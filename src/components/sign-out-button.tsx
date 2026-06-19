@@ -11,7 +11,7 @@ export function SignOutButton() {
     <Button
       type="button"
       variant="ghost"
-      className="h-10 min-h-10 w-10 rounded-full p-0"
+      className="h-11 min-h-11 w-full justify-start rounded-md px-3"
       aria-label="Sign out"
       title="Sign out"
       onClick={async () => {
@@ -21,6 +21,7 @@ export function SignOutButton() {
       }}
     >
       <LogOut className="h-5 w-5" />
+      Logout
     </Button>
   );
 }

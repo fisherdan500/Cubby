@@ -12,16 +12,19 @@ export function ActivityForm({
   babies,
   type,
   initial,
-  activityId
+  activityId,
+  selectedBabyId
 }: {
   babies: BabyOption[];
   type: ActivityTypeName;
   initial?: Record<string, string | number | boolean | null | undefined>;
   activityId?: string;
+  selectedBabyId?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
-  const defaultBaby = String(initial?.babyId ?? babies[0]?.id ?? "");
+  const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
+  const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
 
   async function submit(formData: FormData) {
     setError("");
@@ -38,7 +41,7 @@ export function ActivityForm({
       setError(result.error.message);
       return;
     }
-    router.push("/app");
+    router.push(`/app?babyId=${encodeURIComponent(String(body.babyId || defaultBaby))}`);
     router.refresh();
   }
 

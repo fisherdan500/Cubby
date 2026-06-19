@@ -192,6 +192,7 @@ model Household {
   importedRecords ImportedRecord[]
   medicineCatalog MedicineCatalog[]
   calendarEvents  CalendarEvent[]
+  dashboardWarningDismissals DashboardWarningDismissal[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -211,6 +212,7 @@ model HouseholdMember {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities  ActivityLog[]
   auditEvents AuditEvent[]
+  dashboardWarningDismissals DashboardWarningDismissal[]
 
   @@unique([householdId, userId])
   @@index([householdId, role])
@@ -260,6 +262,7 @@ model Baby {
   reminders   Reminder[]
   notificationPreferences NotificationPreference[]
   calendarLinks CalendarEventBaby[]
+  dashboardWarningDismissals DashboardWarningDismissal[]
 
   @@index([householdId])
   @@index([deletedAt])
@@ -486,6 +489,25 @@ model HouseholdSettings {
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   household                Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+}
+
+model DashboardWarningDismissal {
+  id                  String          @id @default(cuid())
+  householdId         String
+  babyId              String
+  type                String
+  fingerprint         String
+  dismissedByMemberId String
+  dismissedAt         DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  household           Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby                Baby            @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  dismissedByMember   HouseholdMember @relation(fields: [dismissedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([householdId, babyId, type, fingerprint])
+  @@index([householdId, babyId])
+  @@index([dismissedByMemberId])
 }
 
 model ApiKey {

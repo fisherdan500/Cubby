@@ -1,13 +1,32 @@
 import { ActivityType, DiaperKind, FeedingKind, TimerState, type Prisma } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
+
+const warningTypes = ["feeding", "diaper", "timer"] as const;
+
+export type DashboardWarningType = (typeof warningTypes)[number];
+
+export type DashboardWarningItem = {
+  type: DashboardWarningType;
+  babyId: string;
+  message: string;
+  fingerprint: string;
+};
+
+const dismissWarningSchema = z.object({
+  babyId: z.string().min(1),
+  type: z.enum(warningTypes),
+  fingerprint: z.string().min(1).max(500)
+});
 
 export async function getDashboard(userId: string, babyId?: string) {
   const home = await getHouseholdHome(userId);
   if (!home) return null;
   const baby = home.household.babies.find((item) => item.id === babyId) ?? home.household.babies[0];
-  if (!baby) return { home, baby: null, activities: [], activeTimers: [], summaries: {} };
+  if (!baby) return { home, baby: null, activities: [], activeTimers: [], warnings: [], summaries: {} };
 
   const since = new Date();
   since.setHours(0, 0, 0, 0);
@@ -66,6 +85,30 @@ export async function getDashboard(userId: string, babyId?: string) {
     })
   ]);
 
+  const warningItems = buildDashboardWarningItems({
+    babyId: baby.id,
+    lastFeeding,
+    lastDiaper,
+    activeTimers,
+    feedingWarningMinutes: baby.feedingWarningMinutes,
+    diaperWarningMinutes: baby.diaperWarningMinutes,
+    sleepWarningMinutes: baby.sleepWarningMinutes
+  });
+  const dismissals = warningItems.length
+    ? await prisma.dashboardWarningDismissal.findMany({
+        where: {
+          householdId: home.householdId,
+          babyId: baby.id,
+          OR: warningItems.map((warning) => ({
+            type: warning.type,
+            fingerprint: warning.fingerprint
+          }))
+        },
+        select: { type: true, fingerprint: true }
+      })
+    : [];
+  const dismissed = dismissalKeySet(dismissals);
+
   return {
     home,
     baby,
@@ -74,6 +117,7 @@ export async function getDashboard(userId: string, babyId?: string) {
     lastFeeding,
     lastDiaper,
     lastSleep,
+    warnings: warningItems.filter((warning) => !dismissed.has(dismissalKey(warning))),
     dailySummary: summarizeDay(todayActivities),
     summaries: Object.fromEntries(counts.map((count) => [count.type, count._count]))
   };
@@ -98,6 +142,109 @@ export function warningState(input: {
       (timer) => timer.startedAt && now - timer.startedAt.getTime() > sleepMinutes * 60 * 1000
     )
   };
+}
+
+export function buildDashboardWarningItems(input: {
+  babyId: string;
+  lastFeeding?: { occurredAt: Date } | null;
+  lastDiaper?: { occurredAt: Date } | null;
+  activeTimers: Array<{ id: string; startedAt: Date | null; timerState: TimerState | string; type: string }>;
+  feedingWarningMinutes?: number | null;
+  diaperWarningMinutes?: number | null;
+  sleepWarningMinutes?: number | null;
+  now?: Date;
+}): DashboardWarningItem[] {
+  const now = input.now?.getTime() ?? Date.now();
+  const feedingMinutes = input.feedingWarningMinutes ?? 4 * 60;
+  const diaperMinutes = input.diaperWarningMinutes ?? 4 * 60;
+  const sleepMinutes = input.sleepWarningMinutes ?? 6 * 60;
+  const items: DashboardWarningItem[] = [];
+
+  if (!input.lastFeeding || now - input.lastFeeding.occurredAt.getTime() > feedingMinutes * 60 * 1000) {
+    items.push({
+      type: "feeding",
+      babyId: input.babyId,
+      message: "Long time since feeding",
+      fingerprint: warningFingerprint(input.babyId, "feeding", input.lastFeeding?.occurredAt.toISOString() ?? "never")
+    });
+  }
+
+  if (!input.lastDiaper || now - input.lastDiaper.occurredAt.getTime() > diaperMinutes * 60 * 1000) {
+    items.push({
+      type: "diaper",
+      babyId: input.babyId,
+      message: "Long time since diaper",
+      fingerprint: warningFingerprint(input.babyId, "diaper", input.lastDiaper?.occurredAt.toISOString() ?? "never")
+    });
+  }
+
+  const longTimers = input.activeTimers
+    .filter((timer) => timer.startedAt && now - timer.startedAt.getTime() > sleepMinutes * 60 * 1000)
+    .map((timer) => `${timer.id}:${timer.timerState}:${timer.startedAt?.toISOString()}`)
+    .sort();
+  if (longTimers.length) {
+    items.push({
+      type: "timer",
+      babyId: input.babyId,
+      message: "Timer running unusually long",
+      fingerprint: warningFingerprint(input.babyId, "timer", longTimers.join("|"))
+    });
+  }
+
+  return items;
+}
+
+export function filterDismissedWarnings(
+  warnings: DashboardWarningItem[],
+  dismissals: Array<{ type: string; fingerprint: string }>
+) {
+  const dismissed = dismissalKeySet(dismissals);
+  return warnings.filter((warning) => !dismissed.has(dismissalKey(warning)));
+}
+
+export async function dismissDashboardWarning(raw: unknown) {
+  const ctx = await getHouseholdContext();
+  requirePermission(ctx, "activity.read");
+  const input = dismissWarningSchema.parse(raw);
+  const baby = await prisma.baby.findFirst({
+    where: { id: input.babyId, householdId: ctx.householdId, deletedAt: null },
+    select: { id: true }
+  });
+  if (!baby) throw new Error("not_found");
+
+  return prisma.dashboardWarningDismissal.upsert({
+    where: {
+      householdId_babyId_type_fingerprint: {
+        householdId: ctx.householdId,
+        babyId: input.babyId,
+        type: input.type,
+        fingerprint: input.fingerprint
+      }
+    },
+    update: {
+      dismissedByMemberId: ctx.memberId,
+      dismissedAt: new Date()
+    },
+    create: {
+      householdId: ctx.householdId,
+      babyId: input.babyId,
+      type: input.type,
+      fingerprint: input.fingerprint,
+      dismissedByMemberId: ctx.memberId
+    }
+  });
+}
+
+function warningFingerprint(babyId: string, type: DashboardWarningType, value: string) {
+  return `${babyId}:${type}:${value}`;
+}
+
+function dismissalKey(warning: { type: string; fingerprint: string }) {
+  return `${warning.type}:${warning.fingerprint}`;
+}
+
+function dismissalKeySet(dismissals: Array<{ type: string; fingerprint: string }>) {
+  return new Set(dismissals.map(dismissalKey));
 }
 
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;

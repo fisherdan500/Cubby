@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Bell, DatabaseBackup, KeyRound, Shield, UserRoundCog, Users } from "lucide-react";
+import { Baby, Bell, DatabaseBackup, KeyRound, Shield, UserRoundCog, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { requireUserPage } from "@/server/auth/session";
 
 const sections = [
   { href: "/app/settings/admin", label: "Admin", description: "Registration policy, household controls, and app behavior.", icon: Shield },
+  { href: "/app/babies", label: "Babies", description: "Manage baby profiles, timezones, notes, and warning thresholds.", icon: Baby },
   { href: "/app/settings/members", label: "Members and invites", description: "Invite caretakers and review pending invites.", icon: Users },
   { href: "/app/settings/integrations", label: "Integrations", description: "API keys and webhook endpoints.", icon: KeyRound },
   { href: "/app/settings/backups", label: "Backups", description: "JSON export, Sprout import, restore, and spreadsheet exports.", icon: DatabaseBackup },

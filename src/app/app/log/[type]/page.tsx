@@ -6,7 +6,13 @@ import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/a
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdHome } from "@/server/services/households";
 
-export default async function LogActivityPage({ params }: { params: { type: string } }) {
+export default async function LogActivityPage({
+  params,
+  searchParams
+}: {
+  params: { type: string };
+  searchParams: { babyId?: string };
+}) {
   const type = params.type as ActivityTypeName;
   if (!activityTypes.includes(type)) notFound();
   const user = await requireUserPage();
@@ -23,7 +29,7 @@ export default async function LogActivityPage({ params }: { params: { type: stri
       <div>
         <Card className="mx-auto max-w-2xl">
           {babies.length ? (
-            <ActivityForm babies={babies} type={type} />
+            <ActivityForm babies={babies} type={type} selectedBabyId={searchParams.babyId} />
           ) : (
             <p className="text-sm text-muted-foreground">Add a baby before logging activities.</p>
           )}

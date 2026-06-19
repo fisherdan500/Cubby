@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { Baby, CalendarDays, ClipboardList, LineChart, Moon, PlusCircle, Settings, Users } from "lucide-react";
+import { CalendarDays, ClipboardList, LineChart, Moon, PlusCircle, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 
-const nav = [
+const primaryNav = [
   { href: "/app", label: "Log Entry", icon: PlusCircle },
   { href: "/app/history", label: "Full Log", icon: ClipboardList },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/app/reports", label: "Reports", icon: LineChart },
-  { href: "/app/babies", label: "Babies", icon: Baby },
-  { href: "/app/settings/members", label: "Members", icon: Users },
-  { href: "/app/nursery", label: "Nursery", icon: Moon },
+  { href: "/app/nursery", label: "Nursery", icon: Moon }
+];
+
+const mobileNav = [
+  ...primaryNav.slice(0, 4),
   { href: "/app/settings", label: "Settings", icon: Settings }
 ];
 
@@ -36,7 +38,7 @@ export function AppShell({
           </div>
         </Link>
         <nav className="flex-1 space-y-2 px-4 py-6">
-          {nav.map((item) => (
+          {primaryNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -47,8 +49,8 @@ export function AppShell({
             </Link>
           ))}
         </nav>
-        <div className="border-t border-border p-4">
-          <div className="mb-3 flex items-center gap-3 rounded-md bg-muted p-3">
+        <div className="space-y-3 border-t border-border p-4">
+          <div className="flex items-center gap-3 rounded-md bg-muted p-3">
             <Moon className="h-5 w-5 text-primary" />
             <div>
               <p className="text-sm font-bold">Dark</p>
@@ -56,6 +58,13 @@ export function AppShell({
             </div>
             <ThemeToggle />
           </div>
+          <Link
+            href="/app/settings"
+            className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-foreground/90 hover:bg-muted hover:text-foreground"
+          >
+            <Settings className="h-5 w-5 text-primary" />
+            Settings
+          </Link>
           <SignOutButton />
         </div>
       </aside>
@@ -81,7 +90,7 @@ export function AppShell({
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/96 px-2 py-2 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-5 gap-1">
-          {nav.slice(0, 5).map((item) => (
+          {mobileNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}

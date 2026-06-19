@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  AlertTriangle,
   Bath,
   Bed,
   Droplets,
@@ -18,12 +17,13 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } from "@/components/actions/activity-actions";
+import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity, formatDateTime, formatDuration } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
-import { getDashboard, warningState } from "@/server/services/dashboard";
+import { getDashboard } from "@/server/services/dashboard";
 
 const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
   ["feeding", Milk],
@@ -79,11 +79,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             <Metric label="Pumped" value={dashboard.dailySummary.pumped ? `${dashboard.dailySummary.pumped.toFixed(1)} oz` : "0 oz"} />
           </section>
 
-          <Warnings dashboard={dashboard} />
+          <DashboardWarnings warnings={dashboard.warnings} />
 
           <section className="flex gap-3 overflow-x-auto border-y border-border bg-primary/15 px-1 py-4">
             {quickActions.map(([type, Icon]) => (
-              <Link key={type} href={`/app/log/${type}`} className="min-w-24">
+              <Link key={type} href={`/app/log/${type}?babyId=${baby.id}`} className="min-w-24">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <div className={`flex h-14 w-14 items-center justify-center rounded-full shadow-soft ${activityAccent[type]}`}>
                     <Icon className="h-7 w-7" />
@@ -214,34 +214,6 @@ function LastCard({ title, activity }: { title: string; activity: Parameters<typ
       ) : (
         <p className="mt-1 text-sm text-muted-foreground">Nothing logged yet.</p>
       )}
-    </Card>
-  );
-}
-
-function Warnings({ dashboard }: { dashboard: NonNullable<Awaited<ReturnType<typeof getDashboard>>> }) {
-  const warnings = warningState({
-    lastFeeding: dashboard.lastFeeding,
-    lastDiaper: dashboard.lastDiaper,
-    activeTimers: dashboard.activeTimers,
-    feedingWarningMinutes: dashboard.baby?.feedingWarningMinutes,
-    diaperWarningMinutes: dashboard.baby?.diaperWarningMinutes,
-    sleepWarningMinutes: dashboard.baby?.sleepWarningMinutes
-  });
-  const items = [
-    warnings.feedingLate ? "Long time since feeding" : "",
-    warnings.diaperLate ? "Long time since diaper" : "",
-    warnings.timerLong ? "Timer running unusually long" : ""
-  ].filter(Boolean);
-  if (!items.length) return null;
-  return (
-    <Card className="border-accent bg-accent/10">
-      <div className="flex gap-3">
-        <AlertTriangle className="mt-1 h-5 w-5 text-accent" />
-        <div>
-          <h2 className="font-bold">Needs a glance</h2>
-          <p className="text-sm text-muted-foreground">{items.join(" - ")}</p>
-        </div>
-      </div>
     </Card>
   );
 }
