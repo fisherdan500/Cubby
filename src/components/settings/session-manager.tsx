@@ -45,7 +45,7 @@ export function SessionManager() {
           <div key={session.token} className="rounded-lg border border-border bg-card p-3">
             <p className="text-sm font-semibold">{session.userAgent || "Unknown device"}</p>
             <p className="text-xs text-muted-foreground">
-              {session.ipAddress || "No IP"} · expires {new Date(session.expiresAt).toLocaleDateString()}
+              {session.ipAddress || "No IP"} - expires {new Date(session.expiresAt).toLocaleDateString()}
             </p>
             <Button
               className="mt-3"

@@ -4,6 +4,7 @@ import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
+import { getAppRegistrationPolicy } from "@/server/services/registration";
 
 export async function listHouseholdsForUser(userId: string) {
   return prisma.householdMember.findMany({
@@ -20,6 +21,9 @@ export async function createOnboardingHousehold(raw: unknown) {
 
   const existing = await listHouseholdsForUser(user.id);
   if (existing.length > 0) return existing[0].household;
+
+  const policy = await getAppRegistrationPolicy();
+  if (!policy.newHouseholdCreationAllowed) throw new Error("forbidden");
 
   return prisma.household.create({
     data: {
@@ -38,8 +42,15 @@ export async function createOnboardingHousehold(raw: unknown) {
           birthDate,
           timezone: input.timezone
         }
+      },
+      settings: {
+        create: {
+          allowPublicRegistration: false,
+          allowNewHouseholdCreation: false
+        }
       }
-    }
+    },
+    include: { settings: true }
   });
 }
 
@@ -53,7 +64,10 @@ export async function addBaby(raw: unknown) {
       name: input.name,
       birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
       timezone: input.timezone,
-      notes: input.notes || undefined
+      notes: input.notes || undefined,
+      feedingWarningMinutes: input.feedingWarningMinutes,
+      diaperWarningMinutes: input.diaperWarningMinutes,
+      sleepWarningMinutes: input.sleepWarningMinutes
     }
   });
   await writeAudit(ctx, {

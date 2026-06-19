@@ -35,6 +35,38 @@ export function StopTimerButton({ id }: { id: string }) {
   );
 }
 
+export function PauseTimerButton({ id }: { id: string }) {
+  const router = useRouter();
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={async () => {
+        await fetch(`/api/timers/${id}/pause`, { method: "POST" });
+        router.refresh();
+      }}
+    >
+      Pause
+    </Button>
+  );
+}
+
+export function ResumeTimerButton({ id }: { id: string }) {
+  const router = useRouter();
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={async () => {
+        await fetch(`/api/timers/${id}/resume`, { method: "POST" });
+        router.refresh();
+      }}
+    >
+      Resume
+    </Button>
+  );
+}
+
 export function UndoLastButton() {
   const router = useRouter();
   return (

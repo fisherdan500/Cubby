@@ -1,4 +1,5 @@
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { describeActivity } from "@/lib/activity-format";
 import { listActivities } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
 
@@ -26,13 +27,6 @@ export async function activityCsv() {
     "notes"
   ];
   const rows = activities.map((activity) => {
-    const detail =
-      activity.feeding?.mode ??
-      activity.diaper?.kind ??
-      activity.medicine?.name ??
-      activity.milestone?.title ??
-      activity.note?.category ??
-      "";
     return [
       activity.id,
       activity.baby.name,
@@ -43,7 +37,7 @@ export async function activityCsv() {
       activity.durationSeconds,
       activity.timezone,
       activity.actorMember.displayName ?? activity.actorMember.user.name,
-      detail,
+      describeActivity(activity),
       activity.notes
     ].map(csvValue);
   });
@@ -55,4 +49,17 @@ export async function activityCsv() {
   });
 
   return [headers.map(csvValue).join(","), ...rows.map((row) => row.join(","))].join("\n");
+}
+
+export async function activitySpreadsheet() {
+  const csv = await activityCsv();
+  return csv
+    .split("\n")
+    .map((line) =>
+      line
+        .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+        .map((value) => value.replace(/^"|"$/g, "").replaceAll('""', '"'))
+        .join("\t")
+    )
+    .join("\n");
 }

@@ -20,7 +20,7 @@ export default async function LogActivityPage({ params }: { params: { type: stri
 
   return (
     <AppShell title={`Log ${activityLabels[type]}`} userName={user.name}>
-      <div className="md:pl-56">
+      <div>
         <Card className="mx-auto max-w-2xl">
           {babies.length ? (
             <ActivityForm babies={babies} type={type} />

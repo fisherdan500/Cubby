@@ -13,7 +13,10 @@ export type Permission =
   | "activity.delete.own"
   | "invite.create"
   | "export.create"
-  | "session.manage";
+  | "session.manage"
+  | "integration.manage"
+  | "backup.manage"
+  | "notification.manage";
 
 const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
   owner: [
@@ -26,7 +29,10 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "activity.delete.any",
     "invite.create",
     "export.create",
-    "session.manage"
+    "session.manage",
+    "integration.manage",
+    "backup.manage",
+    "notification.manage"
   ],
   parent: [
     "baby.manage",
@@ -36,7 +42,8 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "activity.delete.any",
     "invite.create",
     "export.create",
-    "session.manage"
+    "session.manage",
+    "notification.manage"
   ],
   caretaker: [
     "activity.read",

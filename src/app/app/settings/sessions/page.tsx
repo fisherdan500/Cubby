@@ -7,7 +7,7 @@ export default async function SessionsPage() {
   const user = await requireUserPage();
   return (
     <AppShell title="Sessions" userName={user.name}>
-      <div className="md:pl-56">
+      <div>
         <Card>
           <SessionManager />
         </Card>

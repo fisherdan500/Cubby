@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import type { ActivityTypeName } from "@/domain/activity";
+import { timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
 
 type BabyOption = { id: string; name: string; timezone: string };
 
@@ -78,17 +78,25 @@ function localDateTimeValue(date?: Date) {
 }
 
 function timeRangeFields(type: ActivityTypeName, initial?: Record<string, unknown>) {
-  if (!["feeding", "sleep", "pumping"].includes(type)) return null;
+  if (!timerActivityTypes.includes(type as (typeof timerActivityTypes)[number])) return null;
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <label className="block space-y-2 text-sm font-semibold">
-        Start
-        <Input name="startedAt" type="datetime-local" defaultValue={String(initial?.startedAt ?? "")} />
-      </label>
-      <label className="block space-y-2 text-sm font-semibold">
-        End
-        <Input name="endedAt" type="datetime-local" defaultValue={String(initial?.endedAt ?? "")} />
-      </label>
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block space-y-2 text-sm font-semibold">
+          Start
+          <Input name="startedAt" type="datetime-local" defaultValue={String(initial?.startedAt ?? "")} />
+        </label>
+        <label className="block space-y-2 text-sm font-semibold">
+          End
+          <Input name="endedAt" type="datetime-local" defaultValue={String(initial?.endedAt ?? "")} />
+        </label>
+      </div>
+      {!activityIdField(initial) ? (
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input name="activeTimer" type="checkbox" />
+          Start active timer
+        </label>
+      ) : null}
     </div>
   );
 }
@@ -102,6 +110,10 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
           <InputField name="amount" label="Amount" defaultValue={initial?.amount} />
           <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
           <Select name="side" label="Side" defaultValue={String(initial?.side ?? "")} options={["", "left", "right", "both"]} />
+          <InputField name="bottleType" label="Bottle type" defaultValue={initial?.bottleType} />
+          <InputField name="food" label="Solids food" defaultValue={initial?.food} />
+          <InputField name="leftSeconds" label="Left seconds" defaultValue={initial?.leftSeconds} />
+          <InputField name="rightSeconds" label="Right seconds" defaultValue={initial?.rightSeconds} />
         </div>
       );
     case "diaper":
@@ -110,18 +122,28 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
           <Select name="kind" label="Kind" defaultValue={String(initial?.kind ?? "wet")} options={["wet", "dirty", "mixed", "dry"]} />
           <InputField name="color" label="Color" defaultValue={initial?.color} />
           <InputField name="consistency" label="Consistency" defaultValue={initial?.consistency} />
+          <InputField name="condition" label="Condition" defaultValue={initial?.condition} />
           <label className="flex items-center gap-2 pt-7 text-sm font-semibold">
             <input name="rashConcern" type="checkbox" defaultChecked={Boolean(initial?.rashConcern)} />
             Rash or concern
           </label>
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input name="blowout" type="checkbox" defaultChecked={Boolean(initial?.blowout)} />
+            Blowout
+          </label>
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input name="creamApplied" type="checkbox" defaultChecked={Boolean(initial?.creamApplied)} />
+            Cream applied
+          </label>
         </div>
       );
     case "sleep":
-      return activityIdField(initial) ? null : (
-        <label className="flex items-center gap-2 text-sm font-semibold">
-          <input name="activeTimer" type="checkbox" />
-          Start active sleep timer
-        </label>
+      return (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Select name="sleepType" label="Sleep type" defaultValue={String(initial?.sleepType ?? "")} options={["", "nap", "night"]} />
+          <InputField name="location" label="Location" defaultValue={initial?.location} />
+          <Select name="quality" label="Quality" defaultValue={String(initial?.quality ?? "")} options={["", "settled", "restless", "woke early"]} />
+        </div>
       );
     case "pumping":
       return (
@@ -130,6 +152,12 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
           <InputField name="leftAmount" label="Left amount" defaultValue={initial?.leftAmount} />
           <InputField name="rightAmount" label="Right amount" defaultValue={initial?.rightAmount} />
           <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+          <Select
+            name="inventoryAction"
+            label="Inventory action"
+            defaultValue={String(initial?.inventoryAction ?? "")}
+            options={["", "stored", "fed", "discarded", "thawed", "donated", "expired"]}
+          />
         </div>
       );
     case "medicine":
@@ -149,6 +177,9 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
           <InputField name="lengthUnit" label="Length unit" defaultValue={initial?.lengthUnit ?? "in"} />
           <InputField name="headCircumference" label="Head circumference" defaultValue={initial?.headCircumference} />
           <InputField name="headUnit" label="Head unit" defaultValue={initial?.headUnit ?? "in"} />
+          <InputField name="temperature" label="Temperature" defaultValue={initial?.temperature} />
+          <InputField name="temperatureUnit" label="Temperature unit" defaultValue={initial?.temperatureUnit ?? "F"} />
+          <InputField name="measurementType" label="Measurement type" defaultValue={initial?.measurementType} />
         </div>
       );
     case "milestone":
@@ -166,6 +197,67 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
             Note
             <Textarea name="text" defaultValue={String(initial?.text ?? "")} required />
           </label>
+        </div>
+      );
+    case "bath":
+      return (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <InputField name="bathType" label="Bath type" defaultValue={initial?.bathType} />
+          <InputField name="products" label="Products" defaultValue={initial?.products} />
+          <InputField name="waterTemp" label="Water temp" defaultValue={initial?.waterTemp} />
+        </div>
+      );
+    case "play":
+      return (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <InputField name="activityName" label="Activity" defaultValue={initial?.activityName} />
+          <InputField name="location" label="Location" defaultValue={initial?.location} />
+          <Select name="intensity" label="Intensity" defaultValue={String(initial?.intensity ?? "")} options={["", "quiet", "active", "tummy time", "outside"]} />
+        </div>
+      );
+    case "mood":
+      return (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <InputField name="mood" label="Mood" defaultValue={initial?.mood} required />
+          <Select name="intensity" label="Intensity" defaultValue={String(initial?.intensity ?? "")} options={["", "1", "2", "3", "4", "5"]} />
+          <InputField name="context" label="Context" defaultValue={initial?.context} />
+        </div>
+      );
+    case "supplement":
+      return (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <InputField name="name" label="Supplement" defaultValue={initial?.name} required />
+          <InputField name="dose" label="Dose" defaultValue={initial?.dose} />
+          <InputField name="unit" label="Unit" defaultValue={initial?.unit} />
+        </div>
+      );
+    case "vaccine":
+      return (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <InputField name="name" label="Vaccine" defaultValue={initial?.name} required />
+          <InputField name="dose" label="Dose" defaultValue={initial?.dose} />
+          <InputField name="lot" label="Lot" defaultValue={initial?.lot} />
+          <InputField name="provider" label="Provider" defaultValue={initial?.provider} />
+          <label className="block space-y-2 text-sm font-semibold">
+            Due date
+            <Input name="dueDate" type="date" defaultValue={String(initial?.dueDate ?? "")} />
+          </label>
+          <InputField name="documentUrl" label="Document URL" defaultValue={initial?.documentUrl} />
+        </div>
+      );
+    case "milk_inventory":
+      return (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select
+            name="action"
+            label="Action"
+            defaultValue={String(initial?.action ?? "stored")}
+            options={["stored", "fed", "discarded", "thawed", "donated", "expired"]}
+          />
+          <InputField name="amount" label="Amount" defaultValue={initial?.amount} />
+          <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+          <InputField name="storage" label="Storage" defaultValue={initial?.storage} />
+          <InputField name="label" label="Label" defaultValue={initial?.label} />
         </div>
       );
   }

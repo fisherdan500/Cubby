@@ -10,7 +10,7 @@ export default async function MembersPage() {
 
   return (
     <AppShell title="Members" userName={user.name}>
-      <div className="grid gap-4 md:grid-cols-[1fr_360px] md:pl-56">
+      <div className="grid gap-4 md:grid-cols-[1fr_360px]">
         <section className="space-y-4">
           <Card>
             <h2 className="mb-3 text-lg font-bold">Household</h2>
@@ -22,7 +22,7 @@ export default async function MembersPage() {
               <div key={member.id} className="rounded-lg bg-muted p-3">
                 <p className="font-semibold">{member.displayName ?? member.user.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {member.user.email} · {member.role}
+                  {member.user.email} - {member.role}
                 </p>
               </div>
             ))}
@@ -34,7 +34,7 @@ export default async function MembersPage() {
               <div key={invite.id} className="rounded-lg bg-muted p-3">
                 <p className="font-semibold">{invite.email}</p>
                 <p className="text-sm text-muted-foreground">
-                  {invite.role} · expires {invite.expiresAt.toLocaleDateString()}
+                  {invite.role} - expires {invite.expiresAt.toLocaleDateString()}
                 </p>
               </div>
             ))}

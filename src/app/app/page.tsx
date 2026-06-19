@@ -1,12 +1,27 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, Baby, Bed, Droplets, Milk, Pill, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  Bath,
+  Bed,
+  Droplets,
+  Milk,
+  NotebookText,
+  Package,
+  Pill,
+  Plus,
+  Ruler,
+  Smile,
+  Syringe,
+  Trophy,
+  Wand2
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { StopTimerButton, UndoLastButton } from "@/components/actions/activity-actions";
+import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } from "@/components/actions/activity-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { activityLabels, type ActivityTypeName } from "@/domain/activity";
-import { describeActivity, formatDateTime } from "@/lib/activity-format";
+import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { describeActivity, formatDateTime, formatDuration } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboard, warningState } from "@/server/services/dashboard";
 
@@ -16,7 +31,15 @@ const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
   ["sleep", Bed],
   ["pumping", Milk],
   ["medicine", Pill],
-  ["note", Plus]
+  ["measurement", Ruler],
+  ["milestone", Trophy],
+  ["note", NotebookText],
+  ["bath", Bath],
+  ["play", Wand2],
+  ["mood", Smile],
+  ["supplement", Plus],
+  ["vaccine", Syringe],
+  ["milk_inventory", Package]
 ];
 
 export default async function DashboardPage({ searchParams }: { searchParams: { babyId?: string } }) {
@@ -36,7 +59,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
           </Link>
         </Card>
       ) : (
-        <div className="space-y-5 md:pl-56">
+        <div className="space-y-5">
           <form className="flex gap-2">
             <select name="babyId" defaultValue={baby.id} className="min-h-11 flex-1 rounded-lg border border-border bg-card px-3">
               {dashboard.home.household.babies.map((item) => (
@@ -48,24 +71,28 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             <Button>Switch</Button>
           </form>
 
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {["feeding", "diaper", "sleep", "medicine"].map((type) => (
-              <Card key={type}>
-                <p className="text-sm text-muted-foreground">{activityLabels[type as ActivityTypeName]}</p>
-                <p className="mt-1 text-3xl font-black">{dashboard.summaries[type] ?? 0}</p>
-              </Card>
-            ))}
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <Metric label="Total sleep" value={formatDuration(dashboard.dailySummary.sleepSeconds) || "0 min"} />
+            <Metric label="Feeds" value={String(dashboard.dailySummary.feeds)} />
+            <Metric label="Wet diapers" value={String(dashboard.dailySummary.wetDiapers)} />
+            <Metric label="Dirty diapers" value={String(dashboard.dailySummary.dirtyDiapers)} />
+            <Metric label="Pumped" value={dashboard.dailySummary.pumped ? `${dashboard.dailySummary.pumped.toFixed(1)} oz` : "0 oz"} />
           </section>
 
           <Warnings dashboard={dashboard} />
 
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+          <section className="flex gap-3 overflow-x-auto border-y border-border bg-primary/15 px-1 py-4">
             {quickActions.map(([type, Icon]) => (
-              <Link key={type} href={`/app/log/${type}`}>
-                <Button className="h-20 w-full flex-col text-base">
-                  <Icon className="h-6 w-6" />
-                  {activityLabels[type]}
-                </Button>
+              <Link key={type} href={`/app/log/${type}`} className="min-w-24">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-full shadow-soft ${activityAccent[type]}`}>
+                    <Icon className="h-7 w-7" />
+                  </div>
+                  <p className="text-xs font-bold text-muted-foreground">{activityLabels[type]}</p>
+                  {dashboard.activeTimers.some((timer) => timer.type === type) ? (
+                    <span className="rounded-full bg-green-500 px-2 py-0.5 text-[11px] font-black text-slate-950">Active</span>
+                  ) : null}
+                </div>
               </Link>
             ))}
           </section>
@@ -77,9 +104,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
                 <div key={timer.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
                   <div>
                     <p className="font-semibold">{activityLabels[timer.type as ActivityTypeName]}</p>
-                    <p className="text-sm text-muted-foreground">Started {formatDateTime(timer.startedAt)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {timer.timerState === "paused" ? "Paused" : "Started"} {formatDateTime(timer.startedAt)}
+                    </p>
                   </div>
-                  <StopTimerButton id={timer.id} />
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {timer.timerState === "paused" ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
+                    <StopTimerButton id={timer.id} />
+                  </div>
                 </div>
               ))}
             </Card>
@@ -99,27 +131,75 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             {dashboard.activities.length === 0 ? (
               <p className="text-sm text-muted-foreground">No activity yet. The first log will show up here.</p>
             ) : (
-              <div className="space-y-2">
-                {dashboard.activities.map((activity) => (
-                  <Link
-                    key={activity.id}
-                    href={`/app/activities/${activity.id}/edit`}
-                    className="block rounded-lg border border-border p-3 hover:bg-muted"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-semibold">{activityLabels[activity.type as ActivityTypeName]}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateTime(activity.occurredAt)}</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{describeActivity(activity)}</p>
-                  </Link>
-                ))}
-              </div>
+              <Timeline activities={dashboard.activities} />
             )}
           </Card>
         </div>
       )}
     </AppShell>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <Card>
+      <p className="text-sm font-semibold text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
+    </Card>
+  );
+}
+
+type TimelineActivity = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
+
+function Timeline({ activities }: { activities: TimelineActivity[] }) {
+  const groups = activities.reduce<Record<string, TimelineActivity[]>>((acc, activity) => {
+    const label = periodLabel(activity.occurredAt);
+    acc[label] = acc[label] ?? [];
+    acc[label].push(activity);
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-5">
+      {Object.entries(groups).map(([label, items]) => (
+        <div key={label} className="relative border-l border-border pl-6">
+          <h3 className="mb-3 text-sm font-black text-foreground">{label}</h3>
+          <div className="space-y-3">
+            {items.map((activity) => {
+              const type = activity.type as ActivityTypeName;
+              return (
+                <Link
+                  key={activity.id}
+                  href={`/app/activities/${activity.id}/edit`}
+                  className="relative block rounded-md border border-border bg-background/45 p-3 hover:bg-muted"
+                >
+                  <span className={`absolute -left-[33px] top-4 h-4 w-4 rounded-full ring-4 ring-background ${activityAccent[type].split(" ")[0]}`} />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-black">{activityLabels[type]}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity)}</p>
+                    </div>
+                    <p className="shrink-0 text-right text-xs font-semibold text-muted-foreground">
+                      {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(activity.occurredAt)}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function periodLabel(date: Date) {
+  const hour = date.getHours();
+  if (hour < 5) return "Overnight";
+  if (hour < 12) return "Morning";
+  if (hour < 17) return "Afternoon";
+  if (hour < 21) return "Evening";
+  return "Night";
 }
 
 function LastCard({ title, activity }: { title: string; activity: Parameters<typeof describeActivity>[0] | null }) {
@@ -142,7 +222,10 @@ function Warnings({ dashboard }: { dashboard: NonNullable<Awaited<ReturnType<typ
   const warnings = warningState({
     lastFeeding: dashboard.lastFeeding,
     lastDiaper: dashboard.lastDiaper,
-    activeTimers: dashboard.activeTimers
+    activeTimers: dashboard.activeTimers,
+    feedingWarningMinutes: dashboard.baby?.feedingWarningMinutes,
+    diaperWarningMinutes: dashboard.baby?.diaperWarningMinutes,
+    sleepWarningMinutes: dashboard.baby?.sleepWarningMinutes
   });
   const items = [
     warnings.feedingLate ? "Long time since feeding" : "",
@@ -156,7 +239,7 @@ function Warnings({ dashboard }: { dashboard: NonNullable<Awaited<ReturnType<typ
         <AlertTriangle className="mt-1 h-5 w-5 text-accent" />
         <div>
           <h2 className="font-bold">Needs a glance</h2>
-          <p className="text-sm text-muted-foreground">{items.join(" · ")}</p>
+          <p className="text-sm text-muted-foreground">{items.join(" - ")}</p>
         </div>
       </div>
     </Card>

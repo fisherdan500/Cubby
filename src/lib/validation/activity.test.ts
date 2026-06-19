@@ -26,4 +26,42 @@ describe("activity validation", () => {
       })
     ).toThrow();
   });
+
+  it("accepts new care activity types", () => {
+    expect(
+      activityCreateSchema.parse({
+        babyId: "baby_1",
+        type: "bath",
+        occurredAt: "2026-01-01T05:00",
+        timezone: "America/New_York",
+        bathType: "sink"
+      }).type
+    ).toBe("bath");
+
+    expect(
+      activityCreateSchema.parse({
+        babyId: "baby_1",
+        type: "milk_inventory",
+        occurredAt: "2026-01-01T05:00",
+        timezone: "America/New_York",
+        action: "stored",
+        amount: "3",
+        unit: "oz"
+      }).type
+    ).toBe("milk_inventory");
+  });
+
+  it("accepts feeding timers", () => {
+    const parsed = activityCreateSchema.parse({
+      babyId: "baby_1",
+      type: "feeding",
+      occurredAt: "2026-01-01T05:00",
+      startedAt: "2026-01-01T05:00",
+      timezone: "America/New_York",
+      mode: "breast",
+      side: "left",
+      activeTimer: true
+    });
+    expect(parsed.activeTimer).toBe(true);
+  });
 });

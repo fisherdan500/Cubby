@@ -24,7 +24,7 @@ export default async function NurseryPage() {
 
   return (
     <AppShell title="Nursery mode" userName={user.name}>
-      <div className="space-y-5 md:pl-56">
+      <div className="space-y-5">
         <section className="grid grid-cols-2 gap-3">
           {nurseryActions.map(([href, label, Icon]) => (
             <Link key={href} href={href}>

@@ -12,13 +12,13 @@ export default async function BabiesPage() {
 
   return (
     <AppShell title="Babies" userName={user.name}>
-      <div className="grid gap-4 md:grid-cols-[1fr_360px] md:pl-56">
+      <div className="grid gap-4 md:grid-cols-[1fr_360px]">
         <section className="space-y-3">
           {home.household.babies.map((baby) => (
             <Card key={baby.id}>
               <h2 className="text-lg font-bold">{baby.name}</h2>
               <p className="text-sm text-muted-foreground">
-                {baby.birthDate ? `Born ${baby.birthDate.toLocaleDateString()}` : "Birth date not set"} · {baby.timezone}
+                {baby.birthDate ? `Born ${baby.birthDate.toLocaleDateString()}` : "Birth date not set"} - {baby.timezone}
               </p>
               {baby.notes ? <p className="mt-2 text-sm">{baby.notes}</p> : null}
             </Card>

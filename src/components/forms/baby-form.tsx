@@ -30,6 +30,11 @@ export function BabyForm() {
       <Input name="name" placeholder="Baby name" required />
       <Input name="birthDate" type="date" />
       <Input name="timezone" defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone} required />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Input name="feedingWarningMinutes" type="number" min="1" placeholder="Feed warning minutes" defaultValue="240" />
+        <Input name="diaperWarningMinutes" type="number" min="1" placeholder="Diaper warning minutes" defaultValue="240" />
+        <Input name="sleepWarningMinutes" type="number" min="1" placeholder="Timer warning minutes" defaultValue="360" />
+      </div>
       <Textarea name="notes" placeholder="Notes" />
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       <Button>Add baby</Button>

@@ -7,7 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({
+  mode,
+  next = mode === "register" ? "/onboarding" : "/app",
+  allowRegisterLink = true,
+  inviteToken
+}: {
+  mode: "login" | "register";
+  next?: string;
+  allowRegisterLink?: boolean;
+  inviteToken?: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,14 +30,24 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     const name = String(formData.get("name") || email.split("@")[0]);
     const result =
       mode === "register"
-        ? await authClient.signUp.email({ email, password, name, callbackURL: "/onboarding" })
-        : await authClient.signIn.email({ email, password, rememberMe: true, callbackURL: "/app" });
+        ? await authClient.signUp.email({ email, password, name, callbackURL: next })
+        : await authClient.signIn.email({ email, password, rememberMe: true, callbackURL: next });
     setLoading(false);
     if (result.error) {
       setError(result.error.message ?? "Authentication failed.");
       return;
     }
-    router.push(mode === "register" ? "/onboarding" : "/app");
+    if (mode === "register" && inviteToken) {
+      const accept = await fetch(`/api/invites/${inviteToken}/accept`, { method: "POST" });
+      if (!accept.ok) {
+        setError("Account created, but the invite could not be accepted. Sign in and open the invite link again.");
+        return;
+      }
+      router.push("/app");
+      router.refresh();
+      return;
+    }
+    router.push(next);
     router.refresh();
   }
 
@@ -51,12 +71,21 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       <Button className="w-full" disabled={loading}>
         {loading ? "Working..." : mode === "register" ? "Create account" : "Sign in"}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        {mode === "register" ? "Already have an account?" : "Need an account?"}{" "}
-        <Link className="font-semibold text-primary" href={mode === "register" ? "/login" : "/register"}>
-          {mode === "register" ? "Sign in" : "Create one"}
-        </Link>
-      </p>
+      {mode === "register" ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link className="font-semibold text-primary" href={`/login?next=${encodeURIComponent(next)}`}>
+            Sign in
+          </Link>
+        </p>
+      ) : allowRegisterLink ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Need an account?{" "}
+          <Link className="font-semibold text-primary" href={`/register?next=${encodeURIComponent(next)}`}>
+            Create one
+          </Link>
+        </p>
+      ) : null}
     </form>
   );
 }

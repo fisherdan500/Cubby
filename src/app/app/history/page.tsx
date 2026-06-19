@@ -17,7 +17,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ty
 
   return (
     <AppShell title="Activity history" userName={user.name}>
-      <div className="space-y-4 md:pl-56">
+      <div className="space-y-4">
         <Card>
           <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <select name="type" defaultValue={searchParams.type ?? ""} className="min-h-11 rounded-lg border border-border bg-card px-3">
@@ -50,7 +50,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ty
                 <div>
                   <p className="font-bold">{activityLabels[activity.type as ActivityTypeName]}</p>
                   <p className="text-sm text-muted-foreground">
-                    {activity.baby.name} · {formatDateTime(activity.occurredAt)} ·{" "}
+                    {activity.baby.name} - {formatDateTime(activity.occurredAt)} -{" "}
                     {activity.actorMember.displayName ?? activity.actorMember.user.name}
                   </p>
                   <p className="mt-1 text-sm">{describeActivity(activity)}</p>

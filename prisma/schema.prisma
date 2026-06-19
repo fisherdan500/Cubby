@@ -30,11 +30,18 @@ enum ActivityType {
   measurement
   milestone
   note
+  bath
+  play
+  mood
+  supplement
+  vaccine
+  milk_inventory
 }
 
 enum TimerState {
   none
   running
+  paused
   stopped
 }
 
@@ -63,6 +70,32 @@ enum ReminderKind {
   diaper
   medicine
   pumping
+  sleep
+  play
+}
+
+enum MilkInventoryAction {
+  stored
+  fed
+  discarded
+  thawed
+  donated
+  expired
+}
+
+enum WebhookEvent {
+  activity_created
+  activity_updated
+  activity_deleted
+  timer_started
+  timer_stopped
+  reminder_due
+}
+
+enum DeliveryStatus {
+  pending
+  delivered
+  failed
 }
 
 model User {
@@ -80,6 +113,10 @@ model User {
   sentInvites   Invite[]          @relation("InviteSender")
   acceptedInvites Invite[]        @relation("InviteAccepter")
   auditEvents   AuditEvent[]
+  pushSubscriptions PushSubscription[]
+  notificationPreferences NotificationPreference[]
+  notificationLogs NotificationLog[]
+  backupRecords BackupRecord[]
 }
 
 model Session {
@@ -142,6 +179,14 @@ model Household {
   activities      ActivityLog[]
   trustedDevices  TrustedDevice[]
   auditEvents     AuditEvent[]
+  settings        HouseholdSettings?
+  apiKeys         ApiKey[]
+  webhookEndpoints WebhookEndpoint[]
+  webhookDeliveries WebhookDelivery[]
+  pushSubscriptions PushSubscription[]
+  notificationPreferences NotificationPreference[]
+  notificationLogs NotificationLog[]
+  backupRecords   BackupRecord[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -198,12 +243,17 @@ model Baby {
   birthDate   DateTime?
   timezone    String        @default("UTC")
   notes       String?
+  feedingWarningMinutes Int?
+  diaperWarningMinutes  Int?
+  sleepWarningMinutes   Int?
+  preferredUnits Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
   household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   activities  ActivityLog[]
   reminders   Reminder[]
+  notificationPreferences NotificationPreference[]
 
   @@index([householdId])
   @@index([deletedAt])
@@ -224,6 +274,8 @@ model ActivityLog {
   notes             String?
   source            String          @default("manual")
   timerState        TimerState      @default(none)
+  pausedAt          DateTime?
+  pausedSeconds     Int             @default(0)
   clientMutationId  String?
   deletedAt         DateTime?
   deletedByMemberId String?
@@ -240,6 +292,14 @@ model ActivityLog {
   measurement       MeasurementLog?
   milestone         MilestoneLog?
   note              NoteLog?
+  bath              BathLog?
+  play              PlayLog?
+  mood              MoodLog?
+  supplement        SupplementLog?
+  vaccine           VaccineLog?
+  milkInventory     MilkInventoryLog?
+  webhookDeliveries WebhookDelivery[]
+  notificationLogs  NotificationLog[]
 
   @@index([householdId])
   @@index([babyId])
@@ -257,6 +317,10 @@ model FeedingLog {
   amount     Decimal?    @db.Decimal(10, 2)
   unit       String?
   side       NursingSide?
+  bottleType String?
+  food       String?
+  leftSeconds Int?
+  rightSeconds Int?
   activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
 }
 
@@ -267,12 +331,18 @@ model DiaperLog {
   color       String?
   consistency String?
   rashConcern Boolean      @default(false)
+  condition   String?
+  blowout     Boolean      @default(false)
+  creamApplied Boolean     @default(false)
   activity    ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
 }
 
 model SleepLog {
   id         String       @id @default(cuid())
   activityId String      @unique
+  sleepType  String?
+  location   String?
+  quality    String?
   activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
 }
 
@@ -283,6 +353,7 @@ model PumpingLog {
   leftAmount  Decimal?     @db.Decimal(10, 2)
   rightAmount Decimal?     @db.Decimal(10, 2)
   unit        String?
+  inventoryAction MilkInventoryAction?
   activity    ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
 }
 
@@ -299,6 +370,15 @@ model MedicineLog {
   @@index([contactId])
 }
 
+model SupplementLog {
+  id          String       @id @default(cuid())
+  activityId  String       @unique
+  name        String
+  dose        Decimal?     @db.Decimal(10, 2)
+  unit        String?
+  activity    ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
 model MeasurementLog {
   id                String       @id @default(cuid())
   activityId        String       @unique
@@ -308,6 +388,9 @@ model MeasurementLog {
   lengthUnit        String?
   headCircumference Decimal?     @db.Decimal(10, 2)
   headUnit          String?
+  temperature       Decimal?     @db.Decimal(10, 2)
+  temperatureUnit   String?
+  measurementType   String?
   activity          ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
 }
 
@@ -325,6 +408,217 @@ model NoteLog {
   category   String?
   text       String
   activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model BathLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  bathType   String?
+  products   String?
+  waterTemp  String?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model PlayLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  activityName String?
+  location   String?
+  intensity  String?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model MoodLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  mood       String
+  intensity  Int?
+  context    String?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model VaccineLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  name       String
+  dose       String?
+  lot        String?
+  provider   String?
+  dueDate    DateTime?
+  documentUrl String?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model MilkInventoryLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  action     MilkInventoryAction
+  amount     Decimal?    @db.Decimal(10, 2)
+  unit       String?
+  storage    String?
+  label      String?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model HouseholdSettings {
+  id                       String    @id @default(cuid())
+  householdId              String    @unique
+  allowPublicRegistration  Boolean   @default(false)
+  allowNewHouseholdCreation Boolean  @default(false)
+  activityOrder            Json?
+  activityVisibility       Json?
+  unitPreferences          Json?
+  dateFormat               String    @default("MMM d, yyyy")
+  timeFormat               String    @default("h:mm a")
+  sleepLocations           String[]  @default(["Crib", "Bassinet", "Contact nap", "Stroller", "Car seat"])
+  medicines                String[]  @default([])
+  supplements              String[]  @default([])
+  nurseryModeEnabled       Boolean   @default(true)
+  pwaInstallPromptEnabled  Boolean   @default(true)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  household                Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  householdId String
+  name        String
+  keyHash     String    @unique
+  prefix      String
+  scopes      String[]
+  babyId      String?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@index([prefix])
+}
+
+model WebhookEndpoint {
+  id          String    @id @default(cuid())
+  householdId String
+  name        String
+  url         String
+  secret      String
+  events      WebhookEvent[]
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([householdId])
+  @@index([deletedAt])
+}
+
+model WebhookDelivery {
+  id          String         @id @default(cuid())
+  householdId String
+  endpointId  String
+  event       WebhookEvent
+  activityId  String?
+  status      DeliveryStatus @default(pending)
+  attemptCount Int           @default(0)
+  nextAttemptAt DateTime?
+  lastStatusCode Int?
+  lastError   String?
+  payload     Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  household   Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  endpoint    WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  activity    ActivityLog?   @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([endpointId])
+  @@index([status])
+}
+
+model PushSubscription {
+  id          String    @id @default(cuid())
+  householdId String
+  userId      String
+  endpoint    String    @unique
+  p256dh      String
+  auth        String
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferences NotificationPreference[]
+
+  @@index([householdId])
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+model NotificationPreference {
+  id          String    @id @default(cuid())
+  householdId String
+  subscriptionId String?
+  babyId      String?
+  userId      String
+  timerOverdue Boolean @default(true)
+  activityCreated Boolean @default(false)
+  reminders   Boolean @default(true)
+  quietHoursStart String?
+  quietHoursEnd String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  subscription PushSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  baby        Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@index([userId])
+  @@index([babyId])
+}
+
+model NotificationLog {
+  id          String    @id @default(cuid())
+  householdId String
+  activityId  String?
+  userId      String?
+  kind        String
+  status      DeliveryStatus @default(pending)
+  title       String
+  body        String?
+  error       String?
+  createdAt   DateTime @default(now())
+  sentAt      DateTime?
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  activity    ActivityLog? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  user        User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([activityId])
+  @@index([status])
+}
+
+model BackupRecord {
+  id          String    @id @default(cuid())
+  householdId String
+  actorUserId String?
+  kind        String
+  status      String
+  itemCount   Int?
+  checksum    String?
+  error       String?
+  createdAt   DateTime @default(now())
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  actorUser   User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([createdAt])
 }
 
 model Contact {

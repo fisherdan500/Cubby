@@ -8,7 +8,7 @@ export default async function ExportPage() {
   const user = await requireUserPage();
   return (
     <AppShell title="Export" userName={user.name}>
-      <div className="md:pl-56">
+      <div>
         <Card className="max-w-xl space-y-3">
           <h2 className="text-lg font-bold">Activity CSV</h2>
           <p className="text-sm text-muted-foreground">
