@@ -20,6 +20,9 @@ export function handleError(error: unknown) {
     if (error.message === "missing_file") return fail("missing_file", "Choose a backup file to upload.", 422);
     if (error.message === "file_too_large") return fail("file_too_large", "Backup files must be 100 MB or smaller.", 413);
     if (error.message === "invalid_sqlite_backup") return fail("invalid_sqlite_backup", "That file is not a valid SQLite backup.", 422);
+    if (error.message === "sprout_sqlite_unavailable") {
+      return fail("sprout_sqlite_unavailable", "Cubby could not start the Sprout SQLite reader. Rebuild and restart the app, then try the import again.", 500);
+    }
     if (error.message === "unsupported_sprout_backup") {
       return fail("unsupported_sprout_backup", "Upload a Sprout Track zip, baby-tracker.db, or data.json backup.", 422);
     }

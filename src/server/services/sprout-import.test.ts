@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
+import initSqlJs from "sql.js";
 import { sproutImportTestUtils } from "@/server/services/sprout-import";
 
 describe("sprout import parsing", () => {
@@ -30,6 +31,29 @@ describe("sprout import parsing", () => {
     expect(() => sproutImportTestUtils.validateSqlite(Buffer.from("not a sqlite database"))).toThrow(
       "invalid_sqlite_backup"
     );
+  });
+
+  it("reads Sprout tables from a standalone SQLite backup", async () => {
+    const SQL = await initSqlJs();
+    const db = new SQL.Database();
+    db.run("CREATE TABLE Baby (id TEXT PRIMARY KEY, firstName TEXT, birthDate TEXT)");
+    db.run("CREATE TABLE FeedLog (id TEXT PRIMARY KEY, babyId TEXT, time TEXT, type TEXT)");
+    db.run("INSERT INTO Baby VALUES (?, ?, ?)", ["baby-1", "Finley", "2026-03-13T00:00:00.000Z"]);
+    db.run("INSERT INTO FeedLog VALUES (?, ?, ?, ?)", [
+      "feed-1",
+      "baby-1",
+      "2026-06-19T10:00:00.000Z",
+      "BOTTLE"
+    ]);
+
+    const parsed = await sproutImportTestUtils.parseSproutBackup(Buffer.from(db.export()), "baby-tracker.db");
+    db.close();
+
+    expect(parsed.format).toBe("sqlite");
+    expect(parsed.tables.Baby).toEqual([
+      { id: "baby-1", firstName: "Finley", birthDate: "2026-03-13T00:00:00.000Z" }
+    ]);
+    expect(parsed.tables.FeedLog).toHaveLength(1);
   });
 
   it("coerces Sprout warning times and measurement rows", () => {

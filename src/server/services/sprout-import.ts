@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
-import initSqlJs, { type SqlJsStatic } from "sql.js";
+import { createRequire } from "module";
+import path from "path";
+import type { SqlJsStatic } from "sql.js";
 import JSZip from "jszip";
 import {
   ActivityType,
@@ -92,10 +94,27 @@ const SECRET_OR_RUNTIME_TABLES = new Set([
 let sqlReady: Promise<SqlJsStatic> | undefined;
 
 function getSql() {
-  sqlReady ??= initSqlJs({
-    locateFile: (file) => `node_modules/sql.js/dist/${file}`
-  });
+  sqlReady ??= loadSqlJs();
   return sqlReady;
+}
+
+function loadSqlJs() {
+  try {
+    const runtimeRequire = createRequire(import.meta.url);
+    const initSqlJs = runtimeRequire("sql.js/dist/sql-wasm.js") as (config: {
+      locateFile: (file: string) => string;
+    }) => Promise<SqlJsStatic>;
+    const wasmDir = path.dirname(runtimeRequire.resolve("sql.js/dist/sql-wasm.js"));
+    return initSqlJs({
+      locateFile: (file) => path.join(wasmDir, file)
+    }).catch((error) => {
+      console.error("Failed to initialize sql.js for Sprout import", error);
+      throw new Error("sprout_sqlite_unavailable");
+    });
+  } catch (error) {
+    console.error("Failed to load sql.js for Sprout import", error);
+    throw new Error("sprout_sqlite_unavailable");
+  }
 }
 
 function rows(tables: SproutTables, name: string) {
