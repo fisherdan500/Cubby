@@ -9,7 +9,7 @@ Cubby is a self-hostable baby-care tracker for families. It is a clean-room, ori
 - Activity logging for feeding, diaper, sleep, pumping, medicine, measurement, milestone, note, bath, play, mood, supplement, vaccine, and milk inventory.
 - Persistent timers for feeding, sleep, pumping, and play with pause, resume, and stop controls.
 - Dark dashboard shell with desktop sidebar, mobile bottom navigation, icon quick actions, daily summary, active timers, and timeline.
-- Full log, calendar month view, report tabs, growth trend charts, heatmaps, CSV export, spreadsheet TSV export, JSON backup export, and JSON restore.
+- Full log, calendar month view, report tabs, growth trend charts, heatmaps, CSV export, spreadsheet TSV export, JSON backup export, JSON restore, and Sprout Track backup import.
 - Admin settings for registration policy, API keys, webhooks, backups, notifications, and sessions.
 - API-key hook endpoints under `/api/hooks/v1` for babies, status, activities, latest measurements, and reference metadata.
 
@@ -44,6 +44,7 @@ Members are invited from `/app/settings/members`. Invite links route through `/i
 - Webhook endpoints are persisted and activity/timer events are queued in `WebhookDelivery` for delivery workers.
 - Browser notification subscriptions and preferences are stored, and activity-created notification records are queued when enabled.
 - JSON backups are exported/restored at `/app/settings/backups`; CSV and TSV activity exports are available there too.
+- Sprout Track restore is available at `/app/settings/backups` for Sprout `.zip`, standalone `baby-tracker.db`, or `data.json` backups. Cubby previews the upload first, imports user-owned tracking data into the current household, preserves Sprout caretakers as historical attribution, and skips Sprout auth/API/push/email secrets.
 
 ## Local Development
 

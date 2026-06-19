@@ -17,6 +17,12 @@ export function handleError(error: unknown) {
     if (error.message === "unauthenticated") return fail("unauthenticated", "Please sign in.", 401);
     if (error.message === "forbidden") return fail("forbidden", "You do not have access.", 403);
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);
+    if (error.message === "missing_file") return fail("missing_file", "Choose a backup file to upload.", 422);
+    if (error.message === "file_too_large") return fail("file_too_large", "Backup files must be 100 MB or smaller.", 413);
+    if (error.message === "invalid_sqlite_backup") return fail("invalid_sqlite_backup", "That file is not a valid SQLite backup.", 422);
+    if (error.message === "unsupported_sprout_backup") {
+      return fail("unsupported_sprout_backup", "Upload a Sprout Track zip, baby-tracker.db, or data.json backup.", 422);
+    }
   }
   console.error(error);
   return fail("server_error", "Something went wrong.", 500);

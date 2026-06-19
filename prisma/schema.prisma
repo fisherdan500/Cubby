@@ -117,6 +117,7 @@ model User {
   notificationPreferences NotificationPreference[]
   notificationLogs NotificationLog[]
   backupRecords BackupRecord[]
+  importBatches ImportBatch[]
 }
 
 model Session {
@@ -187,6 +188,10 @@ model Household {
   notificationPreferences NotificationPreference[]
   notificationLogs NotificationLog[]
   backupRecords   BackupRecord[]
+  importBatches   ImportBatch[]
+  importedRecords ImportedRecord[]
+  medicineCatalog MedicineCatalog[]
+  calendarEvents  CalendarEvent[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -254,6 +259,7 @@ model Baby {
   activities  ActivityLog[]
   reminders   Reminder[]
   notificationPreferences NotificationPreference[]
+  calendarLinks CalendarEventBaby[]
 
   @@index([householdId])
   @@index([deletedAt])
@@ -273,6 +279,7 @@ model ActivityLog {
   timezone          String
   notes             String?
   source            String          @default("manual")
+  externalActorName String?
   timerState        TimerState      @default(none)
   pausedAt          DateTime?
   pausedSeconds     Int             @default(0)
@@ -447,6 +454,7 @@ model VaccineLog {
   dueDate    DateTime?
   documentUrl String?
   activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  documents  VaccineDocument[]
 }
 
 model MilkInventoryLog {
@@ -621,6 +629,48 @@ model BackupRecord {
   @@index([createdAt])
 }
 
+model ImportBatch {
+  id             String    @id @default(cuid())
+  householdId    String
+  actorUserId    String?
+  sourceSystem   String
+  sourceFilename String?
+  sourceFormat   String
+  status         String
+  summary        Json?
+  warnings       String[]  @default([])
+  error          String?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+  household      Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  actorUser      User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  records        ImportedRecord[]
+
+  @@index([householdId])
+  @@index([sourceSystem])
+  @@index([createdAt])
+}
+
+model ImportedRecord {
+  id            String      @id @default(cuid())
+  householdId   String
+  importBatchId String
+  sourceSystem  String
+  sourceTable   String
+  sourceId      String
+  targetType    String
+  targetId      String
+  checksum      String?
+  createdAt     DateTime    @default(now())
+  household     Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  importBatch   ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, sourceSystem, sourceTable, sourceId])
+  @@index([householdId])
+  @@index([importBatchId])
+  @@index([targetType, targetId])
+}
+
 model Contact {
   id          String        @id @default(cuid())
   householdId String
@@ -628,15 +678,108 @@ model Contact {
   kind        String?
   phone       String?
   email       String?
+  address     String?
   notes       String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   deletedAt   DateTime?
   household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   medicines   MedicineLog[]
+  calendarLinks CalendarEventContact[]
 
   @@index([householdId])
   @@index([deletedAt])
+}
+
+model MedicineCatalog {
+  id              String    @id @default(cuid())
+  householdId     String
+  name            String
+  typicalDoseSize Decimal?  @db.Decimal(10, 2)
+  unit            String?
+  doseMinTime     String?
+  notes           String?
+  active          Boolean   @default(true)
+  isSupplement    Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@index([name])
+  @@index([isSupplement])
+  @@index([deletedAt])
+}
+
+model CalendarEvent {
+  id                    String    @id @default(cuid())
+  householdId           String
+  title                 String
+  description           String?
+  startTime             DateTime
+  endTime               DateTime?
+  allDay                Boolean   @default(false)
+  eventType             String?
+  location              String?
+  color                 String?
+  recurring             Boolean   @default(false)
+  recurrencePattern     String?
+  recurrenceEnd         DateTime?
+  customRecurrence      String?
+  reminderMinutes       Int?
+  notificationSent      Boolean   @default(false)
+  source                String    @default("manual")
+  externalCaretakerNames String[] @default([])
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+  household             Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  babies                CalendarEventBaby[]
+  contacts              CalendarEventContact[]
+
+  @@index([householdId])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([eventType])
+  @@index([deletedAt])
+}
+
+model CalendarEventBaby {
+  babyId  String
+  eventId String
+  baby    Baby          @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  event   CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([babyId, eventId])
+  @@index([babyId])
+  @@index([eventId])
+}
+
+model CalendarEventContact {
+  contactId String
+  eventId   String
+  contact   Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, eventId])
+  @@index([contactId])
+  @@index([eventId])
+}
+
+model VaccineDocument {
+  id           String     @id @default(cuid())
+  vaccineLogId String
+  originalName String
+  storedName   String?
+  mimeType     String?
+  fileSize     Int?
+  sourcePath   String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  vaccineLog   VaccineLog @relation(fields: [vaccineLogId], references: [id], onDelete: Cascade)
+
+  @@index([vaccineLogId])
 }
 
 model Reminder {

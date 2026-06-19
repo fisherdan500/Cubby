@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { BackupRestoreForm } from "@/components/settings/backup-restore-form";
+import { SproutRestoreForm } from "@/components/settings/sprout-restore-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireUserPage } from "@/server/auth/session";
@@ -31,6 +32,10 @@ export default async function BackupsSettingsPage() {
           <Card>
             <h2 className="mb-3 text-lg font-black">Restore</h2>
             <BackupRestoreForm />
+          </Card>
+          <Card>
+            <h2 className="mb-3 text-lg font-black">Restore from Sprout Track</h2>
+            <SproutRestoreForm />
           </Card>
         </section>
         <Card className="space-y-3">

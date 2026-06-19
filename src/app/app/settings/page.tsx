@@ -8,7 +8,7 @@ const sections = [
   { href: "/app/settings/admin", label: "Admin", description: "Registration policy, household controls, and app behavior.", icon: Shield },
   { href: "/app/settings/members", label: "Members and invites", description: "Invite caretakers and review pending invites.", icon: Users },
   { href: "/app/settings/integrations", label: "Integrations", description: "API keys and webhook endpoints.", icon: KeyRound },
-  { href: "/app/settings/backups", label: "Backups", description: "JSON export, restore, and spreadsheet exports.", icon: DatabaseBackup },
+  { href: "/app/settings/backups", label: "Backups", description: "JSON export, Sprout import, restore, and spreadsheet exports.", icon: DatabaseBackup },
   { href: "/app/settings/notifications", label: "Notifications", description: "Browser subscriptions and preference records.", icon: Bell },
   { href: "/app/settings/sessions", label: "Sessions", description: "Review and revoke signed-in devices.", icon: UserRoundCog }
 ];

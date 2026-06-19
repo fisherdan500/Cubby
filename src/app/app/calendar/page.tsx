@@ -73,9 +73,12 @@ export default async function CalendarPage({
                     <div className="mt-2 flex flex-wrap gap-1">
                       {Object.entries(day.counts)
                         .slice(0, 6)
-                        .map(([type, count]) => (
-                          <span key={type} className={`h-2 w-2 rounded-full ${activityAccent[type as ActivityTypeName].split(" ")[0]}`} title={`${activityLabels[type as ActivityTypeName]} ${count}`} />
-                        ))}
+                        .map(([type, count]) => {
+                          const isEvent = type === "calendar_event";
+                          const label = isEvent ? "Calendar event" : activityLabels[type as ActivityTypeName];
+                          const dot = isEvent ? "bg-accent" : activityAccent[type as ActivityTypeName]?.split(" ")[0] ?? "bg-primary";
+                          return <span key={type} className={`h-2 w-2 rounded-full ${dot}`} title={`${label} ${count}`} />;
+                        })}
                     </div>
                   </Link>
                 ))}
@@ -85,7 +88,22 @@ export default async function CalendarPage({
           <aside>
             <Card className="space-y-3">
               <h2 className="text-lg font-black">{calendar.selected ? format(calendar.selected.date, "MMM d, yyyy") : "Day detail"}</h2>
-              {calendar.selected?.activities.length ? null : <p className="text-sm text-muted-foreground">No activity for this day.</p>}
+              {calendar.selected?.activities.length || calendar.selected?.events.length ? null : (
+                <p className="text-sm text-muted-foreground">No activity or events for this day.</p>
+              )}
+              {calendar.selected?.events.map((event) => (
+                <div key={event.id} className="rounded-md bg-muted p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-black">{event.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {event.allDay ? "All day" : new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(event.startTime)}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {[event.eventType, event.location, event.contacts.map((link) => link.contact.name).join(", ")].filter(Boolean).join(" - ")}
+                  </p>
+                </div>
+              ))}
               {calendar.selected?.activities.map((activity) => {
                 const type = activity.type as ActivityTypeName;
                 return (

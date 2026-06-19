@@ -25,6 +25,19 @@ export async function getCalendar(userId: string, input?: { babyId?: string; mon
     include: activityInclude,
     orderBy: { occurredAt: "asc" }
   });
+  const events = await prisma.calendarEvent.findMany({
+    where: {
+      householdId: ctx.householdId,
+      deletedAt: null,
+      startTime: { gte: rangeStart, lte: rangeEnd },
+      OR: [{ babies: { some: { babyId: baby.id } } }, { babies: { none: {} } }]
+    },
+    include: {
+      babies: true,
+      contacts: { include: { contact: true } }
+    },
+    orderBy: { startTime: "asc" }
+  });
   const selectedDate = input?.date ? new Date(`${input.date}T00:00:00`) : new Date();
   const selectedKey = dateKey(selectedDate);
   const byDate = new Map<string, typeof activities>();
@@ -32,18 +45,26 @@ export async function getCalendar(userId: string, input?: { babyId?: string; mon
     const key = dateKey(activity.occurredAt);
     byDate.set(key, [...(byDate.get(key) ?? []), activity]);
   }
+  const eventsByDate = new Map<string, typeof events>();
+  for (const event of events) {
+    const key = dateKey(event.startTime);
+    eventsByDate.set(key, [...(eventsByDate.get(key) ?? []), event]);
+  }
 
   const days = [];
   const cursor = new Date(rangeStart);
   while (cursor <= rangeEnd) {
     const key = dateKey(cursor);
     const items = byDate.get(key) ?? [];
+    const dayEvents = eventsByDate.get(key) ?? [];
     days.push({
       date: new Date(cursor),
       key,
       inMonth: cursor.getMonth() === month.getMonth(),
-      counts: Object.fromEntries(Object.entries(groupCounts(items)).filter(([, count]) => count > 0)),
-      total: items.length
+      counts: Object.fromEntries(
+        Object.entries({ ...groupCounts(items), calendar_event: dayEvents.length }).filter(([, count]) => count > 0)
+      ),
+      total: items.length + dayEvents.length
     });
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -56,7 +77,8 @@ export async function getCalendar(userId: string, input?: { babyId?: string; mon
     selected: {
       key: selectedKey,
       date: selectedDate,
-      activities: byDate.get(selectedKey) ?? []
+      activities: byDate.get(selectedKey) ?? [],
+      events: eventsByDate.get(selectedKey) ?? []
     }
   };
 }
