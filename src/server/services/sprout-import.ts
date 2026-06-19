@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { createRequire } from "module";
 import path from "path";
 import type { SqlJsStatic } from "sql.js";
 import JSZip from "jszip";
@@ -98,23 +97,48 @@ function getSql() {
   return sqlReady;
 }
 
-function loadSqlJs() {
+async function getRuntimeRequire() {
   try {
-    const runtimeRequire = createRequire(import.meta.url);
-    const initSqlJs = runtimeRequire("sql.js/dist/sql-wasm.js") as (config: {
+    // Webpack can replace normal require/createRequire in route chunks; module.require stays Node-backed.
+    // eslint-disable-next-line no-eval
+    const nodeRequire = eval("module.require.bind(module)") as NodeJS.Require;
+    if (typeof nodeRequire === "function") {
+      return nodeRequire;
+    }
+  } catch {
+    // ESM test runners do not expose CommonJS module; fall through to other Node fallbacks.
+  }
+
+  try {
+    // Keep this server-only require out of the Next route bundle so sql.js can load from runtime node_modules.
+    // eslint-disable-next-line no-eval
+    const nodeRequire = (0, eval)("require") as NodeJS.Require;
+    if (typeof nodeRequire === "function") {
+      return nodeRequire;
+    }
+  } catch {
+    // ESM test runners do not expose require; fall through to Node's createRequire fallback.
+  }
+
+  const { createRequire } = await import("module");
+  return createRequire(import.meta.url);
+}
+
+function loadSqlJs() {
+  const wasmDir = path.join(process.cwd(), "node_modules", "sql.js", "dist");
+  const loaderPath = path.join(wasmDir, "sql-wasm.js");
+
+  return getRuntimeRequire().then((runtimeRequire) => {
+    const initSqlJs = runtimeRequire(loaderPath) as (config: {
       locateFile: (file: string) => string;
     }) => Promise<SqlJsStatic>;
-    const wasmDir = path.dirname(runtimeRequire.resolve("sql.js/dist/sql-wasm.js"));
     return initSqlJs({
       locateFile: (file) => path.join(wasmDir, file)
-    }).catch((error) => {
-      console.error("Failed to initialize sql.js for Sprout import", error);
-      throw new Error("sprout_sqlite_unavailable");
     });
-  } catch (error) {
-    console.error("Failed to load sql.js for Sprout import", error);
+  }).catch((error) => {
+    console.error("Failed to load or initialize sql.js for Sprout import", { loaderPath, wasmDir, error });
     throw new Error("sprout_sqlite_unavailable");
-  }
+  });
 }
 
 function rows(tables: SproutTables, name: string) {
