@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum HouseholdRole {
+  owner
+  parent
+  caretaker
+  read_only
+}
+
+enum InviteStatus {
+  pending
+  accepted
+  revoked
+  expired
+}
+
+enum ActivityType {
+  feeding
+  diaper
+  sleep
+  pumping
+  medicine
+  measurement
+  milestone
+  note
+}
+
+enum TimerState {
+  none
+  running
+  stopped
+}
+
+enum FeedingKind {
+  breast
+  bottle
+  formula
+  solids
+}
+
+enum NursingSide {
+  left
+  right
+  both
+}
+
+enum DiaperKind {
+  wet
+  dirty
+  mixed
+  dry
+}
+
+enum ReminderKind {
+  feeding
+  diaper
+  medicine
+  pumping
+}
+
+model User {
+  id            String            @id @default(cuid())
+  name          String
+  email         String            @unique
+  emailVerified Boolean           @default(false)
+  image         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   HouseholdMember[]
+  trustedDevices TrustedDevice[]
+  sentInvites   Invite[]          @relation("InviteSender")
+  acceptedInvites Invite[]        @relation("InviteAccepter")
+  auditEvents   AuditEvent[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+}
+
+model Household {
+  id              String            @id @default(cuid())
+  name            String
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  members         HouseholdMember[]
+  invites         Invite[]
+  babies          Baby[]
+  contacts        Contact[]
+  reminders       Reminder[]
+  activities      ActivityLog[]
+  trustedDevices  TrustedDevice[]
+  auditEvents     AuditEvent[]
+
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
+model HouseholdMember {
+  id          String        @id @default(cuid())
+  householdId String
+  userId      String
+  role        HouseholdRole
+  displayName String?
+  joinedAt    DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activities  ActivityLog[]
+  auditEvents AuditEvent[]
+
+  @@unique([householdId, userId])
+  @@index([householdId, role])
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+model Invite {
+  id               String        @id @default(cuid())
+  householdId      String
+  email            String
+  role             HouseholdRole
+  tokenHash        String        @unique
+  status           InviteStatus  @default(pending)
+  invitedByUserId  String
+  acceptedByUserId String?
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  household        Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  invitedBy        User          @relation("InviteSender", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  acceptedBy       User?         @relation("InviteAccepter", fields: [acceptedByUserId], references: [id])
+
+  @@index([householdId, status])
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Baby {
+  id          String        @id @default(cuid())
+  householdId String
+  name        String
+  birthDate   DateTime?
+  timezone    String        @default("UTC")
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  activities  ActivityLog[]
+  reminders   Reminder[]
+
+  @@index([householdId])
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id                String          @id @default(cuid())
+  householdId       String
+  babyId            String
+  actorMemberId     String
+  type              ActivityType
+  occurredAt        DateTime
+  startedAt         DateTime?
+  endedAt           DateTime?
+  durationSeconds   Int?
+  timezone          String
+  notes             String?
+  source            String          @default("manual")
+  timerState        TimerState      @default(none)
+  clientMutationId  String?
+  deletedAt         DateTime?
+  deletedByMemberId String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  household         Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby              Baby            @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  actorMember       HouseholdMember @relation(fields: [actorMemberId], references: [id], onDelete: Restrict)
+  feeding           FeedingLog?
+  diaper            DiaperLog?
+  sleep             SleepLog?
+  pumping           PumpingLog?
+  medicine          MedicineLog?
+  measurement       MeasurementLog?
+  milestone         MilestoneLog?
+  note              NoteLog?
+
+  @@index([householdId])
+  @@index([babyId])
+  @@index([type])
+  @@index([occurredAt])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([householdId, babyId, type, occurredAt])
+}
+
+model FeedingLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  mode       FeedingKind
+  amount     Decimal?    @db.Decimal(10, 2)
+  unit       String?
+  side       NursingSide?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model DiaperLog {
+  id          String       @id @default(cuid())
+  activityId  String       @unique
+  kind        DiaperKind
+  color       String?
+  consistency String?
+  rashConcern Boolean      @default(false)
+  activity    ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model SleepLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model PumpingLog {
+  id          String       @id @default(cuid())
+  activityId  String       @unique
+  amount      Decimal?     @db.Decimal(10, 2)
+  leftAmount  Decimal?     @db.Decimal(10, 2)
+  rightAmount Decimal?     @db.Decimal(10, 2)
+  unit        String?
+  activity    ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model MedicineLog {
+  id          String       @id @default(cuid())
+  activityId  String       @unique
+  contactId   String?
+  name        String
+  dose        Decimal?     @db.Decimal(10, 2)
+  unit        String?
+  activity    ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  contact     Contact?     @relation(fields: [contactId], references: [id])
+
+  @@index([contactId])
+}
+
+model MeasurementLog {
+  id                String       @id @default(cuid())
+  activityId        String       @unique
+  weight            Decimal?     @db.Decimal(10, 2)
+  weightUnit        String?
+  length            Decimal?     @db.Decimal(10, 2)
+  lengthUnit        String?
+  headCircumference Decimal?     @db.Decimal(10, 2)
+  headUnit          String?
+  activity          ActivityLog  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model MilestoneLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  title      String
+  category   String?
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model NoteLog {
+  id         String       @id @default(cuid())
+  activityId String      @unique
+  category   String?
+  text       String
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id          String        @id @default(cuid())
+  householdId String
+  name        String
+  kind        String?
+  phone       String?
+  email       String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  medicines   MedicineLog[]
+
+  @@index([householdId])
+  @@index([deletedAt])
+}
+
+model Reminder {
+  id             String       @id @default(cuid())
+  householdId    String
+  babyId         String
+  kind           ReminderKind
+  title          String
+  cadenceMinutes Int?
+  dueAt          DateTime?
+  enabled        Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  household      Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby           Baby         @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@index([babyId])
+  @@index([kind])
+  @@index([dueAt])
+  @@index([deletedAt])
+}
+
+model TrustedDevice {
+  id          String    @id @default(cuid())
+  householdId String?
+  userId      String
+  label       String
+  pinHash     String?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([householdId])
+  @@index([deletedAt])
+}
+
+model AuditEvent {
+  id            String           @id @default(cuid())
+  householdId   String
+  actorUserId   String?
+  actorMemberId String?
+  action        String
+  entityType    String
+  entityId      String
+  before        Json?
+  after         Json?
+  createdAt     DateTime         @default(now())
+  household     Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  actorUser     User?            @relation(fields: [actorUserId], references: [id])
+  actorMember   HouseholdMember? @relation(fields: [actorMemberId], references: [id])
+
+  @@index([householdId])
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

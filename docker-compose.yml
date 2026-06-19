@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cubby
+      POSTGRES_USER: cubby
+      POSTGRES_PASSWORD: cubby_password
+      TZ: UTC
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cubby -d cubby"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - cubby_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  cubby_postgres_data:
