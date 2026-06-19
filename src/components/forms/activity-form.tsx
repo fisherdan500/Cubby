@@ -5,21 +5,26 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
+import { dateTimeInputValue } from "@/lib/timezone";
 
-type BabyOption = { id: string; name: string; timezone: string };
+type BabyOption = { id: string; name: string };
 
 export function ActivityForm({
   babies,
   type,
   initial,
   activityId,
-  selectedBabyId
+  selectedBabyId,
+  returnDate,
+  appTimeZone
 }: {
   babies: BabyOption[];
   type: ActivityTypeName;
   initial?: Record<string, string | number | boolean | null | undefined>;
   activityId?: string;
   selectedBabyId?: string;
+  returnDate?: string;
+  appTimeZone: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -30,7 +35,6 @@ export function ActivityForm({
     setError("");
     const body = Object.fromEntries(formData);
     body.type = type;
-    body.timezone = String(body.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
     const response = await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
       method: activityId ? "PATCH" : "POST",
       headers: { "content-type": "application/json" },
@@ -41,7 +45,9 @@ export function ActivityForm({
       setError(result.error.message);
       return;
     }
-    router.push(`/app?babyId=${encodeURIComponent(String(body.babyId || defaultBaby))}`);
+    const query = new URLSearchParams({ babyId: String(body.babyId || defaultBaby) });
+    if (returnDate) query.set("date", returnDate);
+    router.push(`/app?${query.toString()}`);
     router.refresh();
   }
 
@@ -57,10 +63,9 @@ export function ActivityForm({
           ))}
         </select>
       </label>
-      <Input name="timezone" type="hidden" defaultValue={String(initial?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone)} />
       <label className="block space-y-2 text-sm font-semibold">
         Time
-        <Input name="occurredAt" type="datetime-local" defaultValue={String(initial?.occurredAt ?? localDateTimeValue())} required />
+        <Input name="occurredAt" type="datetime-local" defaultValue={String(initial?.occurredAt ?? localDateTimeValue(undefined, appTimeZone))} required />
       </label>
       {timeRangeFields(type, initial)}
       {typeFields(type, initial)}
@@ -74,10 +79,8 @@ export function ActivityForm({
   );
 }
 
-function localDateTimeValue(date?: Date) {
-  const value = date ?? new Date();
-  const offset = value.getTimezoneOffset();
-  return new Date(value.getTime() - offset * 60_000).toISOString().slice(0, 16);
+function localDateTimeValue(date: Date | undefined, timeZone: string) {
+  return dateTimeInputValue(date, timeZone);
 }
 
 function timeRangeFields(type: ActivityTypeName, initial?: Record<string, unknown>) {

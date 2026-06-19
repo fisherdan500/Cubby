@@ -5,7 +5,7 @@ services:
       POSTGRES_DB: cubby
       POSTGRES_USER: cubby
       POSTGRES_PASSWORD: cubby_password
-      TZ: UTC
+      TZ: ${APP_TIMEZONE:-America/New_York}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cubby -d cubby"]
       interval: 10s
@@ -19,6 +19,9 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      TZ: ${APP_TIMEZONE:-America/New_York}
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/New_York}
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
+import { dateKeyInTimeZone } from "@/lib/timezone";
 import { sproutImportTestUtils } from "@/server/services/sprout-import";
 
 describe("sprout import parsing", () => {
@@ -66,5 +67,40 @@ describe("sprout import parsing", () => {
         unit: "IN"
       })
     ).toEqual({ headCircumference: 14.25, headUnit: "in", measurementType: "head" });
+  });
+
+  it("treats offset-less Sprout datetimes as UTC instants", () => {
+    const date = sproutImportTestUtils.parseSproutDateForImport("2026-06-19T10:00:00.000");
+
+    expect(date?.toISOString()).toBe("2026-06-19T10:00:00.000Z");
+  });
+
+  it("preserves explicit UTC and offset datetimes", () => {
+    expect(sproutImportTestUtils.parseSproutDateForImport("2026-06-19T10:00:00.000Z")?.toISOString()).toBe(
+      "2026-06-19T10:00:00.000Z"
+    );
+    expect(sproutImportTestUtils.parseSproutDateForImport("2026-06-19T10:00:00.000-04:00")?.toISOString()).toBe(
+      "2026-06-19T14:00:00.000Z"
+    );
+  });
+
+  it("keeps date-only Sprout values on the configured app calendar date", () => {
+    const date = sproutImportTestUtils.parseSproutDateForImport("2026-06-19");
+
+    expect(date?.toISOString()).toBe("2026-06-19T04:00:00.000Z");
+    expect(dateKeyInTimeZone(date!, "America/New_York")).toBe("2026-06-19");
+  });
+
+  it("stores imported activity timezone as the configured app timezone without shifting UTC timestamps", () => {
+    const draft = sproutImportTestUtils.activityDraftForTest("FeedLog", {
+      id: "feed-1",
+      babyId: "source-baby",
+      time: "2026-06-19T03:30:00.000",
+      type: "BOTTLE"
+    });
+
+    expect(draft?.timezone).toBe("America/New_York");
+    expect(draft?.occurredAt).toEqual(new Date("2026-06-19T03:30:00.000Z"));
+    expect(dateKeyInTimeZone(draft?.occurredAt as Date, "America/New_York")).toBe("2026-06-18");
   });
 });

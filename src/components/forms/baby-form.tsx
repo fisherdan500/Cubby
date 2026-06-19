@@ -29,7 +29,6 @@ export function BabyForm() {
     <form id="baby-form" action={submit} className="space-y-3">
       <Input name="name" placeholder="Baby name" required />
       <Input name="birthDate" type="date" />
-      <Input name="timezone" defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone} required />
       <div className="grid gap-3 sm:grid-cols-3">
         <Input name="feedingWarningMinutes" type="number" min="1" placeholder="Feed warning minutes" defaultValue="240" />
         <Input name="diaperWarningMinutes" type="number" min="1" placeholder="Diaper warning minutes" defaultValue="240" />

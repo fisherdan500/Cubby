@@ -1,9 +1,13 @@
 import { ActivityType, DiaperKind, FeedingKind, TimerState, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { env } from "@/lib/env";
+import { addDaysToDateKey, dateKeyInTimeZone, normalizeTimeZone, zonedDateStart } from "@/lib/timezone";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
+
+export { addDaysToDateKey } from "@/lib/timezone";
 
 const warningTypes = ["feeding", "diaper", "timer"] as const;
 
@@ -22,21 +26,36 @@ const dismissWarningSchema = z.object({
   fingerprint: z.string().min(1).max(500)
 });
 
-export async function getDashboard(userId: string, babyId?: string) {
+export type DashboardDate = {
+  key: string;
+  label: string;
+  previous: string;
+  next: string;
+  start: Date;
+  end: Date;
+  timezone: string;
+};
+
+export async function getDashboard(userId: string, params?: string | { babyId?: string; date?: string }) {
   const home = await getHouseholdHome(userId);
   if (!home) return null;
+  const babyId = typeof params === "string" ? params : params?.babyId;
+  const dateInput = typeof params === "string" ? undefined : params?.date;
   const baby = home.household.babies.find((item) => item.id === babyId) ?? home.household.babies[0];
   if (!baby) return { home, baby: null, activities: [], activeTimers: [], warnings: [], summaries: {} };
 
-  const since = new Date();
-  since.setHours(0, 0, 0, 0);
+  const selectedDate = resolveDashboardDate(dateInput);
 
   const [activities, activeTimers, counts, todayActivities, lastFeeding, lastDiaper, lastSleep] = await Promise.all([
     prisma.activityLog.findMany({
-      where: { householdId: home.householdId, babyId: baby.id, deletedAt: null },
+      where: {
+        householdId: home.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        occurredAt: { gte: selectedDate.start, lt: selectedDate.end }
+      },
       include: activityInclude,
-      orderBy: { occurredAt: "desc" },
-      take: 30
+      orderBy: { occurredAt: "desc" }
     }),
     prisma.activityLog.findMany({
       where: {
@@ -54,7 +73,7 @@ export async function getDashboard(userId: string, babyId?: string) {
         householdId: home.householdId,
         babyId: baby.id,
         deletedAt: null,
-        occurredAt: { gte: since }
+        occurredAt: { gte: selectedDate.start, lt: selectedDate.end }
       },
       _count: true
     }),
@@ -63,7 +82,7 @@ export async function getDashboard(userId: string, babyId?: string) {
         householdId: home.householdId,
         babyId: baby.id,
         deletedAt: null,
-        occurredAt: { gte: since }
+        occurredAt: { gte: selectedDate.start, lt: selectedDate.end }
       },
       include: activityInclude,
       orderBy: { occurredAt: "desc" }
@@ -117,6 +136,7 @@ export async function getDashboard(userId: string, babyId?: string) {
     lastFeeding,
     lastDiaper,
     lastSleep,
+    selectedDate,
     warnings: warningItems.filter((warning) => !dismissed.has(dismissalKey(warning))),
     dailySummary: summarizeDay(todayActivities),
     summaries: Object.fromEntries(counts.map((count) => [count.type, count._count]))
@@ -247,11 +267,46 @@ function dismissalKeySet(dismissals: Array<{ type: string; fingerprint: string }
   return new Set(dismissals.map(dismissalKey));
 }
 
+export function resolveDashboardDate(input: string | undefined, timezone = env.APP_TIMEZONE, now = new Date()): DashboardDate {
+  const safeTimezone = normalizeTimeZone(timezone, env.APP_TIMEZONE);
+  const key = isValidDateKey(input) ? input : dateKeyInTimeZone(now, safeTimezone);
+  const previous = addDaysToDateKey(key, -1);
+  const next = addDaysToDateKey(key, 1);
+  return {
+    key,
+    label: formatDashboardDateLabel(key, safeTimezone),
+    previous,
+    next,
+    start: zonedDateStart(key, safeTimezone),
+    end: zonedDateStart(next, safeTimezone),
+    timezone: safeTimezone
+  };
+}
+
+function isValidDateKey(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function formatDashboardDateLabel(key: string, timezone: string) {
+  const start = zonedDateStart(key, timezone);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: timezone
+  }).format(start);
+}
+
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
 function summarizeDay(activities: DashboardActivity[]) {
   let sleepSeconds = 0;
   let feeds = 0;
+  let feedAmount = 0;
   let wetDiapers = 0;
   let dirtyDiapers = 0;
   let pumped = 0;
@@ -259,6 +314,7 @@ function summarizeDay(activities: DashboardActivity[]) {
   for (const activity of activities) {
     if (activity.type === ActivityType.sleep) sleepSeconds += activity.durationSeconds ?? 0;
     if (activity.feeding?.mode === FeedingKind.bottle || activity.feeding?.mode === FeedingKind.formula) feeds += 1;
+    if (activity.feeding?.amount) feedAmount += Number(activity.feeding.amount);
     if (activity.diaper?.kind === DiaperKind.wet || activity.diaper?.kind === DiaperKind.mixed) wetDiapers += 1;
     if (activity.diaper?.kind === DiaperKind.dirty || activity.diaper?.kind === DiaperKind.mixed) dirtyDiapers += 1;
     if (activity.pumping?.amount) pumped += Number(activity.pumping.amount);
@@ -267,6 +323,7 @@ function summarizeDay(activities: DashboardActivity[]) {
   return {
     sleepSeconds,
     feeds,
+    feedAmount,
     wetDiapers,
     dirtyDiapers,
     pumped

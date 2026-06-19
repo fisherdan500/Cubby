@@ -18,7 +18,7 @@ export default async function BabiesPage() {
             <Card key={baby.id}>
               <h2 className="text-lg font-bold">{baby.name}</h2>
               <p className="text-sm text-muted-foreground">
-                {baby.birthDate ? `Born ${baby.birthDate.toLocaleDateString()}` : "Birth date not set"} - {baby.timezone}
+                {baby.birthDate ? `Born ${baby.birthDate.toLocaleDateString()}` : "Birth date not set"}
               </p>
               {baby.notes ? <p className="mt-2 text-sm">{baby.notes}</p> : null}
             </Card>

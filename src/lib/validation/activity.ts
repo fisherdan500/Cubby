@@ -9,7 +9,7 @@ const common = z.object({
   occurredAt: dateString,
   startedAt: z.string().optional(),
   endedAt: z.string().optional(),
-  timezone: z.string().min(1).default("UTC"),
+  timezone: z.string().optional(),
   notes: optionalString,
   activeTimer: z.coerce.boolean().default(false)
 });

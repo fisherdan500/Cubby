@@ -55,6 +55,16 @@ export function formatDuration(seconds?: number | null) {
   return rest ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
+export function formatElapsedBadge(date: Date | string | null | undefined, now = new Date()) {
+  if (!date) return null;
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return null;
+  const minutes = Math.max(0, Math.floor((now.getTime() - value.getTime()) / 60_000));
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `${hours}:${String(rest).padStart(2, "0")}`;
+}
+
 export function describeActivity(activity: ActivityWithDetails) {
   switch (activity.type) {
     case "feeding":

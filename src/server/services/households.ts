@@ -1,5 +1,6 @@
 import { HouseholdRole } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { env } from "@/lib/env";
 import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
@@ -40,7 +41,7 @@ export async function createOnboardingHousehold(raw: unknown) {
         create: {
           name: input.babyName,
           birthDate,
-          timezone: input.timezone
+          timezone: env.APP_TIMEZONE
         }
       },
       settings: {
@@ -63,7 +64,7 @@ export async function addBaby(raw: unknown) {
       householdId: ctx.householdId,
       name: input.name,
       birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
-      timezone: input.timezone,
+      timezone: env.APP_TIMEZONE,
       notes: input.notes || undefined,
       feedingWarningMinutes: input.feedingWarningMinutes,
       diaperWarningMinutes: input.diaperWarningMinutes,

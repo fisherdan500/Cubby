@@ -1,6 +1,8 @@
 import { ActivityType, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { durationSeconds } from "@/lib/dates";
+import { env } from "@/lib/env";
+import { zonedDateTimeToDate } from "@/lib/timezone";
 import { activityCreateSchema, activityUpdateSchema, type ActivityCreateInput } from "@/lib/validation/activity";
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
@@ -29,6 +31,9 @@ type ActivityCreateDraft = Omit<Prisma.ActivityLogCreateInput, "household" | "ba
 
 function toDate(value: string | undefined, fallback?: Date) {
   if (!value) return fallback;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) {
+    return zonedDateTimeToDate(value, env.APP_TIMEZONE);
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) throw new Error("Invalid date");
   return date;
@@ -60,7 +65,7 @@ function specificCreate(input: ActivityCreateInput): ActivityCreateDraft {
     startedAt,
     endedAt,
     durationSeconds: duration,
-    timezone: input.timezone,
+    timezone: env.APP_TIMEZONE,
     notes: input.notes,
     timerState
   };

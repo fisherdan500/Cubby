@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import {
   Bath,
   Bed,
+  ChevronLeft,
+  ChevronRight,
   Droplets,
   Milk,
   NotebookText,
@@ -21,20 +23,20 @@ import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
-import { describeActivity, formatDateTime, formatDuration } from "@/lib/activity-format";
+import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboard } from "@/server/services/dashboard";
 
 const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
+  ["sleep", Bed],
   ["feeding", Milk],
   ["diaper", Droplets],
-  ["sleep", Bed],
-  ["pumping", Milk],
-  ["medicine", Pill],
-  ["measurement", Ruler],
-  ["milestone", Trophy],
   ["note", NotebookText],
   ["bath", Bath],
+  ["pumping", Milk],
+  ["measurement", Ruler],
+  ["milestone", Trophy],
+  ["medicine", Pill],
   ["play", Wand2],
   ["mood", Smile],
   ["supplement", Plus],
@@ -42,14 +44,28 @@ const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
   ["milk_inventory", Package]
 ];
 
-export default async function DashboardPage({ searchParams }: { searchParams: { babyId?: string } }) {
+const elapsedBadgeClasses: Partial<Record<ActivityTypeName, string>> = {
+  sleep: "bg-slate-200 text-slate-950",
+  feeding: "bg-sky-300 text-slate-950",
+  diaper: "bg-teal-300 text-slate-950"
+};
+
+type DashboardData = NonNullable<Awaited<ReturnType<typeof getDashboard>>>;
+type DashboardWithBaby = DashboardData & {
+  baby: NonNullable<DashboardData["baby"]>;
+  selectedDate: NonNullable<DashboardData["selectedDate"]>;
+  dailySummary: NonNullable<DashboardData["dailySummary"]>;
+};
+
+export default async function DashboardPage({ searchParams }: { searchParams: { babyId?: string; date?: string } }) {
   const user = await requireUserPage();
-  const dashboard = await getDashboard(user.id, searchParams.babyId);
+  const dashboard = await getDashboard(user.id, { babyId: searchParams.babyId, date: searchParams.date });
   if (!dashboard?.home) redirect("/onboarding");
   const { baby } = dashboard;
+  const currentDashboard = dashboard as DashboardWithBaby;
 
   return (
-    <AppShell title="Today" userName={user.name}>
+    <AppShell title="Log Entry" userName={user.name}>
       {!baby ? (
         <Card>
           <h2 className="text-lg font-bold">Add your first baby</h2>
@@ -61,6 +77,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       ) : (
         <div className="space-y-5">
           <form className="flex gap-2">
+            <input type="hidden" name="date" value={currentDashboard.selectedDate.key} />
             <select name="babyId" defaultValue={baby.id} className="min-h-11 flex-1 rounded-lg border border-border bg-card px-3">
               {dashboard.home.household.babies.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -71,36 +88,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             <Button>Switch</Button>
           </form>
 
-          <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <Metric label="Total sleep" value={formatDuration(dashboard.dailySummary.sleepSeconds) || "0 min"} />
-            <Metric label="Feeds" value={String(dashboard.dailySummary.feeds)} />
-            <Metric label="Wet diapers" value={String(dashboard.dailySummary.wetDiapers)} />
-            <Metric label="Dirty diapers" value={String(dashboard.dailySummary.dirtyDiapers)} />
-            <Metric label="Pumped" value={dashboard.dailySummary.pumped ? `${dashboard.dailySummary.pumped.toFixed(1)} oz` : "0 oz"} />
-          </section>
+          <QuickActionRail dashboard={currentDashboard} />
+          <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
+          <DailySummary summary={currentDashboard.dailySummary} />
+          <DashboardWarnings warnings={currentDashboard.warnings} />
 
-          <DashboardWarnings warnings={dashboard.warnings} />
-
-          <section className="flex gap-3 overflow-x-auto border-y border-border bg-primary/15 px-1 py-4">
-            {quickActions.map(([type, Icon]) => (
-              <Link key={type} href={`/app/log/${type}?babyId=${baby.id}`} className="min-w-24">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-full shadow-soft ${activityAccent[type]}`}>
-                    <Icon className="h-7 w-7" />
-                  </div>
-                  <p className="text-xs font-bold text-muted-foreground">{activityLabels[type]}</p>
-                  {dashboard.activeTimers.some((timer) => timer.type === type) ? (
-                    <span className="rounded-full bg-green-500 px-2 py-0.5 text-[11px] font-black text-slate-950">Active</span>
-                  ) : null}
-                </div>
-              </Link>
-            ))}
-          </section>
-
-          {dashboard.activeTimers.length ? (
+          {currentDashboard.activeTimers.length ? (
             <Card className="space-y-3">
               <h2 className="text-lg font-bold">Active timers</h2>
-              {dashboard.activeTimers.map((timer) => (
+              {currentDashboard.activeTimers.map((timer) => (
                 <div key={timer.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
                   <div>
                     <p className="font-semibold">{activityLabels[timer.type as ActivityTypeName]}</p>
@@ -117,43 +113,115 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             </Card>
           ) : null}
 
-          <section className="grid gap-3 md:grid-cols-3">
-            <LastCard title="Last feeding" activity={dashboard.lastFeeding} />
-            <LastCard title="Last diaper" activity={dashboard.lastDiaper} />
-            <LastCard title="Last sleep" activity={dashboard.lastSleep} />
-          </section>
-
-          <Card className="space-y-3">
+          <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold">Recent activity</h2>
+              <h2 className="text-lg font-bold">Daily log</h2>
               <UndoLastButton />
             </div>
-            {dashboard.activities.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No activity yet. The first log will show up here.</p>
+            {currentDashboard.activities.length === 0 ? (
+              <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No activity for this date.</p>
             ) : (
-              <Timeline activities={dashboard.activities} />
+              <Timeline activities={currentDashboard.activities} timeZone={currentDashboard.selectedDate.timezone} />
             )}
-          </Card>
+          </section>
         </div>
       )}
     </AppShell>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
   return (
-    <Card>
-      <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-black">{value}</p>
-    </Card>
+    <section className="flex gap-3 overflow-x-auto border-y border-border bg-primary/15 px-1 py-4">
+      {quickActions.map(([type, Icon]) => {
+        const badge = elapsedBadge(type, dashboard);
+        return (
+          <Link
+            key={type}
+            href={`/app/log/${type}?babyId=${dashboard.baby.id}&date=${dashboard.selectedDate.key}`}
+            className="min-w-24"
+          >
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="flex h-5 items-center justify-center">
+                {badge ? (
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${elapsedBadgeClasses[type]}`}>
+                    {badge}
+                  </span>
+                ) : null}
+              </div>
+              <div className={`flex h-14 w-14 items-center justify-center rounded-full shadow-soft ${activityAccent[type]}`}>
+                <Icon className="h-7 w-7" />
+              </div>
+              <p className="text-xs font-bold text-muted-foreground">{quickActionLabel(type)}</p>
+              {dashboard.activeTimers.some((timer) => timer.type === type) ? (
+                <span className="rounded-full bg-green-500 px-2 py-0.5 text-[11px] font-black text-slate-950">Active</span>
+              ) : null}
+            </div>
+          </Link>
+        );
+      })}
+    </section>
+  );
+}
+
+function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate: DashboardWithBaby["selectedDate"] }) {
+  return (
+    <nav className="flex items-center justify-center gap-5">
+      <Link
+        href={`/app?babyId=${babyId}&date=${selectedDate.previous}`}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        aria-label="Previous day"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Link>
+      <p className="min-w-40 text-center text-sm font-black">{selectedDate.label}</p>
+      <Link
+        href={`/app?babyId=${babyId}&date=${selectedDate.next}`}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        aria-label="Next day"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </Link>
+    </nav>
+  );
+}
+
+function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-black">Daily Summary</h2>
+      <div className="flex flex-wrap gap-x-8 gap-y-4">
+        <SummaryItem icon={<Bed className="h-5 w-5 text-slate-300" />} value={formatDuration(summary.sleepSeconds) || "0 min"} label="Total Sleep" />
+        <SummaryItem
+          icon={<Milk className="h-5 w-5 text-sky-300" />}
+          value={String(summary.feeds)}
+          label={summary.feedAmount ? `${summary.feedAmount.toFixed(1)} oz` : "Feeds"}
+        />
+        <SummaryItem icon={<Droplets className="h-5 w-5 text-teal-300" />} value={String(summary.wetDiapers)} label="Wet Diapers" />
+        <SummaryItem icon={<Droplets className="h-5 w-5 text-orange-400" />} value={String(summary.dirtyDiapers)} label="Poops" />
+        <SummaryItem icon={<Milk className="h-5 w-5 text-fuchsia-300" />} value={summary.pumped ? `${summary.pumped.toFixed(1)} oz` : "0 oz"} label="Pumped" />
+      </div>
+    </section>
+  );
+}
+
+function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      {icon}
+      <div>
+        <p className="text-lg font-black leading-none">{value}</p>
+        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+      </div>
+    </div>
   );
 }
 
 type TimelineActivity = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
 
-function Timeline({ activities }: { activities: TimelineActivity[] }) {
+function Timeline({ activities, timeZone }: { activities: TimelineActivity[]; timeZone: string }) {
   const groups = activities.reduce<Record<string, TimelineActivity[]>>((acc, activity) => {
-    const label = periodLabel(activity.occurredAt);
+    const label = periodLabel(activity.occurredAt, timeZone);
     acc[label] = acc[label] ?? [];
     acc[label].push(activity);
     return acc;
@@ -180,7 +248,7 @@ function Timeline({ activities }: { activities: TimelineActivity[] }) {
                       <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity)}</p>
                     </div>
                     <p className="shrink-0 text-right text-xs font-semibold text-muted-foreground">
-                      {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(activity.occurredAt)}
+                      {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
                     </p>
                   </div>
                 </Link>
@@ -193,8 +261,8 @@ function Timeline({ activities }: { activities: TimelineActivity[] }) {
   );
 }
 
-function periodLabel(date: Date) {
-  const hour = date.getHours();
+function periodLabel(date: Date, timeZone: string) {
+  const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone }).format(date));
   if (hour < 5) return "Overnight";
   if (hour < 12) return "Morning";
   if (hour < 17) return "Afternoon";
@@ -202,18 +270,15 @@ function periodLabel(date: Date) {
   return "Night";
 }
 
-function LastCard({ title, activity }: { title: string; activity: Parameters<typeof describeActivity>[0] | null }) {
-  return (
-    <Card>
-      <p className="text-sm text-muted-foreground">{title}</p>
-      {activity ? (
-        <>
-          <p className="mt-1 font-bold">{formatDateTime(activity.occurredAt)}</p>
-          <p className="text-sm text-muted-foreground">{describeActivity(activity)}</p>
-        </>
-      ) : (
-        <p className="mt-1 text-sm text-muted-foreground">Nothing logged yet.</p>
-      )}
-    </Card>
-  );
+function elapsedBadge(type: ActivityTypeName, dashboard: DashboardData) {
+  if (type === "sleep") return formatElapsedBadge(dashboard.lastSleep?.endedAt ?? dashboard.lastSleep?.occurredAt);
+  if (type === "feeding") return formatElapsedBadge(dashboard.lastFeeding?.occurredAt);
+  if (type === "diaper") return formatElapsedBadge(dashboard.lastDiaper?.occurredAt);
+  return null;
+}
+
+function quickActionLabel(type: ActivityTypeName) {
+  if (type === "feeding") return "Feed";
+  if (type === "pumping") return "Pump";
+  return activityLabels[type];
 }

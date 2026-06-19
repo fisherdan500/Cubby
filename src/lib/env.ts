@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_APP_TIMEZONE, normalizeTimeZone } from "@/lib/timezone";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -6,7 +7,8 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   TRUSTED_ORIGINS: z.string().optional(),
   ENABLE_REGISTRATION: z.string().default("true"),
-  ALLOW_PUBLIC_REGISTRATION: z.string().default("false")
+  ALLOW_PUBLIC_REGISTRATION: z.string().default("false"),
+  APP_TIMEZONE: z.string().optional().transform((value) => normalizeTimeZone(value, DEFAULT_APP_TIMEZONE))
 });
 
 export const env = envSchema.parse({
@@ -19,7 +21,8 @@ export const env = envSchema.parse({
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   TRUSTED_ORIGINS: process.env.TRUSTED_ORIGINS,
   ENABLE_REGISTRATION: process.env.ENABLE_REGISTRATION ?? "true",
-  ALLOW_PUBLIC_REGISTRATION: process.env.ALLOW_PUBLIC_REGISTRATION ?? "false"
+  ALLOW_PUBLIC_REGISTRATION: process.env.ALLOW_PUBLIC_REGISTRATION ?? "false",
+  APP_TIMEZONE: process.env.APP_TIMEZONE ?? DEFAULT_APP_TIMEZONE
 });
 
 export function trustedOrigins() {

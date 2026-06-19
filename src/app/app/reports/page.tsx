@@ -41,8 +41,8 @@ export default async function ReportsPage({
                   </option>
                 ))}
               </select>
-              <input name="start" type="date" defaultValue={report.start.toISOString().slice(0, 10)} className="min-h-11 rounded-lg border border-border bg-card px-3" />
-              <input name="end" type="date" defaultValue={report.end.toISOString().slice(0, 10)} className="min-h-11 rounded-lg border border-border bg-card px-3" />
+              <input name="start" type="date" defaultValue={report.startKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
+              <input name="end" type="date" defaultValue={report.endKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
               <Button>Apply</Button>
             </form>
           </Card>
@@ -51,7 +51,7 @@ export default async function ReportsPage({
             {tabs.map(([value, label, Icon]) => (
               <Link
                 key={value}
-                href={`/app/reports?babyId=${report.baby?.id}&start=${report.start.toISOString().slice(0, 10)}&end=${report.end.toISOString().slice(0, 10)}&tab=${value}`}
+                href={`/app/reports?babyId=${report.baby?.id}&start=${report.startKey}&end=${report.endKey}&tab=${value}`}
                 className={`inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-bold ${
                   tab === value ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted"
                 }`}

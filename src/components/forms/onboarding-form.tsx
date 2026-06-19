@@ -40,10 +40,6 @@ export function OnboardingForm() {
         Birth date
         <Input name="birthDate" type="date" />
       </label>
-      <label className="block space-y-2 text-sm font-semibold">
-        Timezone
-        <Input name="timezone" defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone} required />
-      </label>
       <Textarea className="hidden" aria-hidden />
       {error ? <p className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
       <Button className="w-full">Start tracking</Button>

@@ -12,6 +12,8 @@ import {
   type Prisma
 } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { env } from "@/lib/env";
+import { zonedDateStart } from "@/lib/timezone";
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { durationSeconds } from "@/lib/dates";
 
@@ -176,15 +178,31 @@ function boolValue(row: SproutRow, key: string) {
 }
 
 function dateValue(row: SproutRow, key: string) {
-  const raw = value(row, key);
+  return parseSproutDateForImport(value(row, key));
+}
+
+function parseSproutDateForImport(raw: unknown) {
   if (raw === null || raw === undefined || raw === "") return undefined;
   if (raw instanceof Date) return Number.isNaN(raw.getTime()) ? undefined : raw;
   if (typeof raw === "number") {
     const date = new Date(raw);
     return Number.isNaN(date.getTime()) ? undefined : date;
   }
-  const date = new Date(String(raw));
+  const value = String(raw).trim();
+  if (!value) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return zonedDateStart(value, env.APP_TIMEZONE);
+  }
+  const normalized = normalizeSproutDateTime(value);
+  const date = new Date(normalized);
   return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function normalizeSproutDateTime(value: string) {
+  const normalized = value.replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/, "$1T$2");
+  const isIsoLikeDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?$/.test(normalized);
+  const hasExplicitZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized);
+  return isIsoLikeDateTime && !hasExplicitZone ? `${normalized}Z` : normalized;
 }
 
 function requiredDate(row: SproutRow, keys: string[], fallback = new Date()) {
@@ -676,7 +694,7 @@ async function importBabies(
           householdId: ctx.householdId,
           name,
           birthDate,
-          timezone: text(row, "timezone") ?? "UTC",
+          timezone: env.APP_TIMEZONE,
           notes: appendNotes(text(row, "notes"), boolValue(row, "inactive") ? "Imported from Sprout as inactive." : undefined),
           feedingWarningMinutes: parseWarningMinutes(value(row, "feedWarningTime")),
           diaperWarningMinutes: parseWarningMinutes(value(row, "diaperWarningTime"))
@@ -1060,7 +1078,7 @@ function activityBase(
     household: { connect: { id: ctx.householdId } },
     baby: { connect: { id: babyId } },
     actorMember: { connect: { id: ctx.memberId } },
-    timezone: "UTC",
+    timezone: env.APP_TIMEZONE,
     source: SOURCE_SYSTEM,
     externalActorName,
     timerState: TimerState.none,
@@ -1179,8 +1197,28 @@ async function importVaccineDocuments(
 
 export const sproutImportTestUtils = {
   parseSproutBackup,
+  parseSproutDateForImport,
   parseWarningMinutes,
   tablesFromJson,
   mapMeasurement,
-  validateSqlite
+  validateSqlite,
+  activityDraftForTest(table: string, row: SproutRow, babyId = "target-baby") {
+    const sourceBabyId = text(row, "babyId") ?? "source-baby";
+    return activityDraft(
+      {
+        householdId: "household-1",
+        memberId: "member-1",
+        userId: "user-1"
+      } as HouseholdContext,
+      table,
+      { babyId: sourceBabyId, ...row },
+      {
+        babies: new Map([[sourceBabyId, babyId]]),
+        contacts: new Map(),
+        medicines: new Map(),
+        caretakers: new Map(),
+        vaccines: new Map()
+      }
+    );
+  }
 };

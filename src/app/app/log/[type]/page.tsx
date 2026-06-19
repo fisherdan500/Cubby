@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { ActivityForm } from "@/components/forms/activity-form";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
+import { env } from "@/lib/env";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdHome } from "@/server/services/households";
 
@@ -11,7 +12,7 @@ export default async function LogActivityPage({
   searchParams
 }: {
   params: { type: string };
-  searchParams: { babyId?: string };
+  searchParams: { babyId?: string; date?: string };
 }) {
   const type = params.type as ActivityTypeName;
   if (!activityTypes.includes(type)) notFound();
@@ -20,8 +21,7 @@ export default async function LogActivityPage({
   if (!home) redirect("/onboarding");
   const babies = home.household.babies.map((baby) => ({
     id: baby.id,
-    name: baby.name,
-    timezone: baby.timezone
+    name: baby.name
   }));
 
   return (
@@ -29,7 +29,13 @@ export default async function LogActivityPage({
       <div>
         <Card className="mx-auto max-w-2xl">
           {babies.length ? (
-            <ActivityForm babies={babies} type={type} selectedBabyId={searchParams.babyId} />
+            <ActivityForm
+              babies={babies}
+              type={type}
+              selectedBabyId={searchParams.babyId}
+              returnDate={searchParams.date}
+              appTimeZone={env.APP_TIMEZONE}
+            />
           ) : (
             <p className="text-sm text-muted-foreground">Add a baby before logging activities.</p>
           )}

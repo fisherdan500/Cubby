@@ -1,8 +1,9 @@
 import { ActivityType, type Prisma } from "@prisma/client";
-import { endOfDay, startOfDay, subDays } from "date-fns";
 import { prisma } from "@/lib/db/prisma";
 import { activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { formatDuration } from "@/lib/activity-format";
+import { env } from "@/lib/env";
+import { addDaysToDateKey, dateKeyInTimeZone, dateTimePartsInTimeZone, zonedDateStart } from "@/lib/timezone";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
@@ -15,16 +16,32 @@ export async function getReports(userId: string, input?: { babyId?: string; star
   const home = await getHouseholdHome(userId);
   if (!home) return null;
   const baby = home.household.babies.find((item) => item.id === input?.babyId) ?? home.household.babies[0];
-  if (!baby) return { home, baby: null, activities: [], stats: null };
+  const todayKey = dateKeyInTimeZone(new Date(), env.APP_TIMEZONE);
+  const startKey = isValidDateKey(input?.start) ? input.start : addDaysToDateKey(todayKey, -6);
+  const endKey = isValidDateKey(input?.end) ? input.end : todayKey;
+  const start = zonedDateStart(startKey, env.APP_TIMEZONE);
+  const end = zonedDateStart(endKey, env.APP_TIMEZONE);
+  const endExclusive = zonedDateStart(addDaysToDateKey(endKey, 1), env.APP_TIMEZONE);
+  if (!baby) {
+    return {
+      home,
+      baby: null,
+      start,
+      end,
+      startKey,
+      endKey,
+      timezone: env.APP_TIMEZONE,
+      activities: [],
+      stats: null
+    };
+  }
 
-  const start = input?.start ? startOfDay(new Date(input.start)) : startOfDay(subDays(new Date(), 6));
-  const end = input?.end ? endOfDay(new Date(input.end)) : endOfDay(new Date());
   const activities = await prisma.activityLog.findMany({
     where: {
       householdId: ctx.householdId,
       babyId: baby.id,
       deletedAt: null,
-      occurredAt: { gte: start, lte: end }
+      occurredAt: { gte: start, lt: endExclusive }
     },
     include: activityInclude,
     orderBy: { occurredAt: "asc" }
@@ -35,12 +52,15 @@ export async function getReports(userId: string, input?: { babyId?: string; star
     baby,
     start,
     end,
+    startKey,
+    endKey,
+    timezone: env.APP_TIMEZONE,
     activities,
-    stats: buildStats(activities, baby.birthDate)
+    stats: buildStats(activities, baby.birthDate, env.APP_TIMEZONE)
   };
 }
 
-function buildStats(activities: ReportActivity[], birthDate?: Date | null) {
+function buildStats(activities: ReportActivity[], birthDate?: Date | null, timeZone = env.APP_TIMEZONE) {
   const byType = Object.fromEntries(activityTypes.map((type) => [type, 0])) as Record<ActivityTypeName, number>;
   let sleepSeconds = 0;
   let napCount = 0;
@@ -67,8 +87,9 @@ function buildStats(activities: ReportActivity[], birthDate?: Date | null) {
 
   for (const activity of activities) {
     byType[activity.type as ActivityTypeName] += 1;
-    const day = activity.occurredAt.getDay();
-    const hour = activity.occurredAt.getHours();
+    const localKey = dateKeyInTimeZone(activity.occurredAt, timeZone);
+    const day = dayIndexFromDateKey(localKey);
+    const hour = dateTimePartsInTimeZone(activity.occurredAt, timeZone).hour;
     heatmap[day * 24 + hour].count += 1;
 
     if (activity.type === ActivityType.sleep) {
@@ -89,7 +110,7 @@ function buildStats(activities: ReportActivity[], birthDate?: Date | null) {
     if (activity.diaper?.kind === "dirty" || activity.diaper?.kind === "mixed") dirty += 1;
     if (activity.pumping?.amount) pumped += Number(activity.pumping.amount);
     if (activity.measurement) {
-      const date = activity.occurredAt.toISOString().slice(0, 10);
+      const date = dateKeyInTimeZone(activity.occurredAt, timeZone);
       const ageMonths = birthDate
         ? Number(((activity.occurredAt.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)).toFixed(1))
         : 0;
@@ -128,4 +149,16 @@ function buildStats(activities: ReportActivity[], birthDate?: Date | null) {
     milestones,
     heatmap
   };
+}
+
+function isValidDateKey(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function dayIndexFromDateKey(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 }
