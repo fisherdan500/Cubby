@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CalendarDays, ClipboardList, LineChart, Moon, PlusCircle, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
+import { HeaderBabySelector } from "@/components/header-baby-selector";
+import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
   { href: "/app", label: "Log Entry", icon: PlusCircle },
@@ -19,12 +21,16 @@ const mobileNav = [
 export function AppShell({
   children,
   title,
-  userName
+  userName,
+  babySelector
 }: {
   children: React.ReactNode;
   title: string;
   userName: string;
+  babySelector?: HeaderBabySelectorData | null;
 }) {
+  const selectedBabyId = babySelector?.selectedBabyId;
+
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-slate-700/60 backdrop-blur md:flex md:flex-col">
@@ -41,7 +47,7 @@ export function AppShell({
           {primaryNav.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={withBabyId(item.href, selectedBabyId)}
               className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-foreground/90 hover:bg-muted hover:text-foreground"
             >
               <item.icon className="h-5 w-5 text-primary" />
@@ -76,7 +82,11 @@ export function AppShell({
             <h1 className="text-base font-black text-primary-foreground sm:text-lg">{title}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden rounded-full bg-blue-500 px-4 py-2 text-sm font-bold text-white sm:block">{userName}</span>
+            {babySelector ? (
+              <HeaderBabySelector data={babySelector} />
+            ) : (
+              <span className="hidden rounded-full bg-blue-500 px-4 py-2 text-sm font-bold text-white sm:block">{userName}</span>
+            )}
             <div className="md:hidden">
               <ThemeToggle />
             </div>
@@ -93,7 +103,7 @@ export function AppShell({
           {mobileNav.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={withBabyId(item.href, selectedBabyId)}
               className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <item.icon className="h-5 w-5" />
@@ -104,4 +114,9 @@ export function AppShell({
       </nav>
     </div>
   );
+}
+
+function withBabyId(href: string, babyId?: string) {
+  if (!babyId || href.startsWith("/app/settings")) return href;
+  return `${href}?babyId=${encodeURIComponent(babyId)}`;
 }

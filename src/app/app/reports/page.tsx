@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { requireUserPage } from "@/server/auth/session";
+import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getReports } from "@/server/services/reports";
 
 const tabs = [
@@ -22,25 +23,21 @@ export default async function ReportsPage({
   searchParams: { babyId?: string; start?: string; end?: string; tab?: string };
 }) {
   const user = await requireUserPage();
-  const report = await getReports(user.id, searchParams);
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
+  const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
+  const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!report?.home) redirect("/onboarding");
   const tab = tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "stats";
 
   return (
-    <AppShell title={`${report.baby?.name ?? "Baby"} - Reports`} userName={user.name}>
+    <AppShell title="Reports" userName={user.name} babySelector={babySelector}>
       {!report.baby || !report.stats ? (
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
           <Card>
-            <form className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
-              <select name="babyId" defaultValue={report.baby.id} className="min-h-11 rounded-lg border border-border bg-card px-3">
-                {report.home.household.babies.map((baby) => (
-                  <option key={baby.id} value={baby.id}>
-                    {baby.name}
-                  </option>
-                ))}
-              </select>
+            <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <input name="babyId" type="hidden" value={report.baby.id} />
               <input name="start" type="date" defaultValue={report.startKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
               <input name="end" type="date" defaultValue={report.endKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
               <Button>Apply</Button>

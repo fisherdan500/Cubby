@@ -25,6 +25,7 @@ import { Card } from "@/components/ui/card";
 import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
+import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getDashboard } from "@/server/services/dashboard";
 
 const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
@@ -59,13 +60,14 @@ type DashboardWithBaby = DashboardData & {
 
 export default async function DashboardPage({ searchParams }: { searchParams: { babyId?: string; date?: string } }) {
   const user = await requireUserPage();
-  const dashboard = await getDashboard(user.id, { babyId: searchParams.babyId, date: searchParams.date });
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
+  const dashboard = await getDashboard(user.id, { babyId: babySelector?.selectedBabyId ?? searchParams.babyId, date: searchParams.date });
   if (!dashboard?.home) redirect("/onboarding");
   const { baby } = dashboard;
   const currentDashboard = dashboard as DashboardWithBaby;
 
   return (
-    <AppShell title="Log Entry" userName={user.name}>
+    <AppShell title="Log Entry" userName={user.name} babySelector={babySelector}>
       {!baby ? (
         <Card>
           <h2 className="text-lg font-bold">Add your first baby</h2>
@@ -76,18 +78,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
         </Card>
       ) : (
         <div className="space-y-5">
-          <form className="flex gap-2">
-            <input type="hidden" name="date" value={currentDashboard.selectedDate.key} />
-            <select name="babyId" defaultValue={baby.id} className="min-h-11 flex-1 rounded-lg border border-border bg-card px-3">
-              {dashboard.home.household.babies.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            <Button>Switch</Button>
-          </form>
-
           <QuickActionRail dashboard={currentDashboard} />
           <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
           <DailySummary summary={currentDashboard.dailySummary} />

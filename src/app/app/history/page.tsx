@@ -7,19 +7,23 @@ import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/a
 import { describeActivity, formatDateTime } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
 import { listActivities } from "@/server/services/activities";
+import { getHeaderBabySelector } from "@/server/services/baby-selector";
 
-export default async function HistoryPage({ searchParams }: { searchParams: { type?: string; search?: string } }) {
+export default async function HistoryPage({ searchParams }: { searchParams: { babyId?: string; type?: string; search?: string } }) {
   const user = await requireUserPage();
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
   const activities = await listActivities({
+    babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
     type: searchParams.type,
     search: searchParams.search
   });
 
   return (
-    <AppShell title="Activity history" userName={user.name}>
+    <AppShell title="Full Log" userName={user.name} babySelector={babySelector}>
       <div className="space-y-4">
         <Card>
           <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            {babySelector ? <input type="hidden" name="babyId" value={babySelector.selectedBabyId} /> : null}
             <select name="type" defaultValue={searchParams.type ?? ""} className="min-h-11 rounded-lg border border-border bg-card px-3">
               <option value="">All types</option>
               {activityTypes.map((type) => (

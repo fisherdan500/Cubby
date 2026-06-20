@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
+import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getCalendar } from "@/server/services/calendar";
 
 export default async function CalendarPage({
@@ -15,28 +16,24 @@ export default async function CalendarPage({
   searchParams: { babyId?: string; month?: string; date?: string };
 }) {
   const user = await requireUserPage();
-  const calendar = await getCalendar(user.id, searchParams);
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
+  const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
+  const calendar = await getCalendar(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!calendar?.home) redirect("/onboarding");
   const monthKey = format(calendar.month, "yyyy-MM");
   const previous = format(subMonths(calendar.month, 1), "yyyy-MM");
   const next = format(addMonths(calendar.month, 1), "yyyy-MM");
 
   return (
-    <AppShell title={`${calendar.baby?.name ?? "Baby"} - Calendar`} userName={user.name}>
+    <AppShell title="Calendar" userName={user.name} babySelector={babySelector}>
       {!calendar.baby ? (
         <Card>Add a baby before viewing the calendar.</Card>
       ) : (
         <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
           <section className="space-y-4">
             <Card>
-              <form className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
-                <select name="babyId" defaultValue={calendar.baby.id} className="min-h-11 rounded-lg border border-border bg-card px-3">
-                  {calendar.home.household.babies.map((baby) => (
-                    <option key={baby.id} value={baby.id}>
-                      {baby.name}
-                    </option>
-                  ))}
-                </select>
+              <form className="grid gap-3 md:grid-cols-[auto_auto_auto]">
+                <input name="babyId" type="hidden" value={calendar.baby.id} />
                 <input name="month" type="month" defaultValue={monthKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
                 <input name="date" type="date" defaultValue={calendar.selected?.key} className="min-h-11 rounded-lg border border-border bg-card px-3" />
                 <Button>Apply</Button>
