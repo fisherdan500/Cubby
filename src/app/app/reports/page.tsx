@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, BarChart3, CalendarDays, Grid3X3, LineChart, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -35,13 +35,12 @@ export default async function ReportsPage({
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
-          <Card>
-            <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+          <Card className="w-fit max-w-full">
+            <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
               <input name="babyId" type="hidden" value={report.baby.id} />
-              <input name="start" type="date" defaultValue={report.startKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
-              <input name="end" type="date" defaultValue={report.endKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
-              <Button>Apply</Button>
-            </form>
+              <input name="start" type="date" defaultValue={report.startKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
+              <input name="end" type="date" defaultValue={report.endKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
+            </AutoSubmitForm>
           </Card>
 
           <div className="flex gap-2 overflow-x-auto border-b border-border pb-2">

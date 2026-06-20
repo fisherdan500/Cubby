@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { addMonths, format, subMonths } from "date-fns";
 import { AppShell } from "@/components/app-shell";
+import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
@@ -31,13 +31,12 @@ export default async function CalendarPage({
       ) : (
         <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
           <section className="space-y-4">
-            <Card>
-              <form className="grid gap-3 md:grid-cols-[auto_auto_auto]">
+            <Card className="w-fit max-w-full">
+              <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
                 <input name="babyId" type="hidden" value={calendar.baby.id} />
-                <input name="month" type="month" defaultValue={monthKey} className="min-h-11 rounded-lg border border-border bg-card px-3" />
-                <input name="date" type="date" defaultValue={calendar.selected?.key} className="min-h-11 rounded-lg border border-border bg-card px-3" />
-                <Button>Apply</Button>
-              </form>
+                <input name="month" type="month" defaultValue={monthKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
+                <input name="date" type="date" defaultValue={calendar.selected?.key} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
+              </AutoSubmitForm>
             </Card>
             <Card className="space-y-4">
               <div className="flex items-center justify-between gap-3">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { DeleteActivityButton } from "@/components/actions/activity-actions";
+import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
@@ -21,10 +22,10 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
   return (
     <AppShell title="Full Log" userName={user.name} babySelector={babySelector}>
       <div className="space-y-4">
-        <Card>
-          <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+        <Card className="w-fit max-w-full">
+          <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
             {babySelector ? <input type="hidden" name="babyId" value={babySelector.selectedBabyId} /> : null}
-            <select name="type" defaultValue={searchParams.type ?? ""} className="min-h-11 rounded-lg border border-border bg-card px-3">
+            <select name="type" defaultValue={searchParams.type ?? ""} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48">
               <option value="">All types</option>
               {activityTypes.map((type) => (
                 <option key={type} value={type}>
@@ -36,10 +37,9 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
               name="search"
               defaultValue={searchParams.search ?? ""}
               placeholder="Search notes, meds, milestones"
-              className="min-h-11 rounded-lg border border-border bg-card px-3"
+              className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-72"
             />
-            <Button>Filter</Button>
-          </form>
+          </AutoSubmitForm>
         </Card>
 
         <div className="space-y-3">
