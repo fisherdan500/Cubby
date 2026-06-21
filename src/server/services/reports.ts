@@ -10,7 +10,17 @@ import { activityInclude } from "@/server/services/activities";
 
 type ReportActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
-export async function getReports(userId: string, input?: { babyId?: string; start?: string; end?: string }) {
+export type RoutineWindow = "1w" | "2w" | "1m";
+
+type RoutineActivity = Pick<ReportActivity, "type" | "occurredAt" | "durationSeconds">;
+
+const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
+  "1w": { label: "1 week", days: 7 },
+  "2w": { label: "2 weeks", days: 14 },
+  "1m": { label: "1 month", days: 30 }
+};
+
+export async function getReports(userId: string, input?: { babyId?: string; start?: string; end?: string; routineWindow?: string }) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.read");
   const home = await getHouseholdHome(userId);
@@ -22,6 +32,8 @@ export async function getReports(userId: string, input?: { babyId?: string; star
   const start = zonedDateStart(startKey, env.APP_TIMEZONE);
   const end = zonedDateStart(endKey, env.APP_TIMEZONE);
   const endExclusive = zonedDateStart(addDaysToDateKey(endKey, 1), env.APP_TIMEZONE);
+  const routineWindow = resolveRoutineWindow(input?.routineWindow);
+  const routineRange = routineWindowRange(endKey, routineWindow, env.APP_TIMEZONE);
   if (!baby) {
     return {
       home,
@@ -32,20 +44,34 @@ export async function getReports(userId: string, input?: { babyId?: string; star
       endKey,
       timezone: env.APP_TIMEZONE,
       activities: [],
+      routine: buildRoutineTimeline([], endKey, routineWindow, env.APP_TIMEZONE),
       stats: null
     };
   }
 
-  const activities = await prisma.activityLog.findMany({
-    where: {
-      householdId: ctx.householdId,
-      babyId: baby.id,
-      deletedAt: null,
-      occurredAt: { gte: start, lt: endExclusive }
-    },
-    include: activityInclude,
-    orderBy: { occurredAt: "asc" }
-  });
+  const [activities, routineActivities] = await Promise.all([
+    prisma.activityLog.findMany({
+      where: {
+        householdId: ctx.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        occurredAt: { gte: start, lt: endExclusive }
+      },
+      include: activityInclude,
+      orderBy: { occurredAt: "asc" }
+    }),
+    prisma.activityLog.findMany({
+      where: {
+        householdId: ctx.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        type: { in: [ActivityType.sleep, ActivityType.feeding] },
+        occurredAt: { gte: routineRange.start, lt: routineRange.endExclusive }
+      },
+      include: activityInclude,
+      orderBy: { occurredAt: "asc" }
+    })
+  ]);
 
   return {
     home,
@@ -56,7 +82,108 @@ export async function getReports(userId: string, input?: { babyId?: string; star
     endKey,
     timezone: env.APP_TIMEZONE,
     activities,
+    routine: buildRoutineTimeline(routineActivities, endKey, routineWindow, env.APP_TIMEZONE),
     stats: buildStats(activities, baby.birthDate, env.APP_TIMEZONE)
+  };
+}
+
+export function resolveRoutineWindow(value: string | undefined): RoutineWindow {
+  return value === "2w" || value === "1m" ? value : "1w";
+}
+
+export function routineWindowRange(endKey: string, window: RoutineWindow, timeZone = env.APP_TIMEZONE) {
+  const days = routineWindows[window].days;
+  const startKey = addDaysToDateKey(endKey, -(days - 1));
+  const endExclusiveKey = addDaysToDateKey(endKey, 1);
+  return {
+    window,
+    label: routineWindows[window].label,
+    days,
+    startKey,
+    endKey,
+    start: zonedDateStart(startKey, timeZone),
+    endExclusive: zonedDateStart(endExclusiveKey, timeZone)
+  };
+}
+
+export function buildRoutineTimeline(activities: RoutineActivity[], endKey: string, window: RoutineWindow, timeZone = env.APP_TIMEZONE) {
+  const range = routineWindowRange(endKey, window, timeZone);
+  const days = new Map<string, Array<{ type: "sleep" | "feeding"; occurredAt: Date; durationSeconds: number | null }>>();
+  const sleepMinutes: number[] = [];
+  const feedMinutes: number[] = [];
+  const sleepDurations: number[] = [];
+
+  for (const activity of activities) {
+    if (activity.type !== ActivityType.sleep && activity.type !== ActivityType.feeding) continue;
+    const key = dateKeyInTimeZone(activity.occurredAt, timeZone);
+    if (key < range.startKey || key > range.endKey) continue;
+    const type = activity.type === ActivityType.sleep ? "sleep" : "feeding";
+    const minute = minuteOfDay(activity.occurredAt, timeZone);
+    if (type === "sleep") {
+      sleepMinutes.push(minute);
+      if (activity.durationSeconds) sleepDurations.push(activity.durationSeconds);
+    } else {
+      feedMinutes.push(minute);
+    }
+    days.set(key, [
+      ...(days.get(key) ?? []),
+      {
+        type,
+        occurredAt: activity.occurredAt,
+        durationSeconds: activity.durationSeconds ?? null
+      }
+    ]);
+  }
+
+  const sequences = [...days.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([, entries]) => entries.sort((left, right) => left.occurredAt.getTime() - right.occurredAt.getTime()));
+  const daysWithData = sequences.length;
+  const minSamples = daysWithData <= 2 ? 1 : Math.max(2, Math.ceil(daysWithData * 0.25));
+  const maxLength = Math.max(0, ...sequences.map((sequence) => sequence.length));
+  const rows = [];
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const entries = sequences.map((sequence) => sequence[index]).filter(Boolean);
+    const sleepEntries = entries.filter((entry) => entry.type === "sleep");
+    const feedEntries = entries.filter((entry) => entry.type === "feeding");
+    const type = sleepEntries.length >= feedEntries.length ? "sleep" : "feeding";
+    const matching = type === "sleep" ? sleepEntries : feedEntries;
+    if (matching.length < minSamples) continue;
+
+    const averageMinutes = average(matching.map((entry) => minuteOfDay(entry.occurredAt, timeZone)));
+    const averageDurationSeconds =
+      type === "sleep" ? average(matching.map((entry) => entry.durationSeconds ?? 0).filter((value) => value > 0)) : 0;
+
+    rows.push({
+      index,
+      type,
+      averageMinutes,
+      averageTime: formatMinuteOfDay(averageMinutes),
+      averageDurationSeconds,
+      averageDuration: type === "sleep" ? formatDuration(averageDurationSeconds) || "0 min" : null,
+      sampleCount: matching.length
+    });
+  }
+
+  rows.sort((left, right) => left.averageMinutes - right.averageMinutes);
+
+  return {
+    window,
+    windowLabel: range.label,
+    startKey: range.startKey,
+    endKey: range.endKey,
+    windowDays: range.days,
+    daysWithData,
+    minSamples,
+    summary: {
+      averageSleepTime: sleepMinutes.length ? formatMinuteOfDay(average(sleepMinutes)) : null,
+      averageSleepDuration: sleepDurations.length ? formatDuration(average(sleepDurations)) || "0 min" : "0 min",
+      averageFeedTime: feedMinutes.length ? formatMinuteOfDay(average(feedMinutes)) : null,
+      sleepSamples: sleepMinutes.length,
+      feedSamples: feedMinutes.length
+    },
+    rows
   };
 }
 
@@ -161,4 +288,23 @@ function isValidDateKey(value: string | undefined): value is string {
 function dayIndexFromDateKey(key: string) {
   const [year, month, day] = key.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+function minuteOfDay(date: Date, timeZone: string) {
+  const parts = dateTimePartsInTimeZone(date, timeZone);
+  return parts.hour * 60 + parts.minute;
+}
+
+function average(values: number[]) {
+  if (!values.length) return 0;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function formatMinuteOfDay(value: number) {
+  const total = Math.round(value);
+  const hours24 = Math.floor(total / 60) % 24;
+  const minutes = total % 60;
+  const hours12 = hours24 % 12 || 12;
+  const suffix = hours24 >= 12 ? "PM" : "AM";
+  return `${hours12}:${String(minutes).padStart(2, "0")} ${suffix}`;
 }

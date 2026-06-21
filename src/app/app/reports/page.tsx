@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Activity, BarChart3, CalendarDays, Grid3X3, LineChart, Trophy } from "lucide-react";
+import { Activity, BarChart3, Clock3, Grid3X3, LineChart, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
@@ -14,20 +14,30 @@ const tabs = [
   ["milestones", "Milestones", Trophy],
   ["growth", "Growth Trends", LineChart],
   ["activity", "Activity", Activity],
+  ["routine", "Routine", Clock3],
   ["heatmaps", "Heatmaps", Grid3X3]
 ] as const;
 
 export default async function ReportsPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; start?: string; end?: string; tab?: string };
+  searchParams: { babyId?: string; start?: string; end?: string; tab?: string; routineWindow?: string };
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!report?.home) redirect("/onboarding");
-  const tab = tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "stats";
+  const tab = searchParams.tab && tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "stats";
+  const reportHref = (next: { tab?: string; routineWindow?: string }) => {
+    const params = new URLSearchParams();
+    if (report.baby?.id) params.set("babyId", report.baby.id);
+    params.set("start", report.startKey);
+    params.set("end", report.endKey);
+    params.set("tab", next.tab ?? tab);
+    params.set("routineWindow", next.routineWindow ?? report.routine.window);
+    return `/app/reports?${params.toString()}`;
+  };
 
   return (
     <AppShell title="Reports" userName={user.name} babySelector={babySelector}>
@@ -38,6 +48,8 @@ export default async function ReportsPage({
           <Card className="w-fit max-w-full">
             <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
               <input name="babyId" type="hidden" value={report.baby.id} />
+              <input name="tab" type="hidden" value={tab} />
+              <input name="routineWindow" type="hidden" value={report.routine.window} />
               <input name="start" type="date" defaultValue={report.startKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
               <input name="end" type="date" defaultValue={report.endKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
             </AutoSubmitForm>
@@ -47,7 +59,7 @@ export default async function ReportsPage({
             {tabs.map(([value, label, Icon]) => (
               <Link
                 key={value}
-                href={`/app/reports?babyId=${report.baby?.id}&start=${report.startKey}&end=${report.endKey}&tab=${value}`}
+                href={reportHref({ tab: value })}
                 className={`inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-bold ${
                   tab === value ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted"
                 }`}
@@ -62,6 +74,7 @@ export default async function ReportsPage({
           {tab === "milestones" ? <MilestonesTab stats={report.stats} /> : null}
           {tab === "growth" ? <GrowthTab stats={report.stats} /> : null}
           {tab === "activity" ? <ActivityTab stats={report.stats} /> : null}
+          {tab === "routine" ? <RoutineTab report={report} /> : null}
           {tab === "heatmaps" ? <HeatmapTab stats={report.stats} /> : null}
         </div>
       )}
@@ -140,6 +153,75 @@ function ActivityTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof g
         </div>
       ))}
     </Card>
+  );
+}
+
+function RoutineTab({ report }: { report: NonNullable<Awaited<ReturnType<typeof getReports>>> }) {
+  if (!report.baby) return null;
+  const routine = report.routine;
+  return (
+    <div className="space-y-5">
+      <Card className="w-fit max-w-full">
+        <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
+          <input name="babyId" type="hidden" value={report.baby.id} />
+          <input name="start" type="hidden" value={report.startKey} />
+          <input name="end" type="hidden" value={report.endKey} />
+          <input name="tab" type="hidden" value="routine" />
+          <select
+            name="routineWindow"
+            defaultValue={routine.window}
+            className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-44"
+          >
+            <option value="1w">1 week</option>
+            <option value="2w">2 weeks</option>
+            <option value="1m">1 month</option>
+          </select>
+        </AutoSubmitForm>
+      </Card>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <Metric label="Avg sleep time" value={routine.summary.averageSleepTime ?? "--"} />
+        <Metric label="Avg sleep duration" value={routine.summary.averageSleepDuration} />
+        <Metric label="Avg feed time" value={routine.summary.averageFeedTime ?? "--"} />
+        <Metric label="Days included" value={`${routine.daysWithData}/${routine.windowDays}`} />
+      </div>
+
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-base font-black">Typical Day</h2>
+            <p className="text-sm text-muted-foreground">
+              {routine.windowLabel} ending {routine.endKey}
+            </p>
+          </div>
+          <p className="text-xs font-bold text-muted-foreground">
+            {routine.summary.sleepSamples + routine.summary.feedSamples} samples
+          </p>
+        </div>
+
+        {routine.rows.length ? (
+          <div className="space-y-3">
+            {routine.rows.map((row) => (
+              <div key={`${row.type}-${row.index}`} className="grid grid-cols-[84px_1fr] gap-4 rounded-lg bg-muted p-3">
+                <p className="text-sm font-black text-primary">{row.averageTime}</p>
+                <div>
+                  <p className="font-black">
+                    {row.type === "sleep"
+                      ? `Sleep around ${row.averageTime} for ${row.averageDuration}`
+                      : `Feed around ${row.averageTime}`}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {row.sampleCount} {row.sampleCount === 1 ? "sample" : "samples"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No sleep or feeding data in this routine window.</p>
+        )}
+      </Card>
+    </div>
   );
 }
 
