@@ -52,30 +52,50 @@ export function ActivityForm({
   }
 
   return (
-    <form action={submit} className="space-y-4">
-      <label className="block space-y-2 text-sm font-semibold">
-        Baby
-        <select name="babyId" defaultValue={defaultBaby} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2">
-          {babies.map((baby) => (
-            <option key={baby.id} value={baby.id}>
-              {baby.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block space-y-2 text-sm font-semibold">
-        Time
-        <Input name="occurredAt" type="datetime-local" defaultValue={String(initial?.occurredAt ?? localDateTimeValue(undefined, appTimeZone))} required />
-      </label>
-      {timeRangeFields(type, initial)}
-      {typeFields(type, initial)}
-      <label className="block space-y-2 text-sm font-semibold">
-        Notes
-        <Textarea name="notes" defaultValue={String(initial?.notes ?? "")} />
-      </label>
+    <form action={submit} className="space-y-4 pb-20 md:pb-0">
+      <FormSection title="When">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block space-y-2 text-sm font-semibold">
+            Baby
+            <select name="babyId" defaultValue={defaultBaby} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2">
+              {babies.map((baby) => (
+                <option key={baby.id} value={baby.id}>
+                  {baby.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-2 text-sm font-semibold">
+            Time
+            <Input name="occurredAt" type="datetime-local" defaultValue={String(initial?.occurredAt ?? localDateTimeValue(undefined, appTimeZone))} required />
+          </label>
+        </div>
+        {timeRangeFields(type, initial)}
+      </FormSection>
+
+      <FormSection title="Details">{typeFields(type, initial)}</FormSection>
+
+      <FormSection title="Notes">
+        <label className="block space-y-2 text-sm font-semibold">
+          Notes
+          <Textarea name="notes" defaultValue={String(initial?.notes ?? "")} />
+        </label>
+      </FormSection>
+
       {error ? <p className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
-      <Button className="w-full">{activityId ? "Save changes" : "Log activity"}</Button>
+      <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-card/95 p-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+        <Button className="min-h-12 w-full text-base md:w-auto md:min-w-44">{activityId ? "Save changes" : "Log activity"}</Button>
+      </div>
     </form>
+  );
+}
+
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3 border-b border-border pb-4 last:border-0">
+      <h2 className="text-sm font-black text-foreground">{title}</h2>
+      {children}
+    </section>
   );
 }
 

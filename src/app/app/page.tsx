@@ -45,6 +45,10 @@ const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
   ["milk_inventory", Package]
 ];
 
+const primaryQuickActionTypes = new Set<ActivityTypeName>(["sleep", "feeding", "diaper"]);
+const primaryQuickActions = quickActions.filter(([type]) => primaryQuickActionTypes.has(type));
+const secondaryQuickActions = quickActions.filter(([type]) => !primaryQuickActionTypes.has(type));
+
 const elapsedBadgeClasses: Partial<Record<ActivityTypeName, string>> = {
   sleep: "bg-slate-200 text-slate-950",
   feeding: "bg-sky-300 text-slate-950",
@@ -126,35 +130,76 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
 function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
   return (
-    <section className="flex gap-3 overflow-x-auto border-y border-border bg-primary/15 px-1 py-4">
-      {quickActions.map(([type, Icon]) => {
-        const badge = elapsedBadge(type, dashboard);
-        return (
-          <Link
-            key={type}
-            href={`/app/log/${type}?babyId=${dashboard.baby.id}&date=${dashboard.selectedDate.key}`}
-            className="min-w-24"
-          >
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="flex h-5 items-center justify-center">
-                {badge ? (
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${elapsedBadgeClasses[type]}`}>
-                    {badge}
-                  </span>
-                ) : null}
-              </div>
-              <div className={`flex h-14 w-14 items-center justify-center rounded-full shadow-soft ${activityAccent[type]}`}>
-                <Icon className="h-7 w-7" />
-              </div>
-              <p className="text-xs font-bold text-muted-foreground">{quickActionLabel(type)}</p>
-              {dashboard.activeTimers.some((timer) => timer.type === type) ? (
-                <span className="rounded-full bg-green-500 px-2 py-0.5 text-[11px] font-black text-slate-950">Active</span>
-              ) : null}
-            </div>
-          </Link>
-        );
-      })}
+    <section className="space-y-3 border-y border-border bg-primary/15 px-1 py-3 sm:px-2 sm:py-4">
+      <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
+        {primaryQuickActions.map(([type, Icon]) => (
+          <QuickActionLink key={type} type={type} Icon={Icon} dashboard={dashboard} priority="primary" />
+        ))}
+      </div>
+
+      <details className="group sm:hidden">
+        <summary className="flex min-h-10 cursor-pointer list-none items-center justify-center rounded-lg border border-border bg-card/70 text-sm font-black text-foreground marker:hidden">
+          More
+        </summary>
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          {secondaryQuickActions.map(([type, Icon]) => (
+            <QuickActionLink key={type} type={type} Icon={Icon} dashboard={dashboard} priority="secondary" />
+          ))}
+        </div>
+      </details>
+
+      <div className="hidden gap-2 overflow-x-auto sm:flex">
+        {secondaryQuickActions.map(([type, Icon]) => (
+          <QuickActionLink key={type} type={type} Icon={Icon} dashboard={dashboard} priority="secondary" />
+        ))}
+      </div>
     </section>
+  );
+}
+
+function QuickActionLink({
+  type,
+  Icon,
+  dashboard,
+  priority
+}: {
+  type: ActivityTypeName;
+  Icon: React.ElementType;
+  dashboard: DashboardWithBaby;
+  priority: "primary" | "secondary";
+}) {
+  const badge = elapsedBadge(type, dashboard);
+  const active = dashboard.activeTimers.some((timer) => timer.type === type);
+  const primary = priority === "primary";
+
+  return (
+    <Link
+      href={`/app/log/${type}?babyId=${dashboard.baby.id}&date=${dashboard.selectedDate.key}`}
+      className={
+        primary
+          ? "rounded-lg border border-border bg-card/70 p-2 text-center shadow-soft transition hover:bg-muted"
+          : "min-w-0 rounded-lg p-1 text-center transition hover:bg-muted sm:min-w-20"
+      }
+    >
+      <div className="flex flex-col items-center gap-1.5">
+        <div className={`flex ${primary ? "h-5" : "h-4"} items-center justify-center`}>
+          {badge ? (
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-black leading-none ${elapsedBadgeClasses[type]}`}>
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <div className={`flex items-center justify-center rounded-full shadow-soft ${activityAccent[type]} ${primary ? "h-16 w-16" : "h-12 w-12"}`}>
+          <Icon className={primary ? "h-8 w-8" : "h-6 w-6"} />
+        </div>
+        <p className={`${primary ? "text-sm" : "text-[11px]"} font-black leading-tight text-muted-foreground`}>
+          {quickActionLabel(type)}
+        </p>
+        {active ? (
+          <span className="rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-black leading-none text-slate-950">Active</span>
+        ) : null}
+      </div>
+    </Link>
   );
 }
 
@@ -265,10 +310,10 @@ function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] 
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-2">
       <h2 className="text-sm font-black">Daily Summary</h2>
       {items.length ? (
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
           {items.map((item) => (
             <SummaryItem key={item.key} icon={item.icon} value={item.value} label={item.label} />
           ))}
@@ -292,10 +337,10 @@ function diaperSummaryLabel(summary: DashboardWithBaby["dailySummary"]["diaper"]
 
 function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
-    <div className="flex min-h-16 min-w-0 items-center gap-2 rounded-md border border-border bg-card/60 p-2 sm:min-w-36 sm:px-3">
+    <div className="flex min-h-14 min-w-0 items-center gap-2 rounded-md border border-border bg-card/60 p-2 sm:min-w-32 sm:px-3">
       <div className="shrink-0">{icon}</div>
       <div className="min-w-0">
-        <p className="truncate text-base font-black leading-none sm:text-lg">{value}</p>
+        <p className="truncate text-sm font-black leading-none sm:text-base">{value}</p>
         <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
       </div>
     </div>

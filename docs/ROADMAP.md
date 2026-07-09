@@ -28,13 +28,13 @@ structure.
 
 ## Planned Next
 
-### Mobile UX Audit And Polish
+### Broader Mobile UX Audit
 
 - Status: planned
-- Priority: high
-- Goal: Review Cubby's main workflows as a mobile-first app and make common actions faster and more intuitive on phone-sized screens.
-- Acceptance: Log Entry, activity forms, Full Log, Calendar, Reports, Nursery, and Settings are checked around common mobile widths; controls are thumb-friendly, dense information remains readable, and desktop remains tidy.
-- Notes: This is a design/product pass, not a signal that the current mobile UI is broken. Keep changes Cubby-original and clean-room.
+- Priority: medium
+- Goal: Review Cubby's remaining secondary workflows as a mobile-first app after the daily-use pass.
+- Acceptance: Full Log, Calendar, Reports, Settings, backups, and integrations are checked around common mobile widths; controls are thumb-friendly, dense information remains readable, and desktop remains tidy.
+- Notes: The first daily-use pass covered the shell, Log Entry, activity forms, and Nursery. Keep future changes Cubby-original and clean-room.
 
 ## Later
 
@@ -45,6 +45,14 @@ No later roadmap items are currently documented.
 No parked ideas are currently documented.
 
 ## Recently Completed
+
+### Mobile Daily-Use Polish
+
+- Status: done
+- Priority: high
+- Goal: Make Cubby's most-used phone workflows faster to use one-handed.
+- Acceptance: Mobile shell is denser, bottom navigation has active state, Log Entry prioritizes Sleep/Feed/Diaper, activity forms have grouped fields with a sticky mobile submit action, and Nursery has larger night-use controls.
+- Notes: This did not add PWA/offline support, reminder logic, bottom-sheet forms, or schema changes.
 
 ### Documentation Foundation
 
