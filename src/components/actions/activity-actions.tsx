@@ -3,15 +3,20 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-export function DeleteActivityButton({ id }: { id: string }) {
+export function DeleteActivityButton({ id, returnTo }: { id: string; returnTo?: string }) {
   const router = useRouter();
   return (
     <Button
       type="button"
       variant="danger"
       onClick={async () => {
-        await fetch(`/api/activities/${id}`, { method: "DELETE" });
-        router.refresh();
+        const response = await fetch(`/api/activities/${id}`, { method: "DELETE" });
+        if (!response.ok) return;
+        if (returnTo) {
+          router.replace(returnTo);
+        } else {
+          router.refresh();
+        }
       }}
     >
       Delete

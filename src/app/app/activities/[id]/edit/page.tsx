@@ -5,12 +5,12 @@ import { ActivityForm } from "@/components/forms/activity-form";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { env } from "@/lib/env";
-import { dateTimeInputValue } from "@/lib/timezone";
+import { dateKeyInTimeZone, dateTimeInputValue } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getActivity } from "@/server/services/activities";
 import { getHouseholdHome } from "@/server/services/households";
 
-export default async function EditActivityPage({ params }: { params: { id: string } }) {
+export default async function EditActivityPage({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string } }) {
   const user = await requireUserPage();
   const home = await getHouseholdHome(user.id);
   if (!home) redirect("/onboarding");
@@ -19,6 +19,7 @@ export default async function EditActivityPage({ params }: { params: { id: strin
   const type = activity.type as ActivityTypeName;
   const babies = home.household.babies.map((baby) => ({ id: baby.id, name: baby.name }));
   const initial = serializeActivity(activity);
+  const returnTo = safeReturnTo(searchParams.returnTo) ?? activityFallbackReturnTo(activity);
 
   return (
     <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
@@ -26,10 +27,22 @@ export default async function EditActivityPage({ params }: { params: { id: strin
         <Card>
           <ActivityForm babies={babies} type={type} activityId={activity.id} initial={initial} appTimeZone={env.APP_TIMEZONE} />
         </Card>
-        <DeleteActivityButton id={activity.id} />
+        <DeleteActivityButton id={activity.id} returnTo={returnTo} />
       </div>
     </AppShell>
   );
+}
+
+function safeReturnTo(value: string | undefined) {
+  if (!value || (value !== "/app" && !value.startsWith("/app?") && !value.startsWith("/app/"))) return undefined;
+  if (value.startsWith("/app/activities/")) return undefined;
+  return value;
+}
+
+function activityFallbackReturnTo(activity: Awaited<ReturnType<typeof getActivity>>) {
+  const date = dateKeyInTimeZone(activity.occurredAt, env.APP_TIMEZONE);
+  const params = new URLSearchParams({ babyId: activity.babyId, date });
+  return `/app?${params.toString()}`;
 }
 
 function localValue(date?: Date | null) {

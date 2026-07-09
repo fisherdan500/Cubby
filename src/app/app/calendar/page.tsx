@@ -239,8 +239,9 @@ function CalendarDrawer({
                 {calendar.selected?.activities.length ? null : <p className="text-sm text-muted-foreground">No tracked activity for this day.</p>}
                 {calendar.selected?.activities.map((activity) => {
                   const type = activity.type as ActivityTypeName;
+                  const returnTo = calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate });
                   return (
-                    <Link key={activity.id} href={`/app/activities/${activity.id}/edit`} className="block rounded-lg border border-border bg-background/40 p-4">
+                    <Link key={activity.id} href={activityEditHref(activity.id, returnTo)} className="block rounded-lg border border-border bg-background/40 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-black">{activityLabels[type]}</p>
                         <p className="text-xs font-bold text-muted-foreground">{formatTime(activity.occurredAt, calendar.timezone)}</p>
@@ -385,6 +386,10 @@ function calendarHref(babyId: string, month: string, extra?: { date?: string; ev
   if (extra?.eventId) params.set("eventId", extra.eventId);
   if (extra?.new) params.set("new", extra.new);
   return `/app/calendar?${params.toString()}`;
+}
+
+function activityEditHref(activityId: string, returnTo: string) {
+  return `/app/activities/${activityId}/edit?${new URLSearchParams({ returnTo }).toString()}`;
 }
 
 function prioritizeSelectedEvent<T extends { id: string }>(events: T[], selectedId?: string) {

@@ -111,7 +111,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             {currentDashboard.activities.length === 0 ? (
               <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No activity for this date.</p>
             ) : (
-              <Timeline activities={currentDashboard.activities} timeZone={currentDashboard.selectedDate.timezone} />
+              <Timeline
+                activities={currentDashboard.activities}
+                timeZone={currentDashboard.selectedDate.timezone}
+                returnTo={`/app?${new URLSearchParams({ babyId: baby.id, date: currentDashboard.selectedDate.key }).toString()}`}
+              />
             )}
           </section>
         </div>
@@ -300,7 +304,7 @@ function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: str
 
 type TimelineActivity = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
 
-function Timeline({ activities, timeZone }: { activities: TimelineActivity[]; timeZone: string }) {
+function Timeline({ activities, timeZone, returnTo }: { activities: TimelineActivity[]; timeZone: string; returnTo: string }) {
   const groups = activities.reduce<Record<string, TimelineActivity[]>>((acc, activity) => {
     const label = periodLabel(activity.occurredAt, timeZone);
     acc[label] = acc[label] ?? [];
@@ -319,7 +323,7 @@ function Timeline({ activities, timeZone }: { activities: TimelineActivity[]; ti
               return (
                 <Link
                   key={activity.id}
-                  href={`/app/activities/${activity.id}/edit`}
+                  href={activityEditHref(activity.id, returnTo)}
                   className="relative block rounded-md border border-border bg-background/45 p-3 hover:bg-muted"
                 >
                   <span className={`absolute -left-[33px] top-4 h-4 w-4 rounded-full ring-4 ring-background ${activityAccent[type].split(" ")[0]}`} />
@@ -340,6 +344,10 @@ function Timeline({ activities, timeZone }: { activities: TimelineActivity[]; ti
       ))}
     </div>
   );
+}
+
+function activityEditHref(activityId: string, returnTo: string) {
+  return `/app/activities/${activityId}/edit?${new URLSearchParams({ returnTo }).toString()}`;
 }
 
 function periodLabel(date: Date, timeZone: string) {

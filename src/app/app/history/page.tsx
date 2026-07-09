@@ -18,6 +18,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
     type: searchParams.type,
     search: searchParams.search
   });
+  const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
+  const returnTo = historyHref({ babyId: selectedBabyId, type: searchParams.type, search: searchParams.search });
 
   return (
     <AppShell title="Full Log" userName={user.name} babySelector={babySelector}>
@@ -60,7 +62,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
                   <p className="mt-1 text-sm">{describeActivity(activity)}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/app/activities/${activity.id}/edit`}>
+                  <Link href={activityEditHref(activity.id, returnTo)}>
                     <Button variant="secondary">Edit</Button>
                   </Link>
                   <DeleteActivityButton id={activity.id} />
@@ -72,4 +74,17 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
       </div>
     </AppShell>
   );
+}
+
+function historyHref(input: { babyId?: string; type?: string; search?: string }) {
+  const params = new URLSearchParams();
+  if (input.babyId) params.set("babyId", input.babyId);
+  if (input.type) params.set("type", input.type);
+  if (input.search) params.set("search", input.search);
+  const query = params.toString();
+  return query ? `/app/history?${query}` : "/app/history";
+}
+
+function activityEditHref(activityId: string, returnTo: string) {
+  return `/app/activities/${activityId}/edit?${new URLSearchParams({ returnTo }).toString()}`;
 }
