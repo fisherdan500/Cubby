@@ -1,11 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { TimerState } from "@prisma/client";
+import { ActivityType, DiaperKind, FeedingKind, TimerState } from "@prisma/client";
 import {
   addDaysToDateKey,
   buildDashboardWarningItems,
   filterDismissedWarnings,
-  resolveDashboardDate
+  resolveDashboardDate,
+  summarizeDay
 } from "@/server/services/dashboard";
+
+type SummaryActivity = Parameters<typeof summarizeDay>[0][number];
+
+function summaryActivity(input: Partial<SummaryActivity> & { type: ActivityType }): SummaryActivity {
+  return {
+    type: input.type,
+    durationSeconds: input.durationSeconds ?? null,
+    feeding: input.feeding ?? null,
+    diaper: input.diaper ?? null,
+    pumping: input.pumping ?? null
+  } as SummaryActivity;
+}
+
+function feeding(mode: FeedingKind, amount?: string) {
+  return { mode, amount: amount ?? null } as SummaryActivity["feeding"];
+}
+
+function diaper(kind: DiaperKind) {
+  return { kind } as SummaryActivity["diaper"];
+}
+
+function pumping(amount?: string) {
+  return { amount: amount ?? null } as SummaryActivity["pumping"];
+}
 
 describe("dashboard warnings", () => {
   it("builds overdue warning items and filters dismissed fingerprints", () => {
@@ -105,5 +130,56 @@ describe("dashboard warnings", () => {
 
     expect(date.timezone).toBe("America/New_York");
     expect(date.key).toBe("2026-06-18");
+  });
+});
+
+describe("daily summary", () => {
+  it("summarizes supported activity groups and ignores unsupported day activity", () => {
+    const summary = summarizeDay([
+      summaryActivity({ type: ActivityType.sleep, durationSeconds: 1800 }),
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.breast) }),
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.bottle, "4.25") }),
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.formula, "2.50") }),
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.solids) }),
+      summaryActivity({ type: ActivityType.diaper, diaper: diaper(DiaperKind.wet) }),
+      summaryActivity({ type: ActivityType.diaper, diaper: diaper(DiaperKind.dirty) }),
+      summaryActivity({ type: ActivityType.diaper, diaper: diaper(DiaperKind.mixed) }),
+      summaryActivity({ type: ActivityType.diaper, diaper: diaper(DiaperKind.dry) }),
+      summaryActivity({ type: ActivityType.pumping, pumping: pumping("3.50") }),
+      summaryActivity({ type: ActivityType.bath }),
+      summaryActivity({ type: ActivityType.milestone }),
+      summaryActivity({ type: ActivityType.medicine }),
+      summaryActivity({ type: ActivityType.play, durationSeconds: 900 }),
+      summaryActivity({ type: ActivityType.note }),
+      summaryActivity({ type: ActivityType.mood })
+    ]);
+
+    expect(summary.sleep).toEqual({ count: 1, seconds: 1800 });
+    expect(summary.feeding).toEqual({ count: 4, amount: 6.75 });
+    expect(summary.diaper).toEqual({ count: 4, wet: 1, dirty: 1, mixed: 1, dry: 1 });
+    expect(summary.pumping).toEqual({ count: 1, amount: 3.5 });
+    expect(summary.bath).toEqual({ count: 1 });
+    expect(summary.milestone).toEqual({ count: 1 });
+    expect(summary.medicine).toEqual({ count: 1 });
+    expect(summary.play).toEqual({ count: 1, seconds: 900 });
+  });
+
+  it("returns zero metrics when no supported summary activity was recorded", () => {
+    const summary = summarizeDay([
+      summaryActivity({ type: ActivityType.note }),
+      summaryActivity({ type: ActivityType.measurement }),
+      summaryActivity({ type: ActivityType.mood })
+    ]);
+
+    expect(summary).toEqual({
+      sleep: { count: 0, seconds: 0 },
+      feeding: { count: 0, amount: 0 },
+      diaper: { count: 0, wet: 0, dirty: 0, mixed: 0, dry: 0 },
+      bath: { count: 0 },
+      pumping: { count: 0, amount: 0 },
+      milestone: { count: 0 },
+      medicine: { count: 0 },
+      play: { count: 0, seconds: 0 }
+    });
   });
 });

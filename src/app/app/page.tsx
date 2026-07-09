@@ -177,22 +177,97 @@ function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate:
 }
 
 function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] }) {
+  const items = [
+    summary.sleep.count
+      ? {
+          key: "sleep",
+          icon: <Bed className="h-5 w-5 text-slate-300" />,
+          value: formatDuration(summary.sleep.seconds) || "0 min",
+          label: "Total Sleep"
+        }
+      : null,
+    summary.feeding.count
+      ? {
+          key: "feeding",
+          icon: <Milk className="h-5 w-5 text-sky-300" />,
+          value: String(summary.feeding.count),
+          label: summary.feeding.amount ? `${summary.feeding.amount.toFixed(1)} oz` : "Feeds"
+        }
+      : null,
+    summary.diaper.count
+      ? {
+          key: "diaper",
+          icon: <Droplets className="h-5 w-5 text-teal-300" />,
+          value: String(summary.diaper.count),
+          label: diaperSummaryLabel(summary.diaper)
+        }
+      : null,
+    summary.bath.count
+      ? {
+          key: "bath",
+          icon: <Bath className="h-5 w-5 text-cyan-300" />,
+          value: String(summary.bath.count),
+          label: summary.bath.count === 1 ? "Bath" : "Baths"
+        }
+      : null,
+    summary.pumping.count
+      ? {
+          key: "pumping",
+          icon: <Milk className="h-5 w-5 text-fuchsia-300" />,
+          value: summary.pumping.amount ? `${summary.pumping.amount.toFixed(1)} oz` : String(summary.pumping.count),
+          label: summary.pumping.amount ? "Pumped" : "Pump"
+        }
+      : null,
+    summary.milestone.count
+      ? {
+          key: "milestone",
+          icon: <Trophy className="h-5 w-5 text-indigo-300" />,
+          value: String(summary.milestone.count),
+          label: summary.milestone.count === 1 ? "Milestone" : "Milestones"
+        }
+      : null,
+    summary.medicine.count
+      ? {
+          key: "medicine",
+          icon: <Pill className="h-5 w-5 text-emerald-300" />,
+          value: String(summary.medicine.count),
+          label: "Medicine"
+        }
+      : null,
+    summary.play.count
+      ? {
+          key: "play",
+          icon: <Wand2 className="h-5 w-5 text-lime-300" />,
+          value: summary.play.seconds ? formatDuration(summary.play.seconds) || "0 min" : String(summary.play.count),
+          label: summary.play.seconds ? "Play Time" : "Play"
+        }
+      : null
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
+
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-black">Daily Summary</h2>
-      <div className="flex flex-wrap gap-x-8 gap-y-4">
-        <SummaryItem icon={<Bed className="h-5 w-5 text-slate-300" />} value={formatDuration(summary.sleepSeconds) || "0 min"} label="Total Sleep" />
-        <SummaryItem
-          icon={<Milk className="h-5 w-5 text-sky-300" />}
-          value={String(summary.feeds)}
-          label={summary.feedAmount ? `${summary.feedAmount.toFixed(1)} oz` : "Feeds"}
-        />
-        <SummaryItem icon={<Droplets className="h-5 w-5 text-teal-300" />} value={String(summary.wetDiapers)} label="Wet Diapers" />
-        <SummaryItem icon={<Droplets className="h-5 w-5 text-orange-400" />} value={String(summary.dirtyDiapers)} label="Poops" />
-        <SummaryItem icon={<Milk className="h-5 w-5 text-fuchsia-300" />} value={summary.pumped ? `${summary.pumped.toFixed(1)} oz` : "0 oz"} label="Pumped" />
-      </div>
+      {items.length ? (
+        <div className="flex flex-wrap gap-x-8 gap-y-4">
+          {items.map((item) => (
+            <SummaryItem key={item.key} icon={item.icon} value={item.value} label={item.label} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No summary activity for this date.</p>
+      )}
     </section>
   );
+}
+
+function diaperSummaryLabel(summary: DashboardWithBaby["dailySummary"]["diaper"]) {
+  const parts = [
+    summary.wet ? `${summary.wet} wet` : null,
+    summary.dirty ? `${summary.dirty} dirty` : null,
+    summary.mixed ? `${summary.mixed} mixed` : null,
+    summary.dry ? `${summary.dry} dry` : null
+  ].filter(Boolean);
+  return parts.length ? parts.join(" / ") : "Diapers";
 }
 
 function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {

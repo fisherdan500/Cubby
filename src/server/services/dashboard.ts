@@ -1,4 +1,4 @@
-import { ActivityType, DiaperKind, FeedingKind, TimerState, type Prisma } from "@prisma/client";
+import { ActivityType, DiaperKind, TimerState, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
@@ -303,29 +303,76 @@ function formatDashboardDateLabel(key: string, timezone: string) {
 
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
-function summarizeDay(activities: DashboardActivity[]) {
-  let sleepSeconds = 0;
-  let feeds = 0;
-  let feedAmount = 0;
-  let wetDiapers = 0;
-  let dirtyDiapers = 0;
-  let pumped = 0;
+export function summarizeDay(activities: DashboardActivity[]) {
+  const summary = {
+    sleep: {
+      count: 0,
+      seconds: 0
+    },
+    feeding: {
+      count: 0,
+      amount: 0
+    },
+    diaper: {
+      count: 0,
+      wet: 0,
+      dirty: 0,
+      mixed: 0,
+      dry: 0
+    },
+    bath: {
+      count: 0
+    },
+    pumping: {
+      count: 0,
+      amount: 0
+    },
+    milestone: {
+      count: 0
+    },
+    medicine: {
+      count: 0
+    },
+    play: {
+      count: 0,
+      seconds: 0
+    }
+  };
 
   for (const activity of activities) {
-    if (activity.type === ActivityType.sleep) sleepSeconds += activity.durationSeconds ?? 0;
-    if (activity.feeding?.mode === FeedingKind.bottle || activity.feeding?.mode === FeedingKind.formula) feeds += 1;
-    if (activity.feeding?.amount) feedAmount += Number(activity.feeding.amount);
-    if (activity.diaper?.kind === DiaperKind.wet || activity.diaper?.kind === DiaperKind.mixed) wetDiapers += 1;
-    if (activity.diaper?.kind === DiaperKind.dirty || activity.diaper?.kind === DiaperKind.mixed) dirtyDiapers += 1;
-    if (activity.pumping?.amount) pumped += Number(activity.pumping.amount);
+    if (activity.type === ActivityType.sleep) {
+      summary.sleep.count += 1;
+      summary.sleep.seconds += activity.durationSeconds ?? 0;
+    }
+
+    if (activity.type === ActivityType.feeding) {
+      summary.feeding.count += 1;
+      if (activity.feeding?.amount) summary.feeding.amount += Number(activity.feeding.amount);
+    }
+
+    if (activity.type === ActivityType.diaper) {
+      summary.diaper.count += 1;
+      if (activity.diaper?.kind === DiaperKind.wet) summary.diaper.wet += 1;
+      if (activity.diaper?.kind === DiaperKind.dirty) summary.diaper.dirty += 1;
+      if (activity.diaper?.kind === DiaperKind.mixed) summary.diaper.mixed += 1;
+      if (activity.diaper?.kind === DiaperKind.dry) summary.diaper.dry += 1;
+    }
+
+    if (activity.type === ActivityType.bath) summary.bath.count += 1;
+
+    if (activity.type === ActivityType.pumping) {
+      summary.pumping.count += 1;
+      if (activity.pumping?.amount) summary.pumping.amount += Number(activity.pumping.amount);
+    }
+
+    if (activity.type === ActivityType.milestone) summary.milestone.count += 1;
+    if (activity.type === ActivityType.medicine) summary.medicine.count += 1;
+
+    if (activity.type === ActivityType.play) {
+      summary.play.count += 1;
+      summary.play.seconds += activity.durationSeconds ?? 0;
+    }
   }
 
-  return {
-    sleepSeconds,
-    feeds,
-    feedAmount,
-    wetDiapers,
-    dirtyDiapers,
-    pumped
-  };
+  return summary;
 }
