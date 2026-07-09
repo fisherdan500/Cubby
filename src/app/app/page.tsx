@@ -174,7 +174,7 @@ function QuickActionLink({
 
   return (
     <Link
-      href={`/app/log/${type}?babyId=${dashboard.baby.id}&date=${dashboard.selectedDate.key}`}
+      href={activityLogHref(type, dashboard)}
       className={
         primary
           ? "rounded-lg border border-border bg-card/70 p-2 text-center shadow-soft transition hover:bg-muted"
@@ -201,6 +201,16 @@ function QuickActionLink({
       </div>
     </Link>
   );
+}
+
+function activityLogHref(type: ActivityTypeName, dashboard: DashboardWithBaby) {
+  const returnTo = `/app?${new URLSearchParams({ babyId: dashboard.baby.id, date: dashboard.selectedDate.key }).toString()}`;
+  const params = new URLSearchParams({
+    babyId: dashboard.baby.id,
+    date: dashboard.selectedDate.key,
+    returnTo
+  });
+  return `/app/log/${type}?${params.toString()}`;
 }
 
 function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate: DashboardWithBaby["selectedDate"] }) {

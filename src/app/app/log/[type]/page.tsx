@@ -12,7 +12,7 @@ export default async function LogActivityPage({
   searchParams
 }: {
   params: { type: string };
-  searchParams: { babyId?: string; date?: string };
+  searchParams: { babyId?: string; date?: string; returnTo?: string };
 }) {
   const type = params.type as ActivityTypeName;
   if (!activityTypes.includes(type)) notFound();
@@ -34,6 +34,7 @@ export default async function LogActivityPage({
               type={type}
               selectedBabyId={searchParams.babyId}
               returnDate={searchParams.date}
+              returnTo={searchParams.returnTo}
               appTimeZone={env.APP_TIMEZONE}
             />
           ) : (

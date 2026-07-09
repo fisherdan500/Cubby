@@ -25,7 +25,7 @@ export default async function EditActivityPage({ params, searchParams }: { param
     <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
       <div className="mx-auto max-w-2xl space-y-4">
         <Card>
-          <ActivityForm babies={babies} type={type} activityId={activity.id} initial={initial} appTimeZone={env.APP_TIMEZONE} />
+          <ActivityForm babies={babies} type={type} activityId={activity.id} initial={initial} returnTo={returnTo} appTimeZone={env.APP_TIMEZONE} />
         </Card>
         <DeleteActivityButton id={activity.id} returnTo={returnTo} />
       </div>

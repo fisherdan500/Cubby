@@ -32,7 +32,7 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
           {nurseryActions.map(([href, label, Icon]) => (
             <Link
               key={href}
-              href={selectedBabyId ? `${href}?babyId=${selectedBabyId}` : href}
+              href={nurseryActionHref(href, selectedBabyId)}
               className="flex h-32 flex-col items-center justify-center gap-3 rounded-xl bg-primary px-4 py-3 text-lg font-black text-primary-foreground shadow-soft transition hover:opacity-95 sm:h-36"
             >
               <Icon className="h-9 w-9" />
@@ -68,4 +68,11 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
       </div>
     </AppShell>
   );
+}
+
+function nurseryActionHref(href: string, babyId: string | undefined) {
+  if (!babyId) return href;
+  const returnTo = `/app/nursery?${new URLSearchParams({ babyId }).toString()}`;
+  const params = new URLSearchParams({ babyId, returnTo });
+  return `${href}?${params.toString()}`;
 }

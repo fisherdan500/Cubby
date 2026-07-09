@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export function ActivityForm({
   activityId,
   selectedBabyId,
   returnDate,
+  returnTo,
   appTimeZone
 }: {
   babies: BabyOption[];
@@ -24,12 +26,14 @@ export function ActivityForm({
   activityId?: string;
   selectedBabyId?: string;
   returnDate?: string;
+  returnTo?: string;
   appTimeZone: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
+  const cancelHref = activityFormCancelHref(returnTo, defaultBaby, returnDate);
 
   async function submit(formData: FormData) {
     setError("");
@@ -84,10 +88,38 @@ export function ActivityForm({
 
       {error ? <p className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
       <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-card/95 p-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
-        <Button className="min-h-12 w-full text-base md:w-auto md:min-w-44">{activityId ? "Save changes" : "Log activity"}</Button>
+        <div className="grid grid-cols-2 gap-2 md:flex md:justify-end">
+          <Link
+            href={cancelHref}
+            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-muted px-4 py-2 text-base font-semibold text-foreground transition hover:bg-border md:min-w-32"
+          >
+            Cancel
+          </Link>
+          <Button className="min-h-12 w-full text-base md:w-auto md:min-w-44">{activityId ? "Save changes" : "Log activity"}</Button>
+        </div>
       </div>
     </form>
   );
+}
+
+function activityFormCancelHref(returnTo: string | undefined, babyId: string, returnDate: string | undefined) {
+  const safeReturnTo = safeInternalReturnTo(returnTo);
+  if (safeReturnTo) return safeReturnTo;
+
+  const params = new URLSearchParams();
+  if (babyId) params.set("babyId", babyId);
+  if (returnDate) params.set("date", returnDate);
+
+  const query = params.toString();
+  return query ? `/app?${query}` : "/app";
+}
+
+function safeInternalReturnTo(value: string | undefined) {
+  if (!value) return undefined;
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
+  if (value !== "/app" && !value.startsWith("/app?") && !value.startsWith("/app/")) return undefined;
+  if (value.startsWith("/app/activities/")) return undefined;
+  return value;
 }
 
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
