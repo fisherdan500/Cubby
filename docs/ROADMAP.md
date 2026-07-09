@@ -33,8 +33,8 @@ structure.
 - Status: planned
 - Priority: medium
 - Goal: Review Cubby's remaining secondary workflows as a mobile-first app after the daily-use pass.
-- Acceptance: Full Log, Calendar, Reports, Settings, backups, and integrations are checked around common mobile widths; controls are thumb-friendly, dense information remains readable, and desktop remains tidy.
-- Notes: The first daily-use pass covered the shell, Log Entry, activity forms, and Nursery. Keep future changes Cubby-original and clean-room.
+- Acceptance: Calendar, Reports, Settings, backups, and integrations are checked around common mobile widths; controls are thumb-friendly, dense information remains readable, and desktop remains tidy.
+- Notes: Earlier mobile passes covered the shell, Log Entry, activity forms, Nursery, and Full Log. Keep future changes Cubby-original and clean-room.
 
 ## Later
 
@@ -53,6 +53,14 @@ No parked ideas are currently documented.
 - Goal: Make Cubby's most-used phone workflows faster to use one-handed.
 - Acceptance: Mobile shell is denser, bottom navigation has active state, Log Entry prioritizes Sleep/Feed/Diaper, activity forms have grouped fields with a sticky mobile submit action, and Nursery has larger night-use controls.
 - Notes: This did not add PWA/offline support, reminder logic, bottom-sheet forms, or schema changes.
+
+### Full Log Mobile Polish
+
+- Status: done
+- Priority: medium
+- Goal: Make reviewing, finding, editing, and deleting past entries easier on phone-sized screens.
+- Acceptance: Full Log has compact auto-applying filters, a clear action for active filters, day-grouped entries, row-tap edit navigation, and delete returns to the same filtered list.
+- Notes: This stayed UI/navigation focused and did not add date-range filtering or change service limits.
 
 ### Documentation Foundation
 
