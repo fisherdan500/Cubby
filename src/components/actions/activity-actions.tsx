@@ -13,7 +13,7 @@ export function DeleteActivityButton({ id, returnTo }: { id: string; returnTo?: 
         const response = await fetch(`/api/activities/${id}`, { method: "DELETE" });
         if (!response.ok) return;
         if (returnTo) {
-          router.replace(returnTo);
+          window.location.replace(returnTo);
         } else {
           router.refresh();
         }
