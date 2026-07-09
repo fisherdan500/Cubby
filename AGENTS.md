@@ -29,6 +29,7 @@ conversation context when the repo can answer the question.
 - Keep timestamps as stored instants and group/display them through `APP_TIMEZONE`.
 - Treat Docker Compose as the primary deployment path.
 - Respect the current dark operational UI direction and existing app shell patterns.
+- Design and check Cubby UI mobile-first; most use is expected from phones, with desktop kept tidy but secondary.
 - Do not run destructive git commands unless the user explicitly asks for them.
 - Preserve unrelated user changes in a dirty worktree.
 

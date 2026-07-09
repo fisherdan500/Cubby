@@ -28,7 +28,13 @@ structure.
 
 ## Planned Next
 
-No committed near-term roadmap items are currently documented.
+### Mobile UX Audit And Polish
+
+- Status: planned
+- Priority: high
+- Goal: Review Cubby's main workflows as a mobile-first app and make common actions faster and more intuitive on phone-sized screens.
+- Acceptance: Log Entry, activity forms, Full Log, Calendar, Reports, Nursery, and Settings are checked around common mobile widths; controls are thumb-friendly, dense information remains readable, and desktop remains tidy.
+- Notes: This is a design/product pass, not a signal that the current mobile UI is broken. Keep changes Cubby-original and clean-room.
 
 ## Later
 

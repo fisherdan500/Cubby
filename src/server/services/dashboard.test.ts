@@ -149,6 +149,8 @@ describe("daily summary", () => {
       summaryActivity({ type: ActivityType.bath }),
       summaryActivity({ type: ActivityType.milestone }),
       summaryActivity({ type: ActivityType.medicine }),
+      summaryActivity({ type: ActivityType.supplement }),
+      summaryActivity({ type: ActivityType.vaccine }),
       summaryActivity({ type: ActivityType.play, durationSeconds: 900 }),
       summaryActivity({ type: ActivityType.note }),
       summaryActivity({ type: ActivityType.mood })
@@ -161,6 +163,8 @@ describe("daily summary", () => {
     expect(summary.bath).toEqual({ count: 1 });
     expect(summary.milestone).toEqual({ count: 1 });
     expect(summary.medicine).toEqual({ count: 1 });
+    expect(summary.supplement).toEqual({ count: 1 });
+    expect(summary.vaccine).toEqual({ count: 1 });
     expect(summary.play).toEqual({ count: 1, seconds: 900 });
   });
 
@@ -179,6 +183,8 @@ describe("daily summary", () => {
       pumping: { count: 0, amount: 0 },
       milestone: { count: 0 },
       medicine: { count: 0 },
+      supplement: { count: 0 },
+      vaccine: { count: 0 },
       play: { count: 0, seconds: 0 }
     });
   });

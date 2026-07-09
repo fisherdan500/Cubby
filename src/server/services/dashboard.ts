@@ -333,6 +333,12 @@ export function summarizeDay(activities: DashboardActivity[]) {
     medicine: {
       count: 0
     },
+    supplement: {
+      count: 0
+    },
+    vaccine: {
+      count: 0
+    },
     play: {
       count: 0,
       seconds: 0
@@ -367,6 +373,8 @@ export function summarizeDay(activities: DashboardActivity[]) {
 
     if (activity.type === ActivityType.milestone) summary.milestone.count += 1;
     if (activity.type === ActivityType.medicine) summary.medicine.count += 1;
+    if (activity.type === ActivityType.supplement) summary.supplement.count += 1;
+    if (activity.type === ActivityType.vaccine) summary.vaccine.count += 1;
 
     if (activity.type === ActivityType.play) {
       summary.play.count += 1;

@@ -234,6 +234,22 @@ function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] 
           label: "Medicine"
         }
       : null,
+    summary.supplement.count
+      ? {
+          key: "supplement",
+          icon: <Plus className="h-5 w-5 text-violet-300" />,
+          value: String(summary.supplement.count),
+          label: summary.supplement.count === 1 ? "Supplement" : "Supplements"
+        }
+      : null,
+    summary.vaccine.count
+      ? {
+          key: "vaccine",
+          icon: <Syringe className="h-5 w-5 text-red-300" />,
+          value: String(summary.vaccine.count),
+          label: summary.vaccine.count === 1 ? "Vaccine" : "Vaccines"
+        }
+      : null,
     summary.play.count
       ? {
           key: "play",
@@ -248,7 +264,7 @@ function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] 
     <section className="space-y-3">
       <h2 className="text-sm font-black">Daily Summary</h2>
       {items.length ? (
-        <div className="flex flex-wrap gap-x-8 gap-y-4">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
           {items.map((item) => (
             <SummaryItem key={item.key} icon={item.icon} value={item.value} label={item.label} />
           ))}
@@ -272,11 +288,11 @@ function diaperSummaryLabel(summary: DashboardWithBaby["dailySummary"]["diaper"]
 
 function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
-    <div className="flex items-center gap-2">
-      {icon}
-      <div>
-        <p className="text-lg font-black leading-none">{value}</p>
-        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+    <div className="flex min-h-16 min-w-0 items-center gap-2 rounded-md border border-border bg-card/60 p-2 sm:min-w-36 sm:px-3">
+      <div className="shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <p className="truncate text-base font-black leading-none sm:text-lg">{value}</p>
+        <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
       </div>
     </div>
   );
