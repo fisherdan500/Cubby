@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "@/components/forms/onboarding-form";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { Card } from "@/components/ui/card";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdHome } from "@/server/services/households";
@@ -12,8 +13,9 @@ export default async function OnboardingPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="w-full max-w-lg space-y-5">
-        <div>
-          <h1 className="text-2xl font-bold">Set up Cubby</h1>
+        <div className="text-center">
+          <ActivityArtwork type="feeding" size="xl" className="mx-auto mb-3" />
+          <h1 className="font-editorial text-3xl font-bold">Set up Cubby</h1>
           <p className="text-sm text-muted-foreground">Create your household and first baby profile.</p>
         </div>
         <OnboardingForm />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, BarChart3, Clock3, Grid3X3, LineChart, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
@@ -144,10 +145,13 @@ function ActivityTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof g
   return (
     <Card className="space-y-3">
       {activityTypes.map((type) => (
-        <div key={type} className="grid grid-cols-[150px_1fr_40px] items-center gap-3">
-          <p className="text-sm font-bold">{activityLabels[type]}</p>
-          <div className="h-3 rounded-full bg-muted">
-            <div className="h-3 rounded-full bg-primary" style={{ width: `${(stats.byType[type] / max) * 100}%` }} />
+        <div key={type} className="grid grid-cols-[40px_minmax(0,1fr)_32px] items-center gap-3">
+          <ActivityArtwork type={type} size="sm" />
+          <div className="min-w-0">
+            <p className="mb-1 truncate text-sm font-bold">{activityLabels[type]}</p>
+            <div className="h-2.5 rounded-full bg-muted">
+              <div className="h-2.5 rounded-full bg-primary" style={{ width: `${(stats.byType[type] / max) * 100}%` }} />
+            </div>
           </div>
           <p className="text-right text-sm font-black">{stats.byType[type]}</p>
         </div>
@@ -202,9 +206,10 @@ function RoutineTab({ report }: { report: NonNullable<Awaited<ReturnType<typeof 
         {routine.rows.length ? (
           <div className="space-y-3">
             {routine.rows.map((row) => (
-              <div key={`${row.type}-${row.index}`} className="grid grid-cols-[84px_1fr] gap-4 rounded-lg bg-muted p-3">
-                <p className="text-sm font-black text-primary">{row.averageTime}</p>
-                <div>
+              <div key={`${row.type}-${row.index}`} className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 rounded-lg bg-surface p-3">
+                <ActivityArtwork type={row.type === "sleep" ? "sleep" : "feeding"} size="md" />
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-primary">{row.averageTime}</p>
                   <p className="font-black">
                     {row.type === "sleep"
                       ? `Sleep around ${row.averageTime} for ${row.averageDuration}`
@@ -248,7 +253,7 @@ function HeatmapTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof ge
                 <div
                   key={`${day}-${hour}`}
                   className="h-7 rounded-sm border border-border"
-                  style={{ backgroundColor: `hsl(174 65% ${14 + (value / max) * 42}%)` }}
+                  style={{ backgroundColor: `hsl(var(--primary) / ${0.12 + (value / max) * 0.78})` }}
                   title={`${day} ${hour}:00 - ${value}`}
                 />
               );
@@ -265,7 +270,7 @@ function ReportSection({ title, children }: { title: string; children: React.Rea
     <section className="space-y-3">
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <h2 className="text-base font-black">{title}</h2>
+        <h2 className="font-editorial text-lg font-bold">{title}</h2>
         <div className="h-px flex-1 bg-border" />
       </div>
       <div className="grid gap-3 md:grid-cols-4">{children}</div>
@@ -276,7 +281,7 @@ function ReportSection({ title, children }: { title: string; children: React.Rea
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <Card>
-      <p className="text-2xl font-black">{value}</p>
+      <p className="font-editorial text-2xl font-bold">{value}</p>
       <p className="text-sm font-semibold text-muted-foreground">{label}</p>
     </Card>
   );

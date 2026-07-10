@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Clock3, MapPin, PlusCircle, Users, X } from 
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -114,7 +114,7 @@ export default async function CalendarPage({
                           {activityEntries.slice(0, 6).map(([type, count]) => (
                             <span
                               key={type}
-                              className={`h-2.5 w-2.5 rounded-full ${activityAccent[type as ActivityTypeName]?.split(" ")[0] ?? "bg-primary"}`}
+                              className={`h-2.5 w-2.5 rounded-full ${activityVisuals[type as ActivityTypeName]?.toneClass ?? "bg-primary"}`}
                               title={`${activityLabels[type as ActivityTypeName]} ${count}`}
                             />
                           ))}

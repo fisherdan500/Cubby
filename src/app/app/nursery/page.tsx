@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bed, Droplets, Milk, NotebookPen, Pill } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
@@ -10,12 +10,12 @@ import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getDashboard } from "@/server/services/dashboard";
 
-const nurseryActions: Array<[string, string, React.ElementType]> = [
-  ["/app/log/feeding", "Feeding", Milk],
-  ["/app/log/diaper", "Diaper", Droplets],
-  ["/app/log/sleep", "Sleep", Bed],
-  ["/app/log/medicine", "Medicine", Pill],
-  ["/app/log/note", "Note", NotebookPen]
+const nurseryActions: Array<[string, ActivityTypeName]> = [
+  ["/app/log/feeding", "feeding"],
+  ["/app/log/diaper", "diaper"],
+  ["/app/log/sleep", "sleep"],
+  ["/app/log/medicine", "medicine"],
+  ["/app/log/note", "note"]
 ];
 
 export default async function NurseryPage({ searchParams }: { searchParams: { babyId?: string } }) {
@@ -29,14 +29,14 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
     <AppShell title="Nursery" userName={user.name} babySelector={babySelector}>
       <div className="space-y-4">
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {nurseryActions.map(([href, label, Icon]) => (
+          {nurseryActions.map(([href, type]) => (
             <Link
               key={href}
               href={nurseryActionHref(href, selectedBabyId)}
-              className="flex h-32 flex-col items-center justify-center gap-3 rounded-xl bg-primary px-4 py-3 text-lg font-black text-primary-foreground shadow-soft transition hover:opacity-95 sm:h-36"
+              className="flex h-32 flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-base font-black text-foreground shadow-soft transition hover:border-primary/40 hover:bg-surface-soft sm:h-36"
             >
-              <Icon className="h-9 w-9" />
-              {label}
+              <ActivityArtwork type={type} size="xl" />
+              {activityLabels[type]}
             </Link>
           ))}
         </section>

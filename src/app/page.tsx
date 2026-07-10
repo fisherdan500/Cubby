@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Baby, ChartNoAxesCombined, Lock, Moon, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,15 +19,37 @@ export default async function HomePage() {
   if (session?.user) redirect("/app");
 
   return (
-    <main className="min-h-screen">
-      <section className="mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-4 py-10 md:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6">
+    <main className="min-h-screen overflow-hidden">
+      <section className="relative flex min-h-[78svh] items-center overflow-hidden border-b border-border px-4 py-14">
+        <Image
+          src="/activity-art/sleep.webp"
+          alt=""
+          width={250}
+          height={250}
+          className="pointer-events-none absolute -right-12 top-16 h-44 w-44 rotate-6 object-contain opacity-45 sm:right-8 sm:h-56 sm:w-56 sm:opacity-80"
+        />
+        <Image
+          src="/activity-art/feeding.webp"
+          alt=""
+          width={210}
+          height={210}
+          className="pointer-events-none absolute -bottom-8 right-20 hidden h-44 w-44 -rotate-6 object-contain opacity-65 sm:block"
+        />
+        <Image
+          src="/activity-art/milestone.webp"
+          alt=""
+          width={180}
+          height={180}
+          className="pointer-events-none absolute bottom-6 left-[52%] hidden h-36 w-36 object-contain opacity-55 lg:block"
+        />
+        <div className="relative z-10 mx-auto w-full max-w-6xl">
+          <div className="max-w-2xl space-y-6">
           <div className="inline-flex rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground">
             Private family baby-care tracking
           </div>
           <div className="space-y-3">
-            <h1 className="text-5xl font-black tracking-normal sm:text-6xl">Cubby</h1>
-            <p className="text-2xl font-semibold text-primary">Track the little things.</p>
+            <h1 className="font-editorial text-5xl font-bold sm:text-6xl">Cubby</h1>
+            <p className="font-editorial text-2xl font-semibold text-primary">Track the little things.</p>
             <p className="max-w-xl text-lg leading-8 text-muted-foreground">
               Fast feeding, diaper, sleep, medicine, milestone, and note tracking for families who want reliable self-hosted data and calmer nights.
             </p>
@@ -40,7 +63,10 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
-        <div className="grid gap-3">
+        </div>
+      </section>
+      <section className="bg-surface/55 px-4 py-8">
+        <div className="mx-auto grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {featureCards.map(([title, Icon, text]) => (
             <Card key={String(title)} className="flex items-start gap-3">
               <div className="rounded-lg bg-primary/10 p-2 text-primary">

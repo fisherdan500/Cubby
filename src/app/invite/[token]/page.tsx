@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { AcceptInviteButton } from "@/components/actions/accept-invite-button";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,14 +12,15 @@ export default async function InvitePage({ params }: { params: { token: string }
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md space-y-4">
+        <ActivityArtwork type="milestone" size="xl" className="mx-auto mb-2" />
         {!invite ? (
           <>
-            <h1 className="text-2xl font-bold">Invite unavailable</h1>
+            <h1 className="text-center font-editorial text-3xl font-bold">Invite unavailable</h1>
             <p className="text-sm text-muted-foreground">This invite is expired, revoked, or no longer exists.</p>
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-bold">Join {invite.household.name}</h1>
+            <h1 className="text-center font-editorial text-3xl font-bold">Join {invite.household.name}</h1>
             <p className="text-sm text-muted-foreground">
               You were invited as {invite.role}. Sign in or create an account, then accept the invite.
             </p>

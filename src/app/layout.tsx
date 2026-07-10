@@ -1,4 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource/fraunces/600.css";
+import "@fontsource/fraunces/700.css";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
 import "@/styles/globals.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -16,8 +22,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f1e8" },
-    { media: "(prefers-color-scheme: dark)", color: "#111a1f" }
+    { media: "(prefers-color-scheme: light)", color: "#f8f6f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#201c1a" }
   ],
   width: "device-width",
   initialScale: 1
@@ -27,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <PwaRegister />
           {children}
         </ThemeProvider>

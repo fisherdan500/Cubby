@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { Input, Textarea } from "@/components/ui/input";
-import { timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
+import { activityLabels, timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
 import { dateTimeInputValue } from "@/lib/timezone";
 
 type BabyOption = { id: string; name: string };
@@ -57,6 +58,13 @@ export function ActivityForm({
 
   return (
     <form action={submit} className="space-y-4 pb-20 md:pb-0">
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-soft p-3">
+        <ActivityArtwork type={type} size="lg" />
+        <div className="min-w-0">
+          <p className="font-editorial text-lg font-bold">{activityId ? "Update" : "New"} {activityLabels[type].toLowerCase()}</p>
+          <p className="text-sm text-muted-foreground">Record the essentials now. Optional details can stay blank.</p>
+        </div>
+      </div>
       <FormSection title="When">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-2 text-sm font-semibold">

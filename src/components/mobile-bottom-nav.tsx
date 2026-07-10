@@ -17,7 +17,7 @@ export function MobileBottomNav({ selectedBabyId }: { selectedBabyId?: string })
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/96 px-2 py-2 shadow-soft backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/96 px-2 py-2 shadow-[0_-8px_24px_hsl(var(--shadow)/0.08)] backdrop-blur md:hidden">
       <div className="grid grid-cols-5 gap-1">
         {mobileNav.map((item) => {
           const active = isActivePath(pathname, item.href);
@@ -28,7 +28,7 @@ export function MobileBottomNav({ selectedBabyId }: { selectedBabyId?: string })
               className={cn(
                 "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-black transition",
                 active
-                  ? "bg-primary text-primary-foreground shadow-soft"
+                  ? "bg-primary/14 text-primary ring-1 ring-primary/20"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
               aria-current={active ? "page" : undefined}

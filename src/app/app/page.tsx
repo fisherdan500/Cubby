@@ -1,29 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  Bath,
-  Bed,
-  ChevronLeft,
-  ChevronRight,
-  Droplets,
-  Milk,
-  NotebookText,
-  Package,
-  Pill,
-  Plus,
-  Ruler,
-  Smile,
-  Syringe,
-  Trophy,
-  Wand2
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } from "@/components/actions/activity-actions";
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  activityAccent,
   activityLabels,
   filterActivitiesBySummaryType,
   isDailySummaryActivityType,
@@ -35,31 +19,19 @@ import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getDashboard } from "@/server/services/dashboard";
 
-const quickActions: Array<[ActivityTypeName, React.ElementType]> = [
-  ["sleep", Bed],
-  ["feeding", Milk],
-  ["diaper", Droplets],
-  ["note", NotebookText],
-  ["bath", Bath],
-  ["pumping", Milk],
-  ["measurement", Ruler],
-  ["milestone", Trophy],
-  ["medicine", Pill],
-  ["play", Wand2],
-  ["mood", Smile],
-  ["supplement", Plus],
-  ["vaccine", Syringe],
-  ["milk_inventory", Package]
+const quickActions: ActivityTypeName[] = [
+  "sleep", "feeding", "diaper", "note", "bath", "pumping", "measurement",
+  "milestone", "medicine", "play", "mood", "supplement", "vaccine", "milk_inventory"
 ];
 
 const primaryQuickActionTypes = new Set<ActivityTypeName>(["sleep", "feeding", "diaper"]);
-const primaryQuickActions = quickActions.filter(([type]) => primaryQuickActionTypes.has(type));
-const secondaryQuickActions = quickActions.filter(([type]) => !primaryQuickActionTypes.has(type));
+const primaryQuickActions = quickActions.filter((type) => primaryQuickActionTypes.has(type));
+const secondaryQuickActions = quickActions.filter((type) => !primaryQuickActionTypes.has(type));
 
 const elapsedBadgeClasses: Partial<Record<ActivityTypeName, string>> = {
-  sleep: "bg-slate-200 text-slate-950",
-  feeding: "bg-sky-300 text-slate-950",
-  diaper: "bg-teal-300 text-slate-950"
+  sleep: "activity-tone-sleep text-foreground",
+  feeding: "activity-tone-feeding text-foreground",
+  diaper: "activity-tone-diaper text-foreground"
 };
 
 type DashboardData = NonNullable<Awaited<ReturnType<typeof getDashboard>>>;
@@ -151,10 +123,10 @@ export default async function DashboardPage({
 
 function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
   return (
-    <section className="space-y-3 border-y border-border bg-primary/15 px-1 py-3 sm:px-2 sm:py-4">
+    <section className="space-y-3 border-y border-border bg-surface/70 px-1 py-3 sm:px-2 sm:py-4">
       <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
-        {primaryQuickActions.map(([type, Icon]) => (
-          <QuickActionLink key={type} type={type} Icon={Icon} dashboard={dashboard} priority="primary" />
+        {primaryQuickActions.map((type) => (
+          <QuickActionLink key={type} type={type} dashboard={dashboard} priority="primary" />
         ))}
       </div>
 
@@ -163,15 +135,15 @@ function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
           More
         </summary>
         <div className="mt-2 grid grid-cols-4 gap-2">
-          {secondaryQuickActions.map(([type, Icon]) => (
-            <QuickActionLink key={type} type={type} Icon={Icon} dashboard={dashboard} priority="secondary" />
+          {secondaryQuickActions.map((type) => (
+            <QuickActionLink key={type} type={type} dashboard={dashboard} priority="secondary" />
           ))}
         </div>
       </details>
 
       <div className="hidden gap-2 overflow-x-auto sm:flex">
-        {secondaryQuickActions.map(([type, Icon]) => (
-          <QuickActionLink key={type} type={type} Icon={Icon} dashboard={dashboard} priority="secondary" />
+        {secondaryQuickActions.map((type) => (
+          <QuickActionLink key={type} type={type} dashboard={dashboard} priority="secondary" />
         ))}
       </div>
     </section>
@@ -180,12 +152,10 @@ function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
 
 function QuickActionLink({
   type,
-  Icon,
   dashboard,
   priority
 }: {
   type: ActivityTypeName;
-  Icon: React.ElementType;
   dashboard: DashboardWithBaby;
   priority: "primary" | "secondary";
 }) {
@@ -198,7 +168,7 @@ function QuickActionLink({
       href={activityLogHref(type, dashboard)}
       className={
         primary
-          ? "rounded-lg border border-border bg-card/70 p-2 text-center shadow-soft transition hover:bg-muted"
+          ? "rounded-lg border border-border bg-card/80 p-2 text-center shadow-soft transition hover:border-primary/35 hover:bg-card"
           : "min-w-0 rounded-lg p-1 text-center transition hover:bg-muted sm:min-w-20"
       }
     >
@@ -210,14 +180,12 @@ function QuickActionLink({
             </span>
           ) : null}
         </div>
-        <div className={`flex items-center justify-center rounded-full shadow-soft ${activityAccent[type]} ${primary ? "h-16 w-16" : "h-12 w-12"}`}>
-          <Icon className={primary ? "h-8 w-8" : "h-6 w-6"} />
-        </div>
+        <ActivityArtwork type={type} size={primary ? "xl" : "lg"} />
         <p className={`${primary ? "text-sm" : "text-[11px]"} font-black leading-tight text-muted-foreground`}>
           {quickActionLabel(type)}
         </p>
         {active ? (
-          <span className="rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-black leading-none text-slate-950">Active</span>
+          <span className="rounded-full bg-primary/16 px-2 py-0.5 text-[10px] font-black leading-none text-primary">Active</span>
         ) : null}
       </div>
     </Link>
@@ -269,7 +237,6 @@ function DailySummary({
 }) {
   type SummaryItemData = {
     key: DailySummaryActivityType;
-    icon: React.ReactNode;
     value: string;
     label: string;
   };
@@ -277,7 +244,6 @@ function DailySummary({
     summary.sleep.count
       ? {
           key: "sleep",
-          icon: <Bed className="h-5 w-5 text-slate-300" />,
           value: formatDuration(summary.sleep.seconds) || "0 min",
           label: "Total Sleep"
         }
@@ -285,7 +251,6 @@ function DailySummary({
     summary.feeding.count
       ? {
           key: "feeding",
-          icon: <Milk className="h-5 w-5 text-sky-300" />,
           value: String(summary.feeding.count),
           label: summary.feeding.amount ? `${summary.feeding.amount.toFixed(1)} oz` : "Feeds"
         }
@@ -293,7 +258,6 @@ function DailySummary({
     summary.diaper.count
       ? {
           key: "diaper",
-          icon: <Droplets className="h-5 w-5 text-teal-300" />,
           value: String(summary.diaper.count),
           label: diaperSummaryLabel(summary.diaper)
         }
@@ -301,7 +265,6 @@ function DailySummary({
     summary.bath.count
       ? {
           key: "bath",
-          icon: <Bath className="h-5 w-5 text-cyan-300" />,
           value: String(summary.bath.count),
           label: summary.bath.count === 1 ? "Bath" : "Baths"
         }
@@ -309,7 +272,6 @@ function DailySummary({
     summary.pumping.count
       ? {
           key: "pumping",
-          icon: <Milk className="h-5 w-5 text-fuchsia-300" />,
           value: summary.pumping.amount ? `${summary.pumping.amount.toFixed(1)} oz` : String(summary.pumping.count),
           label: summary.pumping.amount ? "Pumped" : "Pump"
         }
@@ -317,7 +279,6 @@ function DailySummary({
     summary.milestone.count
       ? {
           key: "milestone",
-          icon: <Trophy className="h-5 w-5 text-indigo-300" />,
           value: String(summary.milestone.count),
           label: summary.milestone.count === 1 ? "Milestone" : "Milestones"
         }
@@ -325,7 +286,6 @@ function DailySummary({
     summary.medicine.count
       ? {
           key: "medicine",
-          icon: <Pill className="h-5 w-5 text-emerald-300" />,
           value: String(summary.medicine.count),
           label: "Medicine"
         }
@@ -333,7 +293,6 @@ function DailySummary({
     summary.supplement.count
       ? {
           key: "supplement",
-          icon: <Plus className="h-5 w-5 text-violet-300" />,
           value: String(summary.supplement.count),
           label: summary.supplement.count === 1 ? "Supplement" : "Supplements"
         }
@@ -341,7 +300,6 @@ function DailySummary({
     summary.vaccine.count
       ? {
           key: "vaccine",
-          icon: <Syringe className="h-5 w-5 text-red-300" />,
           value: String(summary.vaccine.count),
           label: summary.vaccine.count === 1 ? "Vaccine" : "Vaccines"
         }
@@ -349,7 +307,6 @@ function DailySummary({
     summary.play.count
       ? {
           key: "play",
-          icon: <Wand2 className="h-5 w-5 text-lime-300" />,
           value: summary.play.seconds ? formatDuration(summary.play.seconds) || "0 min" : String(summary.play.count),
           label: summary.play.seconds ? "Play Time" : "Play"
         }
@@ -366,7 +323,7 @@ function DailySummary({
             <SummaryItem
               key={item.key}
               href={dailySummaryFilterHref(babyId, selectedDate, item.key, selectedType)}
-              icon={item.icon}
+              type={item.key}
               value={item.value}
               label={item.label}
               selected={selectedType === item.key}
@@ -392,13 +349,13 @@ function diaperSummaryLabel(summary: DashboardWithBaby["dailySummary"]["diaper"]
 
 function SummaryItem({
   href,
-  icon,
+  type,
   value,
   label,
   selected
 }: {
   href: string;
-  icon: React.ReactNode;
+  type: DailySummaryActivityType;
   value: string;
   label: string;
   selected: boolean;
@@ -413,7 +370,7 @@ function SummaryItem({
           : "border-border bg-card/60 hover:border-primary/40 hover:bg-muted"
       }`}
     >
-      <div className="shrink-0">{icon}</div>
+      <ActivityArtwork type={type} size="xs" />
       <div className="min-w-0">
         <p className="truncate text-sm font-black leading-none sm:text-base">{value}</p>
         <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
@@ -463,7 +420,7 @@ function Timeline({ activities, timeZone, returnTo }: { activities: TimelineActi
                   href={activityEditHref(activity.id, returnTo)}
                   className="relative block rounded-md border border-border bg-background/45 p-3 hover:bg-muted"
                 >
-                  <span className={`absolute -left-[33px] top-4 h-4 w-4 rounded-full ring-4 ring-background ${activityAccent[type].split(" ")[0]}`} />
+                  <ActivityArtwork type={type} size="xs" className="absolute -left-[41px] top-2 ring-4 ring-background" />
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="font-black">{activityLabels[type]}</p>

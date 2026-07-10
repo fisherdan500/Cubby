@@ -487,6 +487,7 @@ model HouseholdSettings {
   supplements              String[]  @default([])
   nurseryModeEnabled       Boolean   @default(true)
   pwaInstallPromptEnabled  Boolean   @default(true)
+  accentTheme              String    @default("sage")
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   household                Household @relation(fields: [householdId], references: [id], onDelete: Cascade)

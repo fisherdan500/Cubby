@@ -3,33 +3,91 @@
 @tailwind utilities;
 
 :root {
-  --background: 39 43% 96%;
-  --foreground: 210 18% 18%;
-  --card: 0 0% 100%;
-  --card-foreground: 210 18% 18%;
-  --border: 34 20% 84%;
-  --muted: 34 28% 90%;
-  --muted-foreground: 210 10% 42%;
-  --primary: 174 52% 31%;
-  --primary-foreground: 0 0% 100%;
-  --accent: 28 88% 64%;
-  --accent-foreground: 210 18% 18%;
-  --danger: 2 72% 48%;
+  --background: 42 38% 96%;
+  --foreground: 24 18% 19%;
+  --card: 42 45% 99%;
+  --card-foreground: 24 18% 19%;
+  --surface: 38 34% 93%;
+  --surface-soft: 40 40% 97%;
+  --border: 34 22% 84%;
+  --muted: 37 27% 90%;
+  --muted-foreground: 27 10% 42%;
+  --primary: 143 15% 47%;
+  --primary-foreground: 42 45% 98%;
+  --accent: 13 45% 63%;
+  --accent-foreground: 24 22% 17%;
+  --ring: 143 15% 47%;
+  --danger: 2 55% 48%;
+  --shadow: 28 20% 26%;
 }
 
 .dark {
-  --background: 205 20% 10%;
-  --foreground: 35 34% 94%;
-  --card: 205 18% 14%;
-  --card-foreground: 35 34% 94%;
-  --border: 205 12% 24%;
-  --muted: 205 15% 20%;
-  --muted-foreground: 35 12% 72%;
-  --primary: 174 46% 46%;
-  --primary-foreground: 205 20% 10%;
-  --accent: 28 78% 58%;
-  --accent-foreground: 205 20% 10%;
-  --danger: 3 70% 62%;
+  --background: 24 13% 11%;
+  --foreground: 38 28% 92%;
+  --card: 26 12% 15%;
+  --card-foreground: 38 28% 92%;
+  --surface: 28 11% 18%;
+  --surface-soft: 26 12% 13%;
+  --border: 29 10% 27%;
+  --muted: 29 10% 21%;
+  --muted-foreground: 35 12% 69%;
+  --primary: 143 19% 61%;
+  --primary-foreground: 24 18% 12%;
+  --accent: 13 50% 67%;
+  --accent-foreground: 24 18% 12%;
+  --ring: 143 19% 61%;
+  --danger: 3 61% 62%;
+  --shadow: 20 24% 4%;
+}
+
+[data-accent="sage"] {
+  --primary: 143 15% 47%;
+  --ring: 143 15% 47%;
+}
+
+[data-accent="rose"] {
+  --primary: 354 24% 55%;
+  --ring: 354 24% 55%;
+}
+
+[data-accent="powder"] {
+  --primary: 202 21% 50%;
+  --ring: 202 21% 50%;
+}
+
+[data-accent="butter"] {
+  --primary: 42 44% 44%;
+  --ring: 42 44% 44%;
+}
+
+[data-accent="terracotta"] {
+  --primary: 14 38% 52%;
+  --ring: 14 38% 52%;
+}
+
+.dark [data-accent="sage"] {
+  --primary: 143 19% 61%;
+  --ring: 143 19% 61%;
+}
+
+.dark [data-accent="rose"] {
+  --primary: 354 34% 68%;
+  --ring: 354 34% 68%;
+}
+
+.dark [data-accent="powder"] {
+  --primary: 202 32% 67%;
+  --ring: 202 32% 67%;
+}
+
+.dark [data-accent="butter"] {
+  --primary: 42 55% 67%;
+  --ring: 42 55% 67%;
+}
+
+.dark [data-accent="terracotta"] {
+  --primary: 14 50% 67%;
+  --ring: 14 50% 67%;
 }
 
 * {
@@ -40,14 +98,25 @@ body {
   min-height: 100vh;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+body::before {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  background-image: url("/textures/paper.webp");
+  background-repeat: repeat;
+  background-size: 520px 520px;
+  content: "";
+  opacity: 0.035;
+  pointer-events: none;
+}
+
+.dark body::before {
+  filter: invert(1);
+  opacity: 0.018;
 }
 
 button,
@@ -59,4 +128,56 @@ textarea {
 
 a {
   color: inherit;
+}
+
+.font-editorial {
+  font-family: "Fraunces", ui-serif, Georgia, serif;
+  font-variation-settings: "SOFT" 45, "WONK" 0;
+  letter-spacing: 0;
+}
+
+:focus-visible {
+  outline: 3px solid hsl(var(--ring) / 0.42);
+  outline-offset: 2px;
+}
+
+.activity-tone-sleep { background: #dce7f1; }
+.activity-tone-feeding { background: #d8edf2; }
+.activity-tone-diaper { background: #d8eee6; }
+.activity-tone-note { background: #f4e8bd; }
+.activity-tone-bath { background: #d9edf0; }
+.activity-tone-pumping { background: #eadced; }
+.activity-tone-measurement { background: #f1ddc7; }
+.activity-tone-milestone { background: #dddff1; }
+.activity-tone-medicine { background: #d8eee3; }
+.activity-tone-play { background: #e8efb9; }
+.activity-tone-mood { background: #f2d8dc; }
+.activity-tone-supplement { background: #e8e0f1; }
+.activity-tone-vaccine { background: #f3ddd2; }
+.activity-tone-milk-inventory { background: #dbe9ef; }
+
+.dark .activity-tone-sleep { background: #3c4855; }
+.dark .activity-tone-feeding { background: #354d52; }
+.dark .activity-tone-diaper { background: #354d44; }
+.dark .activity-tone-note { background: #514a32; }
+.dark .activity-tone-bath { background: #344b4e; }
+.dark .activity-tone-pumping { background: #4b3d4e; }
+.dark .activity-tone-measurement { background: #504235; }
+.dark .activity-tone-milestone { background: #3f4050; }
+.dark .activity-tone-medicine { background: #354b40; }
+.dark .activity-tone-play { background: #484b31; }
+.dark .activity-tone-mood { background: #503b3f; }
+.dark .activity-tone-supplement { background: #473f50; }
+.dark .activity-tone-vaccine { background: #4e3e37; }
+.dark .activity-tone-milk-inventory { background: #384950; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

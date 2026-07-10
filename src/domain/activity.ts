@@ -17,6 +17,11 @@ export const activityTypes = [
 
 export type ActivityTypeName = (typeof activityTypes)[number];
 
+export type ActivityVisual = {
+  artwork: string;
+  toneClass: string;
+};
+
 export const activityLabels: Record<ActivityTypeName, string> = {
   feeding: "Feeding",
   diaper: "Diaper",
@@ -51,21 +56,21 @@ export const dailySummaryActivityTypes = [
 
 export type DailySummaryActivityType = (typeof dailySummaryActivityTypes)[number];
 
-export const activityAccent: Record<ActivityTypeName, string> = {
-  feeding: "bg-sky-300 text-slate-950",
-  diaper: "bg-teal-400 text-slate-950",
-  sleep: "bg-slate-500 text-white",
-  pumping: "bg-fuchsia-300 text-slate-950",
-  medicine: "bg-emerald-300 text-slate-950",
-  measurement: "bg-orange-300 text-slate-950",
-  milestone: "bg-indigo-300 text-slate-950",
-  note: "bg-amber-200 text-slate-950",
-  bath: "bg-cyan-300 text-slate-950",
-  play: "bg-lime-300 text-slate-950",
-  mood: "bg-rose-300 text-slate-950",
-  supplement: "bg-violet-300 text-slate-950",
-  vaccine: "bg-red-300 text-slate-950",
-  milk_inventory: "bg-blue-300 text-slate-950"
+export const activityVisuals: Record<ActivityTypeName, ActivityVisual> = {
+  feeding: { artwork: "/activity-art/feeding.webp", toneClass: "activity-tone-feeding" },
+  diaper: { artwork: "/activity-art/diaper.webp", toneClass: "activity-tone-diaper" },
+  sleep: { artwork: "/activity-art/sleep.webp", toneClass: "activity-tone-sleep" },
+  pumping: { artwork: "/activity-art/pumping.webp", toneClass: "activity-tone-pumping" },
+  medicine: { artwork: "/activity-art/medicine.webp", toneClass: "activity-tone-medicine" },
+  measurement: { artwork: "/activity-art/measurement.webp", toneClass: "activity-tone-measurement" },
+  milestone: { artwork: "/activity-art/milestone.webp", toneClass: "activity-tone-milestone" },
+  note: { artwork: "/activity-art/note.webp", toneClass: "activity-tone-note" },
+  bath: { artwork: "/activity-art/bath.webp", toneClass: "activity-tone-bath" },
+  play: { artwork: "/activity-art/play.webp", toneClass: "activity-tone-play" },
+  mood: { artwork: "/activity-art/mood.webp", toneClass: "activity-tone-mood" },
+  supplement: { artwork: "/activity-art/supplement.webp", toneClass: "activity-tone-supplement" },
+  vaccine: { artwork: "/activity-art/vaccine.webp", toneClass: "activity-tone-vaccine" },
+  milk_inventory: { artwork: "/activity-art/milk_inventory.webp", toneClass: "activity-tone-milk-inventory" }
 };
 
 export function isActivityType(value: string): value is ActivityTypeName {

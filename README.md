@@ -10,7 +10,8 @@ calendar planning, backups, and integrations.
 - Protected household ownership, delegated admins, role-based member access, invites, trusted devices, sessions, audit records, and server-side permission checks.
 - Baby profiles and activity logging for feeding, diaper, sleep, pumping, medicine, measurement, milestone, note, bath, play, mood, supplement, vaccine, and milk inventory.
 - Persistent timers for feeding, sleep, pumping, and play.
-- Dark app shell with Log Entry, Full Log, Calendar, Reports, Nursery, and Settings areas.
+- Mobile-first light/dark app shell with Log Entry, Full Log, Calendar, Reports, Nursery, and Settings areas.
+- Original illustrated activity artwork and a household-selectable sage, rose, powder, butter, or terracotta accent.
 - Dashboard quick actions, elapsed badges, daily summary, warning dismissal, active timers, and selected-day timeline.
 - Calendar month view with events, Reports tabs including stats, milestones, growth trends, activity, heatmaps, and routine rhythm.
 - CSV/TSV activity exports, JSON backup/restore, and Sprout Track backup import into the current household.
@@ -65,6 +66,7 @@ TRUSTED_ORIGINS=http://localhost:3002,http://127.0.0.1:3002
 - [Architecture](docs/ARCHITECTURE.md): system shape, data model, services, permissions, imports, integrations, and time handling.
 - [Development](docs/DEVELOPMENT.md): setup, workflows, verification commands, and troubleshooting.
 - [Roadmap](docs/ROADMAP.md): future features, known follow-ups, and parked ideas.
+- [Third-Party Assets](docs/THIRD_PARTY_ASSETS.md): local font packages and asset provenance.
 - [Agent Guide](AGENTS.md): project-specific instructions for Codex and other coding agents.
 
 ## Verification

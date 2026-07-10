@@ -29,14 +29,14 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-slate-700/60 backdrop-blur md:flex md:flex-col">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-card/94 backdrop-blur md:flex md:flex-col">
         <Link href="/app" className="flex h-20 items-center gap-3 border-b border-border px-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-lg font-black text-primary-foreground">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/25 bg-primary/15 font-editorial text-xl font-bold text-primary">
             C
           </div>
           <div>
-            <p className="text-xl font-black text-primary">Cubby</p>
-            <p className="text-sm font-semibold text-foreground">Family tracker</p>
+            <p className="font-editorial text-xl font-bold text-foreground">Cubby</p>
+            <p className="text-xs font-semibold text-muted-foreground">Family journal</p>
           </div>
         </Link>
         <nav className="flex-1 space-y-2 px-4 py-6">
@@ -52,11 +52,11 @@ export function AppShell({
           ))}
         </nav>
         <div className="space-y-3 border-t border-border p-4">
-          <div className="flex items-center gap-3 rounded-md bg-muted p-3">
+          <div className="flex items-center gap-3 rounded-md bg-surface p-3">
             <Moon className="h-5 w-5 text-primary" />
             <div>
-              <p className="text-sm font-bold">Dark</p>
-              <p className="text-xs text-muted-foreground">Switch to system</p>
+              <p className="text-sm font-bold">Appearance</p>
+              <p className="text-xs text-muted-foreground">Light or dark</p>
             </div>
             <ThemeToggle />
           </div>
@@ -71,17 +71,17 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-border bg-primary/90 backdrop-blur md:ml-64">
+      <header className="sticky top-0 z-20 border-b border-primary/25 bg-primary/92 backdrop-blur md:ml-64">
         <div className="flex min-h-14 items-center justify-between gap-2 px-3 py-2 md:min-h-20 md:px-8 md:py-0">
           <div className="min-w-0">
             <p className="hidden text-[10px] font-bold uppercase tracking-normal text-primary-foreground/75 sm:block md:text-xs">Cubby</p>
-            <h1 className="truncate text-sm font-black text-primary-foreground sm:text-base md:text-lg">{title}</h1>
+            <h1 className="truncate font-editorial text-base font-bold text-primary-foreground md:text-xl">{title}</h1>
           </div>
           <div className="flex min-w-0 items-center gap-2">
             {babySelector ? (
               <HeaderBabySelector data={babySelector} />
             ) : (
-              <span className="hidden rounded-full bg-blue-500 px-4 py-2 text-sm font-bold text-white sm:block">{userName}</span>
+              <span className="hidden rounded-full border border-primary-foreground/20 bg-primary-foreground/12 px-4 py-2 text-sm font-bold text-primary-foreground sm:block">{userName}</span>
             )}
             <div className="flex items-center gap-1 md:hidden">
               <ThemeToggle />

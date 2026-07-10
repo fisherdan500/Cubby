@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import { DeleteActivityButton } from "@/components/actions/activity-actions";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
-import { activityAccent, activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
+import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
@@ -98,7 +99,7 @@ function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivi
       <div className="flex items-stretch">
         <Link href={activityEditHref(activity.id, returnTo)} className="min-w-0 flex-1 p-3 transition hover:bg-muted">
           <div className="flex items-start gap-3">
-            <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${activityAccent[type].split(" ")[0]}`} />
+            <ActivityArtwork type={type} size="sm" />
             <div className="min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <p className="font-black leading-tight">{activityLabels[type]}</p>

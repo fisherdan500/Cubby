@@ -169,6 +169,18 @@ Cubby JSON backup restore should validate the input and import into the current
 household with permission checks. Do not bypass service-layer ownership checks
 for restore paths.
 
+### Visual Assets And Themes
+
+Use semantic colors from `tailwind.config.ts` and `src/styles/globals.css`
+instead of adding page-specific saturated color palettes. Household accents are
+defined in `src/domain/appearance.ts`. Activity artwork belongs in
+`public/activity-art` and should be rendered through `ActivityArtwork` so image
+fallbacks, dimensions, and dark-mode framing stay consistent.
+
+Cubby uses locally packaged Manrope and Fraunces font files through Fontsource;
+the app does not depend on a font CDN at runtime. See
+`docs/THIRD_PARTY_ASSETS.md` before changing font or illustration sources.
+
 ### Calendar And Reports
 
 Calendar and Reports should use `APP_TIMEZONE`, the selected baby, and existing

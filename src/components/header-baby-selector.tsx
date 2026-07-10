@@ -2,45 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  Bath,
-  Bed,
-  ChevronDown,
-  Droplets,
-  Milk,
-  NotebookText,
-  Package,
-  Pill,
-  Plus,
-  Ruler,
-  Smile,
-  Syringe,
-  Trophy,
-  Wand2
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { ActivityArtwork } from "@/components/activity-artwork";
 import {
   SELECTED_BABY_COOKIE,
   SELECTED_BABY_STORAGE_KEY,
   type HeaderBabySelectorData
 } from "@/lib/baby-selector";
-import type { ActivityTypeName } from "@/domain/activity";
-
-const activityIcons: Record<ActivityTypeName, React.ElementType> = {
-  feeding: Milk,
-  diaper: Droplets,
-  sleep: Bed,
-  pumping: Milk,
-  medicine: Pill,
-  measurement: Ruler,
-  milestone: Trophy,
-  note: NotebookText,
-  bath: Bath,
-  play: Wand2,
-  mood: Smile,
-  supplement: Plus,
-  vaccine: Syringe,
-  milk_inventory: Package
-};
 
 export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
   const router = useRouter();
@@ -49,8 +17,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
   const [selectedId, setSelectedId] = useState(data.selectedBabyId);
   const babyIds = useMemo(() => new Set(data.babies.map((baby) => baby.id)), [data.babies]);
   const selectedBaby = data.babies.find((baby) => baby.id === selectedId) ?? data.babies[0];
-  const ActiveIcon =
-    selectedId === data.selectedBabyId && data.activeTimerType ? activityIcons[data.activeTimerType] : undefined;
+  const activeTimerType = selectedId === data.selectedBabyId ? data.activeTimerType : undefined;
 
   const replaceBabyId = useCallback(
     (nextBabyId: string) => {
@@ -96,15 +63,15 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
 
   return (
     <div className="relative">
-      <div className="flex min-h-12 items-center gap-2 rounded-full bg-blue-500 px-4 py-2 text-left font-bold text-white shadow-soft">
+      <div className="flex min-h-12 items-center gap-2 rounded-full border border-primary-foreground/25 bg-card px-3 py-1.5 text-left font-bold text-card-foreground shadow-soft">
+        {activeTimerType ? <ActivityArtwork type={activeTimerType} size="xs" /> : null}
         <div className="min-w-0">
           <div className="flex items-center gap-1">
             <span className="max-w-32 truncate text-sm sm:max-w-40 sm:text-base">{selectedBaby.name}</span>
-            {ActiveIcon ? <ActiveIcon className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}
           </div>
-          <p className="text-xs font-semibold text-white/85 sm:text-sm">{selectedBaby.ageLabel}</p>
+          <p className="text-xs font-semibold text-muted-foreground sm:text-sm">{selectedBaby.ageLabel}</p>
         </div>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
           <ChevronDown className="h-4 w-4" />
         </span>
       </div>

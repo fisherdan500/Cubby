@@ -28,13 +28,13 @@ structure.
 
 ## Planned Next
 
-### Broader Mobile UX Audit
+### Secondary Workflow Mobile Audit
 
 - Status: planned
 - Priority: medium
-- Goal: Review Cubby's remaining secondary workflows as a mobile-first app after the daily-use pass.
-- Acceptance: Calendar, Reports, Settings, backups, and integrations are checked around common mobile widths; controls are thumb-friendly, dense information remains readable, and desktop remains tidy.
-- Notes: Earlier mobile passes covered the shell, Log Entry, activity forms, Nursery, and Full Log. Keep future changes Cubby-original and clean-room.
+- Goal: Continue the mobile audit for dense administrative and integration workflows after the visual-system pass.
+- Acceptance: Backups, integrations, member management, and long settings forms are checked at common mobile widths; controls remain thumb-friendly and desktop remains tidy.
+- Notes: The visual-system pass covered shared theming plus the primary activity, calendar, and report surfaces. Keep future changes Cubby-original and clean-room.
 
 ## Later
 
@@ -45,6 +45,14 @@ No later roadmap items are currently documented.
 No parked ideas are currently documented.
 
 ## Recently Completed
+
+### Soft Editorial Visual System
+
+- Status: done
+- Priority: high
+- Goal: Give Cubby a calm, premium nursery character while preserving fast one-handed tracking.
+- Acceptance: Light and dark semantic palettes, original activity artwork, local editorial/body fonts, household accent presets, subtle material texture, and shared shell/activity components are implemented.
+- Notes: Utility actions retain conventional icons. Household appearance is owner/admin controlled and included in Cubby JSON backups.
 
 ### Mobile Daily-Use Polish
 

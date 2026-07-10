@@ -10,6 +10,8 @@ const config: Config = {
         foreground: "hsl(var(--foreground))",
         card: "hsl(var(--card))",
         "card-foreground": "hsl(var(--card-foreground))",
+        surface: "hsl(var(--surface))",
+        "surface-soft": "hsl(var(--surface-soft))",
         border: "hsl(var(--border))",
         muted: "hsl(var(--muted))",
         "muted-foreground": "hsl(var(--muted-foreground))",
@@ -17,10 +19,16 @@ const config: Config = {
         "primary-foreground": "hsl(var(--primary-foreground))",
         accent: "hsl(var(--accent))",
         "accent-foreground": "hsl(var(--accent-foreground))",
+        ring: "hsl(var(--ring))",
         danger: "hsl(var(--danger))"
       },
       boxShadow: {
-        soft: "0 12px 40px rgba(36, 31, 25, 0.08)"
+        soft: "0 10px 30px hsl(var(--shadow) / 0.09)",
+        lift: "0 14px 34px hsl(var(--shadow) / 0.14)"
+      },
+      fontFamily: {
+        sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
+        editorial: ["Fraunces", "ui-serif", "Georgia", "serif"]
       }
     }
   },

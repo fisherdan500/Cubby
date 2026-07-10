@@ -2,11 +2,17 @@ import { createHash } from "crypto";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { parseAccentTheme } from "@/domain/appearance";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { activityInclude, createActivity } from "@/server/services/activities";
 
 const restoreSchema = z.object({
   version: z.literal(1),
+  settings: z
+    .object({
+      accentTheme: z.unknown().optional()
+    })
+    .optional(),
   babies: z.array(
     z.object({
       id: z.string(),
@@ -22,8 +28,9 @@ const restoreSchema = z.object({
 export async function exportBackupJson() {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "backup.manage");
-  const [household, babies, activities] = await Promise.all([
+  const [household, settings, babies, activities] = await Promise.all([
     prisma.household.findUniqueOrThrow({ where: { id: ctx.householdId } }),
+    prisma.householdSettings.findUnique({ where: { householdId: ctx.householdId } }),
     prisma.baby.findMany({ where: { householdId: ctx.householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     prisma.activityLog.findMany({
       where: { householdId: ctx.householdId, deletedAt: null },
@@ -35,6 +42,7 @@ export async function exportBackupJson() {
     version: 1 as const,
     exportedAt: new Date().toISOString(),
     household: { id: household.id, name: household.name },
+    settings: { accentTheme: parseAccentTheme(settings?.accentTheme) },
     babies,
     activities: activities.map(activityToInput)
   };
@@ -202,6 +210,15 @@ export async function restoreBackupJson(raw: unknown) {
   requirePermission(ctx, "backup.manage");
   const input = restoreSchema.parse(raw);
   const babyMap = new Map<string, string>();
+
+  if (input.settings?.accentTheme) {
+    const accentTheme = parseAccentTheme(input.settings.accentTheme);
+    await prisma.householdSettings.upsert({
+      where: { householdId: ctx.householdId },
+      update: { accentTheme },
+      create: { householdId: ctx.householdId, accentTheme }
+    });
+  }
 
   for (const baby of input.babies) {
     const existing = await prisma.baby.findFirst({

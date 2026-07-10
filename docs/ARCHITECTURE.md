@@ -102,6 +102,19 @@ math in pages.
 
 ## Feature Areas
 
+### Appearance
+
+Authenticated app routes are wrapped by `src/app/app/layout.tsx`, which resolves
+the household accent and exposes it through `data-accent`. Semantic color tokens
+in `src/styles/globals.css` provide light and dark palettes for the five curated
+accent choices. Appearance changes go through `src/server/services/appearance.ts`
+and require `household.manage`.
+
+Activity recognition uses Cubby-original raster artwork under
+`public/activity-art` through the shared `ActivityArtwork` component. Utility
+actions such as navigation, settings, editing, and deletion continue to use
+Lucide icons so controls remain familiar and accessible.
+
 ### Log Entry And Dashboard
 
 `src/server/services/dashboard.ts` builds the Log Entry view: selected baby,
@@ -133,7 +146,9 @@ trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date.
 
 ### Backups And Sprout Import
 
-`src/server/services/backups.ts` exports and restores Cubby JSON backups.
+`src/server/services/backups.ts` exports and restores Cubby JSON backups,
+including the household appearance accent when present. Older version 1 backups
+without appearance settings remain valid and use the default sage accent.
 `src/server/services/sprout-import.ts` previews and imports Sprout Track backup
 uploads into the current Cubby household.
 
