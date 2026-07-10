@@ -21,6 +21,11 @@ conversation context when the repo can answer the question.
 ## Project Rules
 
 - Keep changes focused on the user request.
+- Optimize first for dependable daily use by one private household; do not add
+  multi-household or generalized product infrastructure without approval.
+- Prioritize fast mobile workflows and always-on reliability. Existing
+  installability does not authorize offline writes, synchronization, or conflict
+  handling; those remain low priority.
 - Prefer existing service/module patterns over new architecture.
 - Put business logic in `src/server/services` instead of page or route-handler bodies.
 - Enforce household membership and permissions server-side for every household-scoped read or write.
@@ -33,13 +38,16 @@ conversation context when the repo can answer the question.
 - Design and check Cubby UI mobile-first; most use is expected from phones, with desktop kept tidy but secondary.
 - Use semantic theme tokens and `ActivityArtwork`; avoid page-specific saturated palettes, copied icon art, and decorative imagery that competes with daily tracking.
 - Do not run destructive git commands unless the user explicitly asks for them.
+- Use an approved isolated worktree for substantive changes. Commit, push, merge,
+  deployment, secrets, and external-system changes require explicit approval.
 - Preserve unrelated user changes in a dirty worktree.
 
 ## Clean-Room Sprout Track Rule
 
-Cubby may use Sprout Track only for product-level behavior discovery and backup
-data compatibility. Do not copy Sprout Track code, Prisma schema, route names,
-assets, exact UI text, credentials, implementation structure, or icon art.
+Cubby may use Sprout Track only as a one-time clean-room migration source for
+household-owned data. Do not pursue ongoing workflow parity or compatibility, or
+copy Sprout Track code, Prisma schema, route names, assets, exact UI text,
+credentials, implementation structure, or icon art.
 
 Sprout backup support must remain a Cubby importer that maps user-owned tracking
 data into Cubby's own schema. It must not import Sprout secrets, auth records,

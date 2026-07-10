@@ -96,6 +96,10 @@ All household devices should use that same URL. HTTPS provides transport
 security and the secure browser context needed for reliable service workers,
 PWA installation, push notifications, and secure-cookie behavior.
 
+The existing manifest and service worker support installation and a lightweight
+shell only. Activity logging remains network-required; there is no offline write
+queue, synchronization, or conflict resolution.
+
 After changing only `.env`, recreate the app container so it receives the new
 values; an image rebuild is not required:
 

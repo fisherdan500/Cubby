@@ -13,6 +13,14 @@ Cubby is a Next.js App Router application deployed as a Docker Compose stack:
 The production container runs Prisma migrations before starting the standalone
 Next server. Docker Compose is the primary deployment path.
 
+### Installability And Network Boundary
+
+`public/manifest.webmanifest`, `src/components/pwa-register.tsx`, and
+`public/sw.js` provide install metadata and a lightweight production
+service-worker shell. Activity reads and writes still require network access;
+Cubby does not implement an offline write queue, synchronization, or conflict
+resolution. Offline expansion is intentionally deferred.
+
 ## Source Layout
 
 - `src/app/app`: authenticated app pages such as Log Entry, Full Log, Calendar, Reports, Nursery, and Settings.
@@ -177,10 +185,10 @@ logs are stored for notification workflows.
 
 ## Clean-Room Boundary
 
-Cubby can implement product behavior inspired by common baby-tracking workflows,
-including workflows observed in Sprout Track. Cubby must not copy Sprout Track
-code, schemas, assets, exact UI text, credentials, route names, or implementation
-structure.
+Sprout Track is a one-time clean-room migration source for household-owned data,
+not an ongoing workflow, parity, or compatibility target. Cubby must not copy
+Sprout Track code, schemas, assets, exact UI text, credentials, route names, or
+implementation structure.
 
 ## Testing Map
 
