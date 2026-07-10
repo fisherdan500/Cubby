@@ -22,9 +22,16 @@ Use this format for each item:
 - Notes: Constraints, dependencies, or design preferences.
 ```
 
-Keep Sprout Track-related ideas clean-room: product behavior only, no copied
-code, schemas, assets, exact UI text, credentials, route names, or implementation
-structure.
+Keep Sprout Track support limited to clean-room migration of household-owned
+data. Do not pursue ongoing Sprout parity or copy code, schemas, assets, exact UI
+text, credentials, route names, or implementation structure.
+
+## Product Priority
+
+1. Daily-use feature gaps and UX polish.
+2. Always-on reliability, manual backup/restore, recovery, and deployment hardening.
+3. Reports, reminders, and additional household capabilities.
+4. Integrations, PWA/offline expansion, and broader self-hosting.
 
 ## Planned Next
 
@@ -38,13 +45,38 @@ structure.
 
 ## Later
 
-No later roadmap items are currently documented.
+### Manual Backup And Restore Reliability
+
+- Status: planned
+- Priority: high
+- Goal: Make manual household backup and restore dependable and rehearsable before automating backups.
+- Acceptance: Validation, permissions, restoration correctness, failure handling, and a repeatable restore rehearsal are verified.
+- Notes: Automated versioned backups stored on the home server follow later; off-device storage is not currently a Cubby responsibility.
+
+### Automated Local Versioned Backups
+
+- Status: proposed
+- Priority: medium
+- Goal: Schedule versioned backups on the home server after manual restore reliability is established.
+- Acceptance: Cadence, retention, status visibility, and recovery instructions are defined and verified.
+- Notes: Do not add remote-storage credentials or providers without separate approval.
 
 ## Ideas / Parking Lot
 
-No parked ideas are currently documented.
+- Configurable timer alerts, scheduled reminders, and pattern warnings: low priority until core usability and reliability are complete.
+- PWA/offline expansion: preserve a future path, but do not add offline writes, synchronization, or conflict handling now.
+- Dedicated integrations: wait for a concrete household use case; retain generic API keys and webhooks.
+- Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Activity Entry Workflow And Selector Labels
+
+- Status: done
+- Priority: high
+- Goal: Make shared activity create/edit workflows faster, clearer, and less error-prone on phones.
+- Acceptance: High-frequency fields are immediately available; optional details are visually subordinate; numeric fields use suitable mobile keyboards; selector labels are human-readable while stored/API values remain unchanged; save state and failures are accessible; create and edit preserve their existing return context.
+- Notes: Implemented in the shared activity form without changing service/API contracts, schemas, offline behavior, reminders, or navigation shape. Verified with lint, type-checking, 75 tests, a production build, a Docker image build, and disposable create/edit browser checks.
 
 ### Session Management Cleanup
 
@@ -106,6 +138,6 @@ No parked ideas are currently documented.
 
 - Status: done
 - Priority: medium
-- Goal: Provide a Sprout-adjacent month calendar with event display and details.
+- Goal: Provide a compact Cubby month calendar with event display and details.
 - Acceptance: Calendar has a compact sticky month header, event markers/rows, detail expansion, and event creation.
 - Notes: Future calendar changes should stay targeted unless the product direction changes.

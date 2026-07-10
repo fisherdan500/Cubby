@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import type { InputHTMLAttributes, ReactNode } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { Input, Textarea } from "@/components/ui/input";
 import { activityLabels, timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
+import { hasActivityDetail } from "@/lib/activity-form";
+import { displayLabel } from "@/lib/display-label";
 import { dateTimeInputValue } from "@/lib/timezone";
 
 type BabyOption = { id: string; name: string };
@@ -32,28 +36,39 @@ export function ActivityForm({
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
   const cancelHref = activityFormCancelHref(returnTo, defaultBaby, returnDate);
 
   async function submit(formData: FormData) {
     setError("");
-    const body = Object.fromEntries(formData);
-    body.type = type;
-    const response = await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
-      method: activityId ? "PATCH" : "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    const result = await response.json();
-    if (!result.ok) {
-      setError(result.error.message);
-      return;
+    setSubmitting(true);
+    try {
+      const body = Object.fromEntries(formData);
+      body.type = type;
+      const response = await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
+        method: activityId ? "PATCH" : "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const result = (await response.json().catch(() => null)) as
+        | { ok: true }
+        | { ok: false; error?: { message?: string } }
+        | null;
+      if (!response.ok || !result?.ok) {
+        setError(result && !result.ok ? result.error?.message ?? "Could not save this activity." : "Could not save this activity.");
+        return;
+      }
+      const query = new URLSearchParams({ babyId: String(body.babyId || defaultBaby) });
+      if (returnDate) query.set("date", returnDate);
+      router.push(`/app?${query.toString()}`);
+      router.refresh();
+    } catch {
+      setError("Could not reach Cubby. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
-    const query = new URLSearchParams({ babyId: String(body.babyId || defaultBaby) });
-    if (returnDate) query.set("date", returnDate);
-    router.push(`/app?${query.toString()}`);
-    router.refresh();
   }
 
   return (
@@ -94,7 +109,7 @@ export function ActivityForm({
         </label>
       </FormSection>
 
-      {error ? <p className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
       <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-card/95 p-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <div className="grid grid-cols-2 gap-2 md:flex md:justify-end">
           <Link
@@ -103,7 +118,9 @@ export function ActivityForm({
           >
             Cancel
           </Link>
-          <Button className="min-h-12 w-full text-base md:w-auto md:min-w-44">{activityId ? "Save changes" : "Log activity"}</Button>
+          <Button type="submit" disabled={submitting} aria-live="polite" className="min-h-12 w-full text-base md:w-auto md:min-w-44">
+            {submitting ? (activityId ? "Saving..." : "Logging...") : activityId ? "Save changes" : "Log activity"}
+          </Button>
         </div>
       </div>
     </form>
@@ -171,159 +188,195 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
   switch (type) {
     case "feeding":
       return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Select name="mode" label="Kind" defaultValue={String(initial?.mode ?? "bottle")} options={["breast", "bottle", "formula", "solids"]} />
-          <InputField name="amount" label="Amount" defaultValue={initial?.amount} />
-          <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
-          <Select name="side" label="Side" defaultValue={String(initial?.side ?? "")} options={["", "left", "right", "both"]} />
-          <InputField name="bottleType" label="Bottle type" defaultValue={initial?.bottleType} />
-          <InputField name="food" label="Solids food" defaultValue={initial?.food} />
-          <InputField name="leftSeconds" label="Left seconds" defaultValue={initial?.leftSeconds} />
-          <InputField name="rightSeconds" label="Right seconds" defaultValue={initial?.rightSeconds} />
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select name="mode" label="Kind" defaultValue={String(initial?.mode ?? "bottle")} options={["breast", "bottle", "formula", "solids"]} />
+            <InputField name="amount" label="Amount" defaultValue={initial?.amount} type="number" inputMode="decimal" min="0" step="any" />
+            <Select name="side" label="Side" defaultValue={String(initial?.side ?? "")} options={["", "left", "right", "both"]} />
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["unit", "bottleType", "food", "leftSeconds", "rightSeconds"])}>
+            <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+            <InputField name="bottleType" label="Bottle type" defaultValue={initial?.bottleType} />
+            <InputField name="food" label="Solids food" defaultValue={initial?.food} />
+            <InputField name="leftSeconds" label="Left seconds" defaultValue={initial?.leftSeconds} type="number" inputMode="numeric" min="0" step="1" />
+            <InputField name="rightSeconds" label="Right seconds" defaultValue={initial?.rightSeconds} type="number" inputMode="numeric" min="0" step="1" />
+          </OptionalDetails>
         </div>
       );
     case "diaper":
       return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Select name="kind" label="Kind" defaultValue={String(initial?.kind ?? "wet")} options={["wet", "dirty", "mixed", "dry"]} />
-          <InputField name="color" label="Color" defaultValue={initial?.color} />
-          <InputField name="consistency" label="Consistency" defaultValue={initial?.consistency} />
-          <InputField name="condition" label="Condition" defaultValue={initial?.condition} />
-          <label className="flex items-center gap-2 pt-7 text-sm font-semibold">
-            <input name="rashConcern" type="checkbox" defaultChecked={Boolean(initial?.rashConcern)} />
-            Rash or concern
-          </label>
-          <label className="flex items-center gap-2 text-sm font-semibold">
-            <input name="blowout" type="checkbox" defaultChecked={Boolean(initial?.blowout)} />
-            Blowout
-          </label>
-          <label className="flex items-center gap-2 text-sm font-semibold">
-            <input name="creamApplied" type="checkbox" defaultChecked={Boolean(initial?.creamApplied)} />
-            Cream applied
-          </label>
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select name="kind" label="Kind" defaultValue={String(initial?.kind ?? "wet")} options={["wet", "dirty", "mixed", "dry"]} />
+            <label className="flex items-center gap-2 pt-2 text-sm font-semibold sm:pt-7">
+              <input name="rashConcern" type="checkbox" defaultChecked={Boolean(initial?.rashConcern)} />
+              Rash or concern
+            </label>
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["color", "consistency", "condition", "blowout", "creamApplied"])}>
+            <InputField name="color" label="Color" defaultValue={initial?.color} />
+            <InputField name="consistency" label="Consistency" defaultValue={initial?.consistency} />
+            <InputField name="condition" label="Condition" defaultValue={initial?.condition} />
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <input name="blowout" type="checkbox" defaultChecked={Boolean(initial?.blowout)} />
+              Blowout
+            </label>
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <input name="creamApplied" type="checkbox" defaultChecked={Boolean(initial?.creamApplied)} />
+              Cream applied
+            </label>
+          </OptionalDetails>
         </div>
       );
     case "sleep":
       return (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Select name="sleepType" label="Sleep type" defaultValue={String(initial?.sleepType ?? "")} options={["", "nap", "night"]} />
-          <InputField name="location" label="Location" defaultValue={initial?.location} />
-          <Select name="quality" label="Quality" defaultValue={String(initial?.quality ?? "")} options={["", "settled", "restless", "woke early"]} />
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select name="sleepType" label="Sleep type" defaultValue={String(initial?.sleepType ?? "")} options={["", "nap", "night"]} />
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["location", "quality"])}>
+            <InputField name="location" label="Location" defaultValue={initial?.location} />
+            <Select name="quality" label="Quality" defaultValue={String(initial?.quality ?? "")} options={["", "settled", "restless", "woke early"]} />
+          </OptionalDetails>
         </div>
       );
     case "pumping":
       return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InputField name="amount" label="Total amount" defaultValue={initial?.amount} />
-          <InputField name="leftAmount" label="Left amount" defaultValue={initial?.leftAmount} />
-          <InputField name="rightAmount" label="Right amount" defaultValue={initial?.rightAmount} />
-          <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
-          <Select
-            name="inventoryAction"
-            label="Inventory action"
-            defaultValue={String(initial?.inventoryAction ?? "")}
-            options={["", "stored", "fed", "discarded", "thawed", "donated", "expired"]}
-          />
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InputField name="amount" label="Total amount" defaultValue={initial?.amount} type="number" inputMode="decimal" min="0" step="any" />
+            <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["leftAmount", "rightAmount", "inventoryAction"])}>
+            <InputField name="leftAmount" label="Left amount" defaultValue={initial?.leftAmount} type="number" inputMode="decimal" min="0" step="any" />
+            <InputField name="rightAmount" label="Right amount" defaultValue={initial?.rightAmount} type="number" inputMode="decimal" min="0" step="any" />
+            <Select
+              name="inventoryAction"
+              label="Inventory action"
+              defaultValue={String(initial?.inventoryAction ?? "")}
+              options={["", "stored", "fed", "discarded", "thawed", "donated", "expired"]}
+            />
+          </OptionalDetails>
         </div>
       );
     case "medicine":
       return (
         <div className="grid gap-3 sm:grid-cols-2">
           <InputField name="name" label="Medicine" defaultValue={initial?.name} required />
-          <InputField name="dose" label="Dose" defaultValue={initial?.dose} />
+          <InputField name="dose" label="Dose" defaultValue={initial?.dose} type="number" inputMode="decimal" min="0" step="any" />
           <InputField name="unit" label="Unit" defaultValue={initial?.unit} />
         </div>
       );
     case "measurement":
       return (
         <div className="grid gap-3 sm:grid-cols-2">
-          <InputField name="weight" label="Weight" defaultValue={initial?.weight} />
+          <InputField name="weight" label="Weight" defaultValue={initial?.weight} type="number" inputMode="decimal" min="0" step="any" />
           <InputField name="weightUnit" label="Weight unit" defaultValue={initial?.weightUnit ?? "lb"} />
-          <InputField name="length" label="Length/height" defaultValue={initial?.length} />
+          <InputField name="length" label="Length/height" defaultValue={initial?.length} type="number" inputMode="decimal" min="0" step="any" />
           <InputField name="lengthUnit" label="Length unit" defaultValue={initial?.lengthUnit ?? "in"} />
-          <InputField name="headCircumference" label="Head circumference" defaultValue={initial?.headCircumference} />
+          <InputField name="headCircumference" label="Head circumference" defaultValue={initial?.headCircumference} type="number" inputMode="decimal" min="0" step="any" />
           <InputField name="headUnit" label="Head unit" defaultValue={initial?.headUnit ?? "in"} />
-          <InputField name="temperature" label="Temperature" defaultValue={initial?.temperature} />
+          <InputField name="temperature" label="Temperature" defaultValue={initial?.temperature} type="number" inputMode="decimal" min="0" step="any" />
           <InputField name="temperatureUnit" label="Temperature unit" defaultValue={initial?.temperatureUnit ?? "F"} />
           <InputField name="measurementType" label="Measurement type" defaultValue={initial?.measurementType} />
         </div>
       );
     case "milestone":
       return (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-3">
           <InputField name="title" label="Title" defaultValue={initial?.title} required />
-          <InputField name="category" label="Category" defaultValue={initial?.category} />
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["category"])}>
+            <InputField name="category" label="Category" defaultValue={initial?.category} />
+          </OptionalDetails>
         </div>
       );
     case "note":
       return (
         <div className="space-y-3">
-          <InputField name="category" label="Category" defaultValue={initial?.category} />
           <label className="block space-y-2 text-sm font-semibold">
             Note
             <Textarea name="text" defaultValue={String(initial?.text ?? "")} required />
           </label>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["category"])}>
+            <InputField name="category" label="Category" defaultValue={initial?.category} />
+          </OptionalDetails>
         </div>
       );
     case "bath":
       return (
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="space-y-3">
           <InputField name="bathType" label="Bath type" defaultValue={initial?.bathType} />
-          <InputField name="products" label="Products" defaultValue={initial?.products} />
-          <InputField name="waterTemp" label="Water temp" defaultValue={initial?.waterTemp} />
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["products", "waterTemp"])}>
+            <InputField name="products" label="Products" defaultValue={initial?.products} />
+            <InputField name="waterTemp" label="Water temp" defaultValue={initial?.waterTemp} />
+          </OptionalDetails>
         </div>
       );
     case "play":
       return (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <InputField name="activityName" label="Activity" defaultValue={initial?.activityName} />
-          <InputField name="location" label="Location" defaultValue={initial?.location} />
-          <Select name="intensity" label="Intensity" defaultValue={String(initial?.intensity ?? "")} options={["", "quiet", "active", "tummy time", "outside"]} />
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InputField name="activityName" label="Activity" defaultValue={initial?.activityName} />
+            <Select name="intensity" label="Intensity" defaultValue={String(initial?.intensity ?? "")} options={["", "quiet", "active", "tummy time", "outside"]} />
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["location"])}>
+            <InputField name="location" label="Location" defaultValue={initial?.location} />
+          </OptionalDetails>
         </div>
       );
     case "mood":
       return (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <InputField name="mood" label="Mood" defaultValue={initial?.mood} required />
-          <Select name="intensity" label="Intensity" defaultValue={String(initial?.intensity ?? "")} options={["", "1", "2", "3", "4", "5"]} />
-          <InputField name="context" label="Context" defaultValue={initial?.context} />
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InputField name="mood" label="Mood" defaultValue={initial?.mood} required />
+            <Select name="intensity" label="Intensity" defaultValue={String(initial?.intensity ?? "")} options={["", "1", "2", "3", "4", "5"]} />
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["context"])}>
+            <InputField name="context" label="Context" defaultValue={initial?.context} />
+          </OptionalDetails>
         </div>
       );
     case "supplement":
       return (
         <div className="grid gap-3 sm:grid-cols-2">
           <InputField name="name" label="Supplement" defaultValue={initial?.name} required />
-          <InputField name="dose" label="Dose" defaultValue={initial?.dose} />
+          <InputField name="dose" label="Dose" defaultValue={initial?.dose} type="number" inputMode="decimal" min="0" step="any" />
           <InputField name="unit" label="Unit" defaultValue={initial?.unit} />
         </div>
       );
     case "vaccine":
       return (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-3">
           <InputField name="name" label="Vaccine" defaultValue={initial?.name} required />
-          <InputField name="dose" label="Dose" defaultValue={initial?.dose} />
-          <InputField name="lot" label="Lot" defaultValue={initial?.lot} />
-          <InputField name="provider" label="Provider" defaultValue={initial?.provider} />
-          <label className="block space-y-2 text-sm font-semibold">
-            Due date
-            <Input name="dueDate" type="date" defaultValue={String(initial?.dueDate ?? "")} />
-          </label>
-          <InputField name="documentUrl" label="Document URL" defaultValue={initial?.documentUrl} />
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["dose", "lot", "provider", "dueDate", "documentUrl"])}>
+            <InputField name="dose" label="Dose" defaultValue={initial?.dose} />
+            <InputField name="lot" label="Lot" defaultValue={initial?.lot} />
+            <InputField name="provider" label="Provider" defaultValue={initial?.provider} />
+            <label className="block space-y-2 text-sm font-semibold">
+              Due date
+              <Input name="dueDate" type="date" defaultValue={String(initial?.dueDate ?? "")} />
+            </label>
+            <InputField name="documentUrl" label="Document URL" defaultValue={initial?.documentUrl} inputMode="url" />
+          </OptionalDetails>
         </div>
       );
     case "milk_inventory":
       return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Select
-            name="action"
-            label="Action"
-            defaultValue={String(initial?.action ?? "stored")}
-            options={["stored", "fed", "discarded", "thawed", "donated", "expired"]}
-          />
-          <InputField name="amount" label="Amount" defaultValue={initial?.amount} />
-          <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
-          <InputField name="storage" label="Storage" defaultValue={initial?.storage} />
-          <InputField name="label" label="Label" defaultValue={initial?.label} />
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select
+              name="action"
+              label="Action"
+              defaultValue={String(initial?.action ?? "stored")}
+              options={["stored", "fed", "discarded", "thawed", "donated", "expired"]}
+            />
+            <InputField name="amount" label="Amount" defaultValue={initial?.amount} type="number" inputMode="decimal" min="0" step="any" />
+            <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+          </div>
+          <OptionalDetails defaultOpen={hasActivityDetail(initial, ["storage", "label"])}>
+            <InputField name="storage" label="Storage" defaultValue={initial?.storage} />
+            <InputField name="label" label="Label" defaultValue={initial?.label} />
+          </OptionalDetails>
         </div>
       );
   }
@@ -337,17 +390,39 @@ function InputField({
   name,
   label,
   defaultValue,
-  required
+  required,
+  type,
+  inputMode,
+  min,
+  max,
+  step,
+  placeholder
 }: {
   name: string;
   label: string;
   defaultValue?: unknown;
   required?: boolean;
+  type?: InputHTMLAttributes<HTMLInputElement>["type"];
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  min?: InputHTMLAttributes<HTMLInputElement>["min"];
+  max?: InputHTMLAttributes<HTMLInputElement>["max"];
+  step?: InputHTMLAttributes<HTMLInputElement>["step"];
+  placeholder?: string;
 }) {
   return (
     <label className="block space-y-2 text-sm font-semibold">
       {label}
-      <Input name={name} defaultValue={String(defaultValue ?? "")} required={required} />
+      <Input
+        name={name}
+        defaultValue={String(defaultValue ?? "")}
+        required={required}
+        type={type}
+        inputMode={inputMode}
+        min={min}
+        max={max}
+        step={step}
+        placeholder={placeholder}
+      />
     </label>
   );
 }
@@ -369,10 +444,28 @@ function Select({
       <select name={name} defaultValue={defaultValue} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2">
         {options.map((option) => (
           <option key={option || "none"} value={option}>
-            {option || "None"}
+            {displayLabel(option)}
           </option>
         ))}
       </select>
     </label>
+  );
+}
+
+function OptionalDetails({ children, defaultOpen = false }: { children: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <details
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      className="group rounded-lg border border-border bg-surface-soft/60"
+    >
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-semibold marker:hidden">
+        More details
+        <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="grid gap-3 border-t border-border p-3 sm:grid-cols-2">{children}</div>
+    </details>
   );
 }

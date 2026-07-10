@@ -17,6 +17,18 @@ calendar planning, backups, and integrations.
 - CSV/TSV activity exports, JSON backup/restore, and Sprout Track backup import into the current household.
 - API-key hook endpoints, webhook configuration, and browser notification preferences.
 
+## Current Product Direction
+
+Cubby's current target is a dependable private application for one household. It
+runs through Docker on the home network; remote access is supplied by the
+household's existing infrastructure. The next milestone is replacing the current
+baby tracker for daily use and operating reliably as an always-on home service.
+
+The browser remains network-required for logging. Cubby includes install metadata
+and a lightweight service-worker shell, but offline writes and synchronization
+are not supported and are low priority. Dedicated third-party integrations are
+also deferred until a concrete household use case exists.
+
 ## Stack
 
 - Next.js App Router and React
@@ -113,7 +125,7 @@ Docs-only changes usually only need markdown review plus `git status --short`.
 
 ## Clean-Room Sprout Track Boundary
 
-Cubby may use Sprout Track only as product-behavior reference material. Do not
-copy Sprout Track code, schemas, assets, exact UI text, credentials, route names,
-or implementation structure. Cubby imports user-owned Sprout backup data through
-its own importer and stores it in Cubby's schema.
+Sprout Track is supported only as a clean-room, one-time migration source for
+household-owned data. Cubby does not pursue ongoing Sprout workflow parity or
+compatibility after migration needs are met. Do not copy Sprout code, schemas,
+assets, exact UI text, credentials, route names, or implementation structure.
