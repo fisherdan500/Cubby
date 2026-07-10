@@ -22,7 +22,14 @@ import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } 
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { activityAccent, activityLabels, type ActivityTypeName } from "@/domain/activity";
+import {
+  activityAccent,
+  activityLabels,
+  filterActivitiesBySummaryType,
+  isDailySummaryActivityType,
+  type ActivityTypeName,
+  type DailySummaryActivityType
+} from "@/domain/activity";
 import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -62,13 +69,22 @@ type DashboardWithBaby = DashboardData & {
   dailySummary: NonNullable<DashboardData["dailySummary"]>;
 };
 
-export default async function DashboardPage({ searchParams }: { searchParams: { babyId?: string; date?: string } }) {
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams: { babyId?: string; date?: string; summaryType?: string };
+}) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
   const dashboard = await getDashboard(user.id, { babyId: babySelector?.selectedBabyId ?? searchParams.babyId, date: searchParams.date });
   if (!dashboard?.home) redirect("/onboarding");
   const { baby } = dashboard;
   const currentDashboard = dashboard as DashboardWithBaby;
+  const requestedSummaryType = isDailySummaryActivityType(searchParams.summaryType) ? searchParams.summaryType : undefined;
+  const selectedSummaryType = baby && requestedSummaryType && currentDashboard.dailySummary[requestedSummaryType].count
+    ? requestedSummaryType
+    : undefined;
+  const visibleActivities = baby ? filterActivitiesBySummaryType(currentDashboard.activities, selectedSummaryType) : [];
 
   return (
     <AppShell title="Log Entry" userName={user.name} babySelector={babySelector}>
@@ -84,7 +100,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
         <div className="space-y-5">
           <QuickActionRail dashboard={currentDashboard} />
           <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
-          <DailySummary summary={currentDashboard.dailySummary} />
+          <DailySummary
+            summary={currentDashboard.dailySummary}
+            babyId={baby.id}
+            selectedDate={currentDashboard.selectedDate.key}
+            selectedType={selectedSummaryType}
+          />
           <DashboardWarnings warnings={currentDashboard.warnings} />
 
           {currentDashboard.activeTimers.length ? (
@@ -112,13 +133,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
               <h2 className="text-lg font-bold">Daily log</h2>
               <UndoLastButton />
             </div>
-            {currentDashboard.activities.length === 0 ? (
+            {visibleActivities.length === 0 ? (
               <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No activity for this date.</p>
             ) : (
               <Timeline
-                activities={currentDashboard.activities}
+                activities={visibleActivities}
                 timeZone={currentDashboard.selectedDate.timezone}
-                returnTo={`/app?${new URLSearchParams({ babyId: baby.id, date: currentDashboard.selectedDate.key }).toString()}`}
+                returnTo={dashboardReturnTo(baby.id, currentDashboard.selectedDate.key, selectedSummaryType)}
               />
             )}
           </section>
@@ -235,8 +256,24 @@ function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate:
   );
 }
 
-function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] }) {
-  const items = [
+function DailySummary({
+  summary,
+  babyId,
+  selectedDate,
+  selectedType
+}: {
+  summary: DashboardWithBaby["dailySummary"];
+  babyId: string;
+  selectedDate: string;
+  selectedType?: DailySummaryActivityType;
+}) {
+  type SummaryItemData = {
+    key: DailySummaryActivityType;
+    icon: React.ReactNode;
+    value: string;
+    label: string;
+  };
+  const candidates: Array<SummaryItemData | null> = [
     summary.sleep.count
       ? {
           key: "sleep",
@@ -317,7 +354,8 @@ function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] 
           label: summary.play.seconds ? "Play Time" : "Play"
         }
       : null
-  ].filter((item): item is NonNullable<typeof item> => item !== null);
+  ];
+  const items = candidates.filter((item): item is SummaryItemData => item !== null);
 
   return (
     <section className="space-y-2">
@@ -325,7 +363,14 @@ function DailySummary({ summary }: { summary: DashboardWithBaby["dailySummary"] 
       {items.length ? (
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
           {items.map((item) => (
-            <SummaryItem key={item.key} icon={item.icon} value={item.value} label={item.label} />
+            <SummaryItem
+              key={item.key}
+              href={dailySummaryFilterHref(babyId, selectedDate, item.key, selectedType)}
+              icon={item.icon}
+              value={item.value}
+              label={item.label}
+              selected={selectedType === item.key}
+            />
           ))}
         </div>
       ) : (
@@ -345,16 +390,53 @@ function diaperSummaryLabel(summary: DashboardWithBaby["dailySummary"]["diaper"]
   return parts.length ? parts.join(" / ") : "Diapers";
 }
 
-function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function SummaryItem({
+  href,
+  icon,
+  value,
+  label,
+  selected
+}: {
+  href: string;
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+  selected: boolean;
+}) {
   return (
-    <div className="flex min-h-14 min-w-0 items-center gap-2 rounded-md border border-border bg-card/60 p-2 sm:min-w-32 sm:px-3">
+    <Link
+      href={href}
+      aria-current={selected ? "true" : undefined}
+      className={`flex min-h-14 min-w-0 items-center gap-2 rounded-md border p-2 transition sm:min-w-32 sm:px-3 ${
+        selected
+          ? "border-primary/60 bg-primary/20 ring-1 ring-primary/30"
+          : "border-border bg-card/60 hover:border-primary/40 hover:bg-muted"
+      }`}
+    >
       <div className="shrink-0">{icon}</div>
       <div className="min-w-0">
         <p className="truncate text-sm font-black leading-none sm:text-base">{value}</p>
         <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
       </div>
-    </div>
+    </Link>
   );
+}
+
+function dailySummaryFilterHref(
+  babyId: string,
+  date: string,
+  type: DailySummaryActivityType,
+  selectedType?: DailySummaryActivityType
+) {
+  const params = new URLSearchParams({ babyId, date });
+  if (selectedType !== type) params.set("summaryType", type);
+  return `/app?${params.toString()}`;
+}
+
+function dashboardReturnTo(babyId: string, date: string, selectedType?: DailySummaryActivityType) {
+  const params = new URLSearchParams({ babyId, date });
+  if (selectedType) params.set("summaryType", selectedType);
+  return `/app?${params.toString()}`;
 }
 
 type TimelineActivity = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };

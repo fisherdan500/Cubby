@@ -36,6 +36,21 @@ export const activityLabels: Record<ActivityTypeName, string> = {
 
 export const timerActivityTypes = ["feeding", "sleep", "pumping", "play"] as const satisfies ActivityTypeName[];
 
+export const dailySummaryActivityTypes = [
+  "sleep",
+  "feeding",
+  "diaper",
+  "bath",
+  "pumping",
+  "milestone",
+  "medicine",
+  "play",
+  "supplement",
+  "vaccine"
+] as const satisfies ActivityTypeName[];
+
+export type DailySummaryActivityType = (typeof dailySummaryActivityTypes)[number];
+
 export const activityAccent: Record<ActivityTypeName, string> = {
   feeding: "bg-sky-300 text-slate-950",
   diaper: "bg-teal-400 text-slate-950",
@@ -55,4 +70,15 @@ export const activityAccent: Record<ActivityTypeName, string> = {
 
 export function isActivityType(value: string): value is ActivityTypeName {
   return activityTypes.includes(value as ActivityTypeName);
+}
+
+export function isDailySummaryActivityType(value: string | undefined): value is DailySummaryActivityType {
+  return Boolean(value && dailySummaryActivityTypes.includes(value as DailySummaryActivityType));
+}
+
+export function filterActivitiesBySummaryType<T extends { type: string }>(
+  activities: T[],
+  type?: DailySummaryActivityType
+) {
+  return type ? activities.filter((activity) => activity.type === type) : activities;
 }
