@@ -50,12 +50,40 @@ BETTER_AUTH_URL=http://localhost:3002
 TRUSTED_ORIGINS=http://localhost:3002,http://127.0.0.1:3002
 ```
 
+### Browser Origin Profiles
+
+Docker publishes `APP_PORT` to the host network, so other devices can normally
+reach Cubby once the host firewall allows that port. Better Auth separately
+requires every browser origin to be trusted. An origin is the exact combination
+of scheme, hostname or IP, and port.
+
+For direct LAN access with a fixed address:
+
+```dotenv
+APP_PORT=3002
+BETTER_AUTH_URL=http://192.168.1.50:3002
+TRUSTED_ORIGINS=http://localhost:3002,http://127.0.0.1:3002,http://192.168.1.50:3002
+```
+
+Use the server's actual LAN address and reserve it in DHCP so it does not
+change. For long-term live use, prefer one stable local DNS name behind an HTTPS
+reverse proxy:
+
+```dotenv
+BETTER_AUTH_URL=https://cubby.home.arpa
+TRUSTED_ORIGINS=https://cubby.home.arpa
+```
+
+HTTPS is recommended for secure cookies, PWA/service-worker behavior, and
+browser notifications. See [Development](docs/DEVELOPMENT.md#network-and-origin-configuration)
+for setup and troubleshooting details.
+
 ## Key Environment Variables
 
 - `DATABASE_URL`: PostgreSQL connection string used by Prisma.
 - `BETTER_AUTH_SECRET`: long secret for Better Auth. Change this before deployment.
-- `BETTER_AUTH_URL`: canonical app URL, including the external port.
-- `TRUSTED_ORIGINS`: comma-separated allowed browser origins for Better Auth.
+- `BETTER_AUTH_URL`: one canonical app origin, including scheme and external port when applicable.
+- `TRUSTED_ORIGINS`: comma-separated exact browser origins allowed by Better Auth.
 - `ENABLE_REGISTRATION`: allows first-owner setup when no owner exists.
 - `ALLOW_PUBLIC_REGISTRATION`: default public account creation policy after setup.
 - `APP_TIMEZONE`: app-level display/grouping timezone, for example `America/New_York`.

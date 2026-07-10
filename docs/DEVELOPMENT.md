@@ -43,6 +43,66 @@ TRUSTED_ORIGINS=http://localhost:3002,http://127.0.0.1:3002
 If these do not match the browser URL, Better Auth can reject sign-up or sign-in
 with an invalid origin error.
 
+## Network And Origin Configuration
+
+Docker Compose publishes `${APP_PORT}:3000` without a loopback-only host binding,
+so Cubby listens on the host's network interfaces. LAN reachability still
+depends on the host firewall and network policy. Better Auth origin validation
+is a separate security boundary and should remain enabled.
+
+An origin must match the browser address exactly:
+
+- Scheme: `http` and `https` are different origins.
+- Host: `localhost`, a LAN IP, and a DNS hostname are different origins.
+- Port: `3000` and `3002` are different origins.
+- Paths are not part of an origin and should not be added to `TRUSTED_ORIGINS`.
+
+### Localhost-Only
+
+```dotenv
+APP_PORT=3000
+BETTER_AUTH_URL=http://localhost:3000
+TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+```
+
+### Direct LAN Address
+
+Use the exact address opened by other devices. Reserve the server address in
+DHCP before treating an IP-based configuration as permanent.
+
+```dotenv
+APP_PORT=3002
+BETTER_AUTH_URL=http://192.168.1.50:3002
+TRUSTED_ORIGINS=http://localhost:3002,http://127.0.0.1:3002,http://192.168.1.50:3002
+```
+
+Better Auth supports origin wildcard patterns, but a subnet pattern such as
+`http://192.168.1.*:3002` broadens the accepted origins and should be limited to
+temporary development. `BETTER_AUTH_URL` must still be one exact canonical
+origin.
+
+### Stable Live Hostname
+
+For long-term deployment, create a local DNS record such as
+`cubby.home.arpa`, point it to the Cubby host, and terminate HTTPS through a
+reverse proxy such as Caddy, Nginx, or Traefik.
+
+```dotenv
+BETTER_AUTH_URL=https://cubby.home.arpa
+TRUSTED_ORIGINS=https://cubby.home.arpa
+```
+
+All household devices should use that same URL. HTTPS provides transport
+security and the secure browser context needed for reliable service workers,
+PWA installation, push notifications, and secure-cookie behavior.
+
+After changing only `.env`, recreate the app container so it receives the new
+values; an image rebuild is not required:
+
+```bash
+docker compose up -d --force-recreate app
+```
+
 ## Docker Workflow
 
 Build and start:
@@ -203,8 +263,16 @@ expects that behavior.
 
 ### Invalid Origin During Sign-Up Or Sign-In
 
-Check the browser URL, `BETTER_AUTH_URL`, and `TRUSTED_ORIGINS`. Include both
-`localhost` and `127.0.0.1` forms if both are used.
+1. Read the origin from the failing device's address bar: scheme, host, and port.
+2. Set `BETTER_AUTH_URL` to the canonical origin Cubby should use.
+3. Add every intentionally supported browser origin to `TRUSTED_ORIGINS`.
+4. Run `docker compose up -d --force-recreate app`.
+5. Refresh the browser. If an installed PWA still shows an old build, clear its
+   site data or reinstall it.
+
+Include both `localhost` and `127.0.0.1` only when both forms are intentionally
+used. Do not disable origin validation or dynamically trust arbitrary request
+hosts to work around this error.
 
 ### Port 3000 Is Already In Use
 
