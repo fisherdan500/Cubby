@@ -7,7 +7,7 @@ calendar planning, backups, and integrations.
 ## What Cubby Does
 
 - Email/password auth with first-owner setup, invite-only member onboarding, and owner-controlled public registration.
-- Protected household ownership, delegated admins, role-based member access, invites, trusted devices, sessions, audit records, and server-side permission checks.
+- Protected household ownership, delegated admins, role-based member access, invites, personal session management, audit records, and server-side permission checks.
 - Baby profiles and activity logging for feeding, diaper, sleep, pumping, medicine, measurement, milestone, note, bath, play, mood, supplement, vaccine, and milk inventory.
 - Persistent timers for feeding, sleep, pumping, and play.
 - Mobile-first light/dark app shell with Log Entry, Full Log, Calendar, Reports, Nursery, and Settings areas.

@@ -15,7 +15,7 @@ const sections = [
   { href: "/app/settings/backups", label: "Backups", description: "JSON export, Sprout import, restore, and spreadsheet exports.", icon: DatabaseBackup, permission: "backup.manage" },
   { href: "/app/settings/export", label: "Export", description: "Download household activity data for review or sharing.", icon: Download, permission: "export.create" },
   { href: "/app/settings/notifications", label: "Notifications", description: "Browser subscriptions and preference records.", icon: Bell, permission: "notification.manage" },
-  { href: "/app/settings/sessions", label: "Sessions", description: "Review and revoke signed-in devices.", icon: UserRoundCog, permission: "session.manage" }
+  { href: "/app/settings/sessions", label: "Sessions", description: "Review and revoke browsers signed into your account.", icon: UserRoundCog, permission: "session.manage" }
 ] satisfies Array<{ href: string; label: string; description: string; icon: typeof Shield; permission: Permission }>;
 
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {

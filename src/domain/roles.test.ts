@@ -40,6 +40,12 @@ describe("role permissions", () => {
     expect(hasPermission("read_only", "activity.create")).toBe(false);
   });
 
+  it("lets every household role manage only their personal sessions", () => {
+    for (const role of ["owner", "admin", "parent", "caretaker", "read_only"] as const) {
+      expect(hasPermission(role, "session.manage")).toBe(true);
+    }
+  });
+
   it("protects owner and admin role assignment", () => {
     expect(canAssignHouseholdRole("owner", "admin")).toBe(true);
     expect(canAssignHouseholdRole("admin", "admin")).toBe(false);

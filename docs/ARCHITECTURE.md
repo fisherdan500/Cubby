@@ -57,6 +57,11 @@ Settings pages are filtered by permission and guarded before household data is
 loaded. Direct API and service calls remain authoritative; UI visibility is not
 treated as an authorization boundary.
 
+Better Auth sessions are personal to the signed-in user rather than household
+resources. Every household role can review and revoke only its own sessions.
+Session management requires a session created within the configured 10-minute
+`freshAge`; stale sessions are directed through a fresh email/password sign-in.
+
 ## Data Model Overview
 
 The Prisma schema uses PostgreSQL and keeps a household boundary on user-owned
@@ -65,7 +70,7 @@ data. Important model groups include:
 - Auth: `User`, `Session`, `Account`, `Verification`.
 - Household: `Household`, `HouseholdMember`, `Invite`, `HouseholdSettings`.
 - Babies and tracking: `Baby`, `ActivityLog`, type-specific log tables, `Reminder`, `DashboardWarningDismissal`.
-- Settings and admin: `TrustedDevice`, `AuditEvent`, `BackupRecord`.
+- Settings and admin: `AuditEvent`, `BackupRecord`.
 - Integrations: `ApiKey`, `WebhookEndpoint`, `WebhookDelivery`.
 - Notifications: `PushSubscription`, `NotificationPreference`, `NotificationLog`.
 - Imports: `ImportBatch`, `ImportedRecord`.

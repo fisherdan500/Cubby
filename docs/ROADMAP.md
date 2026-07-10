@@ -46,6 +46,14 @@ No parked ideas are currently documented.
 
 ## Recently Completed
 
+### Session Management Cleanup
+
+- Status: done
+- Priority: high
+- Goal: Remove the unused trusted-device PIN and make personal session management accurate.
+- Acceptance: The dead PIN model/API/UI are removed; Active Sessions has loading, stale-login, error, current-session, and revocation behavior; sign-in throttling is explained accurately.
+- Notes: Cubby retains Better Auth's 10-minute freshness check and three-requests-per-10-seconds production throttle.
+
 ### Soft Editorial Visual System
 
 - Status: done

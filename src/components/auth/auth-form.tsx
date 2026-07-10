@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
+import { authFailureMessage } from "@/lib/auth/client-errors";
 
 export function AuthForm({
   mode,
@@ -34,7 +35,7 @@ export function AuthForm({
         : await authClient.signIn.email({ email, password, rememberMe: true, callbackURL: next });
     setLoading(false);
     if (result.error) {
-      setError(result.error.message ?? "Authentication failed.");
+      setError(authFailureMessage(mode, result.error));
       return;
     }
     if (mode === "register" && inviteToken) {

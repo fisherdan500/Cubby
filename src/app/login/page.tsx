@@ -23,7 +23,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
             Cubby
           </Link>
           <h1 className="mt-2 font-editorial text-3xl font-bold">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">Use your trusted device and keep tracking.</p>
+          <p className="text-sm text-muted-foreground">Sign in once and keep tracking on your own device.</p>
         </div>
         <AuthForm mode="login" next={next} allowRegisterLink={allowRegisterLink} />
       </Card>

@@ -141,6 +141,18 @@ admins. Admins may manage parents, caretakers, and read-only members, but must n
 be able to modify the owner or another admin. Settings pages must use the same
 permission model as their services and APIs.
 
+### Sessions And Sign-In Throttling
+
+Active Sessions uses Better Auth's own session-listing and revocation endpoints.
+These sensitive endpoints require a session less than 10 minutes old. Keep the
+reauthentication state explicit instead of treating a `403 SESSION_NOT_FRESH`
+response as an empty list.
+
+In production, Better Auth allows three sign-in requests per client IP and
+route in a 10-second window. This counts requests, not only incorrect passwords,
+and is not an account lockout. The limiter currently uses Better Auth's in-memory
+storage and resets when the window elapses or the app process restarts.
+
 ### Baby Selection
 
 Log Entry, Full Log, Calendar, Reports, and Nursery use the shared header baby
