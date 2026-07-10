@@ -25,7 +25,7 @@ export async function requireApiKey(request: Request, requiredScope: "read" | "w
     where: {
       householdId: key.householdId,
       deletedAt: null,
-      role: { in: [HouseholdRole.owner, HouseholdRole.parent] }
+      role: { in: [HouseholdRole.owner, HouseholdRole.admin, HouseholdRole.parent] }
     },
     orderBy: { joinedAt: "asc" }
   });

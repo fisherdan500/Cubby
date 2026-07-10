@@ -25,6 +25,7 @@ conversation context when the repo can answer the question.
 - Put business logic in `src/server/services` instead of page or route-handler bodies.
 - Enforce household membership and permissions server-side for every household-scoped read or write.
 - Preserve Better Auth and the invite-first household model.
+- Preserve the protected owner and delegated-admin model: only owners may grant or revoke Admin access.
 - Preserve the `ActivityLog` aggregate plus type-specific detail table pattern.
 - Keep timestamps as stored instants and group/display them through `APP_TIMEZONE`.
 - Treat Docker Compose as the primary deployment path.

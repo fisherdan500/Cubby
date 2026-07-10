@@ -1,12 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { NotificationPreferenceForm } from "@/components/settings/notification-preference-form";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 import { getHouseholdHome } from "@/server/services/households";
 import { listNotificationPreferences } from "@/server/services/integrations";
 
 export default async function NotificationsSettingsPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("notification.manage");
   const [home, preferences] = await Promise.all([getHouseholdHome(user.id), listNotificationPreferences()]);
   const babies = home?.household.babies.map((baby) => ({ id: baby.id, name: baby.name })) ?? [];
 

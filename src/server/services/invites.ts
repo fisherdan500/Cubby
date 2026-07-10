@@ -1,7 +1,11 @@
 import { createHash, randomBytes } from "crypto";
 import { HouseholdRole, InviteStatus } from "@prisma/client";
+import {
+  canAssignHouseholdRole,
+  canManageHouseholdRole
+} from "@/domain/roles";
 import { prisma } from "@/lib/db/prisma";
-import { inviteSchema } from "@/lib/validation/onboarding";
+import { inviteSchema, memberRoleSchema } from "@/lib/validation/onboarding";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { requireUser } from "@/server/auth/session";
 import { writeAudit } from "@/server/services/audit";
@@ -14,6 +18,7 @@ export async function createInvite(raw: unknown) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "invite.create");
   const input = inviteSchema.parse(raw);
+  if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
   const token = randomBytes(32).toString("base64url");
   const invite = await prisma.invite.create({
     data: {
@@ -52,6 +57,7 @@ export async function acceptInvite(token: string) {
   const user = await requireUser();
   const invite = await getInviteByToken(token);
   if (!invite) throw new Error("not_found");
+  if (invite.email.toLowerCase() !== user.email.toLowerCase()) throw new Error("forbidden");
 
   const member = await prisma.$transaction(async (tx) => {
     const existing = await tx.householdMember.findUnique({
@@ -62,19 +68,24 @@ export async function acceptInvite(token: string) {
         }
       }
     });
-    const nextMember = existing
-      ? await tx.householdMember.update({
-          where: { id: existing.id },
-          data: { role: invite.role, deletedAt: null }
-        })
-      : await tx.householdMember.create({
-          data: {
-            householdId: invite.householdId,
-            userId: user.id,
-            role: invite.role,
-            displayName: user.name
-          }
-        });
+    let nextMember;
+    if (existing?.deletedAt) {
+      nextMember = await tx.householdMember.update({
+        where: { id: existing.id },
+        data: { role: invite.role, deletedAt: null }
+      });
+    } else if (existing) {
+      nextMember = existing;
+    } else {
+      nextMember = await tx.householdMember.create({
+        data: {
+          householdId: invite.householdId,
+          userId: user.id,
+          role: invite.role,
+          displayName: user.name
+        }
+      });
+    }
 
     await tx.invite.update({
       where: { id: invite.id },
@@ -95,7 +106,7 @@ export async function acceptInvite(token: string) {
       action: "invite.accept",
       entityType: "invite",
       entityId: invite.id,
-      after: { userId: user.id, role: invite.role }
+      after: { userId: user.id, role: member.role }
     }
   });
 
@@ -104,8 +115,8 @@ export async function acceptInvite(token: string) {
 
 export async function listMembersAndInvites() {
   const ctx = await getHouseholdContext();
-  requirePermission(ctx, "activity.read");
-  return prisma.household.findUniqueOrThrow({
+  requirePermission(ctx, "member.manage");
+  const household = await prisma.household.findUniqueOrThrow({
     where: { id: ctx.householdId },
     include: {
       members: {
@@ -119,4 +130,87 @@ export async function listMembersAndInvites() {
       }
     }
   });
+  return {
+    ...household,
+    viewerRole: ctx.role,
+    viewerMemberId: ctx.memberId
+  };
+}
+
+export async function updateMemberRole(memberId: string, raw: unknown) {
+  const ctx = await getHouseholdContext();
+  requirePermission(ctx, "member.manage");
+  const input = memberRoleSchema.parse(raw);
+  const member = await findActiveHouseholdMember(ctx.householdId, memberId);
+
+  if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
+  if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
+  if (member.role === input.role) {
+    return prisma.householdMember.findUniqueOrThrow({ where: { id: member.id }, include: { user: true } });
+  }
+
+  const updated = await prisma.householdMember.update({
+    where: { id: member.id },
+    data: { role: input.role as HouseholdRole },
+    include: { user: true }
+  });
+  await writeAudit(ctx, {
+    action: input.role === "admin" ? "member.admin.grant" : member.role === HouseholdRole.admin ? "member.admin.revoke" : "member.role.update",
+    entityType: "household_member",
+    entityId: member.id,
+    before: { role: member.role },
+    after: { role: updated.role }
+  });
+  return updated;
+}
+
+export async function removeMember(memberId: string) {
+  const ctx = await getHouseholdContext();
+  requirePermission(ctx, "member.manage");
+  const member = await findActiveHouseholdMember(ctx.householdId, memberId);
+
+  if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
+
+  const removed = await prisma.householdMember.update({
+    where: { id: member.id },
+    data: { deletedAt: new Date() },
+    include: { user: true }
+  });
+  await writeAudit(ctx, {
+    action: "member.remove",
+    entityType: "household_member",
+    entityId: member.id,
+    before: { role: member.role, userId: member.userId },
+    after: { deletedAt: removed.deletedAt }
+  });
+  return removed;
+}
+
+export async function revokeInvite(inviteId: string) {
+  const ctx = await getHouseholdContext();
+  requirePermission(ctx, "member.manage");
+  const invite = await prisma.invite.findUnique({ where: { id: inviteId } });
+  if (!invite || invite.status !== InviteStatus.pending) throw new Error("not_found");
+  if (invite.householdId !== ctx.householdId) throw new Error("forbidden");
+  if (!canManageHouseholdRole(ctx.role, invite.role)) throw new Error("forbidden");
+
+  const revoked = await prisma.invite.update({
+    where: { id: invite.id },
+    data: { status: InviteStatus.revoked, revokedAt: new Date() }
+  });
+  await writeAudit(ctx, {
+    action: "invite.revoke",
+    entityType: "invite",
+    entityId: invite.id,
+    before: { email: invite.email, role: invite.role, status: invite.status },
+    after: { status: revoked.status, revokedAt: revoked.revokedAt }
+  });
+  return revoked;
+}
+
+async function findActiveHouseholdMember(householdId: string, memberId: string) {
+  const member = await prisma.householdMember.findUnique({ where: { id: memberId } });
+  if (!member || member.deletedAt) throw new Error("not_found");
+  if (member.householdId !== householdId) throw new Error("forbidden");
+  return member;
 }

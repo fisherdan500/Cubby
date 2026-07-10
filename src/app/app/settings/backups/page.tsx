@@ -4,11 +4,11 @@ import { BackupRestoreForm } from "@/components/settings/backup-restore-form";
 import { SproutRestoreForm } from "@/components/settings/sprout-restore-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 import { listBackupRecords } from "@/server/services/backups";
 
 export default async function BackupsSettingsPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("backup.manage");
   const records = await listBackupRecords();
 
   return (

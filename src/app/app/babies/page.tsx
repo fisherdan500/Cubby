@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { BabyForm } from "@/components/forms/baby-form";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 import { getHouseholdHome } from "@/server/services/households";
 
 export default async function BabiesPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("baby.manage");
   const home = await getHouseholdHome(user.id);
   if (!home) redirect("/onboarding");
 

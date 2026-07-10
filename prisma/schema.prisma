@@ -9,6 +9,7 @@ datasource db {
 
 enum HouseholdRole {
   owner
+  admin
   parent
   caretaker
   read_only

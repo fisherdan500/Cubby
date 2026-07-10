@@ -17,5 +17,9 @@ export const babySchema = z.object({
 
 export const inviteSchema = z.object({
   email: z.string().trim().email(),
-  role: z.enum(["parent", "caretaker", "read_only"])
+  role: z.enum(["admin", "parent", "caretaker", "read_only"])
+});
+
+export const memberRoleSchema = z.object({
+  role: z.enum(["admin", "parent", "caretaker", "read_only"])
 });

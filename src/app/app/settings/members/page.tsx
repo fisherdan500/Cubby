@@ -1,48 +1,44 @@
 import { AppShell } from "@/components/app-shell";
 import { InviteForm } from "@/components/forms/invite-form";
+import { MemberAccessManager } from "@/components/settings/member-access-manager";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 import { listMembersAndInvites } from "@/server/services/invites";
 
 export default async function MembersPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("member.manage");
   const household = await listMembersAndInvites();
 
   return (
     <AppShell title="Members" userName={user.name}>
-      <div className="grid gap-4 md:grid-cols-[1fr_360px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
           <Card>
             <h2 className="mb-3 text-lg font-bold">Household</h2>
             <p className="text-sm text-muted-foreground">{household.name}</p>
           </Card>
-          <Card className="space-y-3">
-            <h2 className="text-lg font-bold">People</h2>
-            {household.members.map((member) => (
-              <div key={member.id} className="rounded-lg bg-muted p-3">
-                <p className="font-semibold">{member.displayName ?? member.user.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {member.user.email} - {member.role}
-                </p>
-              </div>
-            ))}
-          </Card>
-          <Card className="space-y-3">
-            <h2 className="text-lg font-bold">Pending invites</h2>
-            {household.invites.length === 0 ? <p className="text-sm text-muted-foreground">No pending invites.</p> : null}
-            {household.invites.map((invite) => (
-              <div key={invite.id} className="rounded-lg bg-muted p-3">
-                <p className="font-semibold">{invite.email}</p>
-                <p className="text-sm text-muted-foreground">
-                  {invite.role} - expires {invite.expiresAt.toLocaleDateString()}
-                </p>
-              </div>
-            ))}
+          <Card>
+            <MemberAccessManager
+              viewerRole={household.viewerRole}
+              members={household.members.map((member) => ({
+                id: member.id,
+                name: member.displayName ?? member.user.name,
+                email: member.user.email,
+                role: member.role
+              }))}
+              invites={household.invites.map((invite) => ({
+                id: invite.id,
+                email: invite.email,
+                role: invite.role,
+                expiresAt: invite.expiresAt.toISOString()
+              }))}
+            />
           </Card>
         </section>
         <Card>
-          <h2 className="mb-3 text-lg font-bold">Invite caretaker</h2>
-          <InviteForm />
+          <h2 className="mb-1 text-lg font-bold">Invite member</h2>
+          <p className="mb-3 text-sm text-muted-foreground">Choose the access level this person should receive.</p>
+          <InviteForm canInviteAdmin={household.viewerRole === "owner"} />
         </Card>
       </div>
     </AppShell>

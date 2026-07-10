@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function InviteForm() {
+export function InviteForm({ canInviteAdmin }: { canInviteAdmin: boolean }) {
   const router = useRouter();
   const [acceptUrl, setAcceptUrl] = useState("");
   const [error, setError] = useState("");
@@ -34,6 +34,7 @@ export function InviteForm() {
         <option value="caretaker">Caretaker</option>
         <option value="parent">Parent</option>
         <option value="read_only">Read only</option>
+        {canInviteAdmin ? <option value="admin">Admin</option> : null}
       </select>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       {acceptUrl ? (
@@ -42,7 +43,7 @@ export function InviteForm() {
           <p className="break-all text-muted-foreground">{acceptUrl}</p>
         </div>
       ) : null}
-      <Button>Invite caretaker</Button>
+      <Button>Invite member</Button>
     </form>
   );
 }

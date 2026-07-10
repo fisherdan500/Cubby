@@ -1,11 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { RegistrationSettingsForm } from "@/components/settings/registration-settings-form";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 import { getHouseholdSettings, getAppRegistrationPolicy } from "@/server/services/registration";
 
 export default async function AdminSettingsPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("household.manage");
   const [settings, policy] = await Promise.all([getHouseholdSettings(), getAppRegistrationPolicy()]);
 
   return (

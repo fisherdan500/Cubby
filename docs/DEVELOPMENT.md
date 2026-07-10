@@ -136,6 +136,11 @@ Every household-scoped read or write must validate the current member and
 permission server-side. Prefer existing context helpers and role permissions from
 `src/domain/roles.ts`.
 
+The household owner is protected and is the only role that can appoint or revoke
+admins. Admins may manage parents, caretakers, and read-only members, but must not
+be able to modify the owner or another admin. Settings pages must use the same
+permission model as their services and APIs.
+
 ### Baby Selection
 
 Log Entry, Full Log, Calendar, Reports, and Nursery use the shared header baby

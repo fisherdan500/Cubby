@@ -1,11 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { ApiKeyForm, DeleteWebhookButton, RevokeApiKeyButton, WebhookForm } from "@/components/settings/integration-forms";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 import { listApiKeys, listWebhooks } from "@/server/services/integrations";
 
 export default async function IntegrationsSettingsPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("integration.manage");
   const [apiKeys, webhooks] = await Promise.all([listApiKeys(), listWebhooks()]);
 
   return (

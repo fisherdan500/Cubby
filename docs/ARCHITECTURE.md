@@ -34,8 +34,14 @@ verification records. The app's household model is separate from Better Auth:
 
 - `Household` owns babies, members, activities, settings, API keys, webhooks, backups, imports, contacts, medicines, and calendar records.
 - `HouseholdMember` connects a Better Auth user to a household role.
-- Roles are `owner`, `parent`, `caretaker`, and `read_only`.
+- Roles are `owner`, `admin`, `parent`, `caretaker`, and `read_only`.
 - Permissions are defined in `src/domain/roles.ts`.
+
+The first household creator is the protected owner and has full administrative
+access. Owners can appoint delegated admins. Admins manage operational household
+settings and lower-access members, but cannot change the owner or grant/revoke
+Admin access. Parents can manage babies, notifications, exports, and activity;
+caretakers manage their own activity; read-only members cannot write.
 
 Server-side permission enforcement is required for every household-scoped read or
 write. UI hiding is not enough.
@@ -44,7 +50,12 @@ Registration is invite-first after setup:
 
 - First owner setup is allowed when no owner/household exists and registration is enabled.
 - Owners can control public registration and new-household creation policy.
+- Owners and admins can invite members, while only the owner can issue an Admin invite.
 - Invite links route users into the inviting household rather than letting them create a new household.
+
+Settings pages are filtered by permission and guarded before household data is
+loaded. Direct API and service calls remain authoritative; UI visibility is not
+treated as an authorization boundary.
 
 ## Data Model Overview
 
@@ -157,6 +168,7 @@ Service tests live near services in `src/server/services/*.test.ts`. Add focused
 tests near the service that owns the behavior:
 
 - Registration and invite policy: `registration.test.ts`, `invites.test.ts`.
+- Role and member access policy: `roles.test.ts`, `member-access.test.ts`.
 - Dashboard, warnings, date grouping: `dashboard.test.ts`.
 - Reports and routine analytics: `reports.test.ts`.
 - Sprout parsing/import mapping: `sprout-import.test.ts`.

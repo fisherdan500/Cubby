@@ -2,10 +2,10 @@ import { Download } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { requireSettingsPage } from "@/server/auth/page-access";
 
 export default async function ExportPage() {
-  const user = await requireUserPage();
+  const { user } = await requireSettingsPage("export.create");
   return (
     <AppShell title="Export" userName={user.name}>
       <div>
