@@ -128,6 +128,12 @@ Activity recognition uses Cubby-original raster artwork under
 actions such as navigation, settings, editing, and deletion continue to use
 Lucide icons so controls remain familiar and accessible.
 
+Cubby's fixed brand identity uses the original Cradle Cubby vector mark and the
+shared `BrandMark`/`BrandLockup` components. Browser, Apple-touch, and maskable
+PWA assets are generated from the SVG sources with `npm run brand:icons`. Brand
+colors remain sage, ivory, and warm charcoal rather than following household
+accent settings.
+
 ### Log Entry And Dashboard
 
 `src/server/services/dashboard.ts` builds the Log Entry view: selected baby,

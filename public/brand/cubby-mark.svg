@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">Cubby cradle logo</title>
-  <rect width="512" height="512" rx="108" fill="#6f8978"/>
-  <g fill="none" stroke="#fff8ec" stroke-linecap="round" stroke-linejoin="round">
+  <title id="title">Cubby cradle mark</title>
+  <g fill="none" stroke="#6f8978" stroke-linecap="round" stroke-linejoin="round">
     <path d="M374 159c-27-48-72-75-128-75-78 0-138 61-138 142v126c0 42 33 76 75 76h153" stroke-width="52"/>
     <path d="M176 260c54-27 106-27 160 0l-17 73c-42 19-84 19-126 0l-17-73Z" stroke-width="22" fill="#fff8ec"/>
     <path d="M207 343v43m98-43v43m-119 0h140" stroke-width="20"/>
   </g>
   <path d="M207 286c32-17 66-17 98 0" fill="none" stroke="#6f8978" stroke-width="12" stroke-linecap="round"/>
+  <path d="m383 104 8 18 19 3-14 13 4 19-17-10-17 10 4-19-14-13 19-3 8-18Z" fill="#d5a777"/>
 </svg>

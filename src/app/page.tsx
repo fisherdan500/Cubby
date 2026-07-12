@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Baby, ChartNoAxesCombined, Lock, Moon, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BrandMark } from "@/components/brand";
 import { getSession } from "@/server/auth/session";
 
 const featureCards: Array<[string, React.ElementType, string]> = [
@@ -44,6 +45,7 @@ export default async function HomePage() {
         />
         <div className="relative z-10 mx-auto w-full max-w-6xl">
           <div className="max-w-2xl space-y-6">
+          <BrandMark size="xl" priority />
           <div className="inline-flex rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground">
             Private family baby-care tracking
           </div>

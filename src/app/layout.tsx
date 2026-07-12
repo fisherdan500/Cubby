@@ -13,6 +13,14 @@ export const metadata: Metadata = {
   title: "Cubby",
   description: "Track the little things.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+      { url: "/icons/favicon-32.png", type: "image/png", sizes: "32x32" }
+    ],
+    shortcut: "/icons/favicon-32.png",
+    apple: [{ url: "/icons/apple-touch-icon.png", type: "image/png", sizes: "180x180" }]
+  },
   appleWebApp: {
     capable: true,
     title: "Cubby",

@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { HeaderBabySelector } from "@/components/header-baby-selector";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { BrandLockup } from "@/components/brand";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
@@ -31,13 +32,7 @@ export function AppShell({
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-card/94 backdrop-blur md:flex md:flex-col">
         <Link href="/app" className="flex h-20 items-center gap-3 border-b border-border px-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/25 bg-primary/15 font-editorial text-xl font-bold text-primary">
-            C
-          </div>
-          <div>
-            <p className="font-editorial text-xl font-bold text-foreground">Cubby</p>
-            <p className="text-xs font-semibold text-muted-foreground">Family journal</p>
-          </div>
+          <BrandLockup size="sm" tagline="Family journal" priority />
         </Link>
         <nav className="flex-1 space-y-2 px-4 py-6">
           {primaryNav.map((item) => (

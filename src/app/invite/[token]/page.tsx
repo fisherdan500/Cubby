@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ActivityArtwork } from "@/components/activity-artwork";
+import { BrandLockup } from "@/components/brand";
 import { AcceptInviteButton } from "@/components/actions/accept-invite-button";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ export default async function InvitePage({ params }: { params: { token: string }
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md space-y-4">
-        <ActivityArtwork type="milestone" size="xl" className="mx-auto mb-2" />
+        <BrandLockup orientation="vertical" size="lg" className="mx-auto mb-2" priority />
         {!invite ? (
           <>
             <h1 className="text-center font-editorial text-3xl font-bold">Invite unavailable</h1>

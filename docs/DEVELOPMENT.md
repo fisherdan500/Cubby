@@ -257,6 +257,17 @@ Cubby uses locally packaged Manrope and Fraunces font files through Fontsource;
 the app does not depend on a font CDN at runtime. See
 `docs/THIRD_PARTY_ASSETS.md` before changing font or illustration sources.
 
+The Cradle Cubby logo source lives under `public/brand`, while browser and PWA
+PNG outputs live under `public/icons`. After editing the source SVGs, regenerate
+and validate every raster size with:
+
+```bash
+npm run brand:icons
+```
+
+Keep the logo's fixed sage/ivory identity separate from household accent themes.
+Use `BrandMark` or `BrandLockup` instead of adding one-off logo markup.
+
 ### Calendar And Reports
 
 Calendar and Reports should use `APP_TIMEZONE`, the selected baby, and existing

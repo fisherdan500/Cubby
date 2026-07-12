@@ -26,3 +26,8 @@ The activity thumbnails in `public/activity-art` and the subtle paper texture in
 from Sprout Track or another baby-tracking product. Activity art is rendered by
 `src/components/activity-artwork.tsx`, which retains a Lucide fallback if an
 image cannot load.
+
+The Cradle Cubby logo, favicon, and install icons under `public/brand`,
+`public/icon.svg`, and `public/icons` are original Cubby assets. Raster icon
+variants are generated from the vector sources with the project script and are
+not copied from another baby-care product.
