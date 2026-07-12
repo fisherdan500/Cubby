@@ -78,6 +78,14 @@ text, credentials, route names, or implementation structure.
 - Acceptance: A labeled mobile header action opens Settings, theme, and sign-out controls; the five primary bottom-navigation destinations remain unchanged; keyboard, screen-reader, common phone widths, and desktop behavior are verified.
 - Notes: Implemented with existing routes and permissions and without a generalized menu framework, schema changes, or unrelated settings-page redesign. Verified with lint, type-checking, 75 tests, a production build, a Docker image and disposable runtime health check, browser interaction checks, and independent review.
 
+### Routine Activity Visibility
+
+- Status: done
+- Priority: medium
+- Goal: Let each browser choose which routine-relevant activity patterns appear in Typical Day.
+- Acceptance: Routine supports Sleep, Feeding, Diaper, Pumping, Medicine, Supplement, Bath, and Play; an accessible artwork checkbox selector filters rows; the choice persists locally; Mood and other event/record types remain outside Typical Day; existing windows and permissions are preserved.
+- Notes: Browser-local preference only; no schema, API, backup, or cross-device synchronization changes. Routine clock times use circular averaging so patterns spanning midnight remain accurate.
+
 ### Activity Entry Workflow And Selector Labels
 
 - Status: done
