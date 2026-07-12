@@ -1,6 +1,12 @@
 import { ActivityType, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { activityTypes, type ActivityTypeName } from "@/domain/activity";
+import {
+  isRoutineActivityType,
+  routineActivityTypes,
+  type RoutineActivityType,
+  type RoutineRow
+} from "@/domain/routine";
 import { formatDuration } from "@/lib/activity-format";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, dateTimePartsInTimeZone, zonedDateStart } from "@/lib/timezone";
@@ -13,6 +19,10 @@ type ReportActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInc
 export type RoutineWindow = "1w" | "2w" | "1m";
 
 type RoutineActivity = Pick<ReportActivity, "type" | "occurredAt" | "durationSeconds">;
+type RoutineEntry = {
+  occurredAt: Date;
+  durationSeconds: number | null;
+};
 
 const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
   "1w": { label: "1 week", days: 7 },
@@ -65,7 +75,7 @@ export async function getReports(userId: string, input?: { babyId?: string; star
         householdId: ctx.householdId,
         babyId: baby.id,
         deletedAt: null,
-        type: { in: [ActivityType.sleep, ActivityType.feeding] },
+        type: { in: [...routineActivityTypes] as ActivityType[] },
         occurredAt: { gte: routineRange.start, lt: routineRange.endExclusive }
       },
       include: activityInclude,
@@ -108,65 +118,70 @@ export function routineWindowRange(endKey: string, window: RoutineWindow, timeZo
 
 export function buildRoutineTimeline(activities: RoutineActivity[], endKey: string, window: RoutineWindow, timeZone = env.APP_TIMEZONE) {
   const range = routineWindowRange(endKey, window, timeZone);
-  const days = new Map<string, Array<{ type: "sleep" | "feeding"; occurredAt: Date; durationSeconds: number | null }>>();
+  const daysByType = new Map<RoutineActivityType, Map<string, RoutineEntry[]>>();
+  const daysWithDataKeys = new Set<string>();
   const sleepMinutes: number[] = [];
   const feedMinutes: number[] = [];
   const sleepDurations: number[] = [];
+  const samplesByType = Object.fromEntries(routineActivityTypes.map((type) => [type, 0])) as Record<RoutineActivityType, number>;
 
   for (const activity of activities) {
-    if (activity.type !== ActivityType.sleep && activity.type !== ActivityType.feeding) continue;
+    if (!isRoutineActivityType(activity.type)) continue;
     const key = dateKeyInTimeZone(activity.occurredAt, timeZone);
     if (key < range.startKey || key > range.endKey) continue;
-    const type = activity.type === ActivityType.sleep ? "sleep" : "feeding";
+    const type = activity.type;
     const minute = minuteOfDay(activity.occurredAt, timeZone);
     if (type === "sleep") {
       sleepMinutes.push(minute);
       if (activity.durationSeconds) sleepDurations.push(activity.durationSeconds);
-    } else {
+    } else if (type === "feeding") {
       feedMinutes.push(minute);
     }
-    days.set(key, [
-      ...(days.get(key) ?? []),
-      {
-        type,
-        occurredAt: activity.occurredAt,
-        durationSeconds: activity.durationSeconds ?? null
-      }
+    samplesByType[type] += 1;
+    daysWithDataKeys.add(key);
+    const typeDays = daysByType.get(type) ?? new Map<string, RoutineEntry[]>();
+    typeDays.set(key, [
+      ...(typeDays.get(key) ?? []),
+      { occurredAt: activity.occurredAt, durationSeconds: activity.durationSeconds ?? null }
     ]);
+    daysByType.set(type, typeDays);
   }
 
-  const sequences = [...days.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([, entries]) => entries.sort((left, right) => left.occurredAt.getTime() - right.occurredAt.getTime()));
-  const daysWithData = sequences.length;
+  const daysWithData = daysWithDataKeys.size;
   const minSamples = daysWithData <= 2 ? 1 : Math.max(2, Math.ceil(daysWithData * 0.25));
-  const maxLength = Math.max(0, ...sequences.map((sequence) => sequence.length));
-  const rows = [];
+  const rows: RoutineRow[] = [];
 
-  for (let index = 0; index < maxLength; index += 1) {
-    const entries = sequences.map((sequence) => sequence[index]).filter(Boolean);
-    const sleepEntries = entries.filter((entry) => entry.type === "sleep");
-    const feedEntries = entries.filter((entry) => entry.type === "feeding");
-    const type = sleepEntries.length >= feedEntries.length ? "sleep" : "feeding";
-    const matching = type === "sleep" ? sleepEntries : feedEntries;
-    if (matching.length < minSamples) continue;
+  for (const type of routineActivityTypes) {
+    const sequences = [...(daysByType.get(type)?.entries() ?? [])]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([, entries]) => entries.sort((left, right) => left.occurredAt.getTime() - right.occurredAt.getTime()));
+    const maxLength = Math.max(0, ...sequences.map((sequence) => sequence.length));
 
-    const averageMinutes = average(matching.map((entry) => minuteOfDay(entry.occurredAt, timeZone)));
-    const averageDurationSeconds =
-      type === "sleep" ? average(matching.map((entry) => entry.durationSeconds ?? 0).filter((value) => value > 0)) : 0;
+    for (let index = 0; index < maxLength; index += 1) {
+      const matching = sequences.map((sequence) => sequence[index]).filter(Boolean);
+      if (matching.length < minSamples) continue;
 
-    rows.push({
-      index,
-      type,
-      averageMinutes,
-      averageTime: formatMinuteOfDay(averageMinutes),
-      averageDurationSeconds,
-      averageDuration: type === "sleep" ? formatDuration(averageDurationSeconds) || "0 min" : null,
-      sampleCount: matching.length
-    });
+      const averageMinutes = averageMinuteOfDay(matching.map((entry) => minuteOfDay(entry.occurredAt, timeZone)));
+      const averageDurationSeconds = average(
+        matching.map((entry) => entry.durationSeconds ?? 0).filter((value) => value > 0)
+      );
+
+      rows.push({
+        index,
+        type,
+        averageMinutes,
+        averageTime: formatMinuteOfDay(averageMinutes),
+        averageDurationSeconds,
+        averageDuration: averageDurationSeconds ? formatDuration(averageDurationSeconds) || "0 min" : null,
+        sampleCount: matching.length
+      });
+    }
   }
 
-  rows.sort((left, right) => left.averageMinutes - right.averageMinutes);
+  rows.sort(
+    (left, right) =>
+      left.averageMinutes - right.averageMinutes || left.type.localeCompare(right.type) || left.index - right.index
+  );
 
   return {
     window,
@@ -177,15 +192,18 @@ export function buildRoutineTimeline(activities: RoutineActivity[], endKey: stri
     daysWithData,
     minSamples,
     summary: {
-      averageSleepTime: sleepMinutes.length ? formatMinuteOfDay(average(sleepMinutes)) : null,
+      averageSleepTime: sleepMinutes.length ? formatMinuteOfDay(averageMinuteOfDay(sleepMinutes)) : null,
       averageSleepDuration: sleepDurations.length ? formatDuration(average(sleepDurations)) || "0 min" : "0 min",
-      averageFeedTime: feedMinutes.length ? formatMinuteOfDay(average(feedMinutes)) : null,
+      averageFeedTime: feedMinutes.length ? formatMinuteOfDay(averageMinuteOfDay(feedMinutes)) : null,
       sleepSamples: sleepMinutes.length,
-      feedSamples: feedMinutes.length
+      feedSamples: feedMinutes.length,
+      samplesByType
     },
     rows
   };
 }
+
+export type RoutineTimeline = ReturnType<typeof buildRoutineTimeline>;
 
 function buildStats(activities: ReportActivity[], birthDate?: Date | null, timeZone = env.APP_TIMEZONE) {
   const byType = Object.fromEntries(activityTypes.map((type) => [type, 0])) as Record<ActivityTypeName, number>;
@@ -298,6 +316,19 @@ function minuteOfDay(date: Date, timeZone: string) {
 function average(values: number[]) {
   if (!values.length) return 0;
   return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function averageMinuteOfDay(values: number[]) {
+  if (!values.length) return 0;
+  const fullDay = 24 * 60;
+  const radiansPerMinute = (2 * Math.PI) / fullDay;
+  const x = values.reduce((total, value) => total + Math.cos(value * radiansPerMinute), 0);
+  const y = values.reduce((total, value) => total + Math.sin(value * radiansPerMinute), 0);
+  if (Math.hypot(x, y) < 1e-10) return average(values);
+
+  const angle = Math.atan2(y, x);
+  const minutes = ((angle < 0 ? angle + 2 * Math.PI : angle) / (2 * Math.PI)) * fullDay;
+  return minutes > fullDay - 1e-10 ? 0 : minutes;
 }
 
 function formatMinuteOfDay(value: number) {

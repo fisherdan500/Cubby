@@ -4,6 +4,7 @@ import { Activity, BarChart3, Clock3, Grid3X3, LineChart, Trophy } from "lucide-
 import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
+import { RoutineTab } from "@/components/reports/routine-tab";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { requireUserPage } from "@/server/auth/session";
@@ -75,7 +76,14 @@ export default async function ReportsPage({
           {tab === "milestones" ? <MilestonesTab stats={report.stats} /> : null}
           {tab === "growth" ? <GrowthTab stats={report.stats} /> : null}
           {tab === "activity" ? <ActivityTab stats={report.stats} /> : null}
-          {tab === "routine" ? <RoutineTab report={report} /> : null}
+          {tab === "routine" ? (
+            <RoutineTab
+              babyId={report.baby.id}
+              startKey={report.startKey}
+              endKey={report.endKey}
+              routine={report.routine}
+            />
+          ) : null}
           {tab === "heatmaps" ? <HeatmapTab stats={report.stats} /> : null}
         </div>
       )}
@@ -157,76 +165,6 @@ function ActivityTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof g
         </div>
       ))}
     </Card>
-  );
-}
-
-function RoutineTab({ report }: { report: NonNullable<Awaited<ReturnType<typeof getReports>>> }) {
-  if (!report.baby) return null;
-  const routine = report.routine;
-  return (
-    <div className="space-y-5">
-      <Card className="w-fit max-w-full">
-        <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
-          <input name="babyId" type="hidden" value={report.baby.id} />
-          <input name="start" type="hidden" value={report.startKey} />
-          <input name="end" type="hidden" value={report.endKey} />
-          <input name="tab" type="hidden" value="routine" />
-          <select
-            name="routineWindow"
-            defaultValue={routine.window}
-            className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-44"
-          >
-            <option value="1w">1 week</option>
-            <option value="2w">2 weeks</option>
-            <option value="1m">1 month</option>
-          </select>
-        </AutoSubmitForm>
-      </Card>
-
-      <div className="grid gap-3 md:grid-cols-4">
-        <Metric label="Avg sleep time" value={routine.summary.averageSleepTime ?? "--"} />
-        <Metric label="Avg sleep duration" value={routine.summary.averageSleepDuration} />
-        <Metric label="Avg feed time" value={routine.summary.averageFeedTime ?? "--"} />
-        <Metric label="Days included" value={`${routine.daysWithData}/${routine.windowDays}`} />
-      </div>
-
-      <Card className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-base font-black">Typical Day</h2>
-            <p className="text-sm text-muted-foreground">
-              {routine.windowLabel} ending {routine.endKey}
-            </p>
-          </div>
-          <p className="text-xs font-bold text-muted-foreground">
-            {routine.summary.sleepSamples + routine.summary.feedSamples} samples
-          </p>
-        </div>
-
-        {routine.rows.length ? (
-          <div className="space-y-3">
-            {routine.rows.map((row) => (
-              <div key={`${row.type}-${row.index}`} className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 rounded-lg bg-surface p-3">
-                <ActivityArtwork type={row.type === "sleep" ? "sleep" : "feeding"} size="md" />
-                <div className="min-w-0">
-                  <p className="text-sm font-black text-primary">{row.averageTime}</p>
-                  <p className="font-black">
-                    {row.type === "sleep"
-                      ? `Sleep around ${row.averageTime} for ${row.averageDuration}`
-                      : `Feed around ${row.averageTime}`}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {row.sampleCount} {row.sampleCount === 1 ? "sample" : "samples"}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No sleep or feeding data in this routine window.</p>
-        )}
-      </Card>
-    </div>
   );
 }
 

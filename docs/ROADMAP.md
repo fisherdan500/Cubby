@@ -70,6 +70,14 @@ text, credentials, route names, or implementation structure.
 
 ## Recently Completed
 
+### Routine Activity Visibility
+
+- Status: done
+- Priority: medium
+- Goal: Let each browser choose which routine-relevant activity patterns appear in Typical Day.
+- Acceptance: Routine supports Sleep, Feeding, Diaper, Pumping, Medicine, Supplement, Bath, and Play; an accessible artwork checkbox selector filters rows; the choice persists locally; Mood and other event/record types remain outside Typical Day; existing windows and permissions are preserved.
+- Notes: Browser-local preference only; no schema, API, backup, or cross-device synchronization changes. Routine clock times use circular averaging so patterns spanning midnight remain accurate.
+
 ### Activity Entry Workflow And Selector Labels
 
 - Status: done
