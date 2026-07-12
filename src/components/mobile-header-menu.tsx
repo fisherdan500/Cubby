@@ -46,8 +46,8 @@ export function MobileHeaderMenu({ userName }: { userName: string }) {
         ref={triggerRef}
         type="button"
         className={cn(
-          "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-black text-primary-foreground hover:bg-primary-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground",
-          settingsActive && "bg-primary-foreground/15"
+          "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-black text-card-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          settingsActive && "bg-muted"
         )}
         aria-expanded={open}
         aria-controls="mobile-header-menu-panel"
