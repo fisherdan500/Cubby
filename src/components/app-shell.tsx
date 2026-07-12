@@ -67,17 +67,17 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-primary/25 bg-primary/92 backdrop-blur md:ml-64">
+      <header className="sticky top-0 z-20 border-b border-primary/30 bg-card/95 backdrop-blur md:ml-64">
         <div className="flex min-h-14 items-center justify-between gap-2 px-3 py-2 md:min-h-20 md:px-8 md:py-0">
           <div className="min-w-0">
-            <p className="hidden text-[10px] font-bold uppercase tracking-normal text-primary-foreground/75 sm:block md:text-xs">Cubby</p>
-            <h1 className="truncate font-editorial text-base font-bold text-primary-foreground md:text-xl">{title}</h1>
+            <p className="hidden text-[10px] font-bold uppercase tracking-normal text-muted-foreground sm:block md:text-xs">Cubby</p>
+            <h1 className="truncate font-editorial text-base font-bold text-card-foreground md:text-xl">{title}</h1>
           </div>
           <div className="flex min-w-0 items-center gap-2">
             {babySelector ? (
               <HeaderBabySelector data={babySelector} />
             ) : (
-              <span className="hidden rounded-full border border-primary-foreground/20 bg-primary-foreground/12 px-4 py-2 text-sm font-bold text-primary-foreground sm:block">{userName}</span>
+              <span className="hidden rounded-full border border-border bg-muted px-4 py-2 text-sm font-bold text-card-foreground sm:block">{userName}</span>
             )}
             <MobileHeaderMenu userName={userName} />
           </div>
