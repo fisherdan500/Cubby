@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { HeaderBabySelector } from "@/components/header-baby-selector";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { MobileHeaderMenu } from "@/components/mobile-header-menu";
 import { BrandLockup } from "@/components/brand";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
@@ -78,16 +79,7 @@ export function AppShell({
             ) : (
               <span className="hidden rounded-full border border-primary-foreground/20 bg-primary-foreground/12 px-4 py-2 text-sm font-bold text-primary-foreground sm:block">{userName}</span>
             )}
-            <div className="flex items-center gap-1 md:hidden">
-              <ThemeToggle />
-              <Link
-                href="/app/settings"
-                className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg text-primary-foreground hover:bg-primary-foreground/15"
-                aria-label="Settings"
-              >
-                <Settings className="h-5 w-5" />
-              </Link>
-            </div>
+            <MobileHeaderMenu userName={userName} />
           </div>
         </div>
       </header>
