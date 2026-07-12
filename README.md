@@ -1,5 +1,7 @@
 # Cubby
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+
 Cubby is a self-hostable baby-care tracker for families. It is a clean-room,
 original implementation focused on household-controlled logging, reporting,
 calendar planning, backups, and integrations.
@@ -108,6 +110,22 @@ for setup and troubleshooting details.
 - [Roadmap](docs/ROADMAP.md): future features, known follow-ups, and parked ideas.
 - [Third-Party Assets](docs/THIRD_PARTY_ASSETS.md): local font packages and asset provenance.
 - [Agent Guide](AGENTS.md): project-specific instructions for Codex and other coding agents.
+
+## License And Contributions
+
+Cubby is free and open-source software licensed under the
+[GNU Affero General Public License v3.0 only](LICENSE) (`AGPL-3.0-only`). You may
+use Cubby privately or commercially, modify it, and redistribute it under the
+license terms. Modified versions made available to users over a network must
+offer those users the corresponding source code under the same license.
+
+The Cubby name and Cradle Cubby logo are governed separately by the
+[Cubby Trademark Policy](TRADEMARKS.md). The software license does not grant
+permission to present a modified distribution as an official Cubby release.
+
+Unless explicitly stated otherwise, contributions submitted to this repository
+are accepted under `AGPL-3.0-only`. Cubby does not require a contributor license
+agreement in this release.
 
 ## Verification
 

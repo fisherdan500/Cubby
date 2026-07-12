@@ -31,3 +31,13 @@ The Cradle Cubby logo, favicon, and install icons under `public/brand`,
 `public/icon.svg`, and `public/icons` are original Cubby assets. Raster icon
 variants are generated from the vector sources with the project script and are
 not copied from another baby-care product.
+
+## Project Licensing
+
+Cubby's original source code and original assets are distributed under the
+project's [GNU Affero General Public License v3.0 only](../LICENSE), except where
+a third-party license is identified above. Copyright permission for the Cradle
+Cubby artwork does not grant permission to identify a modified distribution as
+official Cubby. Use of the Cubby name and Cradle Cubby logo is also governed by
+the [Cubby Trademark Policy](../TRADEMARKS.md); modified distributions must use
+distinct product branding unless written permission is granted.
