@@ -11,11 +11,11 @@ import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getReports } from "@/server/services/reports";
 
 const tabs = [
+  ["routine", "Routine", Clock3],
   ["stats", "Stats", BarChart3],
   ["milestones", "Milestones", Trophy],
   ["growth", "Growth Trends", LineChart],
   ["activity", "Activity", Activity],
-  ["routine", "Routine", Clock3],
   ["heatmaps", "Heatmaps", Grid3X3]
 ] as const;
 
@@ -29,7 +29,7 @@ export default async function ReportsPage({
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!report?.home) redirect("/onboarding");
-  const tab = searchParams.tab && tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "stats";
+  const tab = searchParams.tab && tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "routine";
   const reportHref = (next: { tab?: string; routineWindow?: string }) => {
     const params = new URLSearchParams();
     if (report.baby?.id) params.set("babyId", report.baby.id);
