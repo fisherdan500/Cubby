@@ -70,6 +70,14 @@ text, credentials, route names, or implementation structure.
 
 ## Recently Completed
 
+### Mobile Settings Discoverability
+
+- Status: done
+- Priority: high
+- Goal: Make settings and account actions obvious on phones without crowding the daily-use bottom navigation.
+- Acceptance: A labeled mobile header action opens Settings, theme, and sign-out controls; the five primary bottom-navigation destinations remain unchanged; keyboard, screen-reader, common phone widths, and desktop behavior are verified.
+- Notes: Implemented with existing routes and permissions and without a generalized menu framework, schema changes, or unrelated settings-page redesign. Verified with lint, type-checking, 75 tests, a production build, a Docker image and disposable runtime health check, browser interaction checks, and independent review.
+
 ### Routine Activity Visibility
 
 - Status: done
