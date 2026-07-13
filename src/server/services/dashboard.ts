@@ -1,5 +1,12 @@
 import { ActivityType, DiaperKind, TimerState, type Prisma } from "@prisma/client";
+import { cookies } from "next/headers";
 import { z } from "zod";
+import type { ActivityTypeName } from "@/domain/activity";
+import {
+  SELECTED_BABY_COOKIE,
+  buildHeaderBabySelectorData,
+  resolveSelectedBaby
+} from "@/lib/baby-selector";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, normalizeTimeZone, zonedDateStart } from "@/lib/timezone";
@@ -36,9 +43,37 @@ export type DashboardDate = {
   timezone: string;
 };
 
-export async function getDashboard(userId: string, params?: string | { babyId?: string; date?: string }) {
+type DashboardParams = string | { babyId?: string; date?: string };
+type HouseholdHome = NonNullable<Awaited<ReturnType<typeof getHouseholdHome>>>;
+
+export async function getDashboard(userId: string, params?: DashboardParams) {
   const home = await getHouseholdHome(userId);
   if (!home) return null;
+  return getDashboardForHome(home, params);
+}
+
+export async function getDashboardPageData(
+  userId: string,
+  params?: { babyId?: string; date?: string }
+) {
+  const home = await getHouseholdHome(userId);
+  if (!home) return null;
+
+  const cachedBabyId = cookies().get(SELECTED_BABY_COOKIE)?.value;
+  const selectedBaby = resolveSelectedBaby(home.household.babies, params?.babyId, cachedBabyId);
+  const dashboard = await getDashboardForHome(home, { babyId: selectedBaby?.id, date: params?.date });
+  const babySelector = dashboard.baby
+    ? buildHeaderBabySelectorData(
+        home.household.babies,
+        dashboard.baby.id,
+        dashboard.activeTimers[0]?.type as ActivityTypeName | undefined
+      )
+    : null;
+
+  return { dashboard, babySelector };
+}
+
+async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams) {
   const babyId = typeof params === "string" ? params : params?.babyId;
   const dateInput = typeof params === "string" ? undefined : params?.date;
   const baby = home.household.babies.find((item) => item.id === babyId) ?? home.household.babies[0];
@@ -46,7 +81,7 @@ export async function getDashboard(userId: string, params?: string | { babyId?: 
 
   const selectedDate = resolveDashboardDate(dateInput);
 
-  const [activities, activeTimers, counts, todayActivities, lastFeeding, lastDiaper, lastSleep] = await Promise.all([
+  const [activities, activeTimers, lastFeeding, lastDiaper, lastSleep] = await Promise.all([
     prisma.activityLog.findMany({
       where: {
         householdId: home.householdId,
@@ -65,27 +100,7 @@ export async function getDashboard(userId: string, params?: string | { babyId?: 
         timerState: { in: [TimerState.running, TimerState.paused] }
       },
       include: activityInclude,
-      orderBy: { startedAt: "desc" }
-    }),
-    prisma.activityLog.groupBy({
-      by: ["type"],
-      where: {
-        householdId: home.householdId,
-        babyId: baby.id,
-        deletedAt: null,
-        occurredAt: { gte: selectedDate.start, lt: selectedDate.end }
-      },
-      _count: true
-    }),
-    prisma.activityLog.findMany({
-      where: {
-        householdId: home.householdId,
-        babyId: baby.id,
-        deletedAt: null,
-        occurredAt: { gte: selectedDate.start, lt: selectedDate.end }
-      },
-      include: activityInclude,
-      orderBy: { occurredAt: "desc" }
+      orderBy: [{ startedAt: "desc" }, { createdAt: "desc" }]
     }),
     prisma.activityLog.findFirst({
       where: { householdId: home.householdId, babyId: baby.id, deletedAt: null, type: ActivityType.feeding },
@@ -127,6 +142,7 @@ export async function getDashboard(userId: string, params?: string | { babyId?: 
       })
     : [];
   const dismissed = dismissalKeySet(dismissals);
+  const aggregates = buildDashboardAggregates(activities);
 
   return {
     home,
@@ -138,8 +154,8 @@ export async function getDashboard(userId: string, params?: string | { babyId?: 
     lastSleep,
     selectedDate,
     warnings: warningItems.filter((warning) => !dismissed.has(dismissalKey(warning))),
-    dailySummary: summarizeDay(todayActivities),
-    summaries: Object.fromEntries(counts.map((count) => [count.type, count._count]))
+    dailySummary: aggregates.dailySummary,
+    summaries: aggregates.summaries
   };
 }
 
@@ -302,6 +318,18 @@ function formatDashboardDateLabel(key: string, timezone: string) {
 }
 
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
+
+export function buildDashboardAggregates(activities: DashboardActivity[]) {
+  const summaries: Partial<Record<ActivityType, number>> = {};
+  for (const activity of activities) {
+    summaries[activity.type] = (summaries[activity.type] ?? 0) + 1;
+  }
+
+  return {
+    dailySummary: summarizeDay(activities),
+    summaries
+  };
+}
 
 export function summarizeDay(activities: DashboardActivity[]) {
   const summary = {

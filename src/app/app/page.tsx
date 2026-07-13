@@ -16,8 +16,7 @@ import {
 } from "@/domain/activity";
 import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
-import { getHeaderBabySelector } from "@/server/services/baby-selector";
-import { getDashboard } from "@/server/services/dashboard";
+import { getDashboardPageData } from "@/server/services/dashboard";
 
 const quickActions: ActivityTypeName[] = [
   "sleep", "feeding", "diaper", "note", "bath", "pumping", "measurement",
@@ -34,7 +33,8 @@ const elapsedBadgeClasses: Partial<Record<ActivityTypeName, string>> = {
   diaper: "activity-tone-diaper text-foreground"
 };
 
-type DashboardData = NonNullable<Awaited<ReturnType<typeof getDashboard>>>;
+type DashboardPageData = NonNullable<Awaited<ReturnType<typeof getDashboardPageData>>>;
+type DashboardData = DashboardPageData["dashboard"];
 type DashboardWithBaby = DashboardData & {
   baby: NonNullable<DashboardData["baby"]>;
   selectedDate: NonNullable<DashboardData["selectedDate"]>;
@@ -47,9 +47,12 @@ export default async function DashboardPage({
   searchParams: { babyId?: string; date?: string; summaryType?: string };
 }) {
   const user = await requireUserPage();
-  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
-  const dashboard = await getDashboard(user.id, { babyId: babySelector?.selectedBabyId ?? searchParams.babyId, date: searchParams.date });
-  if (!dashboard?.home) redirect("/onboarding");
+  const pageData = await getDashboardPageData(user.id, {
+    babyId: searchParams.babyId,
+    date: searchParams.date
+  });
+  if (!pageData?.dashboard.home) redirect("/onboarding");
+  const { dashboard, babySelector } = pageData;
   const { baby } = dashboard;
   const currentDashboard = dashboard as DashboardWithBaby;
   const requestedSummaryType = isDailySummaryActivityType(searchParams.summaryType) ? searchParams.summaryType : undefined;

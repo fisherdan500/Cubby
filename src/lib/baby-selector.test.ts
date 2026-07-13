@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { babySelectionHref, formatBabyAge, resolveSelectedBaby } from "@/lib/baby-selector";
+import {
+  babySelectionHref,
+  buildHeaderBabySelectorData,
+  formatBabyAge,
+  resolveSelectedBaby
+} from "@/lib/baby-selector";
 
 const babies = [
   { id: "baby-1", name: "Finley" },
@@ -33,6 +38,27 @@ describe("baby selector helpers", () => {
 
   it("falls back to the first baby when cached baby is invalid", () => {
     expect(resolveSelectedBaby(babies, undefined, "missing")?.id).toBe("baby-1");
+  });
+
+  it("builds selector data from the resolved dashboard inputs", () => {
+    expect(
+      buildHeaderBabySelectorData(
+        [
+          { id: "baby-1", name: "Finley", birthDate: new Date("2026-03-13T00:00:00.000Z") },
+          { id: "baby-2", name: "Riley", birthDate: null }
+        ],
+        "baby-2",
+        "sleep",
+        new Date("2026-06-19T12:00:00.000Z")
+      )
+    ).toEqual({
+      babies: [
+        { id: "baby-1", name: "Finley", ageLabel: "14 weeks" },
+        { id: "baby-2", name: "Riley", ageLabel: "Age not set" }
+      ],
+      selectedBabyId: "baby-2",
+      activeTimerType: "sleep"
+    });
   });
 
   it("resets pagination when changing babies and preserves independent filters", () => {
