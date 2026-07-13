@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { env } from "@/lib/env";
+import { historyHref, historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { listActivities } from "@/server/services/activities";
@@ -14,16 +15,27 @@ import { getHeaderBabySelector } from "@/server/services/baby-selector";
 
 type HistoryActivity = Awaited<ReturnType<typeof listActivities>>[number];
 
-export default async function HistoryPage({ searchParams }: { searchParams: { babyId?: string; type?: string; search?: string } }) {
+export default async function HistoryPage({
+  searchParams
+}: {
+  searchParams: { babyId?: string; type?: string; search?: string; cursor?: string };
+}) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
-  const activities = await listActivities({
+  const activityResults = await listActivities({
     babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
     type: searchParams.type,
-    search: searchParams.search
+    search: searchParams.search,
+    page: historyPageQuery(searchParams.cursor)
   });
+  const { items: activities, nextCursor } = paginateHistoryItems(activityResults);
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
-  const returnTo = historyHref({ babyId: selectedBabyId, type: searchParams.type, search: searchParams.search });
+  const returnTo = historyHref({
+    babyId: selectedBabyId,
+    type: searchParams.type,
+    search: searchParams.search,
+    cursor: searchParams.cursor
+  });
   const clearHref = historyHref({ babyId: selectedBabyId });
   const hasActiveFilters = Boolean(searchParams.type || searchParams.search);
   const groups = groupActivitiesByDay(activities, env.APP_TIMEZONE);
@@ -74,7 +86,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
               <div className="flex items-center justify-between gap-3 px-1">
                 <h2 className="text-sm font-black">{dateGroupLabel(group.key, env.APP_TIMEZONE)}</h2>
                 <span className="text-xs font-bold text-muted-foreground">
-                  {group.activities.length} {group.activities.length === 1 ? "entry" : "entries"}
+                  {group.activities.length} {group.activities.length === 1 ? "entry" : "entries"} on this page
                 </span>
               </div>
               <div className="space-y-2">
@@ -85,6 +97,32 @@ export default async function HistoryPage({ searchParams }: { searchParams: { ba
             </section>
           ))}
         </div>
+
+        {searchParams.cursor || nextCursor ? (
+          <nav aria-label="Activity history pages" className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            {searchParams.cursor ? (
+              <Link
+                href={historyHref({ babyId: selectedBabyId, type: searchParams.type, search: searchParams.search })}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
+              >
+                Newest entries
+              </Link>
+            ) : null}
+            {nextCursor ? (
+              <Link
+                href={historyHref({
+                  babyId: selectedBabyId,
+                  type: searchParams.type,
+                  search: searchParams.search,
+                  cursor: nextCursor
+                })}
+                className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-95"
+              >
+                Older entries
+              </Link>
+            ) : null}
+          </nav>
+        ) : null}
       </div>
     </AppShell>
   );
@@ -97,7 +135,7 @@ function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivi
   return (
     <Card className="overflow-hidden p-0">
       <div className="flex items-stretch">
-        <Link href={activityEditHref(activity.id, returnTo)} className="min-w-0 flex-1 p-3 transition hover:bg-muted">
+        <Link prefetch={false} href={activityEditHref(activity.id, returnTo)} className="min-w-0 flex-1 p-3 transition hover:bg-muted">
           <div className="flex items-start gap-3">
             <ActivityArtwork type={type} size="sm" />
             <div className="min-w-0">
@@ -155,15 +193,6 @@ function timeLabel(date: Date, timeZone: string) {
     minute: "2-digit",
     timeZone
   }).format(date);
-}
-
-function historyHref(input: { babyId?: string; type?: string; search?: string }) {
-  const params = new URLSearchParams();
-  if (input.babyId) params.set("babyId", input.babyId);
-  if (input.type) params.set("type", input.type);
-  if (input.search) params.set("search", input.search);
-  const query = params.toString();
-  return query ? `/app/history?${query}` : "/app/history";
 }
 
 function activityEditHref(activityId: string, returnTo: string) {
