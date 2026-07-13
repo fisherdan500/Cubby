@@ -15,6 +15,13 @@ export type HeaderBabySelectorData = {
   activeTimerType?: ActivityTypeName;
 };
 
+export function babySelectionHref(pathname: string, currentSearch: string, nextBabyId: string) {
+  const params = new URLSearchParams(currentSearch);
+  params.set("babyId", nextBabyId);
+  params.delete("cursor");
+  return `${pathname}?${params.toString()}`;
+}
+
 export function formatBabyAge(birthDate?: Date | string | null, now = new Date()) {
   if (!birthDate) return "Age not set";
   const birth = birthDate instanceof Date ? birthDate : new Date(birthDate);

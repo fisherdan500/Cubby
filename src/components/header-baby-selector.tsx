@@ -7,6 +7,7 @@ import { ActivityArtwork } from "@/components/activity-artwork";
 import {
   SELECTED_BABY_COOKIE,
   SELECTED_BABY_STORAGE_KEY,
+  babySelectionHref,
   type HeaderBabySelectorData
 } from "@/lib/baby-selector";
 
@@ -21,9 +22,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
 
   const replaceBabyId = useCallback(
     (nextBabyId: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("babyId", nextBabyId);
-      router.replace(`${pathname}?${params.toString()}`);
+      router.replace(babySelectionHref(pathname, searchParams.toString(), nextBabyId));
     },
     [pathname, router, searchParams]
   );
@@ -54,9 +53,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
   function choose(nextBabyId: string) {
     setSelectedId(nextBabyId);
     persistSelection(nextBabyId);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("babyId", nextBabyId);
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(babySelectionHref(pathname, searchParams.toString(), nextBabyId));
   }
 
   if (!selectedBaby) return null;

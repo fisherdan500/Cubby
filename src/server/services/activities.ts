@@ -28,6 +28,7 @@ export const activityInclude = {
 } satisfies Prisma.ActivityLogInclude;
 
 type ActivityCreateDraft = Omit<Prisma.ActivityLogCreateInput, "household" | "baby" | "actorMember">;
+type ActivityListPage = Pick<Prisma.ActivityLogFindManyArgs, "cursor" | "skip" | "take" | "orderBy">;
 
 function toDate(value: string | undefined, fallback?: Date) {
   if (!value) return fallback;
@@ -329,7 +330,12 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
   return activity;
 }
 
-export async function listActivities(params?: { babyId?: string; type?: string; search?: string }) {
+export async function listActivities(params?: {
+  babyId?: string;
+  type?: string;
+  search?: string;
+  page?: ActivityListPage;
+}) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.read");
   return prisma.activityLog.findMany({
@@ -354,8 +360,10 @@ export async function listActivities(params?: { babyId?: string; type?: string; 
         : {})
     },
     include: activityInclude,
-    orderBy: { occurredAt: "desc" },
-    take: 100
+    ...(params?.page ?? {
+      orderBy: [{ occurredAt: "desc" as const }, { id: "desc" as const }],
+      take: 100
+    })
   });
 }
 

@@ -31,7 +31,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
       ) : null}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {visibleSections.map((section) => (
-          <Link key={section.href} href={section.href}>
+          <Link key={section.href} href={section.href} prefetch={false}>
             <Card className="h-full transition hover:bg-muted">
               <section.icon className="mb-4 h-6 w-6 text-primary" />
               <h2 className="font-editorial text-lg font-bold">{section.label}</h2>

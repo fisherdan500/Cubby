@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBabyAge, resolveSelectedBaby } from "@/lib/baby-selector";
+import { babySelectionHref, formatBabyAge, resolveSelectedBaby } from "@/lib/baby-selector";
 
 const babies = [
   { id: "baby-1", name: "Finley" },
@@ -33,5 +33,11 @@ describe("baby selector helpers", () => {
 
   it("falls back to the first baby when cached baby is invalid", () => {
     expect(resolveSelectedBaby(babies, undefined, "missing")?.id).toBe("baby-1");
+  });
+
+  it("resets pagination when changing babies and preserves independent filters", () => {
+    expect(
+      babySelectionHref("/app/history", "babyId=baby-1&type=note&search=night+feed&cursor=activity-25", "baby-2")
+    ).toBe("/app/history?babyId=baby-2&type=note&search=night+feed");
   });
 });
