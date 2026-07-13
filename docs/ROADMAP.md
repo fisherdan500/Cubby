@@ -35,15 +35,67 @@ text, credentials, route names, or implementation structure.
 
 ## Planned Next
 
+These items implement the approved daily-use roadmap in dependency order. Each
+substantive application change uses its own approved worktree and separate merge,
+deployment, and cleanup approvals.
+
+### Dashboard Performance Follow-Up And Header Cleanup
+
+- Status: planned
+- Priority: high
+- Goal: Finish evidence-driven dashboard/general-navigation performance work and remove redundant page-header branding.
+- Acceptance: Remaining dashboard and normal-page journeys have production before/after evidence; proven duplicate dashboard/header data loads are consolidated without output or timezone regressions; the `Cubby` page-header eyebrow is absent at every width while sidebar/mobile branding remains; tests, lint, typecheck, build, and responsive checks pass.
+- Notes: Pull request #5 already completed Full Log pagination and Full Log/Settings prefetch hardening. Do not add request-context caching unless post-consolidation measurements justify it.
+
+### Responsive Activity Experience Decision Gate
+
+- Status: planned
+- Priority: high
+- Goal: Select the production create/view/edit interaction model before changing activity forms.
+- Acceptance: Three disposable responsive variants are reviewed at common phone and desktop widths; User selects one; no production activity-form code changes before selection.
+- Notes: Complete after the performance follow-up and before Unit Defaults or Activity Experience form changes.
+
+### Household And Per-Item Unit Defaults
+
+- Status: planned
+- Priority: high
+- Goal: Let each household choose measurement defaults and per-named-item medicine/supplement dose units without rewriting history.
+- Acceptance: Volume, weight, length, and temperature defaults use `oz`, `lb`, `in`, and `°F` when unsaved; normal logging learns/reuses medicine and supplement catalog names; activity overrides do not alter defaults; new entries use defaults while edits preserve saved units; mixed-unit summaries convert correctly; Cubby backups preserve settings and older backups remain compatible.
+- Notes: Deliver as a data-consistent Unit Defaults PR separate from the Activity Experience PR.
+
+### Read-Only Activity Detail And Selected Entry Experience
+
+- Status: planned
+- Priority: high
+- Goal: Give activity selection a polished read-only destination and implement the selected create/edit interaction model.
+- Acceptance: Dashboard, Full Log, Calendar, and other activity-selection surfaces open detail; detail has explicit Edit and separated confirmation-protected Delete actions; create/edit return context remains correct; all 14 types remain supported; unlimited simultaneous and same-type timers remain visible and individually controllable.
+- Notes: Begin only after the responsive sketch decision and deliver separately from Unit Defaults.
+
+### Reversible Member Suspension
+
+- Status: planned
+- Priority: high
+- Goal: Disable and re-enable household access without deleting credentials, membership, role, or history.
+- Acceptance: The protected owner and acting member cannot be disabled; owners may manage admins and lower roles; admins may manage only lower roles; disabling revokes sessions immediately; future login shows exactly `Your account is disabled.`; re-enabling restores login; server authorization, audit records, UI states, and tests cover the lifecycle.
+- Notes: Hiding UI is not an authorization boundary; request-time enforcement is required in addition to session revocation.
+
+### Reversible Baby Inactivity
+
+- Status: planned
+- Priority: high
+- Goal: Remove babies from active tracking without hiding or deleting their historical records.
+- Acceptance: Running or paused timers block deactivation; the last active baby may be deactivated and produces a clear `No active babies` state; inactive babies cannot receive new activities or timers; historical selectors/reports retain an `Inactive` label; existing history remains correctable but cannot start/restart timers; reactivation, backups, audit records, and tests cover the lifecycle.
+- Notes: Active-tracking queries and include-inactive historical queries must remain distinct.
+
+## Later
+
 ### Secondary Workflow Mobile Audit
 
 - Status: planned
 - Priority: medium
-- Goal: Continue the mobile audit for dense administrative and integration workflows after the visual-system pass.
+- Goal: Continue the mobile audit for dense administrative and integration workflows after the approved daily-use roadmap.
 - Acceptance: Backups, integrations, member management, and long settings forms are checked at common mobile widths; controls remain thumb-friendly and desktop remains tidy.
-- Notes: The visual-system pass covered shared theming plus the primary activity, calendar, and report surfaces. Keep future changes Cubby-original and clean-room.
-
-## Later
+- Notes: Resume after the daily-use performance, activity, units, member-suspension, and baby-inactivity phases. Keep future changes Cubby-original and clean-room.
 
 ### Manual Backup And Restore Reliability
 
