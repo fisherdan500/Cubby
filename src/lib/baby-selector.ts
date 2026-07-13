@@ -15,6 +15,25 @@ export type HeaderBabySelectorData = {
   activeTimerType?: ActivityTypeName;
 };
 
+export function buildHeaderBabySelectorData<T extends { id: string; name: string; birthDate?: Date | string | null }>(
+  babies: T[],
+  selectedBabyId: string,
+  activeTimerType?: ActivityTypeName,
+  now = new Date()
+): HeaderBabySelectorData | null {
+  if (!babies.some((baby) => baby.id === selectedBabyId)) return null;
+
+  return {
+    babies: babies.map((baby) => ({
+      id: baby.id,
+      name: baby.name,
+      ageLabel: formatBabyAge(baby.birthDate, now)
+    })),
+    selectedBabyId,
+    activeTimerType
+  };
+}
+
 export function babySelectionHref(pathname: string, currentSearch: string, nextBabyId: string) {
   const params = new URLSearchParams(currentSearch);
   params.set("babyId", nextBabyId);

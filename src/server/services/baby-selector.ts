@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import {
   SELECTED_BABY_COOKIE,
-  formatBabyAge,
+  buildHeaderBabySelectorData,
   resolveSelectedBaby,
   type HeaderBabySelectorData
 } from "@/lib/baby-selector";
@@ -29,13 +29,9 @@ export async function getHeaderBabySelector(userId: string, requestedBabyId?: st
     select: { type: true }
   });
 
-  return {
-    babies: home.household.babies.map((baby) => ({
-      id: baby.id,
-      name: baby.name,
-      ageLabel: formatBabyAge(baby.birthDate)
-    })),
-    selectedBabyId: selected.id,
-    activeTimerType: activeTimer?.type as ActivityTypeName | undefined
-  };
+  return buildHeaderBabySelectorData(
+    home.household.babies,
+    selected.id,
+    activeTimer?.type as ActivityTypeName | undefined
+  );
 }

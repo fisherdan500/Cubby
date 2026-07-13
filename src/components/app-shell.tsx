@@ -70,7 +70,6 @@ export function AppShell({
       <header className="sticky top-0 z-20 border-b border-primary/30 bg-card/95 backdrop-blur md:ml-64">
         <div className="flex min-h-14 items-center justify-between gap-2 px-3 py-2 md:min-h-20 md:px-8 md:py-0">
           <div className="min-w-0">
-            <p className="hidden text-[10px] font-bold uppercase tracking-normal text-muted-foreground sm:block md:text-xs">Cubby</p>
             <h1 className="truncate font-editorial text-base font-bold text-card-foreground md:text-xl">{title}</h1>
           </div>
           <div className="flex min-w-0 items-center gap-2">
