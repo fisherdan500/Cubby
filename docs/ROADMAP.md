@@ -55,14 +55,6 @@ deployment, and cleanup approvals.
 - Acceptance: Three disposable responsive variants are reviewed at common phone and desktop widths; User selects one; no production activity-form code changes before selection.
 - Notes: User selected Focused Routes: dedicated URL-addressable create, read-only detail, and edit pages with explicit Edit and separated confirmation-protected Delete actions.
 
-### Household And Per-Item Unit Defaults
-
-- Status: in review
-- Priority: high
-- Goal: Let each household choose measurement defaults and per-named-item medicine/supplement dose units without rewriting history.
-- Acceptance: Volume, weight, length, and temperature defaults use `oz`, `lb`, `in`, and `°F` when unsaved; normal logging learns/reuses medicine and supplement catalog names; activity overrides do not alter defaults; new entries use defaults while edits preserve saved units; mixed-unit summaries convert correctly; Cubby backups preserve settings and older backups remain compatible.
-- Notes: Implemented and verified on the isolated `feat/unit-defaults` worktree; merge and deployment remain separately approval-gated. Keep this separate from the Activity Experience PR.
-
 ### Read-Only Activity Detail And Selected Entry Experience
 
 - Status: planned
@@ -113,6 +105,14 @@ deployment, and cleanup approvals.
 - Acceptance: Cadence, retention, status visibility, and recovery instructions are defined and verified.
 - Notes: Do not add remote-storage credentials or providers without separate approval.
 
+### Manual Member Invitation Link Management
+
+- Status: planned
+- Priority: medium
+- Goal: Complete the invite-first member onboarding lifecycle with administrator-managed links that Cubby generates for manual sharing but does not send.
+- Acceptance: An authorized household administrator can create an invitation bound to the current household with an intended role/permission level, optional recipient email, and expiration date; Cubby generates a cryptographically secure, single-use link while persisting only the token hash and never the raw token; the administrator can copy the link for manual sharing through email, SMS, or another messaging service; the recipient can follow the link, create or sign into an account, review the household invitation, and accept it; acceptance, expiration, revocation, or replacement invalidates the token; administrators can view pending invitations, copy an active link, revoke it, or generate a replacement; household binding and role-assignment rules prevent cross-household joining and unauthorized role escalation; audit information records creation, expiration, acceptance, revocation, the inviter, and the accepting member.
+- Notes: Extend the existing invite-first flow rather than creating a second onboarding model. The link-copy and replacement design must preserve the no-raw-token-at-rest rule. Cubby does not deliver invitations in the initial implementation; automated transactional email plus optional SMTP or provider integration are separate later enhancements.
+
 ## Ideas / Parking Lot
 
 - Configurable timer alerts, scheduled reminders, and pattern warnings: low priority until core usability and reliability are complete.
@@ -121,6 +121,14 @@ deployment, and cleanup approvals.
 - Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Household And Per-Item Unit Defaults
+
+- Status: done
+- Priority: high
+- Goal: Let each household choose measurement defaults and per-named-item medicine/supplement dose units without rewriting history.
+- Acceptance: Volume, weight, length, and temperature defaults use `oz`, `lb`, `in`, and `°F` when unsaved; normal logging learns/reuses medicine and supplement catalog names; activity overrides do not alter defaults; new entries use defaults while edits preserve saved units; mixed-unit summaries convert correctly; Cubby backups preserve settings and older backups remain compatible.
+- Notes: Squash-merged in pull request #8 after 125 tests, lint, typecheck, production build, responsive checks, static security scanning, and independent fail-closed review. Deployment remains separately approval-gated.
 
 ### Mobile Settings Discoverability
 
