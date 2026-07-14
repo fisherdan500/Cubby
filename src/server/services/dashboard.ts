@@ -3,6 +3,12 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import type { ActivityTypeName } from "@/domain/activity";
 import {
+  defaultUnitPreferences,
+  parseUnitPreferences,
+  type UnitPreferences
+} from "@/domain/unit-preferences";
+import { sumVolume } from "@/domain/units";
+import {
   SELECTED_BABY_COOKIE,
   buildHeaderBabySelectorData,
   resolveSelectedBaby
@@ -142,7 +148,10 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
       })
     : [];
   const dismissed = dismissalKeySet(dismissals);
-  const aggregates = buildDashboardAggregates(activities);
+  const aggregates = buildDashboardAggregates(
+    activities,
+    parseUnitPreferences(home.household.settings?.unitPreferences)
+  );
 
   return {
     home,
@@ -319,19 +328,27 @@ function formatDashboardDateLabel(key: string, timezone: string) {
 
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
-export function buildDashboardAggregates(activities: DashboardActivity[]) {
+export function buildDashboardAggregates(
+  activities: DashboardActivity[],
+  preferences: UnitPreferences = defaultUnitPreferences
+) {
   const summaries: Partial<Record<ActivityType, number>> = {};
   for (const activity of activities) {
     summaries[activity.type] = (summaries[activity.type] ?? 0) + 1;
   }
 
   return {
-    dailySummary: summarizeDay(activities),
+    dailySummary: summarizeDay(activities, preferences),
     summaries
   };
 }
 
-export function summarizeDay(activities: DashboardActivity[]) {
+export function summarizeDay(
+  activities: DashboardActivity[],
+  preferences: UnitPreferences = defaultUnitPreferences
+) {
+  const feedingVolumes: Array<{ amount: number; unit?: string | null }> = [];
+  const pumpingVolumes: Array<{ amount: number; unit?: string | null }> = [];
   const summary = {
     sleep: {
       count: 0,
@@ -339,7 +356,8 @@ export function summarizeDay(activities: DashboardActivity[]) {
     },
     feeding: {
       count: 0,
-      amount: 0
+      amount: 0 as number | null,
+      unit: preferences.volume
     },
     diaper: {
       count: 0,
@@ -353,7 +371,8 @@ export function summarizeDay(activities: DashboardActivity[]) {
     },
     pumping: {
       count: 0,
-      amount: 0
+      amount: 0 as number | null,
+      unit: preferences.volume
     },
     milestone: {
       count: 0
@@ -381,7 +400,9 @@ export function summarizeDay(activities: DashboardActivity[]) {
 
     if (activity.type === ActivityType.feeding) {
       summary.feeding.count += 1;
-      if (activity.feeding?.amount) summary.feeding.amount += Number(activity.feeding.amount);
+      if (activity.feeding?.amount !== null && activity.feeding?.amount !== undefined) {
+        feedingVolumes.push({ amount: Number(activity.feeding.amount), unit: activity.feeding.unit });
+      }
     }
 
     if (activity.type === ActivityType.diaper) {
@@ -396,7 +417,9 @@ export function summarizeDay(activities: DashboardActivity[]) {
 
     if (activity.type === ActivityType.pumping) {
       summary.pumping.count += 1;
-      if (activity.pumping?.amount) summary.pumping.amount += Number(activity.pumping.amount);
+      if (activity.pumping?.amount !== null && activity.pumping?.amount !== undefined) {
+        pumpingVolumes.push({ amount: Number(activity.pumping.amount), unit: activity.pumping.unit });
+      }
     }
 
     if (activity.type === ActivityType.milestone) summary.milestone.count += 1;
@@ -409,6 +432,9 @@ export function summarizeDay(activities: DashboardActivity[]) {
       summary.play.seconds += activity.durationSeconds ?? 0;
     }
   }
+
+  summary.feeding.amount = sumVolume(feedingVolumes, preferences.volume).amount;
+  summary.pumping.amount = sumVolume(pumpingVolumes, preferences.volume).amount;
 
   return summary;
 }

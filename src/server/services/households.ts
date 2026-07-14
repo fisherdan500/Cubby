@@ -95,6 +95,7 @@ export async function getHouseholdHome(userId: string) {
     include: {
       household: {
         include: {
+          settings: true,
           babies: {
             where: { deletedAt: null },
             orderBy: { createdAt: "asc" }

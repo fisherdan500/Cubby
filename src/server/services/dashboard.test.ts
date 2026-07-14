@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ActivityType, DiaperKind, FeedingKind, TimerState } from "@prisma/client";
+import { defaultUnitPreferences } from "@/domain/unit-preferences";
 import { SELECTED_BABY_COOKIE } from "@/lib/baby-selector";
 
 const mocks = vi.hoisted(() => ({
@@ -55,22 +56,23 @@ function summaryActivity(input: Partial<SummaryActivity> & { type: ActivityType 
   } as SummaryActivity;
 }
 
-function feeding(mode: FeedingKind, amount?: string) {
-  return { mode, amount: amount ?? null } as SummaryActivity["feeding"];
+function feeding(mode: FeedingKind, amount?: string, unit = "oz") {
+  return { mode, amount: amount ?? null, unit } as SummaryActivity["feeding"];
 }
 
 function diaper(kind: DiaperKind) {
   return { kind } as SummaryActivity["diaper"];
 }
 
-function pumping(amount?: string) {
-  return { amount: amount ?? null } as SummaryActivity["pumping"];
+function pumping(amount?: string, unit = "oz") {
+  return { amount: amount ?? null, unit } as SummaryActivity["pumping"];
 }
 
 function householdHome() {
   return {
     householdId: "household-1",
     household: {
+      settings: { unitPreferences: defaultUnitPreferences },
       babies: [
         {
           id: "baby-1",
@@ -118,7 +120,7 @@ describe("dashboard service data loading", () => {
     expect(selectedDayReads).toHaveLength(1);
     expect(mocks.activityGroupBy).not.toHaveBeenCalled();
     expect(dashboard?.activities).toBe(activities);
-    expect(dashboard?.dailySummary?.feeding).toEqual({ count: 1, amount: 4.25 });
+    expect(dashboard?.dailySummary?.feeding).toEqual({ count: 1, amount: 4.25, unit: "oz" });
     expect(dashboard?.summaries).toEqual({ feeding: 1, note: 1 });
   });
 
@@ -317,7 +319,7 @@ describe("dashboard aggregates", () => {
 
     const aggregates = buildDashboardAggregates(activities);
 
-    expect(aggregates.dailySummary.feeding).toEqual({ count: 2, amount: 6.75 });
+    expect(aggregates.dailySummary.feeding).toEqual({ count: 2, amount: 6.75, unit: "oz" });
     expect(aggregates.dailySummary.sleep).toEqual({ count: 1, seconds: 1800 });
     expect(aggregates.summaries).toEqual({ feeding: 2, note: 1, sleep: 1 });
   });
@@ -347,9 +349,9 @@ describe("daily summary", () => {
     ]);
 
     expect(summary.sleep).toEqual({ count: 1, seconds: 1800 });
-    expect(summary.feeding).toEqual({ count: 4, amount: 6.75 });
+    expect(summary.feeding).toEqual({ count: 4, amount: 6.75, unit: "oz" });
     expect(summary.diaper).toEqual({ count: 4, wet: 1, dirty: 1, mixed: 1, dry: 1 });
-    expect(summary.pumping).toEqual({ count: 1, amount: 3.5 });
+    expect(summary.pumping).toEqual({ count: 1, amount: 3.5, unit: "oz" });
     expect(summary.bath).toEqual({ count: 1 });
     expect(summary.milestone).toEqual({ count: 1 });
     expect(summary.medicine).toEqual({ count: 1 });
@@ -367,15 +369,37 @@ describe("daily summary", () => {
 
     expect(summary).toEqual({
       sleep: { count: 0, seconds: 0 },
-      feeding: { count: 0, amount: 0 },
+      feeding: { count: 0, amount: 0, unit: "oz" },
       diaper: { count: 0, wet: 0, dirty: 0, mixed: 0, dry: 0 },
       bath: { count: 0 },
-      pumping: { count: 0, amount: 0 },
+      pumping: { count: 0, amount: 0, unit: "oz" },
       milestone: { count: 0 },
       medicine: { count: 0 },
       supplement: { count: 0 },
       vaccine: { count: 0 },
       play: { count: 0, seconds: 0 }
     });
+  });
+
+  it("normalizes mixed volume rows into the household preference", () => {
+    const preferences = { ...defaultUnitPreferences, volume: "mL" as const };
+    const summary = summarizeDay([
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.bottle, "1", "oz") }),
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.formula, "29.5735", "mL") }),
+      summaryActivity({ type: ActivityType.pumping, pumping: pumping("2", "oz") }),
+      summaryActivity({ type: ActivityType.pumping, pumping: pumping("59.147", "mL") })
+    ], preferences);
+
+    expect(summary.feeding).toEqual({ count: 2, amount: expect.closeTo(59.147, 3), unit: "mL" });
+    expect(summary.pumping).toEqual({ count: 2, amount: expect.closeTo(118.294, 3), unit: "mL" });
+  });
+
+  it("omits an amount instead of silently mixing unsupported explicit units", () => {
+    const summary = summarizeDay([
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.bottle, "1", "oz") }),
+      summaryActivity({ type: ActivityType.feeding, feeding: feeding(FeedingKind.formula, "2", "cups") })
+    ], defaultUnitPreferences);
+
+    expect(summary.feeding).toEqual({ count: 2, amount: null, unit: "oz" });
   });
 });

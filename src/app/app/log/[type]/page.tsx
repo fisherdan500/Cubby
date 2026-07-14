@@ -6,6 +6,7 @@ import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/a
 import { env } from "@/lib/env";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdHome } from "@/server/services/households";
+import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
 export default async function LogActivityPage({
   params,
@@ -19,6 +20,7 @@ export default async function LogActivityPage({
   const user = await requireUserPage();
   const home = await getHouseholdHome(user.id);
   if (!home) redirect("/onboarding");
+  const unitSettings = await getActivityUnitPreferences();
   const babies = home.household.babies.map((baby) => ({
     id: baby.id,
     name: baby.name
@@ -36,6 +38,9 @@ export default async function LogActivityPage({
               returnDate={searchParams.date}
               returnTo={searchParams.returnTo}
               appTimeZone={env.APP_TIMEZONE}
+              unitPreferences={unitSettings.preferences}
+              medicineNames={unitSettings.medicineNames}
+              supplementNames={unitSettings.supplementNames}
             />
           ) : (
             <p className="text-sm text-muted-foreground">Add a baby before logging activities.</p>

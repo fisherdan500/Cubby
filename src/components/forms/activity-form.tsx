@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { Input, Textarea } from "@/components/ui/input";
 import { activityLabels, timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
-import { hasActivityDetail } from "@/lib/activity-form";
+import type { UnitPreferences } from "@/domain/unit-preferences";
+import { hasActivityDetail, resolveFormUnit, resolveItemDoseUnit } from "@/lib/activity-form";
 import { displayLabel } from "@/lib/display-label";
 import { dateTimeInputValue } from "@/lib/timezone";
 
@@ -23,7 +24,10 @@ export function ActivityForm({
   selectedBabyId,
   returnDate,
   returnTo,
-  appTimeZone
+  appTimeZone,
+  unitPreferences,
+  medicineNames,
+  supplementNames
 }: {
   babies: BabyOption[];
   type: ActivityTypeName;
@@ -33,6 +37,9 @@ export function ActivityForm({
   returnDate?: string;
   returnTo?: string;
   appTimeZone: string;
+  unitPreferences: UnitPreferences;
+  medicineNames: string[];
+  supplementNames: string[];
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -100,7 +107,7 @@ export function ActivityForm({
         {timeRangeFields(type, initial)}
       </FormSection>
 
-      <FormSection title="Details">{typeFields(type, initial)}</FormSection>
+      <FormSection title="Details">{typeFields(type, initial, unitPreferences, medicineNames, supplementNames)}</FormSection>
 
       <FormSection title="Notes">
         <label className="block space-y-2 text-sm font-semibold">
@@ -184,7 +191,14 @@ function timeRangeFields(type: ActivityTypeName, initial?: Record<string, unknow
   );
 }
 
-function typeFields(type: ActivityTypeName, initial?: Record<string, string | number | boolean | null | undefined>) {
+function typeFields(
+  type: ActivityTypeName,
+  initial: Record<string, string | number | boolean | null | undefined> | undefined,
+  preferences: UnitPreferences,
+  medicineNames: string[],
+  supplementNames: string[]
+) {
+  const editing = Boolean(initial);
   switch (type) {
     case "feeding":
       return (
@@ -195,7 +209,7 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
             <Select name="side" label="Side" defaultValue={String(initial?.side ?? "")} options={["", "left", "right", "both"]} />
           </div>
           <OptionalDetails defaultOpen={hasActivityDetail(initial, ["unit", "bottleType", "food", "leftSeconds", "rightSeconds"])}>
-            <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+            <InputField name="unit" label="Unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.unit), preferred: preferences.volume, fallback: "oz" })} />
             <InputField name="bottleType" label="Bottle type" defaultValue={initial?.bottleType} />
             <InputField name="food" label="Solids food" defaultValue={initial?.food} />
             <InputField name="leftSeconds" label="Left seconds" defaultValue={initial?.leftSeconds} type="number" inputMode="numeric" min="0" step="1" />
@@ -245,7 +259,7 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <InputField name="amount" label="Total amount" defaultValue={initial?.amount} type="number" inputMode="decimal" min="0" step="any" />
-            <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+            <InputField name="unit" label="Unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.unit), preferred: preferences.volume, fallback: "oz" })} />
           </div>
           <OptionalDetails defaultOpen={hasActivityDetail(initial, ["leftAmount", "rightAmount", "inventoryAction"])}>
             <InputField name="leftAmount" label="Left amount" defaultValue={initial?.leftAmount} type="number" inputMode="decimal" min="0" step="any" />
@@ -260,24 +274,18 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
         </div>
       );
     case "medicine":
-      return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InputField name="name" label="Medicine" defaultValue={initial?.name} required />
-          <InputField name="dose" label="Dose" defaultValue={initial?.dose} type="number" inputMode="decimal" min="0" step="any" />
-          <InputField name="unit" label="Unit" defaultValue={initial?.unit} />
-        </div>
-      );
+      return <ItemDoseFields kind="medicine" initial={initial} units={preferences.medicineUnits} names={medicineNames} />;
     case "measurement":
       return (
         <div className="grid gap-3 sm:grid-cols-2">
           <InputField name="weight" label="Weight" defaultValue={initial?.weight} type="number" inputMode="decimal" min="0" step="any" />
-          <InputField name="weightUnit" label="Weight unit" defaultValue={initial?.weightUnit ?? "lb"} />
+          <InputField name="weightUnit" label="Weight unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.weightUnit), preferred: preferences.weight, fallback: "lb" })} />
           <InputField name="length" label="Length/height" defaultValue={initial?.length} type="number" inputMode="decimal" min="0" step="any" />
-          <InputField name="lengthUnit" label="Length unit" defaultValue={initial?.lengthUnit ?? "in"} />
+          <InputField name="lengthUnit" label="Length unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.lengthUnit), preferred: preferences.length, fallback: "in" })} />
           <InputField name="headCircumference" label="Head circumference" defaultValue={initial?.headCircumference} type="number" inputMode="decimal" min="0" step="any" />
-          <InputField name="headUnit" label="Head unit" defaultValue={initial?.headUnit ?? "in"} />
+          <InputField name="headUnit" label="Head unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.headUnit), preferred: preferences.length, fallback: "in" })} />
           <InputField name="temperature" label="Temperature" defaultValue={initial?.temperature} type="number" inputMode="decimal" min="0" step="any" />
-          <InputField name="temperatureUnit" label="Temperature unit" defaultValue={initial?.temperatureUnit ?? "F"} />
+          <InputField name="temperatureUnit" label="Temperature unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.temperatureUnit), preferred: preferences.temperature, fallback: "F" })} />
           <InputField name="measurementType" label="Measurement type" defaultValue={initial?.measurementType} />
         </div>
       );
@@ -337,13 +345,7 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
         </div>
       );
     case "supplement":
-      return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InputField name="name" label="Supplement" defaultValue={initial?.name} required />
-          <InputField name="dose" label="Dose" defaultValue={initial?.dose} type="number" inputMode="decimal" min="0" step="any" />
-          <InputField name="unit" label="Unit" defaultValue={initial?.unit} />
-        </div>
-      );
+      return <ItemDoseFields kind="supplement" initial={initial} units={preferences.supplementUnits} names={supplementNames} />;
     case "vaccine":
       return (
         <div className="space-y-3">
@@ -371,7 +373,7 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
               options={["stored", "fed", "discarded", "thawed", "donated", "expired"]}
             />
             <InputField name="amount" label="Amount" defaultValue={initial?.amount} type="number" inputMode="decimal" min="0" step="any" />
-            <InputField name="unit" label="Unit" defaultValue={initial?.unit ?? "oz"} />
+            <InputField name="unit" label="Unit" defaultValue={resolveFormUnit({ editing, saved: textValue(initial?.unit), preferred: preferences.volume, fallback: "oz" })} />
           </div>
           <OptionalDetails defaultOpen={hasActivityDetail(initial, ["storage", "label"])}>
             <InputField name="storage" label="Storage" defaultValue={initial?.storage} />
@@ -380,6 +382,65 @@ function typeFields(type: ActivityTypeName, initial?: Record<string, string | nu
         </div>
       );
   }
+}
+
+function ItemDoseFields({
+  kind,
+  initial,
+  units,
+  names
+}: {
+  kind: "medicine" | "supplement";
+  initial?: Record<string, string | number | boolean | null | undefined>;
+  units: Record<string, string>;
+  names: string[];
+}) {
+  const initialName = textValue(initial?.name) ?? "";
+  const savedUnit = textValue(initial?.unit);
+  const editing = Boolean(initial);
+  const [name, setName] = useState(initialName);
+  const [unit, setUnit] = useState(() => resolveItemDoseUnit({ saved: savedUnit, name: initialName, units: editing ? {} : units }));
+  const [unitEdited, setUnitEdited] = useState(editing || Boolean(savedUnit));
+  const label = kind === "medicine" ? "Medicine" : "Supplement";
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="block space-y-2 text-sm font-semibold">
+        {label}
+        <Input
+          name="name"
+          value={name}
+          list={`${kind}-names`}
+          required
+          onChange={(event) => {
+            const nextName = event.target.value;
+            setName(nextName);
+            if (!unitEdited) setUnit(resolveItemDoseUnit({ name: nextName, units }));
+          }}
+        />
+        <datalist id={`${kind}-names`}>
+          {names.map((itemName) => <option key={itemName} value={itemName} />)}
+        </datalist>
+      </label>
+      <InputField name="dose" label="Dose" defaultValue={initial?.dose} type="number" inputMode="decimal" min="0" step="any" />
+      <label className="block space-y-2 text-sm font-semibold">
+        Unit
+        <Input
+          name="unit"
+          value={unit}
+          maxLength={20}
+          onChange={(event) => {
+            setUnit(event.target.value);
+            setUnitEdited(true);
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
+function textValue(value: unknown) {
+  return typeof value === "string" ? value : undefined;
 }
 
 function activityIdField(initial?: Record<string, unknown>) {

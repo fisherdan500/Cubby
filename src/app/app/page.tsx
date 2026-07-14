@@ -255,7 +255,7 @@ function DailySummary({
       ? {
           key: "feeding",
           value: String(summary.feeding.count),
-          label: summary.feeding.amount ? `${summary.feeding.amount.toFixed(1)} oz` : "Feeds"
+          label: summary.feeding.amount ? `${summary.feeding.amount.toFixed(1)} ${summary.feeding.unit}` : "Feeds"
         }
       : null,
     summary.diaper.count
@@ -275,7 +275,7 @@ function DailySummary({
     summary.pumping.count
       ? {
           key: "pumping",
-          value: summary.pumping.amount ? `${summary.pumping.amount.toFixed(1)} oz` : String(summary.pumping.count),
+          value: summary.pumping.amount ? `${summary.pumping.amount.toFixed(1)} ${summary.pumping.unit}` : String(summary.pumping.count),
           label: summary.pumping.amount ? "Pumped" : "Pump"
         }
       : null,

@@ -2,6 +2,12 @@ import { ActivityType, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { activityTypes, type ActivityTypeName } from "@/domain/activity";
 import {
+  defaultUnitPreferences,
+  parseUnitPreferences,
+  type UnitPreferences
+} from "@/domain/unit-preferences";
+import { convertLength, convertWeight, sumVolume } from "@/domain/units";
+import {
   isRoutineActivityType,
   routineActivityTypes,
   type RoutineActivityType,
@@ -93,7 +99,12 @@ export async function getReports(userId: string, input?: { babyId?: string; star
     timezone: env.APP_TIMEZONE,
     activities,
     routine: buildRoutineTimeline(routineActivities, endKey, routineWindow, env.APP_TIMEZONE),
-    stats: buildStats(activities, baby.birthDate, env.APP_TIMEZONE)
+    stats: buildReportStats(
+      activities,
+      baby.birthDate,
+      env.APP_TIMEZONE,
+      parseUnitPreferences(home.household.settings?.unitPreferences)
+    )
   };
 }
 
@@ -205,27 +216,32 @@ export function buildRoutineTimeline(activities: RoutineActivity[], endKey: stri
 
 export type RoutineTimeline = ReturnType<typeof buildRoutineTimeline>;
 
-function buildStats(activities: ReportActivity[], birthDate?: Date | null, timeZone = env.APP_TIMEZONE) {
+export function buildReportStats(
+  activities: ReportActivity[],
+  birthDate?: Date | null,
+  timeZone = env.APP_TIMEZONE,
+  preferences: UnitPreferences = defaultUnitPreferences
+) {
   const byType = Object.fromEntries(activityTypes.map((type) => [type, 0])) as Record<ActivityTypeName, number>;
   let sleepSeconds = 0;
   let napCount = 0;
   let nightSleepSeconds = 0;
-  let bottleTotal = 0;
+  const bottleVolumes: Array<{ amount: number; unit?: string | null }> = [];
   let bottleCount = 0;
   let breastCount = 0;
   let solidsCount = 0;
   let wet = 0;
   let dirty = 0;
-  let pumped = 0;
+  const pumpingVolumes: Array<{ amount: number; unit?: string | null }> = [];
 
   const heatmap = Array.from({ length: 7 }, (_, day) =>
     Array.from({ length: 24 }, (_, hour) => ({ day, hour, count: 0 }))
   ).flat();
 
-  const growth = {
-    weight: [] as Array<{ date: string; ageMonths: number; value: number; unit: string }>,
-    length: [] as Array<{ date: string; ageMonths: number; value: number; unit: string }>,
-    head: [] as Array<{ date: string; ageMonths: number; value: number; unit: string }>
+  const growth: Record<"weight" | "length" | "head", GrowthPoint[] | null> = {
+    weight: [],
+    length: [],
+    head: []
   };
 
   const milestones: Array<{ date: Date; title: string; category?: string | null }> = [];
@@ -246,33 +262,58 @@ function buildStats(activities: ReportActivity[], birthDate?: Date | null, timeZ
     if (activity.feeding) {
       if (activity.feeding.mode === "bottle" || activity.feeding.mode === "formula") {
         bottleCount += 1;
-        bottleTotal += Number(activity.feeding.amount ?? 0);
+        if (activity.feeding.amount !== null && activity.feeding.amount !== undefined) {
+          bottleVolumes.push({ amount: Number(activity.feeding.amount), unit: activity.feeding.unit });
+        }
       }
       if (activity.feeding.mode === "breast") breastCount += 1;
       if (activity.feeding.mode === "solids") solidsCount += 1;
     }
     if (activity.diaper?.kind === "wet" || activity.diaper?.kind === "mixed") wet += 1;
     if (activity.diaper?.kind === "dirty" || activity.diaper?.kind === "mixed") dirty += 1;
-    if (activity.pumping?.amount) pumped += Number(activity.pumping.amount);
+    if (activity.pumping?.amount !== null && activity.pumping?.amount !== undefined) {
+      pumpingVolumes.push({ amount: Number(activity.pumping.amount), unit: activity.pumping.unit });
+    }
     if (activity.measurement) {
       const date = dateKeyInTimeZone(activity.occurredAt, timeZone);
       const ageMonths = birthDate
         ? Number(((activity.occurredAt.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)).toFixed(1))
         : 0;
       if (activity.measurement.weight) {
-        growth.weight.push({ date, ageMonths, value: Number(activity.measurement.weight), unit: activity.measurement.weightUnit ?? "lb" });
+        growth.weight = appendGrowthPoint(
+          growth.weight,
+          date,
+          ageMonths,
+          convertWeight(Number(activity.measurement.weight), activity.measurement.weightUnit, preferences.weight),
+          preferences.weight
+        );
       }
       if (activity.measurement.length) {
-        growth.length.push({ date, ageMonths, value: Number(activity.measurement.length), unit: activity.measurement.lengthUnit ?? "in" });
+        growth.length = appendGrowthPoint(
+          growth.length,
+          date,
+          ageMonths,
+          convertLength(Number(activity.measurement.length), activity.measurement.lengthUnit, preferences.length),
+          preferences.length
+        );
       }
       if (activity.measurement.headCircumference) {
-        growth.head.push({ date, ageMonths, value: Number(activity.measurement.headCircumference), unit: activity.measurement.headUnit ?? "in" });
+        growth.head = appendGrowthPoint(
+          growth.head,
+          date,
+          ageMonths,
+          convertLength(Number(activity.measurement.headCircumference), activity.measurement.headUnit, preferences.length),
+          preferences.length
+        );
       }
     }
     if (activity.milestone) {
       milestones.push({ date: activity.occurredAt, title: activity.milestone.title, category: activity.milestone.category });
     }
   }
+
+  const bottleTotal = sumVolume(bottleVolumes, preferences.volume).amount;
+  const pumped = sumVolume(pumpingVolumes, preferences.volume).amount;
 
   return {
     byType,
@@ -284,16 +325,30 @@ function buildStats(activities: ReportActivity[], birthDate?: Date | null, timeZ
     },
     feeding: {
       bottleCount,
-      bottleAverage: bottleCount ? Number((bottleTotal / bottleCount).toFixed(2)) : 0,
+      bottleAverage: bottleCount && bottleTotal !== null ? Number((bottleTotal / bottleCount).toFixed(2)) : bottleCount ? null : 0,
+      unit: preferences.volume,
       breastCount,
       solidsCount
     },
     diaper: { wet, dirty },
-    pumping: { total: Number(pumped.toFixed(2)) },
+    pumping: { total: pumped === null ? null : Number(pumped.toFixed(2)), unit: preferences.volume },
     growth,
     milestones,
     heatmap
   };
+}
+
+type GrowthPoint = { date: string; ageMonths: number; value: number; unit: string };
+
+function appendGrowthPoint(
+  points: GrowthPoint[] | null,
+  date: string,
+  ageMonths: number,
+  value: number | null,
+  unit: string
+) {
+  if (points === null || value === null) return null;
+  return [...points, { date, ageMonths, value: Number(value.toFixed(2)), unit }];
 }
 
 function isValidDateKey(value: string | undefined): value is string {
