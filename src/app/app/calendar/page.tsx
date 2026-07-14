@@ -2,10 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight, Clock3, MapPin, PlusCircle, Users, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { CalendarDrawerShell } from "@/components/calendar-drawer-shell";
+import { CalendarFocusRestore } from "@/components/calendar-focus-restore";
+import { CalendarScrollPair } from "@/components/calendar-scroll-pair";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
+import { activityDetailHref } from "@/lib/activity-navigation";
+import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calendar-layout";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getCalendar } from "@/server/services/calendar";
@@ -17,7 +22,7 @@ const eventTypes = ["Appointment", "Birthday", "Reminder", "Checkup", "Visit", "
 export default async function CalendarPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; month?: string; date?: string; eventId?: string; new?: string; error?: string };
+  searchParams: { babyId?: string; month?: string; date?: string; eventId?: string; new?: string; error?: string; opener?: string };
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
@@ -31,12 +36,12 @@ export default async function CalendarPage({
         <div className="rounded-lg border border-border bg-card p-4">Add a baby before viewing the calendar.</div>
       ) : (
         <div className="space-y-0">
-          <div className="sticky top-20 z-10 -mx-4 -mt-5 md:-mx-6">
+          <div className={`${calendarFullBleedClassName} sticky top-16 z-10 -mt-5 md:top-20`}>
             <section className="border-b border-border bg-primary/85 text-primary-foreground">
               <div className="grid min-h-9 grid-cols-[56px_1fr_56px] items-center px-2 py-1 md:px-6">
                 <Link
                   href={calendarHref(calendar.baby.id, calendar.previousMonth)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-primary-foreground/10"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-primary-foreground/10"
                   aria-label="Previous month"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -46,24 +51,26 @@ export default async function CalendarPage({
                 </div>
                 <Link
                   href={calendarHref(calendar.baby.id, calendar.nextMonth)}
-                  className="inline-flex h-9 w-9 items-center justify-center justify-self-end rounded-full hover:bg-primary-foreground/10"
+                  className="inline-flex h-11 w-11 items-center justify-center justify-self-end rounded-full hover:bg-primary-foreground/10"
                   aria-label="Next month"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </Link>
               </div>
             </section>
-            <div className="overflow-x-auto border-b border-border bg-background">
-              <div className="grid min-w-[860px] grid-cols-7 py-3 text-center text-sm font-black text-muted-foreground">
-                {weekdays.map((day) => (
-                  <div key={day}>{day}</div>
-                ))}
-              </div>
-            </div>
           </div>
 
-          <section className="-mx-4 overflow-x-auto md:-mx-6">
-            <div className="min-w-[860px]">
+          <div className={calendarFullBleedClassName}>
+            <CalendarScrollPair
+              weekdays={
+                <div className="grid min-w-[860px] grid-cols-7 py-3 text-center text-sm font-black text-muted-foreground">
+                  {weekdays.map((day) => (
+                    <div key={day}>{day}</div>
+                  ))}
+                </div>
+              }
+              days={
+                <div className="min-w-[860px]">
               <div className="grid grid-cols-7 border-l border-border">
                 {calendar.days.map((day) => {
                   const activityEntries = Object.entries(day.counts);
@@ -75,10 +82,11 @@ export default async function CalendarPage({
                       } ${calendar.selected?.key === day.key ? "ring-2 ring-inset ring-primary" : ""}`}
                     >
                       <Link
-                        href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key })}
-                        className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-sm font-black hover:bg-muted ${
+                        href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key, opener: `day:${day.key}` })}
+                        className={`inline-flex h-11 min-w-11 items-center justify-center rounded-full px-2 text-sm font-black hover:bg-muted ${
                           day.key === calendar.todayKey ? "bg-primary text-primary-foreground" : ""
                         }`}
+                        data-calendar-day={day.key}
                       >
                         {day.dayNumber}
                       </Link>
@@ -87,9 +95,17 @@ export default async function CalendarPage({
                         {day.events.slice(0, 4).map((event) => (
                           <Link
                             key={event.id}
-                            href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key, eventId: event.id })}
-                            className="block truncate rounded px-2 py-1 text-xs font-black text-white shadow-sm"
-                            style={{ backgroundColor: event.color ?? "hsl(var(--primary))" }}
+                            href={calendarHref(calendar.baby.id, calendar.monthKey, {
+                              date: day.key,
+                              eventId: event.id,
+                              opener: `event:${event.id}`
+                            })}
+                            data-calendar-event={event.id}
+                            className="block min-h-11 truncate rounded px-2 py-3 text-xs font-black shadow-sm"
+                            style={{
+                              backgroundColor: event.color ?? "hsl(var(--primary))",
+                              color: calendarEventTextColor(event.color)
+                            }}
                             title={event.title}
                           >
                             {event.title}
@@ -97,8 +113,9 @@ export default async function CalendarPage({
                         ))}
                         {day.events.length > 4 ? (
                           <Link
-                            href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key })}
-                            className="block rounded bg-muted px-2 py-1 text-xs font-bold text-muted-foreground"
+                            href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key, opener: `more:${day.key}` })}
+                            data-calendar-more={day.key}
+                            className="block min-h-11 rounded bg-muted px-2 py-3 text-xs font-bold text-muted-foreground"
                           >
                             +{day.events.length - 4} more events
                           </Link>
@@ -107,8 +124,9 @@ export default async function CalendarPage({
 
                       {activityEntries.length ? (
                         <Link
-                          href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key })}
-                          className="mt-2 flex flex-wrap gap-1"
+                          href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key, opener: `activity:${day.key}` })}
+                          data-calendar-activity-day={day.key}
+                          className="mt-2 flex min-h-11 flex-wrap items-center gap-1"
                           aria-label={`${day.total} items on ${day.key}`}
                         >
                           {activityEntries.slice(0, 6).map(([type, count]) => (
@@ -124,17 +142,24 @@ export default async function CalendarPage({
                   );
                 })}
               </div>
-            </div>
-          </section>
+                </div>
+              }
+            />
+          </div>
 
           {!calendar.selected && searchParams.new !== "1" ? (
             <Link
-              href={calendarHref(calendar.baby.id, calendar.monthKey, { date: calendar.todayKey, new: "1" })}
+              href={calendarHref(calendar.baby.id, calendar.monthKey, { date: calendar.todayKey, new: "1", opener: "add" })}
+              data-calendar-add-event
               className="fixed bottom-24 right-6 z-20 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-soft md:bottom-6"
             >
               <PlusCircle className="h-5 w-5" />
               Add Event
             </Link>
+          ) : null}
+
+          {!calendar.selected && searchParams.new !== "1" && searchParams.opener ? (
+            <CalendarFocusRestore selector={calendarOpenerSelector(searchParams.opener, calendar.todayKey)} />
           ) : null}
 
           {calendar.selected || searchParams.new === "1" ? (
@@ -143,6 +168,7 @@ export default async function CalendarPage({
               isNew={searchParams.new === "1"}
               error={searchParams.error}
               initialDate={searchParams.date ?? calendar.todayKey}
+              opener={searchParams.opener}
             />
           ) : null}
         </div>
@@ -155,40 +181,48 @@ function CalendarDrawer({
   calendar,
   isNew,
   error,
-  initialDate
+  initialDate,
+  opener
 }: {
   calendar: NonNullable<Awaited<ReturnType<typeof getCalendar>>>;
   isNew: boolean;
   error?: string;
   initialDate: string;
+  opener?: string;
 }) {
   if (!calendar.baby) return null;
-  const closeHref = calendarHref(calendar.baby.id, calendar.monthKey);
+  const closeHref = calendarHref(calendar.baby.id, calendar.monthKey, { opener });
   const selectedDate = calendar.selected?.key ?? initialDate;
   const selectedLabel = calendar.selected?.label ?? formatDateKeyLabel(selectedDate);
+  const restoreFocusSelector = calendarOpenerSelector(opener, selectedDate);
 
   return (
-    <div className="fixed inset-0 z-40 md:left-64">
-      <Link href={closeHref} className="absolute inset-0 bg-black/60" aria-label="Close calendar drawer" />
-      <aside className="absolute inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border bg-card shadow-soft">
+    <CalendarDrawerShell
+      closeHref={closeHref}
+      restoreFocusSelector={restoreFocusSelector}
+      focusKey={`${selectedDate}:${isNew ? "new" : "summary"}`}
+    >
         {isNew ? (
           <NewEventForm
             babyId={calendar.baby.id}
             monthKey={calendar.monthKey}
             selectedDate={selectedDate}
-            closeHref={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate })}
+            closeHref={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, opener })}
             error={error}
+            opener={opener}
           />
         ) : (
           <>
             <div className="flex items-start justify-between gap-3 border-b border-border p-5">
               <div>
-                <h2 className="text-2xl font-black">{selectedLabel}</h2>
+                <h2 id="calendar-drawer-title" tabIndex={-1} data-calendar-drawer-heading className="text-2xl font-black">
+                  {selectedLabel}
+                </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {(calendar.selected?.events.length ?? 0) + (calendar.selected?.activities.length ?? 0)} calendar items
                 </p>
               </div>
-              <Link href={closeHref} className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted" aria-label="Close">
+              <Link href={closeHref} className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted" aria-label="Close">
                 <X className="h-5 w-5" />
               </Link>
             </div>
@@ -239,9 +273,15 @@ function CalendarDrawer({
                 {calendar.selected?.activities.length ? null : <p className="text-sm text-muted-foreground">No tracked activity for this day.</p>}
                 {calendar.selected?.activities.map((activity) => {
                   const type = activity.type as ActivityTypeName;
-                  const returnTo = calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate });
+                  const returnTo = calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, opener });
                   return (
-                    <Link key={activity.id} href={activityEditHref(activity.id, returnTo)} className="block rounded-lg border border-border bg-background/40 p-4">
+                    <Link
+                      replace
+                      key={activity.id}
+                      prefetch={false}
+                      href={activityDetailHref(activity.id, returnTo)}
+                      className="block rounded-lg border border-border bg-background/40 p-4 hover:bg-muted"
+                    >
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-black">{activityLabels[type]}</p>
                         <p className="text-xs font-bold text-muted-foreground">{formatTime(activity.occurredAt, calendar.timezone)}</p>
@@ -261,7 +301,7 @@ function CalendarDrawer({
                 Close
               </Link>
               <Link
-                href={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, new: "1" })}
+                href={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, new: "1", opener })}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-black text-primary-foreground hover:opacity-95"
               >
                 <PlusCircle className="h-5 w-5" />
@@ -270,8 +310,7 @@ function CalendarDrawer({
             </div>
           </>
         )}
-      </aside>
-    </div>
+    </CalendarDrawerShell>
   );
 }
 
@@ -280,24 +319,29 @@ function NewEventForm({
   monthKey,
   selectedDate,
   closeHref,
-  error
+  error,
+  opener
 }: {
   babyId: string;
   monthKey: string;
   selectedDate: string;
   closeHref: string;
   error?: string;
+  opener?: string;
 }) {
   return (
     <form action={createCalendarEventAction} className="flex min-h-full flex-col">
       <input type="hidden" name="babyId" value={babyId} />
       <input type="hidden" name="month" value={monthKey} />
+      <input type="hidden" name="opener" value={opener ?? ""} />
       <div className="flex items-start justify-between gap-3 border-b border-border p-5">
         <div>
-          <h2 className="text-2xl font-black">New Event</h2>
+          <h2 id="calendar-drawer-title" tabIndex={-1} data-calendar-drawer-heading className="text-2xl font-black">
+            New Event
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">{formatDateKeyLabel(selectedDate)}</p>
         </div>
-        <Link href={closeHref} className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted" aria-label="Close">
+        <Link href={closeHref} className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted" aria-label="Close">
           <X className="h-5 w-5" />
         </Link>
       </div>
@@ -323,7 +367,7 @@ function NewEventForm({
             </select>
           </label>
 
-          <label className="flex items-center gap-3 text-sm font-bold">
+          <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
             <input name="allDay" type="checkbox" className="h-5 w-5 rounded border-border bg-card" />
             All day event
           </label>
@@ -380,16 +424,23 @@ function NewEventForm({
   );
 }
 
-function calendarHref(babyId: string, month: string, extra?: { date?: string; eventId?: string; new?: string }) {
+function calendarHref(babyId: string, month: string, extra?: { date?: string; eventId?: string; new?: string; opener?: string }) {
   const params = new URLSearchParams({ babyId, month });
   if (extra?.date) params.set("date", extra.date);
   if (extra?.eventId) params.set("eventId", extra.eventId);
   if (extra?.new) params.set("new", extra.new);
+  if (extra?.opener) params.set("opener", extra.opener);
   return `/app/calendar?${params.toString()}`;
 }
 
-function activityEditHref(activityId: string, returnTo: string) {
-  return `/app/activities/${activityId}/edit?${new URLSearchParams({ returnTo }).toString()}`;
+function calendarOpenerSelector(opener: string | undefined, selectedDate: string) {
+  if (opener === "add") return "[data-calendar-add-event]";
+  const [kind, id, extra] = opener?.split(":") ?? [];
+  if (extra || !id || !/^[a-z0-9-]+$/i.test(id)) return `[data-calendar-day="${selectedDate}"]`;
+  if (kind === "event") return `[data-calendar-event="${id}"]`;
+  if (kind === "more") return `[data-calendar-more="${id}"]`;
+  if (kind === "activity") return `[data-calendar-activity-day="${id}"]`;
+  return `[data-calendar-day="${id}"]`;
 }
 
 function prioritizeSelectedEvent<T extends { id: string }>(events: T[], selectedId?: string) {

@@ -10,9 +10,10 @@ export async function writeAudit(
     entityId: string;
     before?: Prisma.InputJsonValue;
     after?: Prisma.InputJsonValue;
-  }
+  },
+  db: Pick<Prisma.TransactionClient, "auditEvent"> = prisma
 ) {
-  await prisma.auditEvent.create({
+  await db.auditEvent.create({
     data: {
       householdId: ctx.householdId,
       actorUserId: ctx.userId,

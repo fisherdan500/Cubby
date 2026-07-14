@@ -59,7 +59,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
   if (!selectedBaby) return null;
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0 flex-1 rounded-full focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-primary sm:flex-none">
       <div className="flex min-h-12 items-center gap-2 rounded-full border border-primary-foreground/25 bg-card px-3 py-1.5 text-left font-bold text-card-foreground shadow-soft">
         {activeTimerType ? <ActivityArtwork type={activeTimerType} size="xs" /> : null}
         <div className="min-w-0">

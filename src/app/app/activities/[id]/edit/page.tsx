@@ -1,29 +1,33 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { DeleteActivityButton } from "@/components/actions/activity-actions";
 import { ActivityForm } from "@/components/forms/activity-form";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { activityDetailHref, activityFallbackHref, safeActivityReturnTo } from "@/lib/activity-navigation";
+import { activityUnavailableOrThrow } from "@/lib/activity-page-error";
 import { env } from "@/lib/env";
-import { dateKeyInTimeZone, dateTimeInputValue } from "@/lib/timezone";
+import { dateTimeInputValue } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
-import { getActivity } from "@/server/services/activities";
+import { getActivityForEdit } from "@/server/services/activities";
 import { getHouseholdHome } from "@/server/services/households";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
-export default async function EditActivityPage({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string } }) {
+export default async function EditActivityPage({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string | string[] } }) {
   const user = await requireUserPage();
   const home = await getHouseholdHome(user.id);
   if (!home) redirect("/onboarding");
   const [activity, unitSettings] = await Promise.all([
-    getActivity(params.id).catch(() => null),
+    getActivityForEdit(params.id).catch(activityUnavailableOrThrow),
     getActivityUnitPreferences()
   ]);
   if (!activity) notFound();
   const type = activity.type as ActivityTypeName;
   const babies = home.household.babies.map((baby) => ({ id: baby.id, name: baby.name }));
   const initial = serializeActivity(activity);
-  const returnTo = safeReturnTo(searchParams.returnTo) ?? activityFallbackReturnTo(activity);
+  const sourceReturnTo =
+    safeActivityReturnTo(searchParams.returnTo) ??
+    activityFallbackHref({ babyId: activity.babyId, occurredAt: activity.occurredAt, timeZone: env.APP_TIMEZONE });
+  const detailHref = activityDetailHref(activity.id, sourceReturnTo);
 
   return (
     <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
@@ -34,29 +38,18 @@ export default async function EditActivityPage({ params, searchParams }: { param
             type={type}
             activityId={activity.id}
             initial={initial}
-            returnTo={returnTo}
+            returnTo={detailHref}
+            successTo={detailHref}
+            allowActivityDestination
             appTimeZone={env.APP_TIMEZONE}
             unitPreferences={unitSettings.preferences}
             medicineNames={unitSettings.medicineNames}
             supplementNames={unitSettings.supplementNames}
           />
         </Card>
-        <DeleteActivityButton id={activity.id} returnTo={returnTo} />
       </div>
     </AppShell>
   );
-}
-
-function safeReturnTo(value: string | undefined) {
-  if (!value || (value !== "/app" && !value.startsWith("/app?") && !value.startsWith("/app/"))) return undefined;
-  if (value.startsWith("/app/activities/")) return undefined;
-  return value;
-}
-
-function activityFallbackReturnTo(activity: Awaited<ReturnType<typeof getActivity>>) {
-  const date = dateKeyInTimeZone(activity.occurredAt, env.APP_TIMEZONE);
-  const params = new URLSearchParams({ babyId: activity.babyId, date });
-  return `/app?${params.toString()}`;
 }
 
 function localValue(date?: Date | null) {
@@ -64,9 +57,10 @@ function localValue(date?: Date | null) {
   return dateTimeInputValue(date, env.APP_TIMEZONE);
 }
 
-function serializeActivity(activity: Awaited<ReturnType<typeof getActivity>>) {
+function serializeActivity(activity: Awaited<ReturnType<typeof getActivityForEdit>>) {
   return {
     id: activity.id,
+    updatedAt: activity.updatedAt.toISOString(),
     babyId: activity.babyId,
     occurredAt: localValue(activity.occurredAt),
     startedAt: localValue(activity.startedAt),

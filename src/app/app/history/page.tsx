@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
-import { DeleteActivityButton } from "@/components/actions/activity-actions";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
+import { activityDetailHref } from "@/lib/activity-navigation";
 import { env } from "@/lib/env";
 import { historyHref, historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
@@ -46,7 +46,11 @@ export default async function HistoryPage({
         <section className="rounded-lg border border-border bg-card/45 p-2">
           <AutoSubmitForm className="flex max-w-full flex-wrap items-center gap-2">
             {babySelector ? <input type="hidden" name="babyId" value={babySelector.selectedBabyId} /> : null}
+            <label htmlFor="history-type" className="sr-only">
+              Activity type
+            </label>
             <select
+              id="history-type"
               name="type"
               defaultValue={searchParams.type ?? ""}
               className="min-h-11 w-36 rounded-lg border border-border bg-card px-3 text-sm font-semibold sm:w-48"
@@ -58,7 +62,11 @@ export default async function HistoryPage({
                 </option>
               ))}
             </select>
+            <label htmlFor="history-search" className="sr-only">
+              Search activity history
+            </label>
             <input
+              id="history-search"
               name="search"
               defaultValue={searchParams.search ?? ""}
               placeholder="Search notes, meds, milestones"
@@ -134,26 +142,21 @@ function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivi
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="flex items-stretch">
-        <Link prefetch={false} href={activityEditHref(activity.id, returnTo)} className="min-w-0 flex-1 p-3 transition hover:bg-muted">
-          <div className="flex items-start gap-3">
-            <ActivityArtwork type={type} size="sm" />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <p className="font-black leading-tight">{activityLabels[type]}</p>
-                <p className="text-xs font-bold text-muted-foreground">{timeLabel(activity.occurredAt, timeZone)}</p>
-              </div>
-              <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                {activity.baby.name} - {actor}
-              </p>
-              <p className="mt-1 line-clamp-2 text-sm">{describeActivity(activity)}</p>
+      <Link replace prefetch={false} href={activityDetailHref(activity.id, returnTo)} className="block min-w-0 p-3 transition hover:bg-muted">
+        <div className="flex items-start gap-3">
+          <ActivityArtwork type={type} size="sm" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <p className="font-black leading-tight">{activityLabels[type]}</p>
+              <p className="text-xs font-bold text-muted-foreground">{timeLabel(activity.occurredAt, timeZone)}</p>
             </div>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              {activity.baby.name} - {actor}
+            </p>
+            <p className="mt-1 line-clamp-2 text-sm">{describeActivity(activity)}</p>
           </div>
-        </Link>
-        <div className="flex shrink-0 items-center border-l border-border p-2">
-          <DeleteActivityButton id={activity.id} returnTo={returnTo} />
         </div>
-      </div>
+      </Link>
     </Card>
   );
 }
@@ -193,8 +196,4 @@ function timeLabel(date: Date, timeZone: string) {
     minute: "2-digit",
     timeZone
   }).format(date);
-}
-
-function activityEditHref(activityId: string, returnTo: string) {
-  return `/app/activities/${activityId}/edit?${new URLSearchParams({ returnTo }).toString()}`;
 }

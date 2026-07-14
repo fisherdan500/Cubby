@@ -40,6 +40,16 @@ function toDate(value: string | undefined, fallback?: Date) {
   return date;
 }
 
+function auditActivityState(value: Prisma.JsonValue | null) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const updatedAt = typeof value.updatedAt === "string" ? new Date(value.updatedAt) : null;
+  const deletedAt = value.deletedAt === null ? null : typeof value.deletedAt === "string" ? new Date(value.deletedAt) : undefined;
+  if (!updatedAt || Number.isNaN(updatedAt.getTime()) || deletedAt === undefined || (deletedAt && Number.isNaN(deletedAt.getTime()))) {
+    return null;
+  }
+  return { updatedAt, deletedAt };
+}
+
 function decimal(value: unknown) {
   if (value === undefined || value === null || value === "") return undefined;
   return String(value);
@@ -83,8 +93,8 @@ function specificCreate(input: ActivityCreateInput): ActivityCreateDraft {
             side: input.side,
             bottleType: input.bottleType,
             food: input.food,
-            leftSeconds: input.leftSeconds ? Number(input.leftSeconds) : undefined,
-            rightSeconds: input.rightSeconds ? Number(input.rightSeconds) : undefined
+            leftSeconds: input.leftSeconds,
+            rightSeconds: input.rightSeconds
           }
         }
       };
@@ -250,8 +260,13 @@ function specificCreate(input: ActivityCreateInput): ActivityCreateDraft {
   }
 }
 
-async function queueActivitySideEffects(ctx: HouseholdContext, activity: { id: string; type: ActivityType }, event: WebhookEvent) {
-  const endpoints = await prisma.webhookEndpoint.findMany({
+async function queueActivitySideEffects(
+  ctx: HouseholdContext,
+  activity: { id: string; type: ActivityType },
+  event: WebhookEvent,
+  db: Pick<Prisma.TransactionClient, "webhookEndpoint" | "webhookDelivery" | "notificationPreference" | "notificationLog"> = prisma
+) {
+  const endpoints = await db.webhookEndpoint.findMany({
     where: {
       householdId: ctx.householdId,
       enabled: true,
@@ -262,7 +277,7 @@ async function queueActivitySideEffects(ctx: HouseholdContext, activity: { id: s
   });
 
   if (endpoints.length) {
-    await prisma.webhookDelivery.createMany({
+    await db.webhookDelivery.createMany({
       data: endpoints.map((endpoint) => ({
         householdId: ctx.householdId,
         endpointId: endpoint.id,
@@ -274,12 +289,12 @@ async function queueActivitySideEffects(ctx: HouseholdContext, activity: { id: s
   }
 
   if (event === WebhookEvent.activity_created) {
-    const preferences = await prisma.notificationPreference.findMany({
+    const preferences = await db.notificationPreference.findMany({
       where: { householdId: ctx.householdId, activityCreated: true },
       select: { userId: true }
     });
     if (preferences.length) {
-      await prisma.notificationLog.createMany({
+      await db.notificationLog.createMany({
         data: preferences.map((preference) => ({
           householdId: ctx.householdId,
           activityId: activity.id,
@@ -298,6 +313,19 @@ export async function createActivity(raw: unknown) {
   return createActivityForContext(raw, ctx);
 }
 
+async function requireHouseholdMedicineContact(
+  tx: Pick<Prisma.TransactionClient, "contact">,
+  ctx: HouseholdContext,
+  input: ActivityCreateInput
+) {
+  if (input.type !== "medicine" || !input.contactId) return;
+  const contact = await tx.contact.findFirst({
+    where: { id: input.contactId, householdId: ctx.householdId, deletedAt: null },
+    select: { id: true }
+  });
+  if (!contact) throw new Error("not_found");
+}
+
 export async function createActivityForContext(raw: unknown, ctx: HouseholdContext) {
   requirePermission(ctx, "activity.create");
   const input = activityCreateSchema.parse(raw);
@@ -306,28 +334,31 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
   });
   if (!baby) throw new Error("not_found");
 
-  const activity = await prisma.activityLog.create({
-    data: {
-      ...specificCreate(input),
-      household: { connect: { id: ctx.householdId } },
-      baby: { connect: { id: input.babyId } },
-      actorMember: { connect: { id: ctx.memberId } }
-    },
-    include: activityInclude
-  });
+  return prisma.$transaction(async (tx) => {
+    await requireHouseholdMedicineContact(tx, ctx, input);
+    const activity = await tx.activityLog.create({
+      data: {
+        ...specificCreate(input),
+        household: { connect: { id: ctx.householdId } },
+        baby: { connect: { id: input.babyId } },
+        actorMember: { connect: { id: ctx.memberId } }
+      },
+      include: activityInclude
+    });
 
-  await writeAudit(ctx, {
-    action: "activity.create",
-    entityType: "activity",
-    entityId: activity.id,
-    after: activity
+    await writeAudit(
+      ctx,
+      { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity },
+      tx
+    );
+    await queueActivitySideEffects(
+      ctx,
+      activity,
+      activity.timerState === TimerState.running ? WebhookEvent.timer_started : WebhookEvent.activity_created,
+      tx
+    );
+    return activity;
   });
-  await queueActivitySideEffects(
-    ctx,
-    activity,
-    activity.timerState === TimerState.running ? WebhookEvent.timer_started : WebhookEvent.activity_created
-  );
-  return activity;
 }
 
 export async function listActivities(params?: {
@@ -367,7 +398,7 @@ export async function listActivities(params?: {
   });
 }
 
-export async function getActivity(id: string) {
+export async function getActivityView(id: string) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.read");
   const activity = await prisma.activityLog.findFirst({
@@ -375,7 +406,18 @@ export async function getActivity(id: string) {
     include: activityInclude
   });
   if (!activity) throw new Error("not_found");
-  return activity;
+  const isOwn = activity.actorMemberId === ctx.memberId;
+  return {
+    activity,
+    canUpdate: canMutateOwnOrAny(ctx.role, "update", isOwn),
+    canDelete: canMutateOwnOrAny(ctx.role, "delete", isOwn)
+  };
+}
+
+export async function getActivityForEdit(id: string) {
+  const view = await getActivityView(id);
+  if (!view.canUpdate) throw new Error("forbidden");
+  return view.activity;
 }
 
 async function getEditableActivity(ctx: HouseholdContext, id: string, action: "update" | "delete") {
@@ -390,7 +432,41 @@ async function getEditableActivity(ctx: HouseholdContext, id: string, action: "u
   return activity;
 }
 
-async function replaceSpecificLog(tx: Prisma.TransactionClient, id: string, input: ActivityCreateInput) {
+async function updateCurrentActivity(
+  ctx: HouseholdContext,
+  activity: { id: string; updatedAt: Date },
+  data: Prisma.ActivityLogUpdateManyMutationInput,
+  action: string,
+  event?: WebhookEvent
+) {
+  return prisma.$transaction(async (tx) => {
+    const claimed = await tx.activityLog.updateMany({
+      where: {
+        id: activity.id,
+        householdId: ctx.householdId,
+        deletedAt: null,
+        updatedAt: activity.updatedAt
+      },
+      data
+    });
+    if (claimed.count !== 1) throw new Error("not_found");
+    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+    await writeAudit(
+      ctx,
+      { action, entityType: "activity", entityId: activity.id, before: activity, after: updated },
+      tx
+    );
+    if (event) await queueActivitySideEffects(ctx, updated, event, tx);
+    return updated;
+  });
+}
+
+async function replaceSpecificLog(
+  tx: Prisma.TransactionClient,
+  id: string,
+  input: ActivityCreateInput,
+  medicineContactId?: string | null
+) {
   await tx.feedingLog.deleteMany({ where: { activityId: id } });
   await tx.diaperLog.deleteMany({ where: { activityId: id } });
   await tx.sleepLog.deleteMany({ where: { activityId: id } });
@@ -403,8 +479,32 @@ async function replaceSpecificLog(tx: Prisma.TransactionClient, id: string, inpu
   await tx.playLog.deleteMany({ where: { activityId: id } });
   await tx.moodLog.deleteMany({ where: { activityId: id } });
   await tx.supplementLog.deleteMany({ where: { activityId: id } });
-  await tx.vaccineLog.deleteMany({ where: { activityId: id } });
+  if (input.type !== "vaccine") await tx.vaccineLog.deleteMany({ where: { activityId: id } });
   await tx.milkInventoryLog.deleteMany({ where: { activityId: id } });
+
+  if (input.type === "vaccine") {
+    const vaccine = {
+      name: input.name,
+      dose: input.dose,
+      lot: input.lot,
+      provider: input.provider,
+      dueDate: toDate(input.dueDate),
+      documentUrl: input.documentUrl
+    };
+    await tx.vaccineLog.upsert({
+      where: { activityId: id },
+      create: { activityId: id, ...vaccine },
+      update: {
+        name: vaccine.name,
+        dose: vaccine.dose ?? null,
+        lot: vaccine.lot ?? null,
+        provider: vaccine.provider ?? null,
+        dueDate: vaccine.dueDate ?? null,
+        documentUrl: vaccine.documentUrl ?? null
+      }
+    });
+    return;
+  }
 
   const data = specificCreate(input);
   const relation = data.feeding
@@ -437,64 +537,69 @@ async function replaceSpecificLog(tx: Prisma.TransactionClient, id: string, inpu
                               ? { milkInventory: data.milkInventory }
                               : {};
   await tx.activityLog.update({ where: { id }, data: relation });
+  if (data.medicine && medicineContactId) {
+    await tx.medicineLog.update({ where: { activityId: id }, data: { contactId: medicineContactId } });
+  }
 }
 
 export async function updateActivity(id: string, raw: unknown) {
   const ctx = await getHouseholdContext();
+  const medicineContactWasProvided =
+    typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.prototype.hasOwnProperty.call(raw, "contactId");
   const input = activityUpdateSchema.parse({ ...(raw as object), id });
   const before = await getEditableActivity(ctx, id, "update");
   const next = specificCreate(input);
+  if (before.timerState !== TimerState.none && input.type !== before.type) throw new Error("not_found");
+  const expectedUpdatedAt = toDate(input.expectedUpdatedAt) ?? before.updatedAt;
+  const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
+  const editedTimerState = before.timerState === TimerState.none ? next.timerState : before.timerState;
   const baby = await prisma.baby.findFirst({
     where: { id: input.babyId, householdId: ctx.householdId, deletedAt: null }
   });
   if (!baby) throw new Error("not_found");
 
   const updated = await prisma.$transaction(async (tx) => {
-    await replaceSpecificLog(tx, id, input);
-    return tx.activityLog.update({
-      where: { id },
+    if (input.type === "medicine" && medicineContactWasProvided && input.contactId) {
+      await requireHouseholdMedicineContact(tx, ctx, input);
+    }
+    const claimed = await tx.activityLog.updateMany({
+      where: { id, householdId: ctx.householdId, deletedAt: null, updatedAt: expectedUpdatedAt },
       data: {
         babyId: input.babyId,
         type: next.type,
         occurredAt: next.occurredAt,
-        startedAt: next.startedAt,
-        endedAt: next.endedAt,
-        durationSeconds: next.durationSeconds,
+        startedAt: activeTimer ? before.startedAt : next.startedAt,
+        endedAt: activeTimer ? before.endedAt : next.endedAt,
+        durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds,
         timezone: next.timezone,
         notes: next.notes,
-        timerState: next.timerState
-      },
-      include: activityInclude
+        timerState: editedTimerState
+      }
     });
+    if (claimed.count !== 1) throw new Error("not_found");
+    await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
+    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+    await writeAudit(
+      ctx,
+      { action: "activity.update", entityType: "activity", entityId: updated.id, before, after: updated },
+      tx
+    );
+    await queueActivitySideEffects(ctx, updated, WebhookEvent.activity_updated, tx);
+    return updated;
   });
-
-  await writeAudit(ctx, {
-    action: "activity.update",
-    entityType: "activity",
-    entityId: updated.id,
-    before,
-    after: updated
-  });
-  await queueActivitySideEffects(ctx, updated, WebhookEvent.activity_updated);
   return updated;
 }
 
 export async function deleteActivity(id: string) {
   const ctx = await getHouseholdContext();
   const before = await getEditableActivity(ctx, id, "delete");
-  const deleted = await prisma.activityLog.update({
-    where: { id },
-    data: { deletedAt: new Date(), deletedByMemberId: ctx.memberId },
-    include: activityInclude
-  });
-  await writeAudit(ctx, {
-    action: "activity.delete",
-    entityType: "activity",
-    entityId: id,
+  const deleted = await updateCurrentActivity(
+    ctx,
     before,
-    after: deleted
-  });
-  await queueActivitySideEffects(ctx, deleted, WebhookEvent.activity_deleted);
+    { deletedAt: new Date(), deletedByMemberId: ctx.memberId },
+    "activity.delete",
+    WebhookEvent.activity_deleted
+  );
   return deleted;
 }
 
@@ -508,9 +613,10 @@ export async function stopTimer(id: string) {
   const pausedSeconds =
     activity.pausedSeconds + (activity.pausedAt ? durationSeconds(activity.pausedAt, endedAt) : 0);
   const totalSeconds = Math.max(0, durationSeconds(activity.startedAt, endedAt) - pausedSeconds);
-  const updated = await prisma.activityLog.update({
-    where: { id },
-    data: {
+  const updated = await updateCurrentActivity(
+    ctx,
+    activity,
+    {
       endedAt,
       occurredAt: activity.startedAt,
       durationSeconds: totalSeconds,
@@ -518,16 +624,9 @@ export async function stopTimer(id: string) {
       pausedAt: null,
       pausedSeconds
     },
-    include: activityInclude
-  });
-  await writeAudit(ctx, {
-    action: "activity.timer.stop",
-    entityType: "activity",
-    entityId: id,
-    before: activity,
-    after: updated
-  });
-  await queueActivitySideEffects(ctx, updated, WebhookEvent.timer_stopped);
+    "activity.timer.stop",
+    WebhookEvent.timer_stopped
+  );
   return updated;
 }
 
@@ -535,18 +634,12 @@ export async function pauseTimer(id: string) {
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.running || !activity.startedAt) throw new Error("not_found");
-  const updated = await prisma.activityLog.update({
-    where: { id },
-    data: { timerState: TimerState.paused, pausedAt: new Date() },
-    include: activityInclude
-  });
-  await writeAudit(ctx, {
-    action: "activity.timer.pause",
-    entityType: "activity",
-    entityId: id,
-    before: activity,
-    after: updated
-  });
+  const updated = await updateCurrentActivity(
+    ctx,
+    activity,
+    { timerState: TimerState.paused, pausedAt: new Date() },
+    "activity.timer.pause"
+  );
   return updated;
 }
 
@@ -554,54 +647,88 @@ export async function resumeTimer(id: string) {
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.paused || !activity.pausedAt) throw new Error("not_found");
-  const updated = await prisma.activityLog.update({
-    where: { id },
-    data: {
+  const updated = await updateCurrentActivity(
+    ctx,
+    activity,
+    {
       timerState: TimerState.running,
       pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt, new Date()),
       pausedAt: null
     },
-    include: activityInclude
-  });
-  await writeAudit(ctx, {
-    action: "activity.timer.resume",
-    entityType: "activity",
-    entityId: id,
-    before: activity,
-    after: updated
-  });
+    "activity.timer.resume"
+  );
   return updated;
 }
 
 export async function undoLastActivity() {
   const ctx = await getHouseholdContext();
-  const latest = await prisma.auditEvent.findFirst({
-    where: {
-      householdId: ctx.householdId,
-      actorMemberId: ctx.memberId,
-      entityType: "activity",
-      action: { in: ["activity.create", "activity.delete"] }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-  if (!latest) throw new Error("not_found");
-  if (latest.action === "activity.create") {
-    await prisma.activityLog.update({
-      where: { id: latest.entityId },
-      data: { deletedAt: new Date(), deletedByMemberId: ctx.memberId }
+  return prisma.$transaction(async (tx) => {
+    const latest = await tx.auditEvent.findFirst({
+      where: {
+        householdId: ctx.householdId,
+        actorMemberId: ctx.memberId,
+        entityType: "activity",
+        action: { in: ["activity.create", "activity.delete"] }
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }]
     });
-  } else if (latest.action === "activity.delete") {
-    await prisma.activityLog.update({
-      where: { id: latest.entityId },
-      data: { deletedAt: null, deletedByMemberId: null }
+    if (!latest) throw new Error("not_found");
+
+    const locked = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "ActivityLog"
+      WHERE "id" = ${latest.entityId} AND "householdId" = ${ctx.householdId}
+      FOR UPDATE
+    `;
+    if (locked.length !== 1) throw new Error("not_found");
+
+    const superseding = await tx.auditEvent.findFirst({
+      where: {
+        householdId: ctx.householdId,
+        entityType: "activity",
+        entityId: latest.entityId,
+        createdAt: { gte: latest.createdAt },
+        id: { not: latest.id }
+      },
+      select: { id: true }
     });
-  }
-  await writeAudit(ctx, {
-    action: "activity.undo",
-    entityType: "activity",
-    entityId: latest.entityId,
-    before: latest.after ?? undefined,
-    after: latest.before ?? undefined
+    if (superseding) throw new Error("not_found");
+
+    const undoCreate = latest.action === "activity.create";
+    const expected = auditActivityState(latest.after);
+    if (!expected || (undoCreate ? expected.deletedAt !== null : expected.deletedAt === null)) throw new Error("not_found");
+    const before = await tx.activityLog.findFirst({
+      where: {
+        id: latest.entityId,
+        householdId: ctx.householdId,
+        deletedAt: expected.deletedAt,
+        updatedAt: expected.updatedAt
+      },
+      include: activityInclude
+    });
+    if (!before) throw new Error("not_found");
+    if (!canMutateOwnOrAny(ctx.role, undoCreate ? "delete" : "update", before.actorMemberId === ctx.memberId)) {
+      throw new Error("forbidden");
+    }
+
+    const claimed = await tx.activityLog.updateMany({
+      where: {
+        id: before.id,
+        householdId: ctx.householdId,
+        deletedAt: before.deletedAt,
+        updatedAt: before.updatedAt
+      },
+      data: undoCreate
+        ? { deletedAt: new Date(), deletedByMemberId: ctx.memberId }
+        : { deletedAt: null, deletedByMemberId: null }
+    });
+    if (claimed.count !== 1) throw new Error("not_found");
+    const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
+    await writeAudit(
+      ctx,
+      { action: "activity.undo", entityType: "activity", entityId: before.id, before, after },
+      tx
+    );
+    return { id: before.id };
   });
-  return { id: latest.entityId };
 }

@@ -49,7 +49,7 @@ deployment, and cleanup approvals.
 
 ### Responsive Activity Experience Decision Gate
 
-- Status: complete
+- Status: in review
 - Priority: high
 - Goal: Select the production create/view/edit interaction model before changing activity forms.
 - Acceptance: Three disposable responsive variants are reviewed at common phone and desktop widths; User selects one; no production activity-form code changes before selection.
@@ -57,11 +57,11 @@ deployment, and cleanup approvals.
 
 ### Read-Only Activity Detail And Selected Entry Experience
 
-- Status: planned
+- Status: in review
 - Priority: high
 - Goal: Give activity selection a polished read-only destination and implement the selected create/edit interaction model.
-- Acceptance: Dashboard, Full Log, Calendar, and other activity-selection surfaces open detail; detail has explicit Edit and separated confirmation-protected Delete actions; create/edit return context remains correct; all 14 types remain supported; unlimited simultaneous and same-type timers remain visible and individually controllable.
-- Notes: Begin only after the responsive sketch decision and deliver separately from Unit Defaults.
+- Acceptance: Dashboard, Full Log, Calendar, and other activity-selection surfaces open detail; detail has explicit Edit and separated confirmation-protected Delete actions; create/edit return context remains correct; all 14 current types remain supported; unlimited simultaneous and same-type timers remain visible and individually controllable on Dashboard and Nursery.
+- Notes: Focused Routes implementation, static verification, and isolated synthetic runtime QA are complete. Runtime coverage included all 14 activity types, owner/parent/caretaker/read-only authorization, source-aware history and hostile return paths, edit/delete workflows, keyboard/focus behavior, light/dark themes, and exact 320x568, 375x667, 390x844, 430x932, 768x1024, 1280x800, and 1280x900 viewports. Gate C corrected zero-valued feeding duration preservation, narrow-viewport overflow, malformed return paths, mutation races, focus containment, touch targets, and event-color contrast under focused regression tests.
 
 ### Reversible Member Suspension
 

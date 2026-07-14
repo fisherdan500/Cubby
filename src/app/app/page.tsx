@@ -15,6 +15,7 @@ import {
   type DailySummaryActivityType
 } from "@/domain/activity";
 import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
+import { activityDetailHref } from "@/lib/activity-navigation";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
 
@@ -419,8 +420,10 @@ function Timeline({ activities, timeZone, returnTo }: { activities: TimelineActi
               const type = activity.type as ActivityTypeName;
               return (
                 <Link
+                  replace
                   key={activity.id}
-                  href={activityEditHref(activity.id, returnTo)}
+                  prefetch={false}
+                  href={activityDetailHref(activity.id, returnTo)}
                   className="relative block rounded-md border border-border bg-background/45 p-3 hover:bg-muted"
                 >
                   <ActivityArtwork type={type} size="xs" className="absolute -left-[41px] top-2 ring-4 ring-background" />
@@ -443,9 +446,6 @@ function Timeline({ activities, timeZone, returnTo }: { activities: TimelineActi
   );
 }
 
-function activityEditHref(activityId: string, returnTo: string) {
-  return `/app/activities/${activityId}/edit?${new URLSearchParams({ returnTo }).toString()}`;
-}
 
 function periodLabel(date: Date, timeZone: string) {
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone }).format(date));
