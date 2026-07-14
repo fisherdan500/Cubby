@@ -123,7 +123,8 @@ export const activityCreateSchema = z.discriminatedUnion("type", [
   ]);
 
 export const activityUpdateSchema = activityCreateSchema.and(z.object({
-  id: z.string().min(1)
+  id: z.string().min(1),
+  expectedUpdatedAt: z.string().min(1).optional()
 }));
 
 export type ActivityCreateInput = z.infer<typeof activityCreateSchema>;

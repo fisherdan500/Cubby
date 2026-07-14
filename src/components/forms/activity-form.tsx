@@ -10,7 +10,13 @@ import { ActivityArtwork } from "@/components/activity-artwork";
 import { Input, Textarea } from "@/components/ui/input";
 import { activityLabels, timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
 import type { UnitPreferences } from "@/domain/unit-preferences";
-import { hasActivityDetail, resolveFormUnit, resolveItemDoseUnit } from "@/lib/activity-form";
+import {
+  activityFormCancelHref,
+  activityFormSuccessHref,
+  hasActivityDetail,
+  resolveFormUnit,
+  resolveItemDoseUnit
+} from "@/lib/activity-form";
 import { displayLabel } from "@/lib/display-label";
 import { dateTimeInputValue } from "@/lib/timezone";
 
@@ -24,6 +30,8 @@ export function ActivityForm({
   selectedBabyId,
   returnDate,
   returnTo,
+  successTo,
+  allowActivityDestination,
   appTimeZone,
   unitPreferences,
   medicineNames,
@@ -36,6 +44,8 @@ export function ActivityForm({
   selectedBabyId?: string;
   returnDate?: string;
   returnTo?: string;
+  successTo?: string;
+  allowActivityDestination?: boolean;
   appTimeZone: string;
   unitPreferences: UnitPreferences;
   medicineNames: string[];
@@ -46,7 +56,7 @@ export function ActivityForm({
   const [submitting, setSubmitting] = useState(false);
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
-  const cancelHref = activityFormCancelHref(returnTo, defaultBaby, returnDate);
+  const cancelHref = activityFormCancelHref({ returnTo, babyId: defaultBaby, returnDate, allowActivityDestination });
 
   async function submit(formData: FormData) {
     setError("");
@@ -67,9 +77,14 @@ export function ActivityForm({
         setError(result && !result.ok ? result.error?.message ?? "Could not save this activity." : "Could not save this activity.");
         return;
       }
-      const query = new URLSearchParams({ babyId: String(body.babyId || defaultBaby) });
-      if (returnDate) query.set("date", returnDate);
-      router.push(`/app?${query.toString()}`);
+      const destination = activityFormSuccessHref({
+        successTo,
+        babyId: String(body.babyId || defaultBaby),
+        returnDate,
+        allowActivityDestination
+      });
+      if (allowActivityDestination) router.replace(destination);
+      else router.push(destination);
       router.refresh();
     } catch {
       setError("Could not reach Cubby. Check your connection and try again.");
@@ -80,6 +95,7 @@ export function ActivityForm({
 
   return (
     <form action={submit} className="space-y-4 pb-20 md:pb-0">
+      {activityId && initial?.updatedAt ? <input type="hidden" name="expectedUpdatedAt" value={String(initial.updatedAt)} /> : null}
       <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-soft p-3">
         <ActivityArtwork type={type} size="lg" />
         <div className="min-w-0">
@@ -120,6 +136,7 @@ export function ActivityForm({
       <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-card/95 p-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <div className="grid grid-cols-2 gap-2 md:flex md:justify-end">
           <Link
+            replace={allowActivityDestination}
             href={cancelHref}
             className="inline-flex min-h-12 items-center justify-center rounded-lg bg-muted px-4 py-2 text-base font-semibold text-foreground transition hover:bg-border md:min-w-32"
           >
@@ -132,26 +149,6 @@ export function ActivityForm({
       </div>
     </form>
   );
-}
-
-function activityFormCancelHref(returnTo: string | undefined, babyId: string, returnDate: string | undefined) {
-  const safeReturnTo = safeInternalReturnTo(returnTo);
-  if (safeReturnTo) return safeReturnTo;
-
-  const params = new URLSearchParams();
-  if (babyId) params.set("babyId", babyId);
-  if (returnDate) params.set("date", returnDate);
-
-  const query = params.toString();
-  return query ? `/app?${query}` : "/app";
-}
-
-function safeInternalReturnTo(value: string | undefined) {
-  if (!value) return undefined;
-  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
-  if (value !== "/app" && !value.startsWith("/app?") && !value.startsWith("/app/")) return undefined;
-  if (value.startsWith("/app/activities/")) return undefined;
-  return value;
 }
 
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
