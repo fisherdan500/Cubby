@@ -49,19 +49,19 @@ deployment, and cleanup approvals.
 
 ### Responsive Activity Experience Decision Gate
 
-- Status: planned
+- Status: complete
 - Priority: high
 - Goal: Select the production create/view/edit interaction model before changing activity forms.
 - Acceptance: Three disposable responsive variants are reviewed at common phone and desktop widths; User selects one; no production activity-form code changes before selection.
-- Notes: Complete after the performance follow-up and before Unit Defaults or Activity Experience form changes.
+- Notes: User selected Focused Routes: dedicated URL-addressable create, read-only detail, and edit pages with explicit Edit and separated confirmation-protected Delete actions.
 
 ### Household And Per-Item Unit Defaults
 
-- Status: planned
+- Status: in review
 - Priority: high
 - Goal: Let each household choose measurement defaults and per-named-item medicine/supplement dose units without rewriting history.
 - Acceptance: Volume, weight, length, and temperature defaults use `oz`, `lb`, `in`, and `°F` when unsaved; normal logging learns/reuses medicine and supplement catalog names; activity overrides do not alter defaults; new entries use defaults while edits preserve saved units; mixed-unit summaries convert correctly; Cubby backups preserve settings and older backups remain compatible.
-- Notes: Deliver as a data-consistent Unit Defaults PR separate from the Activity Experience PR.
+- Notes: Implemented and verified on the isolated `feat/unit-defaults` worktree; merge and deployment remain separately approval-gated. Keep this separate from the Activity Experience PR.
 
 ### Read-Only Activity Detail And Selected Entry Experience
 

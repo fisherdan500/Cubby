@@ -1,9 +1,90 @@
 import { ActivityType } from "@prisma/client";
 import { describe, expect, it } from "vitest";
+import { defaultUnitPreferences } from "@/domain/unit-preferences";
 import { zonedDateTimeToDate } from "@/lib/timezone";
-import { buildRoutineTimeline, routineWindowRange } from "@/server/services/reports";
+import { buildReportStats, buildRoutineTimeline, routineWindowRange } from "@/server/services/reports";
 
 const timeZone = "America/New_York";
+
+describe("report volume statistics", () => {
+  it("normalizes mixed feeding and pumping units into the household preference", () => {
+    const stats = buildReportStats([
+      statsActivity(ActivityType.feeding, { feeding: { mode: "bottle", amount: "1", unit: "oz" } }),
+      statsActivity(ActivityType.feeding, { feeding: { mode: "formula", amount: "29.5735", unit: "mL" } }),
+      statsActivity(ActivityType.pumping, { pumping: { amount: "2", unit: "oz" } }),
+      statsActivity(ActivityType.pumping, { pumping: { amount: "59.147", unit: "mL" } })
+    ], null, timeZone, { ...defaultUnitPreferences, volume: "mL" });
+
+    expect(stats.feeding).toMatchObject({ bottleCount: 2, bottleAverage: 29.57, unit: "mL" });
+    expect(stats.pumping).toEqual({ total: 118.29, unit: "mL" });
+  });
+});
+
+describe("report growth statistics", () => {
+  it("normalizes mixed growth units into the household preferences", () => {
+    const stats = buildReportStats(
+      [
+        statsActivity(ActivityType.measurement, {
+          measurement: {
+            weight: "2.2046226218",
+            weightUnit: "lb",
+            length: "1",
+            lengthUnit: "in",
+            headCircumference: "2",
+            headUnit: "in"
+          }
+        }),
+        statsActivity(ActivityType.measurement, {
+          measurement: {
+            weight: "1",
+            weightUnit: "kg",
+            length: "2.54",
+            lengthUnit: "cm",
+            headCircumference: "5.08",
+            headUnit: "cm"
+          }
+        })
+      ],
+      null,
+      timeZone,
+      { ...defaultUnitPreferences, weight: "kg", length: "cm" }
+    );
+
+    expect(stats.growth.weight?.map(({ value, unit }) => ({ value, unit }))).toEqual([
+      { value: 1, unit: "kg" },
+      { value: 1, unit: "kg" }
+    ]);
+    expect(stats.growth.length?.map(({ value, unit }) => ({ value, unit }))).toEqual([
+      { value: 2.54, unit: "cm" },
+      { value: 2.54, unit: "cm" }
+    ]);
+    expect(stats.growth.head?.map(({ value, unit }) => ({ value, unit }))).toEqual([
+      { value: 5.08, unit: "cm" },
+      { value: 5.08, unit: "cm" }
+    ]);
+  });
+
+  it("fails a growth series closed when an explicit unit is unsupported", () => {
+    const stats = buildReportStats(
+      [
+        statsActivity(ActivityType.measurement, {
+          measurement: {
+            weight: "10",
+            weightUnit: "stone",
+            length: "20",
+            lengthUnit: "in"
+          }
+        })
+      ],
+      null,
+      timeZone,
+      defaultUnitPreferences
+    );
+
+    expect(stats.growth.weight).toBeNull();
+    expect(stats.growth.length).toEqual([expect.objectContaining({ value: 20, unit: "in" })]);
+  });
+});
 
 describe("reports routine timeline", () => {
   it("builds trailing windows anchored to the report end date", () => {
@@ -210,4 +291,16 @@ function activity(type: ActivityType, localDateTime: string, durationSeconds: nu
     occurredAt: zonedDateTimeToDate(localDateTime, timeZone),
     durationSeconds
   };
+}
+
+function statsActivity(
+  type: ActivityType,
+  detail: Record<string, unknown>
+): Parameters<typeof buildReportStats>[0][number] {
+  return {
+    type,
+    occurredAt: zonedDateTimeToDate("2026-06-19T08:00", timeZone),
+    durationSeconds: null,
+    ...detail
+  } as Parameters<typeof buildReportStats>[0][number];
 }

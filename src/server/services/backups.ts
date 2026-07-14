@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { parseAccentTheme } from "@/domain/appearance";
+import { parseUnitPreferences } from "@/domain/unit-preferences";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { activityInclude, createActivity } from "@/server/services/activities";
 
@@ -10,7 +11,8 @@ const restoreSchema = z.object({
   version: z.literal(1),
   settings: z
     .object({
-      accentTheme: z.unknown().optional()
+      accentTheme: z.unknown().optional(),
+      unitPreferences: z.unknown().optional()
     })
     .optional(),
   babies: z.array(
@@ -42,7 +44,10 @@ export async function exportBackupJson() {
     version: 1 as const,
     exportedAt: new Date().toISOString(),
     household: { id: household.id, name: household.name },
-    settings: { accentTheme: parseAccentTheme(settings?.accentTheme) },
+    settings: {
+      accentTheme: parseAccentTheme(settings?.accentTheme),
+      unitPreferences: parseUnitPreferences(settings?.unitPreferences)
+    },
     babies,
     activities: activities.map(activityToInput)
   };
@@ -211,12 +216,19 @@ export async function restoreBackupJson(raw: unknown) {
   const input = restoreSchema.parse(raw);
   const babyMap = new Map<string, string>();
 
-  if (input.settings?.accentTheme) {
-    const accentTheme = parseAccentTheme(input.settings.accentTheme);
+  const hasAccentTheme = input.settings?.accentTheme !== undefined;
+  const hasUnitPreferences = input.settings?.unitPreferences !== undefined;
+  if (hasAccentTheme || hasUnitPreferences) {
+    const settings = {
+      ...(hasAccentTheme ? { accentTheme: parseAccentTheme(input.settings?.accentTheme) } : {}),
+      ...(hasUnitPreferences
+        ? { unitPreferences: parseUnitPreferences(input.settings?.unitPreferences) as Prisma.InputJsonValue }
+        : {})
+    };
     await prisma.householdSettings.upsert({
       where: { householdId: ctx.householdId },
-      update: { accentTheme },
-      create: { householdId: ctx.householdId, accentTheme }
+      update: settings,
+      create: { householdId: ctx.householdId, ...settings }
     });
   }
 

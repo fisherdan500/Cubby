@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Bell, DatabaseBackup, Download, KeyRound, Palette, Shield, UserRoundCog, Users } from "lucide-react";
+import { Baby, Bell, DatabaseBackup, Download, KeyRound, Palette, Ruler, Shield, UserRoundCog, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
@@ -8,6 +8,7 @@ import { requireUserPage } from "@/server/auth/session";
 
 const sections = [
   { href: "/app/settings/appearance", label: "Appearance", description: "Choose the household accent and visual character.", icon: Palette, permission: "household.manage" },
+  { href: "/app/settings/units", label: "Units", description: "Choose defaults for measurements, medicine, and supplements.", icon: Ruler, permission: "household.manage" },
   { href: "/app/settings/admin", label: "Admin", description: "Registration policy, household controls, and app behavior.", icon: Shield, permission: "household.manage" },
   { href: "/app/babies", label: "Babies", description: "Manage baby profiles, notes, and warning thresholds.", icon: Baby, permission: "baby.manage" },
   { href: "/app/settings/members", label: "Members and access", description: "Invite people, assign roles, and manage household access.", icon: Users, permission: "member.manage" },

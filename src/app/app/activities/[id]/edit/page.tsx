@@ -9,12 +9,16 @@ import { dateKeyInTimeZone, dateTimeInputValue } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getActivity } from "@/server/services/activities";
 import { getHouseholdHome } from "@/server/services/households";
+import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
 export default async function EditActivityPage({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string } }) {
   const user = await requireUserPage();
   const home = await getHouseholdHome(user.id);
   if (!home) redirect("/onboarding");
-  const activity = await getActivity(params.id).catch(() => null);
+  const [activity, unitSettings] = await Promise.all([
+    getActivity(params.id).catch(() => null),
+    getActivityUnitPreferences()
+  ]);
   if (!activity) notFound();
   const type = activity.type as ActivityTypeName;
   const babies = home.household.babies.map((baby) => ({ id: baby.id, name: baby.name }));
@@ -25,7 +29,17 @@ export default async function EditActivityPage({ params, searchParams }: { param
     <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
       <div className="mx-auto max-w-2xl space-y-4">
         <Card>
-          <ActivityForm babies={babies} type={type} activityId={activity.id} initial={initial} returnTo={returnTo} appTimeZone={env.APP_TIMEZONE} />
+          <ActivityForm
+            babies={babies}
+            type={type}
+            activityId={activity.id}
+            initial={initial}
+            returnTo={returnTo}
+            appTimeZone={env.APP_TIMEZONE}
+            unitPreferences={unitSettings.preferences}
+            medicineNames={unitSettings.medicineNames}
+            supplementNames={unitSettings.supplementNames}
+          />
         </Card>
         <DeleteActivityButton id={activity.id} returnTo={returnTo} />
       </div>

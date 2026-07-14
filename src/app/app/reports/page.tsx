@@ -103,14 +103,14 @@ function StatsTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getR
       </ReportSection>
       <ReportSection title="Feeding Statistics">
         <Metric label="Bottle feeds" value={String(stats.feeding.bottleCount)} />
-        <Metric label="Bottle average" value={`${stats.feeding.bottleAverage} oz`} />
+        <Metric label="Bottle average" value={stats.feeding.bottleAverage === null ? "Unavailable" : `${stats.feeding.bottleAverage} ${stats.feeding.unit}`} />
         <Metric label="Breast feeds" value={String(stats.feeding.breastCount)} />
         <Metric label="Solids" value={String(stats.feeding.solidsCount)} />
       </ReportSection>
       <ReportSection title="Care Statistics">
         <Metric label="Wet diapers" value={String(stats.diaper.wet)} />
         <Metric label="Dirty diapers" value={String(stats.diaper.dirty)} />
-        <Metric label="Pumped" value={`${stats.pumping.total} oz`} />
+        <Metric label="Pumped" value={stats.pumping.total === null ? "Unavailable" : `${stats.pumping.total} ${stats.pumping.unit}`} />
       </ReportSection>
     </div>
   );
@@ -225,7 +225,21 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Trend({ title, points }: { title: string; points: Array<{ date: string; ageMonths: number; value: number; unit: string }> }) {
+function Trend({
+  title,
+  points
+}: {
+  title: string;
+  points: Array<{ date: string; ageMonths: number; value: number; unit: string }> | null;
+}) {
+  if (points === null) {
+    return (
+      <Card className="space-y-3">
+        <h2 className="font-black">{title}</h2>
+        <p className="text-sm text-muted-foreground">Unavailable because one or more saved measurements use an unsupported unit.</p>
+      </Card>
+    );
+  }
   const width = 720;
   const height = 180;
   const values = points.map((point) => point.value);
