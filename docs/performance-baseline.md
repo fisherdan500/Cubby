@@ -277,7 +277,7 @@ The grouped-count query disappeared, one active-timer read disappeared, and the 
 
 Visual screenshot inspection at 320, 375, 430, and 1440 pixels confirmed that the candidate removes only the redundant page-header `Cubby` eyebrow. Desktop branding, the page title, mobile selector/menu, quick actions, daily summary, active timer, timeline, and navigation remain rendered without candidate-specific overlap or clipping.
 
-The exact-width check also found a pre-existing mobile-header minimum-width defect: both base and candidate overflow horizontally at 320 and 375 pixels with identical document widths. It is not a regression from this worktree and was not changed in this narrow performance/header slice; it should be handled as a separate responsive fix.
+At the pull request #7 baseline, the exact-width check also found a pre-existing mobile-header minimum-width defect: both base and candidate overflowed horizontally at 320 and 375 pixels with identical document widths. It was not a regression from that worktree and remained outside the narrow performance/header slice. Pull request #10 subsequently added shrinkable mobile-header selector behavior and focused regression coverage, with exact 320x568 and 375x667 responsive acceptance.
 
 ### Safety and cleanup
 

@@ -39,14 +39,6 @@ These items implement the approved daily-use roadmap in dependency order. Each
 substantive application change uses its own approved worktree and separate merge,
 deployment, and cleanup approvals.
 
-### Dashboard Performance Follow-Up And Header Cleanup
-
-- Status: planned
-- Priority: high
-- Goal: Finish evidence-driven dashboard/general-navigation performance work and remove redundant page-header branding.
-- Acceptance: Remaining dashboard and normal-page journeys have production before/after evidence; proven duplicate dashboard/header data loads are consolidated without output or timezone regressions; the `Cubby` page-header eyebrow is absent at every width while sidebar/mobile branding remains; tests, lint, typecheck, build, and responsive checks pass.
-- Notes: Pull request #5 already completed Full Log pagination and Full Log/Settings prefetch hardening. Do not add request-context caching unless post-consolidation measurements justify it.
-
 ## Later
 
 ### Secondary Workflow Mobile Audit
@@ -89,6 +81,14 @@ deployment, and cleanup approvals.
 - Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Dashboard Performance Follow-Up And Header Cleanup
+
+- Status: done
+- Priority: high
+- Goal: Finish evidence-driven dashboard/general-navigation performance work and remove redundant page-header branding.
+- Acceptance: Remaining dashboard and normal-page journeys have production before/after evidence; proven duplicate dashboard/header data loads are consolidated without output or timezone regressions; the `Cubby` page-header eyebrow is absent at every width while sidebar/mobile branding remains; tests, lint, typecheck, build, and responsive checks pass.
+- Notes: Pull request #5 completed Full Log pagination and Full Log/Settings prefetch hardening. Squash-merged in pull request #7 after 20 test files and 99 tests, lint, typecheck, production build, independent reviews, and exact-base/candidate production and responsive evidence passed. The dashboard candidate reduced logged SQL statements from 131 to 106 and median document TTFB from 212.4 ms to 184.7 ms while preserving normalized output hashes, 100 timeline entries and return links, 14 protected navigation journeys, zero JavaScript/console errors, desktop branding, and mobile controls. Pull request #10 subsequently corrected the narrow mobile-header selector overflow found during the pull request #7 baseline and verified exact 320x568 and 375x667 viewports. Request-context caching remains evidence-gated, and deployment remains separately approval-gated.
 
 ### Reversible Baby Inactivity
 
