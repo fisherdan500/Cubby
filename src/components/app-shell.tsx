@@ -83,7 +83,7 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="px-3 pb-24 pt-3 md:ml-64 md:px-6 md:pt-5">
+      <main className="app-shell-content px-3 pb-24 pt-3 md:ml-64 md:px-6 md:pt-5">
         {children}
       </main>
 

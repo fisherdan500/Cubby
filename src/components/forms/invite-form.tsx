@@ -28,9 +28,9 @@ export function InviteForm({ canInviteAdmin }: { canInviteAdmin: boolean }) {
   }
 
   return (
-    <form action={submit} className="space-y-3">
+    <form action={submit} className="min-w-0 space-y-3">
       <Input name="email" type="email" placeholder="caretaker@example.com" required />
-      <select name="role" className="min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm">
+      <select name="role" className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm">
         <option value="caretaker">Caretaker</option>
         <option value="parent">Parent</option>
         <option value="read_only">Read only</option>

@@ -137,7 +137,7 @@ export function MemberAccessManager({
               ) : null}
 
               {canManage ? (
-                <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {member.disabledAt ? (
                     <p className="self-center text-xs font-semibold text-muted-foreground">Restore access before changing this role.</p>
                   ) : (
@@ -146,7 +146,7 @@ export function MemberAccessManager({
                         event.preventDefault();
                         void updateRole(member.id, new FormData(event.currentTarget));
                       }}
-                      className="flex min-w-0 gap-2"
+                      className="flex min-w-0 flex-1 basis-64 gap-2"
                     >
                       <select
                         name="role"

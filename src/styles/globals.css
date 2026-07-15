@@ -171,6 +171,12 @@ a {
 .dark .activity-tone-vaccine { background: #4e3e37; }
 .dark .activity-tone-milk-inventory { background: #384950; }
 
+@media (max-width: 767px) {
+  .app-shell-content :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    scroll-margin-block: 6rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

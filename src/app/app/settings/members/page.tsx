@@ -11,8 +11,8 @@ export default async function MembersPage() {
 
   return (
     <AppShell title="Members" userName={user.name}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="space-y-4">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0 space-y-4">
           <Card>
             <h2 className="mb-3 text-lg font-bold">Household</h2>
             <p className="text-sm text-muted-foreground">{household.name}</p>
