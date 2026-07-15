@@ -24,6 +24,7 @@ export async function requireApiKey(request: Request, requiredScope: "read" | "w
   const actor = await prisma.householdMember.findFirst({
     where: {
       householdId: key.householdId,
+      disabledAt: null,
       deletedAt: null,
       role: { in: [HouseholdRole.owner, HouseholdRole.admin, HouseholdRole.parent] }
     },

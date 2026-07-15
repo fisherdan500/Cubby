@@ -49,11 +49,11 @@ deployment, and cleanup approvals.
 
 ### Reversible Member Suspension
 
-- Status: planned
+- Status: in progress
 - Priority: high
 - Goal: Disable and re-enable household access without deleting credentials, membership, role, or history.
-- Acceptance: The protected owner and acting member cannot be disabled; owners may manage admins and lower roles; admins may manage only lower roles; disabling revokes sessions immediately; future login shows exactly `Your account is disabled.`; re-enabling restores login; server authorization, audit records, UI states, and tests cover the lifecycle.
-- Notes: Hiding UI is not an authorization boundary; request-time enforcement is required in addition to session revocation.
+- Acceptance: The protected owner and acting member cannot be disabled; owners may manage admins and lower roles; admins may manage only lower roles; disabling revokes sessions immediately; a user whose only current memberships are suspended sees exactly `Your account is disabled.` on future valid login; another active household membership remains usable but does not grant access to the suspended household; re-enabling restores household access; server authorization, audit records, UI states, and tests cover the lifecycle.
+- Notes: Isolated implementation and verification are complete and await commit/push approval. Hiding UI is not an authorization boundary; request-time enforcement, uncached session reads, and database serialization with concurrent session creation are required in addition to session revocation. Merge, migration, and deployment remain separately gated.
 
 ### Reversible Baby Inactivity
 

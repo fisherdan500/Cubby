@@ -24,7 +24,8 @@ export default async function MembersPage() {
                 id: member.id,
                 name: member.displayName ?? member.user.name,
                 email: member.user.email,
-                role: member.role
+                role: member.role,
+                disabledAt: member.disabledAt?.toISOString() ?? null
               }))}
               invites={household.invites.map((invite) => ({
                 id: invite.id,

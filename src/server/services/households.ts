@@ -9,7 +9,7 @@ import { getAppRegistrationPolicy } from "@/server/services/registration";
 
 export async function listHouseholdsForUser(userId: string) {
   return prisma.householdMember.findMany({
-    where: { userId, deletedAt: null, household: { deletedAt: null } },
+    where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
     include: { household: true },
     orderBy: { joinedAt: "asc" }
   });
@@ -91,7 +91,7 @@ export async function listBabies() {
 
 export async function getHouseholdHome(userId: string) {
   const member = await prisma.householdMember.findFirst({
-    where: { userId, deletedAt: null, household: { deletedAt: null } },
+    where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
     include: {
       household: {
         include: {

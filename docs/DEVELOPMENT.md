@@ -217,6 +217,21 @@ route in a 10-second window. This counts requests, not only incorrect passwords,
 and is not an account lockout. The limiter currently uses Better Auth's in-memory
 storage and resets when the window elapses or the app process restarts.
 
+Member suspension is household-scoped. Resolve household access only through
+membership queries that require both `deletedAt: null` and `disabledAt: null`.
+Users with another active household membership may sign in, but users whose only
+current memberships are suspended receive exactly `Your account is disabled.`
+after credential verification. Do not remove the uncached server session lookup
+or the migration's guarded `Session` insert trigger: together with transactional
+session deletion, they close stale-cookie and concurrent-sign-in gaps. The trigger
+uses the dedicated `CUB01` SQLSTATE; the Better Auth Prisma adapter wrapper must
+translate only that marker plus the exact message to `403 / ACCOUNT_DISABLED`.
+
+Role, removal, suspension, and restoration mutations must acquire deterministic
+row locks for the acting and target membership, then re-read and authorize inside
+the transaction. Suspension writes `member.suspend`, restoration writes
+`member.restore`, and only a real state transition writes an audit event.
+
 ### Baby Selection
 
 Log Entry, Full Log, Calendar, Reports, and Nursery use the shared header baby
@@ -244,6 +259,9 @@ rebuild Docker and test preview/import from `/app/settings/backups`.
 Cubby JSON backup restore should validate the input and import into the current
 household with permission checks. Do not bypass service-layer ownership checks
 for restore paths.
+Backups intentionally exclude auth users, credentials, sessions, and household
+memberships. Restore must not create, update, delete, suspend, or restore a
+membership, and must leave `HouseholdMember.disabledAt` unchanged.
 
 ### Visual Assets And Themes
 

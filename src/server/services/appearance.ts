@@ -18,7 +18,7 @@ export async function getCurrentAppearanceTheme() {
   const user = await requireUser().catch(() => null);
   if (!user) return "sage" as const;
   const member = await prisma.householdMember.findFirst({
-    where: { userId: user.id, deletedAt: null, household: { deletedAt: null } },
+    where: { userId: user.id, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
     select: { household: { select: { settings: { select: { accentTheme: true } } } } },
     orderBy: { joinedAt: "asc" }
   });

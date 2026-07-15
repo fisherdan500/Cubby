@@ -9,7 +9,12 @@ const mocks = vi.hoisted(() => ({
   babyFindMany: vi.fn(),
   activityFindMany: vi.fn(),
   backupCreate: vi.fn(),
-  createActivity: vi.fn()
+  createActivity: vi.fn(),
+  memberCreate: vi.fn(),
+  memberUpdate: vi.fn(),
+  memberUpdateMany: vi.fn(),
+  memberDelete: vi.fn(),
+  memberDeleteMany: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -18,7 +23,14 @@ vi.mock("@/lib/db/prisma", () => ({
     householdSettings: { findUnique: mocks.settingsFind, upsert: mocks.settingsUpsert },
     baby: { findMany: mocks.babyFindMany, findFirst: vi.fn(), create: vi.fn() },
     activityLog: { findMany: mocks.activityFindMany },
-    backupRecord: { create: mocks.backupCreate }
+    backupRecord: { create: mocks.backupCreate },
+    householdMember: {
+      create: mocks.memberCreate,
+      update: mocks.memberUpdate,
+      updateMany: mocks.memberUpdateMany,
+      delete: mocks.memberDelete,
+      deleteMany: mocks.memberDeleteMany
+    }
   }
 }));
 
@@ -66,6 +78,8 @@ describe("backup unit preferences", () => {
     const payload = JSON.parse(await exportBackupJson());
 
     expect(payload.settings.unitPreferences).toEqual(unitPreferences);
+    expect(payload).not.toHaveProperty("members");
+    expect(payload.household).not.toHaveProperty("members");
     expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "backup.manage");
   });
 
@@ -83,6 +97,26 @@ describe("backup unit preferences", () => {
       create: { householdId: "household-1", accentTheme: "sage", unitPreferences }
     });
     expect(mocks.createActivity).not.toHaveBeenCalled();
+  });
+
+  it("ignores hostile membership fields without changing membership state", async () => {
+    await expect(restoreBackupJson({
+      version: 1,
+      babies: [],
+      activities: [],
+      members: [{ id: "member-1", role: "owner", disabledAt: null }],
+      household: {
+        id: "household-1",
+        members: [{ id: "member-1", role: "owner", disabledAt: null }]
+      },
+      disabledAt: null
+    })).resolves.toEqual({ restored: 0 });
+
+    expect(mocks.memberCreate).not.toHaveBeenCalled();
+    expect(mocks.memberUpdate).not.toHaveBeenCalled();
+    expect(mocks.memberUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.memberDelete).not.toHaveBeenCalled();
+    expect(mocks.memberDeleteMany).not.toHaveBeenCalled();
   });
 
   it("accepts older v1 backups that do not contain unit preferences", async () => {
