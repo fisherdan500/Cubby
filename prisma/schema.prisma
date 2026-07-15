@@ -206,6 +206,7 @@ model HouseholdMember {
   joinedAt    DateTime      @default(now())
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  disabledAt  DateTime?
   deletedAt   DateTime?
   household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -216,6 +217,7 @@ model HouseholdMember {
   @@unique([householdId, userId])
   @@index([householdId, role])
   @@index([userId])
+  @@index([userId, disabledAt, deletedAt])
   @@index([deletedAt])
 }
 

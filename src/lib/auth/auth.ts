@@ -3,11 +3,15 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/db/prisma";
 import { env, trustedOrigins } from "@/lib/env";
+import { assertUserCanStartSession } from "@/server/auth/member-status";
+import { withSuspendedSessionErrorTranslation } from "@/server/auth/session-adapter";
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "postgresql"
-  }),
+  database: withSuspendedSessionErrorTranslation(
+    prismaAdapter(prisma, {
+      provider: "postgresql"
+    })
+  ),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: trustedOrigins(),
@@ -16,6 +20,13 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       console.info(`Password reset requested for ${user.email}: ${url}`);
+    }
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        before: assertUserCanStartSession
+      }
     }
   },
   session: {

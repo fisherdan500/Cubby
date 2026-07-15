@@ -70,6 +70,30 @@ resources. Every household role can review and revoke only its own sessions.
 Session management requires a session created within the configured 10-minute
 `freshAge`; stale sessions are directed through a fresh email/password sign-in.
 
+Household member suspension is reversible and stored in
+`HouseholdMember.disabledAt`; it does not delete the user, membership, role, or
+history. Owners may suspend admins and lower roles, while admins may suspend only
+lower roles. The protected owner and acting member cannot be suspended. Role,
+removal, suspension, and restoration mutations lock the current actor and target
+membership rows in deterministic order, re-read their current state, and enforce
+the hierarchy inside the same transaction that writes the audit event.
+
+Suspension is household-scoped. Request-time household resolution requires both
+`deletedAt` and `disabledAt` to be null. A user with another active household
+membership may still sign in, but cannot access a suspended household. A user
+whose only current memberships are suspended receives exactly
+`Your account is disabled.` after valid credential verification. Suspension
+revokes all current user sessions. A PostgreSQL `Session` insert trigger takes
+shared locks on current memberships so concurrent sign-in either commits first
+and is revoked by suspension, or observes the suspension and is rejected. The
+trigger's dedicated `CUB01` SQLSTATE is translated narrowly at the Better Auth
+Prisma adapter boundary to the same `403 / ACCOUNT_DISABLED` response. Server
+session reads also bypass Better Auth's cookie cache.
+
+Lifecycle audits use `member.suspend` and `member.restore`. Duplicate requests
+are idempotent after the locked current state is read and do not duplicate audit
+events.
+
 ## Data Model Overview
 
 The Prisma schema uses PostgreSQL and keeps a household boundary on user-owned
@@ -168,6 +192,9 @@ trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date.
 `src/server/services/backups.ts` exports and restores Cubby JSON backups,
 including the household appearance accent when present. Older version 1 backups
 without appearance settings remain valid and use the default sage accent.
+Cubby JSON backups exclude users, credentials, sessions, and household
+memberships. Restoring a backup therefore never changes membership roles or
+`disabledAt` suspension state.
 `src/server/services/sprout-import.ts` previews and imports Sprout Track backup
 uploads into the current Cubby household.
 

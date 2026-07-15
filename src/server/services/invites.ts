@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "crypto";
-import { HouseholdRole, InviteStatus } from "@prisma/client";
+import { HouseholdRole, InviteStatus, Prisma } from "@prisma/client";
 import {
   canAssignHouseholdRole,
   canManageHouseholdRole
@@ -138,52 +138,131 @@ export async function listMembersAndInvites() {
 }
 
 export async function updateMemberRole(memberId: string, raw: unknown) {
-  const ctx = await getHouseholdContext();
-  requirePermission(ctx, "member.manage");
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "member.manage");
   const input = memberRoleSchema.parse(raw);
-  const member = await findActiveHouseholdMember(ctx.householdId, memberId);
 
-  if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
-  if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
-  if (member.role === input.role) {
-    return prisma.householdMember.findUniqueOrThrow({ where: { id: member.id }, include: { user: true } });
-  }
+  return prisma.$transaction(async (tx) => {
+    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId);
+    requirePermission(ctx, "member.manage");
+    if (member.disabledAt) throw new Error("forbidden");
+    if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
+    if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
+    if (member.role === input.role) return member;
 
-  const updated = await prisma.householdMember.update({
-    where: { id: member.id },
-    data: { role: input.role as HouseholdRole },
-    include: { user: true }
+    const updated = await tx.householdMember.update({
+      where: { id: member.id },
+      data: { role: input.role as HouseholdRole },
+      include: { user: true }
+    });
+    await writeAudit(
+      ctx,
+      {
+        action: input.role === "admin" ? "member.admin.grant" : member.role === HouseholdRole.admin ? "member.admin.revoke" : "member.role.update",
+        entityType: "household_member",
+        entityId: member.id,
+        before: { role: member.role },
+        after: { role: updated.role }
+      },
+      tx
+    );
+    return updated;
   });
-  await writeAudit(ctx, {
-    action: input.role === "admin" ? "member.admin.grant" : member.role === HouseholdRole.admin ? "member.admin.revoke" : "member.role.update",
-    entityType: "household_member",
-    entityId: member.id,
-    before: { role: member.role },
-    after: { role: updated.role }
-  });
-  return updated;
 }
 
 export async function removeMember(memberId: string) {
-  const ctx = await getHouseholdContext();
-  requirePermission(ctx, "member.manage");
-  const member = await findActiveHouseholdMember(ctx.householdId, memberId);
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "member.manage");
 
-  if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
+  return prisma.$transaction(async (tx) => {
+    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId);
+    requirePermission(ctx, "member.manage");
+    if (member.disabledAt) throw new Error("forbidden");
+    if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
 
-  const removed = await prisma.householdMember.update({
-    where: { id: member.id },
-    data: { deletedAt: new Date() },
-    include: { user: true }
+    const removed = await tx.householdMember.update({
+      where: { id: member.id },
+      data: { deletedAt: new Date() },
+      include: { user: true }
+    });
+    await writeAudit(
+      ctx,
+      {
+        action: "member.remove",
+        entityType: "household_member",
+        entityId: member.id,
+        before: { role: member.role, userId: member.userId },
+        after: { deletedAt: removed.deletedAt }
+      },
+      tx
+    );
+    return removed;
   });
-  await writeAudit(ctx, {
-    action: "member.remove",
-    entityType: "household_member",
-    entityId: member.id,
-    before: { role: member.role, userId: member.userId },
-    after: { deletedAt: removed.deletedAt }
+}
+
+export async function suspendMember(memberId: string, disabledAt = new Date()) {
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "member.manage");
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId);
+    requirePermission(ctx, "member.manage");
+    if (member.id === ctx.memberId || !canManageHouseholdRole(ctx.role, member.role)) {
+      throw new Error("forbidden");
+    }
+    if (member.disabledAt) return member;
+
+    const suspended = await tx.householdMember.update({
+      where: { id: member.id },
+      data: { disabledAt },
+      include: { user: true }
+    });
+    await tx.session.deleteMany({ where: { userId: member.userId } });
+    await writeAudit(
+      ctx,
+      {
+        action: "member.suspend",
+        entityType: "household_member",
+        entityId: member.id,
+        before: { userId: member.userId, role: member.role, disabledAt: null },
+        after: { userId: member.userId, role: member.role, disabledAt }
+      },
+      tx
+    );
+    return suspended;
   });
-  return removed;
+}
+
+export async function restoreMember(memberId: string) {
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "member.manage");
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId);
+    requirePermission(ctx, "member.manage");
+    if (member.id === ctx.memberId || !canManageHouseholdRole(ctx.role, member.role)) {
+      throw new Error("forbidden");
+    }
+    if (!member.disabledAt) return member;
+
+    const restored = await tx.householdMember.update({
+      where: { id: member.id },
+      data: { disabledAt: null },
+      include: { user: true }
+    });
+    await writeAudit(
+      ctx,
+      {
+        action: "member.restore",
+        entityType: "household_member",
+        entityId: member.id,
+        before: { userId: member.userId, role: member.role, disabledAt: member.disabledAt },
+        after: { userId: member.userId, role: member.role, disabledAt: null }
+      },
+      tx
+    );
+    return restored;
+  });
 }
 
 export async function revokeInvite(inviteId: string) {
@@ -208,9 +287,39 @@ export async function revokeInvite(inviteId: string) {
   return revoked;
 }
 
-async function findActiveHouseholdMember(householdId: string, memberId: string) {
-  const member = await prisma.householdMember.findUnique({ where: { id: memberId } });
+async function lockMemberMutation(
+  tx: Prisma.TransactionClient,
+  requestContext: Awaited<ReturnType<typeof getHouseholdContext>>,
+  memberId: string
+) {
+  const memberIds = [...new Set([requestContext.memberId, memberId])].sort();
+  await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "HouseholdMember"
+    WHERE "id" IN (${Prisma.join(memberIds)})
+    ORDER BY "id"
+    FOR UPDATE
+  `;
+
+  const actor = await tx.householdMember.findUnique({ where: { id: requestContext.memberId } });
+  if (
+    !actor ||
+    actor.householdId !== requestContext.householdId ||
+    actor.deletedAt ||
+    actor.disabledAt
+  ) {
+    throw new Error("forbidden");
+  }
+
+  const member = await tx.householdMember.findUnique({
+    where: { id: memberId },
+    include: { user: true }
+  });
   if (!member || member.deletedAt) throw new Error("not_found");
-  if (member.householdId !== householdId) throw new Error("forbidden");
-  return member;
+  if (member.householdId !== actor.householdId) throw new Error("forbidden");
+
+  return {
+    ctx: { ...requestContext, role: actor.role },
+    member
+  };
 }

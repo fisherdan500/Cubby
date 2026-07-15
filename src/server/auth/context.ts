@@ -15,6 +15,7 @@ export async function getHouseholdContext(householdId?: string): Promise<Househo
   const member = await prisma.householdMember.findFirst({
     where: {
       userId: user.id,
+      disabledAt: null,
       deletedAt: null,
       household: {
         deletedAt: null,
