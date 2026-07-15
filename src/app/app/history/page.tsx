@@ -21,7 +21,7 @@ export default async function HistoryPage({
   searchParams: { babyId?: string; type?: string; search?: string; cursor?: string };
 }) {
   const user = await requireUserPage();
-  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const activityResults = await listActivities({
     babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
     type: searchParams.type,
@@ -139,6 +139,7 @@ export default async function HistoryPage({
 function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivity; returnTo: string; timeZone: string }) {
   const type = activity.type as ActivityTypeName;
   const actor = activity.actorMember.displayName ?? activity.actorMember.user.name;
+  const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
 
   return (
     <Card className="overflow-hidden p-0">
@@ -151,7 +152,10 @@ function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivi
               <p className="text-xs font-bold text-muted-foreground">{timeLabel(activity.occurredAt, timeZone)}</p>
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              {activity.baby.name} - {actor}
+              {activity.baby.name}
+              {isInactiveBaby ? " - Inactive" : ""}
+              {" - "}
+              {actor}
             </p>
             <p className="mt-1 line-clamp-2 text-sm">{describeActivity(activity)}</p>
           </div>

@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } from "@/components/actions/activity-actions";
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
+import { ZeroActiveBabies } from "@/components/dashboard/zero-active-babies";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -14,6 +15,7 @@ import {
   type ActivityTypeName,
   type DailySummaryActivityType
 } from "@/domain/activity";
+import { hasPermission } from "@/domain/roles";
 import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
 import { activityDetailHref } from "@/lib/activity-navigation";
 import { requireUserPage } from "@/server/auth/session";
@@ -65,13 +67,7 @@ export default async function DashboardPage({
   return (
     <AppShell title="Log Entry" userName={user.name} babySelector={babySelector}>
       {!baby ? (
-        <Card>
-          <h2 className="text-lg font-bold">Add your first baby</h2>
-          <p className="mb-4 text-sm text-muted-foreground">Cubby needs a baby profile before logging activities.</p>
-          <Link href="/app/babies">
-            <Button>Add baby</Button>
-          </Link>
-        </Card>
+        <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (
         <div className="space-y-5">
           <QuickActionRail dashboard={currentDashboard} />

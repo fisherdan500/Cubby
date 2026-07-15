@@ -25,10 +25,11 @@ export default async function CalendarPage({
   searchParams: { babyId?: string; month?: string; date?: string; eventId?: string; new?: string; error?: string; opener?: string };
 }) {
   const user = await requireUserPage();
-  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const calendar = await getCalendar(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!calendar?.home) redirect("/onboarding");
+  const canAddEvent = !calendar.baby?.inactiveAt;
 
   return (
     <AppShell title="Calendar" userName={user.name} babySelector={babySelector}>
@@ -147,7 +148,7 @@ export default async function CalendarPage({
             />
           </div>
 
-          {!calendar.selected && searchParams.new !== "1" ? (
+          {canAddEvent && !calendar.selected && searchParams.new !== "1" ? (
             <Link
               href={calendarHref(calendar.baby.id, calendar.monthKey, { date: calendar.todayKey, new: "1", opener: "add" })}
               data-calendar-add-event
@@ -162,10 +163,11 @@ export default async function CalendarPage({
             <CalendarFocusRestore selector={calendarOpenerSelector(searchParams.opener, calendar.todayKey)} />
           ) : null}
 
-          {calendar.selected || searchParams.new === "1" ? (
+          {calendar.selected || (searchParams.new === "1" && canAddEvent) ? (
             <CalendarDrawer
               calendar={calendar}
-              isNew={searchParams.new === "1"}
+              isNew={searchParams.new === "1" && canAddEvent}
+              canAddEvent={canAddEvent}
               error={searchParams.error}
               initialDate={searchParams.date ?? calendar.todayKey}
               opener={searchParams.opener}
@@ -180,12 +182,14 @@ export default async function CalendarPage({
 function CalendarDrawer({
   calendar,
   isNew,
+  canAddEvent,
   error,
   initialDate,
   opener
 }: {
   calendar: NonNullable<Awaited<ReturnType<typeof getCalendar>>>;
   isNew: boolean;
+  canAddEvent: boolean;
   error?: string;
   initialDate: string;
   opener?: string;
@@ -300,13 +304,15 @@ function CalendarDrawer({
               >
                 Close
               </Link>
-              <Link
-                href={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, new: "1", opener })}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-black text-primary-foreground hover:opacity-95"
-              >
-                <PlusCircle className="h-5 w-5" />
-                Add Event
-              </Link>
+              {canAddEvent ? (
+                <Link
+                  href={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, new: "1", opener })}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-black text-primary-foreground hover:opacity-95"
+                >
+                  <PlusCircle className="h-5 w-5" />
+                  Add Event
+                </Link>
+              ) : null}
             </div>
           </>
         )}

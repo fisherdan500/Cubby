@@ -33,4 +33,11 @@ describe("calendar interaction contracts", () => {
     );
     expect(source).toContain('/^[a-z0-9-]+$/i');
   });
+
+  it("keeps inactive babies historical-only", () => {
+    expect(source).toContain("const canAddEvent = !calendar.baby?.inactiveAt");
+    expect(source).toContain('canAddEvent && !calendar.selected && searchParams.new !== "1"');
+    expect(source).toContain('calendar.selected || (searchParams.new === "1" && canAddEvent)');
+    expect(source).toContain("canAddEvent ? (");
+  });
 });

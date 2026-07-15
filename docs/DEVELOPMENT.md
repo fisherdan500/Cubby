@@ -192,7 +192,9 @@ enough.
 
 Activity writes should go through `src/server/services/activities.ts`. Preserve
 the `ActivityLog` aggregate pattern and add type-specific details only where
-needed.
+needed. New activity and timer writes must lock and re-read the baby and acting
+membership inside the transaction and reject inactive babies there, not only in
+pre-transaction page or API checks.
 
 ### Permissions
 
@@ -235,8 +237,12 @@ the transaction. Suspension writes `member.suspend`, restoration writes
 ### Baby Selection
 
 Log Entry, Full Log, Calendar, Reports, and Nursery use the shared header baby
-selector behavior. Pages should preserve `babyId` in links and search params
-where the selected baby matters.
+selector behavior. Active tracking surfaces such as Log Entry, Dashboard, and
+Nursery should offer active babies only and render an intentional `No active
+babies` state when none remain. Historical surfaces such as Full Log, Calendar,
+Reports, activity detail, and edit should retain inactive babies and label them
+explicitly. Pages should preserve `babyId` in links and search params where the
+selected baby matters.
 
 ### Timezone
 
@@ -261,7 +267,9 @@ household with permission checks. Do not bypass service-layer ownership checks
 for restore paths.
 Backups intentionally exclude auth users, credentials, sessions, and household
 memberships. Restore must not create, update, delete, suspend, or restore a
-membership, and must leave `HouseholdMember.disabledAt` unchanged.
+membership, and must leave `HouseholdMember.disabledAt` unchanged. Baby
+`inactiveAt` is part of backup v1 when present; restore should create babies and
+activities first, then apply deactivation timestamps.
 
 ### Visual Assets And Themes
 

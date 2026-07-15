@@ -65,12 +65,13 @@ export async function getDashboardPageData(
   const home = await getHouseholdHome(userId);
   if (!home) return null;
 
+  const activeBabies = home.household.babies.filter((baby) => !baby.inactiveAt);
   const cachedBabyId = cookies().get(SELECTED_BABY_COOKIE)?.value;
-  const selectedBaby = resolveSelectedBaby(home.household.babies, params?.babyId, cachedBabyId);
+  const selectedBaby = resolveSelectedBaby(activeBabies, params?.babyId, cachedBabyId);
   const dashboard = await getDashboardForHome(home, { babyId: selectedBaby?.id, date: params?.date });
   const babySelector = dashboard.baby
     ? buildHeaderBabySelectorData(
-        home.household.babies,
+        activeBabies,
         dashboard.baby.id,
         dashboard.activeTimers[0]?.type as ActivityTypeName | undefined
       )
@@ -82,7 +83,8 @@ export async function getDashboardPageData(
 async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams) {
   const babyId = typeof params === "string" ? params : params?.babyId;
   const dateInput = typeof params === "string" ? undefined : params?.date;
-  const baby = home.household.babies.find((item) => item.id === babyId) ?? home.household.babies[0];
+  const activeBabies = home.household.babies.filter((item) => !item.inactiveAt);
+  const baby = activeBabies.find((item) => item.id === babyId) ?? activeBabies[0];
   if (!baby) return { home, baby: null, activities: [], activeTimers: [], warnings: [], summaries: {} };
 
   const selectedDate = resolveDashboardDate(dateInput);

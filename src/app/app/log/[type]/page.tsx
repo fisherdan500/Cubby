@@ -43,7 +43,7 @@ export default async function LogActivityPage({
               supplementNames={unitSettings.supplementNames}
             />
           ) : (
-            <p className="text-sm text-muted-foreground">Add a baby before logging activities.</p>
+            <p className="text-sm text-muted-foreground">No active babies.</p>
           )}
         </Card>
       </div>

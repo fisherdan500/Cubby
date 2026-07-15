@@ -39,7 +39,7 @@ const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
 export async function getReports(userId: string, input?: { babyId?: string; start?: string; end?: string; routineWindow?: string }) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.read");
-  const home = await getHouseholdHome(userId);
+  const home = await getHouseholdHome(userId, { includeInactive: true });
   if (!home) return null;
   const baby = home.household.babies.find((item) => item.id === input?.babyId) ?? home.household.babies[0];
   const todayKey = dateKeyInTimeZone(new Date(), env.APP_TIMEZONE);

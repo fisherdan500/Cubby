@@ -65,6 +65,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
         <div className="min-w-0">
           <div className="flex items-center gap-1">
             <span className="max-w-32 truncate text-sm sm:max-w-40 sm:text-base">{selectedBaby.name}</span>
+            {selectedBaby.inactive ? <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-black text-muted-foreground">Inactive</span> : null}
           </div>
           <p className="text-xs font-semibold text-muted-foreground sm:text-sm">{selectedBaby.ageLabel}</p>
         </div>
@@ -80,7 +81,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
       >
         {data.babies.map((baby) => (
           <option key={baby.id} value={baby.id}>
-            {baby.name} - {baby.ageLabel}
+            {baby.name}{baby.inactive ? " (Inactive)" : ""} - {baby.ageLabel}
           </option>
         ))}
       </select>

@@ -257,6 +257,7 @@ model Baby {
   preferredUnits Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  inactiveAt  DateTime?
   deletedAt   DateTime?
   household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   activities  ActivityLog[]
@@ -266,6 +267,7 @@ model Baby {
   dashboardWarningDismissals DashboardWarningDismissal[]
 
   @@index([householdId])
+  @@index([inactiveAt])
   @@index([deletedAt])
   @@index([createdAt])
 }

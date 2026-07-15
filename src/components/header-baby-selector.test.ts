@@ -21,7 +21,8 @@ describe("HeaderBabySelector", () => {
             {
               id: "baby-1",
               name: "Synthetic Baby One With A Deliberately Long Name",
-              ageLabel: "6 months"
+              ageLabel: "6 months",
+              inactive: false
             }
           ]
         }

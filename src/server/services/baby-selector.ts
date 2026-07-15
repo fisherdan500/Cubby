@@ -10,8 +10,12 @@ import {
 import type { ActivityTypeName } from "@/domain/activity";
 import { getHouseholdHome } from "@/server/services/households";
 
-export async function getHeaderBabySelector(userId: string, requestedBabyId?: string | null): Promise<HeaderBabySelectorData | null> {
-  const home = await getHouseholdHome(userId);
+export async function getHeaderBabySelector(
+  userId: string,
+  requestedBabyId?: string | null,
+  options?: { includeInactive?: boolean }
+): Promise<HeaderBabySelectorData | null> {
+  const home = await getHouseholdHome(userId, { includeInactive: options?.includeInactive });
   if (!home) return null;
 
   const cachedBabyId = cookies().get(SELECTED_BABY_COOKIE)?.value;

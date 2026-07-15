@@ -16,6 +16,7 @@ import { env } from "@/lib/env";
 import { zonedDateStart } from "@/lib/timezone";
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { durationSeconds } from "@/lib/dates";
+import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 
 type SproutRow = Record<string, unknown>;
 type SproutTables = Record<string, SproutRow[]>;
@@ -498,12 +499,16 @@ function importKeys(parsed: ParsedSproutBackup): ImportKey[] {
   return keys;
 }
 
-async function countDuplicates(ctx: HouseholdContext, keys: ImportKey[]) {
+async function countDuplicates(
+  ctx: HouseholdContext,
+  keys: ImportKey[],
+  db: Pick<Prisma.TransactionClient, "importedRecord"> = prisma
+) {
   let total = 0;
   for (const table of new Set(keys.map((key) => key.sourceTable))) {
     const ids = keys.filter((key) => key.sourceTable === table).map((key) => key.sourceId);
     if (!ids.length) continue;
-    total += await prisma.importedRecord.count({
+    total += await db.importedRecord.count({
       where: {
         householdId: ctx.householdId,
         sourceSystem: SOURCE_SYSTEM,
@@ -527,64 +532,93 @@ export async function importSproutBackup(formData: FormData) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const parsed = await parseUpload(formData);
-  const duplicateCount = await countDuplicates(ctx, importKeys(parsed));
-  const summary = makeSummary(parsed, duplicateCount);
-  const batch = await prisma.importBatch.create({
-    data: {
-      householdId: ctx.householdId,
-      actorUserId: ctx.userId,
-      sourceSystem: SOURCE_SYSTEM,
-      sourceFilename: parsed.filename,
-      sourceFormat: parsed.format,
-      status: "running",
-      summary: summary as Prisma.InputJsonValue,
-      warnings: summary.warnings
-    }
-  });
-
   try {
-    const result = await commitSproutImport(ctx, parsed, batch.id);
-    const finalSummary = { ...summary, result };
-    await prisma.importBatch.update({
-      where: { id: batch.id },
-      data: {
-        status: "complete",
-        completedAt: new Date(),
-        summary: finalSummary as Prisma.InputJsonValue,
-        warnings: [...summary.warnings, ...result.warnings]
-      }
-    });
-    await prisma.backupRecord.create({
-      data: {
-        householdId: ctx.householdId,
-        actorUserId: ctx.userId,
-        kind: "sprout_import",
-        status: "complete",
-        itemCount: result.created,
-        checksum: createHash("sha256").update(JSON.stringify(finalSummary)).digest("hex")
-      }
-    });
-    return finalSummary;
+    return await prisma.$transaction(
+      async (db) => {
+        const lockedCtx = await lockActorForWrite(db, ctx);
+        requirePermission(lockedCtx, "backup.manage");
+        const duplicateCount = await countDuplicates(lockedCtx, importKeys(parsed), db);
+        const summary = makeSummary(parsed, duplicateCount);
+        const batch = await db.importBatch.create({
+          data: {
+            householdId: lockedCtx.householdId,
+            actorUserId: lockedCtx.userId,
+            sourceSystem: SOURCE_SYSTEM,
+            sourceFilename: parsed.filename,
+            sourceFormat: parsed.format,
+            status: "running",
+            summary: summary as Prisma.InputJsonValue,
+            warnings: summary.warnings
+          }
+        });
+        const result = await commitSproutImport(db, lockedCtx, parsed, batch.id);
+        const finalSummary = { ...summary, result };
+        await db.importBatch.update({
+          where: { id: batch.id },
+          data: {
+            status: "complete",
+            completedAt: new Date(),
+            summary: finalSummary as Prisma.InputJsonValue,
+            warnings: [...summary.warnings, ...result.warnings]
+          }
+        });
+        await db.backupRecord.create({
+          data: {
+            householdId: lockedCtx.householdId,
+            actorUserId: lockedCtx.userId,
+            kind: "sprout_import",
+            status: "complete",
+            itemCount: result.created,
+            checksum: createHash("sha256").update(JSON.stringify(finalSummary)).digest("hex")
+          }
+        });
+        return finalSummary;
+      },
+      { maxWait: 10_000, timeout: 120_000 }
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Import failed";
-    await prisma.importBatch.update({
-      where: { id: batch.id },
-      data: { status: "failed", completedAt: new Date(), error: message }
-    });
-    await prisma.backupRecord.create({
+    if (!(error instanceof Error && ["unauthenticated", "forbidden"].includes(error.message))) {
+      await recordSproutImportFailure(ctx, parsed, error).catch(() => undefined);
+    }
+    throw error;
+  }
+}
+
+async function recordSproutImportFailure(ctx: HouseholdContext, parsed: ParsedSproutBackup, error: unknown) {
+  const message = error instanceof Error ? error.message : "Import failed";
+  return prisma.$transaction(async (db) => {
+    const lockedCtx = await lockActorForWrite(db, ctx);
+    requirePermission(lockedCtx, "backup.manage");
+    await db.importBatch.create({
       data: {
-        householdId: ctx.householdId,
-        actorUserId: ctx.userId,
+        householdId: lockedCtx.householdId,
+        actorUserId: lockedCtx.userId,
+        sourceSystem: SOURCE_SYSTEM,
+        sourceFilename: parsed.filename,
+        sourceFormat: parsed.format,
+        status: "failed",
+        error: message,
+        completedAt: new Date()
+      }
+    });
+    await db.backupRecord.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        actorUserId: lockedCtx.userId,
         kind: "sprout_import",
         status: "failed",
         error: message
       }
     });
-    throw error;
-  }
+  });
 }
 
-async function commitSproutImport(ctx: HouseholdContext, parsed: ParsedSproutBackup, batchId: string) {
+async function commitSproutImport(
+  db: Prisma.TransactionClient,
+  ctx: HouseholdContext,
+  parsed: ParsedSproutBackup,
+  batchId: string
+) {
   const maps: ImportMaps = {
     babies: new Map(),
     contacts: new Map(),
@@ -604,12 +638,13 @@ async function commitSproutImport(ctx: HouseholdContext, parsed: ParsedSproutBac
     warnings: [] as string[]
   };
 
-  await importBabies(ctx, parsed.tables, batchId, maps, counters);
-  await importContacts(ctx, parsed.tables, batchId, maps, counters);
-  await importMedicines(ctx, parsed.tables, batchId, maps, counters);
-  await importActivities(ctx, parsed.tables, batchId, maps, counters);
-  await importCalendarEvents(ctx, parsed.tables, batchId, maps, counters);
-  await importVaccineDocuments(ctx, parsed.tables, batchId, maps, counters);
+  await importBabies(db, ctx, parsed.tables, batchId, maps, counters);
+  for (const babyId of [...new Set(maps.babies.values())].sort()) await lockBabyForWrite(db, ctx, babyId);
+  await importContacts(db, ctx, parsed.tables, batchId, maps, counters);
+  await importMedicines(db, ctx, parsed.tables, batchId, maps, counters);
+  await importActivities(db, ctx, parsed.tables, batchId, maps, counters);
+  await importCalendarEvents(db, ctx, parsed.tables, batchId, maps, counters);
+  await importVaccineDocuments(db, ctx, parsed.tables, batchId, maps, counters);
 
   return counters;
 }
@@ -622,8 +657,8 @@ function buildCaretakerMap(tables: SproutTables) {
   return map;
 }
 
-async function importedRecord(ctx: HouseholdContext, table: string, id: string) {
-  return prisma.importedRecord.findUnique({
+async function importedRecord(db: Prisma.TransactionClient, ctx: HouseholdContext, table: string, id: string) {
+  return db.importedRecord.findUnique({
     where: {
       householdId_sourceSystem_sourceTable_sourceId: {
         householdId: ctx.householdId,
@@ -636,6 +671,7 @@ async function importedRecord(ctx: HouseholdContext, table: string, id: string) 
 }
 
 async function rememberImported(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   batchId: string,
   table: string,
@@ -644,41 +680,33 @@ async function rememberImported(
   targetId: string,
   row?: SproutRow
 ) {
-  await prisma.importedRecord
-    .create({
-      data: {
-        householdId: ctx.householdId,
-        importBatchId: batchId,
-        sourceSystem: SOURCE_SYSTEM,
-        sourceTable: table,
-        sourceId: id,
-        targetType,
-        targetId,
-        checksum: row ? checksum(row) : undefined
-      }
-    })
-    .catch(async (error) => {
-      if (isUniqueError(error)) return;
-      throw error;
-    });
-}
-
-function isUniqueError(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "P2002";
+  await db.importedRecord.create({
+    data: {
+      householdId: ctx.householdId,
+      importBatchId: batchId,
+      sourceSystem: SOURCE_SYSTEM,
+      sourceTable: table,
+      sourceId: id,
+      targetType,
+      targetId,
+      checksum: row ? checksum(row) : undefined
+    }
+  });
 }
 
 async function importBabies(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   tables: SproutTables,
   batchId: string,
   maps: ImportMaps,
   counters: ImportCounters
 ) {
-  const existing = await prisma.baby.findMany({ where: { householdId: ctx.householdId, deletedAt: null } });
+  const existing = await db.baby.findMany({ where: { householdId: ctx.householdId, deletedAt: null } });
   for (const [index, row] of rows(tables, "Baby").entries()) {
     if (!isImportable(row)) continue;
     const id = sourceId(row, "Baby", index);
-    const previous = await importedRecord(ctx, "Baby", id);
+    const previous = await importedRecord(db, ctx, "Baby", id);
     if (previous) {
       maps.babies.set(id, previous.targetId);
       counters.skipped += 1;
@@ -689,7 +717,7 @@ async function importBabies(
     const matched = existing.find((baby) => normalizeName(baby.name) === normalizeName(name) && birthKey(baby.birthDate) === birthKey(birthDate));
     const saved =
       matched ??
-      (await prisma.baby.create({
+      (await db.baby.create({
         data: {
           householdId: ctx.householdId,
           name,
@@ -701,7 +729,7 @@ async function importBabies(
         }
       }));
     maps.babies.set(id, saved.id);
-    await rememberImported(ctx, batchId, "Baby", id, "baby", saved.id, row);
+    await rememberImported(db, ctx, batchId, "Baby", id, "baby", saved.id, row);
     counters.babies += matched ? 0 : 1;
     counters.created += matched ? 0 : 1;
     if (!matched) existing.push(saved);
@@ -709,6 +737,7 @@ async function importBabies(
 }
 
 async function importContacts(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   tables: SproutTables,
   batchId: string,
@@ -718,7 +747,7 @@ async function importContacts(
   for (const [index, row] of rows(tables, "Contact").entries()) {
     if (!isImportable(row)) continue;
     const id = sourceId(row, "Contact", index);
-    const previous = await importedRecord(ctx, "Contact", id);
+    const previous = await importedRecord(db, ctx, "Contact", id);
     if (previous) {
       maps.contacts.set(id, previous.targetId);
       counters.skipped += 1;
@@ -726,7 +755,7 @@ async function importContacts(
     }
     const name = text(row, "name") ?? "Imported contact";
     const contact =
-      (await prisma.contact.findFirst({
+      (await db.contact.findFirst({
         where: {
           householdId: ctx.householdId,
           deletedAt: null,
@@ -734,7 +763,7 @@ async function importContacts(
           kind: text(row, "role") ?? text(row, "kind")
         }
       })) ??
-      (await prisma.contact.create({
+      (await db.contact.create({
         data: {
           householdId: ctx.householdId,
           name,
@@ -746,13 +775,14 @@ async function importContacts(
         }
       }));
     maps.contacts.set(id, contact.id);
-    await rememberImported(ctx, batchId, "Contact", id, "contact", contact.id, row);
+    await rememberImported(db, ctx, batchId, "Contact", id, "contact", contact.id, row);
     counters.contacts += 1;
     counters.created += 1;
   }
 }
 
 async function importMedicines(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   tables: SproutTables,
   batchId: string,
@@ -766,17 +796,17 @@ async function importMedicines(
     const id = sourceId(row, "Medicine", index);
     const name = text(row, "name") ?? "Imported medicine";
     const isSupplement = boolValue(row, "isSupplement");
-    const previous = await importedRecord(ctx, "Medicine", id);
+    const previous = await importedRecord(db, ctx, "Medicine", id);
     if (previous) {
       maps.medicines.set(id, { id: previous.targetId, name, isSupplement, unit: unit(row) });
       counters.skipped += 1;
       continue;
     }
     const catalog =
-      (await prisma.medicineCatalog.findFirst({
+      (await db.medicineCatalog.findFirst({
         where: { householdId: ctx.householdId, deletedAt: null, name, isSupplement }
       })) ??
-      (await prisma.medicineCatalog.create({
+      (await db.medicineCatalog.create({
         data: {
           householdId: ctx.householdId,
           name,
@@ -789,7 +819,7 @@ async function importMedicines(
         }
       }));
     maps.medicines.set(id, { id: catalog.id, name, isSupplement, unit: unit(row) });
-    await rememberImported(ctx, batchId, "Medicine", id, "medicine_catalog", catalog.id, row);
+    await rememberImported(db, ctx, batchId, "Medicine", id, "medicine_catalog", catalog.id, row);
     counters.medicines += 1;
     counters.created += 1;
     if (isSupplement) supplementNames.add(name);
@@ -797,12 +827,12 @@ async function importMedicines(
   }
 
   if (medicineNames.size || supplementNames.size) {
-    const settings = await prisma.householdSettings.upsert({
+    const settings = await db.householdSettings.upsert({
       where: { householdId: ctx.householdId },
       update: {},
       create: { householdId: ctx.householdId }
     });
-    await prisma.householdSettings.update({
+    await db.householdSettings.update({
       where: { householdId: ctx.householdId },
       data: {
         medicines: Array.from(new Set([...settings.medicines, ...medicineNames])).sort(),
@@ -817,6 +847,7 @@ function decimal(value?: number) {
 }
 
 async function importActivities(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   tables: SproutTables,
   batchId: string,
@@ -827,7 +858,7 @@ async function importActivities(
     for (const [index, row] of rows(tables, table).entries()) {
       if (!isImportable(row)) continue;
       const id = sourceId(row, table, index);
-      if (await importedRecord(ctx, table, id)) {
+      if (await importedRecord(db, ctx, table, id)) {
         counters.skipped += 1;
         continue;
       }
@@ -837,12 +868,12 @@ async function importActivities(
         counters.skipped += 1;
         continue;
       }
-      const activity = await prisma.activityLog.create({
+      const activity = await db.activityLog.create({
         data: draft,
         include: { vaccine: true }
       });
       if (table === "VaccineLog" && activity.vaccine) maps.vaccines.set(id, activity.vaccine.id);
-      await rememberImported(ctx, batchId, table, id, "activity", activity.id, row);
+      await rememberImported(db, ctx, batchId, table, id, "activity", activity.id, row);
       counters.activities += 1;
       counters.created += 1;
     }
@@ -1094,6 +1125,7 @@ function durationFromMinutes(row: SproutRow, key: string, startedAt?: Date, ende
 }
 
 async function importCalendarEvents(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   tables: SproutTables,
   batchId: string,
@@ -1106,7 +1138,7 @@ async function importCalendarEvents(
   for (const [index, row] of rows(tables, "CalendarEvent").entries()) {
     if (!isImportable(row)) continue;
     const id = sourceId(row, "CalendarEvent", index);
-    if (await importedRecord(ctx, "CalendarEvent", id)) {
+    if (await importedRecord(db, ctx, "CalendarEvent", id)) {
       counters.skipped += 1;
       continue;
     }
@@ -1114,7 +1146,7 @@ async function importCalendarEvents(
       .filter((link) => text(link, "eventId") === id && text(link, "caretakerId"))
       .map((link) => maps.caretakers.get(text(link, "caretakerId") ?? ""))
       .filter((name): name is string => Boolean(name));
-    const event = await prisma.calendarEvent.create({
+    const event = await db.calendarEvent.create({
       data: {
         householdId: ctx.householdId,
         title: text(row, "title") ?? "Imported event",
@@ -1135,23 +1167,27 @@ async function importCalendarEvents(
         externalCaretakerNames: linkedCaretakers
       }
     });
-    await rememberImported(ctx, batchId, "CalendarEvent", id, "calendar_event", event.id, row);
+    await rememberImported(db, ctx, batchId, "CalendarEvent", id, "calendar_event", event.id, row);
     counters.calendarEvents += 1;
     counters.created += 1;
 
     for (const link of babyLinks.filter((item) => text(item, "eventId") === id)) {
       const babyId = text(link, "babyId") ? maps.babies.get(text(link, "babyId") ?? "") : undefined;
       if (babyId) {
-        await prisma.calendarEventBaby.create({ data: { eventId: event.id, babyId } }).catch((error) => {
-          if (!isUniqueError(error)) throw error;
+        await db.calendarEventBaby.upsert({
+          where: { babyId_eventId: { babyId, eventId: event.id } },
+          update: {},
+          create: { eventId: event.id, babyId }
         });
       }
     }
     for (const link of contactLinks.filter((item) => text(item, "eventId") === id)) {
       const contactId = text(link, "contactId") ? maps.contacts.get(text(link, "contactId") ?? "") : undefined;
       if (contactId) {
-        await prisma.calendarEventContact.create({ data: { eventId: event.id, contactId } }).catch((error) => {
-          if (!isUniqueError(error)) throw error;
+        await db.calendarEventContact.upsert({
+          where: { contactId_eventId: { contactId, eventId: event.id } },
+          update: {},
+          create: { eventId: event.id, contactId }
         });
       }
     }
@@ -1159,6 +1195,7 @@ async function importCalendarEvents(
 }
 
 async function importVaccineDocuments(
+  db: Prisma.TransactionClient,
   ctx: HouseholdContext,
   tables: SproutTables,
   batchId: string,
@@ -1168,7 +1205,7 @@ async function importVaccineDocuments(
   for (const [index, row] of rows(tables, "VaccineDocument").entries()) {
     if (!isImportable(row)) continue;
     const id = sourceId(row, "VaccineDocument", index);
-    if (await importedRecord(ctx, "VaccineDocument", id)) {
+    if (await importedRecord(db, ctx, "VaccineDocument", id)) {
       counters.skipped += 1;
       continue;
     }
@@ -1179,7 +1216,7 @@ async function importVaccineDocuments(
       counters.skipped += 1;
       continue;
     }
-    const document = await prisma.vaccineDocument.create({
+    const document = await db.vaccineDocument.create({
       data: {
         vaccineLogId,
         originalName: firstText(row, ["originalName", "fileName", "filename", "name", "storedName"]) ?? "Imported vaccine document",
@@ -1189,7 +1226,7 @@ async function importVaccineDocuments(
         sourcePath: firstText(row, ["storedName", "filePath", "path", "url"])
       }
     });
-    await rememberImported(ctx, batchId, "VaccineDocument", id, "vaccine_document", document.id, row);
+    await rememberImported(db, ctx, batchId, "VaccineDocument", id, "vaccine_document", document.id, row);
     counters.vaccineDocuments += 1;
     counters.created += 1;
   }

@@ -1,11 +1,16 @@
-import { HouseholdRole } from "@prisma/client";
+import { HouseholdRole, TimerState } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
+import { lockActorAndBabyForWrite } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
+
+type BabyQueryOptions = {
+  includeInactive?: boolean;
+};
 
 export async function listHouseholdsForUser(userId: string) {
   return prisma.householdMember.findMany({
@@ -80,16 +85,31 @@ export async function addBaby(raw: unknown) {
   return baby;
 }
 
-export async function listBabies() {
+function babyWhereClause(householdId: string, options?: BabyQueryOptions) {
+  return {
+    householdId,
+    deletedAt: null,
+    ...(options?.includeInactive ? {} : { inactiveAt: null })
+  };
+}
+
+function nestedBabyWhereClause(options?: BabyQueryOptions) {
+  return {
+    deletedAt: null,
+    ...(options?.includeInactive ? {} : { inactiveAt: null })
+  };
+}
+
+export async function listBabies(options?: BabyQueryOptions) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.read");
   return prisma.baby.findMany({
-    where: { householdId: ctx.householdId, deletedAt: null },
+    where: babyWhereClause(ctx.householdId, options),
     orderBy: { createdAt: "asc" }
   });
 }
 
-export async function getHouseholdHome(userId: string) {
+export async function getHouseholdHome(userId: string, options?: BabyQueryOptions) {
   const member = await prisma.householdMember.findFirst({
     where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
     include: {
@@ -97,7 +117,7 @@ export async function getHouseholdHome(userId: string) {
         include: {
           settings: true,
           babies: {
-            where: { deletedAt: null },
+            where: nestedBabyWhereClause(options),
             orderBy: { createdAt: "asc" }
           }
         }
@@ -106,4 +126,71 @@ export async function getHouseholdHome(userId: string) {
     orderBy: { joinedAt: "asc" }
   });
   return member;
+}
+
+export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "baby.manage");
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, baby } = await lockActorAndBabyForWrite(tx, requestContext, babyId);
+    requirePermission(ctx, "baby.manage");
+    if (baby.inactiveAt) return baby;
+
+    const activeTimer = await tx.activityLog.findFirst({
+      where: {
+        householdId: ctx.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        timerState: { in: [TimerState.running, TimerState.paused] }
+      },
+      select: { id: true }
+    });
+    if (activeTimer) throw new Error("baby_has_active_timer");
+
+    const updated = await tx.baby.update({
+      where: { id: baby.id },
+      data: { inactiveAt }
+    });
+    await writeAudit(
+      ctx,
+      {
+        action: "baby.deactivate",
+        entityType: "baby",
+        entityId: baby.id,
+        before: { inactiveAt: baby.inactiveAt },
+        after: { inactiveAt }
+      },
+      tx
+    );
+    return updated;
+  });
+}
+
+export async function reactivateBaby(babyId: string) {
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "baby.manage");
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, baby } = await lockActorAndBabyForWrite(tx, requestContext, babyId);
+    requirePermission(ctx, "baby.manage");
+    if (!baby.inactiveAt) return baby;
+
+    const updated = await tx.baby.update({
+      where: { id: baby.id },
+      data: { inactiveAt: null }
+    });
+    await writeAudit(
+      ctx,
+      {
+        action: "baby.reactivate",
+        entityType: "baby",
+        entityId: baby.id,
+        before: { inactiveAt: baby.inactiveAt },
+        after: { inactiveAt: null }
+      },
+      tx
+    );
+    return updated;
+  });
 }

@@ -86,6 +86,7 @@ function householdHome() {
           id: "baby-2",
           name: "Riley",
           birthDate: null,
+          inactiveAt: null,
           feedingWarningMinutes: null,
           diaperWarningMinutes: null,
           sleepWarningMinutes: null
@@ -204,6 +205,60 @@ describe("dashboard service data loading", () => {
     expect(mocks.activityFindFirst).not.toHaveBeenCalled();
     expect(mocks.activityGroupBy).not.toHaveBeenCalled();
     expect(mocks.dismissalFindMany).not.toHaveBeenCalled();
+  });
+
+  it("filters inactive babies out of the active selector and dashboard queries", async () => {
+    mocks.cookieGet.mockReturnValue({ value: "baby-2" });
+    mocks.getHouseholdHome.mockResolvedValue({
+      ...householdHome(),
+      household: {
+        ...householdHome().household,
+        babies: [
+          {
+            ...householdHome().household.babies[0],
+            inactiveAt: null
+          },
+          {
+            ...householdHome().household.babies[1],
+            inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+          }
+        ]
+      }
+    });
+    mocks.activityFindMany.mockResolvedValue([]);
+    mocks.activityFindFirst.mockResolvedValue(null);
+    mocks.dismissalFindMany.mockResolvedValue([]);
+
+    const pageData = await getDashboardPageData("user-1", { babyId: "baby-2", date: "2026-06-19" });
+
+    expect(pageData?.dashboard.baby?.id).toBe("baby-1");
+    expect(pageData?.babySelector?.selectedBabyId).toBe("baby-1");
+    expect(pageData?.babySelector?.babies.map((baby) => baby.id)).toEqual(["baby-1"]);
+  });
+
+  it("returns an intentional no-active-babies contract when every baby is inactive", async () => {
+    mocks.getHouseholdHome.mockResolvedValue({
+      ...householdHome(),
+      household: {
+        ...householdHome().household,
+        babies: householdHome().household.babies.map((baby) => ({
+          ...baby,
+          inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+        }))
+      }
+    });
+
+    const pageData = await getDashboardPageData("user-1", { date: "2026-06-19" });
+
+    expect(pageData?.dashboard).toMatchObject({
+      baby: null,
+      activities: [],
+      activeTimers: [],
+      warnings: [],
+      summaries: {}
+    });
+    expect(pageData?.babySelector).toBeNull();
+    expect(mocks.activityFindMany).not.toHaveBeenCalled();
   });
 });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  activityEditBabies,
   babySelectionHref,
   buildHeaderBabySelectorData,
   formatBabyAge,
@@ -53,12 +54,39 @@ describe("baby selector helpers", () => {
       )
     ).toEqual({
       babies: [
-        { id: "baby-1", name: "Finley", ageLabel: "14 weeks" },
-        { id: "baby-2", name: "Riley", ageLabel: "Age not set" }
+        { id: "baby-1", name: "Finley", ageLabel: "14 weeks", inactive: false },
+        { id: "baby-2", name: "Riley", ageLabel: "Age not set", inactive: false }
       ],
       selectedBabyId: "baby-2",
       activeTimerType: "sleep"
     });
+  });
+
+  it("marks inactive babies in historical selector data", () => {
+    const data = buildHeaderBabySelectorData(
+      [{ id: "baby-1", name: "Finley", birthDate: null, inactiveAt: new Date("2026-07-14T12:00:00.000Z") }],
+      "baby-1"
+    );
+
+    expect(data?.babies).toEqual([
+      { id: "baby-1", name: "Finley", ageLabel: "Age not set", inactive: true }
+    ]);
+  });
+
+  it("offers active babies plus only the activity's current inactive baby for edits", () => {
+    expect(
+      activityEditBabies(
+        [
+          { id: "baby-active", name: "Active", inactiveAt: null },
+          { id: "baby-current", name: "Current", inactiveAt: new Date("2026-07-14T12:00:00.000Z") },
+          { id: "baby-other", name: "Other", inactiveAt: new Date("2026-07-13T12:00:00.000Z") }
+        ],
+        "baby-current"
+      )
+    ).toEqual([
+      { id: "baby-active", name: "Active" },
+      { id: "baby-current", name: "Current (Inactive)" }
+    ]);
   });
 
   it("resets pagination when changing babies and preserves independent filters", () => {
