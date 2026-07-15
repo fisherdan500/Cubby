@@ -47,22 +47,6 @@ deployment, and cleanup approvals.
 - Acceptance: Remaining dashboard and normal-page journeys have production before/after evidence; proven duplicate dashboard/header data loads are consolidated without output or timezone regressions; the `Cubby` page-header eyebrow is absent at every width while sidebar/mobile branding remains; tests, lint, typecheck, build, and responsive checks pass.
 - Notes: Pull request #5 already completed Full Log pagination and Full Log/Settings prefetch hardening. Do not add request-context caching unless post-consolidation measurements justify it.
 
-### Reversible Member Suspension
-
-- Status: in progress
-- Priority: high
-- Goal: Disable and re-enable household access without deleting credentials, membership, role, or history.
-- Acceptance: The protected owner and acting member cannot be disabled; owners may manage admins and lower roles; admins may manage only lower roles; disabling revokes sessions immediately; a user whose only current memberships are suspended sees exactly `Your account is disabled.` on future valid login; another active household membership remains usable but does not grant access to the suspended household; re-enabling restores household access; server authorization, audit records, UI states, and tests cover the lifecycle.
-- Notes: Isolated implementation and verification are complete, and the feature branch is published pending pull-request approval. Hiding UI is not an authorization boundary; request-time enforcement, uncached session reads, and database serialization with concurrent session creation are required in addition to session revocation. Merge, migration, and deployment remain separately gated.
-
-### Reversible Baby Inactivity
-
-- Status: in progress
-- Priority: high
-- Goal: Remove babies from active tracking without hiding or deleting their historical records.
-- Acceptance: Running or paused timers block deactivation; the last active baby may be deactivated and produces a clear `No active babies` state; inactive babies cannot receive new activities or timers; historical selectors/reports retain an `Inactive` label; existing history remains correctable but cannot start/restart timers; reactivation, backups, audit records, and tests cover the lifecycle.
-- Notes: Active-tracking queries and include-inactive historical queries must remain distinct. This worktree contains the implementation in source; merge and deployment remain separately gated.
-
 ## Later
 
 ### Secondary Workflow Mobile Audit
@@ -105,6 +89,22 @@ deployment, and cleanup approvals.
 - Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Reversible Baby Inactivity
+
+- Status: done
+- Priority: high
+- Goal: Remove babies from active tracking without hiding or deleting their historical records.
+- Acceptance: Running or paused timers block deactivation; the last active baby may be deactivated and produces a clear `No active babies` state; inactive babies cannot receive new activities or timers; historical selectors/reports retain an `Inactive` label; existing history remains correctable but cannot start/restart timers; reactivation, backups, audit records, and tests cover the lifecycle.
+- Notes: Squash-merged in pull request #13 after 304 tests, lint, typecheck, Prisma validation, a production build, isolated PostgreSQL/browser acceptance, and independent immutable-tree security/correctness and product/code-quality reviews with zero blockers. Active-tracking queries and include-inactive historical queries remain distinct. Normal database migration and deployment remain separately approval-gated.
+
+### Reversible Member Suspension
+
+- Status: done
+- Priority: high
+- Goal: Disable and re-enable household access without deleting credentials, membership, role, or history.
+- Acceptance: The protected owner and acting member cannot be disabled; owners may manage admins and lower roles; admins may manage only lower roles; disabling revokes sessions immediately; a user whose only current memberships are suspended sees exactly `Your account is disabled.` on future valid login; another active household membership remains usable but does not grant access to the suspended household; re-enabling restores household access; server authorization, audit records, UI states, and tests cover the lifecycle.
+- Notes: Squash-merged in pull request #12 after 256 tests, lint, typecheck, Prisma validation, a production build, disposable PostgreSQL/Better Auth acceptance, and independent final reviews with zero blockers. Hiding UI is not an authorization boundary; request-time enforcement, uncached session reads, and database serialization with concurrent session creation remain required in addition to session revocation. Normal database migration and deployment remain separately approval-gated.
 
 ### Responsive Activity Experience Decision Gate
 
