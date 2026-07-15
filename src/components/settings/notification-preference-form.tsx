@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function NotificationPreferenceForm({ babies }: { babies: Array<{ id: string; name: string }> }) {
   const router = useRouter();
@@ -53,8 +54,8 @@ export function NotificationPreferenceForm({ babies }: { babies: Array<{ id: str
         Reminders
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <input name="quietHoursStart" type="time" className="min-h-11 rounded-lg border border-border bg-card px-3" />
-        <input name="quietHoursEnd" type="time" className="min-h-11 rounded-lg border border-border bg-card px-3" />
+        <Input name="quietHoursStart" type="time" />
+        <Input name="quietHoursEnd" type="time" />
       </div>
       {error ? <p className="rounded-md bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
       <Button>Save preference</Button>

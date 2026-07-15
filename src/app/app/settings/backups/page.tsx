@@ -14,7 +14,7 @@ export default async function BackupsSettingsPage() {
   return (
     <AppShell title="Backups" userName={user.name}>
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <Card>
             <h2 className="mb-3 text-lg font-black">Exports</h2>
             <div className="flex flex-wrap gap-3">
@@ -38,12 +38,12 @@ export default async function BackupsSettingsPage() {
             <SproutRestoreForm />
           </Card>
         </section>
-        <Card className="space-y-3">
+        <Card className="min-w-0 space-y-3">
           <h2 className="text-lg font-black">Backup records</h2>
           {records.length ? null : <p className="text-sm text-muted-foreground">No backup records yet.</p>}
           {records.map((record) => (
             <div key={record.id} className="rounded-md bg-muted p-3">
-              <p className="font-black">
+              <p className="break-words font-black">
                 {record.kind} - {record.status}
               </p>
               <p className="text-sm text-muted-foreground">

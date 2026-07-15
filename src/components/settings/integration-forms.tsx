@@ -44,7 +44,7 @@ export function ApiKeyForm() {
       <Input name="expiresAt" type="date" />
       {secret ? (
         <p className="rounded-md bg-muted p-3 text-sm">
-          Copy this key now: <span className="font-mono font-bold">{secret}</span>
+          Copy this key now: <span className="break-all font-mono font-bold">{secret}</span>
         </p>
       ) : null}
       {error ? <p className="rounded-md bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
