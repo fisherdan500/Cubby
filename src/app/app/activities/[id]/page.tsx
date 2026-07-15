@@ -22,7 +22,7 @@ export default async function ActivityDetailPage({
   searchParams: { returnTo?: string | string[] };
 }) {
   const user = await requireUserPage();
-  const home = await getHouseholdHome(user.id);
+  const home = await getHouseholdHome(user.id, { includeInactive: true });
   if (!home) redirect("/onboarding");
   const view = await getActivityView(params.id).catch(activityUnavailableOrThrow);
   if (!view) notFound();
@@ -34,6 +34,7 @@ export default async function ActivityDetailPage({
     activityFallbackHref({ babyId: activity.babyId, occurredAt: activity.occurredAt, timeZone: env.APP_TIMEZONE });
   const presentation = buildActivityDetailSections(activity, env.APP_TIMEZONE);
   const actorName = activity.actorMember.displayName || activity.actorMember.user.name;
+  const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
 
   return (
     <AppShell title={activityLabels[type]} userName={user.name}>
@@ -49,7 +50,10 @@ export default async function ActivityDetailPage({
             <div className="flex min-w-0 items-center gap-4">
               <ActivityArtwork type={type} size="xl" />
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-normal text-muted-foreground">{activity.baby.name}</p>
+                <p className="text-xs font-black uppercase tracking-normal text-muted-foreground">
+                  {activity.baby.name}
+                  {isInactiveBaby ? " - Inactive" : ""}
+                </p>
                 <h2 className="font-editorial text-2xl font-black text-foreground sm:text-3xl">{activityLabels[type]}</h2>
                 <p className="mt-1 text-sm font-semibold text-muted-foreground">{formatOccurredAt(activity.occurredAt)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Recorded by {actorName}</p>

@@ -117,6 +117,12 @@ aggregate for feature-specific details:
 
 - Feeding, diaper, sleep, pumping, medicine, measurement, milestone, note, bath, play, mood, supplement, vaccine, and milk inventory records.
 
+`Baby` lifecycle state is separate from deletion. `Baby.inactiveAt` removes a
+baby from active tracking selectors and new activity/timer entry while
+preserving history, edits, exports, reports, calendar visibility, and deletes.
+Inactive babies therefore remain readable and correctable but cannot receive new
+activities or resumed timers until reactivated.
+
 Do not replace this with a separate-table-only model. New tracking types should
 fit the aggregate pattern unless there is a clear architectural reason not to.
 
@@ -173,7 +179,10 @@ changes.
 `src/server/services/activities.ts` owns activity creation, updates, deletes,
 undo behavior, timer transitions, and webhook/notification side effects. Pages
 and API routes should call this service instead of writing activity tables
-directly.
+directly. Activity/timer writes lock and re-read the current actor membership
+and baby inside the mutation transaction and fail closed when the baby is
+inactive. Historical edits remain allowed for inactive babies, but editing must
+not start or restart timers.
 
 ### Calendar
 
@@ -190,8 +199,9 @@ trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date.
 ### Backups And Sprout Import
 
 `src/server/services/backups.ts` exports and restores Cubby JSON backups,
-including the household appearance accent when present. Older version 1 backups
-without appearance settings remain valid and use the default sage accent.
+including the household appearance accent and optional baby `inactiveAt` state
+when present. Older version 1 backups without appearance settings or
+`inactiveAt` remain valid and use the default sage accent.
 Cubby JSON backups exclude users, credentials, sessions, and household
 memberships. Restoring a backup therefore never changes membership roles or
 `disabledAt` suspension state.
@@ -210,7 +220,9 @@ path. Docker-sensitive changes here should be verified inside the container.
 
 API-key hooks live under `/api/hooks/v1`. Hook clients authenticate with
 `Authorization: Bearer <key>`, and keys are stored hashed with prefix display and
-revocation metadata.
+revocation metadata. Hook reads can still reference inactive babies, but hook
+writes go through the same activity service gating and cannot create activity
+for inactive babies.
 
 Webhook endpoint and delivery records are stored for activity/timer event
 delivery. Browser push subscriptions, notification preferences, and notification

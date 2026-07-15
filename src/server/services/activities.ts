@@ -7,6 +7,7 @@ import { activityCreateSchema, activityUpdateSchema, type ActivityCreateInput } 
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
 import { writeAudit } from "@/server/services/audit";
+import { lockActorAndBabyForWrite, lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 
 export const activityInclude = {
   actorMember: { include: { user: true } },
@@ -61,6 +62,12 @@ const timerCapableTypes = new Set<ActivityType>([
   ActivityType.pumping,
   ActivityType.play
 ]);
+
+type HistoricalTimerMetadata = {
+  timerState: typeof TimerState.stopped;
+  durationSeconds: number;
+  pausedSeconds: number;
+};
 
 function specificCreate(input: ActivityCreateInput): ActivityCreateDraft {
   const occurredAt = toDate(input.occurredAt) ?? new Date();
@@ -329,36 +336,63 @@ async function requireHouseholdMedicineContact(
 export async function createActivityForContext(raw: unknown, ctx: HouseholdContext) {
   requirePermission(ctx, "activity.create");
   const input = activityCreateSchema.parse(raw);
-  const baby = await prisma.baby.findFirst({
-    where: { id: input.babyId, householdId: ctx.householdId, deletedAt: null }
-  });
-  if (!baby) throw new Error("not_found");
 
   return prisma.$transaction(async (tx) => {
-    await requireHouseholdMedicineContact(tx, ctx, input);
-    const activity = await tx.activityLog.create({
-      data: {
-        ...specificCreate(input),
-        household: { connect: { id: ctx.householdId } },
-        baby: { connect: { id: input.babyId } },
-        actorMember: { connect: { id: ctx.memberId } }
-      },
-      include: activityInclude
-    });
+    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
+    requirePermission(lockedCtx, "activity.create");
+    if (baby.inactiveAt) throw new Error("baby_inactive");
+    return createActivityInTransaction(input, lockedCtx, tx, true);
+  });
+}
 
-    await writeAudit(
-      ctx,
-      { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity },
-      tx
-    );
+async function createActivityInTransaction(
+  input: ActivityCreateInput,
+  ctx: HouseholdContext,
+  tx: Prisma.TransactionClient,
+  queueSideEffects: boolean,
+  historicalTimer?: HistoricalTimerMetadata
+) {
+  await requireHouseholdMedicineContact(tx, ctx, input);
+  const activity = await tx.activityLog.create({
+    data: {
+      ...specificCreate(input),
+      ...(historicalTimer
+        ? {
+            timerState: historicalTimer.timerState,
+            durationSeconds: historicalTimer.durationSeconds,
+            pausedAt: null,
+            pausedSeconds: historicalTimer.pausedSeconds
+          }
+        : {}),
+      household: { connect: { id: ctx.householdId } },
+      baby: { connect: { id: input.babyId } },
+      actorMember: { connect: { id: ctx.memberId } }
+    },
+    include: activityInclude
+  });
+
+  await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity }, tx);
+  if (queueSideEffects) {
     await queueActivitySideEffects(
       ctx,
       activity,
       activity.timerState === TimerState.running ? WebhookEvent.timer_started : WebhookEvent.activity_created,
       tx
     );
-    return activity;
-  });
+  }
+  return activity;
+}
+
+export async function restoreHistoricalActivityForContext(
+  input: ActivityCreateInput,
+  lockedCtx: HouseholdContext,
+  tx: Prisma.TransactionClient,
+  historicalTimer?: HistoricalTimerMetadata
+) {
+  requirePermission(lockedCtx, "backup.manage");
+  if (input.activeTimer) throw new Error("backup_active_timer");
+  if (historicalTimer && !timerCapableTypes.has(input.type as ActivityType)) throw new Error("backup_invalid_timer");
+  return createActivityInTransaction(input, lockedCtx, tx, false, historicalTimer);
 }
 
 export async function listActivities(params?: {
@@ -434,12 +468,17 @@ async function getEditableActivity(ctx: HouseholdContext, id: string, action: "u
 
 async function updateCurrentActivity(
   ctx: HouseholdContext,
-  activity: { id: string; updatedAt: Date },
+  activity: { id: string; babyId: string; actorMemberId: string; updatedAt: Date },
   data: Prisma.ActivityLogUpdateManyMutationInput,
   action: string,
+  permissionAction: "update" | "delete",
   event?: WebhookEvent
 ) {
   return prisma.$transaction(async (tx) => {
+    const { ctx: lockedCtx } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
+    if (!canMutateOwnOrAny(lockedCtx.role, permissionAction, activity.actorMemberId === lockedCtx.memberId)) {
+      throw new Error("forbidden");
+    }
     const claimed = await tx.activityLog.updateMany({
       where: {
         id: activity.id,
@@ -452,11 +491,11 @@ async function updateCurrentActivity(
     if (claimed.count !== 1) throw new Error("not_found");
     const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
     await writeAudit(
-      ctx,
+      lockedCtx,
       { action, entityType: "activity", entityId: activity.id, before: activity, after: updated },
       tx
     );
-    if (event) await queueActivitySideEffects(ctx, updated, event, tx);
+    if (event) await queueActivitySideEffects(lockedCtx, updated, event, tx);
     return updated;
   });
 }
@@ -553,14 +592,17 @@ export async function updateActivity(id: string, raw: unknown) {
   const expectedUpdatedAt = toDate(input.expectedUpdatedAt) ?? before.updatedAt;
   const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
   const editedTimerState = before.timerState === TimerState.none ? next.timerState : before.timerState;
-  const baby = await prisma.baby.findFirst({
-    where: { id: input.babyId, householdId: ctx.householdId, deletedAt: null }
-  });
-  if (!baby) throw new Error("not_found");
-
   const updated = await prisma.$transaction(async (tx) => {
+    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
+    if (!canMutateOwnOrAny(lockedCtx.role, "update", before.actorMemberId === lockedCtx.memberId)) {
+      throw new Error("forbidden");
+    }
+    const startsTimer = before.timerState === TimerState.none && next.timerState === TimerState.running;
+    if (baby.inactiveAt && (input.babyId !== before.babyId || startsTimer || activeTimer)) {
+      throw new Error("baby_inactive");
+    }
     if (input.type === "medicine" && medicineContactWasProvided && input.contactId) {
-      await requireHouseholdMedicineContact(tx, ctx, input);
+      await requireHouseholdMedicineContact(tx, lockedCtx, input);
     }
     const claimed = await tx.activityLog.updateMany({
       where: { id, householdId: ctx.householdId, deletedAt: null, updatedAt: expectedUpdatedAt },
@@ -580,11 +622,11 @@ export async function updateActivity(id: string, raw: unknown) {
     await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
     const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
     await writeAudit(
-      ctx,
+      lockedCtx,
       { action: "activity.update", entityType: "activity", entityId: updated.id, before, after: updated },
       tx
     );
-    await queueActivitySideEffects(ctx, updated, WebhookEvent.activity_updated, tx);
+    await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.activity_updated, tx);
     return updated;
   });
   return updated;
@@ -598,6 +640,7 @@ export async function deleteActivity(id: string) {
     before,
     { deletedAt: new Date(), deletedByMemberId: ctx.memberId },
     "activity.delete",
+    "delete",
     WebhookEvent.activity_deleted
   );
   return deleted;
@@ -625,6 +668,7 @@ export async function stopTimer(id: string) {
       pausedSeconds
     },
     "activity.timer.stop",
+    "update",
     WebhookEvent.timer_stopped
   );
   return updated;
@@ -638,7 +682,8 @@ export async function pauseTimer(id: string) {
     ctx,
     activity,
     { timerState: TimerState.paused, pausedAt: new Date() },
-    "activity.timer.pause"
+    "activity.timer.pause",
+    "update"
   );
   return updated;
 }
@@ -647,26 +692,46 @@ export async function resumeTimer(id: string) {
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.paused || !activity.pausedAt) throw new Error("not_found");
-  const updated = await updateCurrentActivity(
-    ctx,
-    activity,
-    {
-      timerState: TimerState.running,
-      pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt, new Date()),
-      pausedAt: null
-    },
-    "activity.timer.resume"
-  );
-  return updated;
+  return prisma.$transaction(async (tx) => {
+    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
+    if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) {
+      throw new Error("forbidden");
+    }
+    if (baby.inactiveAt) throw new Error("baby_inactive");
+
+    const claimed = await tx.activityLog.updateMany({
+      where: {
+        id: activity.id,
+        householdId: ctx.householdId,
+        deletedAt: null,
+        updatedAt: activity.updatedAt,
+        timerState: TimerState.paused
+      },
+      data: {
+        timerState: TimerState.running,
+        pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt!, new Date()),
+        pausedAt: null
+      }
+    });
+    if (claimed.count !== 1) throw new Error("not_found");
+    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+    await writeAudit(
+      lockedCtx,
+      { action: "activity.timer.resume", entityType: "activity", entityId: activity.id, before: activity, after: updated },
+      tx
+    );
+    return updated;
+  });
 }
 
 export async function undoLastActivity() {
   const ctx = await getHouseholdContext();
   return prisma.$transaction(async (tx) => {
+    const lockedCtx = await lockActorForWrite(tx, ctx);
     const latest = await tx.auditEvent.findFirst({
       where: {
-        householdId: ctx.householdId,
-        actorMemberId: ctx.memberId,
+        householdId: lockedCtx.householdId,
+        actorMemberId: lockedCtx.memberId,
         entityType: "activity",
         action: { in: ["activity.create", "activity.delete"] }
       },
@@ -674,17 +739,24 @@ export async function undoLastActivity() {
     });
     if (!latest) throw new Error("not_found");
 
+    const target = await tx.activityLog.findFirst({
+      where: { id: latest.entityId, householdId: lockedCtx.householdId },
+      select: { babyId: true }
+    });
+    if (!target) throw new Error("not_found");
+    const baby = await lockBabyForWrite(tx, lockedCtx, target.babyId);
+
     const locked = await tx.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "ActivityLog"
-      WHERE "id" = ${latest.entityId} AND "householdId" = ${ctx.householdId}
+      WHERE "id" = ${latest.entityId} AND "householdId" = ${lockedCtx.householdId}
       FOR UPDATE
     `;
     if (locked.length !== 1) throw new Error("not_found");
 
     const superseding = await tx.auditEvent.findFirst({
       where: {
-        householdId: ctx.householdId,
+        householdId: lockedCtx.householdId,
         entityType: "activity",
         entityId: latest.entityId,
         createdAt: { gte: latest.createdAt },
@@ -700,32 +772,34 @@ export async function undoLastActivity() {
     const before = await tx.activityLog.findFirst({
       where: {
         id: latest.entityId,
-        householdId: ctx.householdId,
+        householdId: lockedCtx.householdId,
         deletedAt: expected.deletedAt,
         updatedAt: expected.updatedAt
       },
       include: activityInclude
     });
     if (!before) throw new Error("not_found");
-    if (!canMutateOwnOrAny(ctx.role, undoCreate ? "delete" : "update", before.actorMemberId === ctx.memberId)) {
+    if (!canMutateOwnOrAny(lockedCtx.role, undoCreate ? "delete" : "update", before.actorMemberId === lockedCtx.memberId)) {
       throw new Error("forbidden");
     }
+    const restoresActiveTimer = !undoCreate && (before.timerState === TimerState.running || before.timerState === TimerState.paused);
+    if (restoresActiveTimer && baby.inactiveAt) throw new Error("baby_inactive");
 
     const claimed = await tx.activityLog.updateMany({
       where: {
         id: before.id,
-        householdId: ctx.householdId,
+        householdId: lockedCtx.householdId,
         deletedAt: before.deletedAt,
         updatedAt: before.updatedAt
       },
       data: undoCreate
-        ? { deletedAt: new Date(), deletedByMemberId: ctx.memberId }
+        ? { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId }
         : { deletedAt: null, deletedByMemberId: null }
     });
     if (claimed.count !== 1) throw new Error("not_found");
     const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
     await writeAudit(
-      ctx,
+      lockedCtx,
       { action: "activity.undo", entityType: "activity", entityId: before.id, before, after },
       tx
     );

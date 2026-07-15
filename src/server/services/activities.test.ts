@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   vaccineDeleteMany: vi.fn(),
   vaccineUpsert: vi.fn(),
   babyFindFirst: vi.fn(),
+  memberFindUnique: vi.fn(),
   webhookFindMany: vi.fn(),
   webhookCreateMany: vi.fn(),
   notificationFindMany: vi.fn(),
@@ -54,6 +55,8 @@ import {
   getActivityForEdit,
   getActivityView,
   pauseTimer,
+  restoreHistoricalActivityForContext,
+  resumeTimer,
   undoLastActivity,
   updateActivity
 } from "@/server/services/activities";
@@ -73,6 +76,13 @@ describe("activity page access", () => {
     mocks.activityLock.mockResolvedValue([{ id: "activity-1" }]);
     mocks.transaction.mockImplementation((operation) => operation(transactionClient()));
     mocks.babyFindFirst.mockResolvedValue({ id: "baby-1" });
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "parent",
+      disabledAt: null,
+      deletedAt: null
+    });
     mocks.contactFindFirst.mockResolvedValue({ id: "contact-2" });
     mocks.webhookFindMany.mockResolvedValue([]);
     mocks.notificationFindMany.mockResolvedValue([]);
@@ -165,6 +175,37 @@ describe("activity page access", () => {
     );
   });
 
+  it("restores stopped timer metadata without recomputing duration", async () => {
+    await restoreHistoricalActivityForContext(
+      {
+        babyId: "baby-1",
+        type: "sleep",
+        occurredAt: "2026-07-14T10:00:00.000Z",
+        startedAt: "2026-07-14T10:00:00.000Z",
+        endedAt: "2026-07-14T11:00:00.000Z",
+        activeTimer: false,
+        notes: undefined,
+        sleepType: undefined,
+        location: undefined,
+        quality: undefined
+      },
+      context("owner"),
+      transactionClient() as never,
+      { timerState: "stopped", durationSeconds: 2700, pausedSeconds: 900 }
+    );
+
+    expect(mocks.activityCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          timerState: "stopped",
+          durationSeconds: 2700,
+          pausedAt: null,
+          pausedSeconds: 900
+        })
+      })
+    );
+  });
+
   it("rejects a medicine create contact outside the active household", async () => {
     mocks.contactFindFirst.mockResolvedValue(null);
 
@@ -182,6 +223,55 @@ describe("activity page access", () => {
     ).rejects.toThrow("not_found");
 
     expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects create for an inactive baby after transactional recheck", async () => {
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-1",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await expect(
+      createActivityForContext(
+        {
+          babyId: "baby-1",
+          occurredAt: "2026-07-14T12:00:00.000Z",
+          type: "feeding",
+          mode: "bottle"
+        },
+        context("parent")
+      )
+    ).rejects.toThrow("baby_inactive");
+
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects create when the locked actor was demoted after context resolution", async () => {
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(createActivityForContext(feedingInput(), context("parent"))).rejects.toThrow("forbidden");
+
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects update when the locked actor was demoted after context resolution", async () => {
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(updateActivity("activity-1", feedingInput())).rejects.toThrow("forbidden");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
   });
 
   it("claims an active household activity inside the update transaction", async () => {
@@ -224,6 +314,91 @@ describe("activity page access", () => {
         })
       })
     );
+  });
+
+  it("keeps timer state unchanged while editing historical activity for an inactive baby", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      babyId: "baby-1",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-1",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await updateActivity("activity-1", feedingInput());
+
+    expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          timerState: "none"
+        })
+      })
+    );
+  });
+
+  it("rejects moving historical activity into a different inactive baby", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      babyId: "baby-active"
+    });
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-inactive",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await expect(
+      updateActivity("activity-1", {
+        babyId: "baby-inactive",
+        occurredAt: "2026-07-14T12:00:00.000Z",
+        type: "feeding",
+        mode: "bottle"
+      })
+    ).rejects.toThrow("baby_inactive");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects edits that would start a timer for an inactive baby", async () => {
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-1",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await expect(
+      updateActivity("activity-1", {
+        babyId: "baby-1",
+        occurredAt: "2026-07-14T12:00:00.000Z",
+        type: "feeding",
+        mode: "bottle",
+        activeTimer: true
+      })
+    ).rejects.toThrow("baby_inactive");
+  });
+
+  it("rejects moving an active timer to an inactive baby", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      babyId: "baby-active",
+      timerState: "running",
+      startedAt: new Date("2026-07-14T11:00:00.000Z")
+    });
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-inactive",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await expect(
+      updateActivity("activity-1", {
+        babyId: "baby-inactive",
+        occurredAt: "2026-07-14T12:00:00.000Z",
+        type: "feeding",
+        mode: "bottle"
+      })
+    ).rejects.toThrow("baby_inactive");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
   });
 
   it("preserves stopped timer state while allowing completed time edits", async () => {
@@ -381,6 +556,13 @@ describe("activity page access", () => {
 
   it("denies undo when the current role can no longer delete the activity", async () => {
     mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
     mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
 
     await expect(undoLastActivity()).rejects.toThrow("forbidden");
@@ -409,7 +591,7 @@ describe("activity page access", () => {
     );
   });
 
-  it("locks the row and rejects an equal-timestamp superseding audit regardless of id ordering", async () => {
+  it("locks actor, baby, and activity before rejecting an equal-timestamp superseding audit", async () => {
     mocks.auditFindFirst.mockImplementation(({ where }) =>
       Promise.resolve(
         where.actorMemberId
@@ -428,7 +610,7 @@ describe("activity page access", () => {
 
     await expect(undoLastActivity()).rejects.toThrow("not_found");
 
-    expect(mocks.activityLock).toHaveBeenCalledOnce();
+    expect(mocks.activityLock).toHaveBeenCalledTimes(3);
     expect(mocks.activityLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.auditFindFirst.mock.invocationCallOrder[1]);
     expect(mocks.auditFindFirst).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -488,6 +670,76 @@ describe("activity page access", () => {
       })
     );
   });
+
+  it("rejects timer resume when the baby became inactive before the transactional recheck", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "paused",
+      pausedAt: new Date("2026-07-14T11:15:00.000Z"),
+      babyId: "baby-1"
+    });
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-1",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await expect(resumeTimer("activity-1")).rejects.toThrow("baby_inactive");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects timer resume when the locked actor was demoted after context resolution", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-current"),
+      timerState: "paused",
+      pausedAt: new Date("2026-07-14T11:15:00.000Z"),
+      babyId: "baby-1"
+    });
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(resumeTimer("activity-1")).rejects.toThrow("forbidden");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("does not restore a deleted active timer for an inactive baby", async () => {
+    const deletedAt = new Date("2026-07-14T10:05:00.000Z");
+    mocks.auditFindFirst.mockImplementation(({ where }) =>
+      Promise.resolve(
+        where.actorMemberId
+          ? {
+              id: "audit-delete",
+              action: "activity.delete",
+              entityId: "activity-1",
+              createdAt: new Date("2026-07-14T10:05:01.000Z"),
+              before: { updatedAt: "2026-07-14T10:00:00.000Z", deletedAt: null },
+              after: { updatedAt: "2026-07-14T10:00:00.000Z", deletedAt: deletedAt.toISOString() }
+            }
+          : null
+      )
+    );
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-current"),
+      babyId: "baby-1",
+      deletedAt,
+      timerState: "running",
+      startedAt: new Date("2026-07-14T09:30:00.000Z")
+    });
+    mocks.babyFindFirst.mockResolvedValue({
+      id: "baby-1",
+      inactiveAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+
+    await expect(undoLastActivity()).rejects.toThrow("baby_inactive");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
 });
 
 function transactionClient() {
@@ -507,6 +759,8 @@ function transactionClient() {
     notificationPreference: { findMany: mocks.notificationFindMany },
     notificationLog: { createMany: mocks.notificationCreateMany },
     contact: { findFirst: mocks.contactFindFirst },
+    householdMember: { findUnique: mocks.memberFindUnique },
+    baby: { findFirst: mocks.babyFindFirst },
     feedingLog: child,
     diaperLog: child,
     sleepLog: child,

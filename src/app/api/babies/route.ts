@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return ok(await listBabies());
+    return ok(await listBabies({ includeInactive: true }));
   } catch (error) {
     return handleError(error);
   }

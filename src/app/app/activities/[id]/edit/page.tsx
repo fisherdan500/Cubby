@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { activityDetailHref, activityFallbackHref, safeActivityReturnTo } from "@/lib/activity-navigation";
 import { activityUnavailableOrThrow } from "@/lib/activity-page-error";
+import { activityEditBabies } from "@/lib/baby-selector";
 import { env } from "@/lib/env";
 import { dateTimeInputValue } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
@@ -14,7 +15,7 @@ import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
 export default async function EditActivityPage({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string | string[] } }) {
   const user = await requireUserPage();
-  const home = await getHouseholdHome(user.id);
+  const home = await getHouseholdHome(user.id, { includeInactive: true });
   if (!home) redirect("/onboarding");
   const [activity, unitSettings] = await Promise.all([
     getActivityForEdit(params.id).catch(activityUnavailableOrThrow),
@@ -22,7 +23,7 @@ export default async function EditActivityPage({ params, searchParams }: { param
   ]);
   if (!activity) notFound();
   const type = activity.type as ActivityTypeName;
-  const babies = home.household.babies.map((baby) => ({ id: baby.id, name: baby.name }));
+  const babies = activityEditBabies(home.household.babies, activity.babyId);
   const initial = serializeActivity(activity);
   const sourceReturnTo =
     safeActivityReturnTo(searchParams.returnTo) ??

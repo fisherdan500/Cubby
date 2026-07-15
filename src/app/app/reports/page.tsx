@@ -26,7 +26,7 @@ export default async function ReportsPage({
   searchParams: { babyId?: string; start?: string; end?: string; tab?: string; routineWindow?: string };
 }) {
   const user = await requireUserPage();
-  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
+  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!report?.home) redirect("/onboarding");

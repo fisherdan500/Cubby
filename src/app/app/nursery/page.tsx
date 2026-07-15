@@ -27,6 +27,11 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
 
   return (
     <AppShell title="Nursery" userName={user.name} babySelector={babySelector}>
+      {!dashboard.baby ? (
+        <Card>
+          <p className="text-sm text-muted-foreground">No active babies.</p>
+        </Card>
+      ) : (
       <div className="space-y-4">
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {nurseryActions.map(([href, type]) => (
@@ -66,6 +71,7 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
           )}
         </Card>
       </div>
+      )}
     </AppShell>
   );
 }

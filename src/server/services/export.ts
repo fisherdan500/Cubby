@@ -27,9 +27,10 @@ export async function activityCsv() {
     "notes"
   ];
   const rows = activities.map((activity) => {
+    const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
     return [
       activity.id,
-      activity.baby.name,
+      isInactiveBaby ? `${activity.baby.name} (Inactive)` : activity.baby.name,
       activity.type,
       activity.occurredAt,
       activity.startedAt,

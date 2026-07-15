@@ -57,11 +57,11 @@ deployment, and cleanup approvals.
 
 ### Reversible Baby Inactivity
 
-- Status: planned
+- Status: in progress
 - Priority: high
 - Goal: Remove babies from active tracking without hiding or deleting their historical records.
 - Acceptance: Running or paused timers block deactivation; the last active baby may be deactivated and produces a clear `No active babies` state; inactive babies cannot receive new activities or timers; historical selectors/reports retain an `Inactive` label; existing history remains correctable but cannot start/restart timers; reactivation, backups, audit records, and tests cover the lifecycle.
-- Notes: Active-tracking queries and include-inactive historical queries must remain distinct.
+- Notes: Active-tracking queries and include-inactive historical queries must remain distinct. This worktree contains the implementation in source; merge and deployment remain separately gated.
 
 ## Later
 

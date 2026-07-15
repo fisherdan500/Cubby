@@ -6,6 +6,7 @@ import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
+import { lockActorAndBabyForWrite } from "@/server/services/mutation-locks";
 
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
@@ -42,7 +43,7 @@ export async function getCalendar(
 ) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.read");
-  const home = await getHouseholdHome(userId);
+  const home = await getHouseholdHome(userId, { includeInactive: true });
   if (!home) return null;
   const baby = home.household.babies.find((item) => item.id === input?.babyId) ?? home.household.babies[0];
   if (!baby) {
@@ -159,57 +160,57 @@ export async function createCalendarEvent(raw: unknown): Promise<CalendarEventCr
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "activity.create");
   const input = calendarEventSchema.parse(raw);
-  const baby = await prisma.baby.findFirst({
-    where: { id: input.babyId, householdId: ctx.householdId, deletedAt: null },
-    select: { id: true }
-  });
-  if (!baby) throw new Error("not_found");
-
   const startTime = input.allDay
     ? zonedDateStart(input.startDate, env.APP_TIMEZONE)
     : zonedDateTimeToDate(`${input.startDate}T${input.startTime}`, env.APP_TIMEZONE);
   const endTime = resolveEventEnd(input);
   if (endTime && endTime <= startTime) throw new Error("invalid_date_range");
 
-  const event = await prisma.calendarEvent.create({
-    data: {
-      householdId: ctx.householdId,
-      title: input.title,
-      description: input.description,
-      startTime,
-      endTime,
-      allDay: input.allDay,
-      eventType: input.eventType,
-      location: input.location,
-      color: input.color,
-      babies: {
-        create: {
-          baby: { connect: { id: input.babyId } }
+  return prisma.$transaction(async (tx) => {
+    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
+    requirePermission(lockedCtx, "activity.create");
+    if (baby.inactiveAt) throw new Error("baby_inactive");
+
+    const event = await tx.calendarEvent.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        title: input.title,
+        description: input.description,
+        startTime,
+        endTime,
+        allDay: input.allDay,
+        eventType: input.eventType,
+        location: input.location,
+        color: input.color,
+        babies: {
+          create: {
+            baby: { connect: { id: input.babyId } }
+          }
         }
+      },
+      include: { babies: true }
+    });
+
+    await writeAudit(lockedCtx, {
+      action: "calendar_event.create",
+      entityType: "calendar_event",
+      entityId: event.id,
+      after: {
+        id: event.id,
+        title: event.title,
+        babyId: input.babyId,
+        startTime: event.startTime.toISOString(),
+        endTime: event.endTime?.toISOString() ?? null
       }
-    },
-    include: { babies: true }
-  });
+    }, tx);
 
-  await writeAudit(ctx, {
-    action: "calendar_event.create",
-    entityType: "calendar_event",
-    entityId: event.id,
-    after: {
+    return {
       id: event.id,
-      title: event.title,
       babyId: input.babyId,
-      startTime: event.startTime.toISOString(),
-      endTime: event.endTime?.toISOString() ?? null
-    }
+      date: input.startDate,
+      month: input.startDate.slice(0, 7)
+    };
   });
-
-  return {
-    id: event.id,
-    babyId: input.babyId,
-    date: input.startDate,
-    month: input.startDate.slice(0, 7)
-  };
 }
 
 function groupCounts(activities: Awaited<ReturnType<typeof prisma.activityLog.findMany>>) {

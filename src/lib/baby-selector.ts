@@ -7,6 +7,7 @@ export type BabySelectorBaby = {
   id: string;
   name: string;
   ageLabel: string;
+  inactive: boolean;
 };
 
 export type HeaderBabySelectorData = {
@@ -15,7 +16,7 @@ export type HeaderBabySelectorData = {
   activeTimerType?: ActivityTypeName;
 };
 
-export function buildHeaderBabySelectorData<T extends { id: string; name: string; birthDate?: Date | string | null }>(
+export function buildHeaderBabySelectorData<T extends { id: string; name: string; birthDate?: Date | string | null; inactiveAt?: Date | string | null }>(
   babies: T[],
   selectedBabyId: string,
   activeTimerType?: ActivityTypeName,
@@ -27,7 +28,8 @@ export function buildHeaderBabySelectorData<T extends { id: string; name: string
     babies: babies.map((baby) => ({
       id: baby.id,
       name: baby.name,
-      ageLabel: formatBabyAge(baby.birthDate, now)
+      ageLabel: formatBabyAge(baby.birthDate, now),
+      inactive: Boolean(baby.inactiveAt)
     })),
     selectedBabyId,
     activeTimerType
@@ -63,6 +65,15 @@ export function resolveSelectedBaby<T extends { id: string }>(
     babies[0] ??
     null
   );
+}
+
+export function activityEditBabies<T extends { id: string; name: string; inactiveAt?: Date | string | null }>(
+  babies: T[],
+  currentBabyId: string
+) {
+  return babies
+    .filter((baby) => !baby.inactiveAt || baby.id === currentBabyId)
+    .map((baby) => ({ id: baby.id, name: baby.inactiveAt ? `${baby.name} (Inactive)` : baby.name }));
 }
 
 function utcDay(date: Date) {
