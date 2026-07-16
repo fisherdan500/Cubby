@@ -198,13 +198,14 @@ trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date.
 
 ### Backups And Sprout Import
 
-`src/server/services/backups.ts` owns Cubby JSON backup preview, export, and
-recovery. Version 2 is a checksummed non-secret logical household snapshot read
-inside one repeatable-read PostgreSQL transaction. Export fails while a running
-or paused timer exists. Recovery accepts only a fresh household whose current
-member is its sole active owner, then rechecks that invariant and restores the
-snapshot atomically in a serializable transaction. The target `User`, owner
-membership, credentials, sessions, role, and `disabledAt` state are preserved.
+`src/server/services/backups.ts` owns Cubby JSON backup preview, export,
+automated local-backup discovery/download status, and recovery. Version 2 is a
+checksummed non-secret logical household snapshot read inside one repeatable-read
+PostgreSQL transaction. Export fails while a running or paused timer exists.
+Recovery accepts only a fresh household whose current member is its sole active
+owner, then rechecks that invariant and restores the snapshot atomically in a
+serializable transaction. The target `User`, owner membership, credentials,
+sessions, role, and `disabledAt` state are preserved.
 
 Version 2 includes allowlisted household settings, active/inactive babies,
 non-deleted activities and coherent stopped-timer history, safe historical
@@ -215,8 +216,12 @@ operational history, warning dismissals, and vaccine attachment metadata and
 file bytes. Legacy version 1 remains an explicitly partial, non-checksummed
 fresh-target recovery path.
 
-The disposable real-PostgreSQL export → restore → re-export rehearsal and exact
-safety boundary are documented in [Manual Backup Recovery](recovery/manual-backup.md).
+`src/server/services/automated-backups.ts` starts from Node instrumentation in
+the existing app container, uses household-scoped advisory locking, writes
+validated files into `/var/lib/cubby/backups`, and retains only the newest valid
+associated automated versions. The disposable real-PostgreSQL automated export →
+local file → restore → re-export rehearsal and exact safety boundary are
+documented in [Backup Recovery](BACKUP_RECOVERY.md).
 `src/server/services/sprout-import.ts` previews and imports Sprout Track backup
 uploads into the current Cubby household.
 

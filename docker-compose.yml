@@ -27,6 +27,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ${CUBBY_BACKUP_HOST_DIR:-./docker-data/backups}:/var/lib/cubby/backups
     restart: unless-stopped
 
 volumes:

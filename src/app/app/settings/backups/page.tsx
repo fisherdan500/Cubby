@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { AutomatedBackupStatus } from "@/components/settings/automated-backup-status";
 import { BackupRestoreForm } from "@/components/settings/backup-restore-form";
 import { BackupDownloadButton } from "@/components/settings/backup-download-button";
 import { SproutRestoreForm } from "@/components/settings/sprout-restore-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireSettingsPage } from "@/server/auth/page-access";
-import { getBackupRestoreTargetName, listBackupRecords } from "@/server/services/backups";
+import { getAutomatedBackupStatus, getBackupRestoreTargetName, listBackupRecords } from "@/server/services/backups";
 
 export default async function BackupsSettingsPage() {
   const { user } = await requireSettingsPage("backup.manage");
-  const [records, targetHouseholdName] = await Promise.all([listBackupRecords(), getBackupRestoreTargetName()]);
+  const [records, targetHouseholdName, automatedStatus] = await Promise.all([
+    listBackupRecords(),
+    getBackupRestoreTargetName(),
+    getAutomatedBackupStatus()
+  ]);
 
   return (
     <AppShell title="Backups" userName={user.name}>
@@ -30,6 +35,9 @@ export default async function BackupsSettingsPage() {
           </Card>
           <Card>
             <h2 className="mb-3 text-lg font-black">Restore</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Download an existing local version below, then upload it here to preview and restore into a fresh owner household.
+            </p>
             <BackupRestoreForm targetHouseholdName={targetHouseholdName} />
           </Card>
           <Card>
@@ -37,6 +45,10 @@ export default async function BackupsSettingsPage() {
             <SproutRestoreForm />
           </Card>
         </section>
+        <Card className="min-w-0 space-y-3">
+          <h2 className="text-lg font-black">Automated local backups</h2>
+          <AutomatedBackupStatus status={automatedStatus} />
+        </Card>
         <Card className="min-w-0 space-y-3">
           <h2 className="text-lg font-black">Backup records</h2>
           {records.length ? null : <p className="text-sm text-muted-foreground">No backup records yet.</p>}

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   getHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   householdFind: vi.fn(),
+  householdCount: vi.fn(),
   householdUpdate: vi.fn(),
   settingsFind: vi.fn(),
   settingsUpsert: vi.fn(),
@@ -22,6 +23,9 @@ const mocks = vi.hoisted(() => ({
   reminderFindMany: vi.fn(),
   reminderCreate: vi.fn(),
   backupCreate: vi.fn(),
+  backupFindMany: vi.fn(),
+  backupFindFirst: vi.fn(),
+  backupCount: vi.fn(),
   restoreActivity: vi.fn(),
   transaction: vi.fn(),
   lockActor: vi.fn(),
@@ -32,12 +36,19 @@ const mocks = vi.hoisted(() => ({
   memberUpdateMany: vi.fn(),
   memberDelete: vi.fn(),
   memberDeleteMany: vi.fn(),
-  freshState: vi.fn()
+  freshState: vi.fn(),
+  scanLocalBackups: vi.fn(),
+  readLocalBackup: vi.fn(),
+  readLocalBackupDocument: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
-    household: { findUniqueOrThrow: mocks.householdFind, update: mocks.householdUpdate },
+    household: {
+      findUniqueOrThrow: mocks.householdFind,
+      update: mocks.householdUpdate,
+      count: mocks.householdCount
+    },
     householdSettings: { findUnique: mocks.settingsFind, upsert: mocks.settingsUpsert },
     baby: {
       findMany: mocks.babyFindMany,
@@ -50,7 +61,12 @@ vi.mock("@/lib/db/prisma", () => ({
     medicineCatalog: { findMany: mocks.catalogFindMany, create: mocks.catalogCreate },
     calendarEvent: { findMany: mocks.calendarFindMany, create: mocks.calendarCreate },
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
-    backupRecord: { create: mocks.backupCreate },
+    backupRecord: {
+      create: mocks.backupCreate,
+      findMany: mocks.backupFindMany,
+      findFirst: mocks.backupFindFirst,
+      count: mocks.backupCount
+    },
     $queryRaw: mocks.freshState,
     $transaction: mocks.transaction,
     householdMember: {
@@ -79,8 +95,21 @@ vi.mock("@/server/services/mutation-locks", () => ({
 }));
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/local-backup-storage", () => ({
+  scanLocalBackups: mocks.scanLocalBackups,
+  readLocalBackup: mocks.readLocalBackup,
+  readLocalBackupDocument: mocks.readLocalBackupDocument
+}));
 
-import { exportBackupJson, previewBackupJson, restoreBackupJson } from "@/server/services/backups";
+import {
+  buildHouseholdV2Snapshot,
+  downloadLocalBackupFile,
+  exportBackupJson,
+  exportHouseholdBackupJson,
+  getAutomatedBackupStatus,
+  previewBackupJson,
+  restoreBackupJson
+} from "@/server/services/backups";
 import { createV2Backup } from "@/server/services/backup-format";
 
 const ctx = {
@@ -103,6 +132,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.getHouseholdContext.mockResolvedValue(ctx);
   mocks.householdFind.mockResolvedValue({ id: "household-1", name: "Home" });
+  mocks.householdCount.mockResolvedValue(1);
+  mocks.backupCount.mockResolvedValue(0);
+  mocks.backupFindFirst.mockResolvedValue(null);
   mocks.settingsFind.mockResolvedValue({ accentTheme: "sage", unitPreferences });
   mocks.babyFindMany.mockResolvedValue([]);
   mocks.babyFindFirst.mockResolvedValue(null);
@@ -119,6 +151,7 @@ beforeEach(() => {
   mocks.calendarFindMany.mockResolvedValue([]);
   mocks.reminderFindMany.mockResolvedValue([]);
   mocks.backupCreate.mockResolvedValue({ id: "backup-1" });
+  mocks.backupFindMany.mockResolvedValue([]);
   mocks.settingsUpsert.mockResolvedValue({});
   mocks.householdUpdate.mockResolvedValue({ id: "household-1", name: "Recovered Home" });
   mocks.contactCreate.mockResolvedValue({ id: "saved-contact-1" });
@@ -126,6 +159,12 @@ beforeEach(() => {
   mocks.calendarCreate.mockResolvedValue({ id: "saved-event-1" });
   mocks.reminderCreate.mockResolvedValue({ id: "saved-reminder-1" });
   mocks.freshState.mockResolvedValue([{ actorIsSoleOwner: true, operationalCount: 0n }]);
+  mocks.scanLocalBackups.mockResolvedValue([]);
+  mocks.readLocalBackup.mockRejectedValue(new Error("backup_invalid"));
+  mocks.readLocalBackupDocument.mockResolvedValue({
+    file: { filename: "backup.json", checksum: "a".repeat(64) },
+    body: Buffer.from("{}")
+  });
 });
 
 describe("backup unit preferences", () => {
@@ -253,6 +292,22 @@ describe("backup unit preferences", () => {
     expect(mocks.backupCreate.mock.invocationCallOrder[0]).toBeGreaterThan(mocks.transaction.mock.invocationCallOrder[0]);
   });
 
+  it("builds the same canonical v2 payload for internal and manual export paths", async () => {
+    mocks.contactFindMany.mockResolvedValue([{ id: "contact-1", name: "Doctor", kind: null, phone: null, email: null, address: null, notes: null }]);
+
+    const manual = JSON.parse(await exportBackupJson());
+    const internal = await exportHouseholdBackupJson("household-1");
+    const direct = await buildHouseholdV2Snapshot(
+      transactionClient() as unknown as Parameters<typeof buildHouseholdV2Snapshot>[0],
+      "household-1",
+      internal.exportedAt
+    );
+
+    expect(internal).toEqual(direct);
+    expect(internal.payload).toEqual(manual.payload);
+    expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "backup.manage");
+  });
+
   it("exports canonical household unit preferences", async () => {
     const payload = JSON.parse(await exportBackupJson());
 
@@ -260,6 +315,236 @@ describe("backup unit preferences", () => {
     expect(payload).not.toHaveProperty("members");
     expect(payload.payload.household).not.toHaveProperty("members");
     expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "backup.manage");
+  });
+
+  it("reports automated backup status from records and local discovery without exposing storage paths", async () => {
+    const failureRecord = {
+      id: "record-failed",
+      createdAt: new Date("2026-07-15T21:30:00.000Z"),
+      status: "failed",
+      error: "backup_active_timer",
+      checksum: null,
+      itemCount: null,
+      storageFilename: null
+    };
+    const successRecord = {
+      id: "record-success",
+      createdAt: new Date("2026-07-14T20:00:00.000Z"),
+      status: "complete",
+      error: null,
+      checksum: "a".repeat(64),
+      itemCount: 7,
+      storageFilename: "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json"
+    };
+    mocks.backupFindFirst.mockResolvedValueOnce(successRecord).mockResolvedValueOnce(failureRecord);
+    mocks.backupFindMany.mockResolvedValue([successRecord]);
+    mocks.scanLocalBackups.mockResolvedValue([
+      {
+        healthy: true,
+        filename: "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json",
+        exportedAt: "2026-07-14T20:00:00.000Z",
+        householdName: "Recovered Home",
+        checksum: "a".repeat(64),
+        size: 1234,
+        itemCount: 7,
+        absolutePath: "C:\\secret\\path.json"
+      },
+      { healthy: false, filename: "cubby-backup-v2-20260713T200000Z-bbbbbbbbbbbb.json", errorCode: "backup_invalid" }
+    ]);
+
+    const status = await getAutomatedBackupStatus();
+
+    expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "backup.manage");
+    expect(status.config).toEqual({
+      enabled: false,
+      intervalHours: 24,
+      retentionCount: 30,
+      pollMinutes: 15,
+      retryMinutes: 60
+    });
+    expect(status.latestSuccess).toEqual({
+      createdAt: "2026-07-14T20:00:00.000Z",
+      checksum: "a".repeat(64),
+      itemCount: 7
+    });
+    expect(status.latestFailure).toEqual({
+      createdAt: "2026-07-15T21:30:00.000Z",
+      errorCode: "backup_active_timer"
+    });
+    expect(status.healthyVersionCount).toBe(1);
+    expect(JSON.stringify(status)).not.toContain("C:\\secret\\path.json");
+    expect(status.versions).toContainEqual({
+      healthy: true,
+      filename: "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json",
+      exportedAt: "2026-07-14T20:00:00.000Z",
+      householdName: "Recovered Home",
+      checksum: "a".repeat(64),
+      size: 1234,
+      itemCount: 7
+    });
+    expect(mocks.backupFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: "complete", storageFilename: { not: null } })
+    }));
+    expect(mocks.backupFindMany.mock.calls[0]?.[0]).not.toHaveProperty("take");
+  });
+
+  it("reports a sanitized warning instead of failing Settings when the backup root is unavailable", async () => {
+    mocks.scanLocalBackups.mockRejectedValue(new Error("EACCES C:\\private\\backup-root"));
+
+    const status = await getAutomatedBackupStatus();
+
+    expect(status.healthyVersionCount).toBe(0);
+    expect(status.warnings).toEqual([{
+      filename: "local backup directory",
+      errorCode: "backup_directory_unavailable"
+    }]);
+    expect(JSON.stringify(status)).not.toContain("private");
+  });
+
+  it("reports a linked complete record whose local file is missing", async () => {
+    const filename = "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
+    mocks.backupFindMany.mockResolvedValue([{
+      id: "record-success",
+      createdAt: new Date("2026-07-14T20:00:00.000Z"),
+      status: "complete",
+      error: null,
+      checksum: "a".repeat(64),
+      itemCount: 7,
+      storageFilename: filename
+    }]);
+
+    const status = await getAutomatedBackupStatus();
+
+    expect(mocks.readLocalBackup).toHaveBeenCalledWith("/var/lib/cubby/backups", filename);
+    expect(status.warnings).toContainEqual({ filename, errorCode: "backup_file_missing" });
+  });
+
+  it("downloads an existing local backup only through the protected service boundary", async () => {
+    mocks.readLocalBackupDocument.mockResolvedValue({
+      file: {
+        filename: "backup.json",
+        absolutePath: "/private/backup.json",
+        checksum: "a".repeat(64)
+      },
+      body: Buffer.from("backup")
+    });
+
+    await expect(downloadLocalBackupFile("backup.json")).resolves.toEqual({
+      filename: "backup.json",
+      body: Buffer.from("backup")
+    });
+
+    expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "backup.manage");
+    expect(mocks.readLocalBackupDocument).toHaveBeenCalledWith("/var/lib/cubby/backups", "backup.json");
+  });
+
+  it("keeps recovery discovery and download available when only failed backup metadata exists", async () => {
+    const filename = "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
+    const failedRecord = {
+      id: "record-failed",
+      createdAt: new Date("2026-07-15T21:30:00.000Z"),
+      status: "failed",
+      error: "backup_write_failed",
+      checksum: null,
+      itemCount: null,
+      storageFilename: null
+    };
+    mocks.backupFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(failedRecord);
+    mocks.backupCount.mockResolvedValue(1);
+    mocks.scanLocalBackups.mockResolvedValue([{
+      healthy: true,
+      filename,
+      exportedAt: "2026-07-14T20:00:00.000Z",
+      householdName: "Recovered Home",
+      checksum: "a".repeat(64),
+      size: 100,
+      itemCount: 1,
+      absolutePath: "/private/recovery.json"
+    }]);
+    mocks.readLocalBackupDocument.mockResolvedValue({
+      file: { filename, absolutePath: "/private/recovery.json", checksum: "a".repeat(64) },
+      body: Buffer.from("recovery")
+    });
+
+    await expect(getAutomatedBackupStatus()).resolves.toMatchObject({
+      healthyVersionCount: 1,
+      versions: [expect.objectContaining({ filename })]
+    });
+    await expect(downloadLocalBackupFile(filename)).resolves.toEqual({ filename, body: Buffer.from("recovery") });
+    expect(mocks.backupCount).not.toHaveBeenCalled();
+  });
+
+  it("does not bootstrap persisted files into an occupied sole household", async () => {
+    const filename = "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
+    mocks.freshState.mockResolvedValue([{ actorIsSoleOwner: true, operationalCount: 1n }]);
+    mocks.scanLocalBackups.mockResolvedValue([{
+      healthy: true,
+      filename,
+      exportedAt: "2026-07-14T20:00:00.000Z",
+      householdName: "Other Home",
+      checksum: "a".repeat(64),
+      size: 100,
+      absolutePath: "/private/other.json"
+    }]);
+    mocks.readLocalBackupDocument.mockResolvedValue({
+      file: { filename, absolutePath: "/private/other.json", checksum: "a".repeat(64) },
+      body: Buffer.from("other")
+    });
+
+    await expect(getAutomatedBackupStatus()).resolves.toMatchObject({ healthyVersionCount: 0, versions: [] });
+    await expect(downloadLocalBackupFile(filename)).rejects.toThrow("forbidden");
+  });
+
+  it("hides and rejects another household's persisted backup", async () => {
+    const ownFilename = "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
+    const otherFilename = "cubby-backup-v2-20260713T200000Z-bbbbbbbbbbbb.json";
+    mocks.householdCount.mockResolvedValue(2);
+    mocks.backupCount.mockResolvedValue(1);
+    mocks.backupFindMany.mockResolvedValue([
+      {
+        id: "record-success",
+        createdAt: new Date("2026-07-14T20:00:00.000Z"),
+        status: "complete",
+        error: null,
+        checksum: "a".repeat(64),
+        itemCount: 1,
+        storageFilename: ownFilename
+      }
+    ]);
+    mocks.scanLocalBackups.mockResolvedValue([
+      {
+        healthy: true,
+        filename: ownFilename,
+        exportedAt: "2026-07-14T20:00:00.000Z",
+        householdName: "Home",
+        checksum: "a".repeat(64),
+        size: 100,
+        absolutePath: "/private/own.json"
+      },
+      {
+        healthy: true,
+        filename: otherFilename,
+        exportedAt: "2026-07-13T20:00:00.000Z",
+        householdName: "Other Home",
+        checksum: "b".repeat(64),
+        size: 100,
+        absolutePath: "/private/other.json"
+      }
+    ]);
+    mocks.readLocalBackupDocument.mockResolvedValue({
+      file: {
+        filename: otherFilename,
+        absolutePath: "/private/other.json",
+        checksum: "b".repeat(64)
+      },
+      body: Buffer.from("other")
+    });
+
+    const status = await getAutomatedBackupStatus();
+    await expect(downloadLocalBackupFile(otherFilename)).rejects.toThrow("forbidden");
+
+    expect(status.versions).toHaveLength(1);
+    expect(status.versions[0]).toEqual(expect.objectContaining({ filename: ownFilename }));
   });
 
   it("restores unit preferences without rewriting activities", async () => {

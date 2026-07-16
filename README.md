@@ -16,7 +16,7 @@ calendar planning, backups, and integrations.
 - Original illustrated activity artwork and a household-selectable sage, rose, powder, butter, or terracotta accent.
 - Dashboard quick actions, elapsed badges, daily summary, warning dismissal, active timers, and selected-day timeline.
 - Calendar month view with events, Reports tabs including stats, milestones, growth trends, activity, heatmaps, and routine rhythm.
-- CSV/TSV activity exports, checksummed JSON recovery into a fresh household, and Sprout Track backup import into the current household.
+- CSV/TSV activity exports, checksummed JSON recovery into a fresh household, opt-in automated local versioned backups, and Sprout Track backup import into the current household.
 - API-key hook endpoints, webhook configuration, and browser notification preferences.
 
 ## Current Product Direction
@@ -102,12 +102,19 @@ for setup and troubleshooting details.
 - `ALLOW_PUBLIC_REGISTRATION`: default public account creation policy after setup.
 - `APP_TIMEZONE`: app-level display/grouping timezone, for example `America/New_York`.
 - `APP_PORT`: host port mapped to container port 3000 by Docker Compose.
+- `AUTOMATED_BACKUPS_ENABLED`: opt-in local-only automated JSON backups, disabled by default.
+- `AUTOMATED_BACKUP_DIRECTORY`: private in-container directory; defaults to `/var/lib/cubby/backups`.
+- `AUTOMATED_BACKUP_INTERVAL_HOURS`: successful-backup cadence; defaults to `24`.
+- `AUTOMATED_BACKUP_RETENTION_COUNT`: healthy associated versions retained per household; defaults to `30`.
+- `AUTOMATED_BACKUP_POLL_MINUTES`: due-scan cadence; defaults to `15`.
+- `AUTOMATED_BACKUP_RETRY_MINUTES`: retry delay after the newest attempt fails; defaults to `60`.
+- `CUBBY_BACKUP_HOST_DIR`: host path bind-mounted into `/var/lib/cubby/backups` for automated local versions.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md): system shape, data model, services, permissions, imports, integrations, and time handling.
 - [Development](docs/DEVELOPMENT.md): setup, workflows, verification commands, and troubleshooting.
-- [Manual Backup Recovery](docs/recovery/manual-backup.md): version 2 scope, fresh-target rules, exclusions, limitations, and the disposable PostgreSQL rehearsal.
+- [Backup Recovery](docs/BACKUP_RECOVERY.md): automated local backup operations plus manual version 2 recovery and rehearsal details.
 - [Roadmap](docs/ROADMAP.md): future features, known follow-ups, and parked ideas.
 - [Third-Party Assets](docs/THIRD_PARTY_ASSETS.md): local font packages and asset provenance.
 - [Agent Guide](AGENTS.md): project-specific instructions for Codex and other coding agents.

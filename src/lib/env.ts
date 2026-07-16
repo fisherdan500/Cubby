@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readAutomatedBackupConfig } from "@/lib/automated-backup-config";
 import { DEFAULT_APP_TIMEZONE, normalizeTimeZone } from "@/lib/timezone";
 
 const envSchema = z.object({
@@ -23,6 +24,15 @@ export const env = envSchema.parse({
   ENABLE_REGISTRATION: process.env.ENABLE_REGISTRATION ?? "true",
   ALLOW_PUBLIC_REGISTRATION: process.env.ALLOW_PUBLIC_REGISTRATION ?? "false",
   APP_TIMEZONE: process.env.APP_TIMEZONE ?? DEFAULT_APP_TIMEZONE
+});
+
+export const automatedBackupConfig = readAutomatedBackupConfig({
+  AUTOMATED_BACKUPS_ENABLED: process.env.AUTOMATED_BACKUPS_ENABLED,
+  AUTOMATED_BACKUP_DIRECTORY: process.env.AUTOMATED_BACKUP_DIRECTORY,
+  AUTOMATED_BACKUP_INTERVAL_HOURS: process.env.AUTOMATED_BACKUP_INTERVAL_HOURS,
+  AUTOMATED_BACKUP_RETENTION_COUNT: process.env.AUTOMATED_BACKUP_RETENTION_COUNT,
+  AUTOMATED_BACKUP_POLL_MINUTES: process.env.AUTOMATED_BACKUP_POLL_MINUTES,
+  AUTOMATED_BACKUP_RETRY_MINUTES: process.env.AUTOMATED_BACKUP_RETRY_MINUTES
 });
 
 export function trustedOrigins() {

@@ -15,5 +15,31 @@ services:
     volumes:
       - rehearsal_postgres_data:/var/lib/postgresql/data
 
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://cubby_rehearsal:${CUBBY_BACKUP_REHEARSAL_PASSWORD:?rehearsal password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      BETTER_AUTH_SECRET: ${CUBBY_BACKUP_REHEARSAL_AUTH_SECRET:?rehearsal auth secret required}
+      BETTER_AUTH_URL: http://localhost:3000
+      TRUSTED_ORIGINS: http://127.0.0.1:*
+      ENABLE_REGISTRATION: "false"
+      AUTOMATED_BACKUPS_ENABLED: "false"
+      AUTOMATED_BACKUP_DIRECTORY: /var/lib/cubby/backups
+      AUTOMATED_BACKUP_RETENTION_COUNT: "2"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+    ports:
+      - "127.0.0.1::3000"
+    volumes:
+      - ${CUBBY_BACKUP_REHEARSAL_DIRECTORY:?rehearsal backup directory required}:/var/lib/cubby/backups
+
 volumes:
   rehearsal_postgres_data:
