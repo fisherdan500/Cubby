@@ -35,19 +35,19 @@ text, credentials, route names, or implementation structure.
 
 ## Planned Next
 
-These items implement the approved daily-use roadmap in dependency order. Each
-substantive application change uses its own approved worktree and separate merge,
-deployment, and cleanup approvals.
+These items continue the approved always-on reliability phase in dependency
+order. Each substantive application change uses its own approved worktree and
+separate implementation, merge, deployment, and cleanup approvals.
+
+### Always-On Update And Migration Hardening
+
+- Status: planned
+- Priority: high
+- Goal: Make routine Cubby updates safe, observable, and recoverable on the home-server Docker deployment before changing the household's running instance.
+- Acceptance: A pre-update checklist verifies backup freshness, backup-directory preservation, database health, free space, and configuration; Docker distinguishes an app container that is merely running from a Cubby application that is ready with PostgreSQL; the documented update flow covers build or pull, migration execution, startup, post-update health, and functional smoke checks; an isolated disposable rehearsal upgrades realistic existing data through the committed migration chain and verifies persistent timers, authentication, household data, automated-backup discovery, and backup download after app-container replacement; representative startup or migration failure is visible rather than falsely healthy; rollback guidance states when forward-applied migrations require verified backup recovery instead of starting an older image; the operator runbook contains no credentials or private network details.
+- Notes: Planning and documentation only; implementation is not authorized by this entry. Keep the first slice bounded to the existing Docker Compose home-server deployment and its operator workflow. Do not add generalized hosting, remote monitoring, remote backup providers, PWA/offline behavior, or multi-household infrastructure. Deployment to the household stack remains separately approval-gated.
 
 ## Later
-
-### Automated Local Versioned Backups
-
-- Status: in review
-- Priority: medium
-- Goal: Schedule versioned backups on the home server after manual restore reliability is established.
-- Acceptance: Cadence, retention, status visibility, immutable local download, and recovery instructions are defined and verified against the isolated rehearsal.
-- Notes: Implemented and acceptance-tested in an isolated worktree; mark complete only after merge. Automation remains opt-in and local-only. Do not add remote-storage credentials, providers, or application-managed encryption without separate approval.
 
 ### Manual Member Invitation Link Management
 
@@ -65,6 +65,14 @@ deployment, and cleanup approvals.
 - Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Automated Local Versioned Backups
+
+- Status: done
+- Priority: medium
+- Goal: Schedule versioned backups on the home server after manual restore reliability is established.
+- Acceptance: Cadence, retention, status visibility, immutable local download, and recovery instructions are defined and verified against the isolated rehearsal.
+- Notes: Squash-merged in pull request #18 after 417 tests, lint, typecheck, Prisma validation, production build, a disposable PostgreSQL recovery rehearsal, and independent final review. Automation is opt-in and local-only, with sanitized status and failure visibility, immutable checksummed version 2 files, retention safety, and download-based fresh-target recovery. Remote-storage credentials, providers, and application-managed encryption remain out of scope. Deployment remains separately approval-gated.
 
 ### Manual Backup And Restore Reliability
 
