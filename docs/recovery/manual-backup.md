@@ -4,6 +4,10 @@ Cubby version 2 JSON backups are checksummed logical snapshots for recovering
 approved household data into a fresh household. They are not PostgreSQL volume
 backups and do not copy authentication or integration secrets.
 
+Automated local backups use this same version 2 format. See
+[Automated Local Backups](automated-local-backups.md) for enablement, retention,
+status semantics, and the local download-then-upload recovery flow.
+
 ## Disposable PostgreSQL Rehearsal
 
 ### Prerequisites
@@ -44,10 +48,14 @@ Compose project in that command.
 The rehearsal covers allowlisted settings, active and inactive babies, a stopped
 timer with historical source attribution, contact-linked medicine history,
 medicine and supplement catalogs, vaccine history, calendar baby/contact links,
-and a reminder. It proves target-owner preservation, semantic equivalence after
-a second export, exclusion boundaries, checksum and dangling-reference rejection,
-stale-preview/non-empty rejection without partial recovery, and repeat-restore
-rejection.
+and a reminder. It also proves automated file creation, discovery after
+automated-record loss, target-owner preservation, semantic equivalence after a
+second export, exclusion boundaries, checksum and dangling-reference rejection,
+stale-preview/non-empty rejection without partial recovery, repeat-restore
+rejection, concurrent scheduler exclusion, active-timer blocking, exact
+oldest-first retention while preserving an unassociated valid file, preservation
+of prior versions after a failed publication, and full disposable teardown of
+both the database project and generated temporary backup directory.
 
 ## What Version 2 Includes
 

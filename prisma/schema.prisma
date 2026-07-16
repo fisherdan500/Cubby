@@ -646,6 +646,8 @@ model BackupRecord {
   status      String
   itemCount   Int?
   checksum    String?
+  storageFilename String? @unique
+  byteSize    Int?
   error       String?
   createdAt   DateTime @default(now())
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)

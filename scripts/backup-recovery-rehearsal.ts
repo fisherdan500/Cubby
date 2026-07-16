@@ -14,16 +14,19 @@ type DisposableConfig = {
   databaseName: string;
   databaseUser: string;
   composeFile: string;
+  backupDirectory: string;
 };
 
 export function assertDisposableRehearsalConfig(config: DisposableConfig) {
   const normalizedCompose = config.composeFile.replaceAll("\\", "/");
+  const normalizedBackupDirectory = config.backupDirectory.replaceAll("\\", "/");
   if (
     !/^cubby_backup_rehearsal_\d{8}_[a-f0-9]{8}$/.test(config.projectName) ||
     config.databaseName !== REHEARSAL_DATABASE ||
     config.databaseUser !== REHEARSAL_USER ||
     normalizedCompose !== REHEARSAL_COMPOSE_FILE ||
-    normalizedCompose.includes(".env")
+    normalizedCompose.includes(".env") ||
+    !normalizedBackupDirectory.includes("/cubby-backup-rehearsal-files-")
   ) {
     throw new Error("refusing_non_disposable_backup_rehearsal");
   }
@@ -34,6 +37,15 @@ export function parsePublishedPostgresPort(output: string) {
   if (!match) throw new Error("refusing_non_loopback_backup_rehearsal");
   const port = Number(match[1]);
   if (port === 5432) throw new Error("refusing_default_postgres_port");
+  if (port < 1024 || port > 65_535) throw new Error("invalid_backup_rehearsal_port");
+  return port;
+}
+
+export function parsePublishedAppPort(output: string) {
+  const match = output.trim().match(/^127\.0\.0\.1:(\d{2,5})$/);
+  if (!match) throw new Error("refusing_non_loopback_backup_rehearsal");
+  const port = Number(match[1]);
+  if (port === 3000) throw new Error("refusing_default_app_port");
   if (port < 1024 || port > 65_535) throw new Error("invalid_backup_rehearsal_port");
   return port;
 }
@@ -75,7 +87,11 @@ function isolatedEnvironment(databaseUrl: string): NodeJS.ProcessEnv {
   return { ...env, NODE_ENV: "test", DATABASE_URL: databaseUrl };
 }
 
-function isolatedDockerEnvironment(password: string): NodeJS.ProcessEnv {
+function isolatedDockerEnvironment(
+  password: string,
+  authSecret: string,
+  backupDirectory: string
+): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of ["COMPOSE_FILE", "COMPOSE_PROJECT_NAME", "COMPOSE_PROFILES", "COMPOSE_ENV_FILES"]) {
     delete env[key];
@@ -83,7 +99,9 @@ function isolatedDockerEnvironment(password: string): NodeJS.ProcessEnv {
   return {
     ...env,
     COMPOSE_DISABLE_ENV_FILE: "true",
-    CUBBY_BACKUP_REHEARSAL_PASSWORD: password
+    CUBBY_BACKUP_REHEARSAL_PASSWORD: password,
+    CUBBY_BACKUP_REHEARSAL_AUTH_SECRET: authSecret,
+    CUBBY_BACKUP_REHEARSAL_DIRECTORY: backupDirectory
   };
 }
 
@@ -94,15 +112,19 @@ export function runBackupRecoveryRehearsal() {
     projectName: `cubby_backup_rehearsal_${date}_${randomBytes(4).toString("hex")}`,
     databaseName: REHEARSAL_DATABASE,
     databaseUser: REHEARSAL_USER,
-    composeFile: REHEARSAL_COMPOSE_FILE
+    composeFile: REHEARSAL_COMPOSE_FILE,
+    backupDirectory: mkdtempSync(resolve(tmpdir(), "cubby-backup-rehearsal-files-"))
   };
   assertDisposableRehearsalConfig(config);
 
   const composeArgs = ["compose", "--project-name", config.projectName, "--file", config.composeFile];
   const rehearsalPassword = randomBytes(24).toString("hex");
-  const dockerEnv = isolatedDockerEnvironment(rehearsalPassword);
+  const rehearsalAuthSecret = randomBytes(32).toString("hex");
+  const rehearsalAppPassword = randomBytes(24).toString("base64url");
+  const dockerEnv = isolatedDockerEnvironment(rehearsalPassword, rehearsalAuthSecret, config.backupDirectory);
   const migrationCwd = mkdtempSync(resolve(tmpdir(), "cubby-backup-rehearsal-"));
   const isolatedPrismaDir = resolve(migrationCwd, "prisma");
+  const handoffFile = resolve(migrationCwd, "app-probe-handoff.json");
   let composeAttempted = false;
   let teardownFailed = false;
 
@@ -122,7 +144,14 @@ export function runBackupRecoveryRehearsal() {
     });
     const port = parsePublishedPostgresPort(published);
     const databaseUrl = createDisposableDatabaseUrl(port, rehearsalPassword);
-    const env = isolatedEnvironment(databaseUrl);
+    const env = {
+      ...isolatedEnvironment(databaseUrl),
+      AUTOMATED_BACKUPS_ENABLED: "true",
+      AUTOMATED_BACKUP_DIRECTORY: config.backupDirectory,
+      AUTOMATED_BACKUP_RETENTION_COUNT: "2",
+      REHEARSAL_HANDOFF_FILE: handoffFile,
+      REHEARSAL_APP_PASSWORD: rehearsalAppPassword
+    };
 
     const prismaCli = resolve(repositoryRoot, "node_modules/prisma/build/index.js");
     mkdirSync(isolatedPrismaDir, { recursive: true });
@@ -136,9 +165,57 @@ export function runBackupRecoveryRehearsal() {
       [vitestCli, "run", "--config", "scripts/backup-recovery-rehearsal.vitest.config.ts"],
       { cwd: repositoryRoot, env }
     );
+
+    run("docker", [...composeArgs, "up", "--detach", "--wait", "--build", "app"], {
+      cwd: repositoryRoot,
+      env: dockerEnv
+    });
+    const publishedApp = run("docker", [...composeArgs, "port", "app", "3000"], {
+      cwd: repositoryRoot,
+      env: dockerEnv,
+      capture: true
+    });
+    const appPort = parsePublishedAppPort(publishedApp);
+    const probeEnv = {
+      ...isolatedEnvironment(databaseUrl),
+      REHEARSAL_APP_BASE_URL: `http://127.0.0.1:${appPort}`,
+      REHEARSAL_HANDOFF_FILE: handoffFile,
+      REHEARSAL_APP_PASSWORD: rehearsalAppPassword
+    };
+    const probeScript = resolve(repositoryRoot, "scripts/backup-container-replacement-probe.mjs");
+    run(process.execPath, [probeScript], { cwd: repositoryRoot, env: probeEnv });
+
+    const firstAppContainer = run("docker", [...composeArgs, "ps", "--quiet", "app"], {
+      cwd: repositoryRoot,
+      env: dockerEnv,
+      capture: true
+    }).trim();
+    if (!/^[a-f0-9]{12,64}$/.test(firstAppContainer)) throw new Error("rehearsal_app_container_id_invalid");
+    run("docker", [...composeArgs, "up", "--detach", "--wait", "--force-recreate", "--no-deps", "app"], {
+      cwd: repositoryRoot,
+      env: dockerEnv
+    });
+    const replacementAppContainer = run("docker", [...composeArgs, "ps", "--quiet", "app"], {
+      cwd: repositoryRoot,
+      env: dockerEnv,
+      capture: true
+    }).trim();
+    if (!/^[a-f0-9]{12,64}$/.test(replacementAppContainer) || replacementAppContainer === firstAppContainer) {
+      throw new Error("rehearsal_app_container_not_replaced");
+    }
+    const replacementPublishedApp = run("docker", [...composeArgs, "port", "app", "3000"], {
+      cwd: repositoryRoot,
+      env: dockerEnv,
+      capture: true
+    });
+    const replacementAppPort = parsePublishedAppPort(replacementPublishedApp);
+    run(process.execPath, [probeScript], {
+      cwd: repositoryRoot,
+      env: { ...probeEnv, REHEARSAL_APP_BASE_URL: `http://127.0.0.1:${replacementAppPort}` }
+    });
   } finally {
     if (composeAttempted) {
-      const teardown = spawnSync("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"], {
+      const teardown = spawnSync("docker", [...composeArgs, "down", "--volumes", "--remove-orphans", "--rmi", "local"], {
         cwd: repositoryRoot,
         env: dockerEnv,
         encoding: "utf8",
@@ -146,10 +223,11 @@ export function runBackupRecoveryRehearsal() {
       });
       if (teardown.error || teardown.status !== 0) {
         teardownFailed = true;
-        console.error(`Disposable teardown failed for ${config.projectName}; run: docker ${composeArgs.join(" ")} down --volumes --remove-orphans`);
+        console.error(`Disposable teardown failed for ${config.projectName}; run: docker ${composeArgs.join(" ")} down --volumes --remove-orphans --rmi local`);
       }
     }
     rmSync(migrationCwd, { recursive: true, force: true });
+    rmSync(config.backupDirectory, { recursive: true, force: true });
   }
   if (teardownFailed) throw new Error("backup_rehearsal_teardown_failed");
   console.log("BACKUP RECOVERY REHEARSAL PASSED");

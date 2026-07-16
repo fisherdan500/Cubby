@@ -43,11 +43,11 @@ deployment, and cleanup approvals.
 
 ### Automated Local Versioned Backups
 
-- Status: proposed
+- Status: in review
 - Priority: medium
 - Goal: Schedule versioned backups on the home server after manual restore reliability is established.
-- Acceptance: Cadence, retention, status visibility, and recovery instructions are defined and verified.
-- Notes: Do not add remote-storage credentials or providers without separate approval.
+- Acceptance: Cadence, retention, status visibility, immutable local download, and recovery instructions are defined and verified against the isolated rehearsal.
+- Notes: Implemented and acceptance-tested in an isolated worktree; mark complete only after merge. Automation remains opt-in and local-only. Do not add remote-storage credentials, providers, or application-managed encryption without separate approval.
 
 ### Manual Member Invitation Link Management
 
@@ -72,7 +72,7 @@ deployment, and cleanup approvals.
 - Priority: high
 - Goal: Make manual household backup and restore dependable and rehearsable before automating backups.
 - Acceptance: Validation, permissions, restoration correctness, failure handling, and a repeatable restore rehearsal are verified.
-- Notes: The checksummed version 2 fresh-target, non-secret snapshot and project-scoped PostgreSQL rehearsal are complete. The disposable rehearsal applied all committed migrations, verified export → restore → re-export semantics and failure boundaries against real PostgreSQL, and removed its container, network, and volume. Automated versioned backups stored on the home server follow later; off-device storage is not currently a Cubby responsibility.
+- Notes: The checksummed version 2 fresh-target, non-secret snapshot and project-scoped PostgreSQL rehearsal are complete. The disposable rehearsal now also covers automated file generation, discovery, restore, re-export equivalence, retention safety, and teardown of its generated temporary backup directory. Off-device storage is not currently a Cubby responsibility.
 
 ### Secondary Workflow Mobile Audit
 

@@ -275,16 +275,24 @@ metadata and bytes. Restore must preserve the target owner identity and
 membership. Version 1 recovery is partial and fresh-target-only. Sprout import
 remains a separate additive clean-room importer.
 
+Automated local backups are disabled by default and remain local-only. Compose
+bind mounts `${CUBBY_BACKUP_HOST_DIR:-./docker-data/backups}` into
+`/var/lib/cubby/backups`. Do not expose host paths, raw filesystem errors,
+secrets, or `.env` values through Settings, logs, or saved backup records.
+Normal GET or prefetch requests must never create a backup; manual export stays
+POST-only and local recovery uses download-then-upload of an existing immutable
+file.
+
 Run the isolated real-PostgreSQL rehearsal only with:
 
 ```bash
 npm run verify:backup-recovery
 ```
 
-The harness never loads `.env` or the normal Compose stack and always attempts
-project-scoped volume teardown. See [Manual Backup Recovery](recovery/manual-backup.md)
-for prerequisites, expected output, complete inclusion/exclusion rules, and
-recovery limitations.
+The harness never loads `.env` or the normal Compose stack, uses its own
+generated temporary backup directory, and always attempts project-scoped volume
+teardown. See [Backup Recovery](BACKUP_RECOVERY.md) for prerequisites, expected
+output, complete inclusion/exclusion rules, and recovery limitations.
 
 ### Visual Assets And Themes
 

@@ -1,5 +1,7 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
+import { readdir, writeFile } from "node:fs/promises";
+import { hashPassword } from "better-auth/crypto";
 
 const auth = vi.hoisted(() => ({
   context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole }
@@ -16,8 +18,16 @@ vi.mock("@/server/auth/context", () => ({
 }));
 
 import { prisma } from "@/lib/db/prisma";
-import { exportBackupJson, previewBackupJson, restoreBackupJson } from "@/server/services/backups";
+import {
+  downloadLocalBackupFile,
+  exportBackupJson,
+  getAutomatedBackupStatus,
+  previewBackupJson,
+  restoreBackupJson
+} from "@/server/services/backups";
 import { parseBackup, payloadChecksum } from "@/server/services/backup-format";
+import { runAutomatedBackupIfDue } from "@/server/services/automated-backups";
+import { publishLocalBackup, readLocalBackup, scanLocalBackups } from "@/server/services/local-backup-storage";
 
 type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
   format: "cubby-household-backup";
@@ -29,6 +39,13 @@ type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
 
 function context(userId: string, householdId: string, memberId: string) {
   return { userId, householdId, memberId, role: HouseholdRole.owner };
+}
+
+const backupDirectory = process.env.AUTOMATED_BACKUP_DIRECTORY;
+const rehearsalHandoffFile = process.env.REHEARSAL_HANDOFF_FILE;
+const rehearsalAppPassword = process.env.REHEARSAL_APP_PASSWORD;
+if (!backupDirectory || !rehearsalHandoffFile || !rehearsalAppPassword) {
+  throw new Error("rehearsal_environment_not_set");
 }
 
 function normalizedPayload(backup: V2Envelope) {
@@ -282,14 +299,58 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       data: { householdId: target.household.id, actorUserId: target.user.id, kind: "restore", status: "failed", error: "fixture" }
     });
 
+    const automatedAt = new Date("2026-07-15T21:50:13.000Z");
+    const rehearsalConfig = {
+      enabled: true,
+      directory: backupDirectory,
+      intervalHours: 24,
+      retentionCount: 2,
+      pollMinutes: 15,
+      retryMinutes: 60
+    };
+    const concurrentAttempts = await Promise.all([
+      runAutomatedBackupIfDue(source.household.id, automatedAt, rehearsalConfig),
+      runAutomatedBackupIfDue(source.household.id, automatedAt, rehearsalConfig)
+    ]);
+    expect(concurrentAttempts.filter((attempt) => "completed" in attempt)).toHaveLength(1);
+    expect(concurrentAttempts.filter((attempt) => "skipped" in attempt)).toHaveLength(1);
+    expect(concurrentAttempts.find((attempt) => "skipped" in attempt)).toMatchObject({
+      skipped: expect.stringMatching(/^(locked|not_due)$/)
+    });
+    const firstAutomated = concurrentAttempts.find((attempt) => "completed" in attempt);
+    expect(firstAutomated).toMatchObject({ completed: true });
+    const firstAutomatedRecord = await prisma.backupRecord.findFirstOrThrow({
+      where: { householdId: source.household.id, kind: "automated_export", status: "complete" },
+      orderBy: { createdAt: "desc" }
+    });
+
+    const localFilesAfterFirstRun = await scanLocalBackups(backupDirectory);
+    expect(localFilesAfterFirstRun).toHaveLength(1);
+    expect(localFilesAfterFirstRun[0]).toMatchObject({
+      healthy: true,
+      householdName: "Source Nursery"
+    });
+
+    const duplicateAttempt = await runAutomatedBackupIfDue(source.household.id, automatedAt, rehearsalConfig);
+    expect(duplicateAttempt).toEqual({ skipped: "not_due" });
+    expect(await scanLocalBackups(backupDirectory)).toHaveLength(1);
+
     auth.context = source.ctx;
-    const sourceBackup = JSON.parse(await exportBackupJson()) as V2Envelope;
+    const automatedDownload = await downloadLocalBackupFile(localFilesAfterFirstRun[0]!.filename);
+    const sourceBackup = JSON.parse(automatedDownload.body.toString("utf8")) as V2Envelope;
     expect(parseBackup(sourceBackup)).toMatchObject({ version: 2, checksumVerified: true });
+    const unassociatedBackup = structuredClone(sourceBackup);
+    unassociatedBackup.exportedAt = "2026-07-15T22:00:00.000Z";
+    const unassociatedFile = await publishLocalBackup(
+      backupDirectory,
+      JSON.stringify(unassociatedBackup, null, 2)
+    );
     expect(JSON.stringify(sourceBackup)).not.toContain("source-webhook-secret");
     expect(JSON.stringify(sourceBackup)).not.toContain("source-session-token");
     expect(JSON.stringify(sourceBackup)).not.toContain("source-only.pdf");
     expect(sourceBackup.payload.settings).not.toHaveProperty("allowPublicRegistration");
     expect(sourceBackup.payload.settings).not.toHaveProperty("allowNewHouseholdCreation");
+    expect(localFilesAfterFirstRun[0]!.healthy && localFilesAfterFirstRun[0].checksum).toBe(sourceBackup.checksum);
 
     const corrupt = structuredClone(sourceBackup);
     corrupt.payload.household.name = `${corrupt.payload.household.name}!`;
@@ -309,6 +370,27 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect((await prisma.household.findUniqueOrThrow({ where: { id: staleTarget.household.id } })).name).toBe("Stale Target");
 
     auth.context = target.ctx;
+    await prisma.household.updateMany({
+      where: { id: { in: [source.household.id, staleTarget.household.id] } },
+      data: { deletedAt: new Date("2026-07-16T00:00:00.000Z") }
+    });
+    const removedAutomatedHistory = await prisma.backupRecord.deleteMany({
+      where: { householdId: source.household.id, kind: "automated_export" }
+    });
+    expect(removedAutomatedHistory.count).toBeGreaterThanOrEqual(1);
+    expect(await prisma.backupRecord.count({
+      where: { householdId: source.household.id, kind: "automated_export" }
+    })).toBe(0);
+    const discoveredStatus = await getAutomatedBackupStatus();
+    expect(discoveredStatus.healthyVersionCount).toBeGreaterThanOrEqual(1);
+    expect(discoveredStatus.versions.some((version) => version.healthy && version.householdName === "Source Nursery")).toBe(true);
+    const recoveryDownload = await downloadLocalBackupFile(automatedDownload.filename);
+    const recoveryBackup = JSON.parse(recoveryDownload.body.toString("utf8")) as V2Envelope;
+    expect(recoveryBackup).toEqual(sourceBackup);
+    await prisma.household.updateMany({
+      where: { id: { in: [source.household.id, staleTarget.household.id] } },
+      data: { deletedAt: null }
+    });
     const targetOwnerBefore = await prisma.user.findUniqueOrThrow({ where: { id: target.user.id } });
     const targetMemberBefore = await prisma.householdMember.findUniqueOrThrow({ where: { id: target.member.id } });
     await expect(previewBackupJson(sourceBackup)).resolves.toMatchObject({
@@ -316,7 +398,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       counts: { babies: 2, contacts: 1, catalogs: 2, activities: 3, calendarEvents: 1, reminders: 1 }
     });
     await expect(
-      restoreBackupJson(sourceBackup, { confirmation: "Fresh Target", previewChecksum: sourceBackup.checksum })
+      restoreBackupJson(recoveryBackup, { confirmation: "Fresh Target", previewChecksum: recoveryBackup.checksum })
     ).resolves.toMatchObject({ restored: 10, legacyPartial: false });
 
     expect(await prisma.user.findUniqueOrThrow({ where: { id: target.user.id } })).toEqual(targetOwnerBefore);
@@ -354,6 +436,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       select: { allowPublicRegistration: true, allowNewHouseholdCreation: true }
     })).toEqual({ allowPublicRegistration: false, allowNewHouseholdCreation: false });
 
+
     const targetBackup = JSON.parse(await exportBackupJson()) as V2Envelope;
     expect(normalizedPayload(targetBackup)).toEqual(normalizedPayload(sourceBackup));
     await expect(
@@ -361,5 +444,136 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     ).rejects.toThrow("backup_target_not_empty");
     expect(await prisma.activityLog.count({ where: { householdId: target.household.id } })).toBe(3);
     expect(vaccineActivity.id).toBeTruthy();
+
+    await prisma.activityLog.create({
+      data: {
+        householdId: source.household.id,
+        babyId: activeBaby.id,
+        actorMemberId: source.member.id,
+        type: ActivityType.play,
+        occurredAt: new Date("2026-07-16T09:00:00.000Z"),
+        startedAt: new Date("2026-07-16T09:00:00.000Z"),
+        endedAt: null,
+        durationSeconds: null,
+        timezone: "America/New_York",
+        timerState: TimerState.running,
+        play: { create: { activityName: "Active timer", location: "Nursery", intensity: "busy" } }
+      }
+    });
+
+    const blockedAt = new Date(firstAutomatedRecord.createdAt.getTime() + 24 * 60 * 60 * 1000);
+    const blockedAttempt = await runAutomatedBackupIfDue(source.household.id, blockedAt, {
+      enabled: true,
+      directory: backupDirectory,
+      intervalHours: 24,
+      retentionCount: 2,
+      pollMinutes: 15,
+      retryMinutes: 60
+    });
+    expect(blockedAttempt).toEqual({ failed: true, error: "backup_active_timer" });
+    const filesAfterBlockedAttempt = (await scanLocalBackups(backupDirectory))
+      .filter((file) => file.healthy)
+      .map((file) => file.filename);
+    expect(new Set(filesAfterBlockedAttempt)).toEqual(new Set([
+      firstAutomatedRecord.storageFilename,
+      unassociatedFile.filename
+    ]));
+    const blockedRecord = await prisma.backupRecord.findFirstOrThrow({
+      where: { householdId: source.household.id, kind: "automated_export", status: "failed" },
+      orderBy: { createdAt: "desc" }
+    });
+
+    await prisma.activityLog.updateMany({
+      where: { householdId: source.household.id, timerState: TimerState.running },
+      data: { timerState: TimerState.stopped, endedAt: new Date("2026-07-16T09:20:00.000Z"), durationSeconds: 1200 }
+    });
+
+    const retryAt = new Date(blockedRecord.createdAt.getTime() + 60 * 60 * 1000);
+    const secondAutomated = await runAutomatedBackupIfDue(source.household.id, retryAt, {
+      enabled: true,
+      directory: backupDirectory,
+      intervalHours: 24,
+      retentionCount: 2,
+      pollMinutes: 15,
+      retryMinutes: 60
+    });
+    expect(secondAutomated).toMatchObject({ completed: true });
+    const secondAutomatedRecord = await prisma.backupRecord.findFirstOrThrow({
+      where: { householdId: source.household.id, kind: "automated_export", status: "complete" },
+      orderBy: { createdAt: "desc" }
+    });
+
+    await prisma.contact.create({
+      data: { householdId: source.household.id, name: "Retention marker" }
+    });
+
+    const nextDueAt = new Date(secondAutomatedRecord.createdAt.getTime() + 24 * 60 * 60 * 1000);
+    const thirdAutomated = await runAutomatedBackupIfDue(source.household.id, nextDueAt, rehearsalConfig);
+    expect(thirdAutomated).toMatchObject({ completed: true });
+    const thirdAutomatedRecord = await prisma.backupRecord.findFirstOrThrow({
+      where: { householdId: source.household.id, kind: "automated_export", status: "complete" },
+      orderBy: { createdAt: "desc" }
+    });
+
+    await prisma.contact.create({
+      data: { householdId: source.household.id, name: "Second retention marker" }
+    });
+    const fourthDueAt = new Date(thirdAutomatedRecord.createdAt.getTime() + 24 * 60 * 60 * 1000);
+    const fourthAutomated = await runAutomatedBackupIfDue(source.household.id, fourthDueAt, rehearsalConfig);
+    expect(fourthAutomated).toMatchObject({ completed: true });
+    const fourthAutomatedRecord = await prisma.backupRecord.findFirstOrThrow({
+      where: { householdId: source.household.id, kind: "automated_export", status: "complete" },
+      orderBy: { createdAt: "desc" }
+    });
+    expect(await prisma.backupRecord.findUniqueOrThrow({
+      where: { id: secondAutomatedRecord.id },
+      select: { status: true }
+    })).toEqual({ status: "pruned" });
+    await expect(readLocalBackup(backupDirectory, secondAutomatedRecord.storageFilename!))
+      .rejects.toThrow("backup_invalid");
+
+    const finalFiles = (await scanLocalBackups(backupDirectory)).filter((file) => file.healthy);
+    const finalFilenames = finalFiles.map((file) => file.filename);
+    expect(finalFilenames).toHaveLength(4);
+    expect(finalFilenames).toContain(unassociatedFile.filename);
+    expect(finalFilenames).toContain(firstAutomatedRecord.storageFilename);
+    expect(finalFilenames).toContain(thirdAutomatedRecord.storageFilename);
+    expect(finalFilenames).toContain(fourthAutomatedRecord.storageFilename);
+
+    const failedAt = new Date(fourthAutomatedRecord.createdAt.getTime() + 24 * 60 * 60 * 1000);
+    const failedPublication = await runAutomatedBackupIfDue(source.household.id, failedAt, rehearsalConfig, {
+      publish: (root, json, options) => publishLocalBackup(root, json, {
+        ...options,
+        afterTempFileSynced: () => {
+          throw Object.assign(new Error("simulated disk full after fsync"), { code: "ENOSPC" });
+        }
+      })
+    });
+    expect(failedPublication).toEqual({ failed: true, error: "backup_write_failed" });
+    const failedPublicationRecord = await prisma.backupRecord.findFirstOrThrow({
+      where: { householdId: source.household.id, kind: "automated_export", status: "failed" },
+      orderBy: { createdAt: "desc" }
+    });
+    expect(failedPublicationRecord.error).toBe("backup_write_failed");
+    const filesAfterFailure = (await scanLocalBackups(backupDirectory))
+      .filter((file) => file.healthy)
+      .map((file) => file.filename);
+    expect(new Set(filesAfterFailure)).toEqual(new Set(finalFilenames));
+    expect((await readdir(backupDirectory)).filter((filename) => filename.endsWith(".tmp"))).toEqual([]);
+    await Promise.all(finalFilenames.map((filename) => readLocalBackup(backupDirectory, filename)));
+
+    await prisma.account.create({
+      data: {
+        accountId: source.user.id,
+        providerId: "credential",
+        userId: source.user.id,
+        password: await hashPassword(rehearsalAppPassword)
+      }
+    });
+    await writeFile(rehearsalHandoffFile, JSON.stringify({
+      email: source.user.email,
+      filename: fourthAutomatedRecord.storageFilename,
+      checksum: fourthAutomatedRecord.checksum
+    }), { mode: 0o600, flag: "wx" });
   });
 });

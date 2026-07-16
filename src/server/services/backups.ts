@@ -1,6 +1,8 @@
 import { TimerState, type Prisma } from "@prisma/client";
 import { z } from "zod";
+import { automatedBackupStatusConfig } from "@/lib/automated-backup-config";
 import { prisma } from "@/lib/db/prisma";
+import { automatedBackupConfig } from "@/lib/env";
 import { parseAccentTheme } from "@/domain/appearance";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import { activityCreateSchema } from "@/lib/validation/activity";
@@ -9,6 +11,7 @@ import { activityInclude, restoreHistoricalActivityForContext } from "@/server/s
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import { backupSummary, createV2Backup, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
+import { readLocalBackup, readLocalBackupDocument, scanLocalBackups } from "@/server/services/local-backup-storage";
 
 const backupDateTime = z.string().datetime({ offset: true });
 const backupTimerMetadata = z
@@ -24,6 +27,10 @@ const timerMetadataFields = ["timerState", "durationSeconds", "pausedAt", "pause
 const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"]);
 
 type BackupActivityInput = z.infer<typeof activityCreateSchema>;
+type BackupSnapshotTransaction = Pick<
+  Prisma.TransactionClient,
+  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder"
+>;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
   const metadata = backupTimerMetadata.parse(rawActivity);
@@ -98,7 +105,7 @@ const restoreSchema = z.object({
 
 type FreshState = { actorIsSoleOwner: boolean; operationalCount: bigint | number };
 
-async function assertFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getHouseholdContext>>) {
+async function isFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getHouseholdContext>>) {
   const rows = await db.$queryRaw<FreshState[]>`
     SELECT
       ((SELECT COUNT(*) FROM "HouseholdMember" WHERE "householdId" = ${ctx.householdId} AND "deletedAt" IS NULL AND "disabledAt" IS NULL) = 1
@@ -119,7 +126,11 @@ async function assertFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">
        (SELECT COUNT(*) FROM "NotificationLog" WHERE "householdId" = ${ctx.householdId})) AS "operationalCount"
   `;
   const state = rows[0];
-  if (!state?.actorIsSoleOwner || Number(state.operationalCount) !== 0) throw new Error("backup_target_not_empty");
+  return Boolean(state?.actorIsSoleOwner && Number(state.operationalCount) === 0);
+}
+
+async function assertFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getHouseholdContext>>) {
+  if (!(await isFreshTarget(db, ctx))) throw new Error("backup_target_not_empty");
 }
 
 export async function previewBackupJson(raw: unknown) {
@@ -135,89 +146,7 @@ export async function exportBackupJson() {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const snapshot = await prisma.$transaction(
-    async (tx) => {
-      const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders] = await Promise.all([
-        tx.household.findUniqueOrThrow({ where: { id: ctx.householdId } }),
-        tx.householdSettings.findUnique({ where: { householdId: ctx.householdId } }),
-        tx.baby.findMany({ where: { householdId: ctx.householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
-        tx.contact.findMany({ where: { householdId: ctx.householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
-        tx.medicineCatalog.findMany({ where: { householdId: ctx.householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
-        tx.activityLog.findMany({ where: { householdId: ctx.householdId, deletedAt: null }, include: activityInclude, orderBy: { occurredAt: "asc" } }),
-        tx.calendarEvent.findMany({
-          where: { householdId: ctx.householdId, deletedAt: null },
-          include: { babies: { select: { babyId: true } }, contacts: { select: { contactId: true } } },
-          orderBy: { startTime: "asc" }
-        }),
-        tx.reminder.findMany({ where: { householdId: ctx.householdId, deletedAt: null }, orderBy: { createdAt: "asc" } })
-      ]);
-      if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
-        throw new Error("backup_active_timer");
-      }
-      return createV2Backup({
-        household: { name: household.name },
-        settings: settings
-          ? {
-              activityOrder: settings.activityOrder ?? undefined,
-              activityVisibility: settings.activityVisibility ?? undefined,
-              unitPreferences: parseUnitPreferences(settings.unitPreferences),
-              dateFormat: settings.dateFormat,
-              timeFormat: settings.timeFormat,
-              sleepLocations: settings.sleepLocations,
-              medicines: settings.medicines,
-              supplements: settings.supplements,
-              nurseryModeEnabled: settings.nurseryModeEnabled,
-              pwaInstallPromptEnabled: settings.pwaInstallPromptEnabled,
-              accentTheme: parseAccentTheme(settings.accentTheme)
-            }
-          : {},
-        babies: babies.map((baby) => ({
-          id: baby.id,
-          name: baby.name,
-          birthDate: baby.birthDate?.toISOString() ?? null,
-          timezone: baby.timezone,
-          notes: baby.notes,
-          feedingWarningMinutes: baby.feedingWarningMinutes,
-          diaperWarningMinutes: baby.diaperWarningMinutes,
-          sleepWarningMinutes: baby.sleepWarningMinutes,
-          preferredUnits: baby.preferredUnits,
-          inactiveAt: baby.inactiveAt?.toISOString() ?? null
-        })),
-        contacts: contacts.map(({ id, name, kind, phone, email, address, notes }) => ({ id, name, kind, phone, email, address, notes })),
-        catalogs: catalogs.map(({ id, name, typicalDoseSize, unit, doseMinTime, notes, active, isSupplement }) => ({
-          id, name, typicalDoseSize: typicalDoseSize == null ? null : String(typicalDoseSize), unit, doseMinTime, notes, active, isSupplement
-        })),
-        activities: activities.map(activityToInput),
-        calendarEvents: calendarEvents.map((event) => ({
-          id: event.id,
-          title: event.title,
-          description: event.description,
-          startTime: event.startTime.toISOString(),
-          endTime: event.endTime?.toISOString() ?? null,
-          allDay: event.allDay,
-          eventType: event.eventType,
-          location: event.location,
-          color: event.color,
-          recurring: event.recurring,
-          recurrencePattern: event.recurrencePattern,
-          recurrenceEnd: event.recurrenceEnd?.toISOString() ?? null,
-          customRecurrence: event.customRecurrence,
-          reminderMinutes: event.reminderMinutes,
-          source: event.source,
-          externalCaretakerNames: event.externalCaretakerNames,
-          babyIds: event.babies.map((link) => link.babyId),
-          contactIds: event.contacts.map((link) => link.contactId)
-        })),
-        reminders: reminders.map((reminder) => ({
-          id: reminder.id,
-          babyId: reminder.babyId,
-          kind: reminder.kind,
-          title: reminder.title,
-          cadenceMinutes: reminder.cadenceMinutes,
-          dueAt: reminder.dueAt?.toISOString() ?? null,
-          enabled: reminder.enabled
-        }))
-      });
-    },
+    (tx: Prisma.TransactionClient) => buildHouseholdV2Snapshot(tx, ctx.householdId),
     { isolationLevel: "RepeatableRead" }
   );
   const json = JSON.stringify(snapshot, null, 2);
@@ -227,11 +156,110 @@ export async function exportBackupJson() {
       actorUserId: ctx.userId,
       kind: "export",
       status: "complete",
-      itemCount: Object.values(backupSummary(parseBackup(snapshot)).counts).reduce((total, count) => total + count, 0),
+      itemCount: summarizeBackupItemCount(snapshot),
       checksum: snapshot.checksum
     }
   });
   return json;
+}
+
+export async function exportHouseholdBackupJson(householdId: string, exportedAt = new Date().toISOString()) {
+  return prisma.$transaction(
+    (tx: Prisma.TransactionClient) => buildHouseholdV2Snapshot(tx, householdId, exportedAt),
+    { isolationLevel: "RepeatableRead" }
+  );
+}
+
+export async function buildHouseholdV2Snapshot(
+  tx: BackupSnapshotTransaction,
+  householdId: string,
+  exportedAt = new Date().toISOString()
+) {
+  const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders] = await Promise.all([
+    tx.household.findUniqueOrThrow({ where: { id: householdId } }),
+    tx.householdSettings.findUnique({ where: { householdId } }),
+    tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
+    tx.contact.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
+    tx.medicineCatalog.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
+    tx.activityLog.findMany({ where: { householdId, deletedAt: null }, include: activityInclude, orderBy: { occurredAt: "asc" } }),
+    tx.calendarEvent.findMany({
+      where: { householdId, deletedAt: null },
+      include: { babies: { select: { babyId: true } }, contacts: { select: { contactId: true } } },
+      orderBy: { startTime: "asc" }
+    }),
+    tx.reminder.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } })
+  ]);
+  if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
+    throw new Error("backup_active_timer");
+  }
+  return createV2Backup({
+    household: { name: household.name },
+    settings: settings
+      ? {
+          activityOrder: settings.activityOrder ?? undefined,
+          activityVisibility: settings.activityVisibility ?? undefined,
+          unitPreferences: parseUnitPreferences(settings.unitPreferences),
+          dateFormat: settings.dateFormat,
+          timeFormat: settings.timeFormat,
+          sleepLocations: settings.sleepLocations,
+          medicines: settings.medicines,
+          supplements: settings.supplements,
+          nurseryModeEnabled: settings.nurseryModeEnabled,
+          pwaInstallPromptEnabled: settings.pwaInstallPromptEnabled,
+          accentTheme: parseAccentTheme(settings.accentTheme)
+        }
+      : {},
+    babies: babies.map((baby) => ({
+      id: baby.id,
+      name: baby.name,
+      birthDate: baby.birthDate?.toISOString() ?? null,
+      timezone: baby.timezone,
+      notes: baby.notes,
+      feedingWarningMinutes: baby.feedingWarningMinutes,
+      diaperWarningMinutes: baby.diaperWarningMinutes,
+      sleepWarningMinutes: baby.sleepWarningMinutes,
+      preferredUnits: baby.preferredUnits,
+      inactiveAt: baby.inactiveAt?.toISOString() ?? null
+    })),
+    contacts: contacts.map(({ id, name, kind, phone, email, address, notes }) => ({ id, name, kind, phone, email, address, notes })),
+    catalogs: catalogs.map(({ id, name, typicalDoseSize, unit, doseMinTime, notes, active, isSupplement }) => ({
+      id, name, typicalDoseSize: typicalDoseSize == null ? null : String(typicalDoseSize), unit, doseMinTime, notes, active, isSupplement
+    })),
+    activities: activities.map(activityToInput),
+    calendarEvents: calendarEvents.map((event) => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      startTime: event.startTime.toISOString(),
+      endTime: event.endTime?.toISOString() ?? null,
+      allDay: event.allDay,
+      eventType: event.eventType,
+      location: event.location,
+      color: event.color,
+      recurring: event.recurring,
+      recurrencePattern: event.recurrencePattern,
+      recurrenceEnd: event.recurrenceEnd?.toISOString() ?? null,
+      customRecurrence: event.customRecurrence,
+      reminderMinutes: event.reminderMinutes,
+      source: event.source,
+      externalCaretakerNames: event.externalCaretakerNames,
+      babyIds: event.babies.map((link) => link.babyId),
+      contactIds: event.contacts.map((link) => link.contactId)
+    })),
+    reminders: reminders.map((reminder) => ({
+      id: reminder.id,
+      babyId: reminder.babyId,
+      kind: reminder.kind,
+      title: reminder.title,
+      cadenceMinutes: reminder.cadenceMinutes,
+      dueAt: reminder.dueAt?.toISOString() ?? null,
+      enabled: reminder.enabled
+    }))
+  }, exportedAt);
+}
+
+export function summarizeBackupItemCount(snapshot: unknown) {
+  return Object.values(backupSummary(parseBackup(snapshot)).counts).reduce((total, count) => total + count, 0);
 }
 
 function dateValue(date: Date | null | undefined) {
@@ -625,4 +653,154 @@ export async function getBackupRestoreTargetName() {
     where: { id: ctx.householdId },
     select: { name: true }
   })).name;
+}
+
+function addHours(when: Date, hours: number) {
+  return new Date(when.getTime() + hours * 60 * 60 * 1000);
+}
+
+function addMinutes(when: Date, minutes: number) {
+  return new Date(when.getTime() + minutes * 60 * 1000);
+}
+
+async function scanLocalBackupsForStatus() {
+  try {
+    return await scanLocalBackups(automatedBackupConfig.directory);
+  } catch {
+    return [{
+      healthy: false as const,
+      filename: "local backup directory",
+      errorCode: "backup_directory_unavailable"
+    }];
+  }
+}
+
+export async function getAutomatedBackupStatus() {
+  const ctx = await getHouseholdContext();
+  requirePermission(ctx, "backup.manage");
+
+  const recordSelect = {
+    id: true,
+    createdAt: true,
+    status: true,
+    error: true,
+    checksum: true,
+    itemCount: true,
+    storageFilename: true
+  } as const;
+  const recordWhere = { householdId: ctx.householdId, kind: "automated_export" as const };
+  const [latestSuccess, latestFailure, linkedRecords, scanned, activeHouseholdCount] = await Promise.all([
+    prisma.backupRecord.findFirst({
+      where: { ...recordWhere, status: "complete" },
+      orderBy: { createdAt: "desc" },
+      select: recordSelect
+    }),
+    prisma.backupRecord.findFirst({
+      where: { ...recordWhere, status: "failed" },
+      orderBy: { createdAt: "desc" },
+      select: recordSelect
+    }),
+    prisma.backupRecord.findMany({
+      where: { ...recordWhere, status: "complete", storageFilename: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: recordSelect
+    }),
+    scanLocalBackupsForStatus(),
+    prisma.household.count({ where: { deletedAt: null } })
+  ]);
+
+  const storageUnavailable = scanned.some((file) => file.filename === "local backup directory");
+  if (!storageUnavailable) {
+    for (const record of linkedRecords) {
+      if (!record.storageFilename || scanned.some((file) => file.filename === record.storageFilename)) {
+        continue;
+      }
+      try {
+        const file = await readLocalBackup(automatedBackupConfig.directory, record.storageFilename);
+        scanned.push(file.checksum === record.checksum
+          ? { healthy: true, ...file }
+          : { healthy: false, filename: record.storageFilename, errorCode: "backup_checksum_mismatch" });
+      } catch {
+        scanned.push({ healthy: false, filename: record.storageFilename, errorCode: "backup_file_missing" });
+      }
+    }
+  }
+  const allowBootstrapDiscovery = activeHouseholdCount === 1 && await isFreshTarget(prisma, ctx);
+  const visibleVersions = scanned.filter((file) => {
+    if (allowBootstrapDiscovery) return true;
+    const record = linkedRecords.find((candidate) => candidate.storageFilename === file.filename);
+    return Boolean(record && (!file.healthy || record.checksum === file.checksum));
+  });
+  const healthyVersions = visibleVersions.filter((file) => file.healthy);
+  const unhealthyVersions = visibleVersions.filter((file) => !file.healthy);
+
+  return {
+    config: automatedBackupStatusConfig(automatedBackupConfig),
+    latestSuccess: latestSuccess
+      ? {
+          createdAt: latestSuccess.createdAt.toISOString(),
+          checksum: latestSuccess.checksum,
+          itemCount: latestSuccess.itemCount
+        }
+      : null,
+    latestFailure: latestFailure
+      ? {
+          createdAt: latestFailure.createdAt.toISOString(),
+          errorCode: latestFailure.error
+        }
+      : null,
+    nextDueAt: !automatedBackupConfig.enabled
+      ? null
+      : latestFailure && (!latestSuccess || latestFailure.createdAt > latestSuccess.createdAt)
+        ? addMinutes(latestFailure.createdAt, automatedBackupConfig.retryMinutes).toISOString()
+        : latestSuccess
+          ? addHours(latestSuccess.createdAt, automatedBackupConfig.intervalHours).toISOString()
+          : null,
+    healthyVersionCount: healthyVersions.length,
+    versions: visibleVersions.map((file) =>
+      file.healthy
+        ? {
+            filename: file.filename,
+            exportedAt: file.exportedAt,
+            householdName: file.householdName,
+            checksum: file.checksum,
+            size: file.size,
+            itemCount: file.itemCount,
+            healthy: true as const
+          }
+        : {
+            filename: file.filename,
+            errorCode: file.errorCode,
+            healthy: false as const
+          }
+    ),
+    warnings: unhealthyVersions.map((file) => ({
+      filename: file.filename,
+      errorCode: file.errorCode
+    }))
+  };
+}
+
+export async function downloadLocalBackupFile(filename: string) {
+  const ctx = await getHouseholdContext();
+  requirePermission(ctx, "backup.manage");
+  const document = await readLocalBackupDocument(automatedBackupConfig.directory, filename);
+  const file = document.file;
+  const activeHouseholdCount = await prisma.household.count({ where: { deletedAt: null } });
+  if (activeHouseholdCount === 1 && await isFreshTarget(prisma, ctx)) {
+    return { filename: file.filename, body: document.body };
+  }
+
+  const linkedRecord = await prisma.backupRecord.findFirst({
+    where: {
+      householdId: ctx.householdId,
+      kind: "automated_export",
+      status: "complete",
+      storageFilename: file.filename,
+      checksum: file.checksum
+    },
+    select: { id: true }
+  });
+  if (!linkedRecord) throw new Error("forbidden");
+  return { filename: file.filename, body: document.body };
 }
