@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cubby_backup_rehearsal
+      POSTGRES_USER: cubby_rehearsal
+      POSTGRES_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_PASSWORD:?rehearsal password required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cubby_rehearsal -d cubby_backup_rehearsal"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - rehearsal_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  rehearsal_postgres_data:

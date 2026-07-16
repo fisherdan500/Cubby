@@ -8,6 +8,39 @@ import { POST } from "@/app/api/backups/restore/route";
 describe("POST /api/backups/restore", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("passes the raw backup with exact household confirmation and preview checksum", async () => {
+    mocks.restoreBackupJson.mockResolvedValue({ restored: 0 });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(mocks.restoreBackupJson).toHaveBeenCalledWith(
+      { version: 1, babies: [], activities: [] },
+      { confirmation: "Fresh Home", previewChecksum: "legacy-v1" }
+    );
+  });
+
+  it("decodes a Unicode household confirmation from its header-safe representation", async () => {
+    mocks.restoreBackupJson.mockResolvedValue({ restored: 0 });
+
+    const response = await POST(request("家族 🍼"));
+
+    expect(response.status).toBe(200);
+    expect(mocks.restoreBackupJson).toHaveBeenCalledWith(
+      { version: 1, babies: [], activities: [] },
+      { confirmation: "家族 🍼", previewChecksum: "legacy-v1" }
+    );
+  });
+
+  it("requires confirmation headers before reading or restoring", async () => {
+    const response = await POST(new Request("http://localhost/api/backups/restore", {
+      method: "POST", headers: { "content-type": "application/json" }, body: "{}"
+    }));
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "backup_confirmation_mismatch" } });
+    expect(mocks.restoreBackupJson).not.toHaveBeenCalled();
+  });
+
   it("returns an actionable conflict for a backup containing a live timer", async () => {
     mocks.restoreBackupJson.mockRejectedValue(new Error("backup_active_timer"));
 
@@ -36,10 +69,14 @@ describe("POST /api/backups/restore", () => {
   });
 });
 
-function request() {
+function request(confirmation = "Fresh Home") {
   return new Request("http://localhost/api/backups/restore", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-cubby-restore-confirmation": encodeURIComponent(confirmation),
+      "x-cubby-backup-checksum": "legacy-v1"
+    },
     body: JSON.stringify({ version: 1, babies: [], activities: [] })
   });
 }

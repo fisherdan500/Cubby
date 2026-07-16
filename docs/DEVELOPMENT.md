@@ -262,14 +262,29 @@ rebuild Docker and test preview/import from `/app/settings/backups`.
 
 ### Backups
 
-Cubby JSON backup restore should validate the input and import into the current
-household with permission checks. Do not bypass service-layer ownership checks
-for restore paths.
-Backups intentionally exclude auth users, credentials, sessions, and household
-memberships. Restore must not create, update, delete, suspend, or restore a
-membership, and must leave `HouseholdMember.disabledAt` unchanged. Baby
-`inactiveAt` is part of backup v1 when present; restore should create babies and
-activities first, then apply deactivation timestamps.
+Cubby version 2 JSON recovery validates format, limits, references, timer state,
+and checksum before writing. It restores only into a fresh household whose
+current member is the sole active owner; preview does not replace the locked
+empty-target recheck inside the serializable restore transaction. Do not bypass
+service-layer ownership checks or turn this path into merge/replace behavior.
+
+Backups intentionally exclude auth users, credentials, sessions, memberships,
+invitations, registration policy, integration secrets/runtime records,
+notifications, operational history, warning dismissals, and vaccine attachment
+metadata and bytes. Restore must preserve the target owner identity and
+membership. Version 1 recovery is partial and fresh-target-only. Sprout import
+remains a separate additive clean-room importer.
+
+Run the isolated real-PostgreSQL rehearsal only with:
+
+```bash
+npm run verify:backup-recovery
+```
+
+The harness never loads `.env` or the normal Compose stack and always attempts
+project-scoped volume teardown. See [Manual Backup Recovery](recovery/manual-backup.md)
+for prerequisites, expected output, complete inclusion/exclusion rules, and
+recovery limitations.
 
 ### Visual Assets And Themes
 

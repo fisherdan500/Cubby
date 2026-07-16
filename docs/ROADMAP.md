@@ -41,22 +41,6 @@ deployment, and cleanup approvals.
 
 ## Later
 
-### Secondary Workflow Mobile Audit
-
-- Status: planned
-- Priority: medium
-- Goal: Continue the mobile audit for dense administrative and integration workflows after the approved daily-use roadmap.
-- Acceptance: Backups, integrations, member management, and long settings forms are checked at common mobile widths; controls remain thumb-friendly and desktop remains tidy.
-- Notes: Resume after the daily-use performance, activity, units, member-suspension, and baby-inactivity phases. Keep future changes Cubby-original and clean-room.
-
-### Manual Backup And Restore Reliability
-
-- Status: planned
-- Priority: high
-- Goal: Make manual household backup and restore dependable and rehearsable before automating backups.
-- Acceptance: Validation, permissions, restoration correctness, failure handling, and a repeatable restore rehearsal are verified.
-- Notes: Automated versioned backups stored on the home server follow later; off-device storage is not currently a Cubby responsibility.
-
 ### Automated Local Versioned Backups
 
 - Status: proposed
@@ -81,6 +65,22 @@ deployment, and cleanup approvals.
 - Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Manual Backup And Restore Reliability
+
+- Status: done
+- Priority: high
+- Goal: Make manual household backup and restore dependable and rehearsable before automating backups.
+- Acceptance: Validation, permissions, restoration correctness, failure handling, and a repeatable restore rehearsal are verified.
+- Notes: The checksummed version 2 fresh-target, non-secret snapshot and project-scoped PostgreSQL rehearsal are complete. The disposable rehearsal applied all committed migrations, verified export → restore → re-export semantics and failure boundaries against real PostgreSQL, and removed its container, network, and volume. Automated versioned backups stored on the home server follow later; off-device storage is not currently a Cubby responsibility.
+
+### Secondary Workflow Mobile Audit
+
+- Status: done
+- Priority: medium
+- Goal: Keep dense administrative and integration workflows usable at common phone widths while preserving tidy desktop layouts.
+- Acceptance: Backups, integrations, member management, and long settings forms were checked at common mobile widths; controls remain thumb-friendly and desktop remains tidy.
+- Notes: Completed in pull request #16. Automated responsive coverage is complete; real-device Safari and Chrome validation remains deferred and is not evidence claimed by this item.
 
 ### Dashboard Performance Follow-Up And Header Cleanup
 
