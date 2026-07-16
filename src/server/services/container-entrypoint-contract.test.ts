@@ -8,6 +8,7 @@ const entrypoint = new URL("../../../docker/entrypoint.sh", import.meta.url).pat
   /^\/(\w:)/,
   "$1"
 );
+const dockerfilePath = new URL("../../../Dockerfile", import.meta.url);
 const packageJsonPath = new URL("../../../package.json", import.meta.url);
 const sh = process.platform === "win32" ? "C:\\Program Files\\Git\\usr\\bin\\sh.exe" : "sh";
 
@@ -38,6 +39,18 @@ function runEntrypoint(migrationExit = 0) {
 }
 
 describe("container entrypoint contract", () => {
+  it("normalizes the copied entrypoint before direct Linux execution", () => {
+    const dockerfile = readFileSync(dockerfilePath, "utf8");
+    const copy = "COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/cubby-entrypoint";
+    const normalize = String.raw`RUN sed -i 's/\x0D$//' /usr/local/bin/cubby-entrypoint`;
+    const execute = 'ENTRYPOINT ["/usr/local/bin/cubby-entrypoint"]';
+
+    expect(dockerfile).toContain(copy);
+    expect(dockerfile).toContain(normalize);
+    expect(dockerfile.indexOf(copy)).toBeLessThan(dockerfile.indexOf(normalize));
+    expect(dockerfile.indexOf(normalize)).toBeLessThan(dockerfile.indexOf(execute));
+  });
+
   it("runs migrations before starting the server", () => {
     const result = runEntrypoint();
 
