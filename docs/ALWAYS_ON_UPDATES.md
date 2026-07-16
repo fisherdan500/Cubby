@@ -83,6 +83,11 @@ The backup must be a valid checksummed version 2 snapshot exported no more than
 and 1 GiB on the PostgreSQL data filesystem. These are hard safety floors, not
 capacity-planning targets.
 
+Service discovery accepts both the JSON-array output used by earlier Docker
+Compose releases and the newline-delimited JSON objects emitted by Docker Compose
+5.2. The same exact app/PostgreSQL shape and health checks apply to both formats.
+Blank, malformed, mixed, missing, extra, or unhealthy service records fail closed.
+
 Treat timeout, malformed output, missing metadata, an unexpected container
 state, or any `FAIL` marker as a stop condition. Correct the cause and rerun the
 entire preflight; do not bypass a check.

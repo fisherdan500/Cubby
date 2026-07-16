@@ -52,6 +52,26 @@ function exactJson<T>(result: CommandResult, validate: (value: unknown) => value
   }
 }
 
+function jsonArrayOrLines<T>(
+  result: CommandResult,
+  validate: (value: unknown) => value is T[]
+): T[] | undefined {
+  const output = successfulOutput(result);
+  if (output === undefined) return undefined;
+  try {
+    const value: unknown = JSON.parse(output);
+    if (validate(value)) return value;
+  } catch {
+    // Docker Compose 5.2 emits one JSON object per line.
+  }
+  try {
+    const value: unknown = output.trim().split("\n").map((line) => JSON.parse(line.trimEnd()) as unknown);
+    return validate(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function availableBytes(result: CommandResult): number | undefined {
   const output = successfulOutput(result);
   if (output === undefined) return undefined;
@@ -96,7 +116,7 @@ export function runPreflight(args: readonly string[], adapters: PreflightAdapter
 
   check("compose-config", successfulOutput(runCommand(adapters, "docker", ["compose", "config", "--quiet"])) !== undefined);
 
-  const services = exactJson<Array<{ Service: string; State: string; Health: string }>>(
+  const services = jsonArrayOrLines<{ Service: string; State: string; Health: string }>(
     runCommand(adapters, "docker", ["compose", "ps", "--format", "json", "app", "postgres"]),
     (value): value is Array<{ Service: string; State: string; Health: string }> =>
       Array.isArray(value) && value.length === 2 && value.every((item) =>
