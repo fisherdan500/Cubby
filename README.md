@@ -54,7 +54,9 @@ docker compose up --build
 5. Open `http://localhost:3000`, or the port configured with `APP_PORT`.
 
 The compose stack includes the app and PostgreSQL. Postgres data is stored in the
-`cubby_postgres_data` named volume.
+`cubby_postgres_data` named volume. Container startup applies migrations before
+starting Next.js and fails closed if migration deployment fails. Compose reports
+the app healthy only when `/api/health` can query PostgreSQL successfully.
 
 If port 3000 is already in use, set values like these in `.env`:
 
@@ -114,6 +116,8 @@ for setup and troubleshooting details.
 
 - [Architecture](docs/ARCHITECTURE.md): system shape, data model, services, permissions, imports, integrations, and time handling.
 - [Development](docs/DEVELOPMENT.md): setup, workflows, verification commands, and troubleshooting.
+- [Always-On Updates](docs/ALWAYS_ON_UPDATES.md): fail-closed update preflight,
+  migration/startup observation, post-update checks, and recovery boundaries.
 - [Backup Recovery](docs/BACKUP_RECOVERY.md): automated local backup operations plus manual version 2 recovery and rehearsal details.
 - [Roadmap](docs/ROADMAP.md): future features, known follow-ups, and parked ideas.
 - [Third-Party Assets](docs/THIRD_PARTY_ASSETS.md): local font packages and asset provenance.

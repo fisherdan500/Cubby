@@ -13,12 +13,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:backup-recovery": "tsx scripts/backup-recovery-rehearsal.ts",
+    "verify:update-rehearsal": "tsx scripts/backup-recovery-rehearsal.ts",
+    "verify:update-preflight": "tsx scripts/update-preflight.ts",
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts",
-    "docker:start": "prisma migrate deploy && node server.js"
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.4.0",

@@ -101,3 +101,10 @@ Automated local backups are logical household recovery artifacts. They are not
 PostgreSQL physical backups, do not include vaccine attachment files, do not
 copy auth/session/integration runtime state, and do not protect against total
 host-disk loss.
+
+They also do not reverse database migrations. During an application update they
+provide a fresh, checksummed household-data recovery artifact, but an
+incompatible schema rollback requires a separately prepared database
+restore/recovery plan. Prefer a forward correction after migration; never assume
+that starting an older image or applying an ad hoc down migration is safe. See
+[Always-On Updates And Migration Recovery](../ALWAYS_ON_UPDATES.md).

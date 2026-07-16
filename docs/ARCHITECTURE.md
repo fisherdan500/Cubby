@@ -10,8 +10,24 @@ Cubby is a Next.js App Router application deployed as a Docker Compose stack:
 - `app`: Next.js standalone server on container port 3000.
 - `postgres`: PostgreSQL 16 with the `cubby_postgres_data` named volume.
 
-The production container runs Prisma migrations before starting the standalone
-Next server. Docker Compose is the primary deployment path.
+The production container runs `docker/entrypoint.sh`, which executes Prisma
+migrations before starting the standalone Next server. Migration failure is a
+hard startup boundary: the container exits and never reaches the server phase.
+Sanitized `cubby_startup` phase markers provide operator-visible migration and
+server progress without printing connection strings or credentials.
+
+Docker Compose is the primary deployment path and has two distinct health
+contracts. PostgreSQL liveness uses `pg_isready`; application readiness uses
+`GET /api/health` inside the app container. That route performs a minimal Prisma
+query and returns only `200 {"status":"ready"}` or a sanitized
+`503 {"status":"unavailable"}`. The app depends on healthy PostgreSQL and does
+not become healthy from HTTP reachability alone.
+
+`scripts/update-preflight.ts` is the fail-closed, non-mutating normal-stack
+inspection boundary. `scripts/backup-recovery-rehearsal.ts` owns the separately
+invoked disposable fixed-baseline migration/update rehearsal. Operational
+sequencing and forward-fix/restore boundaries are documented in
+[Always-On Updates](ALWAYS_ON_UPDATES.md).
 
 ### Installability And Network Boundary
 
