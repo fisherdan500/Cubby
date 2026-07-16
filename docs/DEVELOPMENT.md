@@ -199,12 +199,15 @@ Update/migration changes also provide focused non-Docker contracts and a
 separately gated disposable Docker rehearsal:
 
 ```bash
+npx vitest run --config scripts/update-preflight.vitest.config.ts
 npm run verify:update-preflight -- --backup-file /private/path/to/cubby-backup.json
 npm run verify:update-rehearsal
 ```
 
-The preflight inspects the current normal stack and therefore belongs in an
-approved maintenance preflight. The rehearsal creates only a unique
+The focused preflight test is non-Docker and covers both legacy JSON-array and
+Docker Compose 5.2 newline-delimited service output. The preflight command itself
+inspects the current normal stack and therefore belongs in an approved maintenance
+preflight. The rehearsal creates only a unique
 loopback-bound disposable project with generated credentials and fixed historical
 migration baseline; do not run it implicitly during ordinary unit verification.
 

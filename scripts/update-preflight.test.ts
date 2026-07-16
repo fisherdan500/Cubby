@@ -88,6 +88,62 @@ describe("update preflight", () => {
     ]);
   });
 
+  it("accepts newline-delimited service objects from Docker Compose 5.2", () => {
+    for (const separator of ["\n", String.fromCharCode(13, 10)]) {
+      const base = validAdapters();
+      const original = base.run;
+      base.run = vi.fn((program: string, args: readonly string[]): CommandResult =>
+        args.join(" ") === "compose ps --format json app postgres"
+          ? {
+              kind: "success",
+              stdout: [
+                JSON.stringify({ Service: "app", State: "running", Health: "healthy" }),
+                JSON.stringify({ Service: "postgres", State: "running", Health: "healthy" })
+              ].join(separator)
+            }
+          : original(program, args)
+      );
+
+      const result = runPreflight(["--backup-file", "selected.json"], base);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.lines).toContain("PASS app-running-healthy");
+      expect(result.lines).toContain("PASS postgres-running-healthy");
+    }
+  });
+
+  it("fails closed for unsafe newline-delimited service output", () => {
+    const app = JSON.stringify({ Service: "app", State: "running", Health: "healthy" });
+    const postgres = JSON.stringify({ Service: "postgres", State: "running", Health: "healthy" });
+    const unsafeOutputs = [
+      "",
+      `${app}\nnot-json`,
+      app,
+      `${app}\n${postgres}\n${JSON.stringify({ Service: "extra", State: "running", Health: "healthy" })}`,
+      `${app}\n\n${postgres}`,
+      `${app}\n${app}`,
+      `${app}\n${JSON.stringify({ Service: "postgres", State: "running", Health: "unhealthy" })}`
+    ];
+
+    for (const stdout of unsafeOutputs) {
+      const base = validAdapters();
+      const original = base.run;
+      base.run = vi.fn((program: string, args: readonly string[]): CommandResult =>
+        args.join(" ") === "compose ps --format json app postgres"
+          ? { kind: "success", stdout }
+          : original(program, args)
+      );
+
+      const result = runPreflight(["--backup-file", "selected.json"], base);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.lines).toContain("FAIL preflight-summary");
+      expect(result.lines.some((line) =>
+        line === "FAIL app-running-healthy" || line === "FAIL postgres-running-healthy"
+      )).toBe(true);
+    }
+  });
+
   it("fails closed for command failure, timeout, malformed, partial, and oversized results", () => {
     const badResults: CommandResult[] = [
       { kind: "failure", stderr: "secret" }, { kind: "timeout", error: new Error("secret") },

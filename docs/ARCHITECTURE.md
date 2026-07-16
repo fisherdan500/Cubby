@@ -24,8 +24,11 @@ query and returns only `200 {"status":"ready"}` or a sanitized
 not become healthy from HTTP reachability alone.
 
 `scripts/update-preflight.ts` is the fail-closed, non-mutating normal-stack
-inspection boundary. `scripts/backup-recovery-rehearsal.ts` owns the separately
-invoked disposable fixed-baseline migration/update rehearsal. Operational
+inspection boundary. Its service discovery accepts both legacy JSON arrays and
+Docker Compose 5.2 newline-delimited JSON objects before applying one strict
+app/PostgreSQL state-and-health contract.
+`scripts/backup-recovery-rehearsal.ts` owns the separately invoked disposable
+fixed-baseline migration/update rehearsal. Operational
 sequencing and forward-fix/restore boundaries are documented in
 [Always-On Updates](ALWAYS_ON_UPDATES.md).
 
