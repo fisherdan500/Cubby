@@ -10,10 +10,18 @@ if (!baseUrl || !handoffFile || !password) {
 const handoff = JSON.parse(await readFile(handoffFile, "utf8"));
 if (
   typeof handoff.email !== "string" ||
+  typeof handoff.householdName !== "string" ||
+  typeof handoff.babyId !== "string" ||
+  typeof handoff.startedAt !== "string" ||
   typeof handoff.filename !== "string" ||
   typeof handoff.checksum !== "string"
 ) {
   throw new Error("rehearsal_probe_handoff_invalid");
+}
+
+const health = await fetch(`${baseUrl}/api/health`, { cache: "no-store" });
+if (!health.ok || JSON.stringify(await health.json()) !== JSON.stringify({ status: "ready" })) {
+  throw new Error("rehearsal_app_health_invalid");
 }
 
 const signIn = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
@@ -30,6 +38,29 @@ if (!signIn.ok) {
 const setCookie = signIn.headers.get("set-cookie") ?? "";
 const sessionCookie = setCookie.match(/(?:^|,\s*)((?:__Secure-)?better-auth\.session_token=[^;,]+)/)?.[1];
 if (!sessionCookie) throw new Error("rehearsal_app_session_cookie_missing");
+
+const authenticatedPage = await fetch(`${baseUrl}/app?babyId=${encodeURIComponent(handoff.babyId)}`, {
+  headers: { cookie: sessionCookie }
+});
+const authenticatedHtml = await authenticatedPage.text();
+const expectedStarted = new Intl.DateTimeFormat("en", {
+  month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Etc/UTC"
+}).format(new Date(handoff.startedAt));
+if (!authenticatedPage.ok || !authenticatedHtml.includes("Active timers") ||
+  !authenticatedHtml.includes("Paused") || !authenticatedHtml.includes(expectedStarted)) {
+  throw new Error("rehearsal_app_timer_incoherent");
+}
+
+const householdPage = await fetch(`${baseUrl}/app/settings/members`, { headers: { cookie: sessionCookie } });
+if (!householdPage.ok || !(await householdPage.text()).includes(handoff.householdName)) {
+  throw new Error("rehearsal_app_household_marker_missing");
+}
+
+const backupsPage = await fetch(`${baseUrl}/app/settings/backups`, { headers: { cookie: sessionCookie } });
+const backupsHtml = await backupsPage.text();
+if (!backupsPage.ok || !backupsHtml.includes("Healthy local versions:") || !backupsHtml.includes(handoff.checksum.slice(0, 12))) {
+  throw new Error("rehearsal_app_backup_discovery_failed");
+}
 
 const download = await fetch(`${baseUrl}/api/backups/local/${encodeURIComponent(handoff.filename)}`, {
   headers: { cookie: sessionCookie }

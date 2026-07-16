@@ -1,7 +1,6 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
-import { readdir, writeFile } from "node:fs/promises";
-import { hashPassword } from "better-auth/crypto";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 
 const auth = vi.hoisted(() => ({
   context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole }
@@ -43,8 +42,7 @@ function context(userId: string, householdId: string, memberId: string) {
 
 const backupDirectory = process.env.AUTOMATED_BACKUP_DIRECTORY;
 const rehearsalHandoffFile = process.env.REHEARSAL_HANDOFF_FILE;
-const rehearsalAppPassword = process.env.REHEARSAL_APP_PASSWORD;
-if (!backupDirectory || !rehearsalHandoffFile || !rehearsalAppPassword) {
+if (!backupDirectory || !rehearsalHandoffFile) {
   throw new Error("rehearsal_environment_not_set");
 }
 
@@ -370,10 +368,20 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect((await prisma.household.findUniqueOrThrow({ where: { id: staleTarget.household.id } })).name).toBe("Stale Target");
 
     auth.context = target.ctx;
-    await prisma.household.updateMany({
-      where: { id: { in: [source.household.id, staleTarget.household.id] } },
+    const otherActiveHouseholds = await prisma.household.findMany({
+      where: { id: { not: target.household.id }, deletedAt: null },
+      select: { id: true }
+    });
+    expect(otherActiveHouseholds).toEqual(expect.arrayContaining([
+      { id: source.household.id },
+      { id: staleTarget.household.id }
+    ]));
+    const retiredHouseholds = await prisma.household.updateMany({
+      where: { id: { in: otherActiveHouseholds.map((household) => household.id) } },
       data: { deletedAt: new Date("2026-07-16T00:00:00.000Z") }
     });
+    expect(retiredHouseholds.count).toBe(otherActiveHouseholds.length);
+    expect(await prisma.household.count({ where: { deletedAt: null } })).toBe(1);
     const removedAutomatedHistory = await prisma.backupRecord.deleteMany({
       where: { householdId: source.household.id, kind: "automated_export" }
     });
@@ -381,6 +389,8 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect(await prisma.backupRecord.count({
       where: { householdId: source.household.id, kind: "automated_export" }
     })).toBe(0);
+    expect((await scanLocalBackups(backupDirectory)).filter((version) => version.healthy)).not.toHaveLength(0);
+    await expect(previewBackupJson(sourceBackup)).resolves.toMatchObject({ checksumVerified: true });
     const discoveredStatus = await getAutomatedBackupStatus();
     expect(discoveredStatus.healthyVersionCount).toBeGreaterThanOrEqual(1);
     expect(discoveredStatus.versions.some((version) => version.healthy && version.householdName === "Source Nursery")).toBe(true);
@@ -388,7 +398,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     const recoveryBackup = JSON.parse(recoveryDownload.body.toString("utf8")) as V2Envelope;
     expect(recoveryBackup).toEqual(sourceBackup);
     await prisma.household.updateMany({
-      where: { id: { in: [source.household.id, staleTarget.household.id] } },
+      where: { id: { in: otherActiveHouseholds.map((household) => household.id) } },
       data: { deletedAt: null }
     });
     const targetOwnerBefore = await prisma.user.findUniqueOrThrow({ where: { id: target.user.id } });
@@ -562,18 +572,15 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect((await readdir(backupDirectory)).filter((filename) => filename.endsWith(".tmp"))).toEqual([]);
     await Promise.all(finalFilenames.map((filename) => readLocalBackup(backupDirectory, filename)));
 
-    await prisma.account.create({
-      data: {
-        accountId: source.user.id,
-        providerId: "credential",
-        userId: source.user.id,
-        password: await hashPassword(rehearsalAppPassword)
-      }
+    const baselineHandoff = JSON.parse(await readFile(rehearsalHandoffFile, "utf8"));
+    await prisma.backupRecord.update({
+      where: { id: fourthAutomatedRecord.id },
+      data: { householdId: baselineHandoff.householdId, actorUserId: baselineHandoff.userId }
     });
     await writeFile(rehearsalHandoffFile, JSON.stringify({
-      email: source.user.email,
+      ...baselineHandoff,
       filename: fourthAutomatedRecord.storageFilename,
       checksum: fourthAutomatedRecord.checksum
-    }), { mode: 0o600, flag: "wx" });
+    }), { mode: 0o600 });
   });
 });

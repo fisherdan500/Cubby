@@ -24,5 +24,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/cubby-entrypoint
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && HOSTNAME=0.0.0.0 PORT=3000 node server.js"]
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+ENTRYPOINT ["/usr/local/bin/cubby-entrypoint"]

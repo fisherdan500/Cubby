@@ -128,7 +128,16 @@ docker compose logs --tail 300 app
 ```
 
 The app container runs `prisma migrate deploy` before starting the Next server.
-Postgres data persists in the `cubby_postgres_data` named volume.
+`docker/entrypoint.sh` emits sanitized migration/server phase markers and exits
+without starting Next.js when migration deployment fails. PostgreSQL data
+persists in the `cubby_postgres_data` named volume. The app is healthy only when
+`/api/health` completes a database query and returns `{"status":"ready"}`;
+PostgreSQL liveness alone is not enough.
+
+For an existing always-on deployment, do not treat `docker compose up --build`
+as the whole update procedure. Follow [Always-On Updates](ALWAYS_ON_UPDATES.md),
+including a fresh checksummed backup, non-mutating preflight, write freeze,
+startup phase review, and post-update auth/data/timer/backup verification.
 
 ## Local Workflow
 
@@ -185,6 +194,19 @@ docker compose up --build -d
 Use the full set for behavior, schema, auth, import, or Docker-sensitive changes.
 For docs-only changes, markdown review and `git status --short` are usually
 enough.
+
+Update/migration changes also provide focused non-Docker contracts and a
+separately gated disposable Docker rehearsal:
+
+```bash
+npm run verify:update-preflight -- --backup-file /private/path/to/cubby-backup.json
+npm run verify:update-rehearsal
+```
+
+The preflight inspects the current normal stack and therefore belongs in an
+approved maintenance preflight. The rehearsal creates only a unique
+loopback-bound disposable project with generated credentials and fixed historical
+migration baseline; do not run it implicitly during ordinary unit verification.
 
 ## Common Development Notes
 

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   assertDisposableRehearsalConfig,
@@ -70,9 +71,38 @@ describe("backup recovery rehearsal safety", () => {
     );
   });
 
-  it("uses the generated disposable password in the isolated database URL", () => {
+  it("URL-encodes the generated disposable credential for authentication", () => {
     expect(createDisposableDatabaseUrl(49157, "temporary p@ssword:/?#")).toBe(
       "postgresql://cubby_rehearsal:temporary%20p%40ssword%3A%2F%3F%23@127.0.0.1:49157/cubby_backup_rehearsal?schema=public"
+    );
+  });
+
+  it("uses one explicit timezone for the disposable app and host-side timer probe", () => {
+    const compose = readFileSync(
+      new URL("../../../scripts/backup-recovery-rehearsal.compose.yml", import.meta.url),
+      "utf8"
+    );
+    const probe = readFileSync(
+      new URL("../../../scripts/backup-container-replacement-probe.mjs", import.meta.url),
+      "utf8"
+    );
+
+    expect(compose).toContain("APP_TIMEZONE: Etc/UTC");
+    expect(probe).toContain('timeZone: "Etc/UTC"');
+  });
+
+  it("requires the write freeze before creating the selected final backup", () => {
+    const runbook = readFileSync(
+      new URL("../../../docs/ALWAYS_ON_UPDATES.md", import.meta.url),
+      "utf8"
+    );
+    const preparation = runbook.slice(
+      runbook.indexOf("## Before The Maintenance Window"),
+      runbook.indexOf("## Fail-Closed Preflight")
+    );
+
+    expect(preparation).toMatch(
+      /Block household writes[\s\S]*Create the final Cubby version 2 JSON backup/
     );
   });
 });

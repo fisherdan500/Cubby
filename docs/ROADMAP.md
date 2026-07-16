@@ -35,17 +35,8 @@ text, credentials, route names, or implementation structure.
 
 ## Planned Next
 
-These items continue the approved always-on reliability phase in dependency
-order. Each substantive application change uses its own approved worktree and
-separate implementation, merge, deployment, and cleanup approvals.
-
-### Always-On Update And Migration Hardening
-
-- Status: planned
-- Priority: high
-- Goal: Make routine Cubby updates safe, observable, and recoverable on the home-server Docker deployment before changing the household's running instance.
-- Acceptance: A pre-update checklist verifies backup freshness, backup-directory preservation, database health, free space, and configuration; Docker distinguishes an app container that is merely running from a Cubby application that is ready with PostgreSQL; the documented update flow covers build or pull, migration execution, startup, post-update health, and functional smoke checks; an isolated disposable rehearsal upgrades realistic existing data through the committed migration chain and verifies persistent timers, authentication, household data, automated-backup discovery, and backup download after app-container replacement; representative startup or migration failure is visible rather than falsely healthy; rollback guidance states when forward-applied migrations require verified backup recovery instead of starting an older image; the operator runbook contains no credentials or private network details.
-- Notes: Planning and documentation only; implementation is not authorized by this entry. Keep the first slice bounded to the existing Docker Compose home-server deployment and its operator workflow. Do not add generalized hosting, remote monitoring, remote backup providers, PWA/offline behavior, or multi-household infrastructure. Deployment to the household stack remains separately approval-gated.
+Each substantive application change uses its own approved worktree and separate
+implementation, merge, deployment, and cleanup approvals.
 
 ## Later
 
@@ -65,6 +56,14 @@ separate implementation, merge, deployment, and cleanup approvals.
 - Broader multi-household/self-hosting productization: possible later, not current scope.
 
 ## Recently Completed
+
+### Always-On Update And Migration Hardening
+
+- Status: done
+- Priority: high
+- Goal: Make routine Cubby updates safe, observable, and recoverable on the home-server Docker deployment before changing the household's running instance.
+- Acceptance: A pre-update checklist verifies backup freshness, backup-directory preservation, database health, free space, and configuration; Docker distinguishes an app container that is merely running from a Cubby application that is ready with PostgreSQL; the documented update flow covers build or pull, migration execution, startup, post-update health, and functional smoke checks; an isolated disposable rehearsal upgrades realistic existing data through the committed migration chain and verifies persistent timers, authentication, household data, automated-backup discovery, and backup download after app-container replacement; representative startup or migration failure is visible rather than falsely healthy; rollback guidance states when forward-applied migrations require verified backup recovery instead of starting an older image; the operator runbook contains no credentials or private network details.
+- Notes: Implementation and isolated verification are complete in the approved worktree. The slice remains bounded to the existing Docker Compose home-server deployment and its operator workflow; generalized hosting, remote monitoring, remote backup providers, PWA/offline behavior, and multi-household infrastructure remain out of scope. Deployment to the household stack remains separately approval-gated.
 
 ### Automated Local Versioned Backups
 

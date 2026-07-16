@@ -27,6 +27,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
     volumes:
       - ${CUBBY_BACKUP_HOST_DIR:-./docker-data/backups}:/var/lib/cubby/backups
     restart: unless-stopped
