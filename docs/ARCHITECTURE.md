@@ -198,13 +198,25 @@ trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date.
 
 ### Backups And Sprout Import
 
-`src/server/services/backups.ts` exports and restores Cubby JSON backups,
-including the household appearance accent and optional baby `inactiveAt` state
-when present. Older version 1 backups without appearance settings or
-`inactiveAt` remain valid and use the default sage accent.
-Cubby JSON backups exclude users, credentials, sessions, and household
-memberships. Restoring a backup therefore never changes membership roles or
-`disabledAt` suspension state.
+`src/server/services/backups.ts` owns Cubby JSON backup preview, export, and
+recovery. Version 2 is a checksummed non-secret logical household snapshot read
+inside one repeatable-read PostgreSQL transaction. Export fails while a running
+or paused timer exists. Recovery accepts only a fresh household whose current
+member is its sole active owner, then rechecks that invariant and restores the
+snapshot atomically in a serializable transaction. The target `User`, owner
+membership, credentials, sessions, role, and `disabledAt` state are preserved.
+
+Version 2 includes allowlisted household settings, active/inactive babies,
+non-deleted activities and coherent stopped-timer history, safe historical
+attribution, contacts, medicine/supplement catalogs, calendar relations, and
+reminders. It excludes authentication and membership state, invitations and
+registration policy, integration secrets/runtime records, notifications,
+operational history, warning dismissals, and vaccine attachment metadata and
+file bytes. Legacy version 1 remains an explicitly partial, non-checksummed
+fresh-target recovery path.
+
+The disposable real-PostgreSQL export → restore → re-export rehearsal and exact
+safety boundary are documented in [Manual Backup Recovery](recovery/manual-backup.md).
 `src/server/services/sprout-import.ts` previews and imports Sprout Track backup
 uploads into the current Cubby household.
 

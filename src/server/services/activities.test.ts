@@ -206,6 +206,57 @@ describe("activity page access", () => {
     );
   });
 
+  it("restores historical timestamps and timezone without normal-create defaults", async () => {
+    await restoreHistoricalActivityForContext(
+      {
+        babyId: "baby-1",
+        type: "medicine",
+        occurredAt: "2026-07-14T10:00:00.000Z",
+        timezone: "UTC",
+        activeTimer: false,
+        name: "Medicine",
+        notes: undefined,
+        dose: undefined,
+        unit: undefined,
+        contactId: undefined
+      },
+      context("owner"),
+      transactionClient() as never,
+      undefined,
+      undefined,
+      { startedAt: null, endedAt: null, timezone: "UTC" }
+    );
+
+    expect(mocks.activityCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ startedAt: null, endedAt: null, timezone: "UTC" })
+      })
+    );
+  });
+
+  it("restores historical attribution without normal activity audits or side effects", async () => {
+    await restoreHistoricalActivityForContext(
+      {
+        babyId: "baby-1",
+        type: "note",
+        occurredAt: "2026-07-14T10:00:00.000Z",
+        text: "history",
+        notes: undefined,
+        activeTimer: false,
+        category: undefined
+      },
+      context("owner"), transactionClient() as never, undefined,
+      { source: "sprout", externalActorName: "Grandma" }
+    );
+
+    expect(mocks.activityCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ source: "sprout", externalActorName: "Grandma" })
+    }));
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookFindMany).not.toHaveBeenCalled();
+    expect(mocks.notificationFindMany).not.toHaveBeenCalled();
+  });
+
   it("rejects a medicine create contact outside the active household", async () => {
     mocks.contactFindFirst.mockResolvedValue(null);
 

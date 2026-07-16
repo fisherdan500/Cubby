@@ -69,6 +69,12 @@ type HistoricalTimerMetadata = {
   pausedSeconds: number;
 };
 
+type HistoricalActivityFields = {
+  startedAt: Date | null;
+  endedAt: Date | null;
+  timezone: string;
+};
+
 function specificCreate(input: ActivityCreateInput): ActivityCreateDraft {
   const occurredAt = toDate(input.occurredAt) ?? new Date();
   const startedAt = toDate(input.startedAt, occurredAt);
@@ -350,7 +356,10 @@ async function createActivityInTransaction(
   ctx: HouseholdContext,
   tx: Prisma.TransactionClient,
   queueSideEffects: boolean,
-  historicalTimer?: HistoricalTimerMetadata
+  historicalTimer?: HistoricalTimerMetadata,
+  historicalAttribution?: { source: string; externalActorName: string | null },
+  writeActivityAudit = true,
+  historicalFields?: HistoricalActivityFields
 ) {
   await requireHouseholdMedicineContact(tx, ctx, input);
   const activity = await tx.activityLog.create({
@@ -364,6 +373,8 @@ async function createActivityInTransaction(
             pausedSeconds: historicalTimer.pausedSeconds
           }
         : {}),
+      ...(historicalAttribution ?? {}),
+      ...(historicalFields ?? {}),
       household: { connect: { id: ctx.householdId } },
       baby: { connect: { id: input.babyId } },
       actorMember: { connect: { id: ctx.memberId } }
@@ -371,7 +382,9 @@ async function createActivityInTransaction(
     include: activityInclude
   });
 
-  await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity }, tx);
+  if (writeActivityAudit) {
+    await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity }, tx);
+  }
   if (queueSideEffects) {
     await queueActivitySideEffects(
       ctx,
@@ -387,12 +400,14 @@ export async function restoreHistoricalActivityForContext(
   input: ActivityCreateInput,
   lockedCtx: HouseholdContext,
   tx: Prisma.TransactionClient,
-  historicalTimer?: HistoricalTimerMetadata
+  historicalTimer?: HistoricalTimerMetadata,
+  historicalAttribution?: { source: string; externalActorName: string | null },
+  historicalFields?: HistoricalActivityFields
 ) {
   requirePermission(lockedCtx, "backup.manage");
   if (input.activeTimer) throw new Error("backup_active_timer");
   if (historicalTimer && !timerCapableTypes.has(input.type as ActivityType)) throw new Error("backup_invalid_timer");
-  return createActivityInTransaction(input, lockedCtx, tx, false, historicalTimer);
+  return createActivityInTransaction(input, lockedCtx, tx, false, historicalTimer, historicalAttribution, false, historicalFields);
 }
 
 export async function listActivities(params?: {

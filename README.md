@@ -16,7 +16,7 @@ calendar planning, backups, and integrations.
 - Original illustrated activity artwork and a household-selectable sage, rose, powder, butter, or terracotta accent.
 - Dashboard quick actions, elapsed badges, daily summary, warning dismissal, active timers, and selected-day timeline.
 - Calendar month view with events, Reports tabs including stats, milestones, growth trends, activity, heatmaps, and routine rhythm.
-- CSV/TSV activity exports, JSON backup/restore, and Sprout Track backup import into the current household.
+- CSV/TSV activity exports, checksummed JSON recovery into a fresh household, and Sprout Track backup import into the current household.
 - API-key hook endpoints, webhook configuration, and browser notification preferences.
 
 ## Current Product Direction
@@ -107,6 +107,7 @@ for setup and troubleshooting details.
 
 - [Architecture](docs/ARCHITECTURE.md): system shape, data model, services, permissions, imports, integrations, and time handling.
 - [Development](docs/DEVELOPMENT.md): setup, workflows, verification commands, and troubleshooting.
+- [Manual Backup Recovery](docs/recovery/manual-backup.md): version 2 scope, fresh-target rules, exclusions, limitations, and the disposable PostgreSQL rehearsal.
 - [Roadmap](docs/ROADMAP.md): future features, known follow-ups, and parked ideas.
 - [Third-Party Assets](docs/THIRD_PARTY_ASSETS.md): local font packages and asset provenance.
 - [Agent Guide](AGENTS.md): project-specific instructions for Codex and other coding agents.

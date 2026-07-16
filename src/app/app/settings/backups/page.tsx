@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { BackupRestoreForm } from "@/components/settings/backup-restore-form";
+import { BackupDownloadButton } from "@/components/settings/backup-download-button";
 import { SproutRestoreForm } from "@/components/settings/sprout-restore-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireSettingsPage } from "@/server/auth/page-access";
-import { listBackupRecords } from "@/server/services/backups";
+import { getBackupRestoreTargetName, listBackupRecords } from "@/server/services/backups";
 
 export default async function BackupsSettingsPage() {
   const { user } = await requireSettingsPage("backup.manage");
-  const records = await listBackupRecords();
+  const [records, targetHouseholdName] = await Promise.all([listBackupRecords(), getBackupRestoreTargetName()]);
 
   return (
     <AppShell title="Backups" userName={user.name}>
@@ -18,9 +19,7 @@ export default async function BackupsSettingsPage() {
           <Card>
             <h2 className="mb-3 text-lg font-black">Exports</h2>
             <div className="flex flex-wrap gap-3">
-              <Link href="/api/backups/export">
-                <Button>JSON backup</Button>
-              </Link>
+              <BackupDownloadButton />
               <Link href="/api/export/activities.csv">
                 <Button variant="secondary">CSV activity export</Button>
               </Link>
@@ -31,7 +30,7 @@ export default async function BackupsSettingsPage() {
           </Card>
           <Card>
             <h2 className="mb-3 text-lg font-black">Restore</h2>
-            <BackupRestoreForm />
+            <BackupRestoreForm targetHouseholdName={targetHouseholdName} />
           </Card>
           <Card>
             <h2 className="mb-3 text-lg font-black">Restore from Sprout Track</h2>

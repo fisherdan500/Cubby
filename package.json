@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "verify:backup-recovery": "tsx scripts/backup-recovery-rehearsal.ts",
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
