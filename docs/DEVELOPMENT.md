@@ -24,8 +24,9 @@ Important variables:
 - `BETTER_AUTH_SECRET`: long random secret. Do not use the example value in production.
 - `BETTER_AUTH_URL`: canonical browser URL, including host port.
 - `TRUSTED_ORIGINS`: comma-separated origins accepted by Better Auth.
-- `ENABLE_REGISTRATION`: enables first-owner setup when no owner exists.
-- `ALLOW_PUBLIC_REGISTRATION`: default owner-controlled public registration state.
+- `ENABLE_REGISTRATION`: permits only the first account while no users, households,
+  platform audit history, or platform owner exist. Later account and household
+  policy comes only from platform settings.
 - `APP_TIMEZONE`: app-level timezone for display, grouping, reports, imports, and redirects.
 - `APP_PORT`: host port mapped by Docker Compose.
 
@@ -178,6 +179,63 @@ When changing schema:
 - Keep household ownership and indexes explicit.
 - Add service tests for permission and cross-household behavior.
 - Run Prisma validation/generation and the full app build.
+
+## Platform Owner Binding And Recovery
+
+Platform authority is deployment-wide and independent of every household role.
+All operations below are host-local, require exact stable user IDs and email
+confirmation, and write platform audit events without pretending that the target
+user was the operator.
+
+Better Auth password signup currently creates an unverified first account and
+Cubby has no outbound verification-email transport. Before initial binding only,
+an operator can explicitly attest the sole account. This requires no existing
+platform owner, exactly one user, a usable password credential, and the exact
+acknowledgement token:
+
+```bash
+npm run platform:owner -- verify-bootstrap --user-id <stable-user-id> --confirm-email <exact-email> --acknowledgement I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION
+```
+
+Verification is never implicit in binding. Bind the verified account separately:
+
+```bash
+npm run platform:owner -- bind --user-id <stable-user-id> --confirm-email <exact-email>
+```
+
+Binding fails after any authority row exists, including a retry for the same user.
+If an operator loses the command result, inspect the command exit/output and the
+platform state through an approved maintenance procedure rather than assuming
+success or rerunning a different target. Serialization conflicts return
+`platform_owner_operation_retry`; retry only the identical operation.
+
+Emergency recovery is a compare-and-swap operation, not ordinary household-owner
+transfer. It requires the exact current owner ID plus a different verified
+successor account with a usable password credential:
+
+```bash
+npm run platform:owner -- recover --current-owner-user-id <current-id> --successor-user-id <successor-id> --confirm-successor-email <exact-successor-email>
+```
+
+In the production image, replace `npm run platform:owner --` with:
+
+```bash
+docker compose exec -T app node /app/platform-owner.mjs
+```
+
+The commands intentionally perform no database work for invalid/help invocations.
+Do not pass credentials, passwords, or database connection strings on their command
+line.
+
+The additive migration retains legacy household registration columns, but new code
+does not synchronize them. Before starting a rollback image, freeze writes, set the
+legacy `ALLOW_PUBLIC_REGISTRATION` environment value to `false`, and reconcile
+`ENABLE_REGISTRATION` with the intended rollback posture. Then explicitly reconcile
+every legacy household registration value to the intended platform policy. Older
+code combines those environment values and legacy columns, so skipping any part of
+this fence can reopen or close registration incorrectly. Migration application,
+rollback reconciliation, owner operations, and deployment each require their own
+approved maintenance step.
 
 ## Verification Commands
 

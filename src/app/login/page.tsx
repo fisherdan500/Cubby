@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
     getAppRegistrationPolicy(),
     inviteToken ? getInviteByToken(inviteToken) : Promise.resolve(null)
   ]);
-  const allowRegisterLink = Boolean(invite) || policy.firstOwnerAllowed || policy.publicRegistrationAllowed;
+  const allowRegisterLink = Boolean(invite) || policy.bootstrapAccountAllowed || policy.publicRegistrationAllowed;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">

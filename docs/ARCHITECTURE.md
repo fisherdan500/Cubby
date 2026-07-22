@@ -73,12 +73,24 @@ caretakers manage their own activity; read-only members cannot write.
 Server-side permission enforcement is required for every household-scoped read or
 write. UI hiding is not enough.
 
-Registration is invite-first after setup:
+Deployment-wide authority is separate from household membership:
 
-- First owner setup is allowed when no owner/household exists and registration is enabled.
-- Owners can control public registration and new-household creation policy.
-- Owners and admins can invite members, while only the owner can issue an Admin invite.
-- Invite links route users into the inviting household rather than letting them create a new household.
+- `PlatformAuthority` binds one explicit user as platform owner; household roles do
+  not grant platform authority.
+- `PlatformSettings` owns public-account registration and the `closed`,
+  `invitation_only`, or `open` direct-household-creation policy. Missing or
+  incomplete singleton rows fail closed.
+- Membership invite tokens remain household-scoped. Signup requires the submitted
+  email to match the active invite case-insensitively, and invite acceptance routes
+  into the inviting household rather than authorizing another household.
+- The first-account signup check is serialized with a PostgreSQL advisory lock.
+  Direct household creation is serialized per user, rechecks membership inside the
+  transaction, and holds a shared platform-settings lock while evaluating policy.
+- Only the platform owner can change platform settings. Household owners and admins
+  continue to manage household invitations under their household permissions.
+- Platform-owner sessions remain valid without household membership. Both the
+  application guard and PostgreSQL session-insert trigger recognize platform
+  authority independently of household suspension state.
 
 Settings pages are filtered by permission and guarded before household data is
 loaded. Direct API and service calls remain authoritative; UI visibility is not
@@ -119,6 +131,7 @@ The Prisma schema uses PostgreSQL and keeps a household boundary on user-owned
 data. Important model groups include:
 
 - Auth: `User`, `Session`, `Account`, `Verification`.
+- Platform: `PlatformAuthority`, `PlatformSettings`, `PlatformAuditEvent`.
 - Household: `Household`, `HouseholdMember`, `Invite`, `HouseholdSettings`.
 - Babies and tracking: `Baby`, `ActivityLog`, type-specific log tables, `Reminder`, `DashboardWarningDismissal`.
 - Settings and admin: `AuditEvent`, `BackupRecord`.

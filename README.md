@@ -8,7 +8,7 @@ calendar planning, backups, and integrations.
 
 ## What Cubby Does
 
-- Email/password auth with first-owner setup, invite-only member onboarding, and owner-controlled public registration.
+- Email/password auth with explicit platform-owner setup, invite-only member onboarding, and closed-default platform registration policy.
 - Protected household ownership, delegated admins, role-based member access, invites, personal session management, audit records, and server-side permission checks.
 - Baby profiles and activity logging for feeding, diaper, sleep, pumping, medicine, measurement, milestone, note, bath, play, mood, supplement, vaccine, and milk inventory.
 - Persistent timers for feeding, sleep, pumping, and play.
@@ -52,6 +52,42 @@ docker compose up --build
 ```
 
 5. Open `http://localhost:3000`, or the port configured with `APP_PORT`.
+
+### Bind the platform owner
+
+After the migration is deployed and the intended owner account exists, bind that
+exact account by stable user ID and confirming email. Cubby never guesses or
+selects an owner automatically, and binding requires a verified email/password
+account.
+
+Fresh password-signup deployments do not have outbound email verification yet.
+Only while there is exactly one account and no platform owner, a host operator may
+explicitly attest that bootstrap account first. This is a separate, audited
+operation with a high-friction acknowledgement; it never runs as a side effect of
+binding.
+
+```bash
+npm run platform:owner -- verify-bootstrap --user-id <stable-user-id> --confirm-email <exact-email> --acknowledgement I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION
+```
+
+Then bind the now-verified account:
+
+```bash
+npm run platform:owner -- bind --user-id <stable-user-id> --confirm-email <exact-email>
+```
+
+For the standard Docker image, the same bundled operations are available in the
+running app container:
+
+```bash
+docker compose exec -T app node /app/platform-owner.mjs bind --user-id <stable-user-id> --confirm-email <exact-email>
+```
+
+Binding creates platform settings in `closed` mode. The bound owner can then visit
+`/platform/settings` to choose `closed`, `invitation-only`, or `open` household
+creation and separately control public account registration. See
+[Development](docs/DEVELOPMENT.md#platform-owner-binding-and-recovery) for
+bootstrap verification, recovery, retry, audit, rollback, and backup boundaries.
 
 The compose stack includes the app and PostgreSQL. Postgres data is stored in the
 `cubby_postgres_data` named volume. Container startup applies migrations before
@@ -100,8 +136,8 @@ for setup and troubleshooting details.
 - `BETTER_AUTH_SECRET`: long secret for Better Auth. Change this before deployment.
 - `BETTER_AUTH_URL`: one canonical app origin, including scheme and external port when applicable.
 - `TRUSTED_ORIGINS`: comma-separated exact browser origins allowed by Better Auth.
-- `ENABLE_REGISTRATION`: allows first-owner setup when no owner exists.
-- `ALLOW_PUBLIC_REGISTRATION`: default public account creation policy after setup.
+- `ENABLE_REGISTRATION`: permits only the first account while no users, households,
+  platform audit history, or platform owner exist.
 - `APP_TIMEZONE`: app-level display/grouping timezone, for example `America/New_York`.
 - `APP_PORT`: host port mapped to container port 3000 by Docker Compose.
 - `AUTOMATED_BACKUPS_ENABLED`: opt-in local-only automated JSON backups, disabled by default.

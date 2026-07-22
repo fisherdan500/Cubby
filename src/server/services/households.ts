@@ -7,6 +7,7 @@ import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
+import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 
 type BabyQueryOptions = {
   includeInactive?: boolean;
@@ -22,41 +23,56 @@ export async function listHouseholdsForUser(userId: string) {
 
 export async function createOnboardingHousehold(raw: unknown) {
   const user = await requireUser();
+  if (!user.emailVerified) throw new Error("email_not_verified");
   const input = onboardingSchema.parse(raw);
   const birthDate = input.birthDate ? new Date(input.birthDate) : undefined;
 
-  const existing = await listHouseholdsForUser(user.id);
-  if (existing.length > 0) return existing[0].household;
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(
+      hashtext(${"cubby.household-creation"}),
+      hashtext(${user.id})
+    )`;
+    const existing = await tx.householdMember.findMany({
+      where: { userId: user.id, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
+      include: { household: true },
+      orderBy: { joinedAt: "asc" }
+    });
+    if (existing.length > 0) return existing[0].household;
 
-  const policy = await getAppRegistrationPolicy();
-  if (!policy.newHouseholdCreationAllowed) throw new Error("forbidden");
+    await tx.$queryRaw`SELECT "id"
+      FROM "PlatformSettings"
+      WHERE "id" = ${PLATFORM_SINGLETON_ID}
+      FOR SHARE`;
+    const policy = await getAppRegistrationPolicy(tx);
+    if (!policy.newHouseholdCreationAllowed) throw new Error("forbidden");
 
-  return prisma.household.create({
-    data: {
-      name: input.householdName,
-      createdByUserId: user.id,
-      members: {
-        create: {
-          userId: user.id,
-          role: HouseholdRole.owner,
-          displayName: user.name
+    return tx.household.create({
+      data: {
+        name: input.householdName,
+        createdByUserId: user.id,
+        members: {
+          create: {
+            userId: user.id,
+            role: HouseholdRole.owner,
+            displayName: user.name
+          }
+        },
+        babies: {
+          create: {
+            name: input.babyName,
+            birthDate,
+            timezone: env.APP_TIMEZONE
+          }
+        },
+        settings: {
+          create: {
+            allowPublicRegistration: false,
+            allowNewHouseholdCreation: false
+          }
         }
       },
-      babies: {
-        create: {
-          name: input.babyName,
-          birthDate,
-          timezone: env.APP_TIMEZONE
-        }
-      },
-      settings: {
-        create: {
-          allowPublicRegistration: false,
-          allowNewHouseholdCreation: false
-        }
-      }
-    },
-    include: { settings: true }
+      include: { settings: true }
+    });
   });
 }
 

@@ -47,6 +47,8 @@ export function handleError(error: unknown) {
   if (error instanceof Error) {
     if (error.message === "unauthenticated") return fail("unauthenticated", "Please sign in.", 401);
     if (error.message === "forbidden") return fail("forbidden", "You do not have access.", 403);
+    if (error.message === "email_not_verified") return fail("email_not_verified", "Verify your email before creating a household.", 403);
+    if (error.message === "platform_uninitialized") return fail("platform_uninitialized", "Platform authority is not initialized.", 409);
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);
     if (error.message === "baby_inactive") return fail("baby_inactive", "Inactive babies cannot receive new activity or timers.", 409);
     if (error.message === "baby_has_active_timer") return fail("baby_has_active_timer", "Stop or end every running or paused timer before deactivating this baby.", 409);

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  memberFindFirst: vi.fn()
+  memberFindFirst: vi.fn(),
+  platformAuthorityFindUnique: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
-    householdMember: { findFirst: mocks.memberFindFirst }
+    householdMember: { findFirst: mocks.memberFindFirst },
+    platformAuthority: { findUnique: mocks.platformAuthorityFindUnique }
   }
 }));
 
@@ -19,6 +21,7 @@ import {
 describe("member session eligibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.platformAuthorityFindUnique.mockResolvedValue(null);
   });
 
   it("denies a suspended member with the exact product message", async () => {
@@ -65,5 +68,17 @@ describe("member session eligibility", () => {
 
     await expect(assertUserCanStartSession({ userId: "user-invited" })).resolves.toBeUndefined();
     expect(mocks.memberFindFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it("allows the platform owner to establish a session independently of household suspension", async () => {
+    mocks.memberFindFirst.mockResolvedValueOnce(null);
+    mocks.platformAuthorityFindUnique.mockResolvedValue({ id: "platform" });
+
+    await expect(assertUserCanStartSession({ userId: "platform-owner" })).resolves.toBeUndefined();
+    expect(mocks.platformAuthorityFindUnique).toHaveBeenCalledWith({
+      where: { ownerUserId: "platform-owner" },
+      select: { id: true }
+    });
+    expect(mocks.memberFindFirst).toHaveBeenCalledOnce();
   });
 });

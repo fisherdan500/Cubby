@@ -13,7 +13,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { n
     getAppRegistrationPolicy(),
     inviteToken ? getInviteByToken(inviteToken) : Promise.resolve(null)
   ]);
-  const allowed = Boolean(invite) || policy.firstOwnerAllowed || policy.publicRegistrationAllowed;
+  const allowed = Boolean(invite) || policy.bootstrapAccountAllowed || policy.publicRegistrationAllowed;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
@@ -22,13 +22,13 @@ export default async function RegisterPage({ searchParams }: { searchParams: { n
           <Link href="/" className="inline-flex">
             <BrandLockup orientation="vertical" size="lg" priority />
           </Link>
-          <h1 className="mt-2 font-editorial text-3xl font-bold">{invite ? `Join ${invite.household.name}` : "Create owner account"}</h1>
+          <h1 className="mt-2 font-editorial text-3xl font-bold">{invite ? `Join ${invite.household.name}` : "Create account"}</h1>
           <p className="text-sm text-muted-foreground">
             {invite
               ? `This invite will add you as ${invite.role}.`
-              : policy.firstOwnerAllowed
-                ? "You will set up your household and first baby next."
-                : "Public account creation is controlled by the household owner."}
+              : policy.bootstrapAccountAllowed
+                ? "Create the first account. Platform ownership is assigned separately through an explicit host-local operation."
+                : "Public account creation is controlled by the platform owner."}
           </p>
         </div>
         {allowed ? (

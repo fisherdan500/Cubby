@@ -15,6 +15,12 @@ enum HouseholdRole {
   read_only
 }
 
+enum PlatformRegistrationMode {
+  closed
+  invitation_only
+  open
+}
+
 enum InviteStatus {
   pending
   accepted
@@ -118,6 +124,40 @@ model User {
   notificationLogs NotificationLog[]
   backupRecords BackupRecord[]
   importBatches ImportBatch[]
+  platformAuthority PlatformAuthority?
+}
+
+model PlatformAuthority {
+  id          String            @id @default("platform")
+  ownerUserId String            @unique
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  owner       User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  settings    PlatformSettings?
+}
+
+model PlatformSettings {
+  id                      String                   @id @default("platform")
+  householdCreationMode   PlatformRegistrationMode @default(closed)
+  allowPublicRegistration Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  authority               PlatformAuthority        @relation(fields: [id], references: [id], onDelete: Restrict)
+}
+
+model PlatformAuditEvent {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  source      String
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model Session {

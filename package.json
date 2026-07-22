@@ -6,7 +6,8 @@
   "description": "Cubby - Track the little things.",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && npm run build:platform-owner && next build",
+    "build:platform-owner": "esbuild scripts/platform-owner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/platform-owner.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -19,7 +20,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "platform:owner": "tsx scripts/platform-owner.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.4.0",
@@ -49,6 +51,7 @@
     "@types/react-dom": "^18.3.5",
     "@types/sql.js": "^1.4.11",
     "autoprefixer": "^10.4.20",
+    "esbuild": "^0.28.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
     "postcss": "^8.4.49",
