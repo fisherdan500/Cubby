@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   authHandler: vi.fn(),
   signupPolicyForRequest: vi.fn(),
   transaction: vi.fn(),
-  queryRaw: vi.fn()
+  executeRaw: vi.fn()
 }));
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -21,10 +21,10 @@ import { POST } from "@/app/api/auth/[...all]/route";
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.transaction.mockImplementation(async (operation: (tx: { $queryRaw: typeof mocks.queryRaw }) => unknown) =>
-    operation({ $queryRaw: mocks.queryRaw })
+  mocks.transaction.mockImplementation(async (operation: (tx: { $executeRaw: typeof mocks.executeRaw }) => unknown) =>
+    operation({ $executeRaw: mocks.executeRaw })
   );
-  mocks.queryRaw.mockResolvedValue([{ pg_advisory_xact_lock: null }]);
+  mocks.executeRaw.mockResolvedValue(1);
   mocks.signupPolicyForRequest.mockResolvedValue({ allowed: true, reason: "bootstrap" });
   mocks.authHandler.mockResolvedValue(new Response(null, { status: 200 }));
 });
@@ -40,13 +40,13 @@ describe("signup serialization", () => {
     await expect(POST(request)).resolves.toMatchObject({ status: 200 });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
-    expect(mocks.queryRaw).toHaveBeenCalledOnce();
-    expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mocks.executeRaw).toHaveBeenCalledOnce();
+    expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.signupPolicyForRequest.mock.invocationCallOrder[0]
     );
     expect(mocks.signupPolicyForRequest).toHaveBeenCalledWith(
       request,
-      expect.objectContaining({ $queryRaw: mocks.queryRaw })
+      expect.objectContaining({ $executeRaw: mocks.executeRaw })
     );
     expect(mocks.signupPolicyForRequest.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.authHandler.mock.invocationCallOrder[0]

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   verify: vi.fn(),
+  attest: vi.fn(),
   bind: vi.fn(),
   recover: vi.fn()
 }));
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../../../src/server/services/platform-owner-binding", () => ({
   BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT: "I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION",
   verifyBootstrapPlatformOwnerCandidate: mocks.verify,
+  attestPlatformOwnerSuccessor: mocks.attest,
   bindInitialPlatformOwner: mocks.bind,
   recoverPlatformOwner: mocks.recover
 }));
@@ -60,6 +62,48 @@ describe("platform owner host-local command", () => {
     expect(() => parsePlatformOwnerCommand(["bind", "--confirm-email", "owner@example.test"])).toThrow(
       "platform_owner_command_usage"
     );
+  });
+
+  it("requires explicit current owner, successor, email, and acknowledgement for successor attestation", () => {
+    expect(
+      parsePlatformOwnerCommand([
+        "attest-successor",
+        "--current-owner-user-id",
+        "current-owner",
+        "--successor-user-id",
+        "successor-user",
+        "--confirm-successor-email",
+        "successor@example.test",
+        "--acknowledgement",
+        "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION"
+      ])
+    ).toEqual({
+      kind: "attest-successor",
+      input: {
+        currentOwnerUserId: "current-owner",
+        successorUserId: "successor-user",
+        confirmSuccessorEmail: "successor@example.test",
+        acknowledgement: "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION"
+      }
+    });
+  });
+
+  it("preserves whitespace in the successor attestation email confirmation", () => {
+    expect(
+      parsePlatformOwnerCommand([
+        "attest-successor",
+        "--current-owner-user-id",
+        "current-owner",
+        "--successor-user-id",
+        "successor-user",
+        "--confirm-successor-email",
+        " successor@example.test ",
+        "--acknowledgement",
+        "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION"
+      ])
+    ).toMatchObject({
+      input: { confirmSuccessorEmail: " successor@example.test " }
+    });
   });
 
   it("requires current owner, successor, and email confirmation for recovery", () => {
@@ -139,6 +183,30 @@ describe("platform owner host-local command", () => {
       acknowledgement: "I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION"
     });
     expect(mocks.bind).not.toHaveBeenCalled();
+  });
+
+  it("dispatches successor attestation separately from owner recovery", async () => {
+    mocks.attest.mockResolvedValue({ id: "successor-user", emailVerified: true });
+    await expect(
+      runPlatformOwnerCommand([
+        "attest-successor",
+        "--current-owner-user-id",
+        "current-owner",
+        "--successor-user-id",
+        "successor-user",
+        "--confirm-successor-email",
+        "successor@example.test",
+        "--acknowledgement",
+        "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION"
+      ])
+    ).resolves.toEqual({ exitCode: 0, line: "Successor account attestation completed." });
+    expect(mocks.attest).toHaveBeenCalledWith({
+      currentOwnerUserId: "current-owner",
+      successorUserId: "successor-user",
+      confirmSuccessorEmail: "successor@example.test",
+      acknowledgement: "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION"
+    });
+    expect(mocks.recover).not.toHaveBeenCalled();
   });
 
   it("loads database operations only after command parsing succeeds", async () => {

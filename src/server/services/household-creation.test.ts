@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   householdCreate: vi.fn(),
   getAppRegistrationPolicy: vi.fn(),
   transaction: vi.fn(),
+  executeRaw: vi.fn(),
   queryRaw: vi.fn()
 }));
 
@@ -33,12 +34,14 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.transaction.mockImplementation(async (operation: (tx: unknown) => unknown) =>
     operation({
+      $executeRaw: mocks.executeRaw,
       $queryRaw: mocks.queryRaw,
       householdMember: { findMany: mocks.memberFindMany },
       household: { create: mocks.householdCreate }
     })
   );
-  mocks.queryRaw.mockResolvedValue([{ pg_advisory_xact_lock: null }]);
+  mocks.executeRaw.mockResolvedValue(1);
+  mocks.queryRaw.mockResolvedValue([{ id: "platform" }]);
   mocks.requireUser.mockResolvedValue({
     id: "user-without-household",
     name: "Parent",
@@ -83,11 +86,12 @@ describe("platform-governed household creation", () => {
     await expect(createOnboardingHousehold(input)).resolves.toMatchObject({ id: "household-new" });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
-    expect(mocks.queryRaw).toHaveBeenCalledTimes(2);
-    expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mocks.executeRaw).toHaveBeenCalledOnce();
+    expect(mocks.queryRaw).toHaveBeenCalledOnce();
+    expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.memberFindMany.mock.invocationCallOrder[0]
     );
-    expect(mocks.queryRaw.mock.invocationCallOrder[1]).toBeLessThan(
+    expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.getAppRegistrationPolicy.mock.invocationCallOrder[0]
     );
     expect(mocks.getAppRegistrationPolicy).toHaveBeenCalledWith(

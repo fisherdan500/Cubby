@@ -205,13 +205,36 @@ npm run platform:owner -- bind --user-id <stable-user-id> --confirm-email <exact
 
 Binding fails after any authority row exists, including a retry for the same user.
 If an operator loses the command result, inspect the command exit/output and the
-platform state through an approved maintenance procedure rather than assuming
-success or rerunning a different target. Serialization conflicts return
-`platform_owner_operation_retry`; retry only the identical operation.
+platform state through an approved maintenance procedure. Do not assume success or
+rerun against a different target. Serialization conflicts return
+`platform_owner_operation_retry`; retry only the identical operation after confirming
+that its inputs remain current.
 
 Emergency recovery is a compare-and-swap operation, not ordinary household-owner
 transfer. It requires the exact current owner ID plus a different verified
-successor account with a usable password credential:
+successor account with a usable password credential.
+
+If that credential-backed successor is unverified and no outbound verification
+transport is configured, first run the explicit host-local attestation operation:
+
+```bash
+npm run platform:owner -- attest-successor --current-owner-user-id <current-id> --successor-user-id <successor-id> --confirm-successor-email <exact-successor-email> --acknowledgement I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION
+```
+
+Attestation checks the persisted current authority, rejects the current owner as
+their own successor, requires a byte-exact email match (including case) and usable
+password credential, and rejects an already-verified target. It transactionally marks
+only that selected account verified and writes
+`platform.owner.successor_user.verify` with source
+`host_local_successor_verification`; the audit snapshots retain the confirmed
+current owner ID. The audit actor remains null because this is a host-local
+administrative action, not an authenticated action by the account being attested.
+This operation does not send or simulate an email, prove control of the mailbox, or
+transfer authority. Use it only after the operator has independently established
+the selected successor's identity and mailbox ownership. If the account is already
+verified through a configured transport, skip attestation.
+
+After attestation (or existing verification), transfer authority separately:
 
 ```bash
 npm run platform:owner -- recover --current-owner-user-id <current-id> --successor-user-id <successor-id> --confirm-successor-email <exact-successor-email>

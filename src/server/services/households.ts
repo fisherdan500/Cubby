@@ -28,7 +28,7 @@ export async function createOnboardingHousehold(raw: unknown) {
   const birthDate = input.birthDate ? new Date(input.birthDate) : undefined;
 
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(
       hashtext(${"cubby.household-creation"}),
       hashtext(${user.id})
     )`;

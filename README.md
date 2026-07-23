@@ -76,6 +76,21 @@ Then bind the now-verified account:
 npm run platform:owner -- bind --user-id <stable-user-id> --confirm-email <exact-email>
 ```
 
+If a later credential-backed successor is still unverified because no outbound
+verification transport is configured, a host operator may explicitly attest that
+specific account before recovery. This records a host-local audit event and marks
+the selected account verified; it does not send email, prove email delivery, or
+transfer platform authority. The confirmation email must match the persisted value
+byte-for-byte, including case.
+
+```bash
+npm run platform:owner -- attest-successor --current-owner-user-id <current-id> --successor-user-id <successor-id> --confirm-successor-email <exact-successor-email> --acknowledgement I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION
+```
+
+After attestation succeeds, run the separate `recover` operation documented in
+[Development](docs/DEVELOPMENT.md#platform-owner-binding-and-recovery). Skip
+attestation when the successor is already verified.
+
 For the standard Docker image, the same bundled operations are available in the
 running app container:
 

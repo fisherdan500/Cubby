@@ -14,6 +14,9 @@ const explicitUserSchema = z.object({
 export const BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT =
   "I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION";
 
+export const SUCCESSOR_VERIFICATION_ACKNOWLEDGEMENT =
+  "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION";
+
 const bootstrapVerificationSchema = explicitUserSchema.extend({
   acknowledgement: z.string().trim().min(1)
 });
@@ -22,6 +25,11 @@ const recoverySchema = z.object({
   currentOwnerUserId: z.string().trim().min(1),
   successorUserId: z.string().trim().min(1),
   confirmSuccessorEmail: z.string().trim().email()
+});
+
+const successorAttestationSchema = recoverySchema.extend({
+  confirmSuccessorEmail: z.string().min(1),
+  acknowledgement: z.string().trim().min(1)
 });
 
 type BindingTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -77,7 +85,7 @@ export async function verifyBootstrapPlatformOwnerCandidate(raw: unknown) {
   try {
     return await prisma.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
         const existing = await tx.platformAuthority.findUnique({
           where: { id: PLATFORM_SINGLETON_ID },
           select: { id: true, ownerUserId: true }
@@ -104,6 +112,73 @@ export async function verifyBootstrapPlatformOwnerCandidate(raw: unknown) {
             source: "host_local_bootstrap_verification",
             before: { emailVerified: false },
             after: { emailVerified: true }
+          }
+        });
+        return verified;
+      },
+      { isolationLevel: "Serializable" }
+    );
+  } catch (error) {
+    throw translateTransactionError(error);
+  }
+}
+
+export async function attestPlatformOwnerSuccessor(raw: unknown) {
+  const input = successorAttestationSchema.parse(raw);
+  if (input.acknowledgement !== SUCCESSOR_VERIFICATION_ACKNOWLEDGEMENT) {
+    throw new Error("platform_owner_successor_acknowledgement_required");
+  }
+  if (input.currentOwnerUserId === input.successorUserId) {
+    throw new Error("platform_owner_successor_must_differ");
+  }
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT "id"
+          FROM "PlatformAuthority"
+          WHERE "id" = ${PLATFORM_SINGLETON_ID}
+          FOR UPDATE
+        `;
+
+        const authority = await tx.platformAuthority.findUnique({
+          where: { id: PLATFORM_SINGLETON_ID },
+          select: { id: true, ownerUserId: true }
+        });
+        if (!authority) throw new Error("platform_owner_not_bound");
+        if (authority.ownerUserId !== input.currentOwnerUserId) {
+          throw new Error("platform_owner_current_confirmation_mismatch");
+        }
+
+        const successor = await requireExplicitCredentialUser(
+          tx,
+          input.successorUserId,
+          input.confirmSuccessorEmail
+        );
+        if (successor.email !== input.confirmSuccessorEmail) {
+          throw new Error("platform_owner_email_confirmation_mismatch");
+        }
+        if (successor.emailVerified) throw new Error("platform_owner_email_already_verified");
+        const verified = await tx.user.update({
+          where: { id: successor.id },
+          data: { emailVerified: true },
+          select: { id: true, emailVerified: true }
+        });
+        await tx.platformAuditEvent.create({
+          data: {
+            actorUserId: null,
+            action: "platform.owner.successor_user.verify",
+            entityType: "user",
+            entityId: successor.id,
+            source: "host_local_successor_verification",
+            before: {
+              emailVerified: false,
+              confirmedPlatformOwnerUserId: authority.ownerUserId
+            },
+            after: {
+              emailVerified: true,
+              confirmedPlatformOwnerUserId: authority.ownerUserId
+            }
           }
         });
         return verified;

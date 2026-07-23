@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   if (url.pathname.endsWith("/sign-up/email")) {
     return prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
       const policy = await signupPolicyForRequest(request, tx);
       if (!policy.allowed) {
         return NextResponse.json(
