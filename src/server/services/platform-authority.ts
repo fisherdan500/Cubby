@@ -48,6 +48,10 @@ export async function updatePlatformRegistrationSettings(raw: unknown) {
 
   return prisma.$transaction(
     async (tx) => {
+      await tx.$queryRaw`SELECT "id"
+        FROM "PlatformAuthority"
+        WHERE "id" = ${PLATFORM_SINGLETON_ID}
+        FOR UPDATE`;
       const authority = await tx.platformAuthority.findFirst({
         where: { id: PLATFORM_SINGLETON_ID, ownerUserId: user.id },
         select: { id: true, ownerUserId: true }

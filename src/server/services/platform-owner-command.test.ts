@@ -55,6 +55,22 @@ describe("platform owner host-local command", () => {
     });
   });
 
+  it("preserves the bootstrap acknowledgement for byte-exact service validation", () => {
+    expect(
+      parsePlatformOwnerCommand([
+        "verify-bootstrap",
+        "--user-id",
+        "user-explicit",
+        "--confirm-email",
+        "owner@example.test",
+        "--acknowledgement",
+        " I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION "
+      ])
+    ).toMatchObject({
+      input: { acknowledgement: " I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION " }
+    });
+  });
+
   it("requires an explicit user ID and confirming email for initial binding", () => {
     expect(
       parsePlatformOwnerCommand([
@@ -112,6 +128,24 @@ describe("platform owner host-local command", () => {
       ])
     ).toMatchObject({
       input: { confirmSuccessorEmail: " successor@example.test " }
+    });
+  });
+
+  it("preserves the successor acknowledgement for byte-exact service validation", () => {
+    expect(
+      parsePlatformOwnerCommand([
+        "attest-successor",
+        "--current-owner-user-id",
+        "current-owner",
+        "--successor-user-id",
+        "successor-user",
+        "--confirm-successor-email",
+        "successor@example.test",
+        "--acknowledgement",
+        " I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION "
+      ])
+    ).toMatchObject({
+      input: { acknowledgement: " I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION " }
     });
   });
 
@@ -354,6 +388,25 @@ describe("platform owner host-local command", () => {
       acknowledgement: "I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
     });
     expect(mocks.recover).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes unexpected operation failures without exposing internal details", async () => {
+    const internalSentinel = "INTERNAL_DATABASE_ERROR_DETAIL_SENTINEL";
+    mocks.bind.mockRejectedValue(new Error(internalSentinel));
+
+    const result = await runPlatformOwnerCommand([
+      "bind",
+      "--user-id",
+      "user-explicit",
+      "--confirm-email",
+      "owner@example.test"
+    ]);
+
+    expect(result).toEqual({
+      exitCode: 1,
+      line: "Platform owner operation failed: platform_owner_operation_failed"
+    });
+    expect(result.line).not.toContain(internalSentinel);
   });
 
   it("loads database operations only after command parsing succeeds", async () => {

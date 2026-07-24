@@ -40,6 +40,8 @@ import { publishLocalBackup, readLocalBackup, scanLocalBackups } from "@/server/
 import { provisionBackupRecoveryTarget } from "@/server/services/platform-backup-recovery";
 import { createOnboardingHousehold } from "@/server/services/households";
 import { lockHouseholdCreation } from "@/server/services/mutation-locks";
+import { updatePlatformRegistrationSettings } from "@/server/services/platform-authority";
+import { recoverPlatformOwner } from "@/server/services/platform-owner-binding";
 
 type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
   format: "cubby-household-backup";
@@ -68,6 +70,22 @@ function runPackagedPlatformOwner(args: string[]) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"]
   });
+}
+
+async function waitForLockWaiters(queryFragment: string, minimumCount: number) {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const [result] = await prisma.$queryRaw<Array<{ waiterCount: number }>>`
+      SELECT COUNT(*)::integer AS "waiterCount"
+      FROM pg_stat_activity
+      WHERE datname = current_database()
+        AND wait_event_type = 'Lock'
+        AND query ILIKE ${`%${queryFragment}%`}
+    `;
+    if ((result?.waiterCount ?? 0) >= minimumCount) return;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error(`rehearsal_lock_waiters_not_observed:${queryFragment}`);
 }
 
 function normalizedPayload(backup: V2Envelope) {
@@ -286,6 +304,68 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
         allowPublicRegistration: false
       }
     });
+
+    let releaseSettingsLock!: () => void;
+    let signalSettingsLockHeld!: () => void;
+    const settingsLockHeld = new Promise<void>((resolve) => {
+      signalSettingsLockHeld = resolve;
+    });
+    const settingsLockRelease = new Promise<void>((resolve) => {
+      releaseSettingsLock = resolve;
+    });
+    const settingsLockHolder = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id"
+        FROM "PlatformSettings"
+        WHERE "id" = 'platform'
+        FOR UPDATE`;
+      signalSettingsLockHeld();
+      await settingsLockRelease;
+    });
+    await settingsLockHeld;
+
+    auth.user = source.user;
+    const oldOwnerPolicyAttempt = updatePlatformRegistrationSettings({
+      householdCreationMode: "open",
+      allowPublicRegistration: true
+    });
+    let authorityRecoveryAttempt!: ReturnType<typeof recoverPlatformOwner>;
+    try {
+      await waitForLockWaiters("PlatformSettings", 1);
+      authorityRecoveryAttempt = recoverPlatformOwner({
+        currentOwnerUserId: source.user.id,
+        successorUserId: targetUser.id,
+        confirmSuccessorEmail: targetUser.email
+      });
+      await waitForLockWaiters("PlatformAuthority", 1);
+      expect(await prisma.platformAuthority.findUniqueOrThrow({
+        where: { id: "platform" },
+        select: { ownerUserId: true }
+      })).toEqual({ ownerUserId: source.user.id });
+    } finally {
+      releaseSettingsLock();
+      await settingsLockHolder;
+    }
+    await expect(oldOwnerPolicyAttempt).resolves.toMatchObject({
+      householdCreationMode: "open",
+      allowPublicRegistration: true
+    });
+    await expect(authorityRecoveryAttempt).resolves.toMatchObject({ ownerUserId: targetUser.id });
+    expect(await prisma.platformAuthority.findUniqueOrThrow({
+      where: { id: "platform" },
+      select: { ownerUserId: true }
+    })).toEqual({ ownerUserId: targetUser.id });
+
+    await recoverPlatformOwner({
+      currentOwnerUserId: targetUser.id,
+      successorUserId: source.user.id,
+      confirmSuccessorEmail: source.user.email
+    });
+    await prisma.platformSettings.update({
+      where: { id: "platform" },
+      data: { householdCreationMode: "closed", allowPublicRegistration: false }
+    });
+    auth.user = null;
+
     await prisma.invite.create({
       data: {
         householdId: source.household.id,
@@ -436,35 +516,19 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     });
     await householdCreationLockHeld;
 
-    let provisioningSettled = false;
-    let onboardingSettled = false;
-    const provisioningAttempt = (async () => {
-      try {
-        return await provisionBackupRecoveryTarget({
-          currentOwnerUserId: source.user.id,
-          targetOwnerUserId: targetUser.id,
-          confirmTargetOwnerEmail: targetUser.email,
-          targetHouseholdName: "Racing Recovery Target",
-          acknowledgement: "I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"
-        });
-      } finally {
-        provisioningSettled = true;
-      }
-    })();
-    const onboardingAttempt = (async () => {
-      try {
-        return await createOnboardingHousehold({
-          householdName: "Concurrent Onboarding Home",
-          babyName: "Concurrent Baby"
-        });
-      } finally {
-        onboardingSettled = true;
-      }
-    })();
+    const provisioningAttempt = provisionBackupRecoveryTarget({
+      currentOwnerUserId: source.user.id,
+      targetOwnerUserId: targetUser.id,
+      confirmTargetOwnerEmail: targetUser.email,
+      targetHouseholdName: "Racing Recovery Target",
+      acknowledgement: "I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"
+    });
+    const onboardingAttempt = createOnboardingHousehold({
+      householdName: "Concurrent Onboarding Home",
+      babyName: "Concurrent Baby"
+    });
     try {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(provisioningSettled).toBe(false);
-      expect(onboardingSettled).toBe(false);
+      await waitForLockWaiters("pg_advisory_xact_lock", 2);
     } finally {
       releaseHouseholdCreationLock();
       await lockHolder;

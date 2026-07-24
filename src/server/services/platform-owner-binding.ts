@@ -18,7 +18,7 @@ export const SUCCESSOR_VERIFICATION_ACKNOWLEDGEMENT =
   "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION";
 
 const bootstrapVerificationSchema = explicitUserSchema.extend({
-  acknowledgement: z.string().trim().min(1)
+  acknowledgement: z.string().min(1)
 });
 
 const recoverySchema = z.object({
@@ -29,7 +29,7 @@ const recoverySchema = z.object({
 
 const successorAttestationSchema = recoverySchema.extend({
   confirmSuccessorEmail: z.string().min(1),
-  acknowledgement: z.string().trim().min(1)
+  acknowledgement: z.string().min(1)
 });
 
 type BindingTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];

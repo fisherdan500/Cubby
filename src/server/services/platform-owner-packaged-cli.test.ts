@@ -39,6 +39,20 @@ const whitespaceEmailArgs = args.map((value, index) =>
   index === 6 ? " successor@example.test " : value
 );
 
+const whitespaceAcknowledgementArgs = args.map((value, index) =>
+  index === 8 ? " I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION " : value
+);
+
+const whitespaceBootstrapAcknowledgementArgs = [
+  "verify-bootstrap",
+  "--user-id",
+  "bootstrap-user",
+  "--confirm-email",
+  "bootstrap@example.test",
+  "--acknowledgement",
+  " I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION "
+] as const;
+
 describe("packaged platform-owner CLI", () => {
   let packaged: PackagedCommand;
 
@@ -82,6 +96,91 @@ describe("packaged platform-owner CLI", () => {
     expect(attest).toHaveBeenCalledWith(
       expect.objectContaining({ confirmSuccessorEmail: " successor@example.test " })
     );
+  });
+
+  it("preserves and rejects whitespace-different bootstrap acknowledgement in the artifact", async () => {
+    expect(
+      packaged.parsePlatformOwnerCommand(whitespaceBootstrapAcknowledgementArgs)
+    ).toMatchObject({
+      input: { acknowledgement: " I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION " }
+    });
+
+    const verify = vi.fn().mockRejectedValue(
+      new Error("platform_owner_bootstrap_acknowledgement_required")
+    );
+    const result = await packaged.runPlatformOwnerCommand(
+      whitespaceBootstrapAcknowledgementArgs,
+      async () => ({
+        verifyBootstrapPlatformOwnerCandidate: verify,
+        attestPlatformOwnerSuccessor: vi.fn(),
+        bindInitialPlatformOwner: vi.fn(),
+        recoverPlatformOwner: vi.fn(),
+        provisionBackupRecoveryTarget: vi.fn(),
+        inspectBackupRecoveryCandidate: vi.fn(),
+        authorizeBackupRecovery: vi.fn()
+      })
+    );
+
+    expect(result).toEqual({
+      exitCode: 1,
+      line: "Platform owner operation failed: platform_owner_bootstrap_acknowledgement_required"
+    });
+    expect(verify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        acknowledgement: " I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION "
+      })
+    );
+  });
+
+  it("preserves and rejects whitespace-different successor acknowledgement in the artifact", async () => {
+    expect(packaged.parsePlatformOwnerCommand(whitespaceAcknowledgementArgs)).toMatchObject({
+      input: { acknowledgement: " I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION " }
+    });
+
+    const attest = vi.fn().mockRejectedValue(
+      new Error("platform_owner_successor_acknowledgement_required")
+    );
+    const result = await packaged.runPlatformOwnerCommand(
+      whitespaceAcknowledgementArgs,
+      async () => ({
+        verifyBootstrapPlatformOwnerCandidate: vi.fn(),
+        attestPlatformOwnerSuccessor: attest,
+        bindInitialPlatformOwner: vi.fn(),
+        recoverPlatformOwner: vi.fn(),
+        provisionBackupRecoveryTarget: vi.fn(),
+        inspectBackupRecoveryCandidate: vi.fn(),
+        authorizeBackupRecovery: vi.fn()
+      })
+    );
+
+    expect(result).toEqual({
+      exitCode: 1,
+      line: "Platform owner operation failed: platform_owner_successor_acknowledgement_required"
+    });
+    expect(attest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        acknowledgement: " I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION "
+      })
+    );
+  });
+
+  it("sanitizes unexpected errors in the distributable artifact", async () => {
+    const internalSentinel = "INTERNAL_DATABASE_ERROR_DETAIL_SENTINEL";
+    const result = await packaged.runPlatformOwnerCommand(args, async () => ({
+      verifyBootstrapPlatformOwnerCandidate: vi.fn(),
+      attestPlatformOwnerSuccessor: vi.fn().mockRejectedValue(new Error(internalSentinel)),
+      bindInitialPlatformOwner: vi.fn(),
+      recoverPlatformOwner: vi.fn(),
+      provisionBackupRecoveryTarget: vi.fn(),
+      inspectBackupRecoveryCandidate: vi.fn(),
+      authorizeBackupRecovery: vi.fn()
+    }));
+
+    expect(result).toEqual({
+      exitCode: 1,
+      line: "Platform owner operation failed: platform_owner_operation_failed"
+    });
+    expect(result.line).not.toContain(internalSentinel);
   });
 
   it("dispatches successor attestation from the distributable artifact without falling through to recovery", async () => {

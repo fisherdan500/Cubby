@@ -118,6 +118,19 @@ describe("explicit host-local bootstrap verification", () => {
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
+  it("rejects surrounding whitespace in the bootstrap acknowledgement", async () => {
+    await expect(
+      verifyBootstrapPlatformOwnerCandidate({
+        userId: "user-explicit",
+        confirmEmail: "owner@example.test",
+        acknowledgement: ` ${BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT} `
+      })
+    ).rejects.toThrow("platform_owner_bootstrap_acknowledgement_required");
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.auditCreate).not.toHaveBeenCalled();
+  });
+
   it("refuses local verification after another account or platform authority exists", async () => {
     mocks.userCount.mockResolvedValue(2);
     await expect(
@@ -213,6 +226,20 @@ describe("host-local successor attestation", () => {
       })
     ).rejects.toThrow("platform_owner_successor_acknowledgement_required");
     expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects surrounding whitespace in the successor acknowledgement", async () => {
+    await expect(
+      attestPlatformOwnerSuccessor({
+        currentOwnerUserId: "current-owner",
+        successorUserId: "successor-user",
+        confirmSuccessorEmail: "successor@example.test",
+        acknowledgement: ` ${SUCCESSOR_VERIFICATION_ACKNOWLEDGEMENT} `
+      })
+    ).rejects.toThrow("platform_owner_successor_acknowledgement_required");
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.auditCreate).not.toHaveBeenCalled();
   });
 
   it.each([

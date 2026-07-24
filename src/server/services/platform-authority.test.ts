@@ -105,8 +105,18 @@ describe("platform registration policy mutation", () => {
       where: { id: "platform", ownerUserId: "platform-owner" },
       select: { id: true, ownerUserId: true }
     });
-    expect(mocks.queryRaw).toHaveBeenCalledOnce();
+    expect(mocks.queryRaw).toHaveBeenCalledTimes(2);
+    expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain('FROM "PlatformAuthority"');
+    expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain("FOR UPDATE");
+    expect(mocks.queryRaw.mock.calls[1]?.[0].join(" ")).toContain('FROM "PlatformSettings"');
+    expect(mocks.queryRaw.mock.calls[1]?.[0].join(" ")).toContain("FOR UPDATE");
     expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.txAuthorityFind.mock.invocationCallOrder[0]
+    );
+    expect(mocks.txAuthorityFind.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.queryRaw.mock.invocationCallOrder[1]
+    );
+    expect(mocks.queryRaw.mock.invocationCallOrder[1]).toBeLessThan(
       mocks.settingsFind.mock.invocationCallOrder[0]
     );
     expect(mocks.settingsUpdate).toHaveBeenCalledWith({

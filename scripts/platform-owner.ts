@@ -74,6 +74,47 @@ const loadPlatformOwnerOperations: LoadPlatformOwnerOperations = async () => {
   return { ...ownerOperations, ...backupRecoveryOperations };
 };
 
+const PUBLIC_OPERATION_ERROR_CODES = new Set([
+  "platform_owner_command_usage",
+  "platform_owner_user_not_found",
+  "platform_owner_email_confirmation_mismatch",
+  "platform_owner_credential_missing",
+  "platform_owner_email_not_verified",
+  "platform_owner_operation_retry",
+  "platform_owner_bootstrap_acknowledgement_required",
+  "platform_owner_already_bound",
+  "platform_owner_bootstrap_user_count_mismatch",
+  "platform_owner_email_already_verified",
+  "platform_owner_successor_acknowledgement_required",
+  "platform_owner_successor_must_differ",
+  "platform_owner_not_bound",
+  "platform_owner_current_confirmation_mismatch",
+  "platform_owner_changed",
+  "backup_recovery_already_authorized",
+  "backup_recovery_checksum_mismatch",
+  "backup_recovery_source_confirmation_mismatch",
+  "backup_recovery_household_creation_not_closed",
+  "backup_recovery_target_count_mismatch",
+  "backup_recovery_target_not_found",
+  "backup_recovery_target_owner_not_sole",
+  "backup_target_not_empty",
+  "backup_recovery_target_owner_not_found",
+  "backup_recovery_target_owner_email_mismatch",
+  "backup_recovery_target_owner_credential_missing",
+  "backup_recovery_target_acknowledgement_required",
+  "backup_recovery_acknowledgement_required",
+  "backup_invalid",
+  "backup_directory_unavailable",
+  "backup_too_large",
+  "backup_unsupported_version",
+  "backup_checksum_mismatch"
+]);
+
+function publicOperationErrorCode(error: unknown) {
+  const code = error instanceof Error ? error.message : "";
+  return PUBLIC_OPERATION_ERROR_CODES.has(code) ? code : "platform_owner_operation_failed";
+}
+
 function exactArguments(
   args: readonly string[],
   expected: readonly string[],
@@ -96,7 +137,11 @@ function exactArguments(
 export function parsePlatformOwnerCommand(args: readonly string[]): PlatformOwnerCommand {
   const [operation, ...rest] = args;
   if (operation === "verify-bootstrap") {
-    const values = exactArguments(rest, ["--user-id", "--confirm-email", "--acknowledgement"]);
+    const values = exactArguments(
+      rest,
+      ["--user-id", "--confirm-email", "--acknowledgement"],
+      ["--acknowledgement"]
+    );
     return {
       kind: "verify-bootstrap",
       input: {
@@ -115,7 +160,7 @@ export function parsePlatformOwnerCommand(args: readonly string[]): PlatformOwne
         "--confirm-successor-email",
         "--acknowledgement"
       ],
-      ["--confirm-successor-email"]
+      ["--confirm-successor-email", "--acknowledgement"]
     );
     return {
       kind: "attest-successor",
@@ -267,7 +312,7 @@ export async function runPlatformOwnerCommand(
       line: `Backup recovery authorization completed: ${authorized.backupRecordId}`
     };
   } catch (error) {
-    const code = error instanceof Error ? error.message : "platform_owner_command_failed";
+    const code = publicOperationErrorCode(error);
     return { exitCode: 1 as const, line: `Platform owner operation failed: ${code}` };
   }
 }
