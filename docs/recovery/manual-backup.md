@@ -27,9 +27,11 @@ from `scripts/backup-recovery-rehearsal.compose.yml`. That file starts only a
 PostgreSQL 16 service with a project-scoped disposable volume and a random
 loopback-only host port. The harness does not load `.env`, does not use
 `docker-compose.yml`, and does not connect to the normal `cubby` database or
-`cubby_postgres_data` volume. It applies committed Prisma migrations, creates
-source and fresh-target household fixtures, exercises export → restore →
-re-export, and removes the project and volume in a `finally` teardown.
+`cubby_postgres_data` volume. It applies committed Prisma migrations, builds the
+packaged platform-owner CLI, creates source and fresh-target household fixtures,
+and exercises export → ordinary-access denial after record loss → packaged
+inspection and explicit authorization → restore → re-export. It removes the
+project and volume in a `finally` teardown.
 
 A successful run ends with output similar to:
 
@@ -48,13 +50,15 @@ Compose project in that command.
 The rehearsal covers allowlisted settings, active and inactive babies, a stopped
 timer with historical source attribution, contact-linked medicine history,
 medicine and supplement catalogs, vaccine history, calendar baby/contact links,
-and a reminder. It also proves automated file creation, discovery after
-automated-record loss, target-owner preservation, semantic equivalence after a
-second export, exclusion boundaries, checksum and dangling-reference rejection,
-stale-preview/non-empty rejection without partial recovery, repeat-restore
-rejection, concurrent scheduler exclusion, active-timer blocking, exact
-oldest-first retention while preserving an unassociated valid file, preservation
-of prior versions after a failed publication, and full disposable teardown of
+and a reminder. It also proves automated file creation; ordinary status/download
+denial after automated-record loss; content-minimized packaged inspection;
+explicit immutable association; platform and household audits; authorization
+replay rejection; target-owner preservation; semantic equivalence after a second
+export; exclusion boundaries; checksum and dangling-reference rejection;
+stale-preview/non-empty rejection without partial recovery; repeat-restore
+rejection; concurrent scheduler exclusion; active-timer blocking; exact
+oldest-first retention while preserving an unassociated valid file; preservation
+of prior versions after a failed publication; and full disposable teardown of
 both the database project and generated temporary backup directory.
 
 ## What Version 2 Includes

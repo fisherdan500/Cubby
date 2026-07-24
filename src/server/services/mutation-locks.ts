@@ -1,6 +1,13 @@
 import type { Prisma } from "@prisma/client";
 import type { HouseholdContext } from "@/server/auth/context";
 
+export async function lockHouseholdCreation(tx: Prisma.TransactionClient) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(
+    hashtext(${"cubby.household-creation"}),
+    0
+  )`;
+}
+
 export async function lockActorForWrite(tx: Prisma.TransactionClient, ctx: HouseholdContext) {
   await tx.$queryRaw<Array<{ id: string }>>`
     SELECT "id"

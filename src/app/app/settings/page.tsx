@@ -5,11 +5,12 @@ import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
 import { getHouseholdContext } from "@/server/auth/context";
 import { requireUserPage } from "@/server/auth/session";
+import { isPlatformOwner } from "@/server/services/platform-authority";
 
 const sections = [
   { href: "/app/settings/appearance", label: "Appearance", description: "Choose the household accent and visual character.", icon: Palette, permission: "household.manage" },
   { href: "/app/settings/units", label: "Units", description: "Choose defaults for measurements, medicine, and supplements.", icon: Ruler, permission: "household.manage" },
-  { href: "/app/settings/admin", label: "Admin", description: "Registration policy, household controls, and app behavior.", icon: Shield, permission: "household.manage" },
+
   { href: "/app/babies", label: "Babies", description: "Manage baby profiles, notes, and warning thresholds.", icon: Baby, permission: "baby.manage" },
   { href: "/app/settings/members", label: "Members and access", description: "Invite people, assign roles, and manage household access.", icon: Users, permission: "member.manage" },
   { href: "/app/settings/integrations", label: "Integrations", description: "API keys and webhook endpoints.", icon: KeyRound, permission: "integration.manage" },
@@ -22,6 +23,7 @@ const sections = [
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {
   const user = await requireUserPage();
   const ctx = await getHouseholdContext();
+  const platformOwner = await isPlatformOwner(user.id);
   const visibleSections = sections.filter((section) => hasPermission(ctx.role, section.permission));
   return (
     <AppShell title="Settings" userName={user.name}>
@@ -40,6 +42,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
             </Card>
           </Link>
         ))}
+        {platformOwner ? (
+          <Link href="/platform/settings" prefetch={false}>
+            <Card className="h-full transition hover:bg-muted">
+              <Shield className="mb-4 h-6 w-6 text-primary" />
+              <h2 className="font-editorial text-lg font-bold">Platform administration</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Manage deployment-wide account and household-creation policy outside household roles.
+              </p>
+            </Card>
+          </Link>
+        ) : null}
       </div>
     </AppShell>
   );

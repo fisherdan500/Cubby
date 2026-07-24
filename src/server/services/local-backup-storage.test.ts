@@ -61,6 +61,21 @@ describe("local backup storage", () => {
     expect(await scanLocalBackups(dir)).toEqual([expect.objectContaining({ healthy: true, filename: stored.filename })]);
   });
 
+  it("scans only explicitly authorized filenames when an allowlist is supplied", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "cubby-backup-storage-"));
+    tempRoots.push(dir);
+    const json = JSON.stringify(createV2Backup({
+      household: { name: "Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: []
+    }, "2026-07-15T21:50:13.000Z"));
+    const stored = await publishLocalBackup(dir, json);
+    const unassociated = formatBackupFilename("2026-07-14T21:50:13.000Z", "b".repeat(64));
+    await writeFile(path.join(dir, unassociated), "not-json");
+
+    await expect(scanLocalBackups(dir, [stored.filename])).resolves.toEqual([
+      expect.objectContaining({ healthy: true, filename: stored.filename })
+    ]);
+  });
+
   it("never overwrites an existing immutable version", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "cubby-backup-storage-"));
     tempRoots.push(dir);

@@ -9,6 +9,10 @@ const STALE_TEMP_MS = 24 * 60 * 60 * 1000;
 const BACKUP_FILE_PATTERN = /^cubby-backup-v2-(\d{8}T\d{6}Z)-([a-f0-9]{12})(?:-([a-f0-9]{32}))?\.json$/;
 const BACKUP_TEMP_PATTERN = /^\.cubby-backup-v2-\d{8}T\d{6}Z-[a-f0-9]{12}(?:-[a-f0-9]{32})?\.json\.[A-Za-z0-9_-]+\.tmp$/;
 
+export function isLocalBackupFilename(filename: string) {
+  return BACKUP_FILE_PATTERN.test(filename);
+}
+
 type PublishLocalBackupOptions = {
   filenameDiscriminator?: string;
   afterRootValidated?: () => void | Promise<void>;
@@ -294,7 +298,7 @@ export async function reconcileLocalBackupTemps(
   }
 }
 
-export async function scanLocalBackups(root: string) {
+export async function scanLocalBackups(root: string, allowedFilenames?: readonly string[]) {
   let trustedRoot;
   try {
     trustedRoot = await assertTrustedBackupRoot(root, false);
@@ -303,6 +307,7 @@ export async function scanLocalBackups(root: string) {
     throw error;
   }
   const { resolvedRoot } = trustedRoot;
+  const allowed = allowedFilenames ? new Set(allowedFilenames) : null;
   await assertTrustedBackupRootIdentity(trustedRoot);
   const dir = await opendir(resolvedRoot);
 
@@ -310,6 +315,7 @@ export async function scanLocalBackups(root: string) {
   let seen = 0;
   for await (const entry of dir) {
     if (!BACKUP_FILE_PATTERN.test(entry.name)) continue;
+    if (allowed && !allowed.has(entry.name)) continue;
     if (seen >= MAX_SCAN_CANDIDATES) break;
     seen += 1;
     await assertTrustedBackupRootIdentity(trustedRoot);

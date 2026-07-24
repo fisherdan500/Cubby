@@ -16,6 +16,12 @@ export async function assertUserCanStartSession(session: { userId: string }) {
   });
   if (activeMembership) return;
 
+  const platformAuthority = await prisma.platformAuthority.findUnique({
+    where: { ownerUserId: session.userId },
+    select: { id: true }
+  });
+  if (platformAuthority) return;
+
   const suspendedMembership = await prisma.householdMember.findFirst({
     where: {
       userId: session.userId,

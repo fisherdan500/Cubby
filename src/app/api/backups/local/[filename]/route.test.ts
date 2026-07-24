@@ -35,17 +35,18 @@ describe("/api/backups/local/[filename]", () => {
     expect(mocks.downloadLocalBackupFile).toHaveBeenCalledWith("cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json");
   });
 
-  it("fails closed for malformed or missing candidates without exposing host paths", async () => {
-    mocks.downloadLocalBackupFile.mockRejectedValue(new Error("backup_invalid"));
+  it("normalizes malformed, foreign, unassociated, and missing candidates to not found", async () => {
+    mocks.downloadLocalBackupFile.mockRejectedValue(new Error("not_found"));
 
     const response = await GET(new Request("http://localhost/api/backups/local/file"), {
       params: { filename: "../escape.json" }
     });
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(404);
+    expect(mocks.downloadLocalBackupFile).toHaveBeenCalledWith("../escape.json");
     await expect(response.json()).resolves.toMatchObject({
       ok: false,
-      error: { code: "backup_invalid" }
+      error: { code: "not_found" }
     });
   });
 });

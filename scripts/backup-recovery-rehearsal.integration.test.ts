@@ -1,9 +1,12 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
+import { spawnSync } from "node:child_process";
 import { readFile, readdir, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
 const auth = vi.hoisted(() => ({
-  context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole }
+  context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole },
+  user: null as null | { id: string; name: string; email: string; emailVerified: boolean }
 }));
 
 vi.mock("@/server/auth/context", () => ({
@@ -14,6 +17,13 @@ vi.mock("@/server/auth/context", () => ({
   requirePermission: (context: { role: HouseholdRole }) => {
     if (context.role !== HouseholdRole.owner) throw new Error("forbidden");
   }
+}));
+
+vi.mock("@/server/auth/session", () => ({
+  requireUser: vi.fn(async () => {
+    if (!auth.user) throw new Error("rehearsal_user_not_set");
+    return auth.user;
+  })
 }));
 
 import { prisma } from "@/lib/db/prisma";
@@ -27,6 +37,11 @@ import {
 import { parseBackup, payloadChecksum } from "@/server/services/backup-format";
 import { runAutomatedBackupIfDue } from "@/server/services/automated-backups";
 import { publishLocalBackup, readLocalBackup, scanLocalBackups } from "@/server/services/local-backup-storage";
+import { provisionBackupRecoveryTarget } from "@/server/services/platform-backup-recovery";
+import { createOnboardingHousehold } from "@/server/services/households";
+import { lockHouseholdCreation } from "@/server/services/mutation-locks";
+import { updatePlatformRegistrationSettings } from "@/server/services/platform-authority";
+import { recoverPlatformOwner } from "@/server/services/platform-owner-binding";
 
 type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
   format: "cubby-household-backup";
@@ -44,6 +59,33 @@ const backupDirectory = process.env.AUTOMATED_BACKUP_DIRECTORY;
 const rehearsalHandoffFile = process.env.REHEARSAL_HANDOFF_FILE;
 if (!backupDirectory || !rehearsalHandoffFile) {
   throw new Error("rehearsal_environment_not_set");
+}
+
+const packagedPlatformOwnerCli = fileURLToPath(new URL("../dist/platform-owner.mjs", import.meta.url));
+
+function runPackagedPlatformOwner(args: string[]) {
+  return spawnSync(process.execPath, [packagedPlatformOwnerCli, ...args], {
+    cwd: fileURLToPath(new URL("..", import.meta.url)),
+    env: process.env,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+}
+
+async function waitForLockWaiters(queryFragment: string, minimumCount: number) {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const [result] = await prisma.$queryRaw<Array<{ waiterCount: number }>>`
+      SELECT COUNT(*)::integer AS "waiterCount"
+      FROM pg_stat_activity
+      WHERE datname = current_database()
+        AND wait_event_type = 'Lock'
+        AND query ILIKE ${`%${queryFragment}%`}
+    `;
+    if ((result?.waiterCount ?? 0) >= minimumCount) return;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error(`rehearsal_lock_waiters_not_observed:${queryFragment}`);
 }
 
 function normalizedPayload(backup: V2Envelope) {
@@ -94,7 +136,9 @@ afterAll(async () => {
 describe("disposable PostgreSQL backup recovery rehearsal", () => {
   it("exports, restores into a fresh owner household, and re-exports equivalent non-secret data", async () => {
     const source = await createOwnerHousehold("source", "Source Nursery");
-    const target = await createOwnerHousehold("target", "Fresh Target");
+    const targetUser = await prisma.user.create({
+      data: { name: "target Owner", email: "target@rehearsal.invalid", emailVerified: true }
+    });
     const staleTarget = await createOwnerHousehold("stale-target", "Stale Target");
 
     await prisma.householdSettings.create({
@@ -115,8 +159,6 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
         accentTheme: "terracotta"
       }
     });
-    await prisma.householdSettings.create({ data: { householdId: target.household.id } });
-
     const activeBaby = await prisma.baby.create({
       data: {
         householdId: source.household.id,
@@ -252,6 +294,78 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     await prisma.account.create({
       data: { id: "source-account", accountId: source.user.email, providerId: "credential", userId: source.user.id, password: "not-a-real-password-hash" }
     });
+    await prisma.account.create({
+      data: { id: "target-account", accountId: targetUser.email, providerId: "credential", userId: targetUser.id, password: "not-a-real-password-hash" }
+    });
+    await prisma.platformAuthority.create({ data: { ownerUserId: source.user.id } });
+    await prisma.platformSettings.create({
+      data: {
+        householdCreationMode: "closed",
+        allowPublicRegistration: false
+      }
+    });
+
+    let releaseSettingsLock!: () => void;
+    let signalSettingsLockHeld!: () => void;
+    const settingsLockHeld = new Promise<void>((resolve) => {
+      signalSettingsLockHeld = resolve;
+    });
+    const settingsLockRelease = new Promise<void>((resolve) => {
+      releaseSettingsLock = resolve;
+    });
+    const settingsLockHolder = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id"
+        FROM "PlatformSettings"
+        WHERE "id" = 'platform'
+        FOR UPDATE`;
+      signalSettingsLockHeld();
+      await settingsLockRelease;
+    });
+    await settingsLockHeld;
+
+    auth.user = source.user;
+    const oldOwnerPolicyAttempt = updatePlatformRegistrationSettings({
+      householdCreationMode: "open",
+      allowPublicRegistration: true
+    });
+    let authorityRecoveryAttempt!: ReturnType<typeof recoverPlatformOwner>;
+    try {
+      await waitForLockWaiters("PlatformSettings", 1);
+      authorityRecoveryAttempt = recoverPlatformOwner({
+        currentOwnerUserId: source.user.id,
+        successorUserId: targetUser.id,
+        confirmSuccessorEmail: targetUser.email
+      });
+      await waitForLockWaiters("PlatformAuthority", 1);
+      expect(await prisma.platformAuthority.findUniqueOrThrow({
+        where: { id: "platform" },
+        select: { ownerUserId: true }
+      })).toEqual({ ownerUserId: source.user.id });
+    } finally {
+      releaseSettingsLock();
+      await settingsLockHolder;
+    }
+    await expect(oldOwnerPolicyAttempt).resolves.toMatchObject({
+      householdCreationMode: "open",
+      allowPublicRegistration: true
+    });
+    await expect(authorityRecoveryAttempt).resolves.toMatchObject({ ownerUserId: targetUser.id });
+    expect(await prisma.platformAuthority.findUniqueOrThrow({
+      where: { id: "platform" },
+      select: { ownerUserId: true }
+    })).toEqual({ ownerUserId: targetUser.id });
+
+    await recoverPlatformOwner({
+      currentOwnerUserId: targetUser.id,
+      successorUserId: source.user.id,
+      confirmSuccessorEmail: source.user.email
+    });
+    await prisma.platformSettings.update({
+      where: { id: "platform" },
+      data: { householdCreationMode: "closed", allowPublicRegistration: false }
+    });
+    auth.user = null;
+
     await prisma.invite.create({
       data: {
         householdId: source.household.id,
@@ -288,13 +402,6 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     });
     await prisma.importBatch.create({
       data: { householdId: source.household.id, actorUserId: source.user.id, sourceSystem: "sprout", sourceFormat: "json", status: "complete" }
-    });
-
-    await prisma.auditEvent.create({
-      data: { householdId: target.household.id, actorUserId: target.user.id, actorMemberId: target.member.id, action: "household.create", entityType: "household", entityId: target.household.id }
-    });
-    await prisma.backupRecord.create({
-      data: { householdId: target.household.id, actorUserId: target.user.id, kind: "restore", status: "failed", error: "fixture" }
     });
 
     const automatedAt = new Date("2026-07-15T21:50:13.000Z");
@@ -367,9 +474,8 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect(await prisma.baby.count({ where: { householdId: staleTarget.household.id } })).toBe(0);
     expect((await prisma.household.findUniqueOrThrow({ where: { id: staleTarget.household.id } })).name).toBe("Stale Target");
 
-    auth.context = target.ctx;
     const otherActiveHouseholds = await prisma.household.findMany({
-      where: { id: { not: target.household.id }, deletedAt: null },
+      where: { deletedAt: null },
       select: { id: true }
     });
     expect(otherActiveHouseholds).toEqual(expect.arrayContaining([
@@ -381,7 +487,115 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       data: { deletedAt: new Date("2026-07-16T00:00:00.000Z") }
     });
     expect(retiredHouseholds.count).toBe(otherActiveHouseholds.length);
+    expect(await prisma.household.count({ where: { deletedAt: null } })).toBe(0);
+
+    const onboardingRacer = await prisma.user.create({
+      data: {
+        name: "Concurrent Onboarding Owner",
+        email: "concurrent-onboarding@rehearsal.invalid",
+        emailVerified: true
+      }
+    });
+    auth.user = onboardingRacer;
+    await prisma.platformSettings.update({
+      where: { id: "platform" },
+      data: { householdCreationMode: "open", allowPublicRegistration: false }
+    });
+    let releaseHouseholdCreationLock!: () => void;
+    let signalHouseholdCreationLockHeld!: () => void;
+    const householdCreationLockHeld = new Promise<void>((resolve) => {
+      signalHouseholdCreationLockHeld = resolve;
+    });
+    const householdCreationLockRelease = new Promise<void>((resolve) => {
+      releaseHouseholdCreationLock = resolve;
+    });
+    const lockHolder = prisma.$transaction(async (tx) => {
+      await lockHouseholdCreation(tx);
+      signalHouseholdCreationLockHeld();
+      await householdCreationLockRelease;
+    });
+    await householdCreationLockHeld;
+
+    const provisioningAttempt = provisionBackupRecoveryTarget({
+      currentOwnerUserId: source.user.id,
+      targetOwnerUserId: targetUser.id,
+      confirmTargetOwnerEmail: targetUser.email,
+      targetHouseholdName: "Racing Recovery Target",
+      acknowledgement: "I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"
+    });
+    const onboardingAttempt = createOnboardingHousehold({
+      householdName: "Concurrent Onboarding Home",
+      babyName: "Concurrent Baby"
+    });
+    try {
+      await waitForLockWaiters("pg_advisory_xact_lock", 2);
+    } finally {
+      releaseHouseholdCreationLock();
+      await lockHolder;
+    }
+    const [concurrentProvisioning, concurrentOnboarding] = await Promise.allSettled([
+      provisioningAttempt,
+      onboardingAttempt
+    ]);
+    expect(concurrentProvisioning).toMatchObject({
+      status: "rejected",
+      reason: expect.objectContaining({ message: "backup_recovery_household_creation_not_closed" })
+    });
+    expect(concurrentOnboarding).toMatchObject({ status: "fulfilled" });
     expect(await prisma.household.count({ where: { deletedAt: null } })).toBe(1);
+    await prisma.household.updateMany({
+      where: { createdByUserId: onboardingRacer.id, deletedAt: null },
+      data: { deletedAt: new Date("2026-07-16T00:01:00.000Z") }
+    });
+    await prisma.platformSettings.update({
+      where: { id: "platform" },
+      data: { householdCreationMode: "closed", allowPublicRegistration: false }
+    });
+    auth.user = null;
+    expect(await prisma.household.count({ where: { deletedAt: null } })).toBe(0);
+
+    const targetProvisioning = runPackagedPlatformOwner([
+      "provision-backup-recovery-target",
+      "--current-owner-user-id", source.user.id,
+      "--target-owner-user-id", targetUser.id,
+      "--confirm-target-owner-email", targetUser.email,
+      "--target-household-name", "Fresh Target",
+      "--acknowledgement", "I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"
+    ]);
+    expect(targetProvisioning.status, `${targetProvisioning.stdout}${targetProvisioning.stderr}`).toBe(0);
+    const targetHousehold = await prisma.household.findFirstOrThrow({
+      where: { deletedAt: null, members: { some: { userId: targetUser.id, role: HouseholdRole.owner } } }
+    });
+    const targetMember = await prisma.householdMember.findFirstOrThrow({
+      where: { householdId: targetHousehold.id, userId: targetUser.id, role: HouseholdRole.owner }
+    });
+    const target = {
+      user: targetUser,
+      household: targetHousehold,
+      member: targetMember,
+      ctx: context(targetUser.id, targetHousehold.id, targetMember.id)
+    };
+    expect(await prisma.household.count({ where: { deletedAt: null } })).toBe(1);
+    expect(await prisma.platformAuditEvent.count({
+      where: { action: "platform.backup_recovery.target.provision", entityId: target.household.id }
+    })).toBe(1);
+    expect(await prisma.auditEvent.count({
+      where: {
+        householdId: target.household.id,
+        action: "backup.recovery.target.provision",
+        entityId: target.household.id
+      }
+    })).toBe(1);
+    await prisma.backupRecord.create({
+      data: {
+        householdId: target.household.id,
+        actorUserId: target.user.id,
+        kind: "restore",
+        status: "failed",
+        error: "fixture"
+      }
+    });
+    auth.context = target.ctx;
     const removedAutomatedHistory = await prisma.backupRecord.deleteMany({
       where: { householdId: source.household.id, kind: "automated_export" }
     });
@@ -391,9 +605,74 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     })).toBe(0);
     expect((await scanLocalBackups(backupDirectory)).filter((version) => version.healthy)).not.toHaveLength(0);
     await expect(previewBackupJson(sourceBackup)).resolves.toMatchObject({ checksumVerified: true });
-    const discoveredStatus = await getAutomatedBackupStatus();
-    expect(discoveredStatus.healthyVersionCount).toBeGreaterThanOrEqual(1);
-    expect(discoveredStatus.versions.some((version) => version.healthy && version.householdName === "Source Nursery")).toBe(true);
+    await expect(getAutomatedBackupStatus()).resolves.toMatchObject({
+      healthyVersionCount: 0,
+      versions: []
+    });
+    await expect(downloadLocalBackupFile(automatedDownload.filename)).rejects.toThrow("not_found");
+
+    const inspection = runPackagedPlatformOwner([
+      "inspect-backup-recovery",
+      "--current-owner-user-id", source.user.id,
+      "--filename", automatedDownload.filename
+    ]);
+    expect(inspection.status, `${inspection.stdout}${inspection.stderr}`).toBe(0);
+    expect(inspection.stdout).toContain(`\"filename\":\"${automatedDownload.filename}\"`);
+    expect(inspection.stdout).toContain(`\"checksum\":\"${sourceBackup.checksum}\"`);
+    expect(inspection.stdout).not.toContain("absolutePath");
+
+    const authorization = runPackagedPlatformOwner([
+      "authorize-backup-recovery",
+      "--current-owner-user-id", source.user.id,
+      "--target-household-id", target.household.id,
+      "--target-owner-user-id", target.user.id,
+      "--confirm-target-owner-email", target.user.email,
+      "--filename", automatedDownload.filename,
+      "--confirm-checksum", sourceBackup.checksum,
+      "--confirm-source-household-name", "Source Nursery",
+      "--acknowledgement", "I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
+    ]);
+    expect(authorization.status, `${authorization.stdout}${authorization.stderr}`).toBe(0);
+
+    const recoveryRecord = await prisma.backupRecord.findUniqueOrThrow({
+      where: { storageFilename: automatedDownload.filename }
+    });
+    expect(recoveryRecord).toMatchObject({
+      householdId: target.household.id,
+      actorUserId: null,
+      kind: "recovery_authorized",
+      status: "complete",
+      checksum: sourceBackup.checksum
+    });
+    expect(await prisma.platformAuditEvent.count({
+      where: { action: "platform.backup_recovery.authorize", entityId: recoveryRecord.id }
+    })).toBe(1);
+    expect(await prisma.auditEvent.count({
+      where: {
+        householdId: target.household.id,
+        action: "backup.recovery.authorize",
+        entityId: recoveryRecord.id
+      }
+    })).toBe(1);
+
+    const replay = runPackagedPlatformOwner([
+      "authorize-backup-recovery",
+      "--current-owner-user-id", source.user.id,
+      "--target-household-id", target.household.id,
+      "--target-owner-user-id", target.user.id,
+      "--confirm-target-owner-email", target.user.email,
+      "--filename", automatedDownload.filename,
+      "--confirm-checksum", sourceBackup.checksum,
+      "--confirm-source-household-name", "Source Nursery",
+      "--acknowledgement", "I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
+    ]);
+    expect(replay.status).not.toBe(0);
+    expect(replay.stderr).toContain("backup_recovery_already_authorized");
+
+    await expect(getAutomatedBackupStatus()).resolves.toMatchObject({
+      healthyVersionCount: 1,
+      versions: [expect.objectContaining({ filename: automatedDownload.filename })]
+    });
     const recoveryDownload = await downloadLocalBackupFile(automatedDownload.filename);
     const recoveryBackup = JSON.parse(recoveryDownload.body.toString("utf8")) as V2Envelope;
     expect(recoveryBackup).toEqual(sourceBackup);

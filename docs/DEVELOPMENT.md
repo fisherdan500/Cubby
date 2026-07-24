@@ -24,8 +24,9 @@ Important variables:
 - `BETTER_AUTH_SECRET`: long random secret. Do not use the example value in production.
 - `BETTER_AUTH_URL`: canonical browser URL, including host port.
 - `TRUSTED_ORIGINS`: comma-separated origins accepted by Better Auth.
-- `ENABLE_REGISTRATION`: enables first-owner setup when no owner exists.
-- `ALLOW_PUBLIC_REGISTRATION`: default owner-controlled public registration state.
+- `ENABLE_REGISTRATION`: permits only the first account while no users, households,
+  platform audit history, or platform owner exist. Later account and household
+  policy comes only from platform settings.
 - `APP_TIMEZONE`: app-level timezone for display, grouping, reports, imports, and redirects.
 - `APP_PORT`: host port mapped by Docker Compose.
 
@@ -178,6 +179,145 @@ When changing schema:
 - Keep household ownership and indexes explicit.
 - Add service tests for permission and cross-household behavior.
 - Run Prisma validation/generation and the full app build.
+
+## Platform Owner Binding And Recovery
+
+Platform authority is deployment-wide and independent of every household role.
+All operations below are host-local, require exact stable user IDs and email
+confirmation, and write platform audit events without pretending that the target
+user was the operator.
+
+Better Auth password signup currently creates an unverified first account and
+Cubby has no outbound verification-email transport. Before initial binding only,
+an operator can explicitly attest the sole account. This requires no existing
+platform owner, exactly one user, a usable password credential, and the exact
+acknowledgement token:
+
+```bash
+npm run platform:owner -- verify-bootstrap --user-id <stable-user-id> --confirm-email <exact-email> --acknowledgement I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION
+```
+
+Verification is never implicit in binding. Bind the verified account separately:
+
+```bash
+npm run platform:owner -- bind --user-id <stable-user-id> --confirm-email <exact-email>
+```
+
+Binding fails after any authority row exists, including a retry for the same user.
+If an operator loses the command result, inspect the command exit/output and the
+platform state through an approved maintenance procedure. Do not assume success or
+rerun against a different target. Serialization conflicts return
+`platform_owner_operation_retry`; retry only the identical operation after confirming
+that its inputs remain current.
+
+Emergency recovery is a compare-and-swap operation, not ordinary household-owner
+transfer. It requires the exact current owner ID plus a different verified
+successor account with a usable password credential.
+
+If that credential-backed successor is unverified and no outbound verification
+transport is configured, first run the explicit host-local attestation operation:
+
+```bash
+npm run platform:owner -- attest-successor --current-owner-user-id <current-id> --successor-user-id <successor-id> --confirm-successor-email <exact-successor-email> --acknowledgement I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION
+```
+
+Attestation checks the persisted current authority, rejects the current owner as
+their own successor, requires a byte-exact email match (including case) and usable
+password credential, and rejects an already-verified target. It transactionally marks
+only that selected account verified and writes
+`platform.owner.successor_user.verify` with source
+`host_local_successor_verification`; the audit snapshots retain the confirmed
+current owner ID. The audit actor remains null because this is a host-local
+administrative action, not an authenticated action by the account being attested.
+This operation does not send or simulate an email, prove control of the mailbox, or
+transfer authority. Use it only after the operator has independently established
+the selected successor's identity and mailbox ownership. If the account is already
+verified through a configured transport, skip attestation.
+
+After attestation (or existing verification), transfer authority separately:
+
+```bash
+npm run platform:owner -- recover --current-owner-user-id <current-id> --successor-user-id <successor-id> --confirm-successor-email <exact-successor-email>
+```
+
+In the production image, replace `npm run platform:owner --` with:
+
+```bash
+docker compose exec -T app node /app/platform-owner.mjs
+```
+
+The commands intentionally perform no database work for invalid/help invocations.
+Do not pass credentials, passwords, or database connection strings on their command
+line.
+
+### Explicit Automated-Backup Recovery Authority
+
+Filesystem presence, sole-household status, household ownership, platform
+ownership, and target freshness do not authorize an unassociated server-local
+backup. Ordinary status and download paths require a complete backup record for
+the current household before opening a filename; foreign, unassociated, and
+nonexistent filenames share the same `not_found` result.
+
+Recovery from a preserved backup directory is therefore a separate host-local
+workflow. After creating or preserving a credential-backed target-owner account,
+binding the current platform owner, disabling public registration, setting
+household creation mode to `closed`, and confirming there are zero active
+households, provision the supported empty target:
+
+```bash
+npm run platform:owner -- provision-backup-recovery-target --current-owner-user-id <current-platform-owner-id> --target-owner-user-id <target-owner-user-id> --confirm-target-owner-email <exact-persisted-email> --target-household-name <new-target-name> --acknowledgement I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET
+```
+
+This serializable operation shares a deployment-wide advisory lock with ordinary
+onboarding, locks and rechecks the closed platform policy, and creates exactly one
+household, sole owner membership, default settings, and both audit events. It
+creates no baby or other recoverable data, and fails closed if the policy is open,
+any active household already exists, or the target owner lacks a usable password
+credential. Authorization takes the same lock and policy check. Normal household
+onboarding is not a recovery target because it creates recoverable data.
+
+Next inspect one exact candidate without database mutation:
+
+```bash
+npm run platform:owner -- inspect-backup-recovery --current-owner-user-id <current-platform-owner-id> --filename <exact-backup-filename>
+```
+
+Then copy the exact filename, checksum, and source household name from that result
+into the authorization command together with the exact fresh target identity:
+
+```bash
+npm run platform:owner -- authorize-backup-recovery --current-owner-user-id <current-platform-owner-id> --target-household-id <target-household-id> --target-owner-user-id <target-owner-user-id> --confirm-target-owner-email <exact-persisted-email> --filename <exact-backup-filename> --confirm-checksum <exact-sha256> --confirm-source-household-name <exact-source-household-name> --acknowledgement I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY
+```
+
+The authorization operation performs a non-mutating platform-owner and replay
+precheck before opening the file, then rechecks authority and target state and
+reopens the exact candidate inside a serializable transaction immediately before
+association. It requires exactly one active household, the named
+credential-backed user as that household's sole active owner, zero recoverable
+operational rows, exact byte-for-byte email and source-name confirmations, and an
+unassociated globally unique storage filename. It creates one complete
+`recovery_authorized` `BackupRecord` plus `platform.backup_recovery.authorize`
+and `backup.recovery.authorize` audit events atomically. Audit actors remain null
+because the operation is host-local; confirmed stable IDs are retained in the
+audit snapshots instead of attributing the action to the target account.
+
+The backup record is the durable, one-file/one-household authorization and its
+unique storage filename prevents replay or reassignment. No bearer recovery token
+is issued. The selected version becomes visible to that household's ordinary
+backup UI only after authorization. Download does not consume the association;
+restore preview, checksum confirmation, typed target name, and in-transaction
+fresh-target checks remain separate safety gates. See
+[Automated Local Backups](recovery/automated-local-backups.md#recovery-workflow).
+
+The additive migration retains legacy household registration columns, but new code
+does not synchronize them. Before starting a rollback image, freeze writes, set the
+legacy `ALLOW_PUBLIC_REGISTRATION` environment value to `false`, and reconcile
+`ENABLE_REGISTRATION` with the intended rollback posture. Then explicitly reconcile
+every legacy household registration value to the intended platform policy. Older
+code combines those environment values and legacy columns, so skipping any part of
+this fence can reopen or close registration incorrectly. Migration application,
+rollback reconciliation, owner operations, and deployment each require their own
+approved maintenance step.
 
 ## Verification Commands
 
