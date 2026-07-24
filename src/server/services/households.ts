@@ -5,7 +5,7 @@ import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
-import { lockActorAndBabyForWrite } from "@/server/services/mutation-locks";
+import { lockActorAndBabyForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 
@@ -28,10 +28,7 @@ export async function createOnboardingHousehold(raw: unknown) {
   const birthDate = input.birthDate ? new Date(input.birthDate) : undefined;
 
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(
-      hashtext(${"cubby.household-creation"}),
-      hashtext(${user.id})
-    )`;
+    await lockHouseholdCreation(tx);
     const existing = await tx.householdMember.findMany({
       where: { userId: user.id, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
       include: { household: true },

@@ -22,6 +22,33 @@ type PlatformOwnerCommand =
         successorUserId: string;
         confirmSuccessorEmail: string;
       };
+    }
+  | {
+      kind: "inspect-backup-recovery";
+      input: { currentOwnerUserId: string; filename: string };
+    }
+  | {
+      kind: "provision-backup-recovery-target";
+      input: {
+        currentOwnerUserId: string;
+        targetOwnerUserId: string;
+        confirmTargetOwnerEmail: string;
+        targetHouseholdName: string;
+        acknowledgement: string;
+      };
+    }
+  | {
+      kind: "authorize-backup-recovery";
+      input: {
+        currentOwnerUserId: string;
+        targetHouseholdId: string;
+        targetOwnerUserId: string;
+        confirmTargetOwnerEmail: string;
+        filename: string;
+        confirmChecksum: string;
+        confirmSourceHouseholdName: string;
+        acknowledgement: string;
+      };
     };
 
 type PlatformOwnerOperations = Pick<
@@ -30,12 +57,22 @@ type PlatformOwnerOperations = Pick<
   | "attestPlatformOwnerSuccessor"
   | "recoverPlatformOwner"
   | "verifyBootstrapPlatformOwnerCandidate"
+> & Pick<
+  typeof import("../src/server/services/platform-backup-recovery"),
+  | "provisionBackupRecoveryTarget"
+  | "inspectBackupRecoveryCandidate"
+  | "authorizeBackupRecovery"
 >;
 
 type LoadPlatformOwnerOperations = () => Promise<PlatformOwnerOperations>;
 
-const loadPlatformOwnerOperations: LoadPlatformOwnerOperations = () =>
-  import("../src/server/services/platform-owner-binding");
+const loadPlatformOwnerOperations: LoadPlatformOwnerOperations = async () => {
+  const [ownerOperations, backupRecoveryOperations] = await Promise.all([
+    import("../src/server/services/platform-owner-binding"),
+    import("../src/server/services/platform-backup-recovery")
+  ]);
+  return { ...ownerOperations, ...backupRecoveryOperations };
+};
 
 function exactArguments(
   args: readonly string[],
@@ -115,6 +152,78 @@ export function parsePlatformOwnerCommand(args: readonly string[]): PlatformOwne
       }
     };
   }
+  if (operation === "inspect-backup-recovery") {
+    const values = exactArguments(
+      rest,
+      ["--current-owner-user-id", "--filename"],
+      ["--filename"]
+    );
+    return {
+      kind: "inspect-backup-recovery",
+      input: {
+        currentOwnerUserId: values.get("--current-owner-user-id")!,
+        filename: values.get("--filename")!
+      }
+    };
+  }
+  if (operation === "provision-backup-recovery-target") {
+    const values = exactArguments(
+      rest,
+      [
+        "--current-owner-user-id",
+        "--target-owner-user-id",
+        "--confirm-target-owner-email",
+        "--target-household-name",
+        "--acknowledgement"
+      ],
+      ["--confirm-target-owner-email", "--acknowledgement"]
+    );
+    return {
+      kind: "provision-backup-recovery-target",
+      input: {
+        currentOwnerUserId: values.get("--current-owner-user-id")!,
+        targetOwnerUserId: values.get("--target-owner-user-id")!,
+        confirmTargetOwnerEmail: values.get("--confirm-target-owner-email")!,
+        targetHouseholdName: values.get("--target-household-name")!,
+        acknowledgement: values.get("--acknowledgement")!
+      }
+    };
+  }
+  if (operation === "authorize-backup-recovery") {
+    const values = exactArguments(
+      rest,
+      [
+        "--current-owner-user-id",
+        "--target-household-id",
+        "--target-owner-user-id",
+        "--confirm-target-owner-email",
+        "--filename",
+        "--confirm-checksum",
+        "--confirm-source-household-name",
+        "--acknowledgement"
+      ],
+      [
+        "--confirm-target-owner-email",
+        "--filename",
+        "--confirm-checksum",
+        "--confirm-source-household-name",
+        "--acknowledgement"
+      ]
+    );
+    return {
+      kind: "authorize-backup-recovery",
+      input: {
+        currentOwnerUserId: values.get("--current-owner-user-id")!,
+        targetHouseholdId: values.get("--target-household-id")!,
+        targetOwnerUserId: values.get("--target-owner-user-id")!,
+        confirmTargetOwnerEmail: values.get("--confirm-target-owner-email")!,
+        filename: values.get("--filename")!,
+        confirmChecksum: values.get("--confirm-checksum")!,
+        confirmSourceHouseholdName: values.get("--confirm-source-household-name")!,
+        acknowledgement: values.get("--acknowledgement")!
+      }
+    };
+  }
   throw new Error("platform_owner_command_usage");
 }
 
@@ -137,17 +246,43 @@ export async function runPlatformOwnerCommand(
       await operations.bindInitialPlatformOwner(command.input);
       return { exitCode: 0 as const, line: "Platform owner binding completed." };
     }
-    await operations.recoverPlatformOwner(command.input);
-    return { exitCode: 0 as const, line: "Platform owner recovery completed." };
+    if (command.kind === "recover") {
+      await operations.recoverPlatformOwner(command.input);
+      return { exitCode: 0 as const, line: "Platform owner recovery completed." };
+    }
+    if (command.kind === "inspect-backup-recovery") {
+      const candidate = await operations.inspectBackupRecoveryCandidate(command.input);
+      return { exitCode: 0 as const, line: `Backup recovery candidate: ${JSON.stringify(candidate)}` };
+    }
+    if (command.kind === "provision-backup-recovery-target") {
+      const target = await operations.provisionBackupRecoveryTarget(command.input);
+      return {
+        exitCode: 0 as const,
+        line: `Backup recovery target provisioned: ${target.targetHouseholdId}`
+      };
+    }
+    const authorized = await operations.authorizeBackupRecovery(command.input);
+    return {
+      exitCode: 0 as const,
+      line: `Backup recovery authorization completed: ${authorized.backupRecordId}`
+    };
   } catch (error) {
     const code = error instanceof Error ? error.message : "platform_owner_command_failed";
     return { exitCode: 1 as const, line: `Platform owner operation failed: ${code}` };
   }
 }
 
+export function writePlatformOwnerCommandResult(
+  result: { exitCode: 0 | 1; line: string },
+  streams: Pick<typeof process, "stdout" | "stderr"> = process
+) {
+  const stream = result.exitCode === 0 ? streams.stdout : streams.stderr;
+  stream.write(`${result.line}\n`);
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   void runPlatformOwnerCommand(process.argv.slice(2)).then((result) => {
-    process.stdout.write(`${result.line}\n`);
+    writePlatformOwnerCommandResult(result);
     process.exitCode = result.exitCode;
   });
 }

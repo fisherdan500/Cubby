@@ -16,7 +16,7 @@ calendar planning, backups, and integrations.
 - Original illustrated activity artwork and a household-selectable sage, rose, powder, butter, or terracotta accent.
 - Dashboard quick actions, elapsed badges, daily summary, warning dismissal, active timers, and selected-day timeline.
 - Calendar month view with events, Reports tabs including stats, milestones, growth trends, activity, heatmaps, and routine rhythm.
-- CSV/TSV activity exports, checksummed JSON recovery into a fresh household, opt-in automated local versioned backups, and Sprout Track backup import into the current household.
+- CSV/TSV activity exports, checksummed JSON recovery into a fresh household, opt-in automated local versioned backups with explicit host-local recovery authorization, and Sprout Track backup import into the current household.
 - API-key hook endpoints, webhook configuration, and browser notification preferences.
 
 ## Current Product Direction
@@ -90,6 +90,14 @@ npm run platform:owner -- attest-successor --current-owner-user-id <current-id> 
 After attestation succeeds, run the separate `recover` operation documented in
 [Development](docs/DEVELOPMENT.md#platform-owner-binding-and-recovery). Skip
 attestation when the successor is already verified.
+
+Unassociated automated-backup files are never ordinary household discoveries,
+including on a fresh sole-household target. Recovering one from a preserved host
+directory uses host-local `provision-backup-recovery-target`,
+`inspect-backup-recovery`, and `authorize-backup-recovery` commands with an empty
+credential-backed target and exact source, checksum, platform-owner,
+target-household, target-owner, and email confirmations. See
+[Automated Local Backups](docs/recovery/automated-local-backups.md#recovery-workflow).
 
 For the standard Docker image, the same bundled operations are available in the
 running app container:

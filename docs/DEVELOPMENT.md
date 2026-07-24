@@ -250,6 +250,65 @@ The commands intentionally perform no database work for invalid/help invocations
 Do not pass credentials, passwords, or database connection strings on their command
 line.
 
+### Explicit Automated-Backup Recovery Authority
+
+Filesystem presence, sole-household status, household ownership, platform
+ownership, and target freshness do not authorize an unassociated server-local
+backup. Ordinary status and download paths require a complete backup record for
+the current household before opening a filename; foreign, unassociated, and
+nonexistent filenames share the same `not_found` result.
+
+Recovery from a preserved backup directory is therefore a separate host-local
+workflow. After creating or preserving a credential-backed target-owner account,
+binding the current platform owner, disabling public registration, setting
+household creation mode to `closed`, and confirming there are zero active
+households, provision the supported empty target:
+
+```bash
+npm run platform:owner -- provision-backup-recovery-target --current-owner-user-id <current-platform-owner-id> --target-owner-user-id <target-owner-user-id> --confirm-target-owner-email <exact-persisted-email> --target-household-name <new-target-name> --acknowledgement I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET
+```
+
+This serializable operation shares a deployment-wide advisory lock with ordinary
+onboarding, locks and rechecks the closed platform policy, and creates exactly one
+household, sole owner membership, default settings, and both audit events. It
+creates no baby or other recoverable data, and fails closed if the policy is open,
+any active household already exists, or the target owner lacks a usable password
+credential. Authorization takes the same lock and policy check. Normal household
+onboarding is not a recovery target because it creates recoverable data.
+
+Next inspect one exact candidate without database mutation:
+
+```bash
+npm run platform:owner -- inspect-backup-recovery --current-owner-user-id <current-platform-owner-id> --filename <exact-backup-filename>
+```
+
+Then copy the exact filename, checksum, and source household name from that result
+into the authorization command together with the exact fresh target identity:
+
+```bash
+npm run platform:owner -- authorize-backup-recovery --current-owner-user-id <current-platform-owner-id> --target-household-id <target-household-id> --target-owner-user-id <target-owner-user-id> --confirm-target-owner-email <exact-persisted-email> --filename <exact-backup-filename> --confirm-checksum <exact-sha256> --confirm-source-household-name <exact-source-household-name> --acknowledgement I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY
+```
+
+The authorization operation performs a non-mutating platform-owner and replay
+precheck before opening the file, then rechecks authority and target state and
+reopens the exact candidate inside a serializable transaction immediately before
+association. It requires exactly one active household, the named
+credential-backed user as that household's sole active owner, zero recoverable
+operational rows, exact byte-for-byte email and source-name confirmations, and an
+unassociated globally unique storage filename. It creates one complete
+`recovery_authorized` `BackupRecord` plus `platform.backup_recovery.authorize`
+and `backup.recovery.authorize` audit events atomically. Audit actors remain null
+because the operation is host-local; confirmed stable IDs are retained in the
+audit snapshots instead of attributing the action to the target account.
+
+The backup record is the durable, one-file/one-household authorization and its
+unique storage filename prevents replay or reassignment. No bearer recovery token
+is issued. The selected version becomes visible to that household's ordinary
+backup UI only after authorization. Download does not consume the association;
+restore preview, checksum confirmation, typed target name, and in-transaction
+fresh-target checks remain separate safety gates. See
+[Automated Local Backups](recovery/automated-local-backups.md#recovery-workflow).
+
 The additive migration retains legacy household registration columns, but new code
 does not synchronize them. Before starting a rollback image, freeze writes, set the
 legacy `ALLOW_PUBLIC_REGISTRATION` environment value to `false`, and reconcile

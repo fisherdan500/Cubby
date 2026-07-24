@@ -254,6 +254,17 @@ export function runBackupRecoveryRehearsal() {
     }
     run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", schema], { cwd: migrationCwd, env });
     const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
+    const esbuildCli = resolve(repositoryRoot, "node_modules/esbuild/bin/esbuild");
+    run(process.execPath, [
+      esbuildCli,
+      "scripts/platform-owner.ts",
+      "--bundle",
+      "--platform=node",
+      "--format=esm",
+      "--target=node22",
+      "--packages=external",
+      "--outfile=dist/platform-owner.mjs"
+    ], { cwd: repositoryRoot, env });
     run(process.execPath, [vitestCli, "run", "--config", "scripts/update-baseline-fixture.vitest.config.ts"], {
       cwd: repositoryRoot,
       env: { ...env, UPDATE_BASELINE_PHASE: "seed" }

@@ -4,7 +4,10 @@ const mocks = vi.hoisted(() => ({
   verify: vi.fn(),
   attest: vi.fn(),
   bind: vi.fn(),
-  recover: vi.fn()
+  recover: vi.fn(),
+  provisionBackupTarget: vi.fn(),
+  inspectBackup: vi.fn(),
+  authorizeBackup: vi.fn()
 }));
 
 vi.mock("../../../src/server/services/platform-owner-binding", () => ({
@@ -13,6 +16,12 @@ vi.mock("../../../src/server/services/platform-owner-binding", () => ({
   attestPlatformOwnerSuccessor: mocks.attest,
   bindInitialPlatformOwner: mocks.bind,
   recoverPlatformOwner: mocks.recover
+}));
+
+vi.mock("../../../src/server/services/platform-backup-recovery", () => ({
+  provisionBackupRecoveryTarget: mocks.provisionBackupTarget,
+  inspectBackupRecoveryCandidate: mocks.inspectBackup,
+  authorizeBackupRecovery: mocks.authorizeBackup
 }));
 
 import {
@@ -127,6 +136,59 @@ describe("platform owner host-local command", () => {
     });
   });
 
+  it("requires an explicit current platform owner and filename for backup inspection", () => {
+    expect(parsePlatformOwnerCommand([
+      "inspect-backup-recovery",
+      "--current-owner-user-id", "current-owner",
+      "--filename", "cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json"
+    ])).toEqual({
+      kind: "inspect-backup-recovery",
+      input: {
+        currentOwnerUserId: "current-owner",
+        filename: "cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json"
+      }
+    });
+  });
+
+  it("preserves surrounding whitespace in exact backup filenames for rejection by the service", () => {
+    expect(parsePlatformOwnerCommand([
+      "inspect-backup-recovery",
+      "--current-owner-user-id", "current-owner",
+      "--filename", " cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json "
+    ])).toMatchObject({
+      input: { filename: " cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json " }
+    });
+  });
+
+  it("requires every explicit recovery authorization confirmation without inference", () => {
+    const args = [
+      "authorize-backup-recovery",
+      "--current-owner-user-id", "current-owner",
+      "--target-household-id", "target-household",
+      "--target-owner-user-id", "target-owner",
+      "--confirm-target-owner-email", " owner@example.test ",
+      "--filename", "cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json",
+      "--confirm-checksum", ` ${"a".repeat(64)}`,
+      "--confirm-source-household-name", " Previous Home ",
+      "--acknowledgement", " I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
+    ];
+
+    expect(parsePlatformOwnerCommand(args)).toEqual({
+      kind: "authorize-backup-recovery",
+      input: {
+        currentOwnerUserId: "current-owner",
+        targetHouseholdId: "target-household",
+        targetOwnerUserId: "target-owner",
+        confirmTargetOwnerEmail: " owner@example.test ",
+        filename: "cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json",
+        confirmChecksum: ` ${"a".repeat(64)}`,
+        confirmSourceHouseholdName: " Previous Home ",
+        acknowledgement: " I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
+      }
+    });
+    expect(() => parsePlatformOwnerCommand(args.slice(0, -2))).toThrow("platform_owner_command_usage");
+  });
+
   it("rejects unknown, duplicate, and inferred arguments", () => {
     expect(() => parsePlatformOwnerCommand([])).toThrow("platform_owner_command_usage");
     expect(() => parsePlatformOwnerCommand(["bind", "--email", "owner@example.test"])).toThrow(
@@ -205,6 +267,91 @@ describe("platform owner host-local command", () => {
       successorUserId: "successor-user",
       confirmSuccessorEmail: "successor@example.test",
       acknowledgement: "I_ACCEPT_LOCAL_SUCCESSOR_EMAIL_VERIFICATION"
+    });
+    expect(mocks.recover).not.toHaveBeenCalled();
+  });
+
+  it("dispatches backup inspection and returns the exact candidate identity", async () => {
+    const candidate = {
+      filename: "backup.json",
+      exportedAt: "2026-07-15T21:50:13.000Z",
+      householdName: "Previous Home",
+      checksum: "a".repeat(64),
+      size: 1234,
+      itemCount: 17
+    };
+    mocks.inspectBackup.mockResolvedValue(candidate);
+
+    await expect(runPlatformOwnerCommand([
+      "inspect-backup-recovery",
+      "--current-owner-user-id", "current-owner",
+      "--filename", "backup.json"
+    ])).resolves.toEqual({
+      exitCode: 0,
+      line: `Backup recovery candidate: ${JSON.stringify(candidate)}`
+    });
+    expect(mocks.inspectBackup).toHaveBeenCalledWith({
+      currentOwnerUserId: "current-owner",
+      filename: "backup.json"
+    });
+    expect(mocks.authorizeBackup).not.toHaveBeenCalled();
+  });
+
+  it("dispatches empty recovery-target provisioning with exact confirmations", async () => {
+    mocks.provisionBackupTarget.mockResolvedValue({
+      targetHouseholdId: "target-household",
+      targetOwnerUserId: "target-owner"
+    });
+
+    await expect(runPlatformOwnerCommand([
+      "provision-backup-recovery-target",
+      "--current-owner-user-id", "current-owner",
+      "--target-owner-user-id", "target-owner",
+      "--confirm-target-owner-email", " owner@example.test",
+      "--target-household-name", "Recovered Home",
+      "--acknowledgement", " I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"
+    ])).resolves.toEqual({
+      exitCode: 0,
+      line: "Backup recovery target provisioned: target-household"
+    });
+    expect(mocks.provisionBackupTarget).toHaveBeenCalledWith({
+      currentOwnerUserId: "current-owner",
+      targetOwnerUserId: "target-owner",
+      confirmTargetOwnerEmail: " owner@example.test",
+      targetHouseholdName: "Recovered Home",
+      acknowledgement: " I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"
+    });
+    expect(mocks.inspectBackup).not.toHaveBeenCalled();
+    expect(mocks.authorizeBackup).not.toHaveBeenCalled();
+  });
+
+  it("dispatches backup authorization separately from platform-owner recovery", async () => {
+    mocks.authorizeBackup.mockResolvedValue({ backupRecordId: "record-1" });
+    const args = [
+      "authorize-backup-recovery",
+      "--current-owner-user-id", "current-owner",
+      "--target-household-id", "target-household",
+      "--target-owner-user-id", "target-owner",
+      "--confirm-target-owner-email", "owner@example.test",
+      "--filename", "backup.json",
+      "--confirm-checksum", "a".repeat(64),
+      "--confirm-source-household-name", "Previous Home",
+      "--acknowledgement", "I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
+    ];
+
+    await expect(runPlatformOwnerCommand(args)).resolves.toEqual({
+      exitCode: 0,
+      line: "Backup recovery authorization completed: record-1"
+    });
+    expect(mocks.authorizeBackup).toHaveBeenCalledWith({
+      currentOwnerUserId: "current-owner",
+      targetHouseholdId: "target-household",
+      targetOwnerUserId: "target-owner",
+      confirmTargetOwnerEmail: "owner@example.test",
+      filename: "backup.json",
+      confirmChecksum: "a".repeat(64),
+      confirmSourceHouseholdName: "Previous Home",
+      acknowledgement: "I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"
     });
     expect(mocks.recover).not.toHaveBeenCalled();
   });

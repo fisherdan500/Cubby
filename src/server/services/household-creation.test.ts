@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   getAppRegistrationPolicy: vi.fn(),
   transaction: vi.fn(),
   executeRaw: vi.fn(),
-  queryRaw: vi.fn()
+  queryRaw: vi.fn(),
+  lockHouseholdCreation: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -21,7 +22,10 @@ vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "America/New_York" } }));
 vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("@/server/auth/context", () => ({ getHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: vi.fn() }));
-vi.mock("@/server/services/mutation-locks", () => ({ lockActorAndBabyForWrite: vi.fn() }));
+vi.mock("@/server/services/mutation-locks", () => ({
+  lockActorAndBabyForWrite: vi.fn(),
+  lockHouseholdCreation: mocks.lockHouseholdCreation
+}));
 vi.mock("@/server/services/registration", () => ({
   getAppRegistrationPolicy: mocks.getAppRegistrationPolicy
 }));
@@ -86,9 +90,11 @@ describe("platform-governed household creation", () => {
     await expect(createOnboardingHousehold(input)).resolves.toMatchObject({ id: "household-new" });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
-    expect(mocks.executeRaw).toHaveBeenCalledOnce();
+    expect(mocks.lockHouseholdCreation).toHaveBeenCalledWith(
+      expect.objectContaining({ household: expect.any(Object) })
+    );
     expect(mocks.queryRaw).toHaveBeenCalledOnce();
-    expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mocks.lockHouseholdCreation.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.memberFindMany.mock.invocationCallOrder[0]
     );
     expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(

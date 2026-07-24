@@ -11,7 +11,12 @@ import { activityInclude, restoreHistoricalActivityForContext } from "@/server/s
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import { backupSummary, createV2Backup, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
-import { readLocalBackup, readLocalBackupDocument, scanLocalBackups } from "@/server/services/local-backup-storage";
+import {
+  isLocalBackupFilename,
+  readLocalBackup,
+  readLocalBackupDocument,
+  scanLocalBackups
+} from "@/server/services/local-backup-storage";
 
 const backupDateTime = z.string().datetime({ offset: true });
 const backupTimerMetadata = z
@@ -663,9 +668,9 @@ function addMinutes(when: Date, minutes: number) {
   return new Date(when.getTime() + minutes * 60 * 1000);
 }
 
-async function scanLocalBackupsForStatus() {
+async function scanLocalBackupsForStatus(filenames: readonly string[]) {
   try {
-    return await scanLocalBackups(automatedBackupConfig.directory);
+    return await scanLocalBackups(automatedBackupConfig.directory, filenames);
   } catch {
     return [{
       healthy: false as const,
@@ -689,7 +694,7 @@ export async function getAutomatedBackupStatus() {
     storageFilename: true
   } as const;
   const recordWhere = { householdId: ctx.householdId, kind: "automated_export" as const };
-  const [latestSuccess, latestFailure, linkedRecords, scanned, activeHouseholdCount] = await Promise.all([
+  const [latestSuccess, latestFailure, linkedRecords] = await Promise.all([
     prisma.backupRecord.findFirst({
       where: { ...recordWhere, status: "complete" },
       orderBy: { createdAt: "desc" },
@@ -701,13 +706,19 @@ export async function getAutomatedBackupStatus() {
       select: recordSelect
     }),
     prisma.backupRecord.findMany({
-      where: { ...recordWhere, status: "complete", storageFilename: { not: null } },
+      where: {
+        householdId: ctx.householdId,
+        kind: { in: ["automated_export", "recovery_authorized"] },
+        status: "complete",
+        storageFilename: { not: null }
+      },
       orderBy: { createdAt: "desc" },
       select: recordSelect
-    }),
-    scanLocalBackupsForStatus(),
-    prisma.household.count({ where: { deletedAt: null } })
+    })
   ]);
+  const scanned = await scanLocalBackupsForStatus(
+    linkedRecords.flatMap((record) => record.storageFilename ? [record.storageFilename] : [])
+  );
 
   const storageUnavailable = scanned.some((file) => file.filename === "local backup directory");
   if (!storageUnavailable) {
@@ -725,9 +736,8 @@ export async function getAutomatedBackupStatus() {
       }
     }
   }
-  const allowBootstrapDiscovery = activeHouseholdCount === 1 && await isFreshTarget(prisma, ctx);
   const visibleVersions = scanned.filter((file) => {
-    if (allowBootstrapDiscovery) return true;
+    if (file.filename === "local backup directory") return true;
     const record = linkedRecords.find((candidate) => candidate.storageFilename === file.filename);
     return Boolean(record && (!file.healthy || record.checksum === file.checksum));
   });
@@ -784,23 +794,19 @@ export async function getAutomatedBackupStatus() {
 export async function downloadLocalBackupFile(filename: string) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "backup.manage");
-  const document = await readLocalBackupDocument(automatedBackupConfig.directory, filename);
-  const file = document.file;
-  const activeHouseholdCount = await prisma.household.count({ where: { deletedAt: null } });
-  if (activeHouseholdCount === 1 && await isFreshTarget(prisma, ctx)) {
-    return { filename: file.filename, body: document.body };
-  }
-
+  if (!isLocalBackupFilename(filename)) throw new Error("not_found");
   const linkedRecord = await prisma.backupRecord.findFirst({
     where: {
       householdId: ctx.householdId,
-      kind: "automated_export",
+      kind: { in: ["automated_export", "recovery_authorized"] },
       status: "complete",
-      storageFilename: file.filename,
-      checksum: file.checksum
+      storageFilename: filename
     },
-    select: { id: true }
+    select: { checksum: true, storageFilename: true }
   });
-  if (!linkedRecord) throw new Error("forbidden");
+  if (!linkedRecord?.checksum || !linkedRecord.storageFilename) throw new Error("not_found");
+  const document = await readLocalBackupDocument(automatedBackupConfig.directory, linkedRecord.storageFilename);
+  const file = document.file;
+  if (file.checksum !== linkedRecord.checksum) throw new Error("backup_checksum_mismatch");
   return { filename: file.filename, body: document.body };
 }

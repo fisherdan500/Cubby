@@ -105,4 +105,32 @@ describe("backup recovery rehearsal safety", () => {
       /Block household writes[\s\S]*Create the final Cubby version 2 JSON backup/
     );
   });
+
+  it("rehearses explicit packaged recovery authorization instead of implicit discovery", () => {
+    const integration = readFileSync(
+      new URL("../../../scripts/backup-recovery-rehearsal.integration.test.ts", import.meta.url),
+      "utf8"
+    );
+    const runner = readFileSync(
+      new URL("../../../scripts/backup-recovery-rehearsal.ts", import.meta.url),
+      "utf8"
+    );
+
+    expect(runner).toContain("--outfile=dist/platform-owner.mjs");
+    expect(integration).toContain("dist/platform-owner.mjs");
+    expect(integration).toContain('"provision-backup-recovery-target"');
+    expect(integration).toContain('"inspect-backup-recovery"');
+    expect(integration).toContain('"authorize-backup-recovery"');
+    expect(integration.indexOf('"provision-backup-recovery-target"')).toBeLessThan(
+      integration.indexOf('"authorize-backup-recovery"')
+    );
+    expect(integration).toContain('"I_PROVISION_EMPTY_BACKUP_RECOVERY_TARGET"');
+    expect(integration).toContain('"I_AUTHORIZE_EXPLICIT_BACKUP_RECOVERY"');
+    expect(integration).toContain("backup_recovery_already_authorized");
+    expect(integration).toContain("Promise.allSettled");
+    expect(integration).toContain("createOnboardingHousehold");
+    expect(integration).toContain("backup_recovery_household_creation_not_closed");
+    expect(integration).not.toContain('createOwnerHousehold("target", "Fresh Target")');
+    expect(integration).not.toContain("const discoveredStatus = await getAutomatedBackupStatus()");
+  });
 });

@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => ({
   memberDelete: vi.fn(),
   memberDeleteMany: vi.fn(),
   freshState: vi.fn(),
+  isLocalBackupFilename: vi.fn(),
   scanLocalBackups: vi.fn(),
   readLocalBackup: vi.fn(),
   readLocalBackupDocument: vi.fn()
@@ -96,6 +97,7 @@ vi.mock("@/server/services/mutation-locks", () => ({
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 vi.mock("@/server/services/local-backup-storage", () => ({
+  isLocalBackupFilename: mocks.isLocalBackupFilename,
   scanLocalBackups: mocks.scanLocalBackups,
   readLocalBackup: mocks.readLocalBackup,
   readLocalBackupDocument: mocks.readLocalBackupDocument
@@ -135,6 +137,7 @@ beforeEach(() => {
   mocks.householdCount.mockResolvedValue(1);
   mocks.backupCount.mockResolvedValue(0);
   mocks.backupFindFirst.mockResolvedValue(null);
+  mocks.isLocalBackupFilename.mockReturnValue(true);
   mocks.settingsFind.mockResolvedValue({ accentTheme: "sage", unitPreferences });
   mocks.babyFindMany.mockResolvedValue([]);
   mocks.babyFindFirst.mockResolvedValue(null);
@@ -386,6 +389,10 @@ describe("backup unit preferences", () => {
       where: expect.objectContaining({ status: "complete", storageFilename: { not: null } })
     }));
     expect(mocks.backupFindMany.mock.calls[0]?.[0]).not.toHaveProperty("take");
+    expect(mocks.scanLocalBackups).toHaveBeenCalledWith(
+      "/var/lib/cubby/backups",
+      ["cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json"]
+    );
   });
 
   it("reports a sanitized warning instead of failing Settings when the backup root is unavailable", async () => {
@@ -420,6 +427,10 @@ describe("backup unit preferences", () => {
   });
 
   it("downloads an existing local backup only through the protected service boundary", async () => {
+    mocks.backupFindFirst.mockResolvedValue({
+      checksum: "a".repeat(64),
+      storageFilename: "backup.json"
+    });
     mocks.readLocalBackupDocument.mockResolvedValue({
       file: {
         filename: "backup.json",
@@ -435,10 +446,22 @@ describe("backup unit preferences", () => {
     });
 
     expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "backup.manage");
+    expect(mocks.backupFindFirst).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        kind: { in: ["automated_export", "recovery_authorized"] },
+        status: "complete",
+        storageFilename: "backup.json"
+      },
+      select: { checksum: true, storageFilename: true }
+    });
     expect(mocks.readLocalBackupDocument).toHaveBeenCalledWith("/var/lib/cubby/backups", "backup.json");
+    expect(mocks.backupFindFirst.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.readLocalBackupDocument.mock.invocationCallOrder[0]!
+    );
   });
 
-  it("keeps recovery discovery and download available when only failed backup metadata exists", async () => {
+  it("hides unassociated recovery files from a fresh sole household and rejects them before file access", async () => {
     const filename = "cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
     const failedRecord = {
       id: "record-failed",
@@ -449,7 +472,7 @@ describe("backup unit preferences", () => {
       itemCount: null,
       storageFilename: null
     };
-    mocks.backupFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(failedRecord);
+    mocks.backupFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(failedRecord).mockResolvedValueOnce(null);
     mocks.backupCount.mockResolvedValue(1);
     mocks.scanLocalBackups.mockResolvedValue([{
       healthy: true,
@@ -466,12 +489,10 @@ describe("backup unit preferences", () => {
       body: Buffer.from("recovery")
     });
 
-    await expect(getAutomatedBackupStatus()).resolves.toMatchObject({
-      healthyVersionCount: 1,
-      versions: [expect.objectContaining({ filename })]
-    });
-    await expect(downloadLocalBackupFile(filename)).resolves.toEqual({ filename, body: Buffer.from("recovery") });
-    expect(mocks.backupCount).not.toHaveBeenCalled();
+    await expect(getAutomatedBackupStatus()).resolves.toMatchObject({ healthyVersionCount: 0, versions: [] });
+    await expect(downloadLocalBackupFile(filename)).rejects.toThrow("not_found");
+    expect(mocks.scanLocalBackups).toHaveBeenCalledWith("/var/lib/cubby/backups", []);
+    expect(mocks.readLocalBackupDocument).not.toHaveBeenCalled();
   });
 
   it("does not bootstrap persisted files into an occupied sole household", async () => {
@@ -492,7 +513,7 @@ describe("backup unit preferences", () => {
     });
 
     await expect(getAutomatedBackupStatus()).resolves.toMatchObject({ healthyVersionCount: 0, versions: [] });
-    await expect(downloadLocalBackupFile(filename)).rejects.toThrow("forbidden");
+    await expect(downloadLocalBackupFile(filename)).rejects.toThrow("not_found");
   });
 
   it("hides and rejects another household's persisted backup", async () => {
@@ -541,10 +562,24 @@ describe("backup unit preferences", () => {
     });
 
     const status = await getAutomatedBackupStatus();
-    await expect(downloadLocalBackupFile(otherFilename)).rejects.toThrow("forbidden");
+    await expect(downloadLocalBackupFile(otherFilename)).rejects.toThrow("not_found");
 
     expect(status.versions).toHaveLength(1);
     expect(status.versions[0]).toEqual(expect.objectContaining({ filename: ownFilename }));
+  });
+
+  it("rejects a malformed persisted filename before querying or opening storage", async () => {
+    const malformedFilename = "../cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
+    mocks.isLocalBackupFilename.mockReturnValue(false);
+    mocks.backupFindFirst.mockResolvedValue({
+      checksum: "a".repeat(64),
+      storageFilename: malformedFilename
+    });
+
+    await expect(downloadLocalBackupFile(malformedFilename)).rejects.toThrow("not_found");
+
+    expect(mocks.backupFindFirst).not.toHaveBeenCalled();
+    expect(mocks.readLocalBackupDocument).not.toHaveBeenCalled();
   });
 
   it("restores unit preferences without rewriting activities", async () => {
