@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   inviteCreate: vi.fn(),
   inviteFindUnique: vi.fn(),
+  txInviteFindUnique: vi.fn(),
   inviteUpdate: vi.fn()
 }));
 
@@ -76,11 +77,17 @@ describe("household member access management", () => {
     mocks.transaction.mockImplementation(async (callback) =>
       callback({
         $queryRaw: mocks.memberLock,
+        $executeRaw: mocks.memberLock,
         householdMember: {
           findUnique: mocks.txMemberFindUnique,
           findUniqueOrThrow: mocks.memberFindUniqueOrThrow,
           update: mocks.memberUpdate,
           updateMany: mocks.memberUpdateMany
+        },
+        invite: {
+          findUnique: mocks.txInviteFindUnique,
+          create: mocks.inviteCreate,
+          update: mocks.inviteUpdate
         },
         session: { deleteMany: mocks.sessionDeleteMany },
         auditEvent: { create: vi.fn() }
@@ -216,13 +223,26 @@ describe("household member access management", () => {
     mocks.memberFindUnique.mockResolvedValue({ ...activeMember("member-other", "parent"), householdId: "household-2" });
     await expect(updateMemberRole("member-other", { role: "caretaker" })).rejects.toThrow("forbidden");
 
-    mocks.inviteFindUnique.mockResolvedValue({
+    mocks.txInviteFindUnique.mockResolvedValue({
       id: "invite-other",
       householdId: "household-2",
       role: "parent",
       status: "pending"
     });
     await expect(revokeInvite("invite-other")).rejects.toThrow("forbidden");
+  });
+
+  it("rechecks the revoker's active authority under lock before reading the invite", async () => {
+    mocks.txMemberFindUnique.mockResolvedValueOnce({
+      ...activeMember("member-owner", "owner"),
+      disabledAt: new Date("2026-07-26T12:00:00.000Z")
+    });
+
+    await expect(revokeInvite("invite-1")).rejects.toThrow("forbidden");
+
+    expect(mocks.memberLock).toHaveBeenCalledTimes(2);
+    expect(mocks.txInviteFindUnique).not.toHaveBeenCalled();
+    expect(mocks.inviteUpdate).not.toHaveBeenCalled();
   });
 
   it("atomically suspends a manageable member, revokes every session, and audits the lifecycle", async () => {
