@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   settingsUpdate: vi.fn(),
   auditCreate: vi.fn(),
   transaction: vi.fn(),
+  executeRaw: vi.fn(),
   queryRaw: vi.fn()
 }));
 
@@ -50,9 +51,11 @@ beforeEach(() => {
     allowPublicRegistration: true
   });
   mocks.auditCreate.mockResolvedValue({ id: "audit-1" });
+  mocks.executeRaw.mockResolvedValue(1);
   mocks.queryRaw.mockResolvedValue([{ id: "platform" }]);
   mocks.transaction.mockImplementation((operation) =>
     operation({
+      $executeRaw: mocks.executeRaw,
       $queryRaw: mocks.queryRaw,
       platformAuthority: { findFirst: mocks.txAuthorityFind },
       platformSettings: {
@@ -105,11 +108,16 @@ describe("platform registration policy mutation", () => {
       where: { id: "platform", ownerUserId: "platform-owner" },
       select: { id: true, ownerUserId: true }
     });
+    expect(mocks.executeRaw).toHaveBeenCalledOnce();
+    expect(mocks.executeRaw.mock.calls[0]?.[0].join(" ")).toContain("pg_advisory_xact_lock");
     expect(mocks.queryRaw).toHaveBeenCalledTimes(2);
     expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain('FROM "PlatformAuthority"');
     expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain("FOR UPDATE");
     expect(mocks.queryRaw.mock.calls[1]?.[0].join(" ")).toContain('FROM "PlatformSettings"');
     expect(mocks.queryRaw.mock.calls[1]?.[0].join(" ")).toContain("FOR UPDATE");
+    expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.queryRaw.mock.invocationCallOrder[0]
+    );
     expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.txAuthorityFind.mock.invocationCallOrder[0]
     );

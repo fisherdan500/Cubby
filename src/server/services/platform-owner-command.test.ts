@@ -71,6 +71,42 @@ describe("platform owner host-local command", () => {
     });
   });
 
+  it("preserves raw email confirmations for bootstrap, binding, and recovery", () => {
+    expect(
+      parsePlatformOwnerCommand([
+        "verify-bootstrap",
+        "--user-id",
+        "user-explicit",
+        "--confirm-email",
+        " owner@example.test ",
+        "--acknowledgement",
+        "I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION"
+      ])
+    ).toMatchObject({ input: { confirmEmail: " owner@example.test " } });
+
+    expect(
+      parsePlatformOwnerCommand([
+        "bind",
+        "--user-id",
+        "user-explicit",
+        "--confirm-email",
+        " owner@example.test "
+      ])
+    ).toMatchObject({ input: { confirmEmail: " owner@example.test " } });
+
+    expect(
+      parsePlatformOwnerCommand([
+        "recover",
+        "--current-owner-user-id",
+        "current-owner",
+        "--successor-user-id",
+        "successor-user",
+        "--confirm-successor-email",
+        " successor@example.test "
+      ])
+    ).toMatchObject({ input: { confirmSuccessorEmail: " successor@example.test " } });
+  });
+
   it("requires an explicit user ID and confirming email for initial binding", () => {
     expect(
       parsePlatformOwnerCommand([

@@ -140,7 +140,7 @@ export function parsePlatformOwnerCommand(args: readonly string[]): PlatformOwne
     const values = exactArguments(
       rest,
       ["--user-id", "--confirm-email", "--acknowledgement"],
-      ["--acknowledgement"]
+      ["--confirm-email", "--acknowledgement"]
     );
     return {
       kind: "verify-bootstrap",
@@ -173,7 +173,7 @@ export function parsePlatformOwnerCommand(args: readonly string[]): PlatformOwne
     };
   }
   if (operation === "bind") {
-    const values = exactArguments(rest, ["--user-id", "--confirm-email"]);
+    const values = exactArguments(rest, ["--user-id", "--confirm-email"], ["--confirm-email"]);
     return {
       kind: "bind",
       input: {
@@ -187,7 +187,7 @@ export function parsePlatformOwnerCommand(args: readonly string[]): PlatformOwne
       "--current-owner-user-id",
       "--successor-user-id",
       "--confirm-successor-email"
-    ]);
+    ], ["--confirm-successor-email"]);
     return {
       kind: "recover",
       input: {
