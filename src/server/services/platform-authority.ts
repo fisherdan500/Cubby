@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireUser } from "@/server/auth/session";
-import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
+import {
+  PLATFORM_SIGNUP_POLICY_LOCK_ID,
+  PLATFORM_SINGLETON_ID
+} from "@/server/services/platform-constants";
 
 export { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 
@@ -48,6 +51,7 @@ export async function updatePlatformRegistrationSettings(raw: unknown) {
 
   return prisma.$transaction(
     async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
       await tx.$queryRaw`SELECT "id"
         FROM "PlatformAuthority"
         WHERE "id" = ${PLATFORM_SINGLETON_ID}

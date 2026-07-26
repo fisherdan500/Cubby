@@ -79,7 +79,7 @@ describe("explicit host-local bootstrap verification", () => {
     await expect(
       verifyBootstrapPlatformOwnerCandidate({
         userId: "user-explicit",
-        confirmEmail: "OWNER@example.test",
+        confirmEmail: "owner@example.test",
         acknowledgement: BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT
       })
     ).resolves.toEqual({ id: "user-explicit", emailVerified: true });
@@ -117,6 +117,21 @@ describe("explicit host-local bootstrap verification", () => {
     ).rejects.toThrow("platform_owner_bootstrap_acknowledgement_required");
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
+
+  it.each(["OWNER@example.test", " owner@example.test", "owner@example.test "])(
+    "requires a byte-exact bootstrap email confirmation for %j",
+    async (confirmEmail) => {
+      await expect(
+        verifyBootstrapPlatformOwnerCandidate({
+          userId: "user-explicit",
+          confirmEmail,
+          acknowledgement: BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT
+        })
+      ).rejects.toThrow("platform_owner_email_confirmation_mismatch");
+      expect(mocks.userUpdate).not.toHaveBeenCalled();
+      expect(mocks.auditCreate).not.toHaveBeenCalled();
+    }
+  );
 
   it("rejects surrounding whitespace in the bootstrap acknowledgement", async () => {
     await expect(
@@ -373,7 +388,7 @@ describe("explicit initial platform-owner binding", () => {
     await expect(
       bindInitialPlatformOwner({
         userId: "user-explicit",
-        confirmEmail: "OWNER@example.test"
+        confirmEmail: "owner@example.test"
       })
     ).resolves.toEqual({ id: "platform", ownerUserId: "user-explicit" });
 
@@ -414,6 +429,16 @@ describe("explicit initial platform-owner binding", () => {
     });
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
   });
+
+  it.each(["OWNER@example.test", " owner@example.test", "owner@example.test "])(
+    "requires a byte-exact binding email confirmation for %j",
+    async (confirmEmail) => {
+      await expect(
+        bindInitialPlatformOwner({ userId: "user-explicit", confirmEmail })
+      ).rejects.toThrow("platform_owner_email_confirmation_mismatch");
+      expect(mocks.authorityCreate).not.toHaveBeenCalled();
+    }
+  );
 
   it("fails instead of choosing a user when the explicit user ID does not exist", async () => {
     mocks.userFindUnique.mockResolvedValue(null);
@@ -503,7 +528,7 @@ describe("host-local platform-owner recovery", () => {
       recoverPlatformOwner({
         currentOwnerUserId: "current-owner",
         successorUserId: "successor-user",
-        confirmSuccessorEmail: "SUCCESSOR@example.test"
+        confirmSuccessorEmail: "successor@example.test"
       })
     ).resolves.toEqual({ id: "platform", ownerUserId: "successor-user" });
 
@@ -523,6 +548,21 @@ describe("host-local platform-owner recovery", () => {
       }
     });
   });
+
+  it.each(["SUCCESSOR@example.test", " successor@example.test", "successor@example.test "])(
+    "requires a byte-exact recovery successor email confirmation for %j",
+    async (confirmSuccessorEmail) => {
+      await expect(
+        recoverPlatformOwner({
+          currentOwnerUserId: "current-owner",
+          successorUserId: "successor-user",
+          confirmSuccessorEmail
+        })
+      ).rejects.toThrow("platform_owner_email_confirmation_mismatch");
+      expect(mocks.authorityUpdateMany).not.toHaveBeenCalled();
+      expect(mocks.auditCreate).not.toHaveBeenCalled();
+    }
+  );
 
   it("fails closed for a stale current-owner confirmation", async () => {
     await expect(

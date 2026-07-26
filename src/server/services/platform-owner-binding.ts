@@ -8,7 +8,7 @@ import {
 
 const explicitUserSchema = z.object({
   userId: z.string().trim().min(1),
-  confirmEmail: z.string().trim().email()
+  confirmEmail: z.string().min(1)
 });
 
 export const BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT =
@@ -24,7 +24,7 @@ const bootstrapVerificationSchema = explicitUserSchema.extend({
 const recoverySchema = z.object({
   currentOwnerUserId: z.string().trim().min(1),
   successorUserId: z.string().trim().min(1),
-  confirmSuccessorEmail: z.string().trim().email()
+  confirmSuccessorEmail: z.string().min(1)
 });
 
 const successorAttestationSchema = recoverySchema.extend({
@@ -44,7 +44,7 @@ async function requireExplicitCredentialUser(
     select: { id: true, email: true, emailVerified: true }
   });
   if (!user) throw new Error("platform_owner_user_not_found");
-  if (user.email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
+  if (user.email !== confirmEmail) {
     throw new Error("platform_owner_email_confirmation_mismatch");
   }
   const credential = await tx.account.findFirst({
