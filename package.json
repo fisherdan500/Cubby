@@ -6,8 +6,9 @@
   "description": "Cubby - Track the little things.",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && npm run build:platform-owner && next build",
+    "build": "prisma generate && npm run build:platform-owner && npm run build:integrity && next build",
     "build:platform-owner": "esbuild scripts/platform-owner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/platform-owner.mjs",
+    "build:integrity": "esbuild scripts/integrity-check.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/integrity-check.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -21,7 +22,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "platform:owner": "tsx scripts/platform-owner.ts"
+    "platform:owner": "tsx scripts/platform-owner.ts",
+    "verify:integrity": "tsx scripts/integrity-check.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.4.0",
