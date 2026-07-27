@@ -582,7 +582,23 @@ describe("activity page access", () => {
     await updateActivity("activity-1", feedingInput());
 
     expect(mocks.writeAudit).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ activityLog: expect.anything() }));
+    expect(mocks.webhookFindMany).toHaveBeenCalledWith(expect.objectContaining({ orderBy: { id: "asc" } }));
     expect(mocks.webhookCreateMany).toHaveBeenCalledOnce();
+  });
+
+  it("locks every eligible webhook endpoint sequentially in canonical ID order", async () => {
+    mocks.webhookFindMany.mockResolvedValue([{ id: "endpoint-a" }, { id: "endpoint-b" }]);
+
+    await updateActivity("activity-1", feedingInput());
+
+    const endpointLocks = mocks.activityLock.mock.calls
+      .filter(([query]) => String(query).includes('FROM "WebhookEndpoint"'));
+
+    expect(endpointLocks.map(([, endpointId]) => endpointId)).toEqual(["endpoint-a", "endpoint-b"]);
+    expect(endpointLocks.map(([query]) => String(query))).toEqual([
+      expect.stringContaining("FOR UPDATE"),
+      expect.stringContaining("FOR UPDATE")
+    ]);
   });
 
   it("upserts a vaccine subtype without deleting its document parent", async () => {

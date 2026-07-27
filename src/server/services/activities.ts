@@ -286,7 +286,8 @@ async function queueActivitySideEffects(
       deletedAt: null,
       events: { has: event }
     },
-    select: { id: true }
+    select: { id: true },
+    orderBy: { id: "asc" }
   });
 
   const lockedEndpoints: typeof endpoints = [];
