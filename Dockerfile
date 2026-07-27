@@ -24,6 +24,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/dist/platform-owner.mjs ./platform-owner.mjs
+COPY --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs
 COPY --from=builder /app/prisma ./prisma
 COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/cubby-entrypoint
 RUN sed -i 's/\x0D$//' /usr/local/bin/cubby-entrypoint

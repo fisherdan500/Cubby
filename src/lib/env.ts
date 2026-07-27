@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { readAutomatedBackupConfig } from "@/lib/automated-backup-config";
+import { readIntegrityConfig } from "@/lib/integrity-config";
 import { DEFAULT_APP_TIMEZONE, normalizeTimeZone } from "@/lib/timezone";
 
 const envSchema = z.object({
@@ -31,6 +32,11 @@ export const automatedBackupConfig = readAutomatedBackupConfig({
   AUTOMATED_BACKUP_RETENTION_COUNT: process.env.AUTOMATED_BACKUP_RETENTION_COUNT,
   AUTOMATED_BACKUP_POLL_MINUTES: process.env.AUTOMATED_BACKUP_POLL_MINUTES,
   AUTOMATED_BACKUP_RETRY_MINUTES: process.env.AUTOMATED_BACKUP_RETRY_MINUTES
+});
+
+export const integrityConfig = readIntegrityConfig({
+  INTEGRITY_CHECKS_ENABLED: process.env.INTEGRITY_CHECKS_ENABLED,
+  INTEGRITY_CHECK_INTERVAL_HOURS: process.env.INTEGRITY_CHECK_INTERVAL_HOURS
 });
 
 export function trustedOrigins() {

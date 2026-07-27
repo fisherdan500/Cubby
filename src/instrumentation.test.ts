@@ -3,11 +3,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const mocks = vi.hoisted(() => ({
-  start: vi.fn()
+  startBackup: vi.fn(),
+  startIntegrity: vi.fn()
 }));
 
 vi.mock("@/server/automated-backup-scheduler", () => ({
-  startAutomatedBackupScheduler: mocks.start
+  startAutomatedBackupScheduler: mocks.startBackup
+}));
+vi.mock("@/server/integrity-scheduler", () => ({
+  startIntegrityScheduler: mocks.startIntegrity
 }));
 
 describe("instrumentation", () => {
@@ -16,10 +20,11 @@ describe("instrumentation", () => {
     expect(config).toMatch(/instrumentationHook:\s*true/);
   });
 
-  it("starts the scheduler only in node runtime", async () => {
+  it("starts enabled scheduler modules only in node runtime", async () => {
     process.env.NEXT_RUNTIME = "nodejs";
     const { register } = await import("@/instrumentation");
     await register();
-    expect(mocks.start).toHaveBeenCalledOnce();
+    expect(mocks.startBackup).toHaveBeenCalledOnce();
+    expect(mocks.startIntegrity).toHaveBeenCalledOnce();
   });
 });
