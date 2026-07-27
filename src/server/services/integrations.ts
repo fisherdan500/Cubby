@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { requireUser } from "@/server/auth/session";
 import { writeAudit } from "@/server/services/audit";
+import { lockActorForWrite, lockApiKeyForWrite, lockBabyForWrite, lockWebhookForWrite } from "@/server/services/mutation-locks";
 
 const apiKeySchema = z.object({
   name: z.string().trim().min(1),
@@ -62,46 +63,50 @@ export async function listApiKeys() {
 }
 
 export async function createApiKey(raw: unknown) {
-  const ctx = await getHouseholdContext();
-  requirePermission(ctx, "integration.manage");
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "integration.manage");
   const input = apiKeySchema.parse(raw);
   const secret = `cubby_${randomBytes(24).toString("base64url")}`;
-  const key = await prisma.apiKey.create({
-    data: {
-      householdId: ctx.householdId,
-      name: input.name,
-      keyHash: hashSecret(secret),
-      prefix: secret.slice(0, 12),
-      scopes: input.scopes,
-      babyId: input.babyId,
-      expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined
+
+  return prisma.$transaction(async (tx) => {
+    const ctx = await lockActorForWrite(tx, requestContext);
+    requirePermission(ctx, "integration.manage");
+    if (input.babyId) {
+      const baby = await lockBabyForWrite(tx, ctx, input.babyId);
+      if (baby.inactiveAt) throw new Error("baby_inactive");
     }
+    const key = await tx.apiKey.create({
+      data: {
+        householdId: ctx.householdId,
+        name: input.name,
+        keyHash: hashSecret(secret),
+        prefix: secret.slice(0, 12),
+        scopes: input.scopes,
+        babyId: input.babyId,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined
+      }
+    });
+    await writeAudit(ctx, {
+      action: "api_key.create",
+      entityType: "api_key",
+      entityId: key.id,
+      after: { name: key.name, prefix: key.prefix, scopes: key.scopes }
+    }, tx);
+    return { ...key, secret };
   });
-  await writeAudit(ctx, {
-    action: "api_key.create",
-    entityType: "api_key",
-    entityId: key.id,
-    after: { name: key.name, prefix: key.prefix, scopes: key.scopes }
-  });
-  return { ...key, secret };
 }
 
 export async function revokeApiKey(id: string) {
-  const ctx = await getHouseholdContext();
-  requirePermission(ctx, "integration.manage");
-  const key = await prisma.apiKey.findFirst({ where: { id, householdId: ctx.householdId } });
-  if (!key) throw new Error("not_found");
-  const revoked = await prisma.apiKey.update({
-    where: { id },
-    data: { revokedAt: new Date() }
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "integration.manage");
+  return prisma.$transaction(async (tx) => {
+    const ctx = await lockActorForWrite(tx, requestContext);
+    requirePermission(ctx, "integration.manage");
+    const key = await lockApiKeyForWrite(tx, ctx, id);
+    const revoked = await tx.apiKey.update({ where: { id }, data: { revokedAt: new Date() } });
+    await writeAudit(ctx, { action: "api_key.revoke", entityType: "api_key", entityId: id, after: { prefix: key.prefix } }, tx);
+    return revoked;
   });
-  await writeAudit(ctx, {
-    action: "api_key.revoke",
-    entityType: "api_key",
-    entityId: id,
-    after: { prefix: key.prefix }
-  });
-  return revoked;
 }
 
 export async function listWebhooks() {
@@ -120,35 +125,32 @@ export async function listWebhooks() {
 }
 
 export async function createWebhook(raw: unknown) {
-  const ctx = await getHouseholdContext();
-  requirePermission(ctx, "integration.manage");
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "integration.manage");
   const input = webhookSchema.parse(raw);
-  const endpoint = await prisma.webhookEndpoint.create({
-    data: {
-      householdId: ctx.householdId,
-      name: input.name,
-      url: input.url,
-      secret: randomBytes(32).toString("base64url"),
-      events: input.events
-    }
+  return prisma.$transaction(async (tx) => {
+    const ctx = await lockActorForWrite(tx, requestContext);
+    requirePermission(ctx, "integration.manage");
+    const endpoint = await tx.webhookEndpoint.create({ data: { householdId: ctx.householdId, name: input.name, url: input.url, secret: randomBytes(32).toString("base64url"), events: input.events } });
+    await writeAudit(ctx, { action: "webhook.create", entityType: "webhook", entityId: endpoint.id, after: { name: endpoint.name, url: endpoint.url, events: endpoint.events } }, tx);
+    return endpoint;
   });
-  await writeAudit(ctx, {
-    action: "webhook.create",
-    entityType: "webhook",
-    entityId: endpoint.id,
-    after: { name: endpoint.name, url: endpoint.url, events: endpoint.events }
-  });
-  return endpoint;
 }
 
 export async function deleteWebhook(id: string) {
-  const ctx = await getHouseholdContext();
-  requirePermission(ctx, "integration.manage");
-  const endpoint = await prisma.webhookEndpoint.findFirst({ where: { id, householdId: ctx.householdId, deletedAt: null } });
-  if (!endpoint) throw new Error("not_found");
-  return prisma.webhookEndpoint.update({
-    where: { id },
-    data: { deletedAt: new Date(), enabled: false }
+  const requestContext = await getHouseholdContext();
+  requirePermission(requestContext, "integration.manage");
+  return prisma.$transaction(async (tx) => {
+    const ctx = await lockActorForWrite(tx, requestContext);
+    requirePermission(ctx, "integration.manage");
+    const endpoint = await lockWebhookForWrite(tx, ctx, id);
+    await tx.webhookDelivery.updateMany({
+      where: { endpointId: id, status: "pending" },
+      data: { status: "failed", lastError: "endpoint_deleted", nextAttemptAt: null }
+    });
+    const deleted = await tx.webhookEndpoint.update({ where: { id }, data: { deletedAt: new Date(), enabled: false } });
+    await writeAudit(ctx, { action: "webhook.delete", entityType: "webhook", entityId: id, after: { name: endpoint.name, url: endpoint.url } }, tx);
+    return deleted;
   });
 }
 

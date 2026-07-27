@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   notificationFindMany: vi.fn(),
   notificationCreateMany: vi.fn(),
   auditFindFirst: vi.fn(),
+  apiKeyFindFirst: vi.fn(),
   writeAudit: vi.fn()
 }));
 
@@ -149,6 +150,12 @@ describe("activity page access", () => {
     mocks.activityFindFirst.mockResolvedValue(null);
 
     await expect(getActivityView("missing")).rejects.toThrow("not_found");
+  });
+
+  it("rejects a revoked API key inside the activity write transaction", async () => {
+    mocks.apiKeyFindFirst.mockResolvedValue({ id: "key-1", householdId: "household-1", revokedAt: new Date(), expiresAt: null });
+    await expect(createActivityForContext(feedingInput(), { ...context("parent"), apiKeyId: "key-1", scopes: ["write"] })).rejects.toThrow("unauthenticated");
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
   });
 
   it("preserves zero-valued feeding side durations in persistence data", async () => {
@@ -811,6 +818,7 @@ function transactionClient() {
     notificationLog: { createMany: mocks.notificationCreateMany },
     contact: { findFirst: mocks.contactFindFirst },
     householdMember: { findUnique: mocks.memberFindUnique },
+    apiKey: { findFirst: mocks.apiKeyFindFirst },
     baby: { findFirst: mocks.babyFindFirst },
     feedingLog: child,
     diaperLog: child,

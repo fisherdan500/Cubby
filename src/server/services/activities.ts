@@ -7,7 +7,7 @@ import { activityCreateSchema, activityUpdateSchema, type ActivityCreateInput } 
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
 import { writeAudit } from "@/server/services/audit";
-import { lockActorAndBabyForWrite, lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
+import { lockActorAndBabyForWrite, lockActorForWrite, lockApiKeyForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 
 export const activityInclude = {
   actorMember: { include: { user: true } },
@@ -277,7 +277,7 @@ async function queueActivitySideEffects(
   ctx: HouseholdContext,
   activity: { id: string; type: ActivityType },
   event: WebhookEvent,
-  db: Pick<Prisma.TransactionClient, "webhookEndpoint" | "webhookDelivery" | "notificationPreference" | "notificationLog"> = prisma
+  db: Pick<Prisma.TransactionClient, "$queryRaw" | "webhookEndpoint" | "webhookDelivery" | "notificationPreference" | "notificationLog"> = prisma
 ) {
   const endpoints = await db.webhookEndpoint.findMany({
     where: {
@@ -289,9 +289,24 @@ async function queueActivitySideEffects(
     select: { id: true }
   });
 
-  if (endpoints.length) {
+  const lockedEndpoints: typeof endpoints = [];
+  for (const endpoint of endpoints) {
+    const rows = await db.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "WebhookEndpoint"
+      WHERE "id" = ${endpoint.id}
+        AND "householdId" = ${ctx.householdId}
+        AND "enabled" = true
+        AND "deletedAt" IS NULL
+        AND "events" @> ARRAY[${event}]::"WebhookEvent"[]
+      FOR UPDATE
+    `;
+    if (rows.length) lockedEndpoints.push(endpoint);
+  }
+
+  if (lockedEndpoints.length) {
     await db.webhookDelivery.createMany({
-      data: endpoints.map((endpoint) => ({
+      data: lockedEndpoints.map((endpoint) => ({
         householdId: ctx.householdId,
         endpointId: endpoint.id,
         event,
@@ -339,12 +354,17 @@ async function requireHouseholdMedicineContact(
   if (!contact) throw new Error("not_found");
 }
 
-export async function createActivityForContext(raw: unknown, ctx: HouseholdContext) {
+export async function createActivityForContext(raw: unknown, ctx: HouseholdContext & { apiKeyId?: string; scopes?: string[] }) {
   requirePermission(ctx, "activity.create");
   const input = activityCreateSchema.parse(raw);
 
   return prisma.$transaction(async (tx) => {
-    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
+    const lockedCtx = await lockActorForWrite(tx, ctx);
+    if ("apiKeyId" in ctx && typeof ctx.apiKeyId === "string") {
+      const key = await lockApiKeyForWrite(tx, lockedCtx, ctx.apiKeyId);
+      if (!key.scopes.includes("write") && !key.scopes.includes("*")) throw new Error("forbidden");
+    }
+    const baby = await lockBabyForWrite(tx, lockedCtx, input.babyId);
     requirePermission(lockedCtx, "activity.create");
     if (baby.inactiveAt) throw new Error("baby_inactive");
     return createActivityInTransaction(input, lockedCtx, tx, true);
