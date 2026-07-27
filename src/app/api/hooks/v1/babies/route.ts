@@ -1,12 +1,11 @@
 import { ok, handleError } from "@/server/http";
-import { hookBabies, requireApiKey } from "@/server/services/hooks";
+import { hookBabies, withApiKey } from "@/server/services/hooks";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    const ctx = await requireApiKey(request, "read");
-    return ok(await hookBabies(ctx));
+    return ok(await withApiKey(request, "read", (ctx, tx) => hookBabies(ctx, tx)));
   } catch (error) {
     return handleError(error);
   }
