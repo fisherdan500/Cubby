@@ -195,10 +195,29 @@ export async function acceptInvite(token: string) {
   const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
     const invite = await lockInviteByToken(tx, token);
-    if (!invite || invite.status !== InviteStatus.pending || invite.expiresAt <= new Date()) {
+    if (!invite || invite.status !== InviteStatus.pending) {
       throw new Error("not_found");
     }
-    if (invite.email.toLowerCase() !== user.email.toLowerCase()) throw new Error("not_found");
+    const expireInvite = async () => {
+      const expiredAt = new Date();
+      await tx.invite.update({
+        where: { id: invite.id },
+        data: { status: InviteStatus.expired }
+      });
+      await tx.auditEvent.create({
+        data: {
+          householdId: invite.householdId,
+          actorUserId: user.id,
+          action: "invite.expire",
+          entityType: "invite",
+          entityId: invite.id,
+          before: { email: invite.email, role: invite.role, status: invite.status },
+          after: { status: InviteStatus.expired, expiredAt }
+        }
+      });
+      return { expired: true } as const;
+    };
+    if (invite.expiresAt <= new Date()) return expireInvite();
 
     await tx.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
@@ -215,7 +234,27 @@ export async function acceptInvite(token: string) {
         }
       }
     });
-    if (invite.expiresAt <= new Date()) throw new Error("not_found");
+    if (invite.expiresAt <= new Date()) return expireInvite();
+    const recipients = await tx.$queryRaw<Array<{
+      id: string;
+      email: string;
+      emailVerified: boolean;
+    }>>`
+      SELECT "id", "email", "emailVerified"
+      FROM "User"
+      WHERE "id" = ${user.id}
+      FOR UPDATE
+    `;
+    const recipient = recipients[0];
+    if (
+      invite.expiresAt <= new Date() ||
+      !recipient ||
+      !recipient.emailVerified ||
+      recipient.email.toLowerCase() !== invite.email.toLowerCase()
+    ) {
+      if (invite.expiresAt <= new Date()) return expireInvite();
+      throw new Error("not_found");
+    }
     const membershipState = resolveInviteMembershipState(existing, invite.role);
     let member;
     if (membershipState === "removed" && existing) {
@@ -275,6 +314,7 @@ export async function acceptInvite(token: string) {
     return { member } as const;
   });
 
+  if ("expired" in result) throw new Error("not_found");
   if ("conflict" in result) throw new Error("invite_membership_conflict");
   return result.member;
 }

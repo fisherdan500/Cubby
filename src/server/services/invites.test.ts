@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   memberUpdate: vi.fn(),
   inviteLock: vi.fn(),
   sessionLock: vi.fn(),
+  recipientUserLock: vi.fn(),
   globalAuditCreate: vi.fn(),
   txAuditCreate: vi.fn(),
   transaction: vi.fn()
@@ -114,12 +115,19 @@ beforeEach(() => {
     createdAt: now,
     expiresAt: new Date("2026-07-27T13:00:00.000Z")
   }]);
+  mocks.recipientUserLock.mockResolvedValue([{
+    id: "invited-user",
+    email: "invitee@example.test",
+    emailVerified: true
+  }]);
   mocks.transaction.mockImplementation(async (callback) =>
     callback({
       $queryRaw: (...args: unknown[]) => {
         const query = Array.isArray(args[0]) ? args[0][0] : "";
         return typeof query === "string" && query.includes('FROM "Session"')
           ? mocks.sessionLock(...args)
+          : typeof query === "string" && query.includes('FROM "User"')
+            ? mocks.recipientUserLock(...args)
           : mocks.inviteLock(...args);
       },
       $executeRaw: mocks.inviteLock,
@@ -367,9 +375,30 @@ describe("invite consumption serialization", () => {
       name: "Other",
       email: "other@example.test"
     });
+    mocks.recipientUserLock.mockResolvedValue([{
+      id: "other-user",
+      email: "other@example.test",
+      emailVerified: true
+    }]);
 
     await expect(acceptInvite("invite-token")).rejects.toThrow("not_found");
     expect(mocks.memberCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not grant membership to an unverified recipient after locking their user record", async () => {
+    mocks.txInviteFindUnique.mockResolvedValue(pendingInvite());
+    mocks.recipientUserLock.mockResolvedValue([{
+      id: "invited-user",
+      email: "invitee@example.test",
+      emailVerified: false
+    }]);
+
+    await expect(acceptInvite("invite-token")).rejects.toThrow("not_found");
+
+    expect(mocks.recipientUserLock).toHaveBeenCalledOnce();
+    expect(mocks.memberCreate).not.toHaveBeenCalled();
+    expect(mocks.memberUpdate).not.toHaveBeenCalled();
+    expect(mocks.txInviteUpdate).not.toHaveBeenCalled();
   });
 
   it("does not grant membership when a locked invite expires after acceptance began", async () => {
@@ -384,7 +413,13 @@ describe("invite consumption serialization", () => {
     expect(mocks.inviteLock).toHaveBeenCalledTimes(2);
     expect(mocks.memberCreate).not.toHaveBeenCalled();
     expect(mocks.memberUpdate).not.toHaveBeenCalled();
-    expect(mocks.txInviteUpdate).not.toHaveBeenCalled();
+    expect(mocks.txInviteUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "invite-1" },
+      data: expect.objectContaining({ status: "expired" })
+    }));
+    expect(mocks.txAuditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ action: "invite.expire", entityId: "invite-1" })
+    }));
     expect(mocks.inviteFindUnique).not.toHaveBeenCalled();
   });
 
