@@ -1,4 +1,4 @@
-import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
+import { ActivityType, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { activityInclude, createActivityForContext } from "@/server/services/activities";
 import { hashSecret } from "@/server/services/integrations";
@@ -10,45 +10,64 @@ export type ApiKeyContext = HouseholdContext & {
   babyId?: string | null;
 };
 
-export async function requireApiKey(request: Request, requiredScope: "read" | "write") {
+function apiKeyToken(request: Request) {
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
   if (!token) throw new Error("unauthenticated");
-  const key = await prisma.apiKey.findUnique({
-    where: { keyHash: hashSecret(token) },
-    include: { household: true }
-  });
-  if (!key || key.revokedAt || key.household.deletedAt) throw new Error("unauthenticated");
-  if (key.expiresAt && key.expiresAt < new Date()) throw new Error("unauthenticated");
-  if (!key.scopes.includes(requiredScope) && !key.scopes.includes("*")) throw new Error("forbidden");
-  const actor = await prisma.householdMember.findFirst({
-    where: {
+  return token;
+}
+
+export async function withApiKey<T>(
+  request: Request,
+  requiredScope: "read" | "write",
+  action: (ctx: ApiKeyContext, tx: Prisma.TransactionClient) => Promise<T>
+) {
+  const keyHash = hashSecret(apiKeyToken(request));
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "ApiKey" WHERE "keyHash" = ${keyHash} FOR UPDATE
+    `;
+    if (locked.length !== 1) throw new Error("unauthenticated");
+
+    const key = await tx.apiKey.findUnique({ where: { id: locked[0].id }, include: { household: true } });
+    if (!key || key.revokedAt || key.household.deletedAt) throw new Error("unauthenticated");
+    if (key.expiresAt && key.expiresAt < new Date()) throw new Error("unauthenticated");
+    if (!key.scopes.includes(requiredScope) && !key.scopes.includes("*")) throw new Error("forbidden");
+
+    const actor = await tx.householdMember.findFirst({
+      where: {
+        householdId: key.householdId,
+        disabledAt: null,
+        deletedAt: null,
+        role: { in: [HouseholdRole.owner, HouseholdRole.admin, HouseholdRole.parent] }
+      },
+      orderBy: { joinedAt: "asc" }
+    });
+    if (!actor) throw new Error("forbidden");
+
+    await tx.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } });
+    return action({
+      apiKeyId: key.id,
+      scopes: key.scopes,
+      babyId: key.babyId,
+      userId: actor.userId,
       householdId: key.householdId,
-      disabledAt: null,
-      deletedAt: null,
-      role: { in: [HouseholdRole.owner, HouseholdRole.admin, HouseholdRole.parent] }
-    },
-    orderBy: { joinedAt: "asc" }
+      memberId: actor.id,
+      role: actor.role
+    }, tx);
   });
-  if (!actor) throw new Error("forbidden");
-  await prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } });
-  return {
-    apiKeyId: key.id,
-    scopes: key.scopes,
-    babyId: key.babyId,
-    userId: actor.userId,
-    householdId: key.householdId,
-    memberId: actor.id,
-    role: actor.role
-  } satisfies ApiKeyContext;
+}
+
+export async function requireApiKey(request: Request, requiredScope: "read" | "write") {
+  return withApiKey(request, requiredScope, async (ctx) => ctx);
 }
 
 export function assertBabyAllowed(ctx: ApiKeyContext, babyId: string) {
   if (ctx.babyId && ctx.babyId !== babyId) throw new Error("forbidden");
 }
 
-export async function hookBabies(ctx: ApiKeyContext) {
-  return prisma.baby.findMany({
+export async function hookBabies(ctx: ApiKeyContext, db: Pick<Prisma.TransactionClient, "baby"> = prisma) {
+  return db.baby.findMany({
     where: {
       householdId: ctx.householdId,
       deletedAt: null,
@@ -58,22 +77,22 @@ export async function hookBabies(ctx: ApiKeyContext) {
   });
 }
 
-export async function hookBabyStatus(ctx: ApiKeyContext, babyId: string) {
+export async function hookBabyStatus(ctx: ApiKeyContext, babyId: string, db: Pick<Prisma.TransactionClient, "baby" | "activityLog"> = prisma) {
   assertBabyAllowed(ctx, babyId);
-  const baby = await prisma.baby.findFirst({ where: { id: babyId, householdId: ctx.householdId, deletedAt: null } });
+  const baby = await db.baby.findFirst({ where: { id: babyId, householdId: ctx.householdId, deletedAt: null } });
   if (!baby) throw new Error("not_found");
   const [lastFeeding, lastDiaper, activeTimers] = await Promise.all([
-    prisma.activityLog.findFirst({
+    db.activityLog.findFirst({
       where: { householdId: ctx.householdId, babyId, deletedAt: null, type: ActivityType.feeding },
       include: activityInclude,
       orderBy: { occurredAt: "desc" }
     }),
-    prisma.activityLog.findFirst({
+    db.activityLog.findFirst({
       where: { householdId: ctx.householdId, babyId, deletedAt: null, type: ActivityType.diaper },
       include: activityInclude,
       orderBy: { occurredAt: "desc" }
     }),
-    prisma.activityLog.findMany({
+    db.activityLog.findMany({
       where: { householdId: ctx.householdId, babyId, deletedAt: null, timerState: { in: [TimerState.running, TimerState.paused] } },
       include: activityInclude,
       orderBy: { startedAt: "desc" }
@@ -82,9 +101,9 @@ export async function hookBabyStatus(ctx: ApiKeyContext, babyId: string) {
   return { baby, lastFeeding, lastDiaper, activeTimers };
 }
 
-export async function hookActivities(ctx: ApiKeyContext, babyId: string) {
+export async function hookActivities(ctx: ApiKeyContext, babyId: string, db: Pick<Prisma.TransactionClient, "activityLog"> = prisma) {
   assertBabyAllowed(ctx, babyId);
-  return prisma.activityLog.findMany({
+  return db.activityLog.findMany({
     where: { householdId: ctx.householdId, babyId, deletedAt: null },
     include: activityInclude,
     orderBy: { occurredAt: "desc" },
@@ -97,9 +116,9 @@ export async function hookCreateActivity(ctx: ApiKeyContext, babyId: string, raw
   return createActivityForContext({ ...(raw as object), babyId }, ctx);
 }
 
-export async function hookLatestMeasurements(ctx: ApiKeyContext, babyId: string) {
+export async function hookLatestMeasurements(ctx: ApiKeyContext, babyId: string, db: Pick<Prisma.TransactionClient, "activityLog"> = prisma) {
   assertBabyAllowed(ctx, babyId);
-  return prisma.activityLog.findMany({
+  return db.activityLog.findMany({
     where: { householdId: ctx.householdId, babyId, deletedAt: null, type: ActivityType.measurement },
     include: activityInclude,
     orderBy: { occurredAt: "desc" },
