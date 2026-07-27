@@ -24,6 +24,7 @@ enum PlatformRegistrationMode {
 enum InviteStatus {
   pending
   accepted
+  conflicted
   revoked
   expired
 }

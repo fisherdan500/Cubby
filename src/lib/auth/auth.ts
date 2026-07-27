@@ -6,6 +6,8 @@ import { env, trustedOrigins } from "@/lib/env";
 import { assertUserCanStartSession } from "@/server/auth/member-status";
 import { withSuspendedSessionErrorTranslation } from "@/server/auth/session-adapter";
 
+export const SESSION_FRESH_AGE_SECONDS = 60 * 10;
+
 export const auth = betterAuth({
   database: withSuspendedSessionErrorTranslation(
     prismaAdapter(prisma, {
@@ -32,7 +34,7 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 60,
     updateAge: 60 * 60 * 24,
-    freshAge: 60 * 10,
+    freshAge: SESSION_FRESH_AGE_SECONDS,
     cookieCache: {
       enabled: true,
       maxAge: 60

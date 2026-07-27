@@ -17,8 +17,16 @@ export const babySchema = z.object({
 
 export const inviteSchema = z.object({
   email: z.string().trim().email(),
-  role: z.enum(["admin", "parent", "caretaker", "read_only"])
+  role: z.enum(["admin", "parent", "caretaker", "read_only"]),
+  expiresInHours: z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.coerce.number().int().optional()
+  )
 });
+
+export const bulkInviteRevokeSchema = z.object({
+  acknowledgement: z.string()
+}).strict();
 
 export const memberRoleSchema = z.object({
   role: z.enum(["admin", "parent", "caretaker", "read_only"])

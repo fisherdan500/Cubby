@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw, ShieldCheck, Trash2, UserRoundX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   assignableHouseholdRoles,
   canAssignHouseholdRole,
@@ -26,6 +27,8 @@ type InviteRow = {
   role: HouseholdRoleName;
   expiresAt: string;
 };
+
+const BULK_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
 
 export function MemberAccessManager({
   members,
@@ -98,6 +101,24 @@ export function MemberAccessManager({
       setMessage(result.error.message);
       return;
     }
+    router.refresh();
+  }
+
+  async function revokeAll(formData: FormData) {
+    setMessage("");
+    setBusyId("revoke-all");
+    const response = await fetch("/api/invites/revoke-all", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ acknowledgement: formData.get("acknowledgement") })
+    });
+    const result = await response.json();
+    setBusyId("");
+    if (!result.ok) {
+      setMessage(result.error.message);
+      return;
+    }
+    setMessage(`Revoked ${result.data.revokedCount} pending invitation${result.data.revokedCount === 1 ? "" : "s"}.`);
     router.refresh();
   }
 
@@ -212,6 +233,29 @@ export function MemberAccessManager({
             </div>
           );
         })}
+        {viewerRole === "owner" && invites.length > 0 ? (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void revokeAll(new FormData(event.currentTarget));
+            }}
+            className="space-y-2 rounded-lg border border-danger/40 bg-danger/5 p-3"
+          >
+            <p className="text-sm font-bold text-danger">Emergency revoke all pending invitations</p>
+            <p className="text-xs text-muted-foreground">
+              This requires a recent sign-in. Type <span className="font-mono font-semibold">{BULK_REVOKE_ACKNOWLEDGEMENT}</span> exactly.
+            </p>
+            <Input
+              name="acknowledgement"
+              aria-label="Bulk invitation revocation acknowledgement"
+              autoComplete="off"
+              required
+            />
+            <Button type="submit" variant="danger" disabled={busyId === "revoke-all"}>
+              Revoke all pending invitations
+            </Button>
+          </form>
+        ) : null}
       </section>
     </div>
   );

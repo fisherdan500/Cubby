@@ -4,6 +4,8 @@ import { hasPermission } from "@/domain/roles";
 const mocks = vi.hoisted(() => ({
   getHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
+  assertFreshSession: vi.fn(),
+  requireFreshSession: vi.fn(),
   writeAudit: vi.fn(),
   memberFindUnique: vi.fn(),
   txMemberFindUnique: vi.fn(),
@@ -12,9 +14,11 @@ const mocks = vi.hoisted(() => ({
   memberUpdateMany: vi.fn(),
   sessionDeleteMany: vi.fn(),
   memberLock: vi.fn(),
+  sessionLock: vi.fn(),
   transaction: vi.fn(),
   inviteCreate: vi.fn(),
   inviteFindUnique: vi.fn(),
+  inviteFindMany: vi.fn(),
   txInviteFindUnique: vi.fn(),
   inviteUpdate: vi.fn()
 }));
@@ -33,6 +37,7 @@ vi.mock("@/lib/db/prisma", () => ({
     invite: {
       create: mocks.inviteCreate,
       findUnique: mocks.inviteFindUnique,
+      findMany: mocks.inviteFindMany,
       update: mocks.inviteUpdate
     },
     $transaction: mocks.transaction
@@ -44,7 +49,11 @@ vi.mock("@/server/auth/context", () => ({
   requirePermission: mocks.requirePermission
 }));
 
-vi.mock("@/server/auth/session", () => ({ requireUser: vi.fn() }));
+vi.mock("@/server/auth/session", () => ({
+  assertFreshSession: mocks.assertFreshSession,
+  requireFreshSession: mocks.requireFreshSession,
+  requireUser: vi.fn()
+}));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
 import {
@@ -65,10 +74,18 @@ describe("household member access management", () => {
       memberId: "member-owner",
       role: "owner"
     });
+    mocks.inviteFindMany.mockResolvedValue([]);
+    mocks.requireFreshSession.mockResolvedValue({ user: { id: "user-owner" }, session: { id: "session-owner", createdAt: new Date() } });
     mocks.requirePermission.mockImplementation((ctx, permission) => {
       if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
     });
     mocks.memberLock.mockResolvedValue([{ id: "locked" }]);
+    mocks.sessionLock.mockResolvedValue([{
+      id: "session-owner",
+      userId: "user-owner",
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+    }]);
     mocks.txMemberFindUnique.mockImplementation(({ where }) => {
       if (where.id === "member-owner") return activeMember("member-owner", "owner");
       if (where.id === "member-admin") return activeMember("member-admin", "admin");
@@ -76,7 +93,12 @@ describe("household member access management", () => {
     });
     mocks.transaction.mockImplementation(async (callback) =>
       callback({
-        $queryRaw: mocks.memberLock,
+        $queryRaw: (...args: unknown[]) => {
+          const query = Array.isArray(args[0]) ? args[0][0] : "";
+          return typeof query === "string" && query.includes('FROM "Session"')
+            ? mocks.sessionLock(...args)
+            : mocks.memberLock(...args);
+        },
         $executeRaw: mocks.memberLock,
         householdMember: {
           findUnique: mocks.txMemberFindUnique,
@@ -86,6 +108,7 @@ describe("household member access management", () => {
         },
         invite: {
           findUnique: mocks.txInviteFindUnique,
+          findMany: mocks.inviteFindMany,
           create: mocks.inviteCreate,
           update: mocks.inviteUpdate
         },

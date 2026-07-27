@@ -36,11 +36,20 @@ export function InviteForm({ canInviteAdmin }: { canInviteAdmin: boolean }) {
         <option value="read_only">Read only</option>
         {canInviteAdmin ? <option value="admin">Admin</option> : null}
       </select>
+      <select name="expiresInHours" defaultValue="" className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm">
+        <option value="">Default expiry</option>
+        <option value="1">1 hour</option>
+        <option value="24">1 day</option>
+        <option value="168">7 days</option>
+      </select>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       {acceptUrl ? (
         <div className="rounded-lg bg-muted p-3 text-sm">
           <p className="font-semibold">Invite link</p>
           <p className="break-all text-muted-foreground">{acceptUrl}</p>
+          <p className="mt-2 text-xs font-semibold text-muted-foreground">
+            Copy this link now. Cubby displays the raw invitation link only once, and issuing another invite for this email revokes earlier pending links.
+          </p>
         </div>
       ) : null}
       <Button>Invite member</Button>
