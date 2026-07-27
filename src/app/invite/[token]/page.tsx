@@ -7,7 +7,8 @@ import { getSession } from "@/server/auth/session";
 import { getInviteByToken } from "@/server/services/invites";
 
 export default async function InvitePage({ params }: { params: { token: string } }) {
-  const [invite, session] = await Promise.all([getInviteByToken(params.token), getSession()]);
+  const session = await getSession();
+  const invite = await getInviteByToken(params.token, session?.user.email);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
@@ -16,7 +17,19 @@ export default async function InvitePage({ params }: { params: { token: string }
         {!invite ? (
           <>
             <h1 className="text-center font-editorial text-3xl font-bold">Invite unavailable</h1>
-            <p className="text-sm text-muted-foreground">This invite is expired, revoked, or no longer exists.</p>
+            <p className="text-sm text-muted-foreground">
+              Sign in with the invited account to review this invitation. For privacy, unavailable and mismatched invitations look the same.
+            </p>
+            {!session?.user ? (
+              <div className="flex gap-3">
+                <Link href={`/login?next=/invite/${params.token}`}>
+                  <Button>Sign in to review</Button>
+                </Link>
+                <Link href={`/register?next=/invite/${params.token}`}>
+                  <Button variant="secondary">Create account</Button>
+                </Link>
+              </div>
+            ) : null}
           </>
         ) : (
           <>

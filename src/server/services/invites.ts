@@ -4,10 +4,15 @@ import {
   canAssignHouseholdRole,
   canManageHouseholdRole
 } from "@/domain/roles";
+import { SESSION_FRESH_AGE_SECONDS } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
-import { inviteSchema, memberRoleSchema } from "@/lib/validation/onboarding";
+import {
+  bulkInviteRevokeSchema,
+  inviteSchema,
+  memberRoleSchema
+} from "@/lib/validation/onboarding";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
-import { requireUser } from "@/server/auth/session";
+import { requireFreshSession, requireUser } from "@/server/auth/session";
 import { writeAudit } from "@/server/services/audit";
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
 
@@ -15,25 +20,122 @@ export function hashInviteToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+export const BULK_INVITE_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
+
+type MembershipState =
+  | "absent"
+  | "active_same_role"
+  | "active_role_conflict"
+  | "suspended"
+  | "removed";
+
+export function resolveInviteMembershipState(
+  member: { role: HouseholdRole; disabledAt: Date | null; deletedAt: Date | null } | null,
+  inviteRole: HouseholdRole
+): MembershipState {
+  if (!member) return "absent";
+  if (member.deletedAt) return "removed";
+  if (member.disabledAt) return "suspended";
+  return member.role === inviteRole ? "active_same_role" : "active_role_conflict";
+}
+
+export function resolveInviteExpiry(role: HouseholdRole, requestedHours?: number, now = new Date()) {
+  const isAdmin = role === HouseholdRole.admin;
+  const defaultHours = isAdmin ? 24 : 24 * 7;
+  const maximumHours = isAdmin ? 24 * 7 : 24 * 30;
+  const hours = requestedHours ?? defaultHours;
+
+  if (!Number.isInteger(hours) || hours < 1 || hours > maximumHours) {
+    throw new Error("invite_expiry_invalid");
+  }
+
+  return new Date(now.getTime() + hours * 60 * 60 * 1000);
+}
+
+async function lockAndRevalidateFreshSession(
+  tx: Prisma.TransactionClient,
+  freshSession: Awaited<ReturnType<typeof requireFreshSession>>
+) {
+  const sessions = await tx.$queryRaw<Array<{
+    id: string;
+    userId: string;
+    createdAt: Date;
+    expiresAt: Date;
+  }>>`
+    SELECT "id", "userId", "createdAt", "expiresAt"
+    FROM "Session"
+    WHERE "id" = ${freshSession.session.id}
+    FOR UPDATE
+  `;
+  const session = sessions[0];
+  if (!session || session.userId !== freshSession.user.id || session.expiresAt <= new Date()) {
+    throw new Error("unauthenticated");
+  }
+  if (Date.now() - session.createdAt.getTime() >= SESSION_FRESH_AGE_SECONDS * 1000) {
+    throw new Error("fresh_authentication_required");
+  }
+}
+
 export async function createInvite(raw: unknown) {
   const requestContext = await getHouseholdContext();
   requirePermission(requestContext, "invite.create");
   const input = inviteSchema.parse(raw);
+  const freshSession = input.role === "admin" ? await requireFreshSession() : null;
+  if (freshSession) {
+    if (freshSession.user.id !== requestContext.userId) throw new Error("forbidden");
+  }
   const token = randomBytes(32).toString("base64url");
 
   return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
     const { ctx } = await lockMemberMutation(tx, requestContext, requestContext.memberId);
     requirePermission(ctx, "invite.create");
+    if (freshSession) {
+      await lockAndRevalidateFreshSession(tx, freshSession);
+      if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+    }
     if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
+    const expiresAt = resolveInviteExpiry(input.role as HouseholdRole, input.expiresInHours);
+
+    const normalizedEmail = input.email.toLowerCase();
+    const rotatedIds = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "Invite"
+      WHERE "householdId" = ${ctx.householdId}
+        AND LOWER(BTRIM("email")) = ${normalizedEmail}
+        AND "status" = ${InviteStatus.pending}::"InviteStatus"
+      ORDER BY "id"
+      FOR UPDATE
+    `;
+    const rotatedInvites = rotatedIds.length === 0
+      ? []
+      : await tx.invite.findMany({
+          where: { id: { in: rotatedIds.map(({ id }) => id) } },
+          orderBy: { id: "asc" }
+        });
+    const rotatedAt = new Date();
+    for (const rotated of rotatedInvites) {
+      await tx.invite.update({
+        where: { id: rotated.id },
+        data: { status: InviteStatus.revoked, revokedAt: rotatedAt }
+      });
+      await writeAudit(ctx, {
+        action: "invite.rotate",
+        entityType: "invite",
+        entityId: rotated.id,
+        before: { email: rotated.email, role: rotated.role, status: rotated.status },
+        after: { status: InviteStatus.revoked, revokedAt: rotatedAt }
+      }, tx);
+    }
 
     const invite = await tx.invite.create({
       data: {
         householdId: ctx.householdId,
-        email: input.email.toLowerCase(),
+        email: normalizedEmail,
         role: input.role as HouseholdRole,
         tokenHash: hashInviteToken(token),
         invitedByUserId: ctx.userId,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        expiresAt
       },
       include: { household: true }
     });
@@ -43,17 +145,25 @@ export async function createInvite(raw: unknown) {
       entityId: invite.id,
       after: { email: invite.email, role: invite.role, expiresAt: invite.expiresAt }
     }, tx);
-    return { ...invite, acceptUrl: `/invite/${token}` };
+    return {
+      id: invite.id,
+      email: invite.email,
+      role: invite.role,
+      expiresAt: invite.expiresAt,
+      acceptUrl: `/invite/${token}`
+    };
   });
 }
 
-export async function getInviteByToken(token: string) {
+export async function getInviteByToken(token: string, recipientEmail?: string) {
+  if (!recipientEmail) return null;
   const invite = await prisma.invite.findUnique({
     where: { tokenHash: hashInviteToken(token) },
     include: { household: true }
   });
   if (!invite) return null;
-  if (invite.status !== InviteStatus.pending || invite.expiresAt < new Date()) return null;
+  if (invite.status !== InviteStatus.pending || invite.expiresAt <= new Date()) return null;
+  if (invite.email.toLowerCase() !== recipientEmail.toLowerCase()) return null;
   return invite;
 }
 
@@ -82,13 +192,21 @@ async function lockInviteById(tx: Prisma.TransactionClient, inviteId: string) {
 export async function acceptInvite(token: string) {
   const user = await requireUser();
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
     const invite = await lockInviteByToken(tx, token);
-    if (!invite || invite.status !== InviteStatus.pending || invite.expiresAt < new Date()) {
+    if (!invite || invite.status !== InviteStatus.pending || invite.expiresAt <= new Date()) {
       throw new Error("not_found");
     }
-    if (invite.email.toLowerCase() !== user.email.toLowerCase()) throw new Error("forbidden");
+    if (invite.email.toLowerCase() !== user.email.toLowerCase()) throw new Error("not_found");
 
+    await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "HouseholdMember"
+      WHERE "householdId" = ${invite.householdId} AND "userId" = ${user.id}
+      ORDER BY "id"
+      FOR UPDATE
+    `;
     const existing = await tx.householdMember.findUnique({
       where: {
         householdId_userId: {
@@ -97,15 +215,17 @@ export async function acceptInvite(token: string) {
         }
       }
     });
+    if (invite.expiresAt <= new Date()) throw new Error("not_found");
+    const membershipState = resolveInviteMembershipState(existing, invite.role);
     let member;
-    if (existing?.deletedAt) {
+    if (membershipState === "removed" && existing) {
       member = await tx.householdMember.update({
         where: { id: existing.id },
-        data: { role: invite.role, deletedAt: null }
+        data: { role: invite.role, disabledAt: null, deletedAt: null }
       });
-    } else if (existing) {
+    } else if (membershipState === "active_same_role" && existing) {
       member = existing;
-    } else {
+    } else if (membershipState === "absent") {
       member = await tx.householdMember.create({
         data: {
           householdId: invite.householdId,
@@ -114,6 +234,23 @@ export async function acceptInvite(token: string) {
           displayName: user.name
         }
       });
+    } else {
+      await tx.invite.update({
+        where: { id: invite.id },
+        data: { status: InviteStatus.conflicted }
+      });
+      await tx.auditEvent.create({
+        data: {
+          householdId: invite.householdId,
+          actorUserId: user.id,
+          actorMemberId: existing?.id,
+          action: "invite.conflict",
+          entityType: "invite",
+          entityId: invite.id,
+          after: { reason: membershipState }
+        }
+      });
+      return { conflict: true } as const;
     }
 
     await tx.invite.update({
@@ -135,8 +272,11 @@ export async function acceptInvite(token: string) {
         after: { userId: user.id, role: member.role }
       }
     });
-    return member;
+    return { member } as const;
   });
+
+  if ("conflict" in result) throw new Error("invite_membership_conflict");
+  return result.member;
 }
 
 export async function listMembersAndInvites() {
@@ -151,7 +291,7 @@ export async function listMembersAndInvites() {
         orderBy: { joinedAt: "asc" }
       },
       invites: {
-        where: { status: InviteStatus.pending },
+        where: { status: InviteStatus.pending, expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" }
       }
     }
@@ -316,6 +456,61 @@ export async function revokeInvite(inviteId: string) {
       after: { status: revoked.status, revokedAt: revoked.revokedAt }
     }, tx);
     return revoked;
+  });
+}
+
+export async function revokeAllPendingInvites(raw: unknown) {
+  const input = bulkInviteRevokeSchema.parse(raw);
+  if (input.acknowledgement !== BULK_INVITE_REVOKE_ACKNOWLEDGEMENT) {
+    throw new Error("bulk_invite_revoke_acknowledgement_required");
+  }
+
+  const freshSession = await requireFreshSession();
+  const requestContext = await getHouseholdContext();
+  if (freshSession.user.id !== requestContext.userId) throw new Error("forbidden");
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    const { ctx } = await lockMemberMutation(tx, requestContext, requestContext.memberId);
+    if (ctx.role !== HouseholdRole.owner) throw new Error("forbidden");
+    await lockAndRevalidateFreshSession(tx, freshSession);
+    if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+
+    const lockedIds = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "Invite"
+      WHERE "householdId" = ${ctx.householdId}
+        AND "status" = ${InviteStatus.pending}::"InviteStatus"
+      ORDER BY "id"
+      FOR UPDATE
+    `;
+    if (lockedIds.length === 0) return { revokedCount: 0 };
+
+    const invites = await tx.invite.findMany({
+      where: { id: { in: lockedIds.map(({ id }) => id) } },
+      orderBy: { id: "asc" }
+    });
+    const revokedAt = new Date();
+    for (const invite of invites) {
+      await tx.invite.update({
+        where: { id: invite.id },
+        data: { status: InviteStatus.revoked, revokedAt }
+      });
+      await writeAudit(ctx, {
+        action: "invite.emergency_revoke",
+        entityType: "invite",
+        entityId: invite.id,
+        before: { email: invite.email, role: invite.role, status: invite.status },
+        after: { status: InviteStatus.revoked, revokedAt }
+      }, tx);
+    }
+    await writeAudit(ctx, {
+      action: "invite.emergency_revoke_all",
+      entityType: "household",
+      entityId: ctx.householdId,
+      after: { revokedCount: invites.length, revokedAt }
+    }, tx);
+    return { revokedCount: invites.length };
   });
 }
 

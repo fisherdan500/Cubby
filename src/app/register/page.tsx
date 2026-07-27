@@ -13,7 +13,9 @@ export default async function RegisterPage({ searchParams }: { searchParams: { n
     getAppRegistrationPolicy(),
     inviteToken ? getInviteByToken(inviteToken) : Promise.resolve(null)
   ]);
-  const allowed = Boolean(invite) || policy.bootstrapAccountAllowed || policy.publicRegistrationAllowed;
+  // An invite token permits only the opaque registration form. The signup endpoint
+  // remains authoritative for token validity, expiry, and recipient-email matching.
+  const allowed = Boolean(inviteToken) || policy.bootstrapAccountAllowed || policy.publicRegistrationAllowed;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
