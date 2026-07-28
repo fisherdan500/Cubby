@@ -68,6 +68,11 @@ describe("tenant-isolation inventory", () => {
           model: "DashboardWarningDismissal",
           ownership: "direct",
           disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "Reminder",
+          ownership: "direct",
+          disposition: "constraint_slice"
         })
       ])
     );
