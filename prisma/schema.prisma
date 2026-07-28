@@ -591,6 +591,7 @@ model WebhookEndpoint {
   deliveries  WebhookDelivery[]
 
   @@index([householdId])
+  @@unique([householdId, id])
   @@index([deletedAt])
 }
 

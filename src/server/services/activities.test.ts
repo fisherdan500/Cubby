@@ -598,6 +598,9 @@ describe("activity page access", () => {
     expect(mocks.writeAudit).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ activityLog: expect.anything() }));
     expect(mocks.webhookFindMany).toHaveBeenCalledWith(expect.objectContaining({ orderBy: { id: "asc" } }));
     expect(mocks.webhookCreateMany).toHaveBeenCalledOnce();
+    expect(mocks.webhookCreateMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ householdId: "household-1", endpointId: "endpoint-1" })]
+    });
   });
 
   it("locks every eligible webhook endpoint sequentially in canonical ID order", async () => {
