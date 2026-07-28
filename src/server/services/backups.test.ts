@@ -268,7 +268,9 @@ describe("backup unit preferences", () => {
         contacts: { create: [{ contactId: "saved-contact-1" }] }
       })
     }));
-    expect(mocks.reminderCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ babyId: "saved-baby-1" }) }));
+    expect(mocks.reminderCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ householdId: "household-1", babyId: "saved-baby-1" })
+    }));
     expect(mocks.restoreActivity.mock.invocationCallOrder[0]).toBeLessThan(mocks.babyUpdate.mock.invocationCallOrder[0]);
     expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
     expect(mocks.writeAudit).toHaveBeenCalledWith(ctx, expect.objectContaining({ action: "backup.restore" }), expect.anything());

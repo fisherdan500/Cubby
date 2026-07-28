@@ -182,6 +182,20 @@ describe("activity page access", () => {
     );
   });
 
+  it("writes an activity with the locked household, baby, and actor member", async () => {
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    expect(mocks.activityCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          household: { connect: { id: "household-1" } },
+          baby: { connect: { id: "baby-1" } },
+          actorMember: { connect: { id: "member-current" } }
+        })
+      })
+    );
+  });
+
   it("restores stopped timer metadata without recomputing duration", async () => {
     await restoreHistoricalActivityForContext(
       {
@@ -624,7 +638,10 @@ describe("activity page access", () => {
     await deleteActivity("activity-1");
 
     expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ id: "activity-1", householdId: "household-1", deletedAt: null }) })
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "activity-1", householdId: "household-1", deletedAt: null }),
+        data: { deletedAt: expect.any(Date), deletedByMemberId: "member-current" }
+      })
     );
   });
 
@@ -662,6 +679,31 @@ describe("activity page access", () => {
       expect.anything(),
       expect.objectContaining({ action: "activity.undo", entityId: "activity-1" }),
       expect.objectContaining({ activityLog: expect.anything(), auditEvent: expect.anything() })
+    );
+  });
+
+  it("clears deletion attribution when undo restores a deleted activity", async () => {
+    const deletedAt = new Date("2026-07-14T10:05:00.000Z");
+    mocks.auditFindFirst.mockImplementation(({ where }) =>
+      Promise.resolve(
+        where.actorMemberId
+          ? {
+              id: "audit-delete",
+              action: "activity.delete",
+              entityId: "activity-1",
+              createdAt: new Date("2026-07-14T10:05:01.000Z"),
+              before: { updatedAt: "2026-07-14T10:00:00.000Z", deletedAt: null },
+              after: { updatedAt: "2026-07-14T10:00:00.000Z", deletedAt: deletedAt.toISOString() }
+            }
+          : null
+      )
+    );
+    mocks.activityFindFirst.mockResolvedValue({ ...activity("member-current"), deletedAt });
+
+    await undoLastActivity();
+
+    expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { deletedAt: null, deletedByMemberId: null } })
     );
   });
 

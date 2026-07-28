@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
   txWebhookCreate: vi.fn(),
   txWebhookFindFirst: vi.fn(),
   txWebhookUpdate: vi.fn(),
-  txWebhookDeliveryUpdateMany: vi.fn()
+  txWebhookDeliveryUpdateMany: vi.fn(),
+  notificationPreferenceCreate: vi.fn()
 }));
 
 vi.mock("@/server/auth/context", () => ({
@@ -32,11 +33,12 @@ vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     apiKey: { create: mocks.apiKeyCreate, findFirst: mocks.apiKeyFindFirst, update: mocks.apiKeyUpdate },
     webhookEndpoint: { create: mocks.webhookCreate, findFirst: mocks.webhookFindFirst, update: mocks.webhookUpdate },
+    notificationPreference: { create: mocks.notificationPreferenceCreate },
     $transaction: mocks.transaction
   }
 }));
 
-import { createApiKey, createWebhook, deleteWebhook, revokeApiKey } from "@/server/services/integrations";
+import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, saveNotificationPreference } from "@/server/services/integrations";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -45,12 +47,14 @@ beforeEach(() => {
   mocks.txMemberFindUnique.mockResolvedValue({ id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: new Date("2026-07-26T12:00:00.000Z"), deletedAt: null });
   const key = { id: "key-1", name: "Rehearsal", prefix: "cubby_test", scopes: ["read"] };
   const endpoint = { id: "webhook-1", name: "Rehearsal", url: "https://example.test/hook", events: ["activity_created"] };
+  const preference = { id: "preference-1", householdId: "household-1", userId: "owner-user", babyId: "baby-1" };
   mocks.apiKeyCreate.mockResolvedValue(key); mocks.txApiKeyCreate.mockResolvedValue(key);
   mocks.apiKeyFindFirst.mockResolvedValue(key); mocks.txApiKeyFindFirst.mockResolvedValue(key);
   mocks.apiKeyUpdate.mockResolvedValue(key); mocks.txApiKeyUpdate.mockResolvedValue(key);
   mocks.webhookCreate.mockResolvedValue(endpoint); mocks.txWebhookCreate.mockResolvedValue(endpoint);
   mocks.webhookFindFirst.mockResolvedValue(endpoint); mocks.txWebhookFindFirst.mockResolvedValue(endpoint);
   mocks.webhookUpdate.mockResolvedValue(endpoint); mocks.txWebhookUpdate.mockResolvedValue(endpoint);
+  mocks.notificationPreferenceCreate.mockResolvedValue(preference);
   mocks.transaction.mockImplementation(async (callback) => callback({
     $queryRaw: mocks.memberLock,
     householdMember: { findUnique: mocks.txMemberFindUnique },
@@ -105,5 +109,48 @@ describe("capability mutation serialization", () => {
     expect(mocks.apiKeyUpdate).not.toHaveBeenCalled();
     expect(mocks.webhookCreate).not.toHaveBeenCalled();
     expect(mocks.webhookUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("notification preference creation", () => {
+  it("writes the current household with an explicitly scoped Baby preference", async () => {
+    await saveNotificationPreference({
+      babyId: "baby-1",
+      timerOverdue: false,
+      activityCreated: true,
+      reminders: false,
+      quietHoursStart: "22:00",
+      quietHoursEnd: "07:00"
+    });
+
+    expect(mocks.notificationPreferenceCreate).toHaveBeenCalledWith({
+      data: {
+        householdId: "household-1",
+        userId: "owner-user",
+        babyId: "baby-1",
+        timerOverdue: false,
+        activityCreated: true,
+        reminders: false,
+        quietHoursStart: "22:00",
+        quietHoursEnd: "07:00"
+      }
+    });
+  });
+
+  it("preserves the optional Baby scope for a household-wide preference", async () => {
+    await saveNotificationPreference({});
+
+    expect(mocks.notificationPreferenceCreate).toHaveBeenCalledWith({
+      data: {
+        householdId: "household-1",
+        userId: "owner-user",
+        babyId: undefined,
+        timerOverdue: true,
+        activityCreated: false,
+        reminders: true,
+        quietHoursStart: undefined,
+        quietHoursEnd: undefined
+      }
+    });
   });
 });

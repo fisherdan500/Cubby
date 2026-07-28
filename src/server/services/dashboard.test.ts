@@ -7,9 +7,13 @@ const mocks = vi.hoisted(() => ({
   activityFindFirst: vi.fn(),
   activityFindMany: vi.fn(),
   activityGroupBy: vi.fn(),
+  babyFindFirst: vi.fn(),
   cookieGet: vi.fn(),
   dismissalFindMany: vi.fn(),
-  getHouseholdHome: vi.fn()
+  dismissalUpsert: vi.fn(),
+  getHouseholdContext: vi.fn(),
+  getHouseholdHome: vi.fn(),
+  requirePermission: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -19,10 +23,17 @@ vi.mock("@/lib/db/prisma", () => ({
       findMany: mocks.activityFindMany,
       groupBy: mocks.activityGroupBy
     },
+    baby: { findFirst: mocks.babyFindFirst },
     dashboardWarningDismissal: {
-      findMany: mocks.dismissalFindMany
+      findMany: mocks.dismissalFindMany,
+      upsert: mocks.dismissalUpsert
     }
   }
+}));
+
+vi.mock("@/server/auth/context", () => ({
+  getHouseholdContext: mocks.getHouseholdContext,
+  requirePermission: mocks.requirePermission
 }));
 
 vi.mock("@/server/services/households", () => ({
@@ -37,6 +48,7 @@ import {
   addDaysToDateKey,
   buildDashboardAggregates,
   buildDashboardWarningItems,
+  dismissDashboardWarning,
   filterDismissedWarnings,
   getDashboard,
   getDashboardPageData,
@@ -98,6 +110,14 @@ function householdHome() {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.getHouseholdContext.mockResolvedValue({
+    userId: "user-1",
+    householdId: "household-1",
+    memberId: "member-1",
+    role: "owner"
+  });
+  mocks.babyFindFirst.mockResolvedValue({ id: "baby-1" });
+  mocks.dismissalUpsert.mockResolvedValue({ id: "dismissal-1" });
 });
 
 describe("dashboard service data loading", () => {
@@ -360,6 +380,59 @@ describe("dashboard warnings", () => {
 
     expect(date.timezone).toBe("America/New_York");
     expect(date.key).toBe("2026-06-18");
+  });
+});
+
+describe("dashboard warning dismissal", () => {
+  it("dismisses a household-owned warning with the current household member", async () => {
+    await dismissDashboardWarning({ babyId: "baby-1", type: "feeding", fingerprint: "feeding-1" });
+
+    expect(mocks.requirePermission).toHaveBeenCalledWith(
+      expect.objectContaining({ householdId: "household-1", memberId: "member-1" }),
+      "activity.read"
+    );
+    expect(mocks.babyFindFirst).toHaveBeenCalledWith({
+      where: { id: "baby-1", householdId: "household-1", deletedAt: null },
+      select: { id: true }
+    });
+    expect(mocks.dismissalUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        householdId_babyId_type_fingerprint: {
+          householdId: "household-1",
+          babyId: "baby-1",
+          type: "feeding",
+          fingerprint: "feeding-1"
+        }
+      },
+      create: {
+        householdId: "household-1",
+        babyId: "baby-1",
+        type: "feeding",
+        fingerprint: "feeding-1",
+        dismissedByMemberId: "member-1"
+      }
+    }));
+  });
+
+  it("reattributes an existing dismissal to the current household member", async () => {
+    await dismissDashboardWarning({ babyId: "baby-1", type: "timer", fingerprint: "timer-1" });
+
+    expect(mocks.dismissalUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      update: {
+        dismissedByMemberId: "member-1",
+        dismissedAt: expect.any(Date)
+      }
+    }));
+  });
+
+  it("does not upsert a dismissal for a foreign or inactive baby", async () => {
+    mocks.babyFindFirst.mockResolvedValue(null);
+
+    await expect(
+      dismissDashboardWarning({ babyId: "foreign-baby", type: "feeding", fingerprint: "feeding-1" })
+    ).rejects.toThrow("not_found");
+
+    expect(mocks.dismissalUpsert).not.toHaveBeenCalled();
   });
 });
 
