@@ -47,7 +47,7 @@ export const tenantIsolationInventory = [
   { model: "PushSubscription", ownership: "direct", operationClasses: ["notification_write"], disposition: "deferred_constraint" },
   { model: "Reminder", ownership: "direct", operationClasses: ["reminder_write"], disposition: "constraint_slice" },
   { model: "Session", ownership: "global", operationClasses: ["auth_session"], disposition: "excluded" },
-  { model: "WebhookDelivery", ownership: "direct", operationClasses: ["webhook_delivery"], disposition: "deferred_constraint" },
+  { model: "WebhookDelivery", ownership: "direct", operationClasses: ["webhook_delivery"], disposition: "constraint_slice" },
   { model: "WebhookEndpoint", ownership: "direct", operationClasses: ["integration_write", "webhook_delivery"], disposition: "deferred_constraint" },
 
   { model: "FeedingLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
