@@ -40,7 +40,7 @@ export const tenantIsolationInventory = [
   { model: "Invite", ownership: "direct", operationClasses: ["membership"], disposition: "service_guard" },
   { model: "MedicineCatalog", ownership: "direct", operationClasses: ["catalog_write", "activity_parent"], disposition: "deferred_constraint" },
   { model: "NotificationLog", ownership: "direct", operationClasses: ["notification_delivery"], disposition: "deferred_constraint" },
-  { model: "NotificationPreference", ownership: "direct", operationClasses: ["notification_write"], disposition: "deferred_constraint" },
+  { model: "NotificationPreference", ownership: "direct", operationClasses: ["notification_write"], disposition: "constraint_slice" },
   { model: "PlatformAuditEvent", ownership: "global", operationClasses: ["platform_audit"], disposition: "excluded" },
   { model: "PlatformAuthority", ownership: "global", operationClasses: ["platform_authority"], disposition: "excluded" },
   { model: "PlatformSettings", ownership: "global", operationClasses: ["platform_settings"], disposition: "excluded" },

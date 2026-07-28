@@ -73,6 +73,11 @@ describe("tenant-isolation inventory", () => {
           model: "Reminder",
           ownership: "direct",
           disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "NotificationPreference",
+          ownership: "direct",
+          disposition: "constraint_slice"
         })
       ])
     );
