@@ -83,6 +83,11 @@ describe("tenant-isolation inventory", () => {
           model: "WebhookDelivery",
           ownership: "direct",
           disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "ImportedRecord",
+          ownership: "direct",
+          disposition: "constraint_slice"
         })
       ])
     );

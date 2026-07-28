@@ -36,7 +36,7 @@ export const tenantIsolationInventory = [
   { model: "HouseholdMember", ownership: "direct", operationClasses: ["membership", "activity_actor"], disposition: "constraint_slice" },
   { model: "HouseholdSettings", ownership: "direct", operationClasses: ["settings_write"], disposition: "service_guard" },
   { model: "ImportBatch", ownership: "direct", operationClasses: ["import"], disposition: "deferred_constraint" },
-  { model: "ImportedRecord", ownership: "direct", operationClasses: ["import_mapping"], disposition: "deferred_constraint" },
+  { model: "ImportedRecord", ownership: "direct", operationClasses: ["import_mapping"], disposition: "constraint_slice" },
   { model: "Invite", ownership: "direct", operationClasses: ["membership"], disposition: "service_guard" },
   { model: "MedicineCatalog", ownership: "direct", operationClasses: ["catalog_write", "activity_parent"], disposition: "deferred_constraint" },
   { model: "NotificationLog", ownership: "direct", operationClasses: ["notification_delivery"], disposition: "deferred_constraint" },
