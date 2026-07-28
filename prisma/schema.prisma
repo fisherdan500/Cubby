@@ -718,6 +718,7 @@ model ImportBatch {
   actorUser      User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
   records        ImportedRecord[]
 
+  @@unique([householdId, id])
   @@index([householdId])
   @@index([sourceSystem])
   @@index([createdAt])

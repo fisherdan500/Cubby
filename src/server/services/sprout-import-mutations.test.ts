@@ -84,8 +84,12 @@ describe("Sprout import mutation boundaries", () => {
         })
       )
     ).resolves.toEqual(expect.objectContaining({ result: expect.objectContaining({ activities: 1, calendarEvents: 1 }) }));
-
     expect(mocks.transaction).toHaveBeenCalledOnce();
+    expect(mocks.importedCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ householdId: "household-1", importBatchId: "batch-1" })
+      })
+    );
     expect(mocks.lockBaby).toHaveBeenCalledWith(expect.anything(), context("owner"), "baby-1");
     expect(mocks.activityCreate).toHaveBeenCalledOnce();
     expect(mocks.activityCreate).toHaveBeenCalledWith(
