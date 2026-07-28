@@ -256,6 +256,7 @@ model HouseholdMember {
   dashboardWarningDismissals DashboardWarningDismissal[]
 
   @@unique([householdId, userId])
+  @@unique([householdId, id])
   @@index([householdId, role])
   @@index([userId])
   @@index([userId, disabledAt, deletedAt])
@@ -308,6 +309,7 @@ model Baby {
   dashboardWarningDismissals DashboardWarningDismissal[]
 
   @@index([householdId])
+  @@unique([householdId, id])
   @@index([inactiveAt])
   @@index([deletedAt])
   @@index([createdAt])
