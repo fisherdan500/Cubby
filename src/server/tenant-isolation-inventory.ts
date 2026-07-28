@@ -32,7 +32,7 @@ export const tenantIsolationInventory = [
   { model: "BackupRecord", ownership: "direct", operationClasses: ["backup", "restore", "import"], disposition: "deferred_constraint" },
   { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "deferred_constraint" },
   { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "deferred_constraint" },
-  { model: "DashboardWarningDismissal", ownership: "direct", operationClasses: ["dashboard_write"], disposition: "deferred_constraint" },
+  { model: "DashboardWarningDismissal", ownership: "direct", operationClasses: ["dashboard_write"], disposition: "constraint_slice" },
   { model: "HouseholdMember", ownership: "direct", operationClasses: ["membership", "activity_actor"], disposition: "constraint_slice" },
   { model: "HouseholdSettings", ownership: "direct", operationClasses: ["settings_write"], disposition: "service_guard" },
   { model: "ImportBatch", ownership: "direct", operationClasses: ["import"], disposition: "deferred_constraint" },

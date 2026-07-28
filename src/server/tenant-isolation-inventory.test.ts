@@ -63,7 +63,12 @@ describe("tenant-isolation inventory", () => {
         expect.objectContaining({ model: "MedicineLog", ownership: "multi_parent" }),
         expect.objectContaining({ model: "CalendarEventBaby", ownership: "multi_parent" }),
         expect.objectContaining({ model: "CalendarEventContact", ownership: "multi_parent" }),
-        expect.objectContaining({ model: "VaccineDocument", ownership: "inherited" })
+        expect.objectContaining({ model: "VaccineDocument", ownership: "inherited" }),
+        expect.objectContaining({
+          model: "DashboardWarningDismissal",
+          ownership: "direct",
+          disposition: "constraint_slice"
+        })
       ])
     );
   });
