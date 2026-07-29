@@ -60,4 +60,41 @@ describe("integrity command", () => {
     expect(writes[0]).not.toContain("DATABASE_URL");
     expect(formatIntegrityReport(JSON.parse(writes[0]), "json")).toBe(writes[0]);
   });
+
+  it("emits one redacted versioned incomplete report with exit code 3", async () => {
+    const writes: string[] = [];
+    const operations: IntegrityCommandOperations = {
+      run: async () => ({
+        version: 1,
+        status: "incomplete",
+        startedAt: "2026-07-27T15:30:00.000Z",
+        completedAt: "2026-07-27T15:30:01.000Z",
+        findings: [
+          {
+            id: "backup_file_checksum_unavailable",
+            severity: "error",
+            count: 1,
+            evidenceFingerprint: "a".repeat(64)
+          },
+          {
+            id: "import_preview_operation_evidence_unavailable",
+            severity: "error",
+            count: 1,
+            evidenceFingerprint: "b".repeat(64)
+          }
+        ],
+        evidenceFingerprint: "c".repeat(64)
+      })
+    };
+
+    const code = await runIntegrityCommand(["--format", "json", "--scope", "all"], async () => operations, (line) => {
+      writes.push(line);
+    });
+
+    expect(code).toBe(3);
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toContain('"version":1');
+    expect(writes[0]).toContain('"status":"incomplete"');
+    expect(writes[0]).not.toContain("DATABASE_URL");
+  });
 });
