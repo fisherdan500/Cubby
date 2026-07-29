@@ -28,6 +28,67 @@ describe("sprout import parsing", () => {
     expect(parsed.tables.FeedLog).toHaveLength(1);
   });
 
+  it("rejects a ZIP payload entry above the decompressed import limit", async () => {
+    const zip = new JSZip();
+    zip.file("data.json", JSON.stringify({ data: { Baby: [] }, padding: "x".repeat(25 * 1024 * 1024) }));
+
+    const bytes = Buffer.from(await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+
+    await expect(sproutImportTestUtils.parseSproutBackup(bytes, "sprout-track-backup.zip")).rejects.toThrow(
+      "sprout_zip_entry_too_large"
+    );
+  });
+
+  it("rejects an oversized ZIP environment entry before parsing a payload", async () => {
+    const zip = new JSZip();
+    zip.file("data.json", JSON.stringify({ data: { Baby: [] } }));
+    zip.file("backup.env", "x".repeat(25 * 1024 * 1024 + 1));
+
+    const bytes = Buffer.from(await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+
+    await expect(sproutImportTestUtils.parseSproutBackup(bytes, "sprout-track-backup.zip")).rejects.toThrow(
+      "sprout_zip_entry_too_large"
+    );
+  });
+
+  it("rejects ZIP archives whose selected entries exceed the aggregate import limit", async () => {
+    const zip = new JSZip();
+    zip.file("data.json", JSON.stringify({ data: { Baby: [] }, padding: "x".repeat(14 * 1024 * 1024) }));
+    zip.file("backup.env", "x".repeat(14 * 1024 * 1024));
+
+    const bytes = Buffer.from(await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+
+    await expect(sproutImportTestUtils.parseSproutBackup(bytes, "sprout-track-backup.zip")).rejects.toThrow(
+      "sprout_zip_entries_too_large"
+    );
+  });
+
+  it("rejects ZIP archives with unsupported entries before parsing a payload", async () => {
+    const zip = new JSZip();
+    zip.file("data.json", JSON.stringify({ data: { Baby: [] } }));
+    zip.file("notes.txt", "unexpected");
+
+    const bytes = Buffer.from(await zip.generateAsync({ type: "uint8array" }));
+
+    await expect(sproutImportTestUtils.parseSproutBackup(bytes, "sprout-track-backup.zip")).rejects.toThrow(
+      "sprout_zip_unsupported_entry"
+    );
+  });
+
+  it("rejects ZIP archives with too many entries before parsing a payload", async () => {
+    const zip = new JSZip();
+    zip.file("data.json", JSON.stringify({ data: { Baby: [] } }));
+    for (let index = 0; index < 10; index += 1) {
+      zip.file(`unused-${index}.txt`, "unused");
+    }
+
+    const bytes = Buffer.from(await zip.generateAsync({ type: "uint8array" }));
+
+    await expect(sproutImportTestUtils.parseSproutBackup(bytes, "sprout-track-backup.zip")).rejects.toThrow(
+      "sprout_zip_too_many_entries"
+    );
+  });
+
   it("rejects non-SQLite standalone database uploads", () => {
     expect(() => sproutImportTestUtils.validateSqlite(Buffer.from("not a sqlite database"))).toThrow(
       "invalid_sqlite_backup"
