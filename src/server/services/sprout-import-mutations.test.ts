@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import JSZip from "jszip";
 import { hasPermission } from "@/domain/roles";
 
 const mocks = vi.hoisted(() => ({
@@ -29,7 +30,7 @@ vi.mock("@/server/services/mutation-locks", () => ({
   lockBabyForWrite: mocks.lockBaby
 }));
 
-import { importSproutBackup } from "@/server/services/sprout-import";
+import { importSproutBackup, previewSproutBackup } from "@/server/services/sprout-import";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,6 +53,17 @@ beforeEach(() => {
 });
 
 describe("Sprout import mutation boundaries", () => {
+  it("rejects unsupported ZIP entries before preview or import database access", async () => {
+    const formData = await zipUpload();
+
+    await expect(previewSproutBackup(formData)).rejects.toThrow("sprout_zip_unsupported_entry");
+    await expect(importSproutBackup(formData)).rejects.toThrow("sprout_zip_unsupported_entry");
+
+    expect(mocks.importedCount).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.batchCreate).not.toHaveBeenCalled();
+  });
+
   it("rechecks backup permission with the locked role before any import write", async () => {
     mocks.lockActor.mockResolvedValue(context("parent"));
 
@@ -148,6 +160,15 @@ describe("Sprout import mutation boundaries", () => {
 function upload(tables: Record<string, unknown[]>) {
   const form = new FormData();
   form.append("file", new Blob([JSON.stringify({ data: tables })], { type: "application/json" }), "data.json");
+  return form;
+}
+
+async function zipUpload() {
+  const zip = new JSZip();
+  zip.file("data.json", JSON.stringify({ data: { Baby: [] } }));
+  zip.file("notes.txt", "unexpected");
+  const form = new FormData();
+  form.append("file", new Blob([await zip.generateAsync({ type: "arraybuffer" })], { type: "application/zip" }), "sprout.zip");
   return form;
 }
 

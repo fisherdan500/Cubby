@@ -59,6 +59,8 @@ type ImportCounters = {
 
 const SOURCE_SYSTEM = "sprout-track";
 const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
+const MAX_ZIP_ENTRY_BYTES = 25 * 1024 * 1024;
+const MAX_ZIP_ENTRY_COUNT = 10;
 const ACTIVITY_TABLES = [
   "SleepLog",
   "FeedLog",
@@ -342,9 +344,18 @@ async function parseSproutBackup(bytes: Buffer, filename?: string): Promise<Pars
   if (filename?.toLowerCase().endsWith(".zip") || looksLikeZip(bytes)) {
     const zip = await JSZip.loadAsync(bytes);
     const entries = Object.values(zip.files).filter((entry) => !entry.dir);
-    const dbEntry = entries.find((entry) => entry.name.split(/[\\/]/).pop() === "baby-tracker.db");
-    const jsonEntry = entries.find((entry) => entry.name.split(/[\\/]/).pop() === "data.json");
-    const envEntry = entries.find((entry) => entry.name.toLowerCase().endsWith(".env"));
+    if (entries.length > MAX_ZIP_ENTRY_COUNT) throw new Error("sprout_zip_too_many_entries");
+    const payloadEntries = entries.filter((entry) => ["baby-tracker.db", "data.json"].includes(entry.name.split(/[\\/]/).pop() ?? ""));
+    const envEntries = entries.filter((entry) => entry.name.toLowerCase().endsWith(".env"));
+    if (payloadEntries.length !== 1 || envEntries.length > 1 || entries.length !== payloadEntries.length + envEntries.length) {
+      throw new Error("sprout_zip_unsupported_entry");
+    }
+    const dbEntry = payloadEntries.find((entry) => entry.name.split(/[\\/]/).pop() === "baby-tracker.db");
+    const jsonEntry = payloadEntries.find((entry) => entry.name.split(/[\\/]/).pop() === "data.json");
+    const envEntry = envEntries[0];
+    const selectedEntries = [dbEntry, jsonEntry, envEntry].filter((entry): entry is JSZip.JSZipObject => Boolean(entry));
+    const selectedEntriesSize = selectedEntries.reduce((total, entry) => total + zipEntrySize(entry), 0);
+    if (selectedEntriesSize > MAX_ZIP_ENTRY_BYTES) throw new Error("sprout_zip_entries_too_large");
     const envText = envEntry ? await envEntry.async("string") : undefined;
     if (dbEntry) {
       const dbBytes = Buffer.from(await dbEntry.async("uint8array"));
@@ -388,6 +399,14 @@ async function parseSproutBackup(bytes: Buffer, filename?: string): Promise<Pars
     env: parseEnv(undefined),
     warnings
   };
+}
+
+function zipEntrySize(entry: JSZip.JSZipObject) {
+  const size = (entry as JSZip.JSZipObject & { _data?: { uncompressedSize?: unknown } })._data?.uncompressedSize;
+  if (typeof size !== "number" || !Number.isSafeInteger(size) || size < 0 || size > MAX_ZIP_ENTRY_BYTES) {
+    throw new Error("sprout_zip_entry_too_large");
+  }
+  return size;
 }
 
 function looksLikeZip(bytes: Buffer) {
