@@ -19,7 +19,15 @@ const preview = {
   role: "admin" as const,
   suspended: false,
   protectedOwner: false,
-  warnings: ["sole_admin", "active_timers", "pending_invitations", "notification_authority"] as const
+  authorityImpact: { apiKeysToRevoke: 2, webhooksToRetire: 3 },
+  warnings: [
+    "sole_admin",
+    "active_timers",
+    "pending_invitations",
+    "notification_authority",
+    "api_key_authority",
+    "webhook_authority"
+  ] as const
 };
 
 describe("LeaveHouseholdForm", () => {
@@ -31,6 +39,8 @@ describe("LeaveHouseholdForm", () => {
     expect(text).toContain("running or paused timers");
     expect(text).toContain("pending invitations");
     expect(text).toContain("browser notification");
+    expect(text).toContain("2 api keys");
+    expect(text).toContain("3 webhooks");
     expect(html).toContain("River House");
     expect(html).toContain('name="confirmation"');
     expect(html).toContain("Type the household name exactly");

@@ -256,6 +256,8 @@ model HouseholdMember {
   activities  ActivityLog[]
   auditEvents AuditEvent[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  delegatedApiKeys ApiKey[] @relation("ApiKeyDelegatedBy")
+  delegatedWebhookEndpoints WebhookEndpoint[] @relation("WebhookDelegatedBy")
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -559,39 +561,47 @@ model DashboardWarningDismissal {
 }
 
 model ApiKey {
-  id          String    @id @default(cuid())
-  householdId String
-  name        String
-  keyHash     String    @unique
-  prefix      String
-  scopes      String[]
-  babyId      String?
-  expiresAt   DateTime?
-  revokedAt   DateTime?
-  lastUsedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  id                   String           @id @default(cuid())
+  householdId          String
+  delegatedByMemberId  String?
+  legacyUnattributed   Boolean          @default(false)
+  name                 String
+  keyHash              String           @unique
+  prefix               String
+  scopes               String[]
+  babyId               String?
+  expiresAt            DateTime?
+  revokedAt            DateTime?
+  lastUsedAt           DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  household            Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  delegatedByMember    HouseholdMember? @relation("ApiKeyDelegatedBy", fields: [householdId, delegatedByMemberId], references: [householdId, id], onDelete: Restrict)
 
   @@index([householdId])
+  @@index([delegatedByMemberId])
   @@index([prefix])
 }
 
 model WebhookEndpoint {
-  id          String    @id @default(cuid())
-  householdId String
-  name        String
-  url         String
-  secret      String
-  events      WebhookEvent[]
-  enabled     Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  deliveries  WebhookDelivery[]
+  id                   String           @id @default(cuid())
+  householdId          String
+  delegatedByMemberId  String?
+  legacyUnattributed   Boolean          @default(false)
+  name                 String
+  url                  String
+  secret               String
+  events               WebhookEvent[]
+  enabled              Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  deletedAt            DateTime?
+  household            Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  delegatedByMember    HouseholdMember? @relation("WebhookDelegatedBy", fields: [householdId, delegatedByMemberId], references: [householdId, id], onDelete: Restrict)
+  deliveries           WebhookDelivery[]
 
   @@index([householdId])
+  @@index([delegatedByMemberId])
   @@unique([householdId, id])
   @@index([deletedAt])
 }

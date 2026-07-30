@@ -13,14 +13,17 @@ type LeavePreview = {
   role: "owner" | "admin" | "parent" | "caretaker" | "read_only";
   suspended: boolean;
   protectedOwner: boolean;
+  authorityImpact: { apiKeysToRevoke: number; webhooksToRetire: number };
   warnings: readonly HouseholdLeaveWarning[];
 };
 
-const warningText: Record<HouseholdLeaveWarning, string> = {
-  sole_admin: "You are the only remaining administrator. The owner will need to appoint another administrator if needed.",
-  active_timers: "Running or paused timers you started remain household records, but you will no longer be able to manage them.",
-  pending_invitations: "Pending invitations you issued or received for this household will be revoked.",
-  notification_authority: "Your browser notification preferences and subscriptions for this household will be removed."
+const warningText: Record<HouseholdLeaveWarning, (impact: LeavePreview["authorityImpact"]) => string> = {
+  sole_admin: () => "You are the only remaining administrator. The owner will need to appoint another administrator if needed.",
+  active_timers: () => "Running or paused timers you started remain household records, but you will no longer be able to manage them.",
+  pending_invitations: () => "Pending invitations you issued or received for this household will be revoked.",
+  notification_authority: () => "Your browser notification preferences and subscriptions for this household will be removed.",
+  api_key_authority: (impact) => `${impact.apiKeysToRevoke} API key${impact.apiKeysToRevoke === 1 ? "" : "s"} will be revoked. Key values are never shown here.`,
+  webhook_authority: (impact) => `${impact.webhooksToRetire} webhook${impact.webhooksToRetire === 1 ? "" : "s"} will be disabled and queued deliveries will be stopped. Endpoint addresses are never shown here.`
 };
 
 type LeaveSubmissionState = { busy: boolean };
@@ -118,7 +121,7 @@ export function LeaveHouseholdForm({ preview }: { preview: LeavePreview }) {
         <section aria-labelledby="leave-warnings" className="space-y-2">
           <h2 id="leave-warnings" className="font-bold">Review before leaving</h2>
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-            {preview.warnings.map((warning) => <li key={warning}>{warningText[warning]}</li>)}
+            {preview.warnings.map((warning) => <li key={warning}>{warningText[warning](preview.authorityImpact)}</li>)}
           </ul>
         </section>
       ) : null}

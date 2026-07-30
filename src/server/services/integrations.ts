@@ -78,6 +78,8 @@ export async function createApiKey(raw: unknown) {
     const key = await tx.apiKey.create({
       data: {
         householdId: ctx.householdId,
+        delegatedByMemberId: ctx.memberId,
+        legacyUnattributed: false,
         name: input.name,
         keyHash: hashSecret(secret),
         prefix: secret.slice(0, 12),
@@ -131,7 +133,17 @@ export async function createWebhook(raw: unknown) {
   return prisma.$transaction(async (tx) => {
     const ctx = await lockActorForWrite(tx, requestContext);
     requirePermission(ctx, "integration.manage");
-    const endpoint = await tx.webhookEndpoint.create({ data: { householdId: ctx.householdId, name: input.name, url: input.url, secret: randomBytes(32).toString("base64url"), events: input.events } });
+    const endpoint = await tx.webhookEndpoint.create({
+      data: {
+        householdId: ctx.householdId,
+        delegatedByMemberId: ctx.memberId,
+        legacyUnattributed: false,
+        name: input.name,
+        url: input.url,
+        secret: randomBytes(32).toString("base64url"),
+        events: input.events
+      }
+    });
     await writeAudit(ctx, { action: "webhook.create", entityType: "webhook", entityId: endpoint.id, after: { name: endpoint.name, url: endpoint.url, events: endpoint.events } }, tx);
     return endpoint;
   });
@@ -159,24 +171,28 @@ export async function savePushSubscription(raw: unknown) {
   const user = await requireUser();
   requirePermission(ctx, "notification.manage");
   const input = subscriptionSchema.parse(raw);
-  return prisma.pushSubscription.upsert({
-    where: { endpoint: input.endpoint },
-    update: {
-      householdId: ctx.householdId,
-      userId: user.id,
-      p256dh: input.keys.p256dh,
-      auth: input.keys.auth,
-      userAgent: input.userAgent,
-      deletedAt: null
-    },
-    create: {
-      householdId: ctx.householdId,
-      userId: user.id,
-      endpoint: input.endpoint,
-      p256dh: input.keys.p256dh,
-      auth: input.keys.auth,
-      userAgent: input.userAgent
-    }
+  return prisma.$transaction(async (tx) => {
+    const lockedCtx = await lockActorForWrite(tx, ctx);
+    requirePermission(lockedCtx, "notification.manage");
+    return tx.pushSubscription.upsert({
+      where: { endpoint: input.endpoint },
+      update: {
+        householdId: lockedCtx.householdId,
+        userId: user.id,
+        p256dh: input.keys.p256dh,
+        auth: input.keys.auth,
+        userAgent: input.userAgent,
+        deletedAt: null
+      },
+      create: {
+        householdId: lockedCtx.householdId,
+        userId: user.id,
+        endpoint: input.endpoint,
+        p256dh: input.keys.p256dh,
+        auth: input.keys.auth,
+        userAgent: input.userAgent
+      }
+    });
   });
 }
 
@@ -194,16 +210,20 @@ export async function saveNotificationPreference(raw: unknown) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "notification.manage");
   const input = preferencesSchema.parse(raw);
-  return prisma.notificationPreference.create({
-    data: {
-      householdId: ctx.householdId,
-      userId: ctx.userId,
-      babyId: input.babyId,
-      timerOverdue: input.timerOverdue,
-      activityCreated: input.activityCreated,
-      reminders: input.reminders,
-      quietHoursStart: input.quietHoursStart,
-      quietHoursEnd: input.quietHoursEnd
-    }
+  return prisma.$transaction(async (tx) => {
+    const lockedCtx = await lockActorForWrite(tx, ctx);
+    requirePermission(lockedCtx, "notification.manage");
+    return tx.notificationPreference.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        userId: lockedCtx.userId,
+        babyId: input.babyId,
+        timerOverdue: input.timerOverdue,
+        activityCreated: input.activityCreated,
+        reminders: input.reminders,
+        quietHoursStart: input.quietHoursStart,
+        quietHoursEnd: input.quietHoursEnd
+      }
+    });
   });
 }

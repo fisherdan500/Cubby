@@ -52,6 +52,7 @@ describe("POST /api/households/leave", () => {
   it.each([
     ["household_owner_cannot_leave", 409],
     ["household_leave_confirmation_mismatch", 422],
+    ["household_leave_operation_reused", 409],
     ["fresh_authentication_required", 403]
   ])("maps %s without exposing internals", async (code, status) => {
     mocks.leaveHousehold.mockRejectedValue(new Error(code));

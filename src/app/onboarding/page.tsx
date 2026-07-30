@@ -4,14 +4,22 @@ import { OnboardingForm } from "@/components/forms/onboarding-form";
 import { BrandLockup } from "@/components/brand";
 import { Card } from "@/components/ui/card";
 import { requireUserPage } from "@/server/auth/session";
+import { getHouseholdLeaveOptions } from "@/server/services/household-leave";
 import { getHouseholdHome } from "@/server/services/households";
 import { isPlatformOwner } from "@/server/services/platform-authority";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 
 export default async function OnboardingPage() {
   const user = await requireUserPage();
-  const home = await getHouseholdHome(user.id);
+  const [home, leaveOptions] = await Promise.all([
+    getHouseholdHome(user.id),
+    getHouseholdLeaveOptions()
+  ]);
   if (home) redirect("/app");
+  const suspendedLeaveOption = leaveOptions.find((option) => option.suspended && option.role !== "owner");
+  if (suspendedLeaveOption) {
+    redirect(`/app/settings/leave?householdId=${encodeURIComponent(suspendedLeaveOption.householdId)}`);
+  }
   const [policy, platformOwner] = await Promise.all([
     getAppRegistrationPolicy(),
     isPlatformOwner(user.id)

@@ -7,19 +7,28 @@ const mocks = vi.hoisted(() => ({
   memberFindFirst: vi.fn(),
   memberFindMany: vi.fn(),
   memberCount: vi.fn(),
+  txMemberFindMany: vi.fn(),
   activityCount: vi.fn(),
   inviteCount: vi.fn(),
   notificationPreferenceCount: vi.fn(),
   pushSubscriptionCount: vi.fn(),
+  apiKeyCount: vi.fn(),
+  webhookEndpointCount: vi.fn(),
   txMemberFindFirst: vi.fn(),
   memberUpdate: vi.fn(),
   inviteUpdateMany: vi.fn(),
   notificationPreferenceDeleteMany: vi.fn(),
   pushSubscriptionUpdateMany: vi.fn(),
+  apiKeyUpdateMany: vi.fn(),
+  webhookEndpointUpdateMany: vi.fn(),
+  webhookDeliveryUpdateMany: vi.fn(),
+  notificationLogDeleteMany: vi.fn(),
+  notificationLogCreateMany: vi.fn(),
   auditCreate: vi.fn(),
   sessionDeleteMany: vi.fn(),
   policyLock: vi.fn(),
   memberLock: vi.fn(),
+  endpointLock: vi.fn(),
   sessionLock: vi.fn(),
   transaction: vi.fn()
 }));
@@ -40,6 +49,8 @@ vi.mock("@/lib/db/prisma", () => ({
     invite: { count: mocks.inviteCount },
     notificationPreference: { count: mocks.notificationPreferenceCount },
     pushSubscription: { count: mocks.pushSubscriptionCount },
+    apiKey: { count: mocks.apiKeyCount },
+    webhookEndpoint: { count: mocks.webhookEndpointCount },
     session: { deleteMany: mocks.sessionDeleteMany },
     $transaction: mocks.transaction
   }
@@ -82,11 +93,14 @@ beforeEach(() => {
   });
   mocks.memberFindFirst.mockResolvedValue(membership());
   mocks.memberFindMany.mockResolvedValue([]);
+  mocks.txMemberFindMany.mockResolvedValue([]);
   mocks.memberCount.mockResolvedValue(1);
   mocks.activityCount.mockResolvedValue(0);
   mocks.inviteCount.mockResolvedValue(0);
   mocks.notificationPreferenceCount.mockResolvedValue(0);
   mocks.pushSubscriptionCount.mockResolvedValue(0);
+  mocks.apiKeyCount.mockResolvedValue(0);
+  mocks.webhookEndpointCount.mockResolvedValue(0);
   mocks.txMemberFindFirst.mockImplementation(({ where }) =>
     where.leaveOperationId ? null : membership()
   );
@@ -97,6 +111,7 @@ beforeEach(() => {
     leaveOperationId: operationId
   });
   mocks.memberLock.mockResolvedValue([{ id: "member-current" }]);
+  mocks.endpointLock.mockResolvedValue([]);
   mocks.sessionLock.mockResolvedValue([{
     id: "session-1",
     userId: "user-1",
@@ -107,17 +122,22 @@ beforeEach(() => {
     $executeRaw: mocks.policyLock,
     $queryRaw: (...args: unknown[]) => {
       const query = Array.isArray(args[0]) ? args[0][0] : "";
-      return typeof query === "string" && query.includes('FROM "Session"')
-        ? mocks.sessionLock(...args)
-        : mocks.memberLock(...args);
+      if (typeof query === "string" && query.includes('FROM "Session"')) return mocks.sessionLock(...args);
+      if (typeof query === "string" && query.includes('FROM "WebhookEndpoint"')) return mocks.endpointLock(...args);
+      return mocks.memberLock(...args);
     },
     householdMember: {
       findFirst: mocks.txMemberFindFirst,
+      findMany: mocks.txMemberFindMany,
       update: mocks.memberUpdate
     },
     invite: { updateMany: mocks.inviteUpdateMany },
     notificationPreference: { deleteMany: mocks.notificationPreferenceDeleteMany },
     pushSubscription: { updateMany: mocks.pushSubscriptionUpdateMany },
+    apiKey: { updateMany: mocks.apiKeyUpdateMany },
+    webhookEndpoint: { updateMany: mocks.webhookEndpointUpdateMany },
+    webhookDelivery: { updateMany: mocks.webhookDeliveryUpdateMany },
+    notificationLog: { deleteMany: mocks.notificationLogDeleteMany, createMany: mocks.notificationLogCreateMany },
     auditEvent: { create: mocks.auditCreate },
     session: { deleteMany: mocks.sessionDeleteMany }
   }));
@@ -168,6 +188,7 @@ describe("household leave preview", () => {
       role: "admin",
       suspended: false,
       protectedOwner: false,
+      authorityImpact: { apiKeysToRevoke: 0, webhooksToRetire: 0 },
       warnings: ["sole_admin", "active_timers", "pending_invitations", "notification_authority"]
     });
     expect(mocks.inviteCount).toHaveBeenCalledWith({
@@ -177,6 +198,36 @@ describe("household leave preview", () => {
         OR: [
           { invitedByUserId: "user-1" },
           { email: { equals: "member@example.test", mode: "insensitive" } }
+        ]
+      }
+    });
+  });
+
+  it("returns only safe counts for direct API-key and webhook consequences", async () => {
+    mocks.apiKeyCount.mockResolvedValue(2);
+    mocks.webhookEndpointCount.mockResolvedValue(3);
+
+    await expect(getHouseholdLeavePreview("household-1")).resolves.toMatchObject({
+      authorityImpact: { apiKeysToRevoke: 2, webhooksToRetire: 3 },
+      warnings: ["api_key_authority", "webhook_authority"]
+    });
+    expect(mocks.apiKeyCount).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        revokedAt: null,
+        OR: [
+          { legacyUnattributed: true },
+          { legacyUnattributed: false, delegatedByMemberId: "member-current" }
+        ]
+      }
+    });
+    expect(mocks.webhookEndpointCount).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        deletedAt: null,
+        OR: [
+          { legacyUnattributed: true },
+          { legacyUnattributed: false, delegatedByMemberId: "member-current" }
         ]
       }
     });
@@ -280,7 +331,110 @@ describe("self-service household leave", () => {
       where: { householdId: "household-1", userId: "user-1", deletedAt: null },
       data: { deletedAt: now }
     });
+    expect(mocks.notificationLogDeleteMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", userId: "user-1" }
+    });
     expect(mocks.sessionDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("revokes keys delegated by the leaving episode and every legacy-unattributed household key", async () => {
+    await leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId });
+
+    expect(mocks.apiKeyUpdateMany).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        revokedAt: null,
+        OR: [
+          { legacyUnattributed: true },
+          { legacyUnattributed: false, delegatedByMemberId: "member-current" }
+        ]
+      },
+      data: { revokedAt: now }
+    });
+  });
+
+  it("locks and retires leaving-episode and legacy webhooks before failing their queued deliveries", async () => {
+    mocks.endpointLock.mockResolvedValue([{ id: "endpoint-owned" }, { id: "endpoint-legacy" }]);
+
+    await leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId });
+
+    expect(mocks.endpointLock).toHaveBeenCalledOnce();
+    expect(mocks.webhookDeliveryUpdateMany).toHaveBeenCalledWith({
+      where: { endpointId: { in: ["endpoint-owned", "endpoint-legacy"] }, status: "pending" },
+      data: { status: "failed", lastError: "endpoint_owner_left", nextAttemptAt: null }
+    });
+    expect(mocks.webhookEndpointUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["endpoint-owned", "endpoint-legacy"] } },
+      data: { deletedAt: now, enabled: false }
+    });
+  });
+
+  it("locks and revalidates remaining active household owners and admins before recording generic notices", async () => {
+    mocks.txMemberFindMany.mockResolvedValue([
+      { id: "member-owner", userId: "owner-user" },
+      { id: "member-admin", userId: "admin-user" }
+    ]);
+
+    await leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId });
+
+    expect(mocks.notificationLogCreateMany).toHaveBeenCalledWith({
+      data: [
+        {
+          householdId: "household-1",
+          userId: "owner-user",
+          kind: "member_left",
+          title: "A member left the household",
+          body: null
+        },
+        {
+          householdId: "household-1",
+          userId: "admin-user",
+          kind: "member_left",
+          title: "A member left the household",
+          body: null
+        }
+      ]
+    });
+    const recipientLocks = mocks.memberLock.mock.calls.filter(([query]) =>
+      String(query).includes('WHERE "id" =') && String(query).includes("FOR SHARE")
+    );
+    expect(recipientLocks).toHaveLength(2);
+  });
+
+  it("rejects a completed operation ID from a prior membership episode after re-entry", async () => {
+    const priorEpisode = {
+      ...membership(),
+      id: "member-prior",
+      deletedAt: now,
+      closureReason: "self_left",
+      leaveOperationId: operationId
+    };
+    mocks.txMemberFindFirst.mockImplementation(({ where }) =>
+      where.leaveOperationId ? priorEpisode : membership()
+    );
+
+    await expect(leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId }))
+      .rejects.toThrow("household_leave_operation_reused");
+    expect(mocks.memberUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects an operation ID already bound to another household before the global uniqueness constraint can surface", async () => {
+    const otherHouseholdOperation = {
+      ...membership(),
+      id: "member-other-household",
+      householdId: "household-2",
+      deletedAt: now,
+      closureReason: "self_left",
+      leaveOperationId: operationId
+    };
+    mocks.txMemberFindFirst.mockImplementation(({ where }) =>
+      where.leaveOperationId ? otherHouseholdOperation : membership()
+    );
+
+    await expect(leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId }))
+      .rejects.toThrow("household_leave_operation_reused");
+    expect(mocks.memberUpdate).not.toHaveBeenCalled();
+    expect(mocks.txMemberFindFirst).toHaveBeenCalledWith({ where: { leaveOperationId: operationId } });
   });
 
   it("returns the same completed outcome for a duplicate operation without a second tombstone", async () => {

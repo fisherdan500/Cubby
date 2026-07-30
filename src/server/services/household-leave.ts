@@ -15,7 +15,9 @@ export type HouseholdLeaveWarning =
   | "sole_admin"
   | "active_timers"
   | "pending_invitations"
-  | "notification_authority";
+  | "notification_authority"
+  | "api_key_authority"
+  | "webhook_authority";
 
 async function lockAndRevalidateFreshSession(
   tx: Prisma.TransactionClient,
@@ -89,7 +91,15 @@ export async function getHouseholdLeavePreview(householdId: string) {
   });
   if (!member) throw new Error("not_found");
 
-  const [otherAdmins, activeTimers, pendingInvitations, notificationPreferences, pushSubscriptions] = await Promise.all([
+  const [
+    otherAdmins,
+    activeTimers,
+    pendingInvitations,
+    notificationPreferences,
+    pushSubscriptions,
+    apiKeysToRevoke,
+    webhooksToRetire
+  ] = await Promise.all([
     member.role === HouseholdRole.admin
       ? prisma.householdMember.count({
           where: {
@@ -120,7 +130,27 @@ export async function getHouseholdLeavePreview(householdId: string) {
       }
     }),
     prisma.notificationPreference.count({ where: { householdId, userId: user.id } }),
-    prisma.pushSubscription.count({ where: { householdId, userId: user.id, deletedAt: null } })
+    prisma.pushSubscription.count({ where: { householdId, userId: user.id, deletedAt: null } }),
+    prisma.apiKey.count({
+      where: {
+        householdId,
+        revokedAt: null,
+        OR: [
+          { legacyUnattributed: true },
+          { legacyUnattributed: false, delegatedByMemberId: member.id }
+        ]
+      }
+    }),
+    prisma.webhookEndpoint.count({
+      where: {
+        householdId,
+        deletedAt: null,
+        OR: [
+          { legacyUnattributed: true },
+          { legacyUnattributed: false, delegatedByMemberId: member.id }
+        ]
+      }
+    })
   ]);
 
   const warnings: HouseholdLeaveWarning[] = [];
@@ -128,6 +158,8 @@ export async function getHouseholdLeavePreview(householdId: string) {
   if (activeTimers > 0) warnings.push("active_timers");
   if (pendingInvitations > 0) warnings.push("pending_invitations");
   if (notificationPreferences > 0 || pushSubscriptions > 0) warnings.push("notification_authority");
+  if (apiKeysToRevoke > 0) warnings.push("api_key_authority");
+  if (webhooksToRetire > 0) warnings.push("webhook_authority");
 
   return {
     householdId,
@@ -136,6 +168,7 @@ export async function getHouseholdLeavePreview(householdId: string) {
     role: member.role,
     suspended: member.disabledAt !== null,
     protectedOwner: member.role === HouseholdRole.owner,
+    authorityImpact: { apiKeysToRevoke, webhooksToRetire },
     warnings
   };
 }
@@ -158,16 +191,9 @@ export async function leaveHousehold(raw: unknown) {
     `;
     await lockAndRevalidateFreshSession(tx, freshSession);
 
-    const completed = await tx.householdMember.findFirst({
-      where: {
-        householdId: input.householdId,
-        userId: freshSession.user.id,
-        leaveOperationId: input.operationId,
-        closureReason: "self_left"
-      }
+    const completedOperation = await tx.householdMember.findFirst({
+      where: { leaveOperationId: input.operationId }
     });
-    if (completed) return leaveReceipt(completed);
-
     const member = await tx.householdMember.findFirst({
       where: {
         householdId: input.householdId,
@@ -177,7 +203,15 @@ export async function leaveHousehold(raw: unknown) {
       },
       include: { household: { select: { name: true } } }
     });
-    if (!member) throw new Error("not_found");
+    if (!member) {
+      if (
+        completedOperation?.householdId === input.householdId
+        && completedOperation.userId === freshSession.user.id
+        && completedOperation.closureReason === "self_left"
+      ) return leaveReceipt(completedOperation);
+      throw new Error("not_found");
+    }
+    if (completedOperation) throw new Error("household_leave_operation_reused");
     if (member.role === HouseholdRole.owner) throw new Error("household_owner_cannot_leave");
     if (input.confirmation !== member.household.name) {
       throw new Error("household_leave_confirmation_mismatch");
@@ -191,6 +225,40 @@ export async function leaveHousehold(raw: unknown) {
         leaveOperationId: input.operationId
       }
     });
+    await tx.apiKey.updateMany({
+      where: {
+        householdId: input.householdId,
+        revokedAt: null,
+        OR: [
+          { legacyUnattributed: true },
+          { legacyUnattributed: false, delegatedByMemberId: member.id }
+        ]
+      },
+      data: { revokedAt: leftAt }
+    });
+    const retiringEndpoints = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "WebhookEndpoint"
+      WHERE "householdId" = ${input.householdId}
+        AND "deletedAt" IS NULL
+        AND (
+          "legacyUnattributed" = TRUE
+          OR ("legacyUnattributed" = FALSE AND "delegatedByMemberId" = ${member.id})
+        )
+      ORDER BY "id"
+      FOR UPDATE
+    `;
+    const retiringEndpointIds = retiringEndpoints.map((endpoint) => endpoint.id);
+    if (retiringEndpointIds.length) {
+      await tx.webhookDelivery.updateMany({
+        where: { endpointId: { in: retiringEndpointIds }, status: "pending" },
+        data: { status: "failed", lastError: "endpoint_owner_left", nextAttemptAt: null }
+      });
+      await tx.webhookEndpoint.updateMany({
+        where: { id: { in: retiringEndpointIds } },
+        data: { deletedAt: leftAt, enabled: false }
+      });
+    }
     await tx.invite.updateMany({
       where: {
         householdId: input.householdId,
@@ -213,6 +281,44 @@ export async function leaveHousehold(raw: unknown) {
       },
       data: { deletedAt: leftAt }
     });
+    await tx.notificationLog.deleteMany({
+      where: { householdId: input.householdId, userId: freshSession.user.id }
+    });
+    const remainingAdministrators = await tx.householdMember.findMany({
+      where: {
+        householdId: input.householdId,
+        id: { not: member.id },
+        role: { in: [HouseholdRole.owner, HouseholdRole.admin] },
+        disabledAt: null,
+        deletedAt: null
+      },
+      select: { id: true, userId: true },
+      orderBy: { id: "asc" }
+    });
+    const activeRemainingAdministratorUserIds: string[] = [];
+    for (const recipient of remainingAdministrators) {
+      const lockedRecipient = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "HouseholdMember"
+        WHERE "id" = ${recipient.id}
+          AND "householdId" = ${input.householdId}
+          AND "disabledAt" IS NULL
+          AND "deletedAt" IS NULL
+        FOR SHARE
+      `;
+      if (lockedRecipient.length) activeRemainingAdministratorUserIds.push(recipient.userId);
+    }
+    if (activeRemainingAdministratorUserIds.length) {
+      await tx.notificationLog.createMany({
+        data: activeRemainingAdministratorUserIds.map((userId) => ({
+          householdId: input.householdId,
+          userId,
+          kind: "member_left",
+          title: "A member left the household",
+          body: null
+        }))
+      });
+    }
     await tx.auditEvent.create({
       data: {
         householdId: input.householdId,

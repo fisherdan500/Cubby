@@ -53,6 +53,8 @@ export function handleError(error: unknown) {
     if (error.message === "bulk_invite_revoke_acknowledgement_required") return fail("bulk_invite_revoke_acknowledgement_required", "Type the exact acknowledgement to revoke all pending invitations.", 422);
     if (error.message === "household_owner_cannot_leave") return fail("household_owner_cannot_leave", "The protected household owner must transfer ownership before leaving.", 409);
     if (error.message === "household_leave_confirmation_mismatch") return fail("household_leave_confirmation_mismatch", "Type the household name exactly to confirm leaving.", 422);
+    if (error.message === "household_leave_operation_reused") return fail("household_leave_operation_reused", "This leave operation belongs to an earlier membership. Start a new leave request.", 409);
+    if (error.message === "suspended_membership_must_leave") return fail("suspended_membership_must_leave", "Leave your suspended household membership before creating another household.", 409);
     if (error.message === "email_not_verified") return fail("email_not_verified", "Verify your email before creating a household.", 403);
     if (error.message === "platform_uninitialized") return fail("platform_uninitialized", "Platform authority is not initialized.", 409);
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);

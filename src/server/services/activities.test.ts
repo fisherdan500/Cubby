@@ -196,6 +196,22 @@ describe("activity page access", () => {
     );
   });
 
+  it("does not queue a notification for a recipient whose membership closes before the notification lock", async () => {
+    mocks.notificationFindMany.mockResolvedValue([{ userId: "departed-user" }]);
+    mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"userId"')
+        ? []
+        : [{ id: "locked" }]
+    );
+
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    expect(mocks.notificationCreateMany).not.toHaveBeenCalled();
+    expect(String(mocks.activityLock.mock.calls.find(([query]) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"userId"')
+    )?.[0])).toContain("FOR SHARE SKIP LOCKED");
+  });
+
   it("restores stopped timer metadata without recomputing duration", async () => {
     await restoreHistoricalActivityForContext(
       {
@@ -591,7 +607,7 @@ describe("activity page access", () => {
   });
 
   it("writes update audit and outbox records through the mutation transaction", async () => {
-    mocks.webhookFindMany.mockResolvedValue([{ id: "endpoint-1" }]);
+    mocks.webhookFindMany.mockResolvedValue([{ id: "endpoint-1", legacyUnattributed: true, delegatedByMemberId: null }]);
 
     await updateActivity("activity-1", feedingInput());
 
@@ -604,7 +620,10 @@ describe("activity page access", () => {
   });
 
   it("locks every eligible webhook endpoint sequentially in canonical ID order", async () => {
-    mocks.webhookFindMany.mockResolvedValue([{ id: "endpoint-a" }, { id: "endpoint-b" }]);
+    mocks.webhookFindMany.mockResolvedValue([
+      { id: "endpoint-a", legacyUnattributed: true, delegatedByMemberId: null },
+      { id: "endpoint-b", legacyUnattributed: true, delegatedByMemberId: null }
+    ]);
 
     await updateActivity("activity-1", feedingInput());
 
@@ -616,6 +635,24 @@ describe("activity page access", () => {
       expect.stringContaining("FOR UPDATE"),
       expect.stringContaining("FOR UPDATE")
     ]);
+  });
+
+  it("does not enqueue a delegated webhook after its issuing membership is no longer authorized", async () => {
+    mocks.webhookFindMany.mockResolvedValue([
+      { id: "endpoint-issued", legacyUnattributed: false, delegatedByMemberId: "member-delegator" }
+    ]);
+    mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"disabledAt" IS NULL')
+        ? []
+        : [{ id: "locked" }]
+    );
+
+    await updateActivity("activity-1", feedingInput());
+
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+    expect(String(mocks.activityLock.mock.calls.find(([query]) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"disabledAt" IS NULL')
+    )?.[0])).toContain("FOR SHARE SKIP LOCKED");
   });
 
   it("upserts a vaccine subtype without deleting its document parent", async () => {
