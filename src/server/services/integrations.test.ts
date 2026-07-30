@@ -21,7 +21,11 @@ const mocks = vi.hoisted(() => ({
   txWebhookFindFirst: vi.fn(),
   txWebhookUpdate: vi.fn(),
   txWebhookDeliveryUpdateMany: vi.fn(),
-  notificationPreferenceCreate: vi.fn()
+  pushSubscriptionUpsert: vi.fn(),
+  txPushSubscriptionUpsert: vi.fn(),
+  notificationPreferenceCreate: vi.fn(),
+  txNotificationPreferenceCreate: vi.fn(),
+  requireUser: vi.fn()
 }));
 
 vi.mock("@/server/auth/context", () => ({
@@ -29,22 +33,24 @@ vi.mock("@/server/auth/context", () => ({
   requirePermission: mocks.requirePermission
 }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     apiKey: { create: mocks.apiKeyCreate, findFirst: mocks.apiKeyFindFirst, update: mocks.apiKeyUpdate },
     webhookEndpoint: { create: mocks.webhookCreate, findFirst: mocks.webhookFindFirst, update: mocks.webhookUpdate },
+    pushSubscription: { upsert: mocks.pushSubscriptionUpsert },
     notificationPreference: { create: mocks.notificationPreferenceCreate },
     $transaction: mocks.transaction
   }
 }));
 
-import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, saveNotificationPreference } from "@/server/services/integrations";
+import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, saveNotificationPreference, savePushSubscription } from "@/server/services/integrations";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getHouseholdContext.mockResolvedValue({ userId: "owner-user", householdId: "household-1", memberId: "owner-member", role: "owner" });
   mocks.memberLock.mockResolvedValue([{ id: "owner-member" }]);
-  mocks.txMemberFindUnique.mockResolvedValue({ id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: new Date("2026-07-26T12:00:00.000Z"), deletedAt: null });
+  mocks.txMemberFindUnique.mockResolvedValue({ id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null });
   const key = { id: "key-1", name: "Rehearsal", prefix: "cubby_test", scopes: ["read"] };
   const endpoint = { id: "webhook-1", name: "Rehearsal", url: "https://example.test/hook", events: ["activity_created"] };
   const preference = { id: "preference-1", householdId: "household-1", userId: "owner-user", babyId: "baby-1" };
@@ -54,7 +60,11 @@ beforeEach(() => {
   mocks.webhookCreate.mockResolvedValue(endpoint); mocks.txWebhookCreate.mockResolvedValue(endpoint);
   mocks.webhookFindFirst.mockResolvedValue(endpoint); mocks.txWebhookFindFirst.mockResolvedValue(endpoint);
   mocks.webhookUpdate.mockResolvedValue(endpoint); mocks.txWebhookUpdate.mockResolvedValue(endpoint);
+  mocks.requireUser.mockResolvedValue({ id: "owner-user" });
+  mocks.pushSubscriptionUpsert.mockResolvedValue({ id: "subscription-1" });
+  mocks.txPushSubscriptionUpsert.mockResolvedValue({ id: "subscription-1" });
   mocks.notificationPreferenceCreate.mockResolvedValue(preference);
+  mocks.txNotificationPreferenceCreate.mockResolvedValue(preference);
   mocks.transaction.mockImplementation(async (callback) => callback({
     $queryRaw: mocks.memberLock,
     householdMember: { findUnique: mocks.txMemberFindUnique },
@@ -62,11 +72,45 @@ beforeEach(() => {
     baby: { findFirst: mocks.txBabyFindFirst },
     webhookEndpoint: { create: mocks.txWebhookCreate, findFirst: mocks.txWebhookFindFirst, update: mocks.txWebhookUpdate },
     webhookDelivery: { updateMany: mocks.txWebhookDeliveryUpdateMany },
+    pushSubscription: { upsert: mocks.txPushSubscriptionUpsert },
+    notificationPreference: { create: mocks.txNotificationPreferenceCreate },
     auditEvent: { create: vi.fn() }
   }));
 });
 
 describe("capability mutation serialization", () => {
+  it("binds each newly issued API key to the current membership episode", async () => {
+    mocks.txMemberFindUnique.mockResolvedValue({
+      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null
+    });
+
+    await createApiKey({ name: "Episode-bound key" });
+
+    expect(mocks.txApiKeyCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        householdId: "household-1",
+        delegatedByMemberId: "owner-member",
+        legacyUnattributed: false
+      })
+    });
+  });
+
+  it("binds each newly created webhook to the current membership episode", async () => {
+    mocks.txMemberFindUnique.mockResolvedValue({
+      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null
+    });
+
+    await createWebhook({ name: "Episode-bound endpoint", url: "https://example.test/hook", events: ["activity_created"] });
+
+    expect(mocks.txWebhookCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        householdId: "household-1",
+        delegatedByMemberId: "owner-member",
+        legacyUnattributed: false
+      })
+    });
+  });
+
   it("rejects API-key issuance for a baby outside the locked household", async () => {
     mocks.txMemberFindUnique.mockResolvedValue({
       id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null
@@ -104,6 +148,9 @@ describe("capability mutation serialization", () => {
     ["webhook creation", () => createWebhook({ name: "Rehearsal", url: "https://example.test/hook", events: ["activity_created"] })],
     ["webhook deletion", () => deleteWebhook("webhook-1")]
   ])("rejects %s when the actor was suspended after request-context capture", async (_name, mutate) => {
+    mocks.txMemberFindUnique.mockResolvedValue({
+      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: new Date(), deletedAt: null
+    });
     await expect(mutate()).rejects.toThrow("forbidden");
     expect(mocks.apiKeyCreate).not.toHaveBeenCalled();
     expect(mocks.apiKeyUpdate).not.toHaveBeenCalled();
@@ -113,6 +160,21 @@ describe("capability mutation serialization", () => {
 });
 
 describe("notification preference creation", () => {
+  it("does not recreate notification authority after the member is closed", async () => {
+    mocks.txMemberFindUnique.mockResolvedValue({
+      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: new Date()
+    });
+
+    await expect(savePushSubscription({
+      endpoint: "https://example.test/push",
+      keys: { p256dh: "p256dh", auth: "auth" }
+    })).rejects.toThrow("forbidden");
+    await expect(saveNotificationPreference({ activityCreated: true })).rejects.toThrow("forbidden");
+
+    expect(mocks.txPushSubscriptionUpsert).not.toHaveBeenCalled();
+    expect(mocks.txNotificationPreferenceCreate).not.toHaveBeenCalled();
+  });
+
   it("writes the current household with an explicitly scoped Baby preference", async () => {
     await saveNotificationPreference({
       babyId: "baby-1",
@@ -123,7 +185,7 @@ describe("notification preference creation", () => {
       quietHoursEnd: "07:00"
     });
 
-    expect(mocks.notificationPreferenceCreate).toHaveBeenCalledWith({
+    expect(mocks.txNotificationPreferenceCreate).toHaveBeenCalledWith({
       data: {
         householdId: "household-1",
         userId: "owner-user",
@@ -140,7 +202,7 @@ describe("notification preference creation", () => {
   it("preserves the optional Baby scope for a household-wide preference", async () => {
     await saveNotificationPreference({});
 
-    expect(mocks.notificationPreferenceCreate).toHaveBeenCalledWith({
+    expect(mocks.txNotificationPreferenceCreate).toHaveBeenCalledWith({
       data: {
         householdId: "household-1",
         userId: "owner-user",

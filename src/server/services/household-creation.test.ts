@@ -130,4 +130,13 @@ describe("platform-governed household creation", () => {
     expect(mocks.getAppRegistrationPolicy).not.toHaveBeenCalled();
     expect(mocks.householdCreate).not.toHaveBeenCalled();
   });
+
+  it("fails closed rather than creating a household for a suspended-only member", async () => {
+    mocks.memberFindMany.mockResolvedValue([
+      { disabledAt: new Date("2026-07-30T00:00:00.000Z"), household: { id: "suspended-household", name: "Suspended Home" } }
+    ]);
+
+    await expect(createOnboardingHousehold(input)).rejects.toThrow("suspended_membership_must_leave");
+    expect(mocks.householdCreate).not.toHaveBeenCalled();
+  });
 });

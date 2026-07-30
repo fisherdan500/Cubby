@@ -226,12 +226,11 @@ export async function acceptInvite(token: string) {
       ORDER BY "id"
       FOR UPDATE
     `;
-    const existing = await tx.householdMember.findUnique({
+    const existing = await tx.householdMember.findFirst({
       where: {
-        householdId_userId: {
-          householdId: invite.householdId,
-          userId: user.id
-        }
+        householdId: invite.householdId,
+        userId: user.id,
+        deletedAt: null
       }
     });
     if (invite.expiresAt <= new Date()) return expireInvite();
@@ -257,12 +256,7 @@ export async function acceptInvite(token: string) {
     }
     const membershipState = resolveInviteMembershipState(existing, invite.role);
     let member;
-    if (membershipState === "removed" && existing) {
-      member = await tx.householdMember.update({
-        where: { id: existing.id },
-        data: { role: invite.role, disabledAt: null, deletedAt: null }
-      });
-    } else if (membershipState === "active_same_role" && existing) {
+    if (membershipState === "active_same_role" && existing) {
       member = existing;
     } else if (membershipState === "absent") {
       member = await tx.householdMember.create({
@@ -386,11 +380,14 @@ export async function removeMember(memberId: string) {
     if (member.disabledAt) throw new Error("forbidden");
     if (!canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
 
+    const removedAt = new Date();
     const removed = await tx.householdMember.update({
       where: { id: member.id },
-      data: { deletedAt: new Date() },
+      data: { deletedAt: removedAt },
       include: { user: true }
     });
+    await retireDelegatedWebhooks(tx, ctx.householdId, member.id, removedAt, "endpoint_owner_removed");
+    await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, removedAt);
     await writeAudit(
       ctx,
       {
@@ -404,6 +401,64 @@ export async function removeMember(memberId: string) {
     );
     return removed;
   });
+}
+
+async function retireDelegatedWebhooks(
+  tx: Pick<Prisma.TransactionClient, "$queryRaw" | "webhookDelivery" | "webhookEndpoint">,
+  householdId: string,
+  memberId: string,
+  retiredAt: Date,
+  failureReason: "endpoint_owner_removed" | "endpoint_owner_suspended"
+) {
+  const retiringEndpoints = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "WebhookEndpoint"
+    WHERE "householdId" = ${householdId}
+      AND "deletedAt" IS NULL
+      AND (
+        "legacyUnattributed" = TRUE
+        OR ("legacyUnattributed" = FALSE AND "delegatedByMemberId" = ${memberId})
+      )
+    ORDER BY "id"
+    FOR UPDATE
+  `;
+  const endpointIds = retiringEndpoints.map((endpoint) => endpoint.id);
+  if (!endpointIds.length) return;
+  await tx.webhookDelivery.updateMany({
+    where: { endpointId: { in: endpointIds }, status: "pending" },
+    data: { status: "failed", lastError: failureReason, nextAttemptAt: null }
+  });
+  await tx.webhookEndpoint.updateMany({
+    where: { id: { in: endpointIds } },
+    data: { deletedAt: retiredAt, enabled: false }
+  });
+}
+
+async function containClosedMemberAuthority(
+  tx: Pick<
+    Prisma.TransactionClient,
+    "apiKey" | "notificationPreference" | "pushSubscription" | "notificationLog"
+  >,
+  householdId: string,
+  memberId: string,
+  userId: string,
+  closedAt: Date
+) {
+  await tx.apiKey.updateMany({
+    where: {
+      householdId,
+      delegatedByMemberId: memberId,
+      legacyUnattributed: false,
+      revokedAt: null
+    },
+    data: { revokedAt: closedAt }
+  });
+  await tx.notificationPreference.deleteMany({ where: { householdId, userId } });
+  await tx.pushSubscription.updateMany({
+    where: { householdId, userId, deletedAt: null },
+    data: { deletedAt: closedAt }
+  });
+  await tx.notificationLog.deleteMany({ where: { householdId, userId } });
 }
 
 export async function suspendMember(memberId: string, disabledAt = new Date()) {
@@ -423,6 +478,8 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
       data: { disabledAt },
       include: { user: true }
     });
+    await retireDelegatedWebhooks(tx, ctx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
+    await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, disabledAt);
     await tx.session.deleteMany({ where: { userId: member.userId } });
     await writeAudit(
       ctx,

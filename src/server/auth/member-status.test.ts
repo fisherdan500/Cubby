@@ -12,11 +12,7 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-import {
-  ACCOUNT_DISABLED_CODE,
-  ACCOUNT_DISABLED_MESSAGE,
-  assertUserCanStartSession
-} from "@/server/auth/member-status";
+import { assertUserCanStartSession } from "@/server/auth/member-status";
 
 describe("member session eligibility", () => {
   beforeEach(() => {
@@ -24,19 +20,11 @@ describe("member session eligibility", () => {
     mocks.platformAuthorityFindUnique.mockResolvedValue(null);
   });
 
-  it("denies a suspended member with the exact product message", async () => {
-    mocks.memberFindFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "member-disabled" });
+  it("allows a suspended member to establish a session for the separately guarded leave flow", async () => {
+    mocks.memberFindFirst.mockResolvedValue(null);
 
-    const error = await assertUserCanStartSession({ userId: "user-disabled" }).catch((value) => value);
-
-    expect(error).toMatchObject({
-      status: "FORBIDDEN",
-      body: { code: ACCOUNT_DISABLED_CODE, message: ACCOUNT_DISABLED_MESSAGE }
-    });
-    expect(ACCOUNT_DISABLED_MESSAGE).toBe("Your account is disabled.");
-    expect(mocks.memberFindFirst).toHaveBeenNthCalledWith(1, {
+    await expect(assertUserCanStartSession({ userId: "user-disabled" })).resolves.toBeUndefined();
+    expect(mocks.memberFindFirst).toHaveBeenCalledWith({
       where: {
         userId: "user-disabled",
         disabledAt: null,
@@ -45,13 +33,9 @@ describe("member session eligibility", () => {
       },
       select: { id: true }
     });
-    expect(mocks.memberFindFirst).toHaveBeenNthCalledWith(2, {
-      where: {
-        userId: "user-disabled",
-        disabledAt: { not: null },
-        deletedAt: null,
-        household: { deletedAt: null }
-      },
+    expect(mocks.memberFindFirst).toHaveBeenCalledOnce();
+    expect(mocks.platformAuthorityFindUnique).toHaveBeenCalledWith({
+      where: { ownerUserId: "user-disabled" },
       select: { id: true }
     });
   });
@@ -67,7 +51,7 @@ describe("member session eligibility", () => {
     mocks.memberFindFirst.mockResolvedValue(null);
 
     await expect(assertUserCanStartSession({ userId: "user-invited" })).resolves.toBeUndefined();
-    expect(mocks.memberFindFirst).toHaveBeenCalledTimes(2);
+    expect(mocks.memberFindFirst).toHaveBeenCalledOnce();
   });
 
   it("allows the platform owner to establish a session independently of household suspension", async () => {

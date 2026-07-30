@@ -29,12 +29,14 @@ export async function createOnboardingHousehold(raw: unknown) {
 
   return prisma.$transaction(async (tx) => {
     await lockHouseholdCreation(tx);
-    const existing = await tx.householdMember.findMany({
-      where: { userId: user.id, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
+    const currentMemberships = await tx.householdMember.findMany({
+      where: { userId: user.id, deletedAt: null, household: { deletedAt: null } },
       include: { household: true },
       orderBy: { joinedAt: "asc" }
     });
-    if (existing.length > 0) return existing[0].household;
+    const activeMembership = currentMemberships.find((member) => !member.disabledAt);
+    if (activeMembership) return activeMembership.household;
+    if (currentMemberships.length > 0) throw new Error("suspended_membership_must_leave");
 
     await tx.$queryRaw`SELECT "id"
       FROM "PlatformSettings"

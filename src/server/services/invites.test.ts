@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   txMemberFindUnique: vi.fn(),
   memberCreate: vi.fn(),
   memberUpdate: vi.fn(),
+  txMemberFindFirst: vi.fn(),
   inviteLock: vi.fn(),
   sessionLock: vi.fn(),
   recipientUserLock: vi.fn(),
@@ -85,6 +86,7 @@ beforeEach(() => {
   });
   mocks.inviteLock.mockResolvedValue([{ id: "invite-1" }]);
   mocks.memberFindUnique.mockResolvedValue(null);
+  mocks.txMemberFindFirst.mockResolvedValue(null);
   mocks.txMemberFindUnique.mockImplementation(({ where }) =>
     where.id === "owner-member"
       ? {
@@ -138,6 +140,7 @@ beforeEach(() => {
         update: mocks.txInviteUpdate
       },
       householdMember: {
+        findFirst: mocks.txMemberFindFirst,
         findUnique: mocks.txMemberFindUnique,
         create: mocks.memberCreate,
         update: mocks.memberUpdate
@@ -294,25 +297,14 @@ describe("invite consumption serialization", () => {
 
   it("closes a role-conflicting active membership invitation without changing the membership", async () => {
     mocks.txInviteFindUnique.mockResolvedValue(pendingInvite());
-    mocks.txMemberFindUnique.mockImplementation(({ where }) =>
-      where.id === "owner-member"
-        ? {
-            id: "owner-member",
-            userId: "owner-user",
-            householdId: "household-1",
-            role: "owner",
-            disabledAt: null,
-            deletedAt: null
-          }
-        : {
-            id: "existing-member",
-            householdId: "household-1",
-            userId: "invited-user",
-            role: "caretaker",
-            disabledAt: null,
-            deletedAt: null
-          }
-    );
+    mocks.txMemberFindFirst.mockResolvedValue({
+      id: "existing-member",
+      householdId: "household-1",
+      userId: "invited-user",
+      role: "caretaker",
+      disabledAt: null,
+      deletedAt: null
+    });
 
     await expect(acceptInvite("invite-token")).rejects.toThrow("invite_membership_conflict");
 
@@ -325,7 +317,7 @@ describe("invite consumption serialization", () => {
 
   it("closes an invitation for a suspended membership without restoring access", async () => {
     mocks.txInviteFindUnique.mockResolvedValue(pendingInvite());
-    mocks.txMemberFindUnique.mockResolvedValue({
+    mocks.txMemberFindFirst.mockResolvedValue({
       id: "existing-member",
       householdId: "household-1",
       userId: "invited-user",
@@ -345,26 +337,53 @@ describe("invite consumption serialization", () => {
     }));
   });
 
-  it("restores a removed membership with the invited role", async () => {
+  it("creates a distinct membership episode for a removed member without changing the historical row", async () => {
     mocks.txInviteFindUnique.mockResolvedValue(pendingInvite());
-    mocks.txMemberFindUnique.mockResolvedValue({
+    const removedAt = new Date("2026-07-20T12:00:00.000Z");
+    const removed = {
       id: "existing-member",
       householdId: "household-1",
       userId: "invited-user",
       role: "caretaker",
       disabledAt: now,
-      deletedAt: now
-    });
-    mocks.memberUpdate.mockResolvedValue({
-      id: "existing-member",
+      deletedAt: removedAt,
+      closureReason: "self_left",
+      leaveOperationId: "leave-operation-1"
+    };
+    mocks.memberCreate.mockResolvedValue({
+      id: "new-member-episode",
       householdId: "household-1",
       userId: "invited-user",
       role: "parent"
     });
 
-    await expect(acceptInvite("invite-token")).resolves.toMatchObject({ id: "existing-member" });
-    expect(mocks.memberUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      data: { role: "parent", disabledAt: null, deletedAt: null }
+    await expect(acceptInvite("invite-token")).resolves.toMatchObject({
+      id: "new-member-episode",
+      role: "parent"
+    });
+    expect(mocks.memberCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        householdId: "household-1",
+        userId: "invited-user",
+        role: "parent"
+      })
+    });
+    expect(mocks.memberUpdate).not.toHaveBeenCalled();
+    expect(mocks.txMemberFindFirst).toHaveBeenCalledWith({
+      where: { householdId: "household-1", userId: "invited-user", deletedAt: null }
+    });
+    expect(removed).toEqual({
+      id: "existing-member",
+      householdId: "household-1",
+      userId: "invited-user",
+      role: "caretaker",
+      disabledAt: now,
+      deletedAt: removedAt,
+      closureReason: "self_left",
+      leaveOperationId: "leave-operation-1"
+    });
+    expect(mocks.txAuditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ actorMemberId: "new-member-episode" })
     }));
   });
 

@@ -286,12 +286,27 @@ async function queueActivitySideEffects(
       deletedAt: null,
       events: { has: event }
     },
-    select: { id: true },
+    select: { id: true, legacyUnattributed: true, delegatedByMemberId: true },
     orderBy: { id: "asc" }
   });
 
   const lockedEndpoints: typeof endpoints = [];
   for (const endpoint of endpoints) {
+    if (!endpoint.legacyUnattributed) {
+      if (!endpoint.delegatedByMemberId) continue;
+      const issuers = await db.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "HouseholdMember"
+        WHERE "id" = ${endpoint.delegatedByMemberId}
+          AND "householdId" = ${ctx.householdId}
+          AND "disabledAt" IS NULL
+          AND "deletedAt" IS NULL
+        -- A concurrent closure owns this row exclusively; omit the outbox side effect
+        -- rather than waiting behind the actor lock and forming an inverse lock cycle.
+        FOR SHARE SKIP LOCKED
+      `;
+      if (!issuers.length) continue;
+    }
     const rows = await db.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "WebhookEndpoint"
@@ -322,9 +337,25 @@ async function queueActivitySideEffects(
       where: { householdId: ctx.householdId, activityCreated: true },
       select: { userId: true }
     });
-    if (preferences.length) {
+    const activeRecipientUserIds = new Set<string>();
+    for (const userId of [...new Set(preferences.map((preference) => preference.userId))].sort()) {
+      const recipients = await db.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "HouseholdMember"
+        WHERE "householdId" = ${ctx.householdId}
+          AND "userId" = ${userId}
+          AND "disabledAt" IS NULL
+          AND "deletedAt" IS NULL
+        -- A concurrent closure owns this row exclusively; omit the outbox side effect
+        -- rather than waiting behind the actor lock and forming an inverse lock cycle.
+        FOR SHARE SKIP LOCKED
+      `;
+      if (recipients.length) activeRecipientUserIds.add(userId);
+    }
+    const activePreferences = preferences.filter((preference) => activeRecipientUserIds.has(preference.userId));
+    if (activePreferences.length) {
       await db.notificationLog.createMany({
-        data: preferences.map((preference) => ({
+        data: activePreferences.map((preference) => ({
           householdId: ctx.householdId,
           activityId: activity.id,
           userId: preference.userId,

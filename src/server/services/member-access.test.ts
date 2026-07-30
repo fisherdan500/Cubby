@@ -13,6 +13,12 @@ const mocks = vi.hoisted(() => ({
   memberUpdate: vi.fn(),
   memberUpdateMany: vi.fn(),
   sessionDeleteMany: vi.fn(),
+  webhookEndpointUpdateMany: vi.fn(),
+  webhookDeliveryUpdateMany: vi.fn(),
+  apiKeyUpdateMany: vi.fn(),
+  notificationPreferenceDeleteMany: vi.fn(),
+  pushSubscriptionUpdateMany: vi.fn(),
+  notificationLogDeleteMany: vi.fn(),
   memberLock: vi.fn(),
   sessionLock: vi.fn(),
   transaction: vi.fn(),
@@ -113,6 +119,12 @@ describe("household member access management", () => {
           update: mocks.inviteUpdate
         },
         session: { deleteMany: mocks.sessionDeleteMany },
+        webhookEndpoint: { updateMany: mocks.webhookEndpointUpdateMany },
+        webhookDelivery: { updateMany: mocks.webhookDeliveryUpdateMany },
+        apiKey: { updateMany: mocks.apiKeyUpdateMany },
+        notificationPreference: { deleteMany: mocks.notificationPreferenceDeleteMany },
+        pushSubscription: { updateMany: mocks.pushSubscriptionUpdateMany },
+        notificationLog: { deleteMany: mocks.notificationLogDeleteMany },
         auditEvent: { create: vi.fn() }
       })
     );
@@ -228,6 +240,56 @@ describe("household member access management", () => {
     expect(mocks.memberUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { deletedAt: expect.any(Date) } }));
   });
 
+  it("contains a removed member's notification preferences, subscriptions, and queued notifications", async () => {
+    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    const member = activeMember("member-care", "caretaker");
+    mocks.memberFindUnique.mockResolvedValue(member);
+    mocks.memberUpdate.mockResolvedValue({ ...member, deletedAt: new Date(), user: {} });
+
+    await removeMember(member.id);
+
+    expect(mocks.apiKeyUpdateMany).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        delegatedByMemberId: member.id,
+        legacyUnattributed: false,
+        revokedAt: null
+      },
+      data: { revokedAt: expect.any(Date) }
+    });
+    expect(mocks.notificationPreferenceDeleteMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", userId: member.userId }
+    });
+    expect(mocks.pushSubscriptionUpdateMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", userId: member.userId, deletedAt: null },
+      data: { deletedAt: expect.any(Date) }
+    });
+    expect(mocks.notificationLogDeleteMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", userId: member.userId }
+    });
+  });
+
+  it("retires a removed member's delegated and legacy-unattributed household webhooks before failing pending deliveries", async () => {
+    mocks.memberFindUnique.mockResolvedValue(activeMember("member-care", "caretaker"));
+    mocks.memberUpdate.mockResolvedValue({ ...activeMember("member-care", "caretaker"), deletedAt: new Date(), user: {} });
+    mocks.memberLock.mockImplementation(([query]) =>
+      String(query).includes('FROM "WebhookEndpoint"') ? [{ id: "endpoint-issued" }] : [{ id: "locked" }]
+    );
+
+    await removeMember("member-care");
+
+    expect(mocks.webhookDeliveryUpdateMany).toHaveBeenCalledWith({
+      where: { endpointId: { in: ["endpoint-issued"] }, status: "pending" },
+      data: { status: "failed", lastError: "endpoint_owner_removed", nextAttemptAt: null }
+    });
+    expect(mocks.webhookEndpointUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["endpoint-issued"] } },
+      data: { deletedAt: expect.any(Date), enabled: false }
+    });
+    expect(String(mocks.memberLock.mock.calls.find(([query]) => String(query).includes('FROM "WebhookEndpoint"'))?.[0]))
+      .toContain('"legacyUnattributed" = TRUE');
+  });
+
   it("requires a suspended member to be restored before removal", async () => {
     mocks.getHouseholdContext.mockResolvedValue(adminContext());
     const member = activeMember("member-care", "caretaker");
@@ -293,6 +355,29 @@ describe("household member access management", () => {
       }),
       expect.objectContaining({ auditEvent: expect.anything() })
     );
+  });
+
+  it("retires a suspended member's delegated and legacy-unattributed household webhooks before failing pending deliveries", async () => {
+    const member = activeMember("member-parent", "parent");
+    const disabledAt = new Date("2026-07-14T12:00:00.000Z");
+    mocks.memberFindUnique.mockResolvedValue(member);
+    mocks.memberUpdate.mockResolvedValue({ ...member, disabledAt, user: {} });
+    mocks.memberLock.mockImplementation(([query]) =>
+      String(query).includes('FROM "WebhookEndpoint"') ? [{ id: "endpoint-issued" }] : [{ id: "locked" }]
+    );
+
+    await suspendMember(member.id, disabledAt);
+
+    expect(mocks.webhookDeliveryUpdateMany).toHaveBeenCalledWith({
+      where: { endpointId: { in: ["endpoint-issued"] }, status: "pending" },
+      data: { status: "failed", lastError: "endpoint_owner_suspended", nextAttemptAt: null }
+    });
+    expect(mocks.webhookEndpointUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["endpoint-issued"] } },
+      data: { deletedAt: disabledAt, enabled: false }
+    });
+    expect(String(mocks.memberLock.mock.calls.find(([query]) => String(query).includes('FROM "WebhookEndpoint"'))?.[0]))
+      .toContain('"legacyUnattributed" = TRUE');
   });
 
   it("prevents suspending the protected owner or acting member", async () => {

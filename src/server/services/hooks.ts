@@ -1,4 +1,4 @@
-import { ActivityType, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
+import { ActivityType, TimerState, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { activityInclude, createActivityForContext } from "@/server/services/activities";
 import { hashSecret } from "@/server/services/integrations";
@@ -24,26 +24,42 @@ export async function withApiKey<T>(
 ) {
   const keyHash = hashSecret(apiKeyToken(request));
   return prisma.$transaction(async (tx) => {
+    const candidate = await tx.apiKey.findUnique({
+      where: { keyHash },
+      select: { id: true, householdId: true, delegatedByMemberId: true, legacyUnattributed: true }
+    });
+    if (!candidate || candidate.legacyUnattributed || !candidate.delegatedByMemberId) {
+      throw new Error("unauthenticated");
+    }
+
+    const activeIssuers = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "HouseholdMember"
+      WHERE "id" = ${candidate.delegatedByMemberId}
+        AND "householdId" = ${candidate.householdId}
+        AND "disabledAt" IS NULL
+        AND "deletedAt" IS NULL
+      FOR SHARE
+    `;
+    if (activeIssuers.length !== 1) throw new Error("unauthenticated");
+
     const locked = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT "id" FROM "ApiKey" WHERE "keyHash" = ${keyHash} FOR UPDATE
+      SELECT "id" FROM "ApiKey" WHERE "id" = ${candidate.id} AND "keyHash" = ${keyHash} FOR UPDATE
     `;
     if (locked.length !== 1) throw new Error("unauthenticated");
 
-    const key = await tx.apiKey.findUnique({ where: { id: locked[0].id }, include: { household: true } });
+    const key = await tx.apiKey.findUnique({
+      where: { id: locked[0].id },
+      include: { household: true, delegatedByMember: true }
+    });
     if (!key || key.revokedAt || key.household.deletedAt) throw new Error("unauthenticated");
     if (key.expiresAt && key.expiresAt < new Date()) throw new Error("unauthenticated");
     if (!key.scopes.includes(requiredScope) && !key.scopes.includes("*")) throw new Error("forbidden");
 
-    const actor = await tx.householdMember.findFirst({
-      where: {
-        householdId: key.householdId,
-        disabledAt: null,
-        deletedAt: null,
-        role: { in: [HouseholdRole.owner, HouseholdRole.admin, HouseholdRole.parent] }
-      },
-      orderBy: { joinedAt: "asc" }
-    });
+    if (key.legacyUnattributed) throw new Error("unauthenticated");
+    const actor = key.delegatedByMember;
     if (!actor) throw new Error("forbidden");
+    if (actor.householdId !== key.householdId || actor.disabledAt || actor.deletedAt) throw new Error("unauthenticated");
 
     await tx.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } });
     return action({
