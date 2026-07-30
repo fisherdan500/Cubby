@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Bell, DatabaseBackup, Download, KeyRound, Palette, Ruler, Shield, UserRoundCog, Users } from "lucide-react";
+import { Baby, Bell, DatabaseBackup, Download, KeyRound, LogOut, Palette, Ruler, Shield, UserRoundCog, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
@@ -42,6 +42,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
             </Card>
           </Link>
         ))}
+        <Link href="/app/settings/leave" prefetch={false}>
+          <Card className="h-full transition hover:bg-muted">
+            <LogOut className="mb-4 h-6 w-6 text-danger" />
+            <h2 className="font-editorial text-lg font-bold">Leave household</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review warnings and close your current non-owner membership.
+            </p>
+          </Card>
+        </Link>
         {platformOwner ? (
           <Link href="/platform/settings" prefetch={false}>
             <Card className="h-full transition hover:bg-muted">

@@ -249,13 +249,14 @@ model HouseholdMember {
   updatedAt   DateTime      @updatedAt
   disabledAt  DateTime?
   deletedAt   DateTime?
+  closureReason String?
+  leaveOperationId String?  @unique
   household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities  ActivityLog[]
   auditEvents AuditEvent[]
   dashboardWarningDismissals DashboardWarningDismissal[]
 
-  @@unique([householdId, userId])
   @@unique([householdId, id])
   @@index([householdId, role])
   @@index([userId])

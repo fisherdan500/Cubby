@@ -226,12 +226,11 @@ export async function acceptInvite(token: string) {
       ORDER BY "id"
       FOR UPDATE
     `;
-    const existing = await tx.householdMember.findUnique({
+    const existing = await tx.householdMember.findFirst({
       where: {
-        householdId_userId: {
-          householdId: invite.householdId,
-          userId: user.id
-        }
+        householdId: invite.householdId,
+        userId: user.id,
+        deletedAt: null
       }
     });
     if (invite.expiresAt <= new Date()) return expireInvite();
@@ -257,12 +256,7 @@ export async function acceptInvite(token: string) {
     }
     const membershipState = resolveInviteMembershipState(existing, invite.role);
     let member;
-    if (membershipState === "removed" && existing) {
-      member = await tx.householdMember.update({
-        where: { id: existing.id },
-        data: { role: invite.role, disabledAt: null, deletedAt: null }
-      });
-    } else if (membershipState === "active_same_role" && existing) {
+    if (membershipState === "active_same_role" && existing) {
       member = existing;
     } else if (membershipState === "absent") {
       member = await tx.householdMember.create({
