@@ -401,6 +401,21 @@ describe("self-service household leave", () => {
     expect(recipientLocks).toHaveLength(2);
   });
 
+  it("skips a closure-contended notice recipient instead of waiting behind an inverse membership lock", async () => {
+    mocks.txMemberFindMany.mockResolvedValue([{ id: "member-admin", userId: "admin-user" }]);
+    mocks.memberLock.mockImplementation((query) =>
+      String(query).includes('WHERE "id" =') ? [] : [{ id: "member-current" }]
+    );
+
+    await leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId });
+
+    expect(mocks.notificationLogCreateMany).not.toHaveBeenCalled();
+    const recipientLock = mocks.memberLock.mock.calls.find(([query]) =>
+      String(query).includes('WHERE "id" =') && String(query).includes("FOR SHARE")
+    );
+    expect(String(recipientLock?.[0])).toContain("FOR SHARE SKIP LOCKED");
+  });
+
   it("rejects a completed operation ID from a prior membership episode after re-entry", async () => {
     const priorEpisode = {
       ...membership(),

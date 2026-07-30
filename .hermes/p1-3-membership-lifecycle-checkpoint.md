@@ -1,16 +1,16 @@
 # P1-3 Membership Lifecycle Checkpoint
 
-Updated: 2026-07-30 — active source-only remediation candidate
+Updated: 2026-07-30 — post-review remediation in progress
 
 ## Candidate identity
 
 - Worktree: `C:\Projects\Cubby\worktrees\Cubby\p1-3-membership-lifecycle`
 - Branch: `feat/p1-3-membership-lifecycle`
-- Retained evidence commit / HEAD: `814f6382aaa262002a6e1c832c8938c08e8241af`
+- Published P1-3 evidence range: `814f6382aaa262002a6e1c832c8938c08e8241af` through `3d3645630ac63f2f5db7451d59874840e4c1fad0`
 - Baseline / merge-base: `origin/main` / `2f405b87bb7cc66fa3921b37bc7609277fdc980c`
-- Exact tracked/untracked inventory and canonical diff fingerprint are refreshed after each verified remediation slice and must be read from the current remediation evidence report before review.
+- The current worktree contains a bounded post-review fix. Its exact fingerprint and verification state must be refreshed before any merge decision.
 
-This checkpoint supersedes the prior 2026-07-29 disposable-acceptance summary. Its historical test, inventory, Docker, and review claims are not evidence for this current uncommitted candidate.
+The historical published range above is retained only as review context. It is not approval for the current post-review fix.
 
 ## Current contract evidence
 
@@ -23,11 +23,11 @@ This checkpoint supersedes the prior 2026-07-29 disposable-acceptance summary. I
 
 ## Verification and review state
 
-- Focused verification for the latest suspended-landing change passed before this checkpoint refresh; canonical verification and a fresh exact-tree independent review are required after the final tree is frozen.
-- Static/source tests do not establish PostgreSQL contention behavior. A disposable PostgreSQL barrier/concurrency acceptance is separately unauthorized and unrun for this candidate.
+- The targeted self-leave regression test is required to pass before the final candidate is frozen. Canonical verification and a fresh exact-tree independent review are required after that final tree is frozen.
+- Static/source tests do not establish PostgreSQL contention behavior. The earlier disposable acceptance remains historical evidence only; any changed contention predicate requires a separately scoped exact-candidate acceptance decision.
 - Browser/runtime rendering, normal-runtime migration, Docker/runtime operation, and external delivery testing are unauthorized and unrun.
 
 ## Boundaries
 
-- No commit, push, PR, merge, deployment, normal/runtime database migration, server/worker/browser operation, cleanup, or publication occurred under this charter.
+- Published history includes local commits, a pushed branch, and PR #37. The current post-review fix is uncommitted and unpushed; merge, deployment, normal/runtime database migration, server/worker/browser operation, and external delivery remain unperformed.
 - Protected-owner transfer, P1-8 recovery work, scheduled-responsibility policy, and unmodeled capability domains remain outside this remediation.

@@ -304,7 +304,9 @@ export async function leaveHousehold(raw: unknown) {
           AND "householdId" = ${input.householdId}
           AND "disabledAt" IS NULL
           AND "deletedAt" IS NULL
-        FOR SHARE
+        -- A concurrent membership closure owns this row exclusively. Omit the
+        -- non-authoritative notice rather than waiting behind an inverse lock.
+        FOR SHARE SKIP LOCKED
       `;
       if (lockedRecipient.length) activeRemainingAdministratorUserIds.push(recipient.userId);
     }
