@@ -95,6 +95,9 @@ describe("activity page access", () => {
     mocks.contactFindFirst.mockResolvedValue({ id: "contact-2" });
     mocks.webhookFindMany.mockResolvedValue([]);
     mocks.notificationFindMany.mockResolvedValue([]);
+    mocks.mutationReceiptFindFirst.mockReset();
+    mocks.mutationReceiptFindFirst.mockResolvedValue(null);
+    mocks.mutationReceiptCreate.mockReset();
     mocks.auditFindFirst.mockImplementation(({ where }) =>
       Promise.resolve(
         where.actorMemberId
@@ -811,6 +814,191 @@ describe("activity page access", () => {
     );
   });
 
+  it("persists a durable activity-undo receipt in the mutation transaction", async () => {
+    mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
+
+    await (undoLastActivity as unknown as (raw: unknown) => Promise<unknown>)({
+      clientMutationId: "44444444-4444-4444-8444-444444444444"
+    });
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        householdId: "household-1",
+        actorMemberId: "member-current",
+        apiKeyId: null,
+        operation: "activity.undo",
+        targetActivityId: "activity-1",
+        clientMutationId: "44444444-4444-4444-8444-444444444444",
+        intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+        outcomeActivityId: "activity-1"
+      })
+    });
+    expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
+  });
+
+  it("replays the immutable delete direction after an undone create is restored again", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    });
+
+    await expect(undoLastActivity({ clientMutationId: "44444444-4444-4444-8444-444444444444" })).resolves.toEqual({
+      id: "activity-1"
+    });
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("replays the immutable update direction after a restored activity is deleted again", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "d4f846e74d20a5a02606770e683f984f28273c8a40046df0d23aeeab205fdc0e",
+      outcomeActivityId: "activity-1"
+    });
+    mocks.activityFindFirst.mockResolvedValue({ ...activity("member-current"), deletedAt: new Date("2026-07-14T10:05:00.000Z") });
+
+    await expect(undoLastActivity({ clientMutationId: "44444444-4444-4444-8444-444444444444" })).resolves.toEqual({
+      id: "activity-1"
+    });
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("locks and rereads the receipt activity before authorizing replay", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    });
+    mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
+
+    await undoLastActivity({ clientMutationId: "44444444-4444-4444-8444-444444444444" });
+
+    expect(mocks.activityLock).toHaveBeenCalledTimes(3);
+    expect(mocks.activityFindFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it("rechecks a matching receipt after the mutation actor lock before resolving latest", async () => {
+    const receipt = {
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    };
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+    mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
+
+    await expect(undoLastActivity({ clientMutationId: receipt.clientMutationId })).resolves.toEqual({ id: "activity-1" });
+
+    expect(mocks.auditFindFirst).not.toHaveBeenCalled();
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("reauthorizes the actor before replaying an activity-undo receipt", async () => {
+    mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    });
+    mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
+
+    await expect(undoLastActivity({ clientMutationId: "44444444-4444-4444-8444-444444444444" })).rejects.toThrow(
+      "forbidden"
+    );
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects an activity-undo retry when its mutation ID belongs to another operation", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "timer.stop",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    });
+
+    await expect(undoLastActivity({ clientMutationId: "44444444-4444-4444-8444-444444444444" })).rejects.toThrow(
+      "idempotency_conflict"
+    );
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("replays the matching winner after a same-key activity-undo claim race", async () => {
+    const receipt = {
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    };
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+    mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
+    mocks.activityUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect(undoLastActivity({ clientMutationId: receipt.clientMutationId })).resolves.toEqual({ id: "activity-1" });
+
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("replays the matching winner after an activity-undo receipt uniqueness race", async () => {
+    const receipt = {
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.undo",
+      targetActivityId: "activity-1",
+      clientMutationId: "44444444-4444-4444-8444-444444444444",
+      intentFingerprint: "07991d35845b92b2f8479e0f70aa8e52ffd2a9f78756b600796cda1d9e050e1f",
+      outcomeActivityId: "activity-1"
+    };
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+    mocks.activityFindFirst.mockResolvedValue(activity("member-current"));
+    mocks.mutationReceiptCreate.mockRejectedValueOnce({
+      code: "P2002",
+      meta: { target: ["householdId", "clientMutationId"] }
+    });
+
+    await expect(undoLastActivity({ clientMutationId: receipt.clientMutationId })).resolves.toEqual({ id: "activity-1" });
+
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("clears deletion attribution when undo restores a deleted activity", async () => {
     const deletedAt = new Date("2026-07-14T10:05:00.000Z");
     mocks.auditFindFirst.mockImplementation(({ where }) =>
@@ -834,6 +1022,11 @@ describe("activity page access", () => {
     expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { deletedAt: null, deletedByMemberId: null } })
     );
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        intentFingerprint: "d4f846e74d20a5a02606770e683f984f28273c8a40046df0d23aeeab205fdc0e"
+      })
+    });
   });
 
   it("locks actor, baby, and activity before rejecting an equal-timestamp superseding audit", async () => {
@@ -855,8 +1048,8 @@ describe("activity page access", () => {
 
     await expect(undoLastActivity()).rejects.toThrow("not_found");
 
-    expect(mocks.activityLock).toHaveBeenCalledTimes(3);
-    expect(mocks.activityLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.auditFindFirst.mock.invocationCallOrder[1]);
+    expect(mocks.activityLock).toHaveBeenCalledTimes(4);
+    expect(mocks.activityLock.mock.invocationCallOrder[3]).toBeLessThan(mocks.auditFindFirst.mock.invocationCallOrder[1]);
     expect(mocks.auditFindFirst).toHaveBeenLastCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({

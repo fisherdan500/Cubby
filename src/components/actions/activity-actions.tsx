@@ -78,12 +78,20 @@ export function ResumeTimerButton({ id }: { id: string }) {
 
 export function UndoLastButton() {
   const router = useRouter();
+  const mutationId = useRef<string>();
   return (
     <Button
       type="button"
       variant="secondary"
       onClick={async () => {
-        await fetch("/api/activities/undo-last", { method: "POST" });
+        mutationId.current ??= crypto.randomUUID();
+        const response = await fetch("/api/activities/undo-last", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ clientMutationId: mutationId.current })
+        });
+        if (!response.ok) return;
+        mutationId.current = undefined;
         router.refresh();
       }}
     >

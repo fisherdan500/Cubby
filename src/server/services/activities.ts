@@ -52,6 +52,12 @@ function timerMutationFingerprint(operation: "timer.stop" | "timer.pause" | "tim
   return createHash("sha256").update(JSON.stringify({ operation, activityId })).digest("hex");
 }
 
+function activityUndoFingerprint(activityId: string, permissionAction: "delete" | "update") {
+  return createHash("sha256")
+    .update(JSON.stringify({ operation: "activity.undo", activityId, permissionAction }))
+    .digest("hex");
+}
+
 function toDate(value: string | undefined, fallback?: Date) {
   if (!value) return fallback;
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) {
@@ -941,85 +947,167 @@ export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRa
   }
 }
 
-export async function undoLastActivity() {
+async function findActivityUndoReplayInTransaction(
+  tx: Prisma.TransactionClient,
+  lockedCtx: HouseholdContext,
+  mutation: ReturnType<typeof timerMutationInput>
+) {
+  const receipt = await tx.mutationReceipt.findFirst({
+    where: { householdId: lockedCtx.householdId, clientMutationId: mutation.clientMutationId }
+  });
+  if (!receipt) return null;
+  const deleteFingerprint = activityUndoFingerprint(receipt.targetActivityId, "delete");
+  const updateFingerprint = activityUndoFingerprint(receipt.targetActivityId, "update");
+  const permissionAction =
+    receipt.intentFingerprint === deleteFingerprint
+      ? "delete"
+      : receipt.intentFingerprint === updateFingerprint
+        ? "update"
+        : null;
+  if (
+    receipt.actorMemberId !== lockedCtx.memberId ||
+    receipt.operation !== "activity.undo" ||
+    receipt.outcomeActivityId !== receipt.targetActivityId ||
+    permissionAction === null
+  ) {
+    throw new Error("idempotency_conflict");
+  }
+  const candidate = await tx.activityLog.findFirst({
+    where: { id: receipt.outcomeActivityId, householdId: lockedCtx.householdId },
+    select: { babyId: true }
+  });
+  if (!candidate) throw new Error("not_found");
+  await lockBabyForWrite(tx, lockedCtx, candidate.babyId);
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "ActivityLog"
+    WHERE "id" = ${receipt.outcomeActivityId} AND "householdId" = ${lockedCtx.householdId}
+    FOR UPDATE
+  `;
+  if (locked.length !== 1) throw new Error("not_found");
+  const target = await tx.activityLog.findFirst({
+    where: { id: receipt.outcomeActivityId, householdId: lockedCtx.householdId, babyId: candidate.babyId },
+    include: activityInclude
+  });
+  if (!target) throw new Error("not_found");
+  if (!canMutateOwnOrAny(lockedCtx.role, permissionAction, target.actorMemberId === lockedCtx.memberId)) {
+    throw new Error("forbidden");
+  }
+  return { id: target.id };
+}
+
+async function findActivityUndoReplay(mutation: ReturnType<typeof timerMutationInput>) {
   const ctx = await getHouseholdContext();
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
-    const latest = await tx.auditEvent.findFirst({
-      where: {
-        householdId: lockedCtx.householdId,
-        actorMemberId: lockedCtx.memberId,
-        entityType: "activity",
-        action: { in: ["activity.create", "activity.delete"] }
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }]
-    });
-    if (!latest) throw new Error("not_found");
-
-    const target = await tx.activityLog.findFirst({
-      where: { id: latest.entityId, householdId: lockedCtx.householdId },
-      select: { babyId: true }
-    });
-    if (!target) throw new Error("not_found");
-    const baby = await lockBabyForWrite(tx, lockedCtx, target.babyId);
-
-    const locked = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT "id"
-      FROM "ActivityLog"
-      WHERE "id" = ${latest.entityId} AND "householdId" = ${lockedCtx.householdId}
-      FOR UPDATE
-    `;
-    if (locked.length !== 1) throw new Error("not_found");
-
-    const superseding = await tx.auditEvent.findFirst({
-      where: {
-        householdId: lockedCtx.householdId,
-        entityType: "activity",
-        entityId: latest.entityId,
-        createdAt: { gte: latest.createdAt },
-        id: { not: latest.id }
-      },
-      select: { id: true }
-    });
-    if (superseding) throw new Error("not_found");
-
-    const undoCreate = latest.action === "activity.create";
-    const expected = auditActivityState(latest.after);
-    if (!expected || (undoCreate ? expected.deletedAt !== null : expected.deletedAt === null)) throw new Error("not_found");
-    const before = await tx.activityLog.findFirst({
-      where: {
-        id: latest.entityId,
-        householdId: lockedCtx.householdId,
-        deletedAt: expected.deletedAt,
-        updatedAt: expected.updatedAt
-      },
-      include: activityInclude
-    });
-    if (!before) throw new Error("not_found");
-    if (!canMutateOwnOrAny(lockedCtx.role, undoCreate ? "delete" : "update", before.actorMemberId === lockedCtx.memberId)) {
-      throw new Error("forbidden");
-    }
-    const restoresActiveTimer = !undoCreate && (before.timerState === TimerState.running || before.timerState === TimerState.paused);
-    if (restoresActiveTimer && baby.inactiveAt) throw new Error("baby_inactive");
-
-    const claimed = await tx.activityLog.updateMany({
-      where: {
-        id: before.id,
-        householdId: lockedCtx.householdId,
-        deletedAt: before.deletedAt,
-        updatedAt: before.updatedAt
-      },
-      data: undoCreate
-        ? { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId }
-        : { deletedAt: null, deletedByMemberId: null }
-    });
-    if (claimed.count !== 1) throw new Error("not_found");
-    const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
-    await writeAudit(
-      lockedCtx,
-      { action: "activity.undo", entityType: "activity", entityId: before.id, before, after },
-      tx
-    );
-    return { id: before.id };
+    return findActivityUndoReplayInTransaction(tx, lockedCtx, mutation);
   });
+}
+
+export async function undoLastActivity(raw?: unknown) {
+  const mutation = timerMutationInput(raw);
+  const replay = await findActivityUndoReplay(mutation);
+  if (replay) return replay;
+  const ctx = await getHouseholdContext();
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const lockedCtx = await lockActorForWrite(tx, ctx);
+      const lockedReplay = await findActivityUndoReplayInTransaction(tx, lockedCtx, mutation);
+      if (lockedReplay) return lockedReplay;
+      const latest = await tx.auditEvent.findFirst({
+        where: {
+          householdId: lockedCtx.householdId,
+          actorMemberId: lockedCtx.memberId,
+          entityType: "activity",
+          action: { in: ["activity.create", "activity.delete"] }
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }]
+      });
+      if (!latest) throw new Error("not_found");
+
+      const target = await tx.activityLog.findFirst({
+        where: { id: latest.entityId, householdId: lockedCtx.householdId },
+        select: { babyId: true }
+      });
+      if (!target) throw new Error("not_found");
+      const baby = await lockBabyForWrite(tx, lockedCtx, target.babyId);
+
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "ActivityLog"
+        WHERE "id" = ${latest.entityId} AND "householdId" = ${lockedCtx.householdId}
+        FOR UPDATE
+      `;
+      if (locked.length !== 1) throw new Error("not_found");
+
+      const superseding = await tx.auditEvent.findFirst({
+        where: {
+          householdId: lockedCtx.householdId,
+          entityType: "activity",
+          entityId: latest.entityId,
+          createdAt: { gte: latest.createdAt },
+          id: { not: latest.id }
+        },
+        select: { id: true }
+      });
+      if (superseding) throw new Error("not_found");
+
+      const undoCreate = latest.action === "activity.create";
+      const expected = auditActivityState(latest.after);
+      if (!expected || (undoCreate ? expected.deletedAt !== null : expected.deletedAt === null)) throw new Error("not_found");
+      const before = await tx.activityLog.findFirst({
+        where: {
+          id: latest.entityId,
+          householdId: lockedCtx.householdId,
+          deletedAt: expected.deletedAt,
+          updatedAt: expected.updatedAt
+        },
+        include: activityInclude
+      });
+      if (!before) throw new Error("not_found");
+      if (!canMutateOwnOrAny(lockedCtx.role, undoCreate ? "delete" : "update", before.actorMemberId === lockedCtx.memberId)) {
+        throw new Error("forbidden");
+      }
+      const restoresActiveTimer = !undoCreate && (before.timerState === TimerState.running || before.timerState === TimerState.paused);
+      if (restoresActiveTimer && baby.inactiveAt) throw new Error("baby_inactive");
+
+      const claimed = await tx.activityLog.updateMany({
+        where: {
+          id: before.id,
+          householdId: lockedCtx.householdId,
+          deletedAt: before.deletedAt,
+          updatedAt: before.updatedAt
+        },
+        data: undoCreate
+          ? { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId }
+          : { deletedAt: null, deletedByMemberId: null }
+      });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
+      await tx.mutationReceipt.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          actorMemberId: lockedCtx.memberId,
+          apiKeyId: null,
+          operation: "activity.undo",
+          targetActivityId: before.id,
+          clientMutationId: mutation.clientMutationId,
+          intentFingerprint: activityUndoFingerprint(before.id, undoCreate ? "delete" : "update"),
+          outcomeActivityId: after.id
+        }
+      });
+      await writeAudit(
+        lockedCtx,
+        { action: "activity.undo", entityType: "activity", entityId: before.id, before, after },
+        tx
+      );
+      return { id: before.id };
+    });
+  } catch (error) {
+    if (isMutationReceiptUniqueError(error) || (error instanceof Error && error.message === "stale_revision")) {
+      const recovered = await findActivityUndoReplay(mutation);
+      if (recovered) return recovered;
+    }
+    throw error;
+  }
 }
