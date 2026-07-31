@@ -916,7 +916,120 @@ describe("activity page access", () => {
     );
   });
 
+  it("persists a durable receipt with a timer-pause outcome before returning", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "running",
+      startedAt: new Date("2026-07-14T11:00:00.000Z")
+    });
+
+    await (pauseTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "22222222-2222-4222-8222-222222222222"
+    });
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          householdId: "household-1",
+          actorMemberId: "member-current",
+          operation: "timer.pause",
+          targetActivityId: "activity-1",
+          clientMutationId: "22222222-2222-4222-8222-222222222222",
+          outcomeActivityId: "activity-1"
+        })
+      })
+    );
+  });
+
+  it("persists a durable receipt with a timer-resume outcome before returning", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "paused",
+      pausedAt: new Date("2026-07-14T11:15:00.000Z")
+    });
+
+    await (resumeTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "33333333-3333-4333-8333-333333333333"
+    });
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ operation: "timer.resume", clientMutationId: "33333333-3333-4333-8333-333333333333" }) })
+    );
+  });
+
+  it("replays a matching timer-pause receipt without repeating its audit", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "paused" };
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1", actorMemberId: "member-current", operation: "timer.pause", targetActivityId: "activity-1",
+      clientMutationId: "22222222-2222-4222-8222-222222222222", intentFingerprint: "848dfa4672b3a388436481ce3947f82e4f545278f730a4e7b764d92441b44992", outcomeActivityId: "activity-1"
+    });
+    mocks.activityFindFirst.mockResolvedValue(outcome);
+
+    await expect((pauseTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "22222222-2222-4222-8222-222222222222"
+    })).resolves.toEqual(outcome);
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("replays the winner after a same-key timer-pause claim loses its revision race", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "paused" };
+    mocks.mutationReceiptFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        householdId: "household-1", actorMemberId: "member-current", operation: "timer.pause", targetActivityId: "activity-1",
+        clientMutationId: "22222222-2222-4222-8222-222222222222", intentFingerprint: "848dfa4672b3a388436481ce3947f82e4f545278f730a4e7b764d92441b44992", outcomeActivityId: "activity-1"
+      });
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ ...outcome, timerState: "running", startedAt: new Date("2026-07-14T11:00:00.000Z") })
+      .mockResolvedValueOnce(outcome);
+    mocks.activityUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect((pauseTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "22222222-2222-4222-8222-222222222222"
+    })).resolves.toEqual(outcome);
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("replays the winner after a same-key timer-resume claim loses its revision race", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "running" };
+    mocks.mutationReceiptFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        householdId: "household-1", actorMemberId: "member-current", operation: "timer.resume", targetActivityId: "activity-1",
+        clientMutationId: "33333333-3333-4333-8333-333333333333", intentFingerprint: "ebd4d64837b5b1f1cd538646dc8eb2ab73380fe49a947cf61fb49ba920401ec4", outcomeActivityId: "activity-1"
+      });
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ ...outcome, timerState: "paused", pausedAt: new Date("2026-07-14T11:15:00.000Z") })
+      .mockResolvedValueOnce(outcome);
+    mocks.activityUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect((resumeTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "33333333-3333-4333-8333-333333333333"
+    })).resolves.toEqual(outcome);
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a timer-pause retry when its mutation ID belongs to another operation", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1", actorMemberId: "member-current", operation: "timer.stop", targetActivityId: "activity-1",
+      clientMutationId: "22222222-2222-4222-8222-222222222222", intentFingerprint: "eec91cbb8fef2770e0b696a32f25051436c46caabb2be913a1053397fc34beb2", outcomeActivityId: "activity-1"
+    });
+
+    await expect((pauseTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "22222222-2222-4222-8222-222222222222"
+    })).rejects.toThrow("idempotency_conflict");
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("persists a durable receipt with a timer-stop outcome before returning", async () => {
+    mocks.mutationReceiptFindFirst.mockReset();
+    mocks.mutationReceiptFindFirst.mockResolvedValue(null);
     mocks.activityFindFirst.mockResolvedValue({
       ...activity("member-author"),
       timerState: "running",
@@ -1048,6 +1161,8 @@ describe("activity page access", () => {
 
   it("reports a stale revision when a concurrent timer pause wins the conditional claim", async () => {
     mocks.activityFindFirst.mockReset();
+    mocks.mutationReceiptFindFirst.mockReset();
+    mocks.mutationReceiptFindFirst.mockResolvedValue(null);
     mocks.activityFindFirst.mockResolvedValue({
       ...activity("member-author"),
       timerState: "running",

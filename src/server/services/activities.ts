@@ -48,8 +48,8 @@ export function timerMutationInput(raw: unknown) {
   return { clientMutationId };
 }
 
-function timerStopFingerprint(activityId: string) {
-  return createHash("sha256").update(JSON.stringify({ operation: "timer.stop", activityId })).digest("hex");
+function timerMutationFingerprint(operation: "timer.stop" | "timer.pause" | "timer.resume", activityId: string) {
+  return createHash("sha256").update(JSON.stringify({ operation, activityId })).digest("hex");
 }
 
 function toDate(value: string | undefined, fallback?: Date) {
@@ -797,14 +797,18 @@ function isMutationReceiptUniqueError(error: unknown) {
   return candidate.code === "P2002" && Array.isArray(candidate.meta?.target) && candidate.meta.target.length === 2 && candidate.meta.target[0] === "householdId" && candidate.meta.target[1] === "clientMutationId";
 }
 
-async function findTimerStopReplay(id: string, mutation: ReturnType<typeof timerMutationInput>) {
+async function findTimerReplay(
+  id: string,
+  mutation: ReturnType<typeof timerMutationInput>,
+  operation: "timer.stop" | "timer.pause" | "timer.resume"
+) {
   const ctx = await getHouseholdContext();
-  const fingerprint = timerStopFingerprint(id);
+  const fingerprint = timerMutationFingerprint(operation, id);
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     const receipt = await tx.mutationReceipt.findFirst({ where: { householdId: lockedCtx.householdId, clientMutationId: mutation.clientMutationId } });
     if (!receipt) return null;
-    if (receipt.actorMemberId !== lockedCtx.memberId || receipt.operation !== "timer.stop" || receipt.targetActivityId !== id || receipt.intentFingerprint !== fingerprint) {
+    if (receipt.actorMemberId !== lockedCtx.memberId || receipt.operation !== operation || receipt.targetActivityId !== id || receipt.intentFingerprint !== fingerprint) {
       throw new Error("idempotency_conflict");
     }
     const outcome = await tx.activityLog.findFirst({ where: { id: receipt.outcomeActivityId, householdId: lockedCtx.householdId, deletedAt: null }, include: activityInclude });
@@ -817,7 +821,7 @@ async function findTimerStopReplay(id: string, mutation: ReturnType<typeof timer
 
 export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace = false) {
   const mutation = timerMutationInput(raw);
-  const replay = await findTimerStopReplay(id, mutation);
+  const replay = await findTimerReplay(id, mutation, "timer.stop");
   if (replay) return replay;
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
@@ -846,7 +850,7 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
         operation: "timer.stop",
         targetActivityId: activity.id,
         clientMutationId: mutation.clientMutationId,
-        intentFingerprint: timerStopFingerprint(activity.id),
+        intentFingerprint: timerMutationFingerprint("timer.stop", activity.id),
         outcomeActivityId: updated.id
       }
     });
@@ -856,61 +860,85 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
     });
   } catch (error) {
     if (!recoveringReceiptRace && (isMutationReceiptUniqueError(error) || (error instanceof Error && error.message === "stale_revision"))) {
-      const recovered = await findTimerStopReplay(id, mutation);
+      const recovered = await findTimerReplay(id, mutation, "timer.stop");
       if (recovered) return recovered;
     }
     throw error;
   }
 }
 
-export async function pauseTimer(id: string) {
+export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRace = false) {
+  const mutation = timerMutationInput(raw);
+  const replay = await findTimerReplay(id, mutation, "timer.pause");
+  if (replay) return replay;
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.running || !activity.startedAt) throw new Error("not_found");
-  const updated = await updateCurrentActivity(
-    ctx,
-    activity,
-    { timerState: TimerState.paused, pausedAt: new Date() },
-    "activity.timer.pause",
-    "update"
-  );
-  return updated;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const { ctx: lockedCtx } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
+      if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      const claimed = await tx.activityLog.updateMany({
+        where: { id: activity.id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: activity.updatedAt, timerState: TimerState.running },
+        data: { timerState: TimerState.paused, pausedAt: new Date() }
+      });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+      await tx.mutationReceipt.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          actorMemberId: lockedCtx.memberId,
+          apiKeyId: null,
+          operation: "timer.pause",
+          targetActivityId: activity.id,
+          clientMutationId: mutation.clientMutationId,
+          intentFingerprint: timerMutationFingerprint("timer.pause", activity.id),
+          outcomeActivityId: updated.id
+        }
+      });
+      await writeAudit(lockedCtx, { action: "activity.timer.pause", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
+      return updated;
+    });
+  } catch (error) {
+    if (!recoveringReceiptRace && (isMutationReceiptUniqueError(error) || (error instanceof Error && error.message === "stale_revision"))) {
+      const recovered = await findTimerReplay(id, mutation, "timer.pause");
+      if (recovered) return recovered;
+    }
+    throw error;
+  }
 }
 
-export async function resumeTimer(id: string) {
+export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRace = false) {
+  const mutation = timerMutationInput(raw);
+  const replay = await findTimerReplay(id, mutation, "timer.resume");
+  if (replay) return replay;
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.paused || !activity.pausedAt) throw new Error("not_found");
-  return prisma.$transaction(async (tx) => {
-    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
-    if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) {
-      throw new Error("forbidden");
-    }
-    if (baby.inactiveAt) throw new Error("baby_inactive");
-
-    const claimed = await tx.activityLog.updateMany({
-      where: {
-        id: activity.id,
-        householdId: ctx.householdId,
-        deletedAt: null,
-        updatedAt: activity.updatedAt,
-        timerState: TimerState.paused
-      },
-      data: {
-        timerState: TimerState.running,
-        pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt!, new Date()),
-        pausedAt: null
-      }
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
+      if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      if (baby.inactiveAt) throw new Error("baby_inactive");
+      const claimed = await tx.activityLog.updateMany({
+        where: { id: activity.id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: activity.updatedAt, timerState: TimerState.paused },
+        data: { timerState: TimerState.running, pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt!, new Date()), pausedAt: null }
+      });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+      await tx.mutationReceipt.create({
+        data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "timer.resume", targetActivityId: activity.id, clientMutationId: mutation.clientMutationId, intentFingerprint: timerMutationFingerprint("timer.resume", activity.id), outcomeActivityId: updated.id }
+      });
+      await writeAudit(lockedCtx, { action: "activity.timer.resume", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
+      return updated;
     });
-    if (claimed.count !== 1) throw new Error("stale_revision");
-    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
-    await writeAudit(
-      lockedCtx,
-      { action: "activity.timer.resume", entityType: "activity", entityId: activity.id, before: activity, after: updated },
-      tx
-    );
-    return updated;
-  });
+  } catch (error) {
+    if (!recoveringReceiptRace && (isMutationReceiptUniqueError(error) || (error instanceof Error && error.message === "stale_revision"))) {
+      const recovered = await findTimerReplay(id, mutation, "timer.resume");
+      if (recovered) return recovered;
+    }
+    throw error;
+  }
 }
 
 export async function undoLastActivity() {
