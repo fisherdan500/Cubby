@@ -777,6 +777,166 @@ describe("activity page access", () => {
     );
   });
 
+  it("persists a durable activity-delete receipt with the soft delete and side effects", async () => {
+    mocks.webhookFindMany.mockResolvedValue([
+      { id: "webhook-1", legacyUnattributed: true, delegatedByMemberId: null }
+    ]);
+    await (deleteActivity as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    });
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith({
+      data: {
+        householdId: "household-1",
+        actorMemberId: "member-current",
+        apiKeyId: null,
+        operation: "activity.delete",
+        targetActivityId: "activity-1",
+        clientMutationId: "55555555-5555-4555-8555-555555555555",
+        intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
+        outcomeActivityId: "activity-1"
+      }
+    });
+    expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
+    expect(mocks.webhookCreateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("replays a matching activity-delete receipt without a second soft delete, audit, or side effect", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.delete",
+      targetActivityId: "activity-1",
+      clientMutationId: "55555555-5555-4555-8555-555555555555",
+      intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
+      outcomeActivityId: "activity-1"
+    });
+
+    const replay = await (deleteActivity as unknown as (id: string, raw: unknown) => Promise<{ id: string }>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    });
+
+    expect(replay).toMatchObject({ id: "activity-1" });
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when an activity-delete mutation ID is bound to another target", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.delete",
+      targetActivityId: "activity-other",
+      clientMutationId: "55555555-5555-4555-8555-555555555555",
+      intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
+      outcomeActivityId: "activity-other"
+    });
+
+    await expect((deleteActivity as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    })).rejects.toThrow("idempotency_conflict");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("returns the matching receipt winner after a stale activity-delete claim", async () => {
+    const receipt = {
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.delete",
+      targetActivityId: "activity-1",
+      clientMutationId: "55555555-5555-4555-8555-555555555555",
+      intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
+      outcomeActivityId: "activity-1"
+    };
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+    mocks.activityUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await (deleteActivity as unknown as (id: string, raw: unknown) => Promise<{ id: string }>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    });
+
+    expect(result).toMatchObject({ id: "activity-1" });
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("returns stale revision when a losing activity-delete claim has no matching receipt winner", async () => {
+    mocks.activityUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect((deleteActivity as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    })).rejects.toThrow("stale_revision");
+
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("returns the matching receipt winner after an activity-delete receipt uniqueness race", async () => {
+    const receipt = {
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.delete",
+      targetActivityId: "activity-1",
+      clientMutationId: "55555555-5555-4555-8555-555555555555",
+      intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
+      outcomeActivityId: "activity-1"
+    };
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+    mocks.mutationReceiptCreate.mockRejectedValue({ code: "P2002", meta: { target: ["householdId", "clientMutationId"] } });
+
+    const result = await (deleteActivity as unknown as (id: string, raw: unknown) => Promise<{ id: string }>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    });
+
+    expect(result).toMatchObject({ id: "activity-1" });
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("rechecks a matching activity-delete receipt after the mutation actor lock", async () => {
+    const receipt = {
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "activity.delete",
+      targetActivityId: "activity-1",
+      clientMutationId: "55555555-5555-4555-8555-555555555555",
+      intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
+      outcomeActivityId: "activity-1"
+    };
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+
+    const replay = await (deleteActivity as unknown as (id: string, raw: unknown) => Promise<{ id: string }>)("activity-1", {
+      clientMutationId: "55555555-5555-4555-8555-555555555555"
+    });
+
+    expect(replay).toMatchObject({ id: "activity-1" });
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("reauthorizes delete permission inside the mutation transaction", async () => {
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-current",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(deleteActivity("activity-1")).rejects.toThrow("forbidden");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("denies undo when the current role can no longer delete the activity", async () => {
     mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
     mocks.memberFindUnique.mockResolvedValue({

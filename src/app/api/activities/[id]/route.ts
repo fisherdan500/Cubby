@@ -11,9 +11,18 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    return ok(await deleteActivity(params.id));
+    const text = await request.text();
+    let body: unknown;
+    if (text.length > 0) {
+      try {
+        body = JSON.parse(text) as unknown;
+      } catch {
+        throw new Error("validation_error");
+      }
+    }
+    return ok(await deleteActivity(params.id, body));
   } catch (error) {
     return handleError(error);
   }

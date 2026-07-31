@@ -58,6 +58,10 @@ function activityUndoFingerprint(activityId: string, permissionAction: "delete" 
     .digest("hex");
 }
 
+function activityDeleteFingerprint(activityId: string) {
+  return createHash("sha256").update(JSON.stringify({ operation: "activity.delete", activityId })).digest("hex");
+}
+
 function toDate(value: string | undefined, fallback?: Date) {
   if (!value) return fallback;
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) {
@@ -617,40 +621,6 @@ async function getEditableActivity(ctx: HouseholdContext, id: string, action: "u
   return activity;
 }
 
-async function updateCurrentActivity(
-  ctx: HouseholdContext,
-  activity: { id: string; babyId: string; actorMemberId: string; updatedAt: Date },
-  data: Prisma.ActivityLogUpdateManyMutationInput,
-  action: string,
-  permissionAction: "update" | "delete",
-  event?: WebhookEvent
-) {
-  return prisma.$transaction(async (tx) => {
-    const { ctx: lockedCtx } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
-    if (!canMutateOwnOrAny(lockedCtx.role, permissionAction, activity.actorMemberId === lockedCtx.memberId)) {
-      throw new Error("forbidden");
-    }
-    const claimed = await tx.activityLog.updateMany({
-      where: {
-        id: activity.id,
-        householdId: ctx.householdId,
-        deletedAt: null,
-        updatedAt: activity.updatedAt
-      },
-      data
-    });
-    if (claimed.count !== 1) throw new Error("stale_revision");
-    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
-    await writeAudit(
-      lockedCtx,
-      { action, entityType: "activity", entityId: activity.id, before: activity, after: updated },
-      tx
-    );
-    if (event) await queueActivitySideEffects(lockedCtx, updated, event, tx);
-    return updated;
-  });
-}
-
 async function replaceSpecificLog(
   tx: Prisma.TransactionClient,
   id: string,
@@ -783,18 +753,125 @@ export async function updateActivity(id: string, raw: unknown) {
   return updated;
 }
 
-export async function deleteActivity(id: string) {
+async function findActivityDeleteReplayInTransaction(
+  tx: Prisma.TransactionClient,
+  lockedCtx: HouseholdContext,
+  id: string,
+  mutation: ReturnType<typeof timerMutationInput>
+) {
+  const receipt = await tx.mutationReceipt.findFirst({
+    where: { householdId: lockedCtx.householdId, clientMutationId: mutation.clientMutationId }
+  });
+  if (!receipt) return null;
+  if (
+    receipt.actorMemberId !== lockedCtx.memberId ||
+    receipt.operation !== "activity.delete" ||
+    receipt.targetActivityId !== id ||
+    receipt.outcomeActivityId !== id ||
+    receipt.intentFingerprint !== activityDeleteFingerprint(id)
+  ) {
+    throw new Error("idempotency_conflict");
+  }
+  const candidate = await tx.activityLog.findFirst({
+    where: { id, householdId: lockedCtx.householdId },
+    select: { babyId: true }
+  });
+  if (!candidate) throw new Error("not_found");
+  await lockBabyForWrite(tx, lockedCtx, candidate.babyId);
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "ActivityLog"
+    WHERE "id" = ${id} AND "householdId" = ${lockedCtx.householdId}
+    FOR UPDATE
+  `;
+  if (locked.length !== 1) throw new Error("not_found");
+  const target = await tx.activityLog.findFirst({
+    where: { id, householdId: lockedCtx.householdId, babyId: candidate.babyId },
+    include: activityInclude
+  });
+  if (!target) throw new Error("not_found");
+  if (!canMutateOwnOrAny(lockedCtx.role, "delete", target.actorMemberId === lockedCtx.memberId)) {
+    throw new Error("forbidden");
+  }
+  return target;
+}
+
+async function findActivityDeleteReplay(id: string, mutation: ReturnType<typeof timerMutationInput>) {
   const ctx = await getHouseholdContext();
-  const before = await getEditableActivity(ctx, id, "delete");
-  const deleted = await updateCurrentActivity(
-    ctx,
-    before,
-    { deletedAt: new Date(), deletedByMemberId: ctx.memberId },
-    "activity.delete",
-    "delete",
-    WebhookEvent.activity_deleted
-  );
-  return deleted;
+  return prisma.$transaction(async (tx) => {
+    const lockedCtx = await lockActorForWrite(tx, ctx);
+    return findActivityDeleteReplayInTransaction(tx, lockedCtx, id, mutation);
+  });
+}
+
+export async function deleteActivity(id: string, raw?: unknown) {
+  const mutation = timerMutationInput(raw);
+  const replay = await findActivityDeleteReplay(id, mutation);
+  if (replay) return replay;
+  const ctx = await getHouseholdContext();
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const lockedCtx = await lockActorForWrite(tx, ctx);
+      const lockedReplay = await findActivityDeleteReplayInTransaction(tx, lockedCtx, id, mutation);
+      if (lockedReplay) return lockedReplay;
+      const candidate = await tx.activityLog.findFirst({
+        where: { id, householdId: lockedCtx.householdId, deletedAt: null },
+        select: { babyId: true }
+      });
+      if (!candidate) throw new Error("not_found");
+      await lockBabyForWrite(tx, lockedCtx, candidate.babyId);
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "ActivityLog"
+        WHERE "id" = ${id} AND "householdId" = ${lockedCtx.householdId}
+        FOR UPDATE
+      `;
+      if (locked.length !== 1) throw new Error("not_found");
+      const before = await tx.activityLog.findFirst({
+        where: { id, householdId: lockedCtx.householdId, babyId: candidate.babyId, deletedAt: null },
+        include: activityInclude
+      });
+      if (!before) throw new Error("not_found");
+      if (!canMutateOwnOrAny(lockedCtx.role, "delete", before.actorMemberId === lockedCtx.memberId)) {
+        throw new Error("forbidden");
+      }
+      const claimed = await tx.activityLog.updateMany({
+        where: { id, householdId: lockedCtx.householdId, babyId: before.babyId, deletedAt: null, updatedAt: before.updatedAt },
+        data: { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId }
+      });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const deleted = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+      await tx.mutationReceipt.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          actorMemberId: lockedCtx.memberId,
+          apiKeyId: null,
+          operation: "activity.delete",
+          targetActivityId: id,
+          clientMutationId: mutation.clientMutationId,
+          intentFingerprint: activityDeleteFingerprint(id),
+          outcomeActivityId: deleted.id
+        }
+      });
+      await writeAudit(
+        lockedCtx,
+        { action: "activity.delete", entityType: "activity", entityId: id, before, after: deleted },
+        tx
+      );
+      await queueActivitySideEffects(lockedCtx, deleted, WebhookEvent.activity_deleted, tx);
+      return deleted;
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "stale_revision") {
+      const winner = await findActivityDeleteReplay(id, mutation);
+      if (winner) return winner;
+    }
+    if (isMutationReceiptUniqueError(error)) {
+      const winner = await findActivityDeleteReplay(id, mutation);
+      if (winner) return winner;
+    }
+    throw error;
+  }
 }
 
 function isMutationReceiptUniqueError(error: unknown) {
