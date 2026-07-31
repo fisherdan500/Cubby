@@ -404,9 +404,7 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
       const key = await lockApiKeyForWrite(tx, lockedCtx, ctx.apiKeyId);
       if (!key.scopes.includes("write") && !key.scopes.includes("*")) throw new Error("forbidden");
     }
-    const baby = await lockBabyForWrite(tx, lockedCtx, input.babyId);
     requirePermission(lockedCtx, "activity.create");
-    if (baby.inactiveAt) throw new Error("baby_inactive");
     const existing = await tx.activityLog.findFirst({
       where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId },
       include: activityInclude
@@ -417,10 +415,26 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
       }
       return existing;
     }
+    const baby = await lockBabyForWrite(tx, lockedCtx, input.babyId);
+    if (baby.inactiveAt) throw new Error("baby_inactive");
     return createActivityInTransaction(input, lockedCtx, tx, true, undefined, undefined, true, undefined, fingerprint);
     });
   } catch (error) {
-    if (!(typeof error === "object" && error !== null && "code" in error && error.code === "P2002")) throw error;
+    if (
+      !(
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2002" &&
+        "meta" in error &&
+        typeof error.meta === "object" &&
+        error.meta !== null &&
+        "target" in error.meta &&
+        Array.isArray(error.meta.target) &&
+        error.meta.target.includes("householdId") &&
+        error.meta.target.includes("clientMutationId")
+      )
+    ) throw error;
     return prisma.$transaction(async (tx) => {
       const lockedCtx = await lockActorForWrite(tx, ctx);
       if ("apiKeyId" in ctx && typeof ctx.apiKeyId === "string") {
@@ -499,7 +513,16 @@ export async function restoreHistoricalActivityForContext(
   requirePermission(lockedCtx, "backup.manage");
   if (input.activeTimer) throw new Error("backup_active_timer");
   if (historicalTimer && !timerCapableTypes.has(input.type as ActivityType)) throw new Error("backup_invalid_timer");
-  return createActivityInTransaction(input, lockedCtx, tx, false, historicalTimer, historicalAttribution, false, historicalFields);
+  return createActivityInTransaction(
+    { ...input, clientMutationId: undefined },
+    lockedCtx,
+    tx,
+    false,
+    historicalTimer,
+    historicalAttribution,
+    false,
+    historicalFields
+  );
 }
 
 export async function listActivities(params?: {
