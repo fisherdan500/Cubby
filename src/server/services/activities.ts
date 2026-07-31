@@ -422,60 +422,60 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
   const input = activityCreateSchema.parse(raw);
   const fingerprint = activityCreateFingerprint(input);
 
-  try {
-    return await prisma.$transaction(async (tx) => {
+  const replayOrCreate = async (tx: Prisma.TransactionClient, recoverOnly = false) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     if ("apiKeyId" in ctx && typeof ctx.apiKeyId === "string") {
       const key = await lockApiKeyForWrite(tx, lockedCtx, ctx.apiKeyId);
       if (!key.scopes.includes("write") && !key.scopes.includes("*")) throw new Error("forbidden");
     }
     requirePermission(lockedCtx, "activity.create");
-    const existing = await tx.activityLog.findFirst({
+    const receipt = await tx.mutationReceipt.findFirst({
+      where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId }
+    });
+    if (receipt) {
+      if (
+        receipt.actorMemberId !== lockedCtx.memberId ||
+        receipt.operation !== "activity.create" ||
+        receipt.targetActivityId !== receipt.outcomeActivityId ||
+        receipt.intentFingerprint !== fingerprint
+      ) throw new Error("idempotency_conflict");
+      const snapshot = receiptOutcomeSnapshot(receipt);
+      if (!snapshot) throw new Error("idempotency_conflict");
+      return snapshot;
+    }
+    const legacy = await tx.activityLog.findFirst({
       where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId },
       include: activityInclude
     });
-    if (existing) {
-      if (existing.actorMemberId !== lockedCtx.memberId || existing.clientMutationFingerprint !== fingerprint) {
-        throw new Error("idempotency_conflict");
-      }
-      return existing;
+    if (legacy) {
+      if (legacy.actorMemberId !== lockedCtx.memberId || legacy.clientMutationFingerprint !== fingerprint) throw new Error("idempotency_conflict");
+      return legacy;
     }
+    if (recoverOnly) throw new Error("idempotency_conflict");
     const baby = await lockBabyForWrite(tx, lockedCtx, input.babyId);
     if (baby.inactiveAt) throw new Error("baby_inactive");
-    return createActivityInTransaction(input, lockedCtx, tx, true, undefined, undefined, true, undefined, fingerprint);
+    const activity = await createActivityInTransaction(input, lockedCtx, tx, true, undefined, undefined, true, undefined, fingerprint);
+    await tx.mutationReceipt.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        actorMemberId: lockedCtx.memberId,
+        apiKeyId: "apiKeyId" in ctx && typeof ctx.apiKeyId === "string" ? ctx.apiKeyId : null,
+        operation: "activity.create",
+        targetActivityId: activity.id,
+        clientMutationId: input.clientMutationId,
+        intentFingerprint: fingerprint,
+        outcomeActivityId: activity.id,
+        outcomeSnapshot: outcomeSnapshot(activity)
+      }
     });
+    return activity;
+  };
+
+  try {
+    return await prisma.$transaction((tx) => replayOrCreate(tx));
   } catch (error) {
-    if (
-      !(
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "P2002" &&
-        "meta" in error &&
-        typeof error.meta === "object" &&
-        error.meta !== null &&
-        "target" in error.meta &&
-        Array.isArray(error.meta.target) &&
-        error.meta.target.includes("householdId") &&
-        error.meta.target.includes("clientMutationId")
-      )
-    ) throw error;
-    return prisma.$transaction(async (tx) => {
-      const lockedCtx = await lockActorForWrite(tx, ctx);
-      if ("apiKeyId" in ctx && typeof ctx.apiKeyId === "string") {
-        const key = await lockApiKeyForWrite(tx, lockedCtx, ctx.apiKeyId);
-        if (!key.scopes.includes("write") && !key.scopes.includes("*")) throw new Error("forbidden");
-      }
-      requirePermission(lockedCtx, "activity.create");
-      const existing = await tx.activityLog.findFirst({
-        where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId },
-        include: activityInclude
-      });
-      if (!existing || existing.actorMemberId !== lockedCtx.memberId || existing.clientMutationFingerprint !== fingerprint) {
-        throw new Error("idempotency_conflict");
-      }
-      return existing;
-    });
+    if (!isMutationReceiptUniqueError(error)) throw error;
+    return prisma.$transaction((tx) => replayOrCreate(tx, true));
   }
 }
 
@@ -702,55 +702,110 @@ async function replaceSpecificLog(
   }
 }
 
+function receiptOutcomeSnapshot(receipt: { outcomeSnapshot: Prisma.JsonValue | null }) {
+  return receipt.outcomeSnapshot == null ? null : JSON.parse(JSON.stringify(receipt.outcomeSnapshot));
+}
+
+function outcomeSnapshot(activity: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(activity));
+}
+
+export function activityUpdateFingerprint(id: string, input: ReturnType<typeof activityUpdateSchema.parse>) {
+  const { clientMutationId: _clientMutationId, ...intent } = input;
+  return createHash("sha256").update(JSON.stringify({ operation: "activity.update", activityId: id, intent })).digest("hex");
+}
+
+async function findActivityUpdateReplayInTransaction(
+  tx: Prisma.TransactionClient,
+  lockedCtx: HouseholdContext,
+  id: string,
+  input: ReturnType<typeof activityUpdateSchema.parse>
+) {
+  const receipt = await tx.mutationReceipt.findFirst({
+    where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId }
+  });
+  if (!receipt) return null;
+  if (
+    receipt.actorMemberId !== lockedCtx.memberId ||
+    receipt.operation !== "activity.update" ||
+    receipt.targetActivityId !== id ||
+    receipt.outcomeActivityId !== id ||
+    receipt.intentFingerprint !== activityUpdateFingerprint(id, input)
+  ) throw new Error("idempotency_conflict");
+  const candidate = await tx.activityLog.findFirst({ where: { id, householdId: lockedCtx.householdId }, select: { babyId: true } });
+  if (!candidate) throw new Error("not_found");
+  await lockBabyForWrite(tx, lockedCtx, candidate.babyId);
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id" FROM "ActivityLog" WHERE "id" = ${id} AND "householdId" = ${lockedCtx.householdId} FOR UPDATE
+  `;
+  if (locked.length !== 1) throw new Error("not_found");
+  const target = await tx.activityLog.findFirst({ where: { id, householdId: lockedCtx.householdId }, include: activityInclude });
+  if (!target) throw new Error("not_found");
+  if (!canMutateOwnOrAny(lockedCtx.role, "update", target.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+  return receiptOutcomeSnapshot(receipt) ?? target;
+}
+
+async function findActivityUpdateReplay(id: string, input: ReturnType<typeof activityUpdateSchema.parse>) {
+  const ctx = await getHouseholdContext();
+  return prisma.$transaction(async (tx) => findActivityUpdateReplayInTransaction(tx, await lockActorForWrite(tx, ctx), id, input));
+}
+
+async function rejectLegacyActivityCreateReservation(tx: Prisma.TransactionClient, householdId: string, clientMutationId: string) {
+  const reservation = await tx.activityLog.findFirst({
+    where: { householdId, clientMutationId },
+    select: { id: true, clientMutationId: true }
+  });
+  if (reservation?.clientMutationId === clientMutationId) throw new Error("idempotency_conflict");
+}
+
 export async function updateActivity(id: string, raw: unknown) {
   const ctx = await getHouseholdContext();
-  const medicineContactWasProvided =
-    typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.prototype.hasOwnProperty.call(raw, "contactId");
+  const medicineContactWasProvided = typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.prototype.hasOwnProperty.call(raw, "contactId");
   const input = activityUpdateSchema.parse({ ...(raw as object), id });
-  const before = await getEditableActivity(ctx, id, "update");
-  const next = specificCreate(input);
-  if (before.timerState !== TimerState.none && input.type !== before.type) throw new Error("not_found");
-  const expectedUpdatedAt = toDate(input.expectedUpdatedAt) ?? before.updatedAt;
-  const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
-  const editedTimerState = before.timerState === TimerState.none ? next.timerState : before.timerState;
-  const updated = await prisma.$transaction(async (tx) => {
-    const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
-    if (!canMutateOwnOrAny(lockedCtx.role, "update", before.actorMemberId === lockedCtx.memberId)) {
-      throw new Error("forbidden");
-    }
-    const startsTimer = before.timerState === TimerState.none && next.timerState === TimerState.running;
-    if (baby.inactiveAt && (input.babyId !== before.babyId || startsTimer || activeTimer)) {
-      throw new Error("baby_inactive");
-    }
-    if (input.type === "medicine" && medicineContactWasProvided && input.contactId) {
-      await requireHouseholdMedicineContact(tx, lockedCtx, input);
-    }
-    const claimed = await tx.activityLog.updateMany({
-      where: { id, householdId: ctx.householdId, deletedAt: null, updatedAt: expectedUpdatedAt },
-      data: {
-        babyId: input.babyId,
-        type: next.type,
-        occurredAt: next.occurredAt,
-        startedAt: activeTimer ? before.startedAt : next.startedAt,
-        endedAt: activeTimer ? before.endedAt : next.endedAt,
-        durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds,
-        timezone: next.timezone,
-        notes: next.notes,
-        timerState: editedTimerState
-      }
+  const replay = await findActivityUpdateReplay(id, input);
+  if (replay) return replay;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
+      const lockedReplay = await findActivityUpdateReplayInTransaction(tx, lockedCtx, id, input);
+      if (lockedReplay) return lockedReplay;
+      const candidate = await tx.activityLog.findFirst({ where: { id, householdId: lockedCtx.householdId, deletedAt: null }, select: { babyId: true } });
+      if (!candidate) throw new Error("stale_revision");
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "ActivityLog" WHERE "id" = ${id} AND "householdId" = ${lockedCtx.householdId} FOR UPDATE
+      `;
+      if (locked.length !== 1) throw new Error("stale_revision");
+      const before = await tx.activityLog.findFirst({ where: { id, householdId: lockedCtx.householdId, deletedAt: null }, include: activityInclude });
+      if (!before || before.babyId !== candidate.babyId || before.deletedAt) throw new Error("stale_revision");
+      if (before.timerState !== TimerState.none && input.type !== before.type) throw new Error("not_found");
+      if (!canMutateOwnOrAny(lockedCtx.role, "update", before.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, input.clientMutationId);
+      const next = specificCreate(input);
+      const expectedUpdatedAt = toDate(input.expectedUpdatedAt);
+      if (!expectedUpdatedAt) throw new Error("validation_error");
+      const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
+      const startsTimer = before.timerState === TimerState.none && next.timerState === TimerState.running;
+      if (baby.inactiveAt && (input.babyId !== before.babyId || startsTimer || activeTimer)) throw new Error("baby_inactive");
+      if (input.type === "medicine" && medicineContactWasProvided && input.contactId) await requireHouseholdMedicineContact(tx, lockedCtx, input);
+      const claimed = await tx.activityLog.updateMany({
+        where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: expectedUpdatedAt },
+        data: { babyId: input.babyId, type: next.type, occurredAt: next.occurredAt, startedAt: activeTimer ? before.startedAt : next.startedAt, endedAt: activeTimer ? before.endedAt : next.endedAt, durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds, timezone: next.timezone, notes: next.notes, timerState: before.timerState === TimerState.none ? next.timerState : before.timerState }
+      });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
+      const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+      await tx.mutationReceipt.create({ data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "activity.update", targetActivityId: id, clientMutationId: input.clientMutationId, intentFingerprint: activityUpdateFingerprint(id, input), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) } });
+      await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: updated.id, before, after: updated }, tx);
+      await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.activity_updated, tx);
+      return updated;
     });
-    if (claimed.count !== 1) throw new Error("not_found");
-    await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
-    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
-    await writeAudit(
-      lockedCtx,
-      { action: "activity.update", entityType: "activity", entityId: updated.id, before, after: updated },
-      tx
-    );
-    await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.activity_updated, tx);
-    return updated;
-  });
-  return updated;
+  } catch (error) {
+    if (isMutationReceiptUniqueError(error) || (error instanceof Error && error.message === "stale_revision")) {
+      const winner = await findActivityUpdateReplay(id, input);
+      if (winner) return winner;
+    }
+    throw error;
+  }
 }
 
 async function findActivityDeleteReplayInTransaction(
@@ -793,7 +848,7 @@ async function findActivityDeleteReplayInTransaction(
   if (!canMutateOwnOrAny(lockedCtx.role, "delete", target.actorMemberId === lockedCtx.memberId)) {
     throw new Error("forbidden");
   }
-  return target;
+  return receiptOutcomeSnapshot(receipt) ?? target;
 }
 
 async function findActivityDeleteReplay(id: string, mutation: ReturnType<typeof timerMutationInput>) {
@@ -841,6 +896,7 @@ export async function deleteActivity(id: string, raw?: unknown) {
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const deleted = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+      await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
       await tx.mutationReceipt.create({
         data: {
           householdId: lockedCtx.householdId,
@@ -850,7 +906,8 @@ export async function deleteActivity(id: string, raw?: unknown) {
           targetActivityId: id,
           clientMutationId: mutation.clientMutationId,
           intentFingerprint: activityDeleteFingerprint(id),
-          outcomeActivityId: deleted.id
+          outcomeActivityId: deleted.id,
+          outcomeSnapshot: outcomeSnapshot(deleted)
         }
       });
       await writeAudit(
@@ -894,11 +951,11 @@ async function findTimerReplay(
     if (receipt.actorMemberId !== lockedCtx.memberId || receipt.operation !== operation || receipt.targetActivityId !== id || receipt.intentFingerprint !== fingerprint) {
       throw new Error("idempotency_conflict");
     }
-    const outcome = await tx.activityLog.findFirst({ where: { id: receipt.outcomeActivityId, householdId: lockedCtx.householdId, deletedAt: null }, include: activityInclude });
+    const outcome = await tx.activityLog.findFirst({ where: { id: receipt.outcomeActivityId, householdId: lockedCtx.householdId }, include: activityInclude });
     if (!outcome) throw new Error("not_found");
     await lockBabyForWrite(tx, lockedCtx, outcome.babyId);
     if (!canMutateOwnOrAny(lockedCtx.role, "update", outcome.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
-    return outcome;
+    return receiptOutcomeSnapshot(receipt) ?? outcome;
   });
 }
 
@@ -925,6 +982,7 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
     });
     if (claimed.count !== 1) throw new Error("stale_revision");
     const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+    await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
     await tx.mutationReceipt.create({
       data: {
         householdId: lockedCtx.householdId,
@@ -934,7 +992,8 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
         targetActivityId: activity.id,
         clientMutationId: mutation.clientMutationId,
         intentFingerprint: timerMutationFingerprint("timer.stop", activity.id),
-        outcomeActivityId: updated.id
+        outcomeActivityId: updated.id,
+        outcomeSnapshot: outcomeSnapshot(updated)
       }
     });
     await writeAudit(lockedCtx, { action: "activity.timer.stop", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
@@ -967,6 +1026,7 @@ export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRac
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+      await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
       await tx.mutationReceipt.create({
         data: {
           householdId: lockedCtx.householdId,
@@ -976,7 +1036,8 @@ export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRac
           targetActivityId: activity.id,
           clientMutationId: mutation.clientMutationId,
           intentFingerprint: timerMutationFingerprint("timer.pause", activity.id),
-          outcomeActivityId: updated.id
+          outcomeActivityId: updated.id,
+          outcomeSnapshot: outcomeSnapshot(updated)
         }
       });
       await writeAudit(lockedCtx, { action: "activity.timer.pause", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
@@ -1009,8 +1070,9 @@ export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRa
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+      await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
       await tx.mutationReceipt.create({
-        data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "timer.resume", targetActivityId: activity.id, clientMutationId: mutation.clientMutationId, intentFingerprint: timerMutationFingerprint("timer.resume", activity.id), outcomeActivityId: updated.id }
+        data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "timer.resume", targetActivityId: activity.id, clientMutationId: mutation.clientMutationId, intentFingerprint: timerMutationFingerprint("timer.resume", activity.id), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) }
       });
       await writeAudit(lockedCtx, { action: "activity.timer.resume", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
       return updated;
@@ -1070,7 +1132,7 @@ async function findActivityUndoReplayInTransaction(
   if (!canMutateOwnOrAny(lockedCtx.role, permissionAction, target.actorMemberId === lockedCtx.memberId)) {
     throw new Error("forbidden");
   }
-  return { id: target.id };
+  return receiptOutcomeSnapshot(receipt) ?? { id: target.id };
 }
 
 async function findActivityUndoReplay(mutation: ReturnType<typeof timerMutationInput>) {
@@ -1161,6 +1223,7 @@ export async function undoLastActivity(raw?: unknown) {
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
+      await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
       await tx.mutationReceipt.create({
         data: {
           householdId: lockedCtx.householdId,
@@ -1170,7 +1233,8 @@ export async function undoLastActivity(raw?: unknown) {
           targetActivityId: before.id,
           clientMutationId: mutation.clientMutationId,
           intentFingerprint: activityUndoFingerprint(before.id, undoCreate ? "delete" : "update"),
-          outcomeActivityId: after.id
+          outcomeActivityId: after.id,
+          outcomeSnapshot: outcomeSnapshot({ id: before.id })
         }
       });
       await writeAudit(

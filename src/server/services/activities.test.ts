@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hasPermission } from "@/domain/roles";
-import { activityCreateSchema } from "@/lib/validation/activity";
+import { activityCreateSchema, activityUpdateSchema } from "@/lib/validation/activity";
 
 const mocks = vi.hoisted(() => ({
   getHouseholdContext: vi.fn(),
@@ -57,6 +57,7 @@ vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 import {
   createActivityForContext,
   activityCreateFingerprint,
+  activityUpdateFingerprint,
   deleteActivity,
   getActivityForEdit,
   getActivityView,
@@ -167,6 +168,47 @@ describe("activity page access", () => {
     mocks.apiKeyFindFirst.mockResolvedValue({ id: "key-1", householdId: "household-1", revokedAt: new Date(), expiresAt: null });
     await expect(createActivityForContext(feedingInput(), { ...context("parent"), apiKeyId: "key-1", scopes: ["write"] })).rejects.toThrow("unauthenticated");
     expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("writes a new activity create into the shared receipt namespace", async () => {
+    const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64011";
+
+    await createActivityForContext({ ...feedingInput(), clientMutationId: mutationId }, context("parent"));
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          householdId: "household-1",
+          actorMemberId: "member-current",
+          operation: "activity.create",
+          targetActivityId: "activity-created",
+          clientMutationId: mutationId,
+          outcomeActivityId: "activity-created",
+          outcomeSnapshot: expect.objectContaining({ id: "activity-created" })
+        })
+      })
+    );
+  });
+
+  it("returns the immutable new-ledger create snapshot without a second create", async () => {
+    const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64012";
+    const request = { ...feedingInput(), clientMutationId: mutationId };
+    const outcomeSnapshot = { id: "activity-created", type: "feeding", notes: "original response" };
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      apiKeyId: null,
+      operation: "activity.create",
+      targetActivityId: "activity-created",
+      clientMutationId: mutationId,
+      intentFingerprint: activityCreateFingerprint(activityCreateSchema.parse(request)),
+      outcomeActivityId: "activity-created",
+      outcomeSnapshot
+    });
+
+    await expect(createActivityForContext(request, context("parent"))).resolves.toEqual(outcomeSnapshot);
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 
   it("replays the authoritative activity for the same household mutation ID and normalized request", async () => {
@@ -454,12 +496,165 @@ describe("activity page access", () => {
     expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
   });
 
+  it("reauthorizes activity-update permission inside the mutation transaction", async () => {
+    mocks.memberFindUnique
+      .mockResolvedValueOnce({ id: "member-current", householdId: "household-1", role: "parent", disabledAt: null, deletedAt: null })
+      .mockResolvedValueOnce({ id: "member-current", householdId: "household-1", role: "read_only", disabledAt: null, deletedAt: null });
+
+    await expect(updateActivity("activity-1", feedingInput())).rejects.toThrow("forbidden");
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+  });
+
   it("claims an active household activity inside the update transaction", async () => {
     await updateActivity("activity-1", feedingInput());
 
     expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ id: "activity-1", householdId: "household-1", deletedAt: null }) })
     );
+  });
+
+  it("returns stale_revision without effects when a concurrent move wins after the source-baby read", async () => {
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ babyId: "baby-1" })
+      .mockResolvedValueOnce({ ...activity("member-author"), babyId: "baby-2" });
+
+    await expect(updateActivity("activity-1", feedingInput())).rejects.toThrow("stale_revision");
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("returns stale_revision without effects when a concurrent delete wins after the source-baby read", async () => {
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ babyId: "baby-1" })
+      .mockResolvedValueOnce({ ...activity("member-author"), babyId: "baby-1", deletedAt: new Date("2026-07-14T10:01:00.000Z") });
+
+    await expect(updateActivity("activity-1", feedingInput())).rejects.toThrow("stale_revision");
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects legacy PATCH payloads without a stable mutation ID or optimistic revision", async () => {
+    const { clientMutationId: _withoutMutationId, ...withoutMutationId } = feedingInput();
+    const { expectedUpdatedAt: _withoutRevision, ...withoutRevision } = feedingInput();
+
+    await expect(updateActivity("activity-1", withoutMutationId)).rejects.toBeDefined();
+    await expect(updateActivity("activity-1", withoutRevision)).rejects.toBeDefined();
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects an update mutation ID reserved by a pre-ledger activity create", async () => {
+    mocks.activityFindFirst
+      .mockResolvedValueOnce(activity("member-author"))
+      .mockResolvedValueOnce(activity("member-author"))
+      .mockResolvedValueOnce({ id: "legacy-create", clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64005" });
+
+    await expect(updateActivity("activity-1", feedingInput())).rejects.toThrow("idempotency_conflict");
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("returns stale_revision when the expected update version no longer claims the activity", async () => {
+    mocks.activityUpdateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(updateActivity("activity-1", {
+      ...feedingInput(),
+      clientMutationId: "11111111-1111-4111-8111-111111111111",
+      expectedUpdatedAt: "2026-07-14T09:00:00.000Z"
+    })).rejects.toThrow("stale_revision");
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+  });
+
+  it("persists a durable activity-update receipt with the update", async () => {
+    await updateActivity("activity-1", {
+      ...feedingInput(),
+      clientMutationId: "11111111-1111-4111-8111-111111111111"
+    });
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          householdId: "household-1",
+          actorMemberId: "member-current",
+          operation: "activity.update",
+          targetActivityId: "activity-1",
+          clientMutationId: "11111111-1111-4111-8111-111111111111",
+          outcomeActivityId: "activity-1"
+        })
+      })
+    );
+  });
+
+  it("returns the immutable update receipt snapshot after later resource changes", async () => {
+    const input = { ...feedingInput(), clientMutationId: "11111111-1111-4111-8111-111111111112" };
+    const snapshot = { id: "activity-1", type: "feeding", notes: "before later edit" };
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      apiKeyId: null,
+      operation: "activity.update",
+      targetActivityId: "activity-1",
+      outcomeActivityId: "activity-1",
+      clientMutationId: input.clientMutationId,
+      intentFingerprint: activityUpdateFingerprint("activity-1", activityUpdateSchema.parse({ ...input, id: "activity-1" })),
+      outcomeSnapshot: snapshot
+    });
+
+    await expect(updateActivity("activity-1", input)).resolves.toEqual(snapshot);
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("replays a matching activity-update receipt without a second update, audit, or side effect", async () => {
+    const input = { ...feedingInput(), clientMutationId: "11111111-1111-4111-8111-111111111111" };
+    await updateActivity("activity-1", input);
+    const receipt = mocks.mutationReceiptCreate.mock.calls[0]?.[0]?.data;
+    mocks.mutationReceiptFindFirst.mockResolvedValue(receipt);
+    mocks.activityUpdateMany.mockClear();
+    mocks.writeAudit.mockClear();
+    mocks.webhookCreateMany.mockClear();
+
+    const replay = await updateActivity("activity-1", input);
+
+    expect(replay).toMatchObject({ id: "activity-1" });
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.webhookCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when an activity-update mutation ID is rebound to different update intent", async () => {
+    const input = { ...feedingInput(), clientMutationId: "11111111-1111-4111-8111-111111111111" };
+    await updateActivity("activity-1", input);
+    mocks.mutationReceiptFindFirst.mockResolvedValue(mocks.mutationReceiptCreate.mock.calls[0]?.[0]?.data);
+
+    await expect(updateActivity("activity-1", { ...input, notes: "different intent" })).rejects.toThrow("idempotency_conflict");
+    expect(mocks.activityUpdateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers the matching activity-update winner after a receipt uniqueness race", async () => {
+    const input = { ...feedingInput(), clientMutationId: "11111111-1111-4111-8111-111111111111" };
+    await updateActivity("activity-1", input);
+    const receipt = mocks.mutationReceiptCreate.mock.calls[0]?.[0]?.data;
+    mocks.mutationReceiptFindFirst.mockReset();
+    mocks.mutationReceiptFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(receipt);
+    mocks.mutationReceiptCreate.mockRejectedValue({
+      code: "P2002",
+      meta: { target: ["householdId", "clientMutationId"] }
+    });
+    mocks.activityUpdateMany.mockClear();
+    mocks.writeAudit.mockClear();
+
+    const replay = await updateActivity("activity-1", input);
+
+    expect(replay).toMatchObject({ id: "activity-1" });
+    expect(mocks.activityUpdateMany).toHaveBeenCalledTimes(1);
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 
   it("claims an edit against the page-load version", async () => {
@@ -474,7 +669,7 @@ describe("activity page access", () => {
   });
 
   it("preserves timer-control fields while editing a running timer", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       timerState: "running",
       startedAt: new Date("2026-07-14T09:30:00.000Z"),
@@ -497,7 +692,7 @@ describe("activity page access", () => {
   });
 
   it("keeps timer state unchanged while editing historical activity for an inactive baby", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       babyId: "baby-1",
       inactiveAt: new Date("2026-07-14T12:00:00.000Z")
@@ -519,7 +714,7 @@ describe("activity page access", () => {
   });
 
   it("rejects moving historical activity into a different inactive baby", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       babyId: "baby-active"
     });
@@ -530,6 +725,7 @@ describe("activity page access", () => {
 
     await expect(
       updateActivity("activity-1", {
+        ...feedingInput(),
         babyId: "baby-inactive",
         occurredAt: "2026-07-14T12:00:00.000Z",
         type: "feeding",
@@ -548,6 +744,7 @@ describe("activity page access", () => {
 
     await expect(
       updateActivity("activity-1", {
+        ...feedingInput(),
         babyId: "baby-1",
         occurredAt: "2026-07-14T12:00:00.000Z",
         type: "feeding",
@@ -558,7 +755,7 @@ describe("activity page access", () => {
   });
 
   it("rejects moving an active timer to an inactive baby", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       babyId: "baby-active",
       timerState: "running",
@@ -571,6 +768,7 @@ describe("activity page access", () => {
 
     await expect(
       updateActivity("activity-1", {
+        ...feedingInput(),
         babyId: "baby-inactive",
         occurredAt: "2026-07-14T12:00:00.000Z",
         type: "feeding",
@@ -582,7 +780,7 @@ describe("activity page access", () => {
   });
 
   it("preserves stopped timer state while allowing completed time edits", async () => {
-    mocks.activityFindFirst.mockResolvedValue({ ...activity("member-author"), timerState: "stopped" });
+    mockActivityRead({ ...activity("member-author"), timerState: "stopped" });
 
     await updateActivity("activity-1", feedingInput());
 
@@ -592,10 +790,11 @@ describe("activity page access", () => {
   });
 
   it("rejects subtype changes for timer-backed activities", async () => {
-    mocks.activityFindFirst.mockResolvedValue({ ...activity("member-author"), timerState: "running" });
+    mockActivityRead({ ...activity("member-author"), timerState: "running" });
 
     await expect(
       updateActivity("activity-1", {
+        ...feedingInput(),
         babyId: "baby-1",
         occurredAt: "2026-07-14T12:00:00.000Z",
         type: "note",
@@ -607,13 +806,14 @@ describe("activity page access", () => {
   });
 
   it("preserves a linked medicine contact during an edit", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       type: "medicine",
       medicine: { contactId: "contact-1" }
     });
 
     await updateActivity("activity-1", {
+      ...feedingInput(),
       babyId: "baby-1",
       occurredAt: "2026-07-14T12:00:00.000Z",
       type: "medicine",
@@ -629,13 +829,14 @@ describe("activity page access", () => {
   });
 
   it("honors an explicitly replaced medicine contact", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       type: "medicine",
       medicine: { contactId: "contact-1" }
     });
 
     await updateActivity("activity-1", {
+      ...feedingInput(),
       babyId: "baby-1",
       occurredAt: "2026-07-14T12:00:00.000Z",
       type: "medicine",
@@ -654,7 +855,7 @@ describe("activity page access", () => {
   });
 
   it("rejects an explicit medicine contact outside the active household", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       type: "medicine",
       medicine: { contactId: "contact-1" }
@@ -663,6 +864,7 @@ describe("activity page access", () => {
 
     await expect(
       updateActivity("activity-1", {
+        ...feedingInput(),
         babyId: "baby-1",
         occurredAt: "2026-07-14T12:00:00.000Z",
         type: "medicine",
@@ -679,13 +881,14 @@ describe("activity page access", () => {
   });
 
   it("honors an explicitly cleared medicine contact", async () => {
-    mocks.activityFindFirst.mockResolvedValue({
+    mockActivityRead({
       ...activity("member-author"),
       type: "medicine",
       medicine: { contactId: "contact-1" }
     });
 
     await updateActivity("activity-1", {
+      ...feedingInput(),
       babyId: "baby-1",
       occurredAt: "2026-07-14T12:00:00.000Z",
       type: "medicine",
@@ -748,9 +951,10 @@ describe("activity page access", () => {
   });
 
   it("upserts a vaccine subtype without deleting its document parent", async () => {
-    mocks.activityFindFirst.mockResolvedValue({ ...activity("member-author"), type: "vaccine" });
+    mockActivityRead({ ...activity("member-author"), type: "vaccine" });
 
     await updateActivity("activity-1", {
+      ...feedingInput(),
       babyId: "baby-1",
       occurredAt: "2026-07-14T12:00:00.000Z",
       type: "vaccine",
@@ -794,7 +998,8 @@ describe("activity page access", () => {
         targetActivityId: "activity-1",
         clientMutationId: "55555555-5555-4555-8555-555555555555",
         intentFingerprint: "5410baf832f94d84c5511e6e28a4520a51d684c0430ea656fc2b3d077a5d95b1",
-        outcomeActivityId: "activity-1"
+        outcomeActivityId: "activity-1",
+        outcomeSnapshot: expect.objectContaining({ id: "activity-1" })
       }
     });
     expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
@@ -1327,6 +1532,25 @@ describe("activity page access", () => {
     expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 
+  it("replays a persisted timer outcome after the activity is later soft-deleted", async () => {
+    const snapshot = { ...activity("member-author"), id: "activity-1", timerState: "paused", deletedAt: null, updatedAt: "2026-07-14T10:00:00.000Z" };
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1", actorMemberId: "member-current", operation: "timer.pause", targetActivityId: "activity-1",
+      clientMutationId: "22222222-2222-4222-8222-222222222222", intentFingerprint: "848dfa4672b3a388436481ce3947f82e4f545278f730a4e7b764d92441b44992", outcomeActivityId: "activity-1", outcomeSnapshot: snapshot
+    });
+    mocks.activityFindFirst.mockResolvedValue({ ...snapshot, deletedAt: new Date("2026-07-14T12:00:00.000Z") });
+
+    await expect((pauseTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "22222222-2222-4222-8222-222222222222"
+    })).resolves.toEqual(snapshot);
+
+    expect(mocks.activityFindFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "activity-1", householdId: "household-1" }
+    }));
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("replays the winner after a same-key timer-pause claim loses its revision race", async () => {
     const outcome = { ...activity("member-author"), id: "activity-1", timerState: "paused" };
     mocks.mutationReceiptFindFirst
@@ -1463,6 +1687,7 @@ describe("activity page access", () => {
       });
     mocks.activityFindFirst
       .mockResolvedValueOnce({ ...outcome, timerState: "running", startedAt: new Date("2026-07-14T11:00:00.000Z") })
+      .mockResolvedValueOnce(outcome)
       .mockResolvedValueOnce(outcome);
     mocks.mutationReceiptCreate.mockRejectedValueOnce({ code: "P2002", meta: { target: ["householdId", "clientMutationId"] } });
 
@@ -1505,6 +1730,7 @@ describe("activity page access", () => {
     });
     mocks.activityFindFirst
       .mockResolvedValueOnce({ ...outcome, timerState: "running", startedAt: new Date("2026-07-14T11:00:00.000Z") })
+      .mockResolvedValueOnce(outcome)
       .mockResolvedValueOnce(outcome);
     mocks.mutationReceiptCreate.mockRejectedValueOnce({ code: "P2002", meta: { target: ["householdId", "clientMutationId"] } });
 
@@ -1642,6 +1868,7 @@ function feedingInput() {
     clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64005",
     babyId: "baby-1",
     occurredAt: "2026-07-14T12:00:00.000Z",
+    expectedUpdatedAt: "2026-07-14T10:00:00.000Z",
     type: "feeding",
     mode: "bottle"
   };
@@ -1669,4 +1896,10 @@ function activity(actorMemberId: string) {
     pausedAt: null,
     pausedSeconds: 0
   };
+}
+
+function mockActivityRead(value: unknown) {
+  mocks.activityFindFirst.mockImplementation(({ where }) =>
+    Promise.resolve("clientMutationId" in where ? null : value)
+  );
 }

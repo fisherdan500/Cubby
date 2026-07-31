@@ -1,3 +1,4 @@
+import { activityUpdateSchema } from "@/lib/validation/activity";
 import { ok, handleError } from "@/server/http";
 import { deleteActivity, updateActivity } from "@/server/services/activities";
 
@@ -5,7 +6,16 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    return ok(await updateActivity(params.id, await request.json()));
+    const text = await request.text();
+    if (text.length === 0) throw new Error("validation_error");
+    let body: unknown;
+    try {
+      body = JSON.parse(text) as unknown;
+    } catch {
+      throw new Error("validation_error");
+    }
+    activityUpdateSchema.parse({ ...(body as object), id: params.id });
+    return ok(await updateActivity(params.id, body));
   } catch (error) {
     return handleError(error);
   }
