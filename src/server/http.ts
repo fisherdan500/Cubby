@@ -59,6 +59,7 @@ export function handleError(error: unknown) {
     if (error.message === "platform_uninitialized") return fail("platform_uninitialized", "Platform authority is not initialized.", 409);
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);
     if (error.message === "baby_inactive") return fail("baby_inactive", "Inactive babies cannot receive new activity or timers.", 409);
+    if (error.message === "stale_revision") return fail("stale_revision", "This timer changed before your request completed. Refresh and try again.", 409);
     if (error.message === "idempotency_conflict") return fail("idempotency_conflict", "This submission key belongs to a different activity request.", 409);
     if (error.message === "baby_has_active_timer") return fail("baby_has_active_timer", "Stop or end every running or paused timer before deactivating this baby.", 409);
     if (error.message === "backup_active_timer") return fail("backup_active_timer", "This backup contains a running or paused timer. Stop it before exporting a new backup.", 409);

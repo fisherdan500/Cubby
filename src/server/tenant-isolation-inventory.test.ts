@@ -32,6 +32,7 @@ const expectedDirectHouseholdModels = [
   "ImportedRecord",
   "Invite",
   "MedicineCatalog",
+  "MutationReceipt",
   "NotificationLog",
   "NotificationPreference",
   "PushSubscription",

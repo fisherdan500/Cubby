@@ -219,6 +219,7 @@ model Household {
   contacts        Contact[]
   reminders       Reminder[]
   activities      ActivityLog[]
+  mutationReceipts MutationReceipt[]
   auditEvents     AuditEvent[]
   settings        HouseholdSettings?
   apiKeys         ApiKey[]
@@ -369,6 +370,23 @@ model ActivityLog {
   @@index([deletedAt])
   @@index([householdId, babyId, type, occurredAt])
   @@unique([householdId, clientMutationId])
+}
+
+model MutationReceipt {
+  id                String    @id @default(cuid())
+  householdId       String
+  actorMemberId     String
+  apiKeyId          String?
+  operation         String
+  targetActivityId  String
+  clientMutationId  String
+  intentFingerprint String
+  outcomeActivityId String
+  createdAt         DateTime  @default(now())
+  household         Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, clientMutationId])
+  @@index([householdId, targetActivityId])
 }
 
 model FeedingLog {

@@ -3,9 +3,10 @@ import { stopTimer } from "@/server/services/activities";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    return ok(await stopTimer(params.id));
+    const body = await request.json().catch(() => undefined);
+    return ok(await stopTimer(params.id, body));
   } catch (error) {
     return handleError(error);
   }

@@ -1,16 +1,25 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export function StopTimerButton({ id }: { id: string }) {
   const router = useRouter();
+  const mutationId = useRef<string>();
   return (
     <Button
       type="button"
       variant="secondary"
       onClick={async () => {
-        await fetch(`/api/timers/${id}/stop`, { method: "POST" });
+        mutationId.current ??= crypto.randomUUID();
+        const response = await fetch(`/api/timers/${id}/stop`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ clientMutationId: mutationId.current })
+        });
+        if (!response.ok) return;
+        mutationId.current = undefined;
         router.refresh();
       }}
     >

@@ -3,7 +3,7 @@ export const prismaModelNames = [
   "Account", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "FeedingLog",
   "Household", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
-  "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "NoteLog", "NotificationLog",
+  "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog",
   "NotificationPreference", "PlatformAuditEvent", "PlatformAuthority", "PlatformSettings", "PlayLog", "PumpingLog",
   "PushSubscription", "Reminder", "Session", "SleepLog", "SupplementLog", "User", "VaccineDocument", "VaccineLog",
   "Verification", "WebhookDelivery", "WebhookEndpoint"
@@ -39,6 +39,7 @@ export const tenantIsolationInventory = [
   { model: "ImportedRecord", ownership: "direct", operationClasses: ["import_mapping"], disposition: "constraint_slice" },
   { model: "Invite", ownership: "direct", operationClasses: ["membership"], disposition: "service_guard" },
   { model: "MedicineCatalog", ownership: "direct", operationClasses: ["catalog_write", "activity_parent"], disposition: "deferred_constraint" },
+  { model: "MutationReceipt", ownership: "direct", operationClasses: ["consequential_mutation_receipt"], disposition: "service_guard" },
   { model: "NotificationLog", ownership: "direct", operationClasses: ["notification_delivery"], disposition: "deferred_constraint" },
   { model: "NotificationPreference", ownership: "direct", operationClasses: ["notification_write"], disposition: "constraint_slice" },
   { model: "PlatformAuditEvent", ownership: "global", operationClasses: ["platform_audit"], disposition: "excluded" },
