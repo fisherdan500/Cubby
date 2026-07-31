@@ -181,6 +181,22 @@ describe("activity page access", () => {
     expect(mocks.activityCreate).not.toHaveBeenCalled();
   });
 
+  it("replays an existing mutation before checking a now-inactive baby", async () => {
+    const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64008";
+    const request = { ...feedingInput(), clientMutationId: mutationId };
+    const existing = {
+      ...activity("member-current"),
+      id: "activity-inactive-replay",
+      clientMutationId: mutationId,
+      clientMutationFingerprint: activityCreateFingerprint(activityCreateSchema.parse(request))
+    };
+    mocks.activityFindFirst.mockResolvedValue(existing);
+    mocks.babyFindFirst.mockRejectedValue(new Error("baby_inactive"));
+
+    await expect(createActivityForContext(request, context("parent"))).resolves.toBe(existing);
+    expect(mocks.babyFindFirst).not.toHaveBeenCalled();
+  });
+
   it("rejects a reused household mutation ID for a different normalized activity request", async () => {
     const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64002";
     mocks.activityFindFirst.mockResolvedValue({
@@ -204,11 +220,19 @@ describe("activity page access", () => {
       clientMutationId: mutationId,
       clientMutationFingerprint: activityCreateFingerprint(activityCreateSchema.parse(request))
     };
-    mocks.transaction.mockRejectedValueOnce({ code: "P2002" });
+    mocks.transaction.mockRejectedValueOnce({ code: "P2002", meta: { target: ["householdId", "clientMutationId"] } });
     mocks.activityFindFirst.mockResolvedValue(existing);
 
     await expect(createActivityForContext(request, context("parent"))).resolves.toBe(existing);
     expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("does not treat an unrelated unique constraint as an idempotent replay", async () => {
+    const error = { code: "P2002", meta: { target: ["householdId", "otherUniqueField"] } };
+    mocks.transaction.mockRejectedValueOnce(error);
+
+    await expect(createActivityForContext(feedingInput(), context("parent"))).rejects.toBe(error);
+    expect(mocks.activityFindFirst).not.toHaveBeenCalled();
   });
 
   it("preserves zero-valued feeding side durations in persistence data", async () => {
@@ -292,7 +316,9 @@ describe("activity page access", () => {
           timerState: "stopped",
           durationSeconds: 2700,
           pausedAt: null,
-          pausedSeconds: 900
+          pausedSeconds: 900,
+          clientMutationId: undefined,
+          clientMutationFingerprint: undefined
         })
       })
     );
