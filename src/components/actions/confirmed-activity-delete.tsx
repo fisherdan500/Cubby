@@ -13,6 +13,7 @@ export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo
   const hasOpened = useRef(false);
   const triggerContainer = useRef<HTMLDivElement>(null);
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const mutationId = useRef<string>();
 
   useEffect(() => {
     if (confirming) confirmationHeading.current?.focus();
@@ -24,13 +25,19 @@ export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo
     setError("");
 
     try {
-      const response = await fetch(`/api/activities/${encodeURIComponent(id)}`, { method: "DELETE" });
+      mutationId.current ??= crypto.randomUUID();
+      const response = await fetch(`/api/activities/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ clientMutationId: mutationId.current })
+      });
       const result = await response.json().catch(() => null);
       const message = activityDeleteError(response.ok, result);
       if (message) {
         setError(message);
         return;
       }
+      mutationId.current = undefined;
       router.replace(returnTo);
       router.refresh();
     } catch {
