@@ -10,7 +10,7 @@ describe("handleError", () => {
       ok: false,
       error: {
         code: "stale_revision",
-        message: "This timer changed before your request completed. Refresh and try again."
+        message: "This item changed before your request completed. Refresh and try again."
       }
     });
   });
