@@ -336,6 +336,7 @@ model ActivityLog {
   pausedAt          DateTime?
   pausedSeconds     Int             @default(0)
   clientMutationId  String?
+  clientMutationFingerprint String?
   deletedAt         DateTime?
   deletedByMemberId String?
   createdAt         DateTime        @default(now())
@@ -367,6 +368,7 @@ model ActivityLog {
   @@index([createdAt])
   @@index([deletedAt])
   @@index([householdId, babyId, type, occurredAt])
+  @@unique([householdId, clientMutationId])
 }
 
 model FeedingLog {

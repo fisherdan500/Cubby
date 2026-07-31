@@ -5,6 +5,7 @@ const optionalString = z.string().trim().optional().transform((value) => value |
 const dateString = z.string().min(1);
 
 const common = z.object({
+  clientMutationId: z.string().uuid().optional(),
   babyId: z.string().min(1),
   occurredAt: dateString,
   startedAt: z.string().optional(),
@@ -14,7 +15,7 @@ const common = z.object({
   activeTimer: z.coerce.boolean().default(false)
 });
 
-export const activityCreateSchema = z.discriminatedUnion("type", [
+const activityInputSchema = z.discriminatedUnion("type", [
     common.extend({
       type: z.literal("feeding"),
       mode: z.enum(["breast", "bottle", "formula", "solids"]),
@@ -122,9 +123,12 @@ export const activityCreateSchema = z.discriminatedUnion("type", [
     })
   ]);
 
-export const activityUpdateSchema = activityCreateSchema.and(z.object({
+export const activityRestoreSchema = activityInputSchema;
+export const activityCreateSchema = activityInputSchema.and(z.object({ clientMutationId: z.string().uuid() }));
+export const activityUpdateSchema = activityInputSchema.and(z.object({
   id: z.string().min(1),
   expectedUpdatedAt: z.string().min(1).optional()
 }));
 
+export type ActivityRestoreInput = z.infer<typeof activityRestoreSchema>;
 export type ActivityCreateInput = z.infer<typeof activityCreateSchema>;

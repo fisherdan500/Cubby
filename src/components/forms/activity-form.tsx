@@ -54,6 +54,7 @@ export function ActivityForm({
   const router = useRouter();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [clientMutationId] = useState(() => crypto.randomUUID());
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
   const cancelHref = activityFormCancelHref({ returnTo, babyId: defaultBaby, returnDate, allowActivityDestination });
@@ -64,6 +65,7 @@ export function ActivityForm({
     try {
       const body = Object.fromEntries(formData);
       body.type = type;
+      if (!activityId) body.clientMutationId = clientMutationId;
       const response = await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
         method: activityId ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },

@@ -2,8 +2,20 @@ import { describe, expect, it } from "vitest";
 import { activityCreateSchema } from "@/lib/validation/activity";
 
 describe("activity validation", () => {
+  it("requires a UUID mutation ID for normal activity creation", () => {
+    expect(() =>
+      activityCreateSchema.parse({
+        babyId: "baby_1",
+        type: "feeding",
+        occurredAt: "2026-01-01T05:00",
+        mode: "bottle"
+      })
+    ).toThrow();
+  });
+
   it("accepts a feeding payload", () => {
     const parsed = activityCreateSchema.parse({
+      clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64004",
       babyId: "baby_1",
       type: "feeding",
       occurredAt: "2026-01-01T05:00",
@@ -18,6 +30,7 @@ describe("activity validation", () => {
   it("requires medicine name", () => {
     expect(() =>
       activityCreateSchema.parse({
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64004",
         babyId: "baby_1",
         type: "medicine",
         occurredAt: "2026-01-01T05:00",
@@ -30,6 +43,7 @@ describe("activity validation", () => {
   it("accepts new care activity types", () => {
     expect(
       activityCreateSchema.parse({
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64004",
         babyId: "baby_1",
         type: "bath",
         occurredAt: "2026-01-01T05:00",
@@ -40,6 +54,7 @@ describe("activity validation", () => {
 
     expect(
       activityCreateSchema.parse({
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64004",
         babyId: "baby_1",
         type: "milk_inventory",
         occurredAt: "2026-01-01T05:00",
@@ -53,6 +68,7 @@ describe("activity validation", () => {
 
   it("accepts feeding timers", () => {
     const parsed = activityCreateSchema.parse({
+      clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64004",
       babyId: "baby_1",
       type: "feeding",
       occurredAt: "2026-01-01T05:00",
