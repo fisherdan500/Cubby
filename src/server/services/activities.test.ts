@@ -24,6 +24,8 @@ const mocks = vi.hoisted(() => ({
   notificationFindMany: vi.fn(),
   notificationCreateMany: vi.fn(),
   auditFindFirst: vi.fn(),
+  mutationReceiptFindFirst: vi.fn(),
+  mutationReceiptCreate: vi.fn(),
   apiKeyFindFirst: vi.fn(),
   writeAudit: vi.fn()
 }));
@@ -40,6 +42,7 @@ vi.mock("@/lib/db/prisma", () => ({
     webhookEndpoint: { findMany: mocks.webhookFindMany },
     notificationPreference: { findMany: mocks.notificationFindMany },
     auditEvent: { findFirst: mocks.auditFindFirst },
+    mutationReceipt: { findFirst: mocks.mutationReceiptFindFirst, create: mocks.mutationReceiptCreate },
     $transaction: mocks.transaction
   }
 }));
@@ -60,6 +63,7 @@ import {
   pauseTimer,
   restoreHistoricalActivityForContext,
   resumeTimer,
+  stopTimer,
   undoLastActivity,
   updateActivity
 } from "@/server/services/activities";
@@ -912,6 +916,150 @@ describe("activity page access", () => {
     );
   });
 
+  it("persists a durable receipt with a timer-stop outcome before returning", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "running",
+      startedAt: new Date("2026-07-14T11:00:00.000Z")
+    });
+
+    await (stopTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "11111111-1111-4111-8111-111111111111"
+    });
+
+    expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          householdId: "household-1",
+          actorMemberId: "member-current",
+          operation: "timer.stop",
+          targetActivityId: "activity-1",
+          clientMutationId: "11111111-1111-4111-8111-111111111111",
+          outcomeActivityId: "activity-1"
+        })
+      })
+    );
+  });
+
+  it("replays a matching timer-stop receipt without repeating its side effects", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "stopped" };
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "timer.stop",
+      targetActivityId: "activity-1",
+      clientMutationId: "11111111-1111-4111-8111-111111111111",
+      intentFingerprint: "eec91cbb8fef2770e0b696a32f25051436c46caabb2be913a1053397fc34beb2",
+      outcomeActivityId: "activity-1"
+    });
+    mocks.activityFindFirst.mockResolvedValue(outcome);
+
+    await expect((stopTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "11111111-1111-4111-8111-111111111111"
+    })).resolves.toEqual(outcome);
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a timer-stop retry when its mutation ID belongs to another operation", async () => {
+    mocks.mutationReceiptFindFirst.mockResolvedValue({
+      householdId: "household-1",
+      actorMemberId: "member-current",
+      operation: "timer.pause",
+      targetActivityId: "activity-1",
+      clientMutationId: "11111111-1111-4111-8111-111111111111",
+      intentFingerprint: "eec91cbb8fef2770e0b696a32f25051436c46caabb2be913a1053397fc34beb2",
+      outcomeActivityId: "activity-1"
+    });
+
+    await expect((stopTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "11111111-1111-4111-8111-111111111111"
+    })).rejects.toThrow("idempotency_conflict");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("recovers a concurrent timer-stop receipt winner after the receipt unique race", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "stopped" };
+    mocks.mutationReceiptFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        householdId: "household-1",
+        actorMemberId: "member-current",
+        operation: "timer.stop",
+        targetActivityId: "activity-1",
+        clientMutationId: "11111111-1111-4111-8111-111111111111",
+        intentFingerprint: "eec91cbb8fef2770e0b696a32f25051436c46caabb2be913a1053397fc34beb2",
+        outcomeActivityId: "activity-1"
+      });
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ ...outcome, timerState: "running", startedAt: new Date("2026-07-14T11:00:00.000Z") })
+      .mockResolvedValueOnce(outcome);
+    mocks.mutationReceiptCreate.mockRejectedValueOnce({ code: "P2002", meta: { target: ["householdId", "clientMutationId"] } });
+
+    await expect((stopTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "11111111-1111-4111-8111-111111111111"
+    })).resolves.toEqual(outcome);
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("replays the winner after a same-key timer-stop claim loses its revision race", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "stopped" };
+    mocks.mutationReceiptFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        householdId: "household-1", actorMemberId: "member-current", operation: "timer.stop", targetActivityId: "activity-1",
+        clientMutationId: "11111111-1111-4111-8111-111111111111", intentFingerprint: "eec91cbb8fef2770e0b696a32f25051436c46caabb2be913a1053397fc34beb2", outcomeActivityId: "activity-1"
+      });
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ ...outcome, timerState: "running", startedAt: new Date("2026-07-14T11:00:00.000Z") })
+      .mockResolvedValueOnce(outcome);
+    mocks.activityUpdateMany.mockResolvedValue({ count: 0 });
+
+    await expect((stopTimer as unknown as (id: string, raw: unknown) => Promise<unknown>)("activity-1", {
+      clientMutationId: "11111111-1111-4111-8111-111111111111"
+    })).resolves.toEqual(outcome);
+    expect(mocks.mutationReceiptCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("preserves a generated legacy timer-stop mutation ID while recovering a receipt race", async () => {
+    const outcome = { ...activity("member-author"), id: "activity-1", timerState: "stopped" };
+    let receiptLookupCount = 0;
+    mocks.mutationReceiptFindFirst.mockImplementation(async ({ where }) => {
+      receiptLookupCount += 1;
+      if (receiptLookupCount === 1) return null;
+      return {
+        householdId: "household-1", actorMemberId: "member-current", operation: "timer.stop", targetActivityId: "activity-1",
+        clientMutationId: where.clientMutationId, intentFingerprint: "eec91cbb8fef2770e0b696a32f25051436c46caabb2be913a1053397fc34beb2", outcomeActivityId: "activity-1"
+      };
+    });
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ ...outcome, timerState: "running", startedAt: new Date("2026-07-14T11:00:00.000Z") })
+      .mockResolvedValueOnce(outcome);
+    mocks.mutationReceiptCreate.mockRejectedValueOnce({ code: "P2002", meta: { target: ["householdId", "clientMutationId"] } });
+
+    await expect(stopTimer("activity-1")).resolves.toEqual(outcome);
+    expect(mocks.mutationReceiptFindFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports a stale revision when a concurrent timer pause wins the conditional claim", async () => {
+    mocks.activityFindFirst.mockReset();
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "running",
+      startedAt: new Date("2026-07-14T11:00:00.000Z")
+    });
+    mocks.activityUpdateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(pauseTimer("activity-1")).rejects.toThrow("stale_revision");
+
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("rejects timer resume when the baby became inactive before the transactional recheck", async () => {
     mocks.activityFindFirst.mockResolvedValue({
       ...activity("member-author"),
@@ -995,6 +1143,7 @@ function transactionClient() {
       findUniqueOrThrow: mocks.activityFindUniqueOrThrow
     },
     auditEvent: { findFirst: mocks.auditFindFirst },
+    mutationReceipt: { findFirst: mocks.mutationReceiptFindFirst, create: mocks.mutationReceiptCreate },
     webhookEndpoint: { findMany: mocks.webhookFindMany },
     webhookDelivery: { createMany: mocks.webhookCreateMany },
     notificationPreference: { findMany: mocks.notificationFindMany },

@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { ActivityType, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { durationSeconds } from "@/lib/dates";
@@ -35,6 +35,21 @@ type ActivityListPage = Pick<Prisma.ActivityLogFindManyArgs, "cursor" | "skip" |
 export function activityCreateFingerprint(input: { clientMutationId?: string; [key: string]: unknown }) {
   const { clientMutationId: _clientMutationId, ...payload } = input;
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+}
+
+export function timerMutationInput(raw: unknown) {
+  if (raw === undefined || raw === null) return { clientMutationId: randomUUID() };
+  if (typeof raw !== "object" || Array.isArray(raw)) throw new Error("validation_error");
+  const clientMutationId = (raw as { clientMutationId?: unknown }).clientMutationId;
+  if (clientMutationId === undefined) return { clientMutationId: randomUUID() };
+  if (typeof clientMutationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clientMutationId)) {
+    throw new Error("validation_error");
+  }
+  return { clientMutationId };
+}
+
+function timerStopFingerprint(activityId: string) {
+  return createHash("sha256").update(JSON.stringify({ operation: "timer.stop", activityId })).digest("hex");
 }
 
 function toDate(value: string | undefined, fallback?: Date) {
@@ -618,7 +633,7 @@ async function updateCurrentActivity(
       },
       data
     });
-    if (claimed.count !== 1) throw new Error("not_found");
+    if (claimed.count !== 1) throw new Error("stale_revision");
     const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
     await writeAudit(
       lockedCtx,
@@ -776,7 +791,34 @@ export async function deleteActivity(id: string) {
   return deleted;
 }
 
-export async function stopTimer(id: string) {
+function isMutationReceiptUniqueError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; meta?: { target?: unknown } };
+  return candidate.code === "P2002" && Array.isArray(candidate.meta?.target) && candidate.meta.target.length === 2 && candidate.meta.target[0] === "householdId" && candidate.meta.target[1] === "clientMutationId";
+}
+
+async function findTimerStopReplay(id: string, mutation: ReturnType<typeof timerMutationInput>) {
+  const ctx = await getHouseholdContext();
+  const fingerprint = timerStopFingerprint(id);
+  return prisma.$transaction(async (tx) => {
+    const lockedCtx = await lockActorForWrite(tx, ctx);
+    const receipt = await tx.mutationReceipt.findFirst({ where: { householdId: lockedCtx.householdId, clientMutationId: mutation.clientMutationId } });
+    if (!receipt) return null;
+    if (receipt.actorMemberId !== lockedCtx.memberId || receipt.operation !== "timer.stop" || receipt.targetActivityId !== id || receipt.intentFingerprint !== fingerprint) {
+      throw new Error("idempotency_conflict");
+    }
+    const outcome = await tx.activityLog.findFirst({ where: { id: receipt.outcomeActivityId, householdId: lockedCtx.householdId, deletedAt: null }, include: activityInclude });
+    if (!outcome) throw new Error("not_found");
+    await lockBabyForWrite(tx, lockedCtx, outcome.babyId);
+    if (!canMutateOwnOrAny(lockedCtx.role, "update", outcome.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+    return outcome;
+  });
+}
+
+export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace = false) {
+  const mutation = timerMutationInput(raw);
+  const replay = await findTimerStopReplay(id, mutation);
+  if (replay) return replay;
   const ctx = await getHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if ((activity.timerState !== TimerState.running && activity.timerState !== TimerState.paused) || !activity.startedAt) {
@@ -786,22 +828,39 @@ export async function stopTimer(id: string) {
   const pausedSeconds =
     activity.pausedSeconds + (activity.pausedAt ? durationSeconds(activity.pausedAt, endedAt) : 0);
   const totalSeconds = Math.max(0, durationSeconds(activity.startedAt, endedAt) - pausedSeconds);
-  const updated = await updateCurrentActivity(
-    ctx,
-    activity,
-    {
-      endedAt,
-      occurredAt: activity.startedAt,
-      durationSeconds: totalSeconds,
-      timerState: TimerState.stopped,
-      pausedAt: null,
-      pausedSeconds
-    },
-    "activity.timer.stop",
-    "update",
-    WebhookEvent.timer_stopped
-  );
-  return updated;
+  try {
+    return await prisma.$transaction(async (tx) => {
+    const { ctx: lockedCtx } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
+    if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+    const claimed = await tx.activityLog.updateMany({
+      where: { id: activity.id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: activity.updatedAt },
+      data: { endedAt, occurredAt: activity.startedAt!, durationSeconds: totalSeconds, timerState: TimerState.stopped, pausedAt: null, pausedSeconds }
+    });
+    if (claimed.count !== 1) throw new Error("stale_revision");
+    const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
+    await tx.mutationReceipt.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        actorMemberId: lockedCtx.memberId,
+        apiKeyId: null,
+        operation: "timer.stop",
+        targetActivityId: activity.id,
+        clientMutationId: mutation.clientMutationId,
+        intentFingerprint: timerStopFingerprint(activity.id),
+        outcomeActivityId: updated.id
+      }
+    });
+    await writeAudit(lockedCtx, { action: "activity.timer.stop", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
+    await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.timer_stopped, tx);
+    return updated;
+    });
+  } catch (error) {
+    if (!recoveringReceiptRace && (isMutationReceiptUniqueError(error) || (error instanceof Error && error.message === "stale_revision"))) {
+      const recovered = await findTimerStopReplay(id, mutation);
+      if (recovered) return recovered;
+    }
+    throw error;
+  }
 }
 
 export async function pauseTimer(id: string) {
@@ -843,7 +902,7 @@ export async function resumeTimer(id: string) {
         pausedAt: null
       }
     });
-    if (claimed.count !== 1) throw new Error("not_found");
+    if (claimed.count !== 1) throw new Error("stale_revision");
     const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
     await writeAudit(
       lockedCtx,
