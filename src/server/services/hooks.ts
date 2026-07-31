@@ -129,7 +129,15 @@ export async function hookActivities(ctx: ApiKeyContext, babyId: string, db: Pic
 
 export async function hookCreateActivity(ctx: ApiKeyContext, babyId: string, raw: unknown) {
   assertBabyAllowed(ctx, babyId);
-  return createActivityForContext({ ...(raw as object), babyId }, ctx);
+  const payload = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  return createActivityForContext(
+    {
+      ...payload,
+      babyId,
+      clientMutationId: "clientMutationId" in payload ? payload.clientMutationId : crypto.randomUUID()
+    },
+    ctx
+  );
 }
 
 export async function hookLatestMeasurements(ctx: ApiKeyContext, babyId: string, db: Pick<Prisma.TransactionClient, "activityLog"> = prisma) {

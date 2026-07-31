@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
   apiKeyFindUnique: vi.fn(),
   apiKeyUpdate: vi.fn(),
   memberFindFirst: vi.fn(),
-  protectedRead: vi.fn()
+  protectedRead: vi.fn(),
+  createActivity: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -15,7 +16,12 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-import { withApiKey } from "@/server/services/hooks";
+vi.mock("@/server/services/activities", () => ({
+  createActivityForContext: mocks.createActivity,
+  activityInclude: {}
+}));
+
+import { hookCreateActivity, withApiKey } from "@/server/services/hooks";
 
 const request = new Request("https://example.test/api/hooks/v1/babies", {
   headers: { authorization: "Bearer cubby_test" }
@@ -146,5 +152,16 @@ describe("hook API-key capability boundary", () => {
     await expect(withApiKey(request, "read", mocks.protectedRead)).rejects.toThrow("unauthenticated");
     expect(mocks.protectedRead).not.toHaveBeenCalled();
     expect(mocks.apiKeyUpdate).not.toHaveBeenCalled();
+  });
+
+  it("generates a v1 compatibility mutation ID only when callers omit one", async () => {
+    const ctx = { householdId: "household-1", babyId: null, scopes: ["write"] } as never;
+    const supplied = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64009";
+
+    await hookCreateActivity(ctx, "baby-1", { type: "note", clientMutationId: supplied });
+    await hookCreateActivity(ctx, "baby-1", { type: "note" });
+
+    expect(mocks.createActivity.mock.calls[0][0]).toMatchObject({ babyId: "baby-1", clientMutationId: supplied });
+    expect(mocks.createActivity.mock.calls[1][0]).toMatchObject({ babyId: "baby-1", clientMutationId: expect.any(String) });
   });
 });
