@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { automatedBackupConfig } from "@/lib/env";
 import { parseAccentTheme } from "@/domain/appearance";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
-import { activityCreateSchema } from "@/lib/validation/activity";
+import { activityRestoreSchema } from "@/lib/validation/activity";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
 import { activityInclude, restoreHistoricalActivityForContext } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
@@ -31,7 +31,7 @@ const backupTimerMetadata = z
 const timerMetadataFields = ["timerState", "durationSeconds", "pausedAt", "pausedSeconds"] as const;
 const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"]);
 
-type BackupActivityInput = z.infer<typeof activityCreateSchema>;
+type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
   "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder"
@@ -384,7 +384,7 @@ function prepareLegacyRestore(parsed: Extract<ParsedBackup, { version: 1 }>) {
   if (babyIds.size !== input.babies.length) throw new Error("backup_duplicate_source_id");
   const activities = input.activities.map((rawActivity) => {
     const { contactId: _contactId, documentUrl: _documentUrl, ...safeActivity } = rawActivity;
-    const activity = activityCreateSchema.parse(safeActivity);
+    const activity = activityRestoreSchema.parse(safeActivity);
     backupDateTime.parse(activity.occurredAt);
     if (activity.startedAt) backupDateTime.parse(activity.startedAt);
     if (activity.endedAt) backupDateTime.parse(activity.endedAt);
@@ -470,7 +470,7 @@ async function restoreV2InTransaction(
   for (const activity of payload.activities) {
     const targetBabyId = babyMap.get(activity.babyId)!;
     const targetContactId = activity.contactId ? contactMap.get(activity.contactId)! : undefined;
-    const input = activityCreateSchema.parse({
+    const input = activityRestoreSchema.parse({
       ...activity.detail,
       babyId: targetBabyId,
       type: activity.type,

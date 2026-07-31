@@ -1,9 +1,10 @@
+import { createHash } from "node:crypto";
 import { ActivityType, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { durationSeconds } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { zonedDateTimeToDate } from "@/lib/timezone";
-import { activityCreateSchema, activityUpdateSchema, type ActivityCreateInput } from "@/lib/validation/activity";
+import { activityCreateSchema, activityUpdateSchema, type ActivityRestoreInput } from "@/lib/validation/activity";
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
 import { writeAudit } from "@/server/services/audit";
@@ -30,6 +31,11 @@ export const activityInclude = {
 
 type ActivityCreateDraft = Omit<Prisma.ActivityLogCreateInput, "household" | "baby" | "actorMember">;
 type ActivityListPage = Pick<Prisma.ActivityLogFindManyArgs, "cursor" | "skip" | "take" | "orderBy">;
+
+export function activityCreateFingerprint(input: { clientMutationId?: string; [key: string]: unknown }) {
+  const { clientMutationId: _clientMutationId, ...payload } = input;
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+}
 
 function toDate(value: string | undefined, fallback?: Date) {
   if (!value) return fallback;
@@ -75,7 +81,7 @@ type HistoricalActivityFields = {
   timezone: string;
 };
 
-function specificCreate(input: ActivityCreateInput): ActivityCreateDraft {
+function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft {
   const occurredAt = toDate(input.occurredAt) ?? new Date();
   const startedAt = toDate(input.startedAt, occurredAt);
   const isTimer = timerCapableTypes.has(input.type as ActivityType) && input.activeTimer;
@@ -376,7 +382,7 @@ export async function createActivity(raw: unknown) {
 async function requireHouseholdMedicineContact(
   tx: Pick<Prisma.TransactionClient, "contact">,
   ctx: HouseholdContext,
-  input: ActivityCreateInput
+  input: ActivityRestoreInput
 ) {
   if (input.type !== "medicine" || !input.contactId) return;
   const contact = await tx.contact.findFirst({
@@ -389,8 +395,10 @@ async function requireHouseholdMedicineContact(
 export async function createActivityForContext(raw: unknown, ctx: HouseholdContext & { apiKeyId?: string; scopes?: string[] }) {
   requirePermission(ctx, "activity.create");
   const input = activityCreateSchema.parse(raw);
+  const fingerprint = activityCreateFingerprint(input);
 
-  return prisma.$transaction(async (tx) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     if ("apiKeyId" in ctx && typeof ctx.apiKeyId === "string") {
       const key = await lockApiKeyForWrite(tx, lockedCtx, ctx.apiKeyId);
@@ -399,19 +407,49 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
     const baby = await lockBabyForWrite(tx, lockedCtx, input.babyId);
     requirePermission(lockedCtx, "activity.create");
     if (baby.inactiveAt) throw new Error("baby_inactive");
-    return createActivityInTransaction(input, lockedCtx, tx, true);
-  });
+    const existing = await tx.activityLog.findFirst({
+      where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId },
+      include: activityInclude
+    });
+    if (existing) {
+      if (existing.actorMemberId !== lockedCtx.memberId || existing.clientMutationFingerprint !== fingerprint) {
+        throw new Error("idempotency_conflict");
+      }
+      return existing;
+    }
+    return createActivityInTransaction(input, lockedCtx, tx, true, undefined, undefined, true, undefined, fingerprint);
+    });
+  } catch (error) {
+    if (!(typeof error === "object" && error !== null && "code" in error && error.code === "P2002")) throw error;
+    return prisma.$transaction(async (tx) => {
+      const lockedCtx = await lockActorForWrite(tx, ctx);
+      if ("apiKeyId" in ctx && typeof ctx.apiKeyId === "string") {
+        const key = await lockApiKeyForWrite(tx, lockedCtx, ctx.apiKeyId);
+        if (!key.scopes.includes("write") && !key.scopes.includes("*")) throw new Error("forbidden");
+      }
+      requirePermission(lockedCtx, "activity.create");
+      const existing = await tx.activityLog.findFirst({
+        where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId },
+        include: activityInclude
+      });
+      if (!existing || existing.actorMemberId !== lockedCtx.memberId || existing.clientMutationFingerprint !== fingerprint) {
+        throw new Error("idempotency_conflict");
+      }
+      return existing;
+    });
+  }
 }
 
 async function createActivityInTransaction(
-  input: ActivityCreateInput,
+  input: ActivityRestoreInput,
   ctx: HouseholdContext,
   tx: Prisma.TransactionClient,
   queueSideEffects: boolean,
   historicalTimer?: HistoricalTimerMetadata,
   historicalAttribution?: { source: string; externalActorName: string | null },
   writeActivityAudit = true,
-  historicalFields?: HistoricalActivityFields
+  historicalFields?: HistoricalActivityFields,
+  clientMutationFingerprint?: string
 ) {
   await requireHouseholdMedicineContact(tx, ctx, input);
   const activity = await tx.activityLog.create({
@@ -427,6 +465,8 @@ async function createActivityInTransaction(
         : {}),
       ...(historicalAttribution ?? {}),
       ...(historicalFields ?? {}),
+      clientMutationId: input.clientMutationId,
+      clientMutationFingerprint,
       household: { connect: { id: ctx.householdId } },
       baby: { connect: { id: input.babyId } },
       actorMember: { connect: { id: ctx.memberId } }
@@ -449,7 +489,7 @@ async function createActivityInTransaction(
 }
 
 export async function restoreHistoricalActivityForContext(
-  input: ActivityCreateInput,
+  input: ActivityRestoreInput,
   lockedCtx: HouseholdContext,
   tx: Prisma.TransactionClient,
   historicalTimer?: HistoricalTimerMetadata,
@@ -570,7 +610,7 @@ async function updateCurrentActivity(
 async function replaceSpecificLog(
   tx: Prisma.TransactionClient,
   id: string,
-  input: ActivityCreateInput,
+  input: ActivityRestoreInput,
   medicineContactId?: string | null
 ) {
   await tx.feedingLog.deleteMany({ where: { activityId: id } });

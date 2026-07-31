@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hasPermission } from "@/domain/roles";
+import { activityCreateSchema } from "@/lib/validation/activity";
 
 const mocks = vi.hoisted(() => ({
   getHouseholdContext: vi.fn(),
@@ -52,6 +53,7 @@ vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
 import {
   createActivityForContext,
+  activityCreateFingerprint,
   deleteActivity,
   getActivityForEdit,
   getActivityView,
@@ -69,7 +71,9 @@ describe("activity page access", () => {
     mocks.requirePermission.mockImplementation((ctx, permission) => {
       if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
     });
-    mocks.activityFindFirst.mockResolvedValue(activity("member-author"));
+    mocks.activityFindFirst.mockImplementation(({ where }) =>
+      Promise.resolve("clientMutationId" in where ? null : activity("member-author"))
+    );
     mocks.activityCreate.mockResolvedValue({ id: "activity-created", type: "feeding", timerState: "none" });
     mocks.activityUpdate.mockResolvedValue(activity("member-author"));
     mocks.activityUpdateMany.mockResolvedValue({ count: 1 });
@@ -158,9 +162,59 @@ describe("activity page access", () => {
     expect(mocks.activityCreate).not.toHaveBeenCalled();
   });
 
+  it("replays the authoritative activity for the same household mutation ID and normalized request", async () => {
+    const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64001";
+    const request = { ...feedingInput(), clientMutationId: mutationId };
+    const existing = {
+      ...activity("member-current"),
+      id: "activity-existing",
+      clientMutationId: mutationId,
+      clientMutationFingerprint: activityCreateFingerprint(activityCreateSchema.parse(request))
+    };
+    mocks.activityFindFirst.mockResolvedValue(existing);
+
+    await expect(createActivityForContext(request, context("parent"))).resolves.toBe(existing);
+
+    expect(mocks.activityFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { householdId: "household-1", clientMutationId: mutationId } })
+    );
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a reused household mutation ID for a different normalized activity request", async () => {
+    const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64002";
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-current"),
+      clientMutationId: mutationId,
+      clientMutationFingerprint: activityCreateFingerprint({ ...feedingInput(), clientMutationId: mutationId })
+    });
+
+    await expect(
+      createActivityForContext({ ...feedingInput(), clientMutationId: mutationId, mode: "formula" }, context("parent"))
+    ).rejects.toThrow("idempotency_conflict");
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("replays a lost-response retry after the unique household mutation key wins concurrently", async () => {
+    const mutationId = "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64003";
+    const request = { ...feedingInput(), clientMutationId: mutationId };
+    const existing = {
+      ...activity("member-current"),
+      id: "activity-concurrent",
+      clientMutationId: mutationId,
+      clientMutationFingerprint: activityCreateFingerprint(activityCreateSchema.parse(request))
+    };
+    mocks.transaction.mockRejectedValueOnce({ code: "P2002" });
+    mocks.activityFindFirst.mockResolvedValue(existing);
+
+    await expect(createActivityForContext(request, context("parent"))).resolves.toBe(existing);
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("preserves zero-valued feeding side durations in persistence data", async () => {
     await createActivityForContext(
       {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
         babyId: "baby-1",
         occurredAt: "2026-07-14T12:00:00.000Z",
         type: "feeding",
@@ -215,6 +269,7 @@ describe("activity page access", () => {
   it("restores stopped timer metadata without recomputing duration", async () => {
     await restoreHistoricalActivityForContext(
       {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
         babyId: "baby-1",
         type: "sleep",
         occurredAt: "2026-07-14T10:00:00.000Z",
@@ -246,6 +301,7 @@ describe("activity page access", () => {
   it("restores historical timestamps and timezone without normal-create defaults", async () => {
     await restoreHistoricalActivityForContext(
       {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
         babyId: "baby-1",
         type: "medicine",
         occurredAt: "2026-07-14T10:00:00.000Z",
@@ -274,6 +330,7 @@ describe("activity page access", () => {
   it("restores historical attribution without normal activity audits or side effects", async () => {
     await restoreHistoricalActivityForContext(
       {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
         babyId: "baby-1",
         type: "note",
         occurredAt: "2026-07-14T10:00:00.000Z",
@@ -300,6 +357,7 @@ describe("activity page access", () => {
     await expect(
       createActivityForContext(
         {
+          clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
           babyId: "baby-1",
           occurredAt: "2026-07-14T12:00:00.000Z",
           type: "medicine",
@@ -322,6 +380,7 @@ describe("activity page access", () => {
     await expect(
       createActivityForContext(
         {
+          clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
           babyId: "baby-1",
           occurredAt: "2026-07-14T12:00:00.000Z",
           type: "feeding",
@@ -937,6 +996,7 @@ function transactionClient() {
 
 function feedingInput() {
   return {
+    clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64005",
     babyId: "baby-1",
     occurredAt: "2026-07-14T12:00:00.000Z",
     type: "feeding",
