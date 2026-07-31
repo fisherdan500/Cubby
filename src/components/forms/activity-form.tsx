@@ -65,7 +65,7 @@ export function ActivityForm({
     try {
       const body = Object.fromEntries(formData);
       body.type = type;
-      if (!activityId) body.clientMutationId = clientMutationId;
+      body.clientMutationId = clientMutationId;
       const response = await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
         method: activityId ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },

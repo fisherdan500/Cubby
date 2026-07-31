@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cubby_activity_acceptance
+      POSTGRES_USER: cubby_activity_acceptance
+      POSTGRES_PASSWORD: ${CUBBY_ACTIVITY_ACCEPTANCE_PASSWORD:?synthetic password required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cubby_activity_acceptance -d cubby_activity_acceptance"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - activity_acceptance_data:/var/lib/postgresql/data
+
+volumes:
+  activity_acceptance_data:

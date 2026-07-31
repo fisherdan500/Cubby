@@ -127,7 +127,8 @@ export const activityRestoreSchema = activityInputSchema;
 export const activityCreateSchema = activityInputSchema.and(z.object({ clientMutationId: z.string().uuid() }));
 export const activityUpdateSchema = activityInputSchema.and(z.object({
   id: z.string().min(1),
-  expectedUpdatedAt: z.string().min(1).optional()
+  clientMutationId: z.string().uuid(),
+  expectedUpdatedAt: z.string().datetime({ offset: true })
 }));
 
 export type ActivityRestoreInput = z.infer<typeof activityRestoreSchema>;

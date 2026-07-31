@@ -202,3 +202,18 @@ healthy. Cleanup is project-scoped and runs in `finally`.
 This command intentionally executes Docker and must be authorized separately
 from code implementation or static/unit verification. It never loads `.env` and
 must never target the normal Compose project.
+
+### Consequential activity-mutation changes
+
+Activity receipt/replay changes additionally require this separately gated
+disposable PostgreSQL contract before publication:
+
+```bash
+npm run verify:activity-update-safety
+```
+
+It applies the complete candidate migration chain to a generated-credential,
+loopback-only database and exercises real activity services. It covers receipt
+immutability, exact replay, transaction-time authorization, race/conflict
+handling, and audit/webhook durability. It neither starts the app nor reads
+`.env`, sends webhook requests, or targets the normal Compose project.

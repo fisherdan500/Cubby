@@ -351,6 +351,16 @@ preflight. The rehearsal creates only a unique
 loopback-bound disposable project with generated credentials and fixed historical
 migration baseline; do not run it implicitly during ordinary unit verification.
 
+Consequential activity receipt/replay changes additionally require the separately
+gated disposable PostgreSQL contract before publication:
+
+```bash
+npm run verify:activity-update-safety
+```
+
+It runs against generated credentials in a loopback-only project and never reads
+`.env` or targets the normal Compose project.
+
 ## Common Development Notes
 
 ### Activities

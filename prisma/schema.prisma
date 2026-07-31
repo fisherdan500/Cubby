@@ -382,6 +382,7 @@ model MutationReceipt {
   clientMutationId  String
   intentFingerprint String
   outcomeActivityId String
+  outcomeSnapshot   Json?
   createdAt         DateTime  @default(now())
   household         Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 

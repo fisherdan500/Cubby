@@ -26,4 +26,26 @@ describe("POST /api/timers/[id]/stop", () => {
     await POST(new Request("http://localhost/api/timers/activity-1/stop", { method: "POST" }), { params: { id: "activity-1" } });
     expect(mocks.stopTimer).toHaveBeenCalledWith("activity-1", undefined);
   });
+
+  it("rejects malformed non-empty JSON without invoking the timer command", async () => {
+    const callCount = mocks.stopTimer.mock.calls.length;
+    const response = await POST(
+      new Request("http://localhost/api/timers/activity-1/stop", { method: "POST", body: "{" }),
+      { params: { id: "activity-1" } }
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.stopTimer).toHaveBeenCalledTimes(callCount);
+  });
+
+  it.each(["null", "{}"])("rejects non-empty JSON %s without a client mutation ID", async (body) => {
+    const callCount = mocks.stopTimer.mock.calls.length;
+    const response = await POST(
+      new Request("http://localhost/api/timers/activity-1/stop", { method: "POST", body }),
+      { params: { id: "activity-1" } }
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.stopTimer).toHaveBeenCalledTimes(callCount);
+  });
 });
