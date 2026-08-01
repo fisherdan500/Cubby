@@ -4,7 +4,8 @@ import path from "node:path";
 
 const mocks = vi.hoisted(() => ({
   startBackup: vi.fn(),
-  startIntegrity: vi.fn()
+  startIntegrity: vi.fn(),
+  startSproutRetention: vi.fn()
 }));
 
 vi.mock("@/server/automated-backup-scheduler", () => ({
@@ -12,6 +13,9 @@ vi.mock("@/server/automated-backup-scheduler", () => ({
 }));
 vi.mock("@/server/integrity-scheduler", () => ({
   startIntegrityScheduler: mocks.startIntegrity
+}));
+vi.mock("@/server/sprout-source-retention-scheduler", () => ({
+  startSproutSourceRetentionScheduler: mocks.startSproutRetention
 }));
 
 describe("instrumentation", () => {
@@ -26,5 +30,6 @@ describe("instrumentation", () => {
     await register();
     expect(mocks.startBackup).toHaveBeenCalledOnce();
     expect(mocks.startIntegrity).toHaveBeenCalledOnce();
+    expect(mocks.startSproutRetention).toHaveBeenCalledOnce();
   });
 });

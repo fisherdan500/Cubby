@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type SproutPreview = {
+  previewId: string;
   source: {
     filename?: string;
     format: string;
@@ -30,13 +31,14 @@ export function SproutRestoreForm() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<"preview" | "import" | null>(null);
 
-  async function upload(endpoint: string) {
+  async function upload(endpoint: string, previewId?: string) {
     if (!file) {
       setMessage("Choose a Sprout Track .zip, .db, or data.json file.");
       return null;
     }
     const formData = new FormData();
-    formData.set("file", file);
+    if (endpoint.endsWith("/preview")) formData.set("file", file);
+    if (previewId) formData.set("previewId", previewId);
     const response = await fetch(endpoint, { method: "POST", body: formData });
     const result = await response.json();
     if (!result.ok) {
@@ -62,10 +64,14 @@ export function SproutRestoreForm() {
   }
 
   async function importFile() {
+    if (!preview?.previewId) {
+      setMessage("Preview the selected backup before importing it.");
+      return;
+    }
     setBusy("import");
     setMessage("");
     try {
-      const data = await upload("/api/backups/sprout/import");
+      const data = await upload("/api/backups/sprout/import", preview.previewId);
       if (data) {
         setPreview(data);
         setMessage(`Imported ${data.result?.created ?? 0} items. Skipped ${data.result?.skipped ?? 0} existing or unsupported items.`);

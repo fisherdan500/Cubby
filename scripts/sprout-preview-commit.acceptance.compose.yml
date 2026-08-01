@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${CUBBY_SPROUT_ACCEPTANCE_DATABASE:?generated database required}
+      POSTGRES_USER: ${CUBBY_SPROUT_ACCEPTANCE_USER:?generated user required}
+      POSTGRES_PASSWORD: ${CUBBY_SPROUT_ACCEPTANCE_PASSWORD:?generated password required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    secrets:
+      - cubby_sprout_staging_key
+    volumes:
+      - sprout_preview_commit_acceptance_data:/var/lib/postgresql/data
+
+secrets:
+  cubby_sprout_staging_key:
+    file: ${CUBBY_SPROUT_ACCEPTANCE_SECRET_FILE:?generated staging secret required}
+
+volumes:
+  sprout_preview_commit_acceptance_data:
