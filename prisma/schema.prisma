@@ -126,6 +126,7 @@ model User {
   backupRecords BackupRecord[]
   importBatches ImportBatch[]
   platformAuthority PlatformAuthority?
+  platformRegistrationOperations PlatformRegistrationOperation[]
 }
 
 model PlatformAuthority {
@@ -135,27 +136,56 @@ model PlatformAuthority {
   updatedAt   DateTime          @updatedAt
   owner       User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
   settings    PlatformSettings?
+  registrationOperations PlatformRegistrationOperation[]
 }
 
 model PlatformSettings {
   id                      String                   @id @default("platform")
   householdCreationMode   PlatformRegistrationMode @default(closed)
   allowPublicRegistration Boolean                  @default(false)
+  revision                Int                      @default(0)
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   authority               PlatformAuthority        @relation(fields: [id], references: [id], onDelete: Restrict)
 }
 
+enum PlatformRegistrationOperationStatus {
+  pending
+  completed
+  stale
+}
+
+model PlatformRegistrationOperation {
+  id                      String                              @id @default(cuid())
+  actorUserId             String
+  authorityId             String                              @default("platform")
+  intentFingerprint       String
+  expectedRevision        Int
+  householdCreationMode   PlatformRegistrationMode
+  allowPublicRegistration Boolean
+  status                  PlatformRegistrationOperationStatus @default(pending)
+  result                  Json?
+  auditEventId            String?                             @unique
+  createdAt               DateTime                            @default(now())
+  actor                   User                                @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  authority               PlatformAuthority                   @relation(fields: [authorityId], references: [id], onDelete: Restrict)
+  auditEvent              PlatformAuditEvent?                 @relation(fields: [auditEventId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, id])
+  @@index([createdAt])
+}
+
 model PlatformAuditEvent {
-  id          String   @id @default(cuid())
-  actorUserId String?
-  action      String
-  entityType  String
-  entityId    String
-  source      String
-  before      Json?
-  after       Json?
-  createdAt   DateTime @default(now())
+  id                    String                         @id @default(cuid())
+  actorUserId           String?
+  action                String
+  entityType            String
+  entityId              String
+  source                String
+  before                Json?
+  after                 Json?
+  createdAt             DateTime                       @default(now())
+  registrationOperation PlatformRegistrationOperation?
 
   @@index([actorUserId])
   @@index([createdAt])

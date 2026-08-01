@@ -1,1 +1,1 @@
-export { dynamic, GET, PUT } from "@/app/api/platform/registration/route";
+export { dynamic, GET, POST, PUT } from "@/app/api/platform/registration/route";
