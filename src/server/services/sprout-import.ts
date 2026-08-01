@@ -17,6 +17,16 @@ import { zonedDateStart } from "@/lib/timezone";
 import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { durationSeconds } from "@/lib/dates";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
+import { SPROUT_SOURCE_SYSTEM } from "@/server/services/sprout-import-contract";
+import {
+  createSproutStagedFilename,
+  readSproutStagingConfig,
+  readStagedSproutBytes,
+  removeStagedSproutBytes,
+  SproutStagingWriteError,
+  stageSproutBytes,
+  type StagedSproutBytes
+} from "@/server/services/sprout-staging";
 
 type SproutRow = Record<string, unknown>;
 type SproutTables = Record<string, SproutRow[]>;
@@ -30,6 +40,11 @@ type ParsedSproutBackup = {
     encHashPresent: boolean;
   };
   warnings: string[];
+};
+
+type ParsedSproutUpload = {
+  parsed: ParsedSproutBackup;
+  bytes: Buffer;
 };
 
 type ImportKey = {
@@ -57,7 +72,14 @@ type ImportCounters = {
   warnings: string[];
 };
 
-const SOURCE_SYSTEM = "sprout-track";
+const SOURCE_SYSTEM = SPROUT_SOURCE_SYSTEM;
+const PREVIEW_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const SAFE_SPROUT_ERRORS = new Set(["unauthenticated", "forbidden", "sprout_preview_expired", "sprout_preview_mismatch", "sprout_preview_required", "invalid_sqlite_backup", "sprout_sqlite_unavailable", "unsupported_sprout_backup"]);
+
+export function normalizeSproutError(error: unknown) {
+  if (error instanceof Error && SAFE_SPROUT_ERRORS.has(error.message)) return error;
+  return new Error("sprout_import_failed");
+}
 const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
 const MAX_ZIP_ENTRY_BYTES = 25 * 1024 * 1024;
 const MAX_ZIP_ENTRY_COUNT = 10;
@@ -94,6 +116,41 @@ const SECRET_OR_RUNTIME_TABLES = new Set([
   "BetaCampaign",
   "BetaCampaignEmail"
 ]);
+
+const SPROUT_PARSER_ADAPTER_VERSION = "sprout-import-adapter-v1";
+const SPROUT_MAPPING_OPTIONS = {
+  mappingVersion: "sprout-import-mapping-v1",
+  sourceSystem: SOURCE_SYSTEM,
+  sourceFormats: ["json", "sqlite"],
+  activityTables: ACTIVITY_TABLES,
+  ignoredTables: [...SECRET_OR_RUNTIME_TABLES].sort(),
+  dateOnlyTimezone: "APP_TIMEZONE"
+};
+
+function interpretationFingerprint(value: unknown) {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function sproutInterpretationBinding() {
+  return {
+    parserAdapterVersion: SPROUT_PARSER_ADAPTER_VERSION,
+    mappingOptionsFingerprint: interpretationFingerprint(SPROUT_MAPPING_OPTIONS),
+    contextFingerprint: interpretationFingerprint({ appTimezone: env.APP_TIMEZONE })
+  };
+}
+
+function hasCurrentSproutInterpretationBinding(preview: {
+  parserAdapterVersion?: string | null;
+  mappingOptionsFingerprint?: string | null;
+  contextFingerprint?: string | null;
+}) {
+  const current = sproutInterpretationBinding();
+  return (
+    preview.parserAdapterVersion === current.parserAdapterVersion &&
+    preview.mappingOptionsFingerprint === current.mappingOptionsFingerprint &&
+    preview.contextFingerprint === current.contextFingerprint
+  );
+}
 
 let sqlReady: Promise<SqlJsStatic> | undefined;
 
@@ -331,12 +388,15 @@ function mapMeasurement(row: SproutRow) {
   return { measurementType: text(row, "type") };
 }
 
-async function parseUpload(formData: FormData) {
+async function parseUpload(formData: FormData): Promise<ParsedSproutUpload> {
   const file = formData.get("file");
   if (!file || typeof file === "string" || typeof file.arrayBuffer !== "function") throw new Error("missing_file");
   if (file.size > MAX_IMPORT_BYTES) throw new Error("file_too_large");
   const bytes = Buffer.from(await file.arrayBuffer());
-  return parseSproutBackup(bytes, file.name);
+  return {
+    parsed: await parseSproutBackup(bytes, file.name),
+    bytes
+  };
 }
 
 async function parseSproutBackup(bytes: Buffer, filename?: string): Promise<ParsedSproutBackup> {
@@ -539,45 +599,167 @@ async function countDuplicates(
   return total;
 }
 
+function stagedPreview(preview: {
+  sourceDigest: string | null;
+  stagedFilename: string | null;
+  stagedNonce: string | null;
+  stagedAuthTag: string | null;
+  stagedKeyVersion: string | null;
+}): StagedSproutBytes {
+  if (
+    !preview.sourceDigest ||
+    !preview.stagedFilename ||
+    !preview.stagedNonce ||
+    !preview.stagedAuthTag ||
+    !preview.stagedKeyVersion
+  ) {
+    throw new Error("sprout_preview_mismatch");
+  }
+  return {
+    sourceDigest: preview.sourceDigest,
+    stagedFilename: preview.stagedFilename,
+    stagedNonce: preview.stagedNonce,
+    stagedAuthTag: preview.stagedAuthTag,
+    stagedKeyVersion: preview.stagedKeyVersion
+  };
+}
+
+function sproutStagingConfig() {
+  return readSproutStagingConfig({
+    SPROUT_STAGING_DIRECTORY: process.env.SPROUT_STAGING_DIRECTORY,
+    SPROUT_STAGING_KEY_FILE: process.env.SPROUT_STAGING_KEY_FILE,
+    SPROUT_STAGING_KEY_VERSION: process.env.SPROUT_STAGING_KEY_VERSION
+  });
+}
+
 export async function previewSproutBackup(formData: FormData) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "backup.manage");
-  const parsed = await parseUpload(formData);
+  const { parsed, bytes } = await parseUpload(formData);
   const duplicates = await countDuplicates(ctx, importKeys(parsed));
-  return makeSummary(parsed, duplicates);
+  const summary = makeSummary(parsed, duplicates);
+  const config = sproutStagingConfig();
+  const ledger = await prisma.importBatch.create({
+    data: {
+      householdId: ctx.householdId,
+      actorUserId: ctx.userId,
+      sourceSystem: SOURCE_SYSTEM,
+      sourceFormat: "pending",
+      status: "failed",
+      error: "sprout_import_failed"
+    }
+  });
+  const stagedFilename = createSproutStagedFilename();
+  await prisma.importBatch.update({
+    where: { id: ledger.id },
+    data: {
+      stagedFilename,
+      status: "failed",
+      error: "sprout_import_failed"
+    }
+  });
+  let staged: StagedSproutBytes;
+  try {
+    staged = await stageSproutBytes(bytes, config, stagedFilename);
+  } catch (error) {
+    if (error instanceof SproutStagingWriteError) {
+      await removeStagedSproutBytes(stagedFilename, config).catch(() => undefined);
+    }
+    throw error;
+  }
+
+  await prisma.importBatch.update({
+    where: { id: ledger.id },
+    data: {
+      sourceFilename: parsed.filename,
+      sourceFormat: parsed.format,
+      sourceDigest: staged.sourceDigest,
+      stagedFilename: staged.stagedFilename,
+      stagedNonce: staged.stagedNonce,
+      stagedAuthTag: staged.stagedAuthTag,
+      stagedKeyVersion: staged.stagedKeyVersion,
+      status: "failed",
+      error: "sprout_import_failed"
+    }
+  });
+  const preview = await prisma.importBatch.update({
+    where: { id: ledger.id },
+    data: {
+      ...sproutInterpretationBinding(),
+      status: "preview",
+      summary: summary as Prisma.InputJsonValue,
+      warnings: summary.warnings,
+      error: null
+    }
+  });
+  return { ...summary, previewId: preview.id };
 }
 
-export async function importSproutBackup(formData: FormData) {
+export async function importSproutBackup(options: { previewId?: string } = {}) {
   const ctx = await getHouseholdContext();
   requirePermission(ctx, "backup.manage");
-  const parsed = await parseUpload(formData);
+  const previewId = options.previewId?.trim();
+  if (!previewId) throw new Error("sprout_preview_required");
+  const config = sproutStagingConfig();
   try {
     return await prisma.$transaction(
       async (db) => {
         const lockedCtx = await lockActorForWrite(db, ctx);
         requirePermission(lockedCtx, "backup.manage");
+        const lockedPreviews = await db.$queryRaw<Array<{ id: string }>>`
+          SELECT "id" FROM "ImportBatch"
+          WHERE "id" = ${previewId} AND "householdId" = ${lockedCtx.householdId}
+          FOR UPDATE
+        `;
+        if (lockedPreviews.length !== 1) throw new Error("sprout_preview_mismatch");
+        const preview = await db.importBatch.findUnique({
+          where: { householdId_id: { householdId: lockedCtx.householdId, id: previewId } }
+        });
+        if (
+          !preview ||
+          preview.sourceSystem !== SOURCE_SYSTEM ||
+          preview.actorUserId !== lockedCtx.userId ||
+          !hasCurrentSproutInterpretationBinding(preview)
+        ) {
+          throw new Error("sprout_preview_mismatch");
+        }
+        if (preview.status === "complete") {
+          if (!preview.completedResult || typeof preview.completedResult !== "object" || Array.isArray(preview.completedResult)) {
+            throw new Error("sprout_preview_mismatch");
+          }
+          return preview.completedResult;
+        }
+        if (preview.status !== "preview") throw new Error("sprout_preview_mismatch");
+        const previewExpiryCutoff = new Date(Date.now() - PREVIEW_EXPIRY_MS);
+        const claim = await db.importBatch.updateMany({
+          where: {
+            id: preview.id,
+            householdId: lockedCtx.householdId,
+            status: "preview",
+            createdAt: { gt: previewExpiryCutoff }
+          },
+          data: { status: "running" }
+        });
+        if (claim.count !== 1) {
+          if (preview.createdAt <= previewExpiryCutoff) throw new Error("sprout_preview_expired");
+          throw new Error("sprout_preview_mismatch");
+        }
+        const staged = stagedPreview(preview);
+        const bytes = await readStagedSproutBytes(staged, config);
+        const parsed = await parseSproutBackup(bytes, preview.sourceFilename ?? undefined);
+        if (parsed.format !== preview.sourceFormat) throw new Error("sprout_preview_mismatch");
         const duplicateCount = await countDuplicates(lockedCtx, importKeys(parsed), db);
         const summary = makeSummary(parsed, duplicateCount);
-        const batch = await db.importBatch.create({
-          data: {
-            householdId: lockedCtx.householdId,
-            actorUserId: lockedCtx.userId,
-            sourceSystem: SOURCE_SYSTEM,
-            sourceFilename: parsed.filename,
-            sourceFormat: parsed.format,
-            status: "running",
-            summary: summary as Prisma.InputJsonValue,
-            warnings: summary.warnings
-          }
-        });
-        const result = await commitSproutImport(db, lockedCtx, parsed, batch.id);
+        const result = await commitSproutImport(db, lockedCtx, parsed, preview.id);
         const finalSummary = { ...summary, result };
+        const completedResult = { result };
         await db.importBatch.update({
-          where: { id: batch.id },
+          where: { id: preview.id },
           data: {
             status: "complete",
             completedAt: new Date(),
             summary: finalSummary as Prisma.InputJsonValue,
+            completedResult: completedResult as Prisma.InputJsonValue,
             warnings: [...summary.warnings, ...result.warnings]
           }
         });
@@ -591,35 +773,48 @@ export async function importSproutBackup(formData: FormData) {
             checksum: createHash("sha256").update(JSON.stringify(finalSummary)).digest("hex")
           }
         });
-        return finalSummary;
+        return completedResult;
       },
       { maxWait: 10_000, timeout: 120_000 }
     );
   } catch (error) {
-    if (!(error instanceof Error && ["unauthenticated", "forbidden"].includes(error.message))) {
-      await recordSproutImportFailure(ctx, parsed, error).catch(() => undefined);
+    if (!(error instanceof Error && ["unauthenticated", "forbidden", "sprout_preview_expired", "sprout_preview_mismatch", "sprout_preview_required"].includes(error.message))) {
+      await recordSproutImportFailure(ctx, previewId, error).catch(() => undefined);
     }
     throw error;
   }
 }
 
-async function recordSproutImportFailure(ctx: HouseholdContext, parsed: ParsedSproutBackup, error: unknown) {
-  const message = error instanceof Error ? error.message : "Import failed";
+async function recordSproutImportFailure(
+  ctx: HouseholdContext,
+  previewId: string,
+  error: unknown
+) {
+  const message = normalizeSproutError(error).message;
   return prisma.$transaction(async (db) => {
     const lockedCtx = await lockActorForWrite(db, ctx);
     requirePermission(lockedCtx, "backup.manage");
-    await db.importBatch.create({
-      data: {
+    const lockedPreviews = await db.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "ImportBatch"
+      WHERE "id" = ${previewId} AND "householdId" = ${lockedCtx.householdId}
+      FOR UPDATE
+    `;
+    if (lockedPreviews.length !== 1) return;
+    const failed = await db.importBatch.updateMany({
+      where: {
+        id: previewId,
         householdId: lockedCtx.householdId,
-        actorUserId: lockedCtx.userId,
         sourceSystem: SOURCE_SYSTEM,
-        sourceFilename: parsed.filename,
-        sourceFormat: parsed.format,
+        actorUserId: lockedCtx.userId,
+        status: { in: ["preview", "running"] }
+      },
+      data: {
         status: "failed",
         error: message,
         completedAt: new Date()
       }
     });
+    if (failed.count !== 1) return;
     await db.backupRecord.create({
       data: {
         householdId: lockedCtx.householdId,

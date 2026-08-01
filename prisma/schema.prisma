@@ -740,8 +740,25 @@ model ImportBatch {
   sourceSystem   String
   sourceFilename String?
   sourceFormat   String
+  parserAdapterVersion String?
+  mappingOptionsFingerprint String?
+  contextFingerprint String?
+  sourceDigest   String?
+  stagedFilename String?
+  stagedNonce    String?
+  stagedAuthTag  String?
+  stagedKeyVersion String?
+  rawSourceDeletedAt DateTime?
+  rawSourceRetentionReceipt Json?
+  rawSourceCleanupPendingAt DateTime?
+  rawSourceCleanupNextRetryAt DateTime?
+  rawSourceCleanupLastError String?
+  rawSourceCleanupAttempts Int @default(0)
+  rawSourceCleanupLeaseToken String?
+  rawSourceCleanupLeaseExpiresAt DateTime?
   status         String
   summary        Json?
+  completedResult Json?
   warnings       String[]  @default([])
   error          String?
   createdAt      DateTime  @default(now())
@@ -754,6 +771,8 @@ model ImportBatch {
   @@index([householdId])
   @@index([sourceSystem])
   @@index([createdAt])
+  @@index([sourceSystem, status, rawSourceDeletedAt, createdAt])
+  @@index([sourceSystem, rawSourceCleanupNextRetryAt])
 }
 
 model ImportedRecord {

@@ -76,6 +76,10 @@ export function handleError(error: unknown) {
     if (error.message === "backup_unsupported_version") return fail("backup_unsupported_version", "This Cubby backup version is not supported.", 422);
     if (error.message === "backup_confirmation_mismatch") return fail("backup_confirmation_mismatch", "Type the current household name exactly to confirm restore.", 422);
     if (error.message === "backup_preview_mismatch") return fail("backup_preview_mismatch", "The selected backup changed after preview. Preview it again.", 409);
+    if (error.message === "sprout_preview_required") return fail("sprout_preview_required", "Preview this Sprout backup before importing it.", 422);
+    if (error.message === "sprout_preview_mismatch") return fail("sprout_preview_mismatch", "The selected Sprout backup changed after preview. Preview it again.", 409);
+    if (error.message === "sprout_preview_expired") return fail("sprout_preview_expired", "This Sprout preview has expired. Upload it again to continue.", 409);
+    if (error.message === "sprout_import_failed") return fail("sprout_import_failed", "The Sprout import could not be processed.", 422);
     if (error.message === "backup_restore_retry") return fail("backup_restore_retry", "The household changed during restore. Preview the backup and try again.", 409);
     if (error.message === "missing_file") return fail("missing_file", "Choose a backup file to upload.", 422);
     if (error.message === "file_too_large") return fail("file_too_large", "Backup files must be 100 MB or smaller.", 413);

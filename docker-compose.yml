@@ -35,7 +35,14 @@ services:
       start_period: 60s
     volumes:
       - ${CUBBY_BACKUP_HOST_DIR:-./docker-data/backups}:/var/lib/cubby/backups
+      - ${CUBBY_SPROUT_STAGING_HOST_DIR:-./docker-data/sprout-staging}:/var/lib/cubby/sprout-staging
+    secrets:
+      - cubby_sprout_staging_key
     restart: unless-stopped
 
 volumes:
   cubby_postgres_data:
+
+secrets:
+  cubby_sprout_staging_key:
+    file: ${CUBBY_SPROUT_STAGING_KEY_FILE:?Set CUBBY_SPROUT_STAGING_KEY_FILE to the master-key secret file}

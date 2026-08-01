@@ -12,14 +12,19 @@ function appBlock(compose: string) {
   return compose.match(/\r?\n  app:\r?\n([\s\S]*?)(?=\r?\nvolumes:)/)?.[1] ?? "";
 }
 
+function healthcheckBlock(app: string) {
+  return app.match(/healthcheck:\r?\n((?: {6}.*\r?\n)+)/)?.[1] ?? "";
+}
+
 describe("update compose safety", () => {
   it("uses the internal readiness endpoint for normal and rehearsal app health", () => {
     for (const compose of [normal, rehearsal]) {
       const app = appBlock(compose);
+      const healthcheck = healthcheckBlock(app);
       expect(app).toContain("healthcheck:");
-      expect(app).toContain(healthEndpoint);
-      expect(app).toContain('["CMD", "node", "-e"');
-      expect(app).not.toMatch(/healthcheck:[\s\S]*?(postgresql|password|secret|https?:\/\/(?!127\.0\.0\.1:3000))/i);
+      expect(healthcheck).toContain(healthEndpoint);
+      expect(healthcheck).toContain('["CMD", "node", "-e"');
+      expect(healthcheck).not.toMatch(/postgresql|password|secret|https?:\/\/(?!127\.0\.0\.1:3000)/i);
     }
   });
 

@@ -17,6 +17,7 @@
     "verify:backup-recovery": "tsx scripts/backup-recovery-rehearsal.ts",
     "verify:update-rehearsal": "tsx scripts/backup-recovery-rehearsal.ts",
     "verify:activity-update-safety": "tsx scripts/activity-update-safety-rehearsal.ts",
+    "verify:sprout-preview-commit": "tsx scripts/sprout-preview-commit.acceptance-rehearsal.ts",
     "verify:update-preflight": "tsx scripts/update-preflight.ts",
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "db:generate": "prisma generate",
