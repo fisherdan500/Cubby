@@ -89,6 +89,12 @@ describe("tenant-isolation inventory", () => {
           model: "ImportedRecord",
           ownership: "direct",
           disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "PlatformRegistrationOperation",
+          ownership: "global",
+          operationClasses: ["platform_registration_operation"],
+          disposition: "excluded"
         })
       ])
     );

@@ -4,7 +4,7 @@ export const prismaModelNames = [
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "FeedingLog",
   "Household", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog",
-  "NotificationPreference", "PlatformAuditEvent", "PlatformAuthority", "PlatformSettings", "PlayLog", "PumpingLog",
+  "NotificationPreference", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlayLog", "PumpingLog",
   "PushSubscription", "Reminder", "Session", "SleepLog", "SupplementLog", "User", "VaccineDocument", "VaccineLog",
   "Verification", "WebhookDelivery", "WebhookEndpoint"
 ] as const;
@@ -44,6 +44,7 @@ export const tenantIsolationInventory = [
   { model: "NotificationPreference", ownership: "direct", operationClasses: ["notification_write"], disposition: "constraint_slice" },
   { model: "PlatformAuditEvent", ownership: "global", operationClasses: ["platform_audit"], disposition: "excluded" },
   { model: "PlatformAuthority", ownership: "global", operationClasses: ["platform_authority"], disposition: "excluded" },
+  { model: "PlatformRegistrationOperation", ownership: "global", operationClasses: ["platform_registration_operation"], disposition: "excluded" },
   { model: "PlatformSettings", ownership: "global", operationClasses: ["platform_settings"], disposition: "excluded" },
   { model: "PushSubscription", ownership: "direct", operationClasses: ["notification_write"], disposition: "deferred_constraint" },
   { model: "Reminder", ownership: "direct", operationClasses: ["reminder_write"], disposition: "constraint_slice" },

@@ -40,7 +40,10 @@ import { publishLocalBackup, readLocalBackup, scanLocalBackups } from "@/server/
 import { provisionBackupRecoveryTarget } from "@/server/services/platform-backup-recovery";
 import { createOnboardingHousehold } from "@/server/services/households";
 import { lockHouseholdCreation } from "@/server/services/mutation-locks";
-import { updatePlatformRegistrationSettings } from "@/server/services/platform-authority";
+import {
+  allocatePlatformRegistrationOperation,
+  completePlatformRegistrationOperation
+} from "@/server/services/platform-authority";
 import { recoverPlatformOwner } from "@/server/services/platform-owner-binding";
 
 type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
@@ -305,6 +308,12 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       }
     });
 
+    auth.user = source.user;
+    const policyOperation = await allocatePlatformRegistrationOperation({
+      householdCreationMode: "open",
+      allowPublicRegistration: true
+    });
+
     let releaseSettingsLock!: () => void;
     let signalSettingsLockHeld!: () => void;
     const settingsLockHeld = new Promise<void>((resolve) => {
@@ -323,11 +332,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     });
     await settingsLockHeld;
 
-    auth.user = source.user;
-    const oldOwnerPolicyAttempt = updatePlatformRegistrationSettings({
-      householdCreationMode: "open",
-      allowPublicRegistration: true
-    });
+    const oldOwnerPolicyAttempt = completePlatformRegistrationOperation({ operationId: policyOperation.operationId });
     let authorityRecoveryAttempt!: ReturnType<typeof recoverPlatformOwner>;
     try {
       await waitForLockWaiters("PlatformSettings", 1);
@@ -346,8 +351,8 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       await settingsLockHolder;
     }
     await expect(oldOwnerPolicyAttempt).resolves.toMatchObject({
-      householdCreationMode: "open",
-      allowPublicRegistration: true
+      status: "completed",
+      settings: { householdCreationMode: "open", allowPublicRegistration: true }
     });
     await expect(authorityRecoveryAttempt).resolves.toMatchObject({ ownerUserId: targetUser.id });
     expect(await prisma.platformAuthority.findUniqueOrThrow({
