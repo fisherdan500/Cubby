@@ -94,6 +94,30 @@ function operationResult(operation: RegistrationOperation) {
   return JSON.parse(JSON.stringify(operation.result));
 }
 
+const serializableTransactionAttempts = 3;
+
+function isSerializableConflict(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const details = error as { code?: unknown; meta?: { code?: unknown }; message?: unknown };
+  return (
+    details.code === "P2034" ||
+    details.code === "40001" ||
+    details.meta?.code === "40001" ||
+    (typeof details.message === "string" && details.message.includes("could not serialize access"))
+  );
+}
+
+async function withSerializableTransactionRetry<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < serializableTransactionAttempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isSerializableConflict(error) || attempt === serializableTransactionAttempts - 1) throw error;
+    }
+  }
+  throw new Error("serializable_transaction_retry_exhausted");
+}
+
 async function lockAndReauthorizeOwner(
   tx: PlatformRegistrationTransaction,
   userId: string,
@@ -150,7 +174,7 @@ export async function allocatePlatformRegistrationOperation(raw: unknown) {
   const user = await requireUser();
   const intent = platformRegistrationSettingsSchema.parse(raw);
 
-  return prisma.$transaction(async (tx) => {
+  return withSerializableTransactionRetry(() => prisma.$transaction(async (tx) => {
     const db = tx as unknown as PlatformRegistrationTransaction;
     await lockAndReauthorizeOwner(db, user.id);
     const settings = await lockSettings(db);
@@ -164,14 +188,14 @@ export async function allocatePlatformRegistrationOperation(raw: unknown) {
       }
     });
     return { operationId: operation.id, status: "pending" as const };
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function completePlatformRegistrationOperation(raw: unknown) {
   const user = await requireUser();
   const { operationId } = platformRegistrationOperationIdSchema.parse(raw);
 
-  return prisma.$transaction(async (tx) => {
+  return withSerializableTransactionRetry(() => prisma.$transaction(async (tx) => {
     const db = tx as unknown as PlatformRegistrationTransaction;
     await lockAndReauthorizeOwner(db, user.id);
     const settings = await lockSettings(db);
@@ -226,14 +250,14 @@ export async function completePlatformRegistrationOperation(raw: unknown) {
       data: { status: "completed", result, auditEventId: audit.id }
     });
     return operationResult(completed as RegistrationOperation);
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function getPlatformRegistrationOperationStatus(raw: unknown) {
   const user = await requireUser();
   const { operationId } = platformRegistrationOperationIdSchema.parse(raw);
 
-  return prisma.$transaction(async (tx) => {
+  return withSerializableTransactionRetry(() => prisma.$transaction(async (tx) => {
     const db = tx as unknown as PlatformRegistrationTransaction;
     await lockAndReauthorizeOwner(db, user.id, "not_found");
     const operation = await db.platformRegistrationOperation.findFirst({
@@ -246,5 +270,5 @@ export async function getPlatformRegistrationOperationStatus(raw: unknown) {
     };
     if (operation.intentFingerprint !== fingerprint(normalizedIntent)) throw new Error("not_found");
     return operationResult(operation as RegistrationOperation);
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }

@@ -145,6 +145,18 @@ describe("platform registration operations", () => {
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
   });
 
+  it("retries a serialization conflict before completing the same operation", async () => {
+    mocks.transaction.mockRejectedValueOnce({ code: "P2034" });
+
+    await expect(completePlatformRegistrationOperation({ operationId: pendingOperation.id })).resolves.toEqual({
+      operationId: pendingOperation.id,
+      status: "completed",
+      settings: { householdCreationMode: "open", allowPublicRegistration: true, revision: 8 }
+    });
+
+    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+  });
+
   it("conditionally completes a pending operation with one atomic audit event", async () => {
     await expect(completePlatformRegistrationOperation({ operationId: pendingOperation.id })).resolves.toEqual({
       operationId: pendingOperation.id,
