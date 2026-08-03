@@ -12,6 +12,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "operation-registry:generate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/operation-registry.ts --write",
+    "operation-registry:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/operation-registry.ts --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:backup-recovery": "tsx scripts/backup-recovery-rehearsal.ts",

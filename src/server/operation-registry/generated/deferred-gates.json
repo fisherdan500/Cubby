@@ -1,0 +1,122 @@
+{
+  "authority": "observation_only",
+  "declarationDigest": "e6bd2eb6c5490b8103c8662335f0c55d73a1408733456bd2b66a24cf74e3d4af",
+  "declarationDigestVersion": "normalized-declarations.v1",
+  "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
+  "deferredGateRegistryDigestVersion": "deferred-gates.v1",
+  "evidence": [],
+  "gates": [
+    {
+      "blockedAxes": [
+        "carrier_authority_guard"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Review exact carrier and authority guard anchors in R2.",
+      "id": "gate.carrier_authority_guard",
+      "rationale": "Carrier and authority-guard semantics are outside structural observation.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "caller_controlled_scope"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Review caller-controlled inputs and opening scope in R2.",
+      "id": "gate.caller_controlled_scope",
+      "rationale": "Caller-controlled and opening-scope inputs are not inferred from callsites.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "service_operation_linkage"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Add separately approved service declarations and exact linkage in R2.",
+      "id": "gate.service_operation_linkage",
+      "rationale": "Service-operation linkage is not part of R0/R1 sidecars.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "permission_commit_reauthorization"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Review permission and commit reauthorization anchors in R2.",
+      "id": "gate.permission_commit_reauthorization",
+      "rationale": "Permission and commit-time reauthorization semantics require service review.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "tenant_relationship_invariants"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Review tenant predicates and relationship invariants in R2.",
+      "id": "gate.tenant_relationship_invariants",
+      "rationale": "Tenant predicates and relationship invariants are not derived structurally.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "model_reads_writes_effects"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Review exact model and effect-sink anchors in R2.",
+      "id": "gate.model_and_effects",
+      "rationale": "Model reads, writes, and local or external effects remain unknown.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "variant_specific_outcomes"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Define and review each variant-specific outcome in R2.",
+      "id": "gate.variant_outcomes",
+      "rationale": "Variant-specific outcomes cannot be proven by entrypoint identity.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "worker_loop_claim_failure_containment"
+      ],
+      "dependencyPhase": "R2",
+      "exitCriteria": "Review worker loop, claim, and failure containment anchors in R2.",
+      "id": "gate.worker_containment",
+      "rationale": "Worker loop, claim, and failure containment semantics are not inferred from wiring.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "browser_immutable_binding_stale_behavior"
+      ],
+      "dependencyPhase": "R3",
+      "exitCriteria": "Complete the separately approved browser binding inventory in R3.",
+      "id": "gate.browser_binding_staleness",
+      "rationale": "Browser immutable binding and stale behavior remain separate inventory work.",
+      "status": "deferred"
+    },
+    {
+      "blockedAxes": [
+        "executable_evidence_strength"
+      ],
+      "dependencyPhase": "R4",
+      "exitCriteria": "Produce fingerprint-bound executable hostile evidence in R4.",
+      "id": "gate.executable_evidence",
+      "rationale": "Executable evidence strength is outside observation-only source delivery.",
+      "status": "deferred"
+    }
+  ],
+  "generatorDigest": "1174ed98879cdbf84824b0cb851528830372269cd633bb9d1abbd914ee2b9df2",
+  "generatorVersion": "r0.1",
+  "observationDigest": "081a071bf68689ec6499bc6f9b6da13f20e274a44310b0640272e739a308fb22",
+  "observationDigestVersion": "normalized-observation.v1",
+  "ownerSetDigest": "8e661d307ba0fe3b1e3d54e53231351dad1cd37feb31410b8890bc6c4b7cb9d7",
+  "ownerSetDigestVersion": "owner-set.v1",
+  "registryDigest": "87c78931db74536a114a7b590f9715fb937616c6e2192e95c3591ff100ce0b0e",
+  "registryDigestVersion": "operation-registry.v1",
+  "runtimeInvocationLedgerDigest": "41a2602e3ef1d341e070d9aeac0a85db31fa25a31b00d8be3718ef82ac0aadd2",
+  "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
+  "schemaDigest": "6076c2a7ba99584f5ccdda10ad54742710843c14fc30e2ca2aafa2b2c5509e9c",
+  "schemaVersion": 1
+}
