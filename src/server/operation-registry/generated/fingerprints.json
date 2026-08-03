@@ -1,0 +1,1779 @@
+{
+  "authority": "observation_only",
+  "declarationDigest": "e6bd2eb6c5490b8103c8662335f0c55d73a1408733456bd2b66a24cf74e3d4af",
+  "declarationDigestVersion": "normalized-declarations.v1",
+  "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
+  "deferredGateRegistryDigestVersion": "deferred-gates.v1",
+  "fingerprints": [
+    {
+      "anchorFiles": [
+        {
+          "digest": "10c2c52bdd4f668ec995873c86a251de210bad8177c8cdb01ffe8a19b9563a13",
+          "file": "src/app/api/activities/[id]/route.ts"
+        }
+      ],
+      "declarationDigest": "3f39d49d644b0d100827156e2692eb576ed1b384eab26d30813029cfbd80015c",
+      "fingerprint": "afb05b77dd5edd11b93a547a50f858ef25e1002c01ccde954c0b60ca0ed30cc6",
+      "id": "fingerprint:api_route:src/app/api/activities/[id]/route.ts",
+      "ownerId": "api_route:src/app/api/activities/[id]/route.ts",
+      "ownerModule": "src/app/api/activities/[id]/route.ts",
+      "sidecarPath": "src/app/api/activities/[id]/route.operation.ts",
+      "sourceDigest": "69da787306036c08c53e41be4e9a254ae2f5db89c4add5a6c25be7b3e9b04c63",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "8b03bd3e8d9ba780561837174fc2c882b3f6a951dd3a1c7bdbede19f9ac7a44d",
+          "file": "src/app/api/activities/route.ts"
+        }
+      ],
+      "declarationDigest": "6a40916b629028ca9fd297e2cf579eeef9e24bbd38bcb01f7b15e7bc9d02d2bb",
+      "fingerprint": "c21b4ecf5ed1a90eba4066a1362a59d5c3894e6ccc8930053eaa1225dc499bc0",
+      "id": "fingerprint:api_route:src/app/api/activities/route.ts",
+      "ownerId": "api_route:src/app/api/activities/route.ts",
+      "ownerModule": "src/app/api/activities/route.ts",
+      "sidecarPath": "src/app/api/activities/route.operation.ts",
+      "sourceDigest": "5db894740cde880bb5a9d640c5f22e61c9919566c0787e3cff9505e68709ba47",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a950c7a57465c4aafc5907208781651590e81bc092cfc6c306c2aee096dde95e",
+          "file": "src/app/api/activities/undo-last/route.ts"
+        }
+      ],
+      "declarationDigest": "b56d5decc76cac6bd93982537471bf1619e8494246cc203dd06ee6d0a65b1209",
+      "fingerprint": "5918e8c6357c55fe8dcd9eaa7b3513282d3dad7ff658211e76922d43239b4cd0",
+      "id": "fingerprint:api_route:src/app/api/activities/undo-last/route.ts",
+      "ownerId": "api_route:src/app/api/activities/undo-last/route.ts",
+      "ownerModule": "src/app/api/activities/undo-last/route.ts",
+      "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts",
+      "sourceDigest": "a945fa8968ecebe3144441d3efe7a0a3da4d8dc1296e316b366c964435a1e7f9",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "376b47f76a3f6dc109d777e9e241ee4f8ab45108f7a66dd28233e581024684c3",
+          "file": "src/app/api/auth/[...all]/route.ts"
+        }
+      ],
+      "declarationDigest": "d95761afc992b0d0cbe552e194004922d158c91901609afef85f9f96ecf7973e",
+      "fingerprint": "f1334b61a28044fdfa1aae1c7d1b52e915701bafa79fd94d33dcf13857c862eb",
+      "id": "fingerprint:api_route:src/app/api/auth/[...all]/route.ts",
+      "ownerId": "api_route:src/app/api/auth/[...all]/route.ts",
+      "ownerModule": "src/app/api/auth/[...all]/route.ts",
+      "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts",
+      "sourceDigest": "e7100f3a56d15e94987da5d18f42d4d3f1a929d72fc0de753158de87ee65eb66",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a67918c171b25b209ae4b03603941c0162c69e65ed0c475bcd4af751055db256",
+          "file": "src/app/api/babies/[id]/deactivate/route.ts"
+        }
+      ],
+      "declarationDigest": "988455e9bf2845c6ae48ecd6e32de30cb1049a1244f440d0ab139b447939adfc",
+      "fingerprint": "20f7245b5451dc86c712f8697fdc64d1804253728636a4cda028e49fe20998f1",
+      "id": "fingerprint:api_route:src/app/api/babies/[id]/deactivate/route.ts",
+      "ownerId": "api_route:src/app/api/babies/[id]/deactivate/route.ts",
+      "ownerModule": "src/app/api/babies/[id]/deactivate/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts",
+      "sourceDigest": "9e1cb90a76b606952ac86ba0c4b627e95ed510a49aedb634f84b2101b1877cd5",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "257aacc1c47050cbdf10569d88fe6e16618f8ba79bf8c893f92e2d5cb51831cc",
+          "file": "src/app/api/babies/[id]/reactivate/route.ts"
+        }
+      ],
+      "declarationDigest": "cc9c346e1bc267e5c3d9d396a72c9d18b39475d380575b8a5e5bfd172c4c7a13",
+      "fingerprint": "80f768b9b6e51fcbf6061c1698fa687d608b599d230630791268a2ff542a0899",
+      "id": "fingerprint:api_route:src/app/api/babies/[id]/reactivate/route.ts",
+      "ownerId": "api_route:src/app/api/babies/[id]/reactivate/route.ts",
+      "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts",
+      "sourceDigest": "6a307cf1a8dc1dc0cddaf608dcddaee53e17364da73379d40df990c9cc6533f6",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "6448f70d0a6f9114a2deb87238c6e088274bbc2c5522d0960a91d1d76091a970",
+          "file": "src/app/api/babies/route.ts"
+        }
+      ],
+      "declarationDigest": "05489938090b5eaae1d1cb77dc886c6f3e7c31bb188877c3cd98821549da9941",
+      "fingerprint": "5ace1a170f22b69a3941b2db4ff0cc2e1c372eab518a082b91ae11003ae49cca",
+      "id": "fingerprint:api_route:src/app/api/babies/route.ts",
+      "ownerId": "api_route:src/app/api/babies/route.ts",
+      "ownerModule": "src/app/api/babies/route.ts",
+      "sidecarPath": "src/app/api/babies/route.operation.ts",
+      "sourceDigest": "522a9354ba1500a830bf18bbdefc069e192389d83fb45c49fce72018a7f13c78",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "1e9c7493594ca2c8a411aaec5142fdc4d4d666651f9d27ddf51e54120bc9f8f4",
+          "file": "src/app/api/backups/export/route.ts"
+        }
+      ],
+      "declarationDigest": "9476937b078a231d60e0890a6ad18fbfd0ec8944ba2559abcbe7ec1a787b29de",
+      "fingerprint": "eed0f1df260b421910329746831dd31367591e2804a3e462cffc86b4892ea442",
+      "id": "fingerprint:api_route:src/app/api/backups/export/route.ts",
+      "ownerId": "api_route:src/app/api/backups/export/route.ts",
+      "ownerModule": "src/app/api/backups/export/route.ts",
+      "sidecarPath": "src/app/api/backups/export/route.operation.ts",
+      "sourceDigest": "b938cfbc01b2c77666818582faf5baa8fde5f9ef6d97e19eb77722d423decf85",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "ee1310500ccaf50c1bcbd7a04889104bc1bfaed0291f1deefb52118d3f494302",
+          "file": "src/app/api/backups/local/[filename]/route.ts"
+        }
+      ],
+      "declarationDigest": "ed70c684f4b6e3e30595a7ccae888ec27464a44506c531e63bff607a34eb3503",
+      "fingerprint": "2ecef1bb28e3648e84d7d83ba7ddc18218324268aa03eaa48dacfbab52a4d974",
+      "id": "fingerprint:api_route:src/app/api/backups/local/[filename]/route.ts",
+      "ownerId": "api_route:src/app/api/backups/local/[filename]/route.ts",
+      "ownerModule": "src/app/api/backups/local/[filename]/route.ts",
+      "sidecarPath": "src/app/api/backups/local/[filename]/route.operation.ts",
+      "sourceDigest": "b925197be957b9d6914f585adf03b23a3a70b66aff1c621d1d05a0616fda17d9",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c3ee07a9d43e1775fb796ed53f08eccade3134b7a75c965df3b1938682faeff8",
+          "file": "src/app/api/backups/restore/preview/route.ts"
+        }
+      ],
+      "declarationDigest": "6483f48a49c609037a67b4cfeeb003ac40986ea8c81097385e320ddeee9129b3",
+      "fingerprint": "892db99dc591f95aed4c6bccb4c27df463a1fcb928be1ae8cfcdcff5ea73acb7",
+      "id": "fingerprint:api_route:src/app/api/backups/restore/preview/route.ts",
+      "ownerId": "api_route:src/app/api/backups/restore/preview/route.ts",
+      "ownerModule": "src/app/api/backups/restore/preview/route.ts",
+      "sidecarPath": "src/app/api/backups/restore/preview/route.operation.ts",
+      "sourceDigest": "e7696344feaee132d68737092a47b0346e74d5cb7207bb6fe8c9336479bf47ab",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c6bb0826707bff3a2bba28b2e7bea5d99aae17f6e1356a0e7efbecdb81f61add",
+          "file": "src/app/api/backups/restore/route.ts"
+        }
+      ],
+      "declarationDigest": "bf9900c0ce497e93bc409533d4a11e2f888f6ffafdeadd1c00e69f259207f52a",
+      "fingerprint": "6cfb7f462691409975e89fbfa130160b4abbff1f5b04133cb1255e73dd162e31",
+      "id": "fingerprint:api_route:src/app/api/backups/restore/route.ts",
+      "ownerId": "api_route:src/app/api/backups/restore/route.ts",
+      "ownerModule": "src/app/api/backups/restore/route.ts",
+      "sidecarPath": "src/app/api/backups/restore/route.operation.ts",
+      "sourceDigest": "e843b37bb6ac12e4ed4c420e5f7abacc5425a7e0e027c84c133cbecf0e4967d4",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "72cdb2adb0bc596927e81f683b6789af38ca33a48920f6b89bff0e9ea2205485",
+          "file": "src/app/api/backups/route.ts"
+        }
+      ],
+      "declarationDigest": "0e3897a6460fe85393713bbb9f410c63ca7ddc7a47dcb20ba33cdb501e4cb9d0",
+      "fingerprint": "7fd8e0576bfc8c53bb64680c9b518b33591c588116c1b021009d83e3d6980b0d",
+      "id": "fingerprint:api_route:src/app/api/backups/route.ts",
+      "ownerId": "api_route:src/app/api/backups/route.ts",
+      "ownerModule": "src/app/api/backups/route.ts",
+      "sidecarPath": "src/app/api/backups/route.operation.ts",
+      "sourceDigest": "2dc3aa17c6b65313ed868c43b282070485bab03495de1df9d6fb73ae8781583c",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "538a7a31a25d033fb7e1d1017fd049f4781a01083102fceb88bce8628ae3707d",
+          "file": "src/app/api/backups/sprout/import/route.ts"
+        }
+      ],
+      "declarationDigest": "c2c215b0adf9bedd7feb25cf8b4316939686a683a2ba6b9120e126277938adcb",
+      "fingerprint": "f07b24373857ca9b4eb27c084ccac9a1b7d4f8c2fcb55c434fd938b1364f0019",
+      "id": "fingerprint:api_route:src/app/api/backups/sprout/import/route.ts",
+      "ownerId": "api_route:src/app/api/backups/sprout/import/route.ts",
+      "ownerModule": "src/app/api/backups/sprout/import/route.ts",
+      "sidecarPath": "src/app/api/backups/sprout/import/route.operation.ts",
+      "sourceDigest": "730ff86df7a092f55b0bdaa1923f7d317319e47ceff458b64542bfed1264f049",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c9f492924d848aa51891eee838bc8ccd5e28f1fa5f3cf040698eb3294c271666",
+          "file": "src/app/api/backups/sprout/preview/route.ts"
+        }
+      ],
+      "declarationDigest": "0a6d6e7fd241439b4e88df781561440cbdf6c6a99271b37deefcadbe786027c0",
+      "fingerprint": "99fb8d6b2447766869a17f1ac893ba895ef9a35501a742b939b88733be070bea",
+      "id": "fingerprint:api_route:src/app/api/backups/sprout/preview/route.ts",
+      "ownerId": "api_route:src/app/api/backups/sprout/preview/route.ts",
+      "ownerModule": "src/app/api/backups/sprout/preview/route.ts",
+      "sidecarPath": "src/app/api/backups/sprout/preview/route.operation.ts",
+      "sourceDigest": "1bdeb0a7dd205954c81edf76816b3a260764cc6d8108cd8349c8a6792c45367a",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "ca89fa3ccf9f4db2f4fe5b309935e47926eeef1a87d8055cfff67f407902f8bc",
+          "file": "src/app/api/dashboard/warnings/dismiss/route.ts"
+        }
+      ],
+      "declarationDigest": "ee8db6cf59088f63f0a7351281d3118f167b89d16f62956e575bee32e0e979e4",
+      "fingerprint": "86dce2c9c67e7dd0063bf28425c215695740bbdaf2f93e70111ce886953187fe",
+      "id": "fingerprint:api_route:src/app/api/dashboard/warnings/dismiss/route.ts",
+      "ownerId": "api_route:src/app/api/dashboard/warnings/dismiss/route.ts",
+      "ownerModule": "src/app/api/dashboard/warnings/dismiss/route.ts",
+      "sidecarPath": "src/app/api/dashboard/warnings/dismiss/route.operation.ts",
+      "sourceDigest": "cba77bfc1e3570458c58a9558daa90596a0f8d854f6aaa38bdb98af57589922c",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "af615a11b34cba83d879762b093b98c2f36176abce131aa29a34c24dad01e1c8",
+          "file": "src/app/api/export/activities.csv/route.ts"
+        }
+      ],
+      "declarationDigest": "7bdfd69a5ce2710d6312a9130b012266a74683467c69f8afdddfe879758045ac",
+      "fingerprint": "d9476d35f80b549ac15ee2e2cd7e24b72c3e82c223c9d445aef0036cb5a5bea0",
+      "id": "fingerprint:api_route:src/app/api/export/activities.csv/route.ts",
+      "ownerId": "api_route:src/app/api/export/activities.csv/route.ts",
+      "ownerModule": "src/app/api/export/activities.csv/route.ts",
+      "sidecarPath": "src/app/api/export/activities.csv/route.operation.ts",
+      "sourceDigest": "fc163956fb70a03be5749299919e6e7483f20f4370e13b2be0ad6e102cb119c9",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "2e7d348190cbb1b9f5c3f8d4c7a253a673e0416521bf716154839e7ae497e5d8",
+          "file": "src/app/api/export/activities.tsv/route.ts"
+        }
+      ],
+      "declarationDigest": "a039c6fa2c90f229bc88faf9465bdaf7203c481d74e0ac2668823606f64915c4",
+      "fingerprint": "dbdfee0767784d704b75115bd0031dc2fe17294e0603d9e6e3b881505eb9abe3",
+      "id": "fingerprint:api_route:src/app/api/export/activities.tsv/route.ts",
+      "ownerId": "api_route:src/app/api/export/activities.tsv/route.ts",
+      "ownerModule": "src/app/api/export/activities.tsv/route.ts",
+      "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts",
+      "sourceDigest": "2531adfe6182881cd61c74a45196c6ecfb70496c2aa473767b30f2dbdc2ce3ac",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "e031654c60031753c9e8be5dd56dfaffc62396a781f5be51d4667bafb7891088",
+          "file": "src/app/api/health/route.ts"
+        }
+      ],
+      "declarationDigest": "8a7501d7a1219d47f441979f2602862ac7f5adbbd1762a5c876749b9d5d75be5",
+      "fingerprint": "0316d9a70e7469bd4cf4fce7058769b50871678f607f2b4ec356cc460f00d150",
+      "id": "fingerprint:api_route:src/app/api/health/route.ts",
+      "ownerId": "api_route:src/app/api/health/route.ts",
+      "ownerModule": "src/app/api/health/route.ts",
+      "sidecarPath": "src/app/api/health/route.operation.ts",
+      "sourceDigest": "19fb0d9cc903c58f909ee1e3ff478eabff4a13ad81fd363992d9edc7f8bc08c7",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "38e65263a96d9c2db95d05f5250c578fc9a6a2f83820b33838b7a1cb64fa08a7",
+          "file": "src/app/api/hooks/v1/babies/[babyId]/activities/route.ts"
+        }
+      ],
+      "declarationDigest": "00762d56e56f8fb052b3474872e18f8e9eec68504520f4af468a60077cea0ad6",
+      "fingerprint": "c5f3e2eea64b6b4e5753d7605ecaf0c6b6f0913a7dcccb95999f6cc6898080ca",
+      "id": "fingerprint:api_route:src/app/api/hooks/v1/babies/[babyId]/activities/route.ts",
+      "ownerId": "api_route:src/app/api/hooks/v1/babies/[babyId]/activities/route.ts",
+      "ownerModule": "src/app/api/hooks/v1/babies/[babyId]/activities/route.ts",
+      "sidecarPath": "src/app/api/hooks/v1/babies/[babyId]/activities/route.operation.ts",
+      "sourceDigest": "b7e9160651840ff87d7d1f74e91e6824ded44a24a1235b66613c9e827b5520c9",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "3505556ec6b64dd08aeac60d80dadc1e7017a2b1c17189c1b79c404f34b9db0e",
+          "file": "src/app/api/hooks/v1/babies/[babyId]/measurements/latest/route.ts"
+        }
+      ],
+      "declarationDigest": "83122add628686035259be867482295d1b103f1569de6e73efea9d5a4cc29124",
+      "fingerprint": "d827abeb967ec480966dd91bd81d5969c315685fd678448b459c2e487e1a03e2",
+      "id": "fingerprint:api_route:src/app/api/hooks/v1/babies/[babyId]/measurements/latest/route.ts",
+      "ownerId": "api_route:src/app/api/hooks/v1/babies/[babyId]/measurements/latest/route.ts",
+      "ownerModule": "src/app/api/hooks/v1/babies/[babyId]/measurements/latest/route.ts",
+      "sidecarPath": "src/app/api/hooks/v1/babies/[babyId]/measurements/latest/route.operation.ts",
+      "sourceDigest": "63396989af1c18ca652d4682a2cf6740c24637dba3fd0e078a97884f1a142dcb",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "4b23f81d11c6085b2209ba1176244ded7b97eaf182542fbf7b4a063465e4cbd1",
+          "file": "src/app/api/hooks/v1/babies/[babyId]/reference/route.ts"
+        }
+      ],
+      "declarationDigest": "c6d7d3143e31ccd9bced1104fda61f9999d2d9f514d3b52a85a31ea89d1cfacf",
+      "fingerprint": "e9d20cb10478f4d73bcb72440fedb6a718e1e5d3032956e63c1ebffd4c112f20",
+      "id": "fingerprint:api_route:src/app/api/hooks/v1/babies/[babyId]/reference/route.ts",
+      "ownerId": "api_route:src/app/api/hooks/v1/babies/[babyId]/reference/route.ts",
+      "ownerModule": "src/app/api/hooks/v1/babies/[babyId]/reference/route.ts",
+      "sidecarPath": "src/app/api/hooks/v1/babies/[babyId]/reference/route.operation.ts",
+      "sourceDigest": "00219b81d554401ab3f6c46e5f30b3d27b47c612dd5c328e0efc2a521de64561",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a956d2906c3accf06b8c67a120330232818dd3fedf96b25eb1e2d8a347f34b4f",
+          "file": "src/app/api/hooks/v1/babies/[babyId]/status/route.ts"
+        }
+      ],
+      "declarationDigest": "01135883c755b052eea10ecb8acfb5578839ed1aa13904cf10105ad81e437ed5",
+      "fingerprint": "a706b58932bf336d1a92ec1dbacfd2eda3549628548a5d5271f6fbc44ef760d4",
+      "id": "fingerprint:api_route:src/app/api/hooks/v1/babies/[babyId]/status/route.ts",
+      "ownerId": "api_route:src/app/api/hooks/v1/babies/[babyId]/status/route.ts",
+      "ownerModule": "src/app/api/hooks/v1/babies/[babyId]/status/route.ts",
+      "sidecarPath": "src/app/api/hooks/v1/babies/[babyId]/status/route.operation.ts",
+      "sourceDigest": "a2d56704d8612e4eefd5b7f4dc859d499db07a473ceb54e49e806a562ea43eb5",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "3fb3d090edb18f61ab02f42df49aa3d483ee75e3fe96da7ce291f925c1120649",
+          "file": "src/app/api/hooks/v1/babies/route.ts"
+        }
+      ],
+      "declarationDigest": "015a5da815e591b5775fe1198a781b97f50edfc7869a5328a6db66a08a2c557e",
+      "fingerprint": "5b8f4e7e053939d0f6a8d80319d27b406158b29134e6b7779f50366fce75ae32",
+      "id": "fingerprint:api_route:src/app/api/hooks/v1/babies/route.ts",
+      "ownerId": "api_route:src/app/api/hooks/v1/babies/route.ts",
+      "ownerModule": "src/app/api/hooks/v1/babies/route.ts",
+      "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts",
+      "sourceDigest": "307b6e27e710b3902747e2cb2b90001233af4f36f0c2a943e307b22dd893ae8a",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "647a4d26ad9704783402acd406b13699cfabe8decac29c4e10db67cdc7d20e04",
+          "file": "src/app/api/households/leave/route.ts"
+        }
+      ],
+      "declarationDigest": "7d55010f1bcf62b7102f5a7bd8d1d556ae41a09ffe0ff2d4d27e0876f2ed9bef",
+      "fingerprint": "4e428dcbe76bd0cd5a23ee3968eec2125f7dd6f1e21654f7eff585fa0f5fe4fc",
+      "id": "fingerprint:api_route:src/app/api/households/leave/route.ts",
+      "ownerId": "api_route:src/app/api/households/leave/route.ts",
+      "ownerModule": "src/app/api/households/leave/route.ts",
+      "sidecarPath": "src/app/api/households/leave/route.operation.ts",
+      "sourceDigest": "d08bc466b13f9ed9c88218c9f690c9d43d014e54c20eeac0deb8c85e5481aa2f",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "5b9e08ef570eb35921ba60198d9e98ef379ab55e54a2e57682d7172517736412",
+          "file": "src/app/api/invites/[token]/accept/route.ts"
+        }
+      ],
+      "declarationDigest": "3e90dd113d3b0484998e37fac95d20d488e08a64cfcdacb701ffb63446ae2596",
+      "fingerprint": "0e40b075c619f92b0ced0620a61da40996f1ec2a288d2a84e59aa97c14c74563",
+      "id": "fingerprint:api_route:src/app/api/invites/[token]/accept/route.ts",
+      "ownerId": "api_route:src/app/api/invites/[token]/accept/route.ts",
+      "ownerModule": "src/app/api/invites/[token]/accept/route.ts",
+      "sidecarPath": "src/app/api/invites/[token]/accept/route.operation.ts",
+      "sourceDigest": "a8ea15db1d332b5f6718a5c91538cd89dc2847e922269424b9766fca198eba5e",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c32192afed6c16709739e4889b870fdfb6bd71ac15177fbb0bbbd9f2219dd8d4",
+          "file": "src/app/api/invites/[token]/revoke/route.ts"
+        }
+      ],
+      "declarationDigest": "f77fefddc2878059d4dd7439d0469a755596278676e9981cac9cdc1165fe1add",
+      "fingerprint": "12be356e40eb2ab990de360b93e58887cc405989a394ec680df67a652f5d8b72",
+      "id": "fingerprint:api_route:src/app/api/invites/[token]/revoke/route.ts",
+      "ownerId": "api_route:src/app/api/invites/[token]/revoke/route.ts",
+      "ownerModule": "src/app/api/invites/[token]/revoke/route.ts",
+      "sidecarPath": "src/app/api/invites/[token]/revoke/route.operation.ts",
+      "sourceDigest": "a84ed54707ea06b5279b33c74becb531f24b9769c0a7c1612734ba8ee8915bf6",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a88aa7193c3d9eb5d43525a0eb61a0981e8777ffcab44afac94fe2517534805b",
+          "file": "src/app/api/invites/revoke-all/route.ts"
+        }
+      ],
+      "declarationDigest": "5ef801454d511786146e8be9da3aab2729147fafee0e75370b7447e9ab6abe90",
+      "fingerprint": "fd0c084e9af2d19c2937027db6cd4a5e3318ee4b68f119d557deeeebb5e5276b",
+      "id": "fingerprint:api_route:src/app/api/invites/revoke-all/route.ts",
+      "ownerId": "api_route:src/app/api/invites/revoke-all/route.ts",
+      "ownerModule": "src/app/api/invites/revoke-all/route.ts",
+      "sidecarPath": "src/app/api/invites/revoke-all/route.operation.ts",
+      "sourceDigest": "44ee11f05ff7266ca8613a072ec9b45d8e1cc2a153fc55ed91072eb672fc3db0",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c10e4425732bb652c984ac099ec8693e76f9c7164dd2ad4456d391fb353fc940",
+          "file": "src/app/api/invites/route.ts"
+        }
+      ],
+      "declarationDigest": "6d3304051de9de3214b6b8b8883b891cea293202c7d6f7d37eb7fce6a2e42f48",
+      "fingerprint": "d0d873bdeb13269d528cf9a6eef3098f746097f11ff64cd77ce015b10190ebdb",
+      "id": "fingerprint:api_route:src/app/api/invites/route.ts",
+      "ownerId": "api_route:src/app/api/invites/route.ts",
+      "ownerModule": "src/app/api/invites/route.ts",
+      "sidecarPath": "src/app/api/invites/route.operation.ts",
+      "sourceDigest": "5be4e6f0399009a32224315baf0dec749cfa417b6458e6488c012edd3850d4b5",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "985490ea64ad0b4eb235981500a7f33cd0313b19bb94bd8ea6935425b20406be",
+          "file": "src/app/api/members/[id]/restore/route.ts"
+        }
+      ],
+      "declarationDigest": "423cc2d7d6e944fb5d0d6d7623d0f63053d4b632b4a2811713e29cf1781fc3c4",
+      "fingerprint": "5cdc2581e95e4e3b08d4609f404bca32885b20c405603bf37913040b22a8c78d",
+      "id": "fingerprint:api_route:src/app/api/members/[id]/restore/route.ts",
+      "ownerId": "api_route:src/app/api/members/[id]/restore/route.ts",
+      "ownerModule": "src/app/api/members/[id]/restore/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/restore/route.operation.ts",
+      "sourceDigest": "0d80012c1b3f55301a12c61211aa337ca305e1ed3ffd97705ad289e1d0c8156c",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "dbc2814c5c06cb68a31a570a670ee0c8a56c2da53f8533d3dcf529cc2bb92a09",
+          "file": "src/app/api/members/[id]/route.ts"
+        }
+      ],
+      "declarationDigest": "07bc93dcc0bc283e6d0c1bb1bf6096991121afbef925101481dc16777879796c",
+      "fingerprint": "b1c9716cffb57193654ee2e68a5db80321866f68fea920d2acbce05829fb57c9",
+      "id": "fingerprint:api_route:src/app/api/members/[id]/route.ts",
+      "ownerId": "api_route:src/app/api/members/[id]/route.ts",
+      "ownerModule": "src/app/api/members/[id]/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/route.operation.ts",
+      "sourceDigest": "77def7d2d822a751565fdad08b4d2b5983c1771538ebb78e6fab35674b1751e1",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "2973e43ca311b999c8ec590d109281233160f82cb180f513577e5c815d2254d8",
+          "file": "src/app/api/members/[id]/suspend/route.ts"
+        }
+      ],
+      "declarationDigest": "f33ecd7ea31e98cb23c856dacb2cd3a1c88f8ef92c6b96e1ea509182d59d74e2",
+      "fingerprint": "d8b99b798aa8b8f27c2a0b185f1dd099ae18cce2463abb8d3104fbb14d44f5bd",
+      "id": "fingerprint:api_route:src/app/api/members/[id]/suspend/route.ts",
+      "ownerId": "api_route:src/app/api/members/[id]/suspend/route.ts",
+      "ownerModule": "src/app/api/members/[id]/suspend/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts",
+      "sourceDigest": "ae8735bdc00b352da0bb4c5a212fa91a132b4cc996135ddd84eaf3ac36dbfae0",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "aed5135c9779fcd0d71b0a943ff2fcdda70aa7ece574965366a42f07187ff8f9",
+          "file": "src/app/api/notifications/preferences/route.ts"
+        }
+      ],
+      "declarationDigest": "8d822e649a81bb64b2bfb61d51249e468930bb23e58f2239ab0d0aab48e15f33",
+      "fingerprint": "d0e2dac91e2575833e3c2fc36cd1a4884d017603fb9129f4784cf321eda82b18",
+      "id": "fingerprint:api_route:src/app/api/notifications/preferences/route.ts",
+      "ownerId": "api_route:src/app/api/notifications/preferences/route.ts",
+      "ownerModule": "src/app/api/notifications/preferences/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/route.operation.ts",
+      "sourceDigest": "82d78e2f886237e6b4d35fe114404a7a82d7b86af2b0afefdf1263b0d7fa86cb",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "61d79ab9ae887ef96a4113846b6f0679826e29d39fc88725899a9bc673cb7798",
+          "file": "src/app/api/notifications/subscribe/route.ts"
+        }
+      ],
+      "declarationDigest": "40db681e5fbde3a7eb538234a01732bbb1bd5c3c7e7e0e53b156a3774edc9f70",
+      "fingerprint": "31aeed9ec550ce7cb5821023e918411041392c28c61b258bdac55f47b1b891a5",
+      "id": "fingerprint:api_route:src/app/api/notifications/subscribe/route.ts",
+      "ownerId": "api_route:src/app/api/notifications/subscribe/route.ts",
+      "ownerModule": "src/app/api/notifications/subscribe/route.ts",
+      "sidecarPath": "src/app/api/notifications/subscribe/route.operation.ts",
+      "sourceDigest": "bbd066c55c1106e6ef6725f94b4bb51eceb2f0aeeb0475bcce58a88308a3d6b9",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c64c37d8140539bfa5d442cb5a8e45092f1fdb29ba895aed033c15b121056143",
+          "file": "src/app/api/onboarding/route.ts"
+        }
+      ],
+      "declarationDigest": "c6b8ad97cf146be1524f8c53205422ec129e11b94a34f482e9e7f8c6271e3914",
+      "fingerprint": "8f874f2d27e8ef84439f7e4903eae584b5bb5753f8780c310692a6813d12dd6c",
+      "id": "fingerprint:api_route:src/app/api/onboarding/route.ts",
+      "ownerId": "api_route:src/app/api/onboarding/route.ts",
+      "ownerModule": "src/app/api/onboarding/route.ts",
+      "sidecarPath": "src/app/api/onboarding/route.operation.ts",
+      "sourceDigest": "bbbd6d6ad8b1728bfa3888fe0e8d98a6ab4122b74503d2adc99e78b10c808167",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "ab9a6f03888c17de1f091dea7e441c81f4f6785983a000f3331ee62d38166cad",
+          "file": "src/app/api/platform/registration/route.ts"
+        }
+      ],
+      "declarationDigest": "85a9b3fd3be7801ec4e3d467ba6f3ee30d529007247c322db6d8942e83e00925",
+      "fingerprint": "e88d76b932b881e0723f21737a898b57d188bc11d5d545f30889594bf07daf59",
+      "id": "fingerprint:api_route:src/app/api/platform/registration/route.ts",
+      "ownerId": "api_route:src/app/api/platform/registration/route.ts",
+      "ownerModule": "src/app/api/platform/registration/route.ts",
+      "sidecarPath": "src/app/api/platform/registration/route.operation.ts",
+      "sourceDigest": "ba12ccc1e560cf9a9461f498b2c2fdeab2476ee1676afa512938b95daeb29824",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "fb05015ec9bdbdce2ac9b2176cb3defa698ea581351143e7fbe797986b04cf8b",
+          "file": "src/app/api/settings/api-keys/[id]/revoke/route.ts"
+        }
+      ],
+      "declarationDigest": "801e996e9117f9af29c9f15e4f6a8d13ccebc473693f029996c8d3c4bd74ed21",
+      "fingerprint": "65faacbde573c9652177bf0b193fbc643f789c0e02c2e7426ef155f8f8a9e1b9",
+      "id": "fingerprint:api_route:src/app/api/settings/api-keys/[id]/revoke/route.ts",
+      "ownerId": "api_route:src/app/api/settings/api-keys/[id]/revoke/route.ts",
+      "ownerModule": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
+      "sidecarPath": "src/app/api/settings/api-keys/[id]/revoke/route.operation.ts",
+      "sourceDigest": "db4a33308070007b0b0b43ca73b5cbd32a4525e86b2e454b6baec54ca0c3807b",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "d12ce692284bf1c25fc035660ae1ff81cfc5feec64e689e7c8c67002c161abc9",
+          "file": "src/app/api/settings/api-keys/route.ts"
+        }
+      ],
+      "declarationDigest": "b7ef7fb3131798ce834c7b1ad6c60616c833f9023f8f778df41285d967331fd5",
+      "fingerprint": "81aab6ca82bb4cdb1c8d0770c9c1197dfbf01479c2dad8c7a38d78438572c47f",
+      "id": "fingerprint:api_route:src/app/api/settings/api-keys/route.ts",
+      "ownerId": "api_route:src/app/api/settings/api-keys/route.ts",
+      "ownerModule": "src/app/api/settings/api-keys/route.ts",
+      "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts",
+      "sourceDigest": "a2400cb6d42a7cd38d30b914c70be28ebfd15b4c02fb53b396e7920ea4f1ef87",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "cf6a3e39c8d1466ecc63b088bb7c2e90767127df65f51723c28d609af13f1b04",
+          "file": "src/app/api/settings/appearance/route.ts"
+        }
+      ],
+      "declarationDigest": "40f174294e8f4b6136df48d153436bef42e6e78a2d88e6946d778c1492a826d3",
+      "fingerprint": "3a7f482a880f2d3412bdd7b927d4ba96d2eb040dbefbb619f1efe6ff7ac91d47",
+      "id": "fingerprint:api_route:src/app/api/settings/appearance/route.ts",
+      "ownerId": "api_route:src/app/api/settings/appearance/route.ts",
+      "ownerModule": "src/app/api/settings/appearance/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/route.operation.ts",
+      "sourceDigest": "ffa470a9f0b6af7e7df6f43ae30aa97056596aeec2a21fdc715e5964cf75b800",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "ab9a6f03888c17de1f091dea7e441c81f4f6785983a000f3331ee62d38166cad",
+          "file": "src/app/api/platform/registration/route.ts"
+        },
+        {
+          "digest": "7b8ae1a56fcde3e58c0293a7943542ea29a12154bf327cd0f0466c583ffdc9bb",
+          "file": "src/app/api/settings/registration/route.ts"
+        }
+      ],
+      "declarationDigest": "a8ed0f2f1dc648b2fd98989a156aa6ba6111d9df17d05c54093850aab861cd2a",
+      "fingerprint": "ce92ef873a8b1e8598dc722ba8343cc66bea2c8c0e23dd3ea34ef0e1189a1921",
+      "id": "fingerprint:api_route:src/app/api/settings/registration/route.ts",
+      "ownerId": "api_route:src/app/api/settings/registration/route.ts",
+      "ownerModule": "src/app/api/settings/registration/route.ts",
+      "sidecarPath": "src/app/api/settings/registration/route.operation.ts",
+      "sourceDigest": "e2e9c97fb4663a53980435388fb04c88aeb9d9523fd829f0436152f0e7dd48de",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "e369b0ba999f974401b56a60462f1aa0b810ad540d496bc2e78c2e69e57f158a",
+          "file": "src/app/api/settings/units/route.ts"
+        }
+      ],
+      "declarationDigest": "79a56b7f4281c2d5a07c9c80b6eafabeeb2a014b5b342ee954079d87e6329cf4",
+      "fingerprint": "4bf560dd2e4dfd09793587476b0cacfc790f93d0a27b34f6c3b40ca2091f8017",
+      "id": "fingerprint:api_route:src/app/api/settings/units/route.ts",
+      "ownerId": "api_route:src/app/api/settings/units/route.ts",
+      "ownerModule": "src/app/api/settings/units/route.ts",
+      "sidecarPath": "src/app/api/settings/units/route.operation.ts",
+      "sourceDigest": "5f21b7b385b619532d8c11d51f5789ef703197ebdd88154f1c0072f122dc5690",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "01fec23b2aca04f9b9c92bed765d632c026a7fa5efc1f468c9573698d95bc223",
+          "file": "src/app/api/settings/webhooks/[id]/route.ts"
+        }
+      ],
+      "declarationDigest": "1de724144ad9e1f7e52a797387128487d591503f59b13e4bbe0be0f9136c346e",
+      "fingerprint": "d4ec0661a7ffa36c023a71eb06c80e3be519a728038abab18899a457ea2666bd",
+      "id": "fingerprint:api_route:src/app/api/settings/webhooks/[id]/route.ts",
+      "ownerId": "api_route:src/app/api/settings/webhooks/[id]/route.ts",
+      "ownerModule": "src/app/api/settings/webhooks/[id]/route.ts",
+      "sidecarPath": "src/app/api/settings/webhooks/[id]/route.operation.ts",
+      "sourceDigest": "cbdaf574afadccfcb0ddbc4208b20b4163ea89bb80982407e7b66a7acec51216",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "9b58c15f7e6ee9592a4a9fbf0dd562a1a71fa3a76360721a19f9cd5166ed1bc8",
+          "file": "src/app/api/settings/webhooks/route.ts"
+        }
+      ],
+      "declarationDigest": "525eef815270c1b2ba1e14be9d23ed5cd1c92919e5f48e25788c7b3e5d2a779f",
+      "fingerprint": "e4661b9e051f1c6868424b6d4d7efb408d68dc23661237ab476dfcaf85179968",
+      "id": "fingerprint:api_route:src/app/api/settings/webhooks/route.ts",
+      "ownerId": "api_route:src/app/api/settings/webhooks/route.ts",
+      "ownerModule": "src/app/api/settings/webhooks/route.ts",
+      "sidecarPath": "src/app/api/settings/webhooks/route.operation.ts",
+      "sourceDigest": "d341e61049bdda788ae34ee46606918fa328efa5c9355ac71a529fbd5df70d98",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "28a3b18a466134c047d8e4609e6e8c2f17abd10409dc6307a4791c3ba1b6595d",
+          "file": "src/app/api/timers/[id]/pause/route.ts"
+        }
+      ],
+      "declarationDigest": "3040a662a634c8956b0116eaaacf58ccfb84f8922107c1c8a3886ba9b902df85",
+      "fingerprint": "73767a4066276d79533c89b599832514915679fba62e9340648f340f07c3cc41",
+      "id": "fingerprint:api_route:src/app/api/timers/[id]/pause/route.ts",
+      "ownerId": "api_route:src/app/api/timers/[id]/pause/route.ts",
+      "ownerModule": "src/app/api/timers/[id]/pause/route.ts",
+      "sidecarPath": "src/app/api/timers/[id]/pause/route.operation.ts",
+      "sourceDigest": "33017dd3d1924aa8f64a8ac44a3a9a096c2614aa036a194f1c0a33971e2f7bd3",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "87ebcc03c6898ae8d2f5638bd99e86fe0c92f8ae80b265a50ac623115c9e266b",
+          "file": "src/app/api/timers/[id]/resume/route.ts"
+        }
+      ],
+      "declarationDigest": "72f0c81123a21b9626a81e0c69651cb6d0835d5f8d7cc69d74a593de29dd637e",
+      "fingerprint": "dfa952395b5b21dd111dc9ef598655b85395a69e5169311a16197d92d72708de",
+      "id": "fingerprint:api_route:src/app/api/timers/[id]/resume/route.ts",
+      "ownerId": "api_route:src/app/api/timers/[id]/resume/route.ts",
+      "ownerModule": "src/app/api/timers/[id]/resume/route.ts",
+      "sidecarPath": "src/app/api/timers/[id]/resume/route.operation.ts",
+      "sourceDigest": "9236b3fc83abdb862fcf4003df596836ea1c13f36a133f6e9c01dccbf30839ce",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "fd68145564470666762c8d38be644dda21499f92a6859f63dec0f7daf6f218dc",
+          "file": "src/app/api/timers/[id]/stop/route.ts"
+        }
+      ],
+      "declarationDigest": "9b614c30523bf4e5762e7c536f511cfbe4135b3afe4df9d37d261d5007b44e97",
+      "fingerprint": "d327200a4de8b99daa0bc3d318587ac75bc1efd84ce2edd27cc327059a735f6e",
+      "id": "fingerprint:api_route:src/app/api/timers/[id]/stop/route.ts",
+      "ownerId": "api_route:src/app/api/timers/[id]/stop/route.ts",
+      "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
+      "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts",
+      "sourceDigest": "e3291f463d901ddc6a3d8fce1921eaf92a77c95ab4ef0d5c1f9a49c9cab90da1",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "730fa9d45878b2b5ab2565623cdb3f8451785773ca0d51fb8cc9332186789656",
+          "file": "src/app/app/activities/[id]/edit/page.tsx"
+        }
+      ],
+      "declarationDigest": "8f1343ae3639493f39746966897cd3f62df100becad55c4fb7b529673d49225f",
+      "fingerprint": "7694ca8957e0a01ee8e33ce3ed8d876ef57e72532985388890dbb6a8a0816683",
+      "id": "fingerprint:server_loader:src/app/app/activities/[id]/edit/page.tsx",
+      "ownerId": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
+      "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
+      "sidecarPath": "src/app/app/activities/[id]/edit/page.operation.ts",
+      "sourceDigest": "f68bbfa9f07425c98a4e5fbf1f0676682031a03c71a3e64c79a8dfa01a9b65d0",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "6494b6bbce41a1548173ec065274db246eb2feda1138a57dc88f2173282f1771",
+          "file": "src/app/app/activities/[id]/page.tsx"
+        }
+      ],
+      "declarationDigest": "7db689af1701252bff79d689cc65d47d28b401ad8933e95b5f469603025660c1",
+      "fingerprint": "16851c5030fa62156d387be2041752427f887d05423789e71ef5c158d339e51e",
+      "id": "fingerprint:server_loader:src/app/app/activities/[id]/page.tsx",
+      "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
+      "ownerModule": "src/app/app/activities/[id]/page.tsx",
+      "sidecarPath": "src/app/app/activities/[id]/page.operation.ts",
+      "sourceDigest": "f83885841a7c53cfc70a10c42cdaa3b333b4cf4588b3d0703f2b6dcc64c9b255",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "9c3e1fe5d224e485cb5c829afa27f115b3d9fbd295a7d596ff7bef8201484f79",
+          "file": "src/app/app/babies/page.tsx"
+        }
+      ],
+      "declarationDigest": "72a06a540d819b2611a053ff52edf5af3822e1c47ba6b87250310ec9f37c4742",
+      "fingerprint": "c95a4588e50ffe4fbef5def9a00c9f0403ada1a5b3bf0aed9a468f525aa92fb9",
+      "id": "fingerprint:server_loader:src/app/app/babies/page.tsx",
+      "ownerId": "server_loader:src/app/app/babies/page.tsx",
+      "ownerModule": "src/app/app/babies/page.tsx",
+      "sidecarPath": "src/app/app/babies/page.operation.ts",
+      "sourceDigest": "e3b0c511a78c39bfec28d779f63c135969bcf83c8443609dd2107e4fda331e85",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "e918da5a40b96268c0327c73d43fb7e04e85b3183033618f23ba19bea542f108",
+          "file": "src/app/app/calendar/actions.ts"
+        },
+        {
+          "digest": "fd2e69cb6f53c9c5fb96d57ecfee522ee0a0ec778117008cdafb5ef56905a3a0",
+          "file": "src/app/app/calendar/page.tsx"
+        }
+      ],
+      "declarationDigest": "75b569a1465f08036da858fd9f0dd59f9d7d99c163a2ffc265c9b9113dcc59f9",
+      "fingerprint": "c16a23e46caedd2f2a895a00399ed02552620108dce1e969d5e7445e6fc85d82",
+      "id": "fingerprint:server_loader:src/app/app/calendar/page.tsx",
+      "ownerId": "server_loader:src/app/app/calendar/page.tsx",
+      "ownerModule": "src/app/app/calendar/page.tsx",
+      "sidecarPath": "src/app/app/calendar/page.operation.ts",
+      "sourceDigest": "a030747b53c77530959ad9acff3d067ee7cc41cbc7f23096a5463a03f06d71e3",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "d8ddfbb7d74edca8e6c488d4877725e5e2f016cfa530adfb4873808d5106ea24",
+          "file": "src/app/app/history/page.tsx"
+        }
+      ],
+      "declarationDigest": "f54e70404b24e3145631b8f32d9652bb785d9edae4a2815b1d32cf796f851648",
+      "fingerprint": "77a4d7f4c3b4018a20c6d4d1cfd8ea4b34d970b36024c190b8d6b85b258afa31",
+      "id": "fingerprint:server_loader:src/app/app/history/page.tsx",
+      "ownerId": "server_loader:src/app/app/history/page.tsx",
+      "ownerModule": "src/app/app/history/page.tsx",
+      "sidecarPath": "src/app/app/history/page.operation.ts",
+      "sourceDigest": "32b63f67d83291986a6d327e7f1d90e4fd81ae41b774812011775f5c2ea0f95c",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "4b34e0fb0b38540bcf0c2902ebadf3fc997d2e7b56b15a38f9722f9ecebbd9e2",
+          "file": "src/app/app/layout.tsx"
+        }
+      ],
+      "declarationDigest": "1afd6cde548453709a81da36e01db4542a417cc14f29f92ea39d57c9428a291c",
+      "fingerprint": "b699ee6b1026503d44618453c84b37e02e5c096bee5ba906ffdde27b23298550",
+      "id": "fingerprint:server_loader:src/app/app/layout.tsx",
+      "ownerId": "server_loader:src/app/app/layout.tsx",
+      "ownerModule": "src/app/app/layout.tsx",
+      "sidecarPath": "src/app/app/layout.operation.ts",
+      "sourceDigest": "8b5afa6f2eeb5639aa0ce2f28bf2f43e0f0e65f505c05c31f8e5ebfc50d76f8f",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "b0e5adc2bc3f55031c84b110f2d015f043bf2bb8d50bdcdb81b18e425f93a882",
+          "file": "src/app/app/log/[type]/page.tsx"
+        }
+      ],
+      "declarationDigest": "3054a9558526deb2de087383eb4c96b359eb27f63fdf9b881097110bbcafecb6",
+      "fingerprint": "70dda8163117315c9919849e568cf7e14b16d0b839ceb6d85c3402df5e74f235",
+      "id": "fingerprint:server_loader:src/app/app/log/[type]/page.tsx",
+      "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
+      "ownerModule": "src/app/app/log/[type]/page.tsx",
+      "sidecarPath": "src/app/app/log/[type]/page.operation.ts",
+      "sourceDigest": "da993483583a3ac4e5afbddf1d409f8f9f2f2cb12aedef289d4d4b96b039f7d1",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "f0662e293077cc09ec2c934fb2dfbf155e9009fcaaacc25eefb12879a2945c9b",
+          "file": "src/app/app/nursery/page.tsx"
+        }
+      ],
+      "declarationDigest": "81d0a999f45c239091a825bb77e723c8c8042da04c2de539be75b857e5425360",
+      "fingerprint": "62d3a4a8886d72036bb644943381b828e327dcbd30e87094cb44ebcba8525328",
+      "id": "fingerprint:server_loader:src/app/app/nursery/page.tsx",
+      "ownerId": "server_loader:src/app/app/nursery/page.tsx",
+      "ownerModule": "src/app/app/nursery/page.tsx",
+      "sidecarPath": "src/app/app/nursery/page.operation.ts",
+      "sourceDigest": "cd2c36ede8bcde0a7287cb6a31cb5f887d91c4af5385576a6105f1195b62e957",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "3186253a5d7da4c8a59c85dfa7801cace270dd83cab0802286de1ab1cb5b4c85",
+          "file": "src/app/app/page.tsx"
+        }
+      ],
+      "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
+      "fingerprint": "7fdabb903eb78ebd40d7c51b51eeeaff692b6b3c9467f680871cf17ce80c0ba8",
+      "id": "fingerprint:server_loader:src/app/app/page.tsx",
+      "ownerId": "server_loader:src/app/app/page.tsx",
+      "ownerModule": "src/app/app/page.tsx",
+      "sidecarPath": "src/app/app/page.operation.ts",
+      "sourceDigest": "1ca6f93a0237caec90f5a6a84ba9267496af878301fc476d32e728d97983de52",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "220ff89ba3c4648d19f075bfef31e3ff4a17e6afc9386e7df644f8d74db9c886",
+          "file": "src/app/app/reports/page.tsx"
+        }
+      ],
+      "declarationDigest": "0b4aa76d23d2e1e0cfcb726d04c91d37d7368b7080d303d9d030b77704431883",
+      "fingerprint": "6df5bb5f4f0bad2821124a862f172fd72997b01d2e21301496b2329878b950dc",
+      "id": "fingerprint:server_loader:src/app/app/reports/page.tsx",
+      "ownerId": "server_loader:src/app/app/reports/page.tsx",
+      "ownerModule": "src/app/app/reports/page.tsx",
+      "sidecarPath": "src/app/app/reports/page.operation.ts",
+      "sourceDigest": "f9f7f26fb2a77129bc0496e8e533f67d0229ede56af84f26c0afe5a135ea25de",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "78911742ec673753c7d8a12dd894ac13c871f5e3dfc18ca485a6780fdfe2249e",
+          "file": "src/app/app/settings/appearance/page.tsx"
+        }
+      ],
+      "declarationDigest": "00c34375d4c88dffc52b2fd64ec995d64da38161c606439b5b351a7da0b1042c",
+      "fingerprint": "e4df6a6c7ad8e01c7328995512538037d0c7317b354141a33c1bfd53af94ef43",
+      "id": "fingerprint:server_loader:src/app/app/settings/appearance/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/appearance/page.tsx",
+      "ownerModule": "src/app/app/settings/appearance/page.tsx",
+      "sidecarPath": "src/app/app/settings/appearance/page.operation.ts",
+      "sourceDigest": "7122221b4c48ad2ac4cdff78ad31a28453412893b2b5a9cfc2ee61fca6e62d92",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "92cbf0c56fb2405302dcf5c583b01f87202f852506a9b17eb389ce397ce6e86e",
+          "file": "src/app/app/settings/backups/page.tsx"
+        }
+      ],
+      "declarationDigest": "f3a2e4eff95e39d8e9f63d71581fa75642c2bd017df9d7414df794edd7342d2e",
+      "fingerprint": "d1929f1e49b552eac9e94944a70e819f0e1a6832e81b0798744a26a45dac6f8a",
+      "id": "fingerprint:server_loader:src/app/app/settings/backups/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/backups/page.tsx",
+      "ownerModule": "src/app/app/settings/backups/page.tsx",
+      "sidecarPath": "src/app/app/settings/backups/page.operation.ts",
+      "sourceDigest": "1eb634d4e11a112418c1fdf12c5ac4dd3edc6e751112ce72c336a369f9b9ec8b",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "50e488d1ef7bd67fb4540864fd04be524298d656ad8e3b00d5dc291c30267321",
+          "file": "src/app/app/settings/export/page.tsx"
+        }
+      ],
+      "declarationDigest": "2344f3da0657da0d434283c0c229046a2b82bbd7d6d791ca129e0593e8698b57",
+      "fingerprint": "a5d5a06f722cd70dad8c66aa1faf92a62d8aa76102907974f3132fbbbf2fd34b",
+      "id": "fingerprint:server_loader:src/app/app/settings/export/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/export/page.tsx",
+      "ownerModule": "src/app/app/settings/export/page.tsx",
+      "sidecarPath": "src/app/app/settings/export/page.operation.ts",
+      "sourceDigest": "7a7e14d94b5e0667896fa584f7d3eb9c63db1fb258db912354b42d089237db3c",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "c270b22393a296aabeb58a86b02a42eb6ab1881d49de0eabd4a326ccc06cb8b4",
+          "file": "src/app/app/settings/integrations/page.tsx"
+        }
+      ],
+      "declarationDigest": "ea927c4d22143f1aa3a1119ee0b559ff88f9d56354f5371180b3532e8970440e",
+      "fingerprint": "3fd72216a49003860fa4db9eba9fb4b4839f65781ab0e341cb40c2322ce37aea",
+      "id": "fingerprint:server_loader:src/app/app/settings/integrations/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/integrations/page.tsx",
+      "ownerModule": "src/app/app/settings/integrations/page.tsx",
+      "sidecarPath": "src/app/app/settings/integrations/page.operation.ts",
+      "sourceDigest": "3c013f2d529004c22032d461e900f2fbea6c4e07722a5b74b6ef3ac82ec4c2d3",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "cc37463ff23ba731449a91d9c532e6821e87f66c7214ed024c0cf098cffdb14a",
+          "file": "src/app/app/settings/leave/page.tsx"
+        }
+      ],
+      "declarationDigest": "6ff8a8a5f66ace7f9b592eb1526afcd949abe99d36e415c6003426b91c8fd30a",
+      "fingerprint": "7ac9700f461cb519b7ee56411ec4cdf28aecf2732a7a83757da51c3bf3b9a1a0",
+      "id": "fingerprint:server_loader:src/app/app/settings/leave/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/leave/page.tsx",
+      "ownerModule": "src/app/app/settings/leave/page.tsx",
+      "sidecarPath": "src/app/app/settings/leave/page.operation.ts",
+      "sourceDigest": "835bb20a1f8a50ff41839cc5a84b907fce5fde5ecde2e0af07d4eacfa12658f7",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "3313bfd02d1be7da51819e4a4d2899b4407ae969c73a2bd5d4e334ec9da9789c",
+          "file": "src/app/app/settings/members/page.tsx"
+        }
+      ],
+      "declarationDigest": "c1eeed5303df2068c7fc5451692128c8a8014560d8a391ef4b3e15e04c409cea",
+      "fingerprint": "5d03a7b948fe07d2caeb6088680f4020842037a92d3bf9d4ca265a8352d9f307",
+      "id": "fingerprint:server_loader:src/app/app/settings/members/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/members/page.tsx",
+      "ownerModule": "src/app/app/settings/members/page.tsx",
+      "sidecarPath": "src/app/app/settings/members/page.operation.ts",
+      "sourceDigest": "c59f82f24bfc38827c06fa65d6f4912bfd9b18a5a4ab3e71b3dce4c4ead22cf1",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a6b38b5929d1c48294fd45bd447619c1453aba262111cc0aa37b53dfaba33f3d",
+          "file": "src/app/app/settings/notifications/page.tsx"
+        }
+      ],
+      "declarationDigest": "990f54bc3186e7513ed2e7eb39e5b918679d8cb851d8ef1f2a2b3b1df3120ca2",
+      "fingerprint": "d4f9d301ae8d31a2d0dc2f3e036a1050282218db21efd81ab753c6b268e85d35",
+      "id": "fingerprint:server_loader:src/app/app/settings/notifications/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/notifications/page.tsx",
+      "ownerModule": "src/app/app/settings/notifications/page.tsx",
+      "sidecarPath": "src/app/app/settings/notifications/page.operation.ts",
+      "sourceDigest": "cdd83a9379ceb0f36735762ea1bd38f2b1533111bc04f8312687a4d0d767b3a5",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "9256646aab8501b6e4de4719d775b75278cf4363ccc0d40266f81a2d8347f956",
+          "file": "src/app/app/settings/page.tsx"
+        }
+      ],
+      "declarationDigest": "1d030b24aefcce8879d2f0351b963a14d5d677c07989dbcc8b38a929c8e2b074",
+      "fingerprint": "937e53766334d98b9817484736e8a217d08054d1db1afaa04f9045066d33166b",
+      "id": "fingerprint:server_loader:src/app/app/settings/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/page.tsx",
+      "ownerModule": "src/app/app/settings/page.tsx",
+      "sidecarPath": "src/app/app/settings/page.operation.ts",
+      "sourceDigest": "67d51483fecdc1a4de27c99d8d747a3e5a9abfbcdea889f4187331f94b4a8ca8",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "7e996650fb28787fe6d3451959d5499f7b500e8028224e7de64ba478109848bb",
+          "file": "src/app/app/settings/sessions/page.tsx"
+        }
+      ],
+      "declarationDigest": "cc92093e21e278d61068a689c1d9213b6086a2a3b2fb4427faad302777dd2e3a",
+      "fingerprint": "1a19ea93145ba54eb44fe24c5fb8efa3c7b64aa75b48d214dce23e291d7085c8",
+      "id": "fingerprint:server_loader:src/app/app/settings/sessions/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/sessions/page.tsx",
+      "ownerModule": "src/app/app/settings/sessions/page.tsx",
+      "sidecarPath": "src/app/app/settings/sessions/page.operation.ts",
+      "sourceDigest": "7bbe3d3b68d8ce6a1490f1a1f9ccf5328ff7bf4a617ee8fee931a24b64749b9a",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "15dd9c61ab5fcf8f6fd3e07268aeb41461a65ddf837037fb8b985c14d790c0b2",
+          "file": "src/app/app/settings/units/page.tsx"
+        }
+      ],
+      "declarationDigest": "58caba87e9fd20d904b07c0c4f3b8309bc7484e6d17ce485feb1e6e6c118c7f9",
+      "fingerprint": "b21500d242ecd8ef44850ea9bd094a42b6b8c3e81dff1e08ddcde238fa699013",
+      "id": "fingerprint:server_loader:src/app/app/settings/units/page.tsx",
+      "ownerId": "server_loader:src/app/app/settings/units/page.tsx",
+      "ownerModule": "src/app/app/settings/units/page.tsx",
+      "sidecarPath": "src/app/app/settings/units/page.operation.ts",
+      "sourceDigest": "223e30b4e3ed93f45e97b899ddfd0c47d646a3dca9f7352853ef2e798ad1e587",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "80dd344a171c14c4e937833ecd50a4ea191987b495d7ba132652f180bea311cf",
+          "file": "src/app/invite/[token]/page.tsx"
+        }
+      ],
+      "declarationDigest": "9be282900eb3fbe5e34594b3d06ba05ca1f0b462226b6e3c7b03264114d89ecf",
+      "fingerprint": "402d70d23570dcddc75f74059f32386fb695478b3775fa14460fbabacd7158d6",
+      "id": "fingerprint:server_loader:src/app/invite/[token]/page.tsx",
+      "ownerId": "server_loader:src/app/invite/[token]/page.tsx",
+      "ownerModule": "src/app/invite/[token]/page.tsx",
+      "sidecarPath": "src/app/invite/[token]/page.operation.ts",
+      "sourceDigest": "463940320a957c55e25a67bf9f27463e28dd72cec2a915297c19feb038d25a83",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "389fc84ec7a32ec91430ae78fcecd004b8627a6376510bd87d57fe2300c0c4ef",
+          "file": "src/app/login/page.tsx"
+        }
+      ],
+      "declarationDigest": "b219b5ec75f5feda99b549d9678278f04097e8489fbaf2eef623ee8f8f6dd2c8",
+      "fingerprint": "832903b524d3ee5140a154d017a192db118555130ca865def783a1b6a6a1269a",
+      "id": "fingerprint:server_loader:src/app/login/page.tsx",
+      "ownerId": "server_loader:src/app/login/page.tsx",
+      "ownerModule": "src/app/login/page.tsx",
+      "sidecarPath": "src/app/login/page.operation.ts",
+      "sourceDigest": "4af89099e04daf04195320857aea96a647e92ea9b5dfa07c8c7b038a46dc3066",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "cf5abcafbb4c497d74b75bb6935a792866a415920fc0a4145359a490b7246b23",
+          "file": "src/app/onboarding/page.tsx"
+        }
+      ],
+      "declarationDigest": "b91bd5cc3573ef3d93b2113a1a06129b617c9e7289e94db0d4f8aa206c5a1260",
+      "fingerprint": "0fb412732636571328e5b7ea2863f20a6bfc14943d8bae3671f5bbbc03ed6df0",
+      "id": "fingerprint:server_loader:src/app/onboarding/page.tsx",
+      "ownerId": "server_loader:src/app/onboarding/page.tsx",
+      "ownerModule": "src/app/onboarding/page.tsx",
+      "sidecarPath": "src/app/onboarding/page.operation.ts",
+      "sourceDigest": "40dd7852b75a9f9ae2569153c7230794ba125715932211125e186599bb540cff",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "6af2699331ff534ed260be7082030d678ae68e1e3fd3091d222fa01712b09236",
+          "file": "src/app/page.tsx"
+        }
+      ],
+      "declarationDigest": "ef24101a42a2f820e4ac277c57e211e434b8f80eb52c17e7bb70c4faa0bbe425",
+      "fingerprint": "40ff800994a9459f3fef5015c846becf73727b57b0cfe7cb873b83b26583b966",
+      "id": "fingerprint:server_loader:src/app/page.tsx",
+      "ownerId": "server_loader:src/app/page.tsx",
+      "ownerModule": "src/app/page.tsx",
+      "sidecarPath": "src/app/page.operation.ts",
+      "sourceDigest": "d4fb8bc2cdea5d3fc1f0ebf784924f5e4c80815a5622b0392f69b2408f77d7e9",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "2f91d37a7aa40572869b88533b6de9cf2d17d40262d97980b1a8a4954697fdf5",
+          "file": "src/app/platform/settings/page.tsx"
+        }
+      ],
+      "declarationDigest": "1cbf07759e594ceeb73ba88772b3dbbebad12d4a6e9693c4af429702f05fa7ea",
+      "fingerprint": "63bfa79f9c8f56c6f04fbc3cdb2e36f8d70524abb666e909cfc1e2b3656022c0",
+      "id": "fingerprint:server_loader:src/app/platform/settings/page.tsx",
+      "ownerId": "server_loader:src/app/platform/settings/page.tsx",
+      "ownerModule": "src/app/platform/settings/page.tsx",
+      "sidecarPath": "src/app/platform/settings/page.operation.ts",
+      "sourceDigest": "d3b6fefe6b6a43b71386eb608a590f11d6977f38acc900598f0af823ed6627a5",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a3db025a5fb4f9abef96123801ddfc4e2450c7336794b60e59d7f46651a1363a",
+          "file": "src/app/register/page.tsx"
+        }
+      ],
+      "declarationDigest": "07e601a316c6b6eb15db67b1307a6931b10b9c9f371db2511477a1b3646f17b6",
+      "fingerprint": "fa7deee31a6322e1eaf3a9ee10bb82d50c38e23e6e81d5a408c21dca5a3dbfe3",
+      "id": "fingerprint:server_loader:src/app/register/page.tsx",
+      "ownerId": "server_loader:src/app/register/page.tsx",
+      "ownerModule": "src/app/register/page.tsx",
+      "sidecarPath": "src/app/register/page.operation.ts",
+      "sourceDigest": "3e90b38544625da4616a21f2f85ff8763159f70afe4e5c58fd5734b79fd05011",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "f6490fe22961c3342f6ff9dd20651a6d15e0d758e3e07bf639c57c3286d103f8",
+          "file": "src/components/actions/accept-invite-button.tsx"
+        }
+      ],
+      "declarationDigest": "ed95074077b43feb4428c73797079bc361534307693103044bbde68dcb5e0318",
+      "fingerprint": "0860304b04687da942e30c1a9e2eff73830699923d1ca79d37f679669ff117c3",
+      "id": "fingerprint:client_binding:src/components/actions/accept-invite-button.tsx",
+      "ownerId": "client_binding:src/components/actions/accept-invite-button.tsx",
+      "ownerModule": "src/components/actions/accept-invite-button.tsx",
+      "sidecarPath": "src/components/actions/accept-invite-button.operation.ts",
+      "sourceDigest": "ab17600f24f08a722d01f54cb03a23112e3e237019326fa8514e0a6384287a02",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "6f7b9fb7f621163703574100d628a6efe63b972f413475744d10d41c752f8c68",
+          "file": "src/components/actions/activity-actions.tsx"
+        }
+      ],
+      "declarationDigest": "67159b29c3ec82f53088fc604226acc52b896ce08f66e1d769b4388dbcf9093c",
+      "fingerprint": "556498b372cb81e8935dae4cb679529e4410c1f5d22bc7c2328cfc2f340c4cbf",
+      "id": "fingerprint:client_binding:src/components/actions/activity-actions.tsx",
+      "ownerId": "client_binding:src/components/actions/activity-actions.tsx",
+      "ownerModule": "src/components/actions/activity-actions.tsx",
+      "sidecarPath": "src/components/actions/activity-actions.operation.ts",
+      "sourceDigest": "68c49659b265b7eecfaa39d4225582ba69e9ec94490d96872f9de9df148c4b9b",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "310036704a2fb4cbdda04b04fd819aa081a02063c5d6c44c069dc962923e2b8d",
+          "file": "src/components/actions/baby-lifecycle-button.tsx"
+        }
+      ],
+      "declarationDigest": "6c5261e211245f4a9e289ac9fa540abc19fe570eb933079705719682729b8d74",
+      "fingerprint": "be481909776cb4887df057830f7e3b318a29340aeef6f83eaf2e4b9849d66438",
+      "id": "fingerprint:client_binding:src/components/actions/baby-lifecycle-button.tsx",
+      "ownerId": "client_binding:src/components/actions/baby-lifecycle-button.tsx",
+      "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+      "sidecarPath": "src/components/actions/baby-lifecycle-button.operation.ts",
+      "sourceDigest": "e3e36d6192c1cafaf477634bc57f853921296edb876c27ae8fc2a6982c8de5b8",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "561b9fca4418a4874ad2728fb09aa6d20f0b88b2decb7928fc00ebf01a72ff98",
+          "file": "src/components/actions/confirmed-activity-delete.tsx"
+        }
+      ],
+      "declarationDigest": "b28fd7bef7a09588f19fc7fcad4a5ff061172e5946d593ff9143b82e62f47027",
+      "fingerprint": "17a11d1917d40e7b34ece7934d2c8ee8334530d4d50aefafaccb5cf3d9fe5972",
+      "id": "fingerprint:client_binding:src/components/actions/confirmed-activity-delete.tsx",
+      "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
+      "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+      "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts",
+      "sourceDigest": "1b18f3002f95e7e9b2a26a56c837ce2bc4145811c18847f1398561d5bcf8c264",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "3ad2f41f0e03b5fbc6b8cbf23f3d8a4fb3b7b88fa52d712f75b00645bf81f3db",
+          "file": "src/components/auth/auth-form.tsx"
+        }
+      ],
+      "declarationDigest": "8ffa6095790e710753e3f1c35d4fe142ab2477c7438c2da28c449b17497eb952",
+      "fingerprint": "2c271ffdb7f951c75a100b312aa18c2440626da28a67e417e5cbdd15f8cce0a0",
+      "id": "fingerprint:client_binding:src/components/auth/auth-form.tsx",
+      "ownerId": "client_binding:src/components/auth/auth-form.tsx",
+      "ownerModule": "src/components/auth/auth-form.tsx",
+      "sidecarPath": "src/components/auth/auth-form.operation.ts",
+      "sourceDigest": "5c4f2a9d7a7d43388e88780f0e720e4ad55e3a478cf0aa2bd45e984efbc6e059",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "291d82531a1464e01828d316e9bd2ed56cbfc1bc1e0939b15ed0974b19822880",
+          "file": "src/components/dashboard/dashboard-warnings.tsx"
+        }
+      ],
+      "declarationDigest": "8dcf15b6beb483dac8b0f8a49badf87139c3efe2bd9010388094525548c615ba",
+      "fingerprint": "485dab8469b70bcabc21e0cf07281d023a08c8866b1aac25c15e1e4513de3cf0",
+      "id": "fingerprint:client_binding:src/components/dashboard/dashboard-warnings.tsx",
+      "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
+      "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+      "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts",
+      "sourceDigest": "dbcc0555f6dc583bab7581a7f655b77d734cdb14e70c34c621bdadd6a820aaaa",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "6743d8e9f7e036cf6537ceb3154a7d7794fbb05ef7dfcf52fe06a8c2db0d75fe",
+          "file": "src/components/forms/activity-form.tsx"
+        }
+      ],
+      "declarationDigest": "1612daab9028cc1211c110e81c8d7ff35271077002211ee04256bd249eee9b23",
+      "fingerprint": "0f64154afc40646d65769cc32fecf0c53cb1913b7ec81664751419da52064984",
+      "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
+      "ownerId": "client_binding:src/components/forms/activity-form.tsx",
+      "ownerModule": "src/components/forms/activity-form.tsx",
+      "sidecarPath": "src/components/forms/activity-form.operation.ts",
+      "sourceDigest": "9aea10d43a3eb676214fbd492ef39dafc43f4a99a8e963a433ec80693c501d73",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "03a5d02758e811659bb1ace622e203164ad92b797cfd5e1495981b008c57d1e7",
+          "file": "src/components/forms/baby-form.tsx"
+        }
+      ],
+      "declarationDigest": "db14daf4f7a0ebb4964c1a41d8668f9e842e470ecffa9f8d15bf7f3b29efc85e",
+      "fingerprint": "a7a0161041b162c3f21da52a9e065e6914228cc04b745955c7811e61fc013f01",
+      "id": "fingerprint:client_binding:src/components/forms/baby-form.tsx",
+      "ownerId": "client_binding:src/components/forms/baby-form.tsx",
+      "ownerModule": "src/components/forms/baby-form.tsx",
+      "sidecarPath": "src/components/forms/baby-form.operation.ts",
+      "sourceDigest": "56312961e63952e1f42c96808c6142d218088f2d0f9075c83262a744519e5cd8",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "6845065d97784cee615db75c3a5c7886f9e5b8ac2b86cae04972e60ad32e164d",
+          "file": "src/components/forms/invite-form.tsx"
+        }
+      ],
+      "declarationDigest": "5a571c84d4808d573dbfee82f40afeeb9b9967128fba367bd5f2458001071cb0",
+      "fingerprint": "f8f2acfd1326f8b4d1c1a3470bb3270787c31fc03780d48a6b8aa219ed470b90",
+      "id": "fingerprint:client_binding:src/components/forms/invite-form.tsx",
+      "ownerId": "client_binding:src/components/forms/invite-form.tsx",
+      "ownerModule": "src/components/forms/invite-form.tsx",
+      "sidecarPath": "src/components/forms/invite-form.operation.ts",
+      "sourceDigest": "09ccd619ddb1c7828bd38bf103a8fbfd56cf7d1a2f1708b52a21c39c58ebfec8",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "d83fd4426bda09c8fd71db90a34c8bc270121b4d7028d493a0d33e7ff9597be9",
+          "file": "src/components/forms/onboarding-form.tsx"
+        }
+      ],
+      "declarationDigest": "c81feb0a9fecd6f6d52b5adedbad4cf84675f31c55d52bdc1b5fc018cee1a6a0",
+      "fingerprint": "3463949f282b38a3785aa5dc8f179ef19daaf170891afa07701291f5ef905bf8",
+      "id": "fingerprint:client_binding:src/components/forms/onboarding-form.tsx",
+      "ownerId": "client_binding:src/components/forms/onboarding-form.tsx",
+      "ownerModule": "src/components/forms/onboarding-form.tsx",
+      "sidecarPath": "src/components/forms/onboarding-form.operation.ts",
+      "sourceDigest": "12be3cdb1fdb8044a53eb8d2d6f2d5491653189ece451611fe03c71784ba0662",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "e7cb1a0bf3b78cb458e25abf3efd5b94ffdce3f96a57c0d6d49e0bb2c2d8c072",
+          "file": "src/components/settings/appearance-form.tsx"
+        }
+      ],
+      "declarationDigest": "51ef8fc729c049afabe9d6dc6315e5a39267965baf196b553b20225b48ee6765",
+      "fingerprint": "c601ad9c7e992acfe70ab08b179294665d2b647b17ecb47d38b26532b54f2c35",
+      "id": "fingerprint:client_binding:src/components/settings/appearance-form.tsx",
+      "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
+      "ownerModule": "src/components/settings/appearance-form.tsx",
+      "sidecarPath": "src/components/settings/appearance-form.operation.ts",
+      "sourceDigest": "704b13025641e1c298d4bf37d1e51cb5d2785c71b48bedc0fda58925e73e115c",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "ffc053c1b4cab9ec862204e24b3ae3bb53a0995e2125c22394c6c80ae52ba6f2",
+          "file": "src/components/settings/backup-download-button.tsx"
+        }
+      ],
+      "declarationDigest": "130696769ebbca2a8f03774593eb9579707ac0da91723a2f685948298a91da07",
+      "fingerprint": "90efe9434e33254899d7b550edc9095ca9e7d18e9a21e4705f51a7175d4f11bd",
+      "id": "fingerprint:client_binding:src/components/settings/backup-download-button.tsx",
+      "ownerId": "client_binding:src/components/settings/backup-download-button.tsx",
+      "ownerModule": "src/components/settings/backup-download-button.tsx",
+      "sidecarPath": "src/components/settings/backup-download-button.operation.ts",
+      "sourceDigest": "813555fc05d89727116237567419697725bddf042bc7b2921a2ee2220210021b",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a4559b9b7425e217f2b9eb78ac64fbcdfe95f23ee7ecd4e955728b6e852d9608",
+          "file": "src/components/settings/backup-restore-form.tsx"
+        }
+      ],
+      "declarationDigest": "a24b18c134da8a75e1fec73c47e0355f92d55d337b81ff013b30008454bbcf10",
+      "fingerprint": "3af5618ef136a4ae6e0f9b51f3dd29f14f57053b93509f56ac6381275847578f",
+      "id": "fingerprint:client_binding:src/components/settings/backup-restore-form.tsx",
+      "ownerId": "client_binding:src/components/settings/backup-restore-form.tsx",
+      "ownerModule": "src/components/settings/backup-restore-form.tsx",
+      "sidecarPath": "src/components/settings/backup-restore-form.operation.ts",
+      "sourceDigest": "07c6b493f0b9c477e31a782545540fb98ea1f86d65624d417581018aa7f0228f",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "127f3cd176277cb58a726383914c51f989f252d437b3d15c76397b5a8df45b57",
+          "file": "src/components/settings/integration-forms.tsx"
+        }
+      ],
+      "declarationDigest": "73bf88c4e17bc6d04674f6bcda1ed0cd63abc7d4bdff7ef9ef7709bf6ffb1f90",
+      "fingerprint": "c9ad4c03857d6765a5bba4517d51d91b362f204f62ad38b9384322e48f2e6ea4",
+      "id": "fingerprint:client_binding:src/components/settings/integration-forms.tsx",
+      "ownerId": "client_binding:src/components/settings/integration-forms.tsx",
+      "ownerModule": "src/components/settings/integration-forms.tsx",
+      "sidecarPath": "src/components/settings/integration-forms.operation.ts",
+      "sourceDigest": "159abdb77d1640380c83fef5f89599c8d43d4f9246917c3ce7e7c0a5c1fd0412",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "954758d57370224b7e28fa8ac116c7899a4b9eb72f6a5f97cbf39aaeb76b91f1",
+          "file": "src/components/settings/leave-household-form.tsx"
+        }
+      ],
+      "declarationDigest": "775948e842ec186a2abc0d1ad78655a0c2f7c2a943062de990febc116b452028",
+      "fingerprint": "e5e2f7f23ddbcd456fa9ccfe9f27002132de7e8c0759a9b35db75eef6e6e1994",
+      "id": "fingerprint:client_binding:src/components/settings/leave-household-form.tsx",
+      "ownerId": "client_binding:src/components/settings/leave-household-form.tsx",
+      "ownerModule": "src/components/settings/leave-household-form.tsx",
+      "sidecarPath": "src/components/settings/leave-household-form.operation.ts",
+      "sourceDigest": "54d881bbd4165efffe07ddf5563e2d544d8e076f48e6bae829b4dfa91e382aa0",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "13101f40180452903fba4f988a478eca98d11b9e7adf2b352991262fae6283d7",
+          "file": "src/components/settings/member-access-manager.tsx"
+        }
+      ],
+      "declarationDigest": "a1c88d6ef3efff01f39cf9307471c6dbf5a125bbe5e0b48b3fcaec11f05ce817",
+      "fingerprint": "446492af3663ae573bfbbe654550200e09ffaa439b0c0c1252592e01e26244d7",
+      "id": "fingerprint:client_binding:src/components/settings/member-access-manager.tsx",
+      "ownerId": "client_binding:src/components/settings/member-access-manager.tsx",
+      "ownerModule": "src/components/settings/member-access-manager.tsx",
+      "sidecarPath": "src/components/settings/member-access-manager.operation.ts",
+      "sourceDigest": "559608170dece6626eaee520faf08aefc828f4c9d8fba90a4763ad283ba566ca",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "232185280f81649221a7479828896172ee87801d7d16483199121ee79bd25b74",
+          "file": "src/components/settings/notification-preference-form.tsx"
+        }
+      ],
+      "declarationDigest": "db3f4ea9ceb75153fbcc5b04729ae320bcfa26206a1675df57814251214b3daa",
+      "fingerprint": "25404cb33b9989f479ba269cc11811651e1b724338bd24fe7d251c83b30f4332",
+      "id": "fingerprint:client_binding:src/components/settings/notification-preference-form.tsx",
+      "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
+      "ownerModule": "src/components/settings/notification-preference-form.tsx",
+      "sidecarPath": "src/components/settings/notification-preference-form.operation.ts",
+      "sourceDigest": "a43dc1da39324f94cdd5e3ce53b832f95bd67e1ec4e631151658eff91f48d130",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "ab484298773389dbf9de9f2d27ec5da35c9afc377a1e3057e947cabac6e9ccde",
+          "file": "src/components/settings/registration-settings-form.tsx"
+        }
+      ],
+      "declarationDigest": "61788e5258cdf4b05580cac770c71d742a54422fc8231f6b623f0d71688ff194",
+      "fingerprint": "c79fd89fcfb7304e93e4a348e9075e10a64c88c46df4bea76710c9bb05d69558",
+      "id": "fingerprint:client_binding:src/components/settings/registration-settings-form.tsx",
+      "ownerId": "client_binding:src/components/settings/registration-settings-form.tsx",
+      "ownerModule": "src/components/settings/registration-settings-form.tsx",
+      "sidecarPath": "src/components/settings/registration-settings-form.operation.ts",
+      "sourceDigest": "ffdf2156375f79e043380259051f3d25307b3ab9153de9987e17cf32e6a39f17",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "7d60c12e413c47161e2753ef1533a2d780122f55134bb8ca0e671cdaf382ce15",
+          "file": "src/components/settings/session-manager.tsx"
+        }
+      ],
+      "declarationDigest": "56425be1778022fa18e7921050aed40e322c1e4214241e4119be5d3173914311",
+      "fingerprint": "cc83fa5e4d54470eb493632e2d986de45e637e9b029426d7fc4f7b0b4762a36f",
+      "id": "fingerprint:client_binding:src/components/settings/session-manager.tsx",
+      "ownerId": "client_binding:src/components/settings/session-manager.tsx",
+      "ownerModule": "src/components/settings/session-manager.tsx",
+      "sidecarPath": "src/components/settings/session-manager.operation.ts",
+      "sourceDigest": "874e78d98445161223cd86436fa915dd4d4fc314394836c4e1d80ab6cc164560",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "d971b16408f6a59838efdeadd77d389036df6023443601a22677b5d8fa2f1436",
+          "file": "src/components/settings/sprout-restore-form.tsx"
+        }
+      ],
+      "declarationDigest": "6607f03d2f2dec1accf2e0697cbddd7519a2435bd0dae4391809a9423c70ff3c",
+      "fingerprint": "92bedf45b4764061c5ac70b324a48ad4c67389a0aa4f838fd9aab76145e5a05c",
+      "id": "fingerprint:client_binding:src/components/settings/sprout-restore-form.tsx",
+      "ownerId": "client_binding:src/components/settings/sprout-restore-form.tsx",
+      "ownerModule": "src/components/settings/sprout-restore-form.tsx",
+      "sidecarPath": "src/components/settings/sprout-restore-form.operation.ts",
+      "sourceDigest": "595ce91ec70de2f2b8c502a55070f219bbb77fe6b16b5c59e11dac63a301aa9e",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "1d14a24623fe981a221f6095c132481064eabb5836b35583f5d84feda503cf17",
+          "file": "src/components/settings/unit-preferences-form.tsx"
+        }
+      ],
+      "declarationDigest": "5798395e9ac9018b2b05cd36bcbc7268d585039ef022d632622620066625a9dc",
+      "fingerprint": "dbe7fd7fb9340a3cd0f44d03c4281254ba006e1b225e37645371c0743f147939",
+      "id": "fingerprint:client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+      "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts",
+      "sourceDigest": "2bba6e993d54cfbee75ed8f555679f3d9da93876ebb349cf12e000615bab146e",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "593593b44da878dc642f38b7569f12968130bd04f8658f106b864f68ae21b7be",
+          "file": "src/components/sign-out-button.tsx"
+        }
+      ],
+      "declarationDigest": "56324720a06b997f5609fcdcac4dc630c539168830841a8e7b4cc264404300dd",
+      "fingerprint": "def64cd1314d55314d49defb58f5b31076e151399a1ea5c112d3e4f83af6317a",
+      "id": "fingerprint:client_binding:src/components/sign-out-button.tsx",
+      "ownerId": "client_binding:src/components/sign-out-button.tsx",
+      "ownerModule": "src/components/sign-out-button.tsx",
+      "sidecarPath": "src/components/sign-out-button.operation.ts",
+      "sourceDigest": "b2ae42bd7db1a3549419d6b30ca6248ba6e6832bb0eab9928263d0aac965147e",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "e918da5a40b96268c0327c73d43fb7e04e85b3183033618f23ba19bea542f108",
+          "file": "src/app/app/calendar/actions.ts"
+        }
+      ],
+      "declarationDigest": "3e68e74dc441ecf0be1ddc1fb695b88225d92ce05aafaf01be117250a9ea9ae4",
+      "fingerprint": "074ac0fd1bcc1444f6d037cf92e34a77497d0ab5a8e9f873470a64e35e856666",
+      "id": "fingerprint:server_action:src/app/app/calendar/actions.ts",
+      "ownerId": "server_action:src/app/app/calendar/actions.ts",
+      "ownerModule": "src/app/app/calendar/actions.ts",
+      "sidecarPath": "src/app/app/calendar/actions.operation.ts",
+      "sourceDigest": "1fe4582aeb4c2d58b11e7d4728a7e4eda30ea34942af8717309dfc3a1e0eac6a",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "be77b2264807dca2f73a8df89abed934004287e7a055cf4eb50b58771ba83366",
+          "file": "src/instrumentation.ts"
+        }
+      ],
+      "declarationDigest": "010d9aeb069a8678c9d20aa4e85f112a471f6b919c79fc4699e5db4939ed9f31",
+      "fingerprint": "324cefae639c819213a35e6153f0aa30b95c59b295aad343334889dfd44bf798",
+      "id": "fingerprint:instrumentation:src/instrumentation.ts",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts",
+      "sourceDigest": "677597e2945d32ce7437f71724c5613cb24078331b225cd5c0a989e86dd45692",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "bc7a4ef21c22636086cac1b7064bb6cf2d79f045cc188a28d0d18ef8f88f0185",
+          "file": "src/server/automated-backup-scheduler.ts"
+        }
+      ],
+      "declarationDigest": "1e225bf14533523c9c65da652efeaa3bf07d2a09f0efb117ed362cbb72e4add2",
+      "fingerprint": "6ba984cd08bade71abf1d9992ccdc61c673c046b78c33e8791dfde2a0df0048f",
+      "id": "fingerprint:worker:src/server/automated-backup-scheduler.ts",
+      "ownerId": "worker:src/server/automated-backup-scheduler.ts",
+      "ownerModule": "src/server/automated-backup-scheduler.ts",
+      "sidecarPath": "src/server/automated-backup-scheduler.operation.ts",
+      "sourceDigest": "ef3683fae1d99e9278175049dfc02257745e11ed8e63282725e94382c9d11736",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "a761759d3e19777ee4843bf8a3181b0080d4c5b522cd707a0c43338fe540003a",
+          "file": "src/server/integrity-scheduler.ts"
+        }
+      ],
+      "declarationDigest": "a1914ceb3a14d9f1799e984794147829b0c619df31865ba4e482763a8c08160a",
+      "fingerprint": "fb85bb3bdfb6f850cff964b8a5b25ace82a6b17750537f9e91e1b90b23880b68",
+      "id": "fingerprint:worker:src/server/integrity-scheduler.ts",
+      "ownerId": "worker:src/server/integrity-scheduler.ts",
+      "ownerModule": "src/server/integrity-scheduler.ts",
+      "sidecarPath": "src/server/integrity-scheduler.operation.ts",
+      "sourceDigest": "ebfe73d46f7eaf3d3aa786aa97b3e6c31906d55694ec25a03850568f32f3b944",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "87375eb522209933752981228c40ad8330dfbf0e07fdd6fcd6b904c8adb5e970",
+          "file": "src/server/sprout-source-retention-scheduler.ts"
+        }
+      ],
+      "declarationDigest": "188a01a3b92a9aa106a345637c89764ac7d468a7ffb50f646f6a97bf18cd0a80",
+      "fingerprint": "41c573a0a32129c746905c5e9bf494e633b9dcf4e166ce6f431660ff1c0f67e3",
+      "id": "fingerprint:worker:src/server/sprout-source-retention-scheduler.ts",
+      "ownerId": "worker:src/server/sprout-source-retention-scheduler.ts",
+      "ownerModule": "src/server/sprout-source-retention-scheduler.ts",
+      "sidecarPath": "src/server/sprout-source-retention-scheduler.operation.ts",
+      "sourceDigest": "ec112cb4ac9462ef9ab2da9856fa17daae5a79f92a0fdb42a59cd17e8659e174",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "fbc3c7caa110384f44d27335d1244016184092b6c457dfc8a717fe69bac953ed",
+          "file": "prisma/seed.ts"
+        }
+      ],
+      "declarationDigest": "1d9172313ff6b4a816ffd0c53c01feefb3a31fc381e20e6ebc0b591748da6af8",
+      "fingerprint": "b47cd4ba01d3056aa255bfe4bbd61a0c857c7dd6ebb0bdf08d2cfd7b04438501",
+      "id": "fingerprint:package_command:prisma/seed.ts",
+      "ownerId": "package_command:prisma/seed.ts",
+      "ownerModule": "prisma/seed.ts",
+      "sidecarPath": "prisma/seed.operation.ts",
+      "sourceDigest": "5575ce3247f2cf912f42ed3ee7a07412a945893296fd66643ded5255184fd601",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "d42333e8193020e49dfe1986fdf967347622309542ba308f4ae5ae203f3105d2",
+          "file": "scripts/activity-update-safety-rehearsal.ts"
+        }
+      ],
+      "declarationDigest": "810e0eb332d192e755e0f5e2b418d50254e5e8cea24b7c554a66118fd5b4bc14",
+      "fingerprint": "670160b8e53931bb0b3aa457e43dad93cabdc0dc0726db6176840d2712e135e4",
+      "id": "fingerprint:package_command:scripts/activity-update-safety-rehearsal.ts",
+      "ownerId": "package_command:scripts/activity-update-safety-rehearsal.ts",
+      "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
+      "sidecarPath": "scripts/activity-update-safety-rehearsal.operation.ts",
+      "sourceDigest": "20fe6b4d9ce9c9f22e82c89d9ec49235726d2fb26b2e6f2210f22b9a50557c8b",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "a9ecf438eae48171380d6f55ac433168f8b4fbc8efb3c6abe551403c64d11971",
+          "file": "scripts/backup-recovery-rehearsal.ts"
+        }
+      ],
+      "declarationDigest": "55358c2e6713469367903e21ccd0dee474de55aeb3b390abf070d6f8211eaff8",
+      "fingerprint": "c4504705956dbaf10094d1b4348b83b281b0086e5812b0800a5d2c1fbf103b0e",
+      "id": "fingerprint:package_command:scripts/backup-recovery-rehearsal.ts",
+      "ownerId": "package_command:scripts/backup-recovery-rehearsal.ts",
+      "ownerModule": "scripts/backup-recovery-rehearsal.ts",
+      "sidecarPath": "scripts/backup-recovery-rehearsal.operation.ts",
+      "sourceDigest": "faaa3d4ea834e5dde9dc97756e6c76272bf725e25ade32bf6ffb610fe43ad820",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "21bbd21fc70b66ec3a292831d55b51211d59d39d39cfe49ce6f23990272ba825",
+          "file": "Dockerfile"
+        },
+        {
+          "digest": "93df46007769cebcafb5b41dcf0cd2ebdbe2d457c97d71a240df727f6e1dcb00",
+          "file": "docker-compose.yml"
+        },
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "847bb2371eab786e00625839b6d2e6abf547a35a796d61c8c8e1755359b90eb5",
+          "file": "scripts/backup-recovery-rehearsal.compose.yml"
+        },
+        {
+          "digest": "4ee9652aaae29de3710b740a48145e20c21e6ae1a88a06e17b2e783e0cc48ea5",
+          "file": "scripts/integrity-check.ts"
+        }
+      ],
+      "declarationDigest": "c653663765b8b9c3e8e21f3903713c66fa1a8ee927409604794b4302728c15a1",
+      "fingerprint": "ee8a457cfa2d3e086972ce2118d0d6b1929b7eaabd0fa426beb076d50339fc32",
+      "id": "fingerprint:package_command:scripts/integrity-check.ts",
+      "ownerId": "package_command:scripts/integrity-check.ts",
+      "ownerModule": "scripts/integrity-check.ts",
+      "sidecarPath": "scripts/integrity-check.operation.ts",
+      "sourceDigest": "d8731112f07a453a77f447b63b2882afd4bbf8f26802655214f1bca9cf78f180",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "21bbd21fc70b66ec3a292831d55b51211d59d39d39cfe49ce6f23990272ba825",
+          "file": "Dockerfile"
+        },
+        {
+          "digest": "93df46007769cebcafb5b41dcf0cd2ebdbe2d457c97d71a240df727f6e1dcb00",
+          "file": "docker-compose.yml"
+        },
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "847bb2371eab786e00625839b6d2e6abf547a35a796d61c8c8e1755359b90eb5",
+          "file": "scripts/backup-recovery-rehearsal.compose.yml"
+        },
+        {
+          "digest": "e39b7303be205d5cb901975045a9adb8b90404870b1c98dce827bfb11328afd3",
+          "file": "scripts/platform-owner.ts"
+        }
+      ],
+      "declarationDigest": "3246f88ee86d13812b057916cb440a2a626faf92c3fdf8fa60bc959d2712f9c2",
+      "fingerprint": "70ac5752f4bdcdcc722d569d85e2e3bf9066064be87d69f811e36ca4055fa96a",
+      "id": "fingerprint:package_command:scripts/platform-owner.ts",
+      "ownerId": "package_command:scripts/platform-owner.ts",
+      "ownerModule": "scripts/platform-owner.ts",
+      "sidecarPath": "scripts/platform-owner.operation.ts",
+      "sourceDigest": "87278b5a13e6c67fb729bddd2fdf7ff50f4b84553e725d3997e8a29a272a2549",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "0219e0b35b7a57a8c749be7b22b2f4735fe59e532e523bf091494eee54ac39e3",
+          "file": "scripts/sprout-preview-commit.acceptance-rehearsal.ts"
+        }
+      ],
+      "declarationDigest": "fde5434663cc168a353f7214df1622321a45753d4dccbb6ba7e879a4c87e59d1",
+      "fingerprint": "95eb9f297e338ab96a8be9be51b4a2ec27d6666dacb8e7e1e260d386f48228f0",
+      "id": "fingerprint:package_command:scripts/sprout-preview-commit.acceptance-rehearsal.ts",
+      "ownerId": "package_command:scripts/sprout-preview-commit.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
+      "sourceDigest": "3a2be38b1907d25762a2c70c211dfe1fdca299e211984df0a1d59d9145972ff8",
+      "status": "declared"
+    },
+    {
+      "anchorFiles": [
+        {
+          "digest": "b37844770757c839c9a85d19143f5c09587eec65f4c750649c0a402a1cabf44b",
+          "file": "package.json"
+        },
+        {
+          "digest": "fbebd2f3d9a3a1532fc582edcbd34a4a5d2a1cd6e4c4f4d0b1119fecc25b4f70",
+          "file": "scripts/update-preflight.ts"
+        }
+      ],
+      "declarationDigest": "ce687e710780dbd9212d143f5ddd706f1fba8cf1de69a13a68c6ddcef1b7c427",
+      "fingerprint": "9f17b26481f5f59704a1f1814233d01029a1ec2b275097b47b58d0353036a17f",
+      "id": "fingerprint:package_command:scripts/update-preflight.ts",
+      "ownerId": "package_command:scripts/update-preflight.ts",
+      "ownerModule": "scripts/update-preflight.ts",
+      "sidecarPath": "scripts/update-preflight.operation.ts",
+      "sourceDigest": "742af4eb52b95a6dd1b4a4dc191b6dc10e530ad178d9603bb71799b1ee98964e",
+      "status": "declared"
+    }
+  ],
+  "generatorDigest": "1174ed98879cdbf84824b0cb851528830372269cd633bb9d1abbd914ee2b9df2",
+  "generatorVersion": "r0.1",
+  "observationDigest": "081a071bf68689ec6499bc6f9b6da13f20e274a44310b0640272e739a308fb22",
+  "observationDigestVersion": "normalized-observation.v1",
+  "ownerSetDigest": "8e661d307ba0fe3b1e3d54e53231351dad1cd37feb31410b8890bc6c4b7cb9d7",
+  "ownerSetDigestVersion": "owner-set.v1",
+  "registryDigest": "87c78931db74536a114a7b590f9715fb937616c6e2192e95c3591ff100ce0b0e",
+  "registryDigestVersion": "operation-registry.v1",
+  "runtimeInvocationFingerprints": [
+    {
+      "fingerprint": "cbbf954459f7e9b508b2d4502eeada93ff654513058e34b0150bbd3e41c886ee",
+      "id": "runtime:docker/entrypoint.sh:76:main:/app/node_modules/prisma/build/index.js"
+    },
+    {
+      "fingerprint": "191d57991763e8c0ffe83fcf3c4f0c698dc36147795b4175b173a96b56993553",
+      "id": "runtime:docker/entrypoint.sh:346:main:/app/server.js"
+    },
+    {
+      "fingerprint": "6e991ca507bf753001bb95619bb6aafbb9956398c270e8323b02cbfe4b292444",
+      "id": "runtime:docker-compose.yml:762:main:eval"
+    },
+    {
+      "fingerprint": "fb40ce3b85432a457eb1e50dcbb28dcd7ed0f8a1ba18339ed7920ddb4de659d7",
+      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:1266:main:eval"
+    }
+  ],
+  "runtimeInvocationLedgerDigest": "41a2602e3ef1d341e070d9aeac0a85db31fa25a31b00d8be3718ef82ac0aadd2",
+  "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
+  "schemaDigest": "6076c2a7ba99584f5ccdda10ad54742710843c14fc30e2ca2aafa2b2c5509e9c",
+  "schemaVersion": 1
+}
