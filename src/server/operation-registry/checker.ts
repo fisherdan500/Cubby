@@ -2319,6 +2319,7 @@ export function discoverPackageCommands(
   };
   for (const [scriptName, command] of Object.entries(parsed.scripts)) {
     if (typeof command !== "string") continue;
+    const outputOperandRanges = discoverPackageOutputOperandRanges(command);
     const dynamicNodeToken = dynamicPackageNodeTokenKind(command);
     if (dynamicNodeToken) {
       diagnostics.push({
@@ -2326,7 +2327,9 @@ export function discoverPackageCommands(
         file: "package.json",
         detail: `dynamic_node_package_command_${dynamicNodeToken}:${scriptName}`
       });
-    } else if (containsDynamicPackageExecutableToken(command)) {
+    } else if (
+      containsDynamicPackageExecutableToken(command, outputOperandRanges)
+    ) {
       diagnostics.push({
         code: "unsupported_package_command_owner",
         file: "package.json",
@@ -2339,14 +2342,16 @@ export function discoverPackageCommands(
     }
     for (const ownerModule of discoverExistingPackageExecutableTokens(
       repositoryRoot,
-      command
+      command,
+      outputOperandRanges
     )) {
       reportUnsupportedOwner(ownerModule);
     }
     const seenInScript = new Set<string>();
     for (const commandPath of extractRepositoryLocalCommandPaths(
       command,
-      ["ts", "tsx", "mts", "cts"]
+      ["ts", "tsx", "mts", "cts"],
+      outputOperandRanges
     )) {
       const ownerModule = commandPath.path;
       if (seenInScript.has(ownerModule)) continue;
@@ -2436,14 +2441,38 @@ const PACKAGE_COMMAND_OUTPUT_OPTIONS = new Set([
   "-o"
 ]);
 
-function containsDynamicPackageExecutableToken(command: string): boolean {
+type PackageCommandSourceRange = {
+  readonly start: number;
+  readonly end: number;
+};
+
+function discoverPackageOutputOperandRanges(
+  command: string
+): readonly PackageCommandSourceRange[] {
+  const ranges: PackageCommandSourceRange[] = [];
   for (const words of tokenizeShellCommands(command)) {
-    for (let index = 0; index < words.length; index += 1) {
+    const rootIndex = words.findIndex(
+      (word, index) =>
+        !isShellCommandPrefix(word) &&
+        words.slice(0, index).every((prefix) => isShellCommandPrefix(prefix))
+    );
+    if (rootIndex < 0) continue;
+    const root = words[rootIndex];
+    if (
+      !root.closed ||
+      root.dynamic ||
+      root.value.replaceAll("\\", "/").split("/").at(-1) !== "esbuild"
+    ) {
+      continue;
+    }
+    for (let index = rootIndex + 1; index < words.length; index += 1) {
       const word = words[index];
-      if (!word.dynamic || !/\.(?:[cm]?[jt]sx?)(?:$|[?#])/i.test(word.value)) {
-        continue;
-      }
-      if (index > 0 && PACKAGE_COMMAND_OUTPUT_OPTIONS.has(words[index - 1].value)) {
+      if (PACKAGE_COMMAND_OUTPUT_OPTIONS.has(word.value)) {
+        const operand = words[index + 1];
+        if (operand) {
+          ranges.push({ start: operand.start, end: operand.end });
+          index += 1;
+        }
         continue;
       }
       if (
@@ -2451,6 +2480,41 @@ function containsDynamicPackageExecutableToken(command: string): boolean {
           word.value.startsWith(`${option}=`)
         )
       ) {
+        const equals = command.indexOf("=", word.start);
+        if (equals >= word.start && equals < word.end) {
+          ranges.push({ start: equals + 1, end: word.end });
+        }
+      }
+    }
+  }
+  return ranges;
+}
+
+function isInsidePackageOutputOperand(
+  start: number,
+  end: number,
+  outputOperandRanges: readonly PackageCommandSourceRange[]
+): boolean {
+  return outputOperandRanges.some(
+    (range) => start >= range.start && end <= range.end
+  );
+}
+
+function containsDynamicPackageExecutableToken(
+  command: string,
+  outputOperandRanges: readonly PackageCommandSourceRange[]
+): boolean {
+  for (const words of tokenizeShellCommands(command)) {
+    for (let index = 0; index < words.length; index += 1) {
+      const word = words[index];
+      if (
+        outputOperandRanges.some(
+          (range) => range.start >= word.start && range.end <= word.end
+        )
+      ) {
+        continue;
+      }
+      if (!word.dynamic || !/\.(?:[cm]?[jt]sx?)(?:$|[?#])/i.test(word.value)) {
         continue;
       }
       return true;
@@ -2461,17 +2525,20 @@ function containsDynamicPackageExecutableToken(command: string): boolean {
 
 function discoverExistingPackageExecutableTokens(
   repositoryRoot: string,
-  command: string
+  command: string,
+  outputOperandRanges: readonly PackageCommandSourceRange[]
 ): readonly string[] {
   const output = new Set<string>();
   for (const words of tokenizeShellCommands(command)) {
-    for (let index = 0; index < words.length; index += 1) {
-      const word = words[index];
-      if (!word.closed || word.dynamic) continue;
-      if (index > 0 && PACKAGE_COMMAND_OUTPUT_OPTIONS.has(words[index - 1].value)) continue;
-      if ([...PACKAGE_COMMAND_OUTPUT_OPTIONS].some((option) => word.value.startsWith(`${option}=`))) {
+    for (const word of words) {
+      if (
+        outputOperandRanges.some(
+          (range) => range.start >= word.start && range.end <= word.end
+        )
+      ) {
         continue;
       }
+      if (!word.closed || word.dynamic) continue;
       const ownerModule = normalizeRepositoryCommandPath(word.value);
       const extension = ownerModule ? executableExtension(ownerModule) : null;
       if (
@@ -2504,7 +2571,8 @@ function normalizeRepositoryCommandPath(path: string): string | null {
 
 function extractRepositoryLocalCommandPaths(
   command: string,
-  extensions: readonly string[]
+  extensions: readonly string[],
+  outputOperandRanges: readonly PackageCommandSourceRange[]
 ): readonly { readonly path: string; readonly start: number; readonly end: number }[] {
   const output: Array<{ readonly path: string; readonly start: number; readonly end: number }> = [];
   const pattern = /(?:^|[\s"'`=(:,;|&])((?:\.\/)?(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.([A-Za-z0-9]+))(?=$|[\s"'`),;|&])/g;
@@ -2512,6 +2580,12 @@ function extractRepositoryLocalCommandPaths(
     const extension = match[2]?.toLowerCase();
     if (!extension || !extensions.includes(extension) || match.index === undefined) continue;
     const rawPath = match[1];
+    const prefixLength = match[0].length - rawPath.length;
+    const start = match.index + prefixLength;
+    const end = start + rawPath.length;
+    if (isInsidePackageOutputOperand(start, end, outputOperandRanges)) {
+      continue;
+    }
     const path = rawPath.replace(/^\.\//, "");
     if (
       !path.includes("/") ||
@@ -2521,11 +2595,10 @@ function extractRepositoryLocalCommandPaths(
     ) {
       continue;
     }
-    const prefixLength = match[0].length - rawPath.length;
     output.push({
       path,
-      start: match.index + prefixLength,
-      end: match.index + prefixLength + rawPath.length
+      start,
+      end
     });
   }
   return output;
@@ -5468,7 +5541,12 @@ export function discoverStructuralExclusions(
       : existsSync(resolve(repositoryRoot, ownerModule));
   for (const [scriptName, command] of Object.entries(parsed.scripts)) {
     if (typeof command !== "string") continue;
-    for (const commandPath of extractRepositoryLocalCommandPaths(command, ["ts", "mjs"])) {
+    const outputOperandRanges = discoverPackageOutputOperandRanges(command);
+    for (const commandPath of extractRepositoryLocalCommandPaths(
+      command,
+      ["ts", "mjs"],
+      outputOperandRanges
+    )) {
       const ownerModule = commandPath.path;
       let category: StructuralExclusion["category"] | null = null;
       let rationale = "";

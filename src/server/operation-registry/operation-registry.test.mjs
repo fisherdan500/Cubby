@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -1441,6 +1442,87 @@ test("declares the representative platform-owner command sidecar", () => {
   assert.ok(
     registry.declarations.some((entry) => required.has(entry.sidecarPath))
   );
+});
+
+test("shares esbuild output operand ranges without hiding source inputs", () => {
+  const outputOptions = ["--outfile", "--outdir", "--output", "--output-file", "-o"];
+  const scripts = {
+    ...Object.fromEntries(
+      outputOptions.flatMap((option, index) => [
+        [
+          `split-${index}`,
+          `esbuild scripts/source.ts --bundle ${option} dist/missing-rehearsal-${index}.ts`
+        ],
+        [
+          `equals-${index}`,
+          `./node_modules/.bin/esbuild scripts/source.ts --bundle ${option}=dist/missing-equals-rehearsal-${index}.ts`
+        ]
+      ])
+    ),
+    "dynamic-output": 'esbuild scripts/source.ts --outfile "$OUTPUT.mjs"',
+    "missing-outdir": "tsx --outdir scripts/missing-rehearsal.ts",
+    "missing-output": "tsx --output scripts/missing-rehearsal.ts"
+  };
+  const program = createProgramFromSources(repositoryRoot, {
+    "scripts/source.ts": "export const source = true;\n"
+  });
+  const packageResult = discoverPackageCommands(
+    program,
+    repositoryRoot,
+    JSON.stringify({ scripts })
+  );
+
+  assert.deepEqual(
+    packageResult.observations
+      .filter(({ kind }) => kind === "package_script")
+      .map(({ ownerModule, symbol }) => ({ ownerModule, symbol })),
+    Object.keys(scripts)
+      .filter((symbol) => !symbol.startsWith("missing-"))
+      .map((symbol) => ({ ownerModule: "scripts/source.ts", symbol }))
+  );
+  assert.deepEqual(packageResult.diagnostics, [
+    {
+      code: "unresolved_package_command",
+      file: "package.json",
+      detail: "typescript_command_owner_missing:scripts/missing-rehearsal.ts"
+    },
+    {
+      code: "unresolved_package_command",
+      file: "package.json",
+      detail: "typescript_command_owner_missing:scripts/missing-rehearsal.ts"
+    }
+  ]);
+  const exclusionResult = discoverStructuralExclusions(
+    repositoryRoot,
+    JSON.stringify({ scripts }),
+    new Set(["scripts/source.ts"])
+  );
+  assert.deepEqual(exclusionResult.diagnostics, [
+    {
+      code: "stale_structural_exclusion",
+      file: "package.json",
+      detail: "excluded_owner_missing:scripts/missing-rehearsal.ts"
+    },
+    {
+      code: "stale_structural_exclusion",
+      file: "package.json",
+      detail: "excluded_owner_missing:scripts/missing-rehearsal.ts"
+    }
+  ]);
+});
+
+test("does not require current package esbuild outputs to exist", () => {
+  const currentPathsWithoutBuildOutputs = {
+    has: (ownerModule) =>
+      !ownerModule.startsWith("dist/") &&
+      existsSync(resolve(repositoryRoot, ownerModule))
+  };
+  const result = discoverStructuralExclusions(
+    repositoryRoot,
+    readFileSync(resolve(repositoryRoot, "package.json"), "utf8"),
+    currentPathsWithoutBuildOutputs
+  );
+  assert.deepEqual(result.diagnostics, []);
 });
 
 test("classifies rehearsal, fixture, build-tool, and registry exclusions exactly", () => {
