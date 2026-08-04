@@ -73,6 +73,145 @@ function assertDeclarationFamily(sidecarPaths) {
   );
 }
 
+function textWithLineEnding(text, lineEnding) {
+  return text.replace(/\r\n/g, "\n").replace(/\n/g, lineEnding);
+}
+
+function writeCrossEolRepositoryFixture(root, lineEnding) {
+  const writeFixture = (file, content) => {
+    const target = resolve(root, file);
+    mkdirSync(resolve(target, ".."), { recursive: true });
+    writeFileSync(target, textWithLineEnding(content, lineEnding));
+  };
+  writeFixture(
+    "tsconfig.json",
+    JSON.stringify({
+      compilerOptions: { target: "ES2022", module: "ESNext" },
+      include: ["src/**/*.ts"]
+    }) + "\n"
+  );
+  writeFixture("package.json", `${JSON.stringify({ scripts: { tool: "tsx src/app/route.ts" } }, null, 2)}\n`);
+  writeFixture(
+    "src/app/route.ts",
+    "\nexport function GET() { return new Response(\"canonical\"); }\n"
+  );
+  writeFixture(
+    "src/app/route.operation.ts",
+    `import type { OperationDeclaration } from "@/server/operation-registry/schema";
+
+export const operation = {
+  schemaVersion: 1,
+  id: "api_route:src/app/route.ts",
+  ownerModule: "src/app/route.ts",
+  ownerKind: "api_route",
+  bindings: [{ kind: "route_method", symbol: "GET", target: "src/app/route.ts#GET" }],
+  disposition: "observed",
+  deferredGateIds: []
+} as const satisfies OperationDeclaration;
+`
+  );
+  for (const file of [
+    "src/server/operation-registry/checker.ts",
+    "src/server/operation-registry/schema.ts",
+    "scripts/operation-registry.ts"
+  ]) {
+    writeFixture(file, readFileSync(resolve(repositoryRoot, file), "utf8"));
+  }
+  return writeFixture;
+}
+
+test("canonicalizes LF and CRLF repository text before generating anchors and digests", () => {
+  const lfRoot = mkdtempSync(resolve(tmpdir(), "cubby-cross-eol-lf-"));
+  const crlfRoot = mkdtempSync(resolve(tmpdir(), "cubby-cross-eol-crlf-"));
+  try {
+    writeCrossEolRepositoryFixture(lfRoot, "\n");
+    writeCrossEolRepositoryFixture(crlfRoot, "\r\n");
+    const lf = buildRepositoryArtifacts(lfRoot);
+    const crlf = buildRepositoryArtifacts(crlfRoot);
+
+    assert.deepEqual(crlf.artifacts, lf.artifacts);
+    assert.deepEqual(
+      {
+        schemaDigest: crlf.schemaDigest,
+        generatorDigest: crlf.generatorDigest,
+        ownerSetDigest: crlf.ownerSetDigest,
+        observationDigest: crlf.observationDigest,
+        declarationDigest: crlf.declarationDigest,
+        runtimeInvocationLedgerDigest: crlf.runtimeInvocationLedgerDigest,
+        registryDigest: crlf.registryDigest
+      },
+      {
+        schemaDigest: lf.schemaDigest,
+        generatorDigest: lf.generatorDigest,
+        ownerSetDigest: lf.ownerSetDigest,
+        observationDigest: lf.observationDigest,
+        declarationDigest: lf.declarationDigest,
+        runtimeInvocationLedgerDigest: lf.runtimeInvocationLedgerDigest,
+        registryDigest: lf.registryDigest
+      }
+    );
+    const lfObservation = JSON.parse(
+      lf.artifacts["src/server/operation-registry/generated/observation-registry.json"]
+    );
+    const crlfObservation = JSON.parse(
+      crlf.artifacts["src/server/operation-registry/generated/observation-registry.json"]
+    );
+    assert.deepEqual(crlfObservation.observationCanonical, lfObservation.observationCanonical);
+  } finally {
+    rmSync(lfRoot, { recursive: true, force: true });
+    rmSync(crlfRoot, { recursive: true, force: true });
+  }
+});
+
+test("accepts CRLF-translated generated artifacts when canonical content matches", () => {
+  const lfRoot = mkdtempSync(resolve(tmpdir(), "cubby-cross-eol-artifacts-lf-"));
+  const crlfRoot = mkdtempSync(resolve(tmpdir(), "cubby-cross-eol-artifacts-crlf-"));
+  try {
+    writeCrossEolRepositoryFixture(lfRoot, "\n");
+    const writeCrLfFixture = writeCrossEolRepositoryFixture(crlfRoot, "\r\n");
+    const lf = buildRepositoryArtifacts(lfRoot);
+    for (const [file, content] of Object.entries(lf.artifacts)) {
+      writeCrLfFixture(file, content);
+    }
+    const crlf = buildRepositoryArtifacts(crlfRoot);
+    assert.deepEqual(
+      checkGeneratedArtifacts(
+        crlfRoot,
+        lf.artifacts,
+        new Set(crlf.registry.declarations.map((entry) => entry.sidecarPath))
+      ).filter((diagnostic) => diagnostic.code === "generated_artifact_mismatch"),
+      []
+    );
+  } finally {
+    rmSync(lfRoot, { recursive: true, force: true });
+    rmSync(crlfRoot, { recursive: true, force: true });
+  }
+});
+
+test("preserves logical source drift across canonical LF and CRLF repository text", () => {
+  const lfRoot = mkdtempSync(resolve(tmpdir(), "cubby-cross-eol-drift-lf-"));
+  const crlfRoot = mkdtempSync(resolve(tmpdir(), "cubby-cross-eol-drift-crlf-"));
+  try {
+    const writeLfFixture = writeCrossEolRepositoryFixture(lfRoot, "\n");
+    const writeCrLfFixture = writeCrossEolRepositoryFixture(
+      crlfRoot,
+      String.fromCharCode(13) + "\n"
+    );
+    const baseline = buildRepositoryArtifacts(lfRoot);
+    const changedRoute = "\nexport function GET() { return new Response(\"changed\"); }\n";
+    writeLfFixture("src/app/route.ts", changedRoute);
+    writeCrLfFixture("src/app/route.ts", changedRoute);
+    const changedLf = buildRepositoryArtifacts(lfRoot);
+    const changedCrlf = buildRepositoryArtifacts(crlfRoot);
+
+    assert.deepEqual(changedCrlf.artifacts, changedLf.artifacts);
+    assert.notEqual(changedLf.registryDigest, baseline.registryDigest);
+  } finally {
+    rmSync(lfRoot, { recursive: true, force: true });
+    rmSync(crlfRoot, { recursive: true, force: true });
+  }
+});
+
 test("rejects every executable or non-literal sidecar form", () => {
     const invalidSources = [
       `import { value } from "@/server/services/example"; export const operation = ${validBody} as const;`,

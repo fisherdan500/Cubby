@@ -41,6 +41,14 @@ const yamlLoad = (
   }
 ).load;
 
+export function canonicalizeRepositoryText(text: string): string {
+  return text.split(String.fromCharCode(13) + "\n").join("\n");
+}
+
+function readCanonicalRepositoryText(file: string): string {
+  return canonicalizeRepositoryText(readFileSync(file, "utf8"));
+}
+
 export type OperationRegistryDiagnosticCode =
   | "unsupported_sidecar_syntax"
   | "invalid_sidecar_schema"
@@ -290,7 +298,19 @@ export function loadRepositoryProgram(
   const rootNames = relativeRootNames
     ? relativeRootNames.map((file) => resolve(repositoryRoot, file))
     : parsed.fileNames;
-  return ts.createProgram({ rootNames, options: parsed.options });
+  const host = ts.createCompilerHost(parsed.options, true);
+  const defaultReadFile = host.readFile.bind(host);
+  host.readFile = (fileName) => {
+    const text = defaultReadFile(fileName);
+    return text === undefined ? undefined : canonicalizeRepositoryText(text);
+  };
+  host.getSourceFile = (fileName, languageVersion) => {
+    const text = host.readFile(fileName);
+    return text === undefined
+      ? undefined
+      : ts.createSourceFile(fileName, text, languageVersion, true);
+  };
+  return ts.createProgram({ rootNames, options: parsed.options, host });
 }
 
 export function createProgramFromSources(
@@ -307,7 +327,10 @@ export function createProgramFromSources(
     jsx: ts.JsxEmit.Preserve
   };
   const normalized = new Map(
-    Object.entries(sources).map(([file, text]) => [resolve(repositoryRoot, file), text])
+    Object.entries(sources).map(([file, text]) => [
+      resolve(repositoryRoot, file),
+      canonicalizeRepositoryText(text)
+    ])
   );
   const host = ts.createCompilerHost(options, true);
   const defaultFileExists = host.fileExists.bind(host);
@@ -416,7 +439,7 @@ function discoverRepositoryExecutableSourceCandidates(
       : undefined;
     const sourceFile = programSource ?? ts.createSourceFile(
       file,
-      readFileSync(resolve(repositoryRoot, file), "utf8"),
+      readCanonicalRepositoryText(resolve(repositoryRoot, file)),
       ts.ScriptTarget.Latest,
       true
     );
@@ -2272,7 +2295,7 @@ function directIdentifierCalls(node: ts.Node): readonly string[] {
 export function discoverPackageCommands(
   program: ts.Program,
   repositoryRoot: string,
-  packageJsonText = readFileSync(resolve(repositoryRoot, "package.json"), "utf8")
+  packageJsonText = readCanonicalRepositoryText(resolve(repositoryRoot, "package.json"))
 ): StructuralDiscovery {
   const observations: StructuralObservation[] = [];
   const diagnostics: OperationRegistryDiagnostic[] = [];
@@ -2632,7 +2655,7 @@ function discoverSelectedContainerDockerfiles(
   for (const file of discoverRepositoryComposeFiles(repositoryRoot)) {
     const parsed = parseComposeBuildCandidates(
       file,
-      readFileSync(resolve(repositoryRoot, file), "utf8")
+      readCanonicalRepositoryText(resolve(repositoryRoot, file))
     );
     diagnostics.push(...parsed.diagnostics);
     candidates.push(...parsed.candidates);
@@ -2740,7 +2763,7 @@ function discoverSelectedContainerDockerfiles(
         });
         continue;
       }
-      source = readFileSync(dockerfileTarget, "utf8");
+      source = readCanonicalRepositoryText(dockerfileTarget);
     } catch {
       diagnostics.push({
         code: "unsupported_container_command",
@@ -2781,7 +2804,7 @@ function discoverSelectedContainerDockerfiles(
     const existing = selected.get("Dockerfile");
     if (!existing) {
       selected.set("Dockerfile", {
-        source: readFileSync(rootDockerfile, "utf8"),
+        source: readCanonicalRepositoryText(rootDockerfile),
         contextDirectory: repository,
         selectorAnchors: []
       });
@@ -2988,7 +3011,7 @@ function isUnsupportedComposeBuildNode(value: string): boolean {
 
 export function discoverContainerCommandBindings(
   repositoryRoot: string,
-  packageJsonText = readFileSync(resolve(repositoryRoot, "package.json"), "utf8"),
+  packageJsonText = readCanonicalRepositoryText(resolve(repositoryRoot, "package.json")),
   dockerfileText?: string,
   entrypointText?: string
 ): StructuralDiscovery {
@@ -3207,7 +3230,7 @@ export function discoverContainerCommandBindings(
   ) => {
     const source = anchorSource ?? (
       existsSync(resolve(repositoryRoot, anchorFile))
-        ? readFileSync(resolve(repositoryRoot, anchorFile), "utf8")
+        ? readCanonicalRepositoryText(resolve(repositoryRoot, anchorFile))
         : ""
     );
     const anchorBytes = invocation.start >= 0 && invocation.end <= source.length
@@ -3563,7 +3586,7 @@ function discoverContainerShellProvenance(
     let source: string;
     try {
       if (!statSync(absoluteSource).isFile()) throw new Error("not_file");
-      source = readFileSync(absoluteSource, "utf8");
+      source = readCanonicalRepositoryText(absoluteSource);
     } catch {
       diagnostics.push({
         code: "unsupported_container_command",
@@ -3804,7 +3827,9 @@ function discoverComposeShellSelections(repositoryRoot: string): {
   const diagnostics: OperationRegistryDiagnostic[] = [];
   if (!existsSync(repositoryRoot)) return { selections, diagnostics };
   for (const file of discoverRepositoryComposeFiles(repositoryRoot)) {
-    const parsed = parseComposeCommandFields(readFileSync(resolve(repositoryRoot, file), "utf8"));
+    const parsed = parseComposeCommandFields(
+      readCanonicalRepositoryText(resolve(repositoryRoot, file))
+    );
     for (const [service, fields] of parsed.services) {
       const selected = fields.entrypoint ?? (!fields.entrypoint ? fields.command : undefined);
       if (!selected || selected.form === "unsupported") continue;
@@ -4576,7 +4601,7 @@ function discoverComposeNodeInvocations(repositoryRoot: string): {
   const files = [...discoverRepositoryComposeFiles(repositoryRoot)]
     .sort((left, right) => composeFileOrder(left) - composeFileOrder(right) || left.localeCompare(right));
   for (const file of files) {
-    const source = readFileSync(resolve(repositoryRoot, file), "utf8");
+    const source = readCanonicalRepositoryText(resolve(repositoryRoot, file));
     const parsed = parseComposeCommandFields(source);
     diagnostics.push(...parsed.diagnostics.map((detail) => ({
       code: "unsupported_container_command" as const,
@@ -4680,7 +4705,7 @@ function discoverComposeHealthcheckNodeInvocations(repositoryRoot: string): {
       composeFileOrder(left) - composeFileOrder(right) || left.localeCompare(right)
     );
   for (const file of files) {
-    const source = readFileSync(resolve(repositoryRoot, file), "utf8");
+    const source = readCanonicalRepositoryText(resolve(repositoryRoot, file));
     const resolved = resolveComposeYaml(source);
     if (!resolved.document) {
       for (const anchor of findRawNodeCapableHealthcheckAnchors(source)) {
@@ -5503,7 +5528,7 @@ function escapeRegExp(value: string): string {
 
 export function discoverStructuralExclusions(
   repositoryRoot: string,
-  packageJsonText = readFileSync(resolve(repositoryRoot, "package.json"), "utf8"),
+  packageJsonText = readCanonicalRepositoryText(resolve(repositoryRoot, "package.json")),
   availablePaths?: ReadonlySet<string>
 ): StructuralExclusionDiscovery {
   const exclusionsByOwner = new Map<string, StructuralExclusion>();
@@ -5794,7 +5819,7 @@ export function buildRepositoryRegistry(
   for (const sidecarPath of existingSidecars) {
     const parsed = parseSidecarSource(
       sidecarPath,
-      readFileSync(resolve(repositoryRoot, sidecarPath), "utf8")
+      readCanonicalRepositoryText(resolve(repositoryRoot, sidecarPath))
     );
     discoveries.push(...parsed.diagnostics);
     if (!appendixSidecars.has(sidecarPath)) {
@@ -6023,9 +6048,8 @@ export function computeRegistryDigest(input: RegistryDigestInput): RegistryDiges
 
 export function buildRepositoryArtifacts(repositoryRoot: string): RepositoryArtifacts {
   const registry = buildRepositoryRegistry(repositoryRoot);
-  const schemaBytes = readFileSync(
-    resolve(repositoryRoot, "src/server/operation-registry/schema.ts"),
-    "utf8"
+  const schemaBytes = readCanonicalRepositoryText(
+    resolve(repositoryRoot, "src/server/operation-registry/schema.ts")
   );
   const generatorFiles = [
     "src/server/operation-registry/checker.ts",
@@ -6037,7 +6061,7 @@ export function buildRepositoryArtifacts(repositoryRoot: string): RepositoryArti
     stableJson(
       generatorFiles.map((file) => ({
         file,
-        digest: sha256(readFileSync(resolve(repositoryRoot, file), "utf8"))
+        digest: sha256(readCanonicalRepositoryText(resolve(repositoryRoot, file)))
       }))
     )
   );
@@ -6073,7 +6097,7 @@ export function buildRepositoryArtifacts(repositoryRoot: string): RepositoryArti
       anchorFileBytes.set(file, "");
       return "";
     }
-    const bytes = readFileSync(target, "utf8");
+    const bytes = readCanonicalRepositoryText(target);
     anchorFileBytes.set(file, bytes);
     return bytes;
   };
@@ -6217,7 +6241,7 @@ export function buildRepositoryArtifacts(repositoryRoot: string): RepositoryArti
     const ownerBytes = readAnchorFile(owner.ownerModule);
     const declaration = declarationsById.get(owner.id);
     const sidecarBytes = declaration
-      ? readFileSync(resolve(repositoryRoot, declaration.sidecarPath), "utf8")
+      ? readCanonicalRepositoryText(resolve(repositoryRoot, declaration.sidecarPath))
       : "";
     const fingerprintBindings = owner.bindings.map((binding) => ({
       kind: binding.kind,
@@ -6472,8 +6496,8 @@ export function checkGeneratedArtifacts(
       });
       continue;
     }
-    const actualContent = readFileSync(target, "utf8");
-    if (actualContent !== expectedContent) {
+    const actualContent = readCanonicalRepositoryText(target);
+    if (actualContent !== canonicalizeRepositoryText(expectedContent)) {
       diagnostics.push({
         code: "generated_artifact_mismatch",
         file,
@@ -6486,7 +6510,7 @@ export function checkGeneratedArtifacts(
   const registryTarget = resolve(repositoryRoot, registryPath);
   if (existsSync(registryTarget) && expected[registryPath]) {
     try {
-      const actual = JSON.parse(readFileSync(registryTarget, "utf8"));
+      const actual = JSON.parse(readCanonicalRepositoryText(registryTarget));
       const expectedRegistry = JSON.parse(expected[registryPath]);
       const actualOwners = generatedRows(actual, "owners");
       const expectedOwners = generatedRows(expectedRegistry, "owners");
@@ -6552,7 +6576,7 @@ export function checkGeneratedArtifacts(
     const target = resolve(repositoryRoot, file);
     if (!existsSync(target)) continue;
     try {
-      const value = JSON.parse(readFileSync(target, "utf8"));
+      const value = JSON.parse(readCanonicalRepositoryText(target));
       if (isRecord(value)) parsedArtifacts.push({ file, value });
     } catch {
       // The byte comparison and artifact-specific parser report malformed JSON.
