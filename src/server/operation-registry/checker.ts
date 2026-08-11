@@ -53,6 +53,7 @@ function readCanonicalRepositoryText(file: string): string {
 export type OperationRegistryDiagnosticCode =
   | "unsupported_sidecar_syntax"
   | "unsupported_semantic_sidecar_syntax"
+  | "unexpected_semantic_sidecar"
   | "invalid_semantic_exposure_pairing"
   | "duplicate_semantic_identity"
   | "missing_semantic_exposure_export_name"
@@ -6011,14 +6012,107 @@ export function renderSemanticGeneratedArtifacts(
 }
 
 export const SEMANTIC_SIDECAR_PATHS = [
+  "src/app/api/activities/[id]/route.semantic.ts",
+  "src/app/api/activities/route.semantic.ts",
+  "src/app/api/activities/undo-last/route.semantic.ts",
+  "src/app/api/babies/[id]/deactivate/route.semantic.ts",
+  "src/app/api/babies/[id]/reactivate/route.semantic.ts",
+  "src/app/api/babies/route.semantic.ts",
+  "src/app/api/dashboard/warnings/dismiss/route.semantic.ts",
+  "src/app/api/invites/revoke-all/route.semantic.ts",
+  "src/app/api/invites/route.semantic.ts",
+  "src/app/api/members/[id]/restore/route.semantic.ts",
+  "src/app/api/members/[id]/route.semantic.ts",
+  "src/app/api/members/[id]/suspend/route.semantic.ts",
+  "src/app/api/notifications/preferences/route.semantic.ts",
   "src/app/api/platform/registration/route.semantic.ts",
+  "src/app/api/settings/appearance/route.semantic.ts",
   "src/app/api/settings/registration/route.semantic.ts",
-  "src/server/services/platform-authority.semantic.ts"
+  "src/app/api/settings/units/route.semantic.ts",
+  "src/app/api/timers/[id]/pause/route.semantic.ts",
+  "src/app/api/timers/[id]/resume/route.semantic.ts",
+  "src/app/api/timers/[id]/stop/route.semantic.ts",
+  "src/app/app/calendar/actions.semantic.ts",
+  "src/server/services/activities.semantic.ts",
+  "src/server/services/appearance.semantic.ts",
+  "src/server/services/calendar.semantic.ts",
+  "src/server/services/dashboard.semantic.ts",
+  "src/server/services/households.semantic.ts",
+  "src/server/services/integrations.semantic.ts",
+  "src/server/services/invites.semantic.ts",
+  "src/server/services/platform-authority.semantic.ts",
+  "src/server/services/unit-preferences.semantic.ts"
+] as const;
+
+const PLATFORM_REGISTRATION_SEMANTIC_OWNER_MODULES = new Set([
+  "src/app/api/platform/registration/route.ts",
+  "src/app/api/settings/registration/route.ts",
+  "src/server/services/platform-authority.ts"
+]);
+
+const SEMANTIC_SERVICE_OWNER_MODULES = new Set([
+  "src/server/services/activities.ts",
+  "src/server/services/appearance.ts",
+  "src/server/services/calendar.ts",
+  "src/server/services/dashboard.ts",
+  "src/server/services/households.ts",
+  "src/server/services/integrations.ts",
+  "src/server/services/invites.ts",
+  "src/server/services/platform-authority.ts",
+  "src/server/services/unit-preferences.ts"
+]);
+
+const SEMANTIC_BROWSER_EXPOSURE_SERVICE_LINKS = [
+  ["src/app/api/activities/[id]/route.ts", "DELETE", "activity.delete"],
+  ["src/app/api/activities/[id]/route.ts", "PATCH", "activity.update"],
+  ["src/app/api/activities/route.ts", "POST", "activity.create"],
+  ["src/app/api/activities/undo-last/route.ts", "POST", "activity.undo_last"],
+  ["src/app/api/babies/[id]/deactivate/route.ts", "POST", "baby.deactivate"],
+  ["src/app/api/babies/[id]/reactivate/route.ts", "POST", "baby.reactivate"],
+  ["src/app/api/babies/route.ts", "POST", "baby.create"],
+  ["src/app/api/dashboard/warnings/dismiss/route.ts", "POST", "dashboard.warning.dismiss"],
+  ["src/app/api/invites/revoke-all/route.ts", "POST", "invite.revoke_all"],
+  ["src/app/api/invites/route.ts", "POST", "invite.create"],
+  ["src/app/api/members/[id]/restore/route.ts", "POST", "member.restore"],
+  ["src/app/api/members/[id]/route.ts", "DELETE", "member.remove"],
+  ["src/app/api/members/[id]/route.ts", "PATCH", "member.role.update"],
+  ["src/app/api/members/[id]/suspend/route.ts", "POST", "member.suspend"],
+  ["src/app/api/notifications/preferences/route.ts", "POST", "notification.preference.save"],
+  ["src/app/api/settings/appearance/route.ts", "PATCH", "settings.appearance.update"],
+  ["src/app/api/settings/units/route.ts", "PATCH", "settings.units.update"],
+  ["src/app/api/timers/[id]/pause/route.ts", "POST", "activity.timer.pause"],
+  ["src/app/api/timers/[id]/resume/route.ts", "POST", "activity.timer.resume"],
+  ["src/app/api/timers/[id]/stop/route.ts", "POST", "activity.timer.stop"],
+  ["src/app/app/calendar/actions.ts", "createCalendarEventAction", "calendar_event.create"]
+] as const;
+
+const SEMANTIC_BROWSER_SERVICE_OPERATIONS = [
+  ["activity.create", "src/server/services/activities.ts", "createActivity"],
+  ["activity.delete", "src/server/services/activities.ts", "deleteActivity"],
+  ["activity.update", "src/server/services/activities.ts", "updateActivity"],
+  ["activity.undo_last", "src/server/services/activities.ts", "undoLastActivity"],
+  ["activity.timer.pause", "src/server/services/activities.ts", "pauseTimer"],
+  ["activity.timer.resume", "src/server/services/activities.ts", "resumeTimer"],
+  ["activity.timer.stop", "src/server/services/activities.ts", "stopTimer"],
+  ["baby.create", "src/server/services/households.ts", "addBaby"],
+  ["baby.deactivate", "src/server/services/households.ts", "deactivateBaby"],
+  ["baby.reactivate", "src/server/services/households.ts", "reactivateBaby"],
+  ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarning"],
+  ["invite.create", "src/server/services/invites.ts", "createInvite"],
+  ["invite.revoke_all", "src/server/services/invites.ts", "revokeAllPendingInvites"],
+  ["member.restore", "src/server/services/invites.ts", "restoreMember"],
+  ["member.remove", "src/server/services/invites.ts", "removeMember"],
+  ["member.role.update", "src/server/services/invites.ts", "updateMemberRole"],
+  ["member.suspend", "src/server/services/invites.ts", "suspendMember"],
+  ["notification.preference.save", "src/server/services/integrations.ts", "saveNotificationPreference"],
+  ["settings.appearance.update", "src/server/services/appearance.ts", "updateHouseholdAppearance"],
+  ["settings.units.update", "src/server/services/unit-preferences.ts", "updateUnitPreferences"],
+  ["calendar_event.create", "src/server/services/calendar.ts", "createCalendarEvent"]
 ] as const;
 
 export const SEMANTIC_ARTIFACT_VERSION = "semantic-artifact.v1" as const;
 export const SEMANTIC_ARTIFACT_AUTHORITY = "source_reviewed_subset" as const;
-export const SEMANTIC_ARTIFACT_SCOPE = "platform_registration" as const;
+export const SEMANTIC_ARTIFACT_SCOPE = "platform_registration_and_browser_household_mutations" as const;
 
 export type SemanticRepositoryArtifacts = {
   readonly artifacts: Readonly<Record<string, string>>;
@@ -6030,6 +6124,18 @@ export function buildSemanticRepositoryArtifacts(
 ): SemanticRepositoryArtifacts {
   const structuralRegistry = buildRepositoryRegistry(repositoryRoot);
   const diagnostics: OperationRegistryDiagnostic[] = [...structuralRegistry.diagnostics];
+  const semanticSidecarDiscovery = discoverRepositorySemanticSidecars(repositoryRoot);
+  diagnostics.push(...semanticSidecarDiscovery.diagnostics);
+  const allowedSemanticSidecars = new Set<string>(SEMANTIC_SIDECAR_PATHS);
+  for (const fileName of semanticSidecarDiscovery.paths) {
+    if (!allowedSemanticSidecars.has(fileName)) {
+      diagnostics.push({
+        code: "unexpected_semantic_sidecar",
+        file: fileName,
+        detail: "semantic_sidecar_path_is_not_allowed"
+      });
+    }
+  }
   const sidecars: Array<{ readonly fileName: string; readonly sourceText: string }> = [];
   for (const fileName of SEMANTIC_SIDECAR_PATHS) {
     const target = resolve(repositoryRoot, fileName);
@@ -6052,7 +6158,8 @@ export function buildSemanticRepositoryArtifacts(
   );
   diagnostics.push(...parsed.diagnostics);
   const declarations = [...(parsed.declarations ?? [])].sort(compareSemanticDeclarations);
-  if (diagnostics.length > 0 || declarations.length !== 12) {
+  diagnostics.push(...validateCombinedSemanticDeclarationFamily(declarations));
+  if (diagnostics.length > 0 || declarations.length !== 54) {
     if (diagnostics.length === 0) {
       diagnostics.push({
         code: "generated_artifact_mismatch",
@@ -6063,9 +6170,31 @@ export function buildSemanticRepositoryArtifacts(
     return { artifacts: {}, diagnostics };
   }
 
-  const fingerprint = computeSemanticFingerprint({ declarations, repositoryRoot });
-  diagnostics.push(...fingerprint.diagnostics);
-  if (diagnostics.length > 0 || fingerprint.digest === null) return { artifacts: {}, diagnostics };
+  const fingerprintProgram = loadRepositoryProgram(repositoryRoot);
+  const fingerprint = computeSemanticFingerprint({ declarations, repositoryRoot, program: fingerprintProgram });
+  const platformDeclarations = declarations.filter((declaration) =>
+    PLATFORM_REGISTRATION_SEMANTIC_OWNER_MODULES.has(declaration.ownerModule)
+  );
+  const browserMutationDeclarations = declarations.filter((declaration) =>
+    !PLATFORM_REGISTRATION_SEMANTIC_OWNER_MODULES.has(declaration.ownerModule)
+  );
+  const familyFingerprints = [
+    { id: "semantic:platform_registration", declarations: platformDeclarations },
+    { id: "semantic:browser_household_mutations", declarations: browserMutationDeclarations }
+  ].map((family) => ({
+    ...family,
+    fingerprint: computeSemanticFingerprint({
+      declarations: family.declarations,
+      repositoryRoot,
+      program: fingerprintProgram
+    })
+  }));
+  diagnostics.push(...fingerprint.diagnostics, ...familyFingerprints.flatMap((family) => family.fingerprint.diagnostics));
+  if (
+    diagnostics.length > 0 ||
+    fingerprint.digest === null ||
+    familyFingerprints.some((family) => family.declarations.length === 0 || family.fingerprint.digest === null)
+  ) return { artifacts: {}, diagnostics };
 
   const semanticDeclarationDigest = sha256(stableJson(declarations));
   const coverage = buildSemanticStructuralExposureCoverage(
@@ -6081,7 +6210,11 @@ export function buildSemanticRepositoryArtifacts(
         : `semantic-exposure:${declaration.ownerModule}#${declaration.exportName}${
             declaration.variant ? `@${declaration.variant.name}` : ""
           }`,
-      fingerprint: computeSemanticFingerprint({ declarations: [declaration], repositoryRoot })
+      fingerprint: computeSemanticFingerprint({
+        declarations: [declaration],
+        repositoryRoot,
+        program: fingerprintProgram
+      })
     }));
   diagnostics.push(...declarationFingerprints.flatMap(({ fingerprint }) => fingerprint.diagnostics));
   if (diagnostics.length > 0 || declarationFingerprints.some(({ fingerprint }) => fingerprint.digest === null)) {
@@ -6126,7 +6259,7 @@ export function buildSemanticRepositoryArtifacts(
       semanticFingerprints: {
         ...metadata,
         fingerprints: [
-          { id: "semantic:platform_registration", digest: fingerprint.digest },
+          ...familyFingerprints.map(({ id, fingerprint }) => ({ id, digest: fingerprint.digest! })),
           ...declarationFingerprints.map(({ id, fingerprint }) => ({ id, digest: fingerprint.digest! }))
         ].sort((left, right) => left.id.localeCompare(right.id))
       },
@@ -6134,6 +6267,122 @@ export function buildSemanticRepositoryArtifacts(
       semanticStructuralExposureCoverage: { ...metadata, entries: coverage.entries }
     })
   };
+}
+
+function discoverRepositorySemanticSidecars(repositoryRoot: string): {
+  readonly paths: readonly string[];
+  readonly diagnostics: readonly OperationRegistryDiagnostic[];
+} {
+  const sourceRoot = resolve(repositoryRoot, "src");
+  if (!existsSync(sourceRoot) || !statSync(sourceRoot).isDirectory()) {
+    return { paths: [], diagnostics: [] };
+  }
+  const paths: string[] = [];
+  const diagnostics: OperationRegistryDiagnostic[] = [];
+  const visit = (directory: string) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name))) {
+      const target = resolve(directory, entry.name);
+      if (entry.isSymbolicLink()) {
+        diagnostics.push({
+          code: "unexpected_semantic_sidecar",
+          file: relativeModule(repositoryRoot, target),
+          detail: "semantic_sidecar_discovery_rejects_symlink"
+        });
+      } else if (entry.isDirectory()) {
+        visit(target);
+      } else if (entry.isFile() && entry.name.endsWith(".semantic.ts")) {
+        paths.push(relativeModule(repositoryRoot, target));
+      }
+    }
+  };
+  visit(sourceRoot);
+  return { paths, diagnostics };
+}
+
+function validateCombinedSemanticDeclarationFamily(
+  declarations: readonly SemanticDeclaration[]
+): readonly OperationRegistryDiagnostic[] {
+  const diagnostics: OperationRegistryDiagnostic[] = [];
+  const browserDeclarations = declarations.filter(
+    (declaration) => !PLATFORM_REGISTRATION_SEMANTIC_OWNER_MODULES.has(declaration.ownerModule)
+  );
+  const browserExposures = browserDeclarations.filter(
+    (declaration): declaration is Extract<SemanticDeclaration, { readonly kind: "exposure" }> =>
+      declaration.kind === "exposure"
+  );
+  const expectedExposureLinks = new Map<string, string>(
+    SEMANTIC_BROWSER_EXPOSURE_SERVICE_LINKS.map(([ownerModule, exportName, serviceOperationId]) => [
+      `${ownerModule}#${exportName}`,
+      serviceOperationId
+    ])
+  );
+  const actualExposureIdentities = new Set<string>();
+  for (const declaration of browserExposures) {
+    const identity = `${declaration.ownerModule}#${declaration.exportName}`;
+    actualExposureIdentities.add(identity);
+    const expectedServiceOperationId = expectedExposureLinks.get(identity);
+    if (
+      expectedServiceOperationId === undefined ||
+      declaration.variant !== undefined ||
+      declaration.aliasOf !== undefined ||
+      !Array.isArray(declaration.serviceOperationIds) ||
+      declaration.serviceOperationIds.length !== 1 ||
+      declaration.serviceOperationIds[0] !== expectedServiceOperationId
+    ) {
+      diagnostics.push({
+        code: "invalid_semantic_service_linkage",
+        file: declaration.ownerModule,
+        detail: `browser_household_mutation_exposure_is_not_allowed:${identity}`
+      });
+    }
+  }
+  for (const identity of expectedExposureLinks.keys()) {
+    if (!actualExposureIdentities.has(identity)) {
+      diagnostics.push({
+        code: "invalid_semantic_exposure_pairing",
+        file: SEMANTIC_GENERATED_ARTIFACT_PATHS[0],
+        detail: `browser_household_mutation_exposure_is_missing:${identity}`
+      });
+    }
+  }
+
+  const browserServices = browserDeclarations.filter(
+    (declaration): declaration is Extract<SemanticDeclaration, { readonly kind: "service" }> =>
+      declaration.kind === "service"
+  );
+  const expectedServices = new Map<string, { readonly ownerModule: string; readonly exportName: string }>(
+    SEMANTIC_BROWSER_SERVICE_OPERATIONS.map(([id, ownerModule, exportName]) => [
+      id,
+      { ownerModule, exportName }
+    ])
+  );
+  const actualServiceIds = new Set<string>();
+  for (const declaration of browserServices) {
+    actualServiceIds.add(declaration.id);
+    const expected = expectedServices.get(declaration.id);
+    if (
+      expected === undefined ||
+      declaration.ownerModule !== expected.ownerModule ||
+      declaration.exportName !== expected.exportName
+    ) {
+      diagnostics.push({
+        code: "cross_family_semantic_service_reference",
+        file: declaration.ownerModule,
+        detail: `browser_household_mutation_service_is_not_allowed:${declaration.id}`
+      });
+    }
+  }
+  for (const id of expectedServices.keys()) {
+    if (!actualServiceIds.has(id)) {
+      diagnostics.push({
+        code: "unresolved_semantic_service_reference",
+        file: SEMANTIC_GENERATED_ARTIFACT_PATHS[0],
+        detail: `browser_household_mutation_service_is_missing:${id}`
+      });
+    }
+  }
+  return diagnostics;
 }
 
 type SemanticStructuralExposureCoverageEntry = {
@@ -7151,6 +7400,7 @@ function sha256(value: string): string {
 export type SemanticFingerprintInput = {
   readonly declarations: readonly SemanticDeclaration[];
   readonly repositoryRoot: string;
+  readonly program?: ts.Program;
 };
 
 export type SemanticFingerprintResult = {
@@ -7161,7 +7411,7 @@ export type SemanticFingerprintResult = {
 export function computeSemanticFingerprint(
   input: SemanticFingerprintInput
 ): SemanticFingerprintResult {
-  const program = loadRepositoryProgram(input.repositoryRoot);
+  const program = input.program ?? loadRepositoryProgram(input.repositoryRoot);
   const checker = program.getTypeChecker();
   const diagnostics: OperationRegistryDiagnostic[] = [];
   const anchors: Array<{ file: string; start: number; end: number; bytes: string }> = [];
@@ -12785,7 +13035,8 @@ export function parseSemanticSidecarSource(
   sourceText: string,
   structuralDeclarations: readonly OperationDeclaration[] = [],
   repositoryRoot?: string,
-  deferServiceRelations = false
+  deferServiceRelations = false,
+  sharedReviewedProgram?: ts.Program
 ): ParsedSemanticSidecar {
   const sourceFile = ts.createSourceFile(
     fileName,
@@ -12797,11 +13048,7 @@ export function parseSemanticSidecarSource(
   const unsupported = (detail: string): ParsedSemanticSidecar => ({
     diagnostics: [{ code: "unsupported_semantic_sidecar_syntax", file: fileName, detail }]
   });
-  const allowedSemanticSidecars = new Set([
-    "src/app/api/platform/registration/route.semantic.ts",
-    "src/app/api/settings/registration/route.semantic.ts",
-    "src/server/services/platform-authority.semantic.ts"
-  ]);
+  const allowedSemanticSidecars = new Set<string>(SEMANTIC_SIDECAR_PATHS);
   if (!allowedSemanticSidecars.has(fileName)) {
     return unsupported("semantic_sidecar_path_is_not_allowed");
   }
@@ -12858,7 +13105,7 @@ export function parseSemanticSidecarSource(
       {
         code: "cross_family_semantic_service_reference",
         file: fileName,
-        detail: "service_operation_is_outside_platform_registration_family"
+        detail: "service_operation_is_outside_semantic_family"
       }
     ]
   });
@@ -12883,7 +13130,7 @@ export function parseSemanticSidecarSource(
     "variant_specific_outcomes", "worker_loop_claim_failure_containment",
     "browser_immutable_binding_stale_behavior", "executable_evidence_strength"
   ] as const;
-  let reviewedProgram: ts.Program | undefined;
+  let reviewedProgram = sharedReviewedProgram;
   const resolvesReviewedSymbol = (reference: unknown): boolean => {
     if (!repositoryRoot || !isRecord(reference) || !isNonBlankString(reference.file) ||
       reference.file.startsWith("/") || reference.file.includes("..")) return false;
@@ -12991,7 +13238,7 @@ export function parseSemanticSidecarSource(
     })) {
       return { diagnostics: [{ code: "invalid_semantic_axis_state", file: fileName, detail: "service_axis_state_is_invalid" }] };
     }
-    if (declaration.ownerModule !== "src/server/services/platform-authority.ts") {
+    if (!SEMANTIC_SERVICE_OWNER_MODULES.has(declaration.ownerModule)) {
       return crossFamilyServiceReference();
     }
   }
@@ -13289,17 +13536,47 @@ export function parseSemanticSidecarFamily(
   structuralDeclarations: readonly OperationDeclaration[] = [],
   repositoryRoot?: string
 ): ParsedSemanticSidecar {
+  const reviewedProgram = repositoryRoot ? loadRepositoryProgram(repositoryRoot) : undefined;
   const local = sidecars.map(({ fileName, sourceText }) =>
-    parseSemanticSidecarSource(fileName, sourceText, structuralDeclarations, repositoryRoot, true)
+    parseSemanticSidecarSource(
+      fileName,
+      sourceText,
+      structuralDeclarations,
+      repositoryRoot,
+      true,
+      reviewedProgram
+    )
   );
   const diagnostics = local.flatMap((parsed) => parsed.diagnostics);
+  if (diagnostics.length > 0) return { diagnostics };
+  const isCompleteRepositoryFamily = sidecars.length === SEMANTIC_SIDECAR_PATHS.length &&
+    new Set(sidecars.map(({ fileName }) => fileName)).size === SEMANTIC_SIDECAR_PATHS.length &&
+    SEMANTIC_SIDECAR_PATHS.every((fileName) =>
+      sidecars.some((sidecar) => sidecar.fileName === fileName)
+    );
+  if (isCompleteRepositoryFamily) {
+    for (const [index, sidecar] of sidecars.entries()) {
+      const expectedOwnerModule = sidecar.fileName.replace(/\.semantic\.ts$/, ".ts");
+      for (const declaration of local[index].declarations ?? []) {
+        if (declaration.ownerModule !== expectedOwnerModule) {
+          diagnostics.push({
+            code: "sidecar_path_mismatch",
+            file: sidecar.fileName,
+            detail: `expected_semantic_owner:${expectedOwnerModule}`
+          });
+        }
+      }
+    }
+  }
   if (diagnostics.length > 0) return { diagnostics };
   const declarations = local.flatMap((parsed) => parsed.declarations ?? []);
   const aggregate = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
     `import type { SemanticDeclaration } from "@/server/operation-registry/schema";\nexport const semantic = ${JSON.stringify(declarations)} as const satisfies readonly SemanticDeclaration[];`,
     structuralDeclarations,
-    repositoryRoot
+    repositoryRoot,
+    false,
+    reviewedProgram
   );
   return aggregate.diagnostics.length > 0
     ? { diagnostics: aggregate.diagnostics }

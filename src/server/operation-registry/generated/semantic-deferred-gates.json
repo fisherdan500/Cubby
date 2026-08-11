@@ -118,13 +118,13 @@
   "readiness": {
     "authority": "source_reviewed_subset",
     "complete": false,
-    "scope": "platform_registration"
+    "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "8619983fedd3017ea00433373b9955029d308399ff729e0f347e3a26fdbbd391",
+  "semanticArtifactDigest": "9a993582f6a4462a19e39af3657fef9c09c0db5768e1cccf35b3d25d80448119",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "474f52e190ff3eb3308f319a1d15d6e03b082d995eb5d92e87aea5f051b6f864",
-  "semanticDeclarationCount": 12,
-  "semanticDeclarationDigest": "c3f40615e674f4c1a2b36e87643ba1bb01b1d22924b10a6465644b31c02e29ca",
-  "semanticFingerprint": "7be972ede9d4cc3259f2821d8edfa9ba72c7024f6b89f4a87265f0bc6685d41b"
+  "semanticCoverageDigest": "c11944464297c271402c04bcbf4e184f67f07fdada82f3b3f2b2ac6e19eeda74",
+  "semanticDeclarationCount": 54,
+  "semanticDeclarationDigest": "42963dad264ed65e468da496d0d74c16926fc751dce12bdb5e8b775c62133b86",
+  "semanticFingerprint": "241f2497bb10b3023dc5c8b9128d0b6e605981411f69deb9bbed2448b21aa990"
 }
