@@ -13,7 +13,7 @@
         "symbol": "DELETE",
         "target": "src/app/api/activities/[id]/route.ts#DELETE"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/activities/[id]/route.ts:route_method:DELETE:src/app/api/activities/[id]/route.ts#DELETE",
       "ownerId": "api_route:src/app/api/activities/[id]/route.ts",
       "ownerModule": "src/app/api/activities/[id]/route.ts",
@@ -30,7 +30,7 @@
         "symbol": "PATCH",
         "target": "src/app/api/activities/[id]/route.ts#PATCH"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/activities/[id]/route.ts:route_method:PATCH:src/app/api/activities/[id]/route.ts#PATCH",
       "ownerId": "api_route:src/app/api/activities/[id]/route.ts",
       "ownerModule": "src/app/api/activities/[id]/route.ts",
@@ -64,7 +64,7 @@
         "symbol": "POST",
         "target": "src/app/api/activities/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/activities/route.ts:route_method:POST:src/app/api/activities/route.ts#POST",
       "ownerId": "api_route:src/app/api/activities/route.ts",
       "ownerModule": "src/app/api/activities/route.ts",
@@ -81,7 +81,7 @@
         "symbol": "POST",
         "target": "src/app/api/activities/undo-last/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/activities/undo-last/route.ts:route_method:POST:src/app/api/activities/undo-last/route.ts#POST",
       "ownerId": "api_route:src/app/api/activities/undo-last/route.ts",
       "ownerModule": "src/app/api/activities/undo-last/route.ts",
@@ -132,7 +132,7 @@
         "symbol": "POST",
         "target": "src/app/api/babies/[id]/deactivate/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/babies/[id]/deactivate/route.ts:route_method:POST:src/app/api/babies/[id]/deactivate/route.ts#POST",
       "ownerId": "api_route:src/app/api/babies/[id]/deactivate/route.ts",
       "ownerModule": "src/app/api/babies/[id]/deactivate/route.ts",
@@ -149,7 +149,7 @@
         "symbol": "POST",
         "target": "src/app/api/babies/[id]/reactivate/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/babies/[id]/reactivate/route.ts:route_method:POST:src/app/api/babies/[id]/reactivate/route.ts#POST",
       "ownerId": "api_route:src/app/api/babies/[id]/reactivate/route.ts",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
@@ -183,7 +183,7 @@
         "symbol": "POST",
         "target": "src/app/api/babies/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/babies/route.ts:route_method:POST:src/app/api/babies/route.ts#POST",
       "ownerId": "api_route:src/app/api/babies/route.ts",
       "ownerModule": "src/app/api/babies/route.ts",
@@ -336,7 +336,7 @@
         "symbol": "POST",
         "target": "src/app/api/dashboard/warnings/dismiss/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/dashboard/warnings/dismiss/route.ts:route_method:POST:src/app/api/dashboard/warnings/dismiss/route.ts#POST",
       "ownerId": "api_route:src/app/api/dashboard/warnings/dismiss/route.ts",
       "ownerModule": "src/app/api/dashboard/warnings/dismiss/route.ts",
@@ -557,7 +557,7 @@
         "symbol": "POST",
         "target": "src/app/api/invites/revoke-all/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/invites/revoke-all/route.ts:route_method:POST:src/app/api/invites/revoke-all/route.ts#POST",
       "ownerId": "api_route:src/app/api/invites/revoke-all/route.ts",
       "ownerModule": "src/app/api/invites/revoke-all/route.ts",
@@ -574,7 +574,7 @@
         "symbol": "POST",
         "target": "src/app/api/invites/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/invites/route.ts:route_method:POST:src/app/api/invites/route.ts#POST",
       "ownerId": "api_route:src/app/api/invites/route.ts",
       "ownerModule": "src/app/api/invites/route.ts",
@@ -591,7 +591,7 @@
         "symbol": "POST",
         "target": "src/app/api/members/[id]/restore/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/members/[id]/restore/route.ts:route_method:POST:src/app/api/members/[id]/restore/route.ts#POST",
       "ownerId": "api_route:src/app/api/members/[id]/restore/route.ts",
       "ownerModule": "src/app/api/members/[id]/restore/route.ts",
@@ -608,7 +608,7 @@
         "symbol": "DELETE",
         "target": "src/app/api/members/[id]/route.ts#DELETE"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/members/[id]/route.ts:route_method:DELETE:src/app/api/members/[id]/route.ts#DELETE",
       "ownerId": "api_route:src/app/api/members/[id]/route.ts",
       "ownerModule": "src/app/api/members/[id]/route.ts",
@@ -625,7 +625,7 @@
         "symbol": "PATCH",
         "target": "src/app/api/members/[id]/route.ts#PATCH"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/members/[id]/route.ts:route_method:PATCH:src/app/api/members/[id]/route.ts#PATCH",
       "ownerId": "api_route:src/app/api/members/[id]/route.ts",
       "ownerModule": "src/app/api/members/[id]/route.ts",
@@ -642,7 +642,7 @@
         "symbol": "POST",
         "target": "src/app/api/members/[id]/suspend/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/members/[id]/suspend/route.ts:route_method:POST:src/app/api/members/[id]/suspend/route.ts#POST",
       "ownerId": "api_route:src/app/api/members/[id]/suspend/route.ts",
       "ownerModule": "src/app/api/members/[id]/suspend/route.ts",
@@ -676,7 +676,7 @@
         "symbol": "POST",
         "target": "src/app/api/notifications/preferences/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/notifications/preferences/route.ts:route_method:POST:src/app/api/notifications/preferences/route.ts#POST",
       "ownerId": "api_route:src/app/api/notifications/preferences/route.ts",
       "ownerModule": "src/app/api/notifications/preferences/route.ts",
@@ -846,7 +846,7 @@
         "symbol": "PATCH",
         "target": "src/app/api/settings/appearance/route.ts#PATCH"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/settings/appearance/route.ts:route_method:PATCH:src/app/api/settings/appearance/route.ts#PATCH",
       "ownerId": "api_route:src/app/api/settings/appearance/route.ts",
       "ownerModule": "src/app/api/settings/appearance/route.ts",
@@ -931,7 +931,7 @@
         "symbol": "PATCH",
         "target": "src/app/api/settings/units/route.ts#PATCH"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/settings/units/route.ts:route_method:PATCH:src/app/api/settings/units/route.ts#PATCH",
       "ownerId": "api_route:src/app/api/settings/units/route.ts",
       "ownerModule": "src/app/api/settings/units/route.ts",
@@ -999,7 +999,7 @@
         "symbol": "POST",
         "target": "src/app/api/timers/[id]/pause/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/timers/[id]/pause/route.ts:route_method:POST:src/app/api/timers/[id]/pause/route.ts#POST",
       "ownerId": "api_route:src/app/api/timers/[id]/pause/route.ts",
       "ownerModule": "src/app/api/timers/[id]/pause/route.ts",
@@ -1016,7 +1016,7 @@
         "symbol": "POST",
         "target": "src/app/api/timers/[id]/resume/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/timers/[id]/resume/route.ts:route_method:POST:src/app/api/timers/[id]/resume/route.ts#POST",
       "ownerId": "api_route:src/app/api/timers/[id]/resume/route.ts",
       "ownerModule": "src/app/api/timers/[id]/resume/route.ts",
@@ -1033,7 +1033,7 @@
         "symbol": "POST",
         "target": "src/app/api/timers/[id]/stop/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/timers/[id]/stop/route.ts:route_method:POST:src/app/api/timers/[id]/stop/route.ts#POST",
       "ownerId": "api_route:src/app/api/timers/[id]/stop/route.ts",
       "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
@@ -2427,7 +2427,7 @@
         "symbol": "createCalendarEventAction",
         "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "server_action:src/app/app/calendar/actions.ts:server_action:createCalendarEventAction:src/app/app/calendar/actions.ts#createCalendarEventAction",
       "ownerId": "server_action:src/app/app/calendar/actions.ts",
       "ownerModule": "src/app/app/calendar/actions.ts",
@@ -3763,13 +3763,13 @@
   "readiness": {
     "authority": "source_reviewed_subset",
     "complete": false,
-    "scope": "platform_registration"
+    "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "8619983fedd3017ea00433373b9955029d308399ff729e0f347e3a26fdbbd391",
+  "semanticArtifactDigest": "9a993582f6a4462a19e39af3657fef9c09c0db5768e1cccf35b3d25d80448119",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "474f52e190ff3eb3308f319a1d15d6e03b082d995eb5d92e87aea5f051b6f864",
-  "semanticDeclarationCount": 12,
-  "semanticDeclarationDigest": "c3f40615e674f4c1a2b36e87643ba1bb01b1d22924b10a6465644b31c02e29ca",
-  "semanticFingerprint": "7be972ede9d4cc3259f2821d8edfa9ba72c7024f6b89f4a87265f0bc6685d41b"
+  "semanticCoverageDigest": "c11944464297c271402c04bcbf4e184f67f07fdada82f3b3f2b2ac6e19eeda74",
+  "semanticDeclarationCount": 54,
+  "semanticDeclarationDigest": "42963dad264ed65e468da496d0d74c16926fc751dce12bdb5e8b775c62133b86",
+  "semanticFingerprint": "241f2497bb10b3023dc5c8b9128d0b6e605981411f69deb9bbed2448b21aa990"
 }

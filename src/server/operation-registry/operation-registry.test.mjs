@@ -45,7 +45,8 @@ const {
   loadRepositoryProgram,
   parseSidecarSource,
   parseSemanticSidecarSource,
-  parseSemanticSidecarFamily
+  parseSemanticSidecarFamily,
+  SEMANTIC_SIDECAR_PATHS
 } = await import(new URL("./checker.ts", import.meta.url).href);
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
@@ -2878,7 +2879,7 @@ test("rejects generated drift and tamper without writing", () => {
   }
 });
 
-test("builds the bounded twelve-row semantic artifact family as incomplete source-reviewed output", () => {
+test("builds the bounded combined semantic artifact family as incomplete source-reviewed output", () => {
   const built = buildSemanticRepositoryArtifacts(repositoryRoot);
   assert.deepEqual(built.diagnostics, []);
   assert.deepEqual(Object.keys(built.artifacts), [
@@ -2894,9 +2895,257 @@ test("builds the bounded twelve-row semantic artifact family as incomplete sourc
     assert.deepEqual(artifact.readiness, {
       authority: "source_reviewed_subset",
       complete: false,
-      scope: "platform_registration"
+      scope: "platform_registration_and_browser_household_mutations"
     });
-    assert.equal(artifact.semanticDeclarationCount, 12);
+    assert.equal(artifact.semanticDeclarationCount, 54);
+  }
+});
+
+test("builds the combined platform and browser household mutation semantic aggregate contract", () => {
+  const built = buildSemanticRepositoryArtifacts(repositoryRoot);
+  assert.deepEqual(built.diagnostics, []);
+
+  for (const content of Object.values(built.artifacts)) {
+    const artifact = JSON.parse(content);
+    assert.deepEqual(
+      {
+        authority: artifact.authority,
+        complete: artifact.complete,
+        readiness: artifact.readiness,
+        semanticDeclarationCount: artifact.semanticDeclarationCount
+      },
+      {
+        authority: "source_reviewed_subset",
+        complete: false,
+        readiness: {
+          authority: "source_reviewed_subset",
+          complete: false,
+          scope: "platform_registration_and_browser_household_mutations"
+        },
+        semanticDeclarationCount: 54
+      }
+    );
+  }
+
+  const fingerprints = JSON.parse(
+    built.artifacts["src/server/operation-registry/generated/semantic-fingerprints.json"]
+  );
+  const registry = JSON.parse(
+    built.artifacts["src/server/operation-registry/generated/semantic-registry.json"]
+  );
+  const expectedSidecars = [
+    "src/app/api/activities/[id]/route.semantic.ts",
+    "src/app/api/activities/route.semantic.ts",
+    "src/app/api/activities/undo-last/route.semantic.ts",
+    "src/app/api/babies/[id]/deactivate/route.semantic.ts",
+    "src/app/api/babies/[id]/reactivate/route.semantic.ts",
+    "src/app/api/babies/route.semantic.ts",
+    "src/app/api/dashboard/warnings/dismiss/route.semantic.ts",
+    "src/app/api/invites/revoke-all/route.semantic.ts",
+    "src/app/api/invites/route.semantic.ts",
+    "src/app/api/members/[id]/restore/route.semantic.ts",
+    "src/app/api/members/[id]/route.semantic.ts",
+    "src/app/api/members/[id]/suspend/route.semantic.ts",
+    "src/app/api/notifications/preferences/route.semantic.ts",
+    "src/app/api/platform/registration/route.semantic.ts",
+    "src/app/api/settings/appearance/route.semantic.ts",
+    "src/app/api/settings/registration/route.semantic.ts",
+    "src/app/api/settings/units/route.semantic.ts",
+    "src/app/api/timers/[id]/pause/route.semantic.ts",
+    "src/app/api/timers/[id]/resume/route.semantic.ts",
+    "src/app/api/timers/[id]/stop/route.semantic.ts",
+    "src/app/app/calendar/actions.semantic.ts",
+    "src/server/services/activities.semantic.ts",
+    "src/server/services/appearance.semantic.ts",
+    "src/server/services/calendar.semantic.ts",
+    "src/server/services/dashboard.semantic.ts",
+    "src/server/services/households.semantic.ts",
+    "src/server/services/integrations.semantic.ts",
+    "src/server/services/invites.semantic.ts",
+    "src/server/services/platform-authority.semantic.ts",
+    "src/server/services/unit-preferences.semantic.ts"
+  ];
+  assert.deepEqual(SEMANTIC_SIDECAR_PATHS, expectedSidecars);
+  assert.deepEqual(registry.semanticSidecars, expectedSidecars);
+
+  const platformOwners = new Set([
+    "src/app/api/platform/registration/route.ts",
+    "src/app/api/settings/registration/route.ts",
+    "src/server/services/platform-authority.ts"
+  ]);
+  const browserDeclarations = registry.declarations.filter(
+    (declaration) => !platformOwners.has(declaration.ownerModule)
+  );
+  const browserExposures = browserDeclarations
+    .filter((declaration) => declaration.kind === "exposure")
+    .map((declaration) => [
+      declaration.ownerModule,
+      declaration.exportName,
+      declaration.serviceOperationIds
+    ])
+    .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  assert.deepEqual(browserExposures, [
+    ["src/app/api/activities/[id]/route.ts", "DELETE", ["activity.delete"]],
+    ["src/app/api/activities/[id]/route.ts", "PATCH", ["activity.update"]],
+    ["src/app/api/activities/route.ts", "POST", ["activity.create"]],
+    ["src/app/api/activities/undo-last/route.ts", "POST", ["activity.undo_last"]],
+    ["src/app/api/babies/[id]/deactivate/route.ts", "POST", ["baby.deactivate"]],
+    ["src/app/api/babies/[id]/reactivate/route.ts", "POST", ["baby.reactivate"]],
+    ["src/app/api/babies/route.ts", "POST", ["baby.create"]],
+    ["src/app/api/dashboard/warnings/dismiss/route.ts", "POST", ["dashboard.warning.dismiss"]],
+    ["src/app/api/invites/revoke-all/route.ts", "POST", ["invite.revoke_all"]],
+    ["src/app/api/invites/route.ts", "POST", ["invite.create"]],
+    ["src/app/api/members/[id]/restore/route.ts", "POST", ["member.restore"]],
+    ["src/app/api/members/[id]/route.ts", "DELETE", ["member.remove"]],
+    ["src/app/api/members/[id]/route.ts", "PATCH", ["member.role.update"]],
+    ["src/app/api/members/[id]/suspend/route.ts", "POST", ["member.suspend"]],
+    ["src/app/api/notifications/preferences/route.ts", "POST", ["notification.preference.save"]],
+    ["src/app/api/settings/appearance/route.ts", "PATCH", ["settings.appearance.update"]],
+    ["src/app/api/settings/units/route.ts", "PATCH", ["settings.units.update"]],
+    ["src/app/api/timers/[id]/pause/route.ts", "POST", ["activity.timer.pause"]],
+    ["src/app/api/timers/[id]/resume/route.ts", "POST", ["activity.timer.resume"]],
+    ["src/app/api/timers/[id]/stop/route.ts", "POST", ["activity.timer.stop"]],
+    ["src/app/app/calendar/actions.ts", "createCalendarEventAction", ["calendar_event.create"]]
+  ].sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))));
+
+  const browserServices = browserDeclarations
+    .filter((declaration) => declaration.kind === "service")
+    .map((declaration) => [declaration.id, declaration.ownerModule, declaration.exportName])
+    .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  assert.deepEqual(browserServices, [
+    ["activity.create", "src/server/services/activities.ts", "createActivity"],
+    ["activity.delete", "src/server/services/activities.ts", "deleteActivity"],
+    ["activity.timer.pause", "src/server/services/activities.ts", "pauseTimer"],
+    ["activity.timer.resume", "src/server/services/activities.ts", "resumeTimer"],
+    ["activity.timer.stop", "src/server/services/activities.ts", "stopTimer"],
+    ["activity.undo_last", "src/server/services/activities.ts", "undoLastActivity"],
+    ["activity.update", "src/server/services/activities.ts", "updateActivity"],
+    ["baby.create", "src/server/services/households.ts", "addBaby"],
+    ["baby.deactivate", "src/server/services/households.ts", "deactivateBaby"],
+    ["baby.reactivate", "src/server/services/households.ts", "reactivateBaby"],
+    ["calendar_event.create", "src/server/services/calendar.ts", "createCalendarEvent"],
+    ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarning"],
+    ["invite.create", "src/server/services/invites.ts", "createInvite"],
+    ["invite.revoke_all", "src/server/services/invites.ts", "revokeAllPendingInvites"],
+    ["member.remove", "src/server/services/invites.ts", "removeMember"],
+    ["member.restore", "src/server/services/invites.ts", "restoreMember"],
+    ["member.role.update", "src/server/services/invites.ts", "updateMemberRole"],
+    ["member.suspend", "src/server/services/invites.ts", "suspendMember"],
+    ["notification.preference.save", "src/server/services/integrations.ts", "saveNotificationPreference"],
+    ["settings.appearance.update", "src/server/services/appearance.ts", "updateHouseholdAppearance"],
+    ["settings.units.update", "src/server/services/unit-preferences.ts", "updateUnitPreferences"]
+  ].sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))));
+  assert.deepEqual(
+    new Set(browserServices.map(([, ownerModule]) => ownerModule)),
+    new Set([
+      "src/server/services/activities.ts",
+      "src/server/services/appearance.ts",
+      "src/server/services/calendar.ts",
+      "src/server/services/dashboard.ts",
+      "src/server/services/households.ts",
+      "src/server/services/integrations.ts",
+      "src/server/services/invites.ts",
+      "src/server/services/unit-preferences.ts"
+    ])
+  );
+
+  const fingerprintIds = new Set(fingerprints.fingerprints.map((entry) => entry.id));
+  for (const expectedId of [
+    "semantic:platform_registration",
+    "semantic:browser_household_mutations",
+    "semantic-exposure:src/app/api/activities/route.ts#POST",
+    "semantic-service:activity.create",
+    "semantic-exposure:src/app/api/invites/route.ts#POST",
+    "semantic-service:invite.create",
+    "semantic-exposure:src/app/api/settings/appearance/route.ts#PATCH",
+    "semantic-service:settings.appearance.update",
+    "semantic-exposure:src/app/api/timers/[id]/pause/route.ts#POST",
+    "semantic-service:activity.timer.pause",
+    "semantic-exposure:src/app/app/calendar/actions.ts#createCalendarEventAction",
+    "semantic-service:calendar_event.create"
+  ]) {
+    assert.ok(fingerprintIds.has(expectedId), `missing semantic fingerprint: ${expectedId}`);
+  }
+  const fingerprintById = new Map(
+    fingerprints.fingerprints.map((entry) => [entry.id, entry.digest])
+  );
+  const platformDeclarations = registry.declarations.filter((declaration) =>
+    platformOwners.has(declaration.ownerModule)
+  );
+  assert.equal(
+    fingerprintById.get("semantic:platform_registration"),
+    computeSemanticFingerprint({ declarations: platformDeclarations, repositoryRoot }).digest
+  );
+  assert.equal(
+    fingerprintById.get("semantic:browser_household_mutations"),
+    computeSemanticFingerprint({ declarations: browserDeclarations, repositoryRoot }).digest
+  );
+  assert.notEqual(
+    fingerprintById.get("semantic:platform_registration"),
+    fingerprintById.get("semantic:browser_household_mutations")
+  );
+  assert.notEqual(
+    fingerprintById.get("semantic:platform_registration"),
+    fingerprints.semanticFingerprint
+  );
+});
+
+test("semantic artifact builder rejects unlisted repository semantic sidecars", () => {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-unexpected-semantic-sidecar-"));
+  try {
+    cpSync(repositoryRoot, temporaryRoot, {
+      recursive: true,
+      filter: (source) => ![
+        resolve(repositoryRoot, ".git"),
+        resolve(repositoryRoot, ".next"),
+        resolve(repositoryRoot, "node_modules")
+      ].includes(source)
+    });
+    const unexpectedSidecar = resolve(temporaryRoot, "src/app/api/backups/route.semantic.ts");
+    mkdirSync(resolve(unexpectedSidecar, ".."), { recursive: true });
+    writeFileSync(unexpectedSidecar, "export const unexpected = {};\n");
+
+    const built = buildSemanticRepositoryArtifacts(temporaryRoot);
+    assert.deepEqual(built.artifacts, {});
+    assert.ok(
+      built.diagnostics.some(
+        (diagnostic) =>
+          diagnostic.code === "unexpected_semantic_sidecar" &&
+          diagnostic.file === "src/app/api/backups/route.semantic.ts" &&
+          diagnostic.detail === "semantic_sidecar_path_is_not_allowed"
+      )
+    );
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("semantic artifact builder rejects linked source directories", () => {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-linked-semantic-sidecar-"));
+  try {
+    cpSync(repositoryRoot, temporaryRoot, {
+      recursive: true,
+      filter: (source) => ![
+        resolve(repositoryRoot, ".git"),
+        resolve(repositoryRoot, ".next"),
+        resolve(repositoryRoot, "node_modules")
+      ].includes(source)
+    });
+    const linkedSourceDirectory = resolve(temporaryRoot, "linked-semantic-source");
+    mkdirSync(linkedSourceDirectory, { recursive: true });
+    writeFileSync(resolve(linkedSourceDirectory, "route.semantic.ts"), "export const unexpected = {};\n");
+    symlinkSync(linkedSourceDirectory, resolve(temporaryRoot, "src/app/api/linked-semantic-source"), "junction");
+
+    const built = buildSemanticRepositoryArtifacts(temporaryRoot);
+    assert.deepEqual(built.artifacts, {});
+    assert.ok(built.diagnostics.some(
+      (diagnostic) =>
+        diagnostic.code === "unexpected_semantic_sidecar" &&
+        diagnostic.file === "src/app/api/linked-semantic-source" &&
+        diagnostic.detail === "semantic_sidecar_discovery_rejects_symlink"
+    ));
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
   }
 });
 
@@ -7395,24 +7644,23 @@ test("semantic artifacts emit individual declaration fingerprints and byte-check
   const built = buildSemanticRepositoryArtifacts(repositoryRoot);
   assert.deepEqual(built.diagnostics, []);
   const fingerprints = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-fingerprints.json"]);
+  const registry = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-registry.json"]);
+  const declarationFingerprintIds = registry.declarations.map((declaration) =>
+    declaration.kind === "service"
+      ? `semantic-service:${declaration.id}`
+      : `semantic-exposure:${declaration.ownerModule}#${declaration.exportName}${
+          declaration.variant ? `@${declaration.variant.name}` : ""
+        }`
+  );
   assert.deepEqual(
     new Set(fingerprints.fingerprints.map((entry) => entry.id)),
     new Set([
       "semantic:platform_registration",
-      "semantic-exposure:src/app/api/platform/registration/route.ts#GET",
-      "semantic-exposure:src/app/api/platform/registration/route.ts#GET@operation-status",
-      "semantic-exposure:src/app/api/platform/registration/route.ts#POST",
-      "semantic-exposure:src/app/api/platform/registration/route.ts#PUT",
-      "semantic-exposure:src/app/api/settings/registration/route.ts#GET",
-      "semantic-exposure:src/app/api/settings/registration/route.ts#GET@operation-status",
-      "semantic-exposure:src/app/api/settings/registration/route.ts#POST",
-      "semantic-exposure:src/app/api/settings/registration/route.ts#PUT",
-      "semantic-service:platform.registration.allocate",
-      "semantic-service:platform.registration.complete",
-      "semantic-service:platform.registration.settings",
-      "semantic-service:platform.registration.operation-status"
+      "semantic:browser_household_mutations",
+      ...declarationFingerprintIds
     ])
   );
+  assert.equal(declarationFingerprintIds.length, 54);
   const coverage = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-structural-exposure-coverage.json"]);
   assert.ok(coverage.entries.length > 12);
   assert.ok(coverage.entries.some((entry) => entry.coverage === "semantic_declared"));
