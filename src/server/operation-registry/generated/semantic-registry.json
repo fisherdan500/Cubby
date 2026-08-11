@@ -1,0 +1,1911 @@
+{
+  "authority": "source_reviewed_subset",
+  "complete": false,
+  "declarations": [
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings GET has no caller-controlled payload",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "GET delegates authority to the settings service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "GET without operationId calls the settings service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "GET without operationId returns settings"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings GET does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/platform/registration/route.ts#GET"
+      },
+      "exportName": "GET",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/platform/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.settings"
+      ]
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "operationId is read from the query string"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "GET delegates authority to the operation status service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "operationId-present GET calls the operation status service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "operationId-present branch returns operation status"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "operation status GET does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/platform/registration/route.ts#GET"
+      },
+      "exportName": "GET",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/platform/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.operation-status"
+      ],
+      "variant": {
+        "branchAnchor": {
+          "kind": "query_param_equals",
+          "parameter": "operationId",
+          "value": "present"
+        },
+        "name": "operation-status"
+      }
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "request body is passed as unknown"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "route delegates authority"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "route calls allocation service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "POST has no semantic variant",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "POST does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/platform/registration/route.ts#POST"
+      },
+      "exportName": "POST",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/platform/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.allocate"
+      ]
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "request body passed to service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "service authority reviewed"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "route calls completion service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "no route variant",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "no worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/platform/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PUT",
+        "target": "src/app/api/platform/registration/route.ts#PUT"
+      },
+      "exportName": "PUT",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/platform/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.complete"
+      ]
+    },
+    {
+      "aliasOf": {
+        "exportName": "GET",
+        "ownerModule": "src/app/api/platform/registration/route.ts"
+      },
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings GET has no caller-controlled payload",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings route directly re-exports GET"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "direct re-export preserves settings GET linkage"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "GET without operationId returns settings through the direct re-export"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings GET does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/platform/registration/route.ts#GET"
+      },
+      "exportName": "GET",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/settings/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.settings"
+      ]
+    },
+    {
+      "aliasOf": {
+        "exportName": "GET",
+        "ownerModule": "src/app/api/platform/registration/route.ts"
+      },
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "operationId is preserved by the direct re-export"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings route directly re-exports GET"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "direct re-export preserves operation status linkage"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "operationId-present branch is anchored in the canonical GET"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "operation status GET does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "GET",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/platform/registration/route.ts#GET"
+      },
+      "exportName": "GET",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/settings/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.operation-status"
+      ],
+      "variant": {
+        "branchAnchor": {
+          "kind": "query_param_equals",
+          "parameter": "operationId",
+          "value": "present"
+        },
+        "name": "operation-status"
+      }
+    },
+    {
+      "aliasOf": {
+        "exportName": "POST",
+        "ownerModule": "src/app/api/platform/registration/route.ts"
+      },
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "direct re-export preserves request body handling"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings route directly re-exports POST"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "direct re-export preserves allocation linkage"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "POST has no semantic variant",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "POST does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/platform/registration/route.ts#POST"
+      },
+      "exportName": "POST",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/settings/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.allocate"
+      ]
+    },
+    {
+      "aliasOf": {
+        "exportName": "PUT",
+        "ownerModule": "src/app/api/platform/registration/route.ts"
+      },
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "direct re-export preserves request body handling"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings route directly re-exports PUT"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "direct re-export preserves completion linkage"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "PUT has no semantic variant",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "PUT does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "PUT",
+                "file": "src/app/api/settings/registration/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PUT",
+        "target": "src/app/api/platform/registration/route.ts#PUT"
+      },
+      "exportName": "PUT",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/settings/registration/route.ts",
+      "serviceOperationIds": [
+        "platform.registration.complete"
+      ]
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "allocation parses the caller-supplied registration intent with the strict settings schema"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "allocation requires the current user and reauthorizes the owner under the transaction lock"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "allocation locks platform settings and creates a pending PlatformRegistrationOperation with the intent fingerprint and expected revision"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "allocation reauthorizes the owner after entering the serializable transaction and before creating the operation"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "allocation creates a pending registration operation linked to the current owner and intent"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "allocation operates on the platform singleton rather than a tenant relationship",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "allocation has no semantic variant and returns a pending operation result",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "allocation does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "allocatePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "allocatePlatformRegistrationOperation",
+      "id": "platform.registration.allocate",
+      "kind": "service",
+      "ownerModule": "src/server/services/platform-authority.ts"
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "completion parses the caller-supplied operation ID and locks only that operation for the current user"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "completion requires the current user and reauthorizes the owner under the transaction lock"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "completion conditionally updates PlatformSettings, records a PlatformAuditEvent, and persists completed or stale operation state"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "completion reauthorizes the owner after entering the serializable transaction and before settings or operation writes"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "completion resolves the pending registration operation, applies its captured intent, and persists its outcome"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "completion operates on the platform singleton rather than a tenant relationship",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "completion returns an existing non-pending result, a stale snapshot after revision loss, or a completed settings result"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "completion does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "completePlatformRegistrationOperation",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "completePlatformRegistrationOperation",
+      "id": "platform.registration.complete",
+      "kind": "service",
+      "ownerModule": "src/server/services/platform-authority.ts"
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "status retrieval parses the caller-supplied operation ID and queries it only for the current user"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "status retrieval requires the current user and reauthorizes the owner under the transaction lock"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "status retrieval reads the caller-owned PlatformRegistrationOperation and has no write effect"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "status retrieval does not commit a mutation",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "status retrieval finds the caller-owned registration operation and returns its operation result"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "status retrieval operates on the platform singleton rather than a tenant relationship",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "status retrieval returns the pending form or the persisted completed or stale operation result"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "status retrieval does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationOperationStatus",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "getPlatformRegistrationOperationStatus",
+      "id": "platform.registration.operation-status",
+      "kind": "service",
+      "ownerModule": "src/server/services/platform-authority.ts"
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings retrieval accepts no caller-controlled input",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings retrieval requires the platform owner context"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings retrieval reads PlatformSettings by the platform singleton ID and has no write effect"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings retrieval does not commit a mutation",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "settings retrieval returns the platform singleton settings record"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings retrieval operates on the platform singleton rather than a tenant relationship",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings retrieval has no semantic variant",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "settings retrieval does not run a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "getPlatformRegistrationSettings",
+                "file": "src/server/services/platform-authority.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "getPlatformRegistrationSettings",
+      "id": "platform.registration.settings",
+      "kind": "service",
+      "ownerModule": "src/server/services/platform-authority.ts"
+    }
+  ],
+  "readiness": {
+    "authority": "source_reviewed_subset",
+    "complete": false,
+    "scope": "platform_registration"
+  },
+  "schemaVersion": 1,
+  "semanticArtifactDigest": "8619983fedd3017ea00433373b9955029d308399ff729e0f347e3a26fdbbd391",
+  "semanticArtifactVersion": "semantic-artifact.v1",
+  "semanticCoverageDigest": "474f52e190ff3eb3308f319a1d15d6e03b082d995eb5d92e87aea5f051b6f864",
+  "semanticDeclarationCount": 12,
+  "semanticDeclarationDigest": "c3f40615e674f4c1a2b36e87643ba1bb01b1d22924b10a6465644b31c02e29ca",
+  "semanticFingerprint": "7be972ede9d4cc3259f2821d8edfa9ba72c7024f6b89f4a87265f0bc6685d41b",
+  "semanticSidecars": [
+    "src/app/api/platform/registration/route.semantic.ts",
+    "src/app/api/settings/registration/route.semantic.ts",
+    "src/server/services/platform-authority.semantic.ts"
+  ]
+}

@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
 type RegistryModule = typeof import("../src/server/operation-registry/checker");
 type RegistryDiagnostic = ReturnType<RegistryModule["checkRepositoryArtifacts"]>[number];
 
@@ -11,21 +14,35 @@ if (rest.length > 0 || (mode !== "--write" && mode !== "--check")) {
   process.exitCode = 1;
 } else if (mode === "--write") {
   const result = registry.writeRepositoryArtifacts(process.cwd());
-  if (result.diagnostics.length > 0) {
-    writeDiagnostics(result.diagnostics);
+  const semantic = registry.buildSemanticRepositoryArtifacts(process.cwd());
+  const diagnostics = [...result.diagnostics, ...semantic.diagnostics];
+  if (diagnostics.length > 0) {
+    writeDiagnostics(diagnostics);
     process.exitCode = 1;
   } else {
+    for (const [file, content] of Object.entries(semantic.artifacts)) {
+      const target = resolve(process.cwd(), file);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, content);
+    }
     process.stdout.write(
       `operation_registry_generated owners=${result.registry.owners.length} declarations=${result.registry.declarations.length} omissions=${result.registry.omissionLedger.length}\n`
     );
   }
 } else {
-  const diagnostics = registry.checkRepositoryArtifacts(process.cwd());
+  const legacyDiagnostics = registry.checkRepositoryArtifacts(process.cwd());
+  const semantic = registry.buildSemanticRepositoryArtifacts(process.cwd());
+  const semanticDiagnostics = semantic.diagnostics.length > 0
+    ? semantic.diagnostics
+    : registry.checkSemanticGeneratedArtifacts(process.cwd(), semantic.artifacts);
+  const diagnostics = [...legacyDiagnostics, ...semanticDiagnostics];
   if (diagnostics.length > 0) {
     writeDiagnostics(diagnostics);
     process.exitCode = 1;
   } else {
-    process.stdout.write("operation_registry_check_passed authority=observation_only\n");
+    process.stdout.write(
+      "operation_registry_check_passed structural_authority=observation_only semantic_authority=source_reviewed_subset semantic_complete=false\n"
+    );
   }
 }
 

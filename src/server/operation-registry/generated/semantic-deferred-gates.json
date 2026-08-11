@@ -1,10 +1,18 @@
 {
-  "authority": "observation_only",
-  "declarationDigest": "e6bd2eb6c5490b8103c8662335f0c55d73a1408733456bd2b66a24cf74e3d4af",
-  "declarationDigestVersion": "normalized-declarations.v1",
-  "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
-  "deferredGateRegistryDigestVersion": "deferred-gates.v1",
-  "evidence": [],
+  "authority": "source_reviewed_subset",
+  "complete": false,
+  "deferredGateIds": [
+    "gate.browser_binding_staleness",
+    "gate.caller_controlled_scope",
+    "gate.carrier_authority_guard",
+    "gate.executable_evidence",
+    "gate.model_and_effects",
+    "gate.permission_commit_reauthorization",
+    "gate.service_operation_linkage",
+    "gate.tenant_relationship_invariants",
+    "gate.variant_outcomes",
+    "gate.worker_containment"
+  ],
   "gates": [
     {
       "blockedAxes": [
@@ -107,16 +115,16 @@
       "status": "deferred"
     }
   ],
-  "generatorDigest": "1e56f2c2b0c2b61dc91cad63a7575853a8e8dd227f2a46fd605ca0dfd167109a",
-  "generatorVersion": "r0.1",
-  "observationDigest": "5cccbd84c16d88770affe07fe0dff54d8f575ecc9c1c99387421b8fb8f343b53",
-  "observationDigestVersion": "normalized-observation.v1",
-  "ownerSetDigest": "8e661d307ba0fe3b1e3d54e53231351dad1cd37feb31410b8890bc6c4b7cb9d7",
-  "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "62daa320798739fbbea6976bf0f9a35cf787b77860138236e2c724fbb9348c38",
-  "registryDigestVersion": "operation-registry.v1",
-  "runtimeInvocationLedgerDigest": "491db24ab322cbef5887ce048e29a0e721b139f93ffe93bcb6bacf1f709cfbbe",
-  "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
-  "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
-  "schemaVersion": 1
+  "readiness": {
+    "authority": "source_reviewed_subset",
+    "complete": false,
+    "scope": "platform_registration"
+  },
+  "schemaVersion": 1,
+  "semanticArtifactDigest": "8619983fedd3017ea00433373b9955029d308399ff729e0f347e3a26fdbbd391",
+  "semanticArtifactVersion": "semantic-artifact.v1",
+  "semanticCoverageDigest": "474f52e190ff3eb3308f319a1d15d6e03b082d995eb5d92e87aea5f051b6f864",
+  "semanticDeclarationCount": 12,
+  "semanticDeclarationDigest": "c3f40615e674f4c1a2b36e87643ba1bb01b1d22924b10a6465644b31c02e29ca",
+  "semanticFingerprint": "7be972ede9d4cc3259f2821d8edfa9ba72c7024f6b89f4a87265f0bc6685d41b"
 }
