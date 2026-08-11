@@ -17,6 +17,7 @@ import type {
   OperationOwnerKind,
   RuntimeInvocationLedgerEntry,
   RuntimeInvocationStructuralExclusion,
+  SemanticDeclaration,
   StructuralBindingKind
 } from "./schema";
 
@@ -51,6 +52,12 @@ function readCanonicalRepositoryText(file: string): string {
 
 export type OperationRegistryDiagnosticCode =
   | "unsupported_sidecar_syntax"
+  | "unsupported_semantic_sidecar_syntax"
+  | "invalid_semantic_exposure_pairing"
+  | "duplicate_semantic_identity"
+  | "missing_semantic_exposure_export_name"
+  | "missing_semantic_service_linkage"
+  | "invalid_semantic_service_linkage"
   | "invalid_sidecar_schema"
   | "unsupported_route_extension"
   | "unsupported_executable_source"
@@ -94,7 +101,15 @@ export type OperationRegistryDiagnosticCode =
   | "declaration_binding_mismatch"
   | "declaration_disposition_mismatch"
   | "sidecar_path_mismatch"
-  | "extra_sidecar";
+  | "extra_sidecar"
+  | "unresolved_semantic_service_reference"
+  | "orphan_semantic_service_operation"
+  | "unresolved_semantic_service_symbol"
+  | "cross_family_semantic_service_reference"
+  | "unresolved_semantic_variant_anchor"
+  | "unresolved_semantic_alias"
+  | "incomplete_semantic_axis_map"
+  | "invalid_semantic_axis_state";
 
 export type OperationRegistryDiagnostic = {
   readonly code: OperationRegistryDiagnosticCode;
@@ -105,6 +120,11 @@ export type OperationRegistryDiagnostic = {
 export type ParsedSidecar = {
   readonly diagnostics: readonly OperationRegistryDiagnostic[];
   readonly declarations: readonly OperationDeclaration[];
+};
+
+export type ParsedSemanticSidecar = {
+  readonly diagnostics: readonly OperationRegistryDiagnostic[];
+  readonly declarations?: readonly SemanticDeclaration[];
 };
 
 export type StructuralObservation = {
@@ -5965,6 +5985,230 @@ export const GENERATED_ARTIFACT_PATHS = [
   "src/server/operation-registry/generated/deferred-gates.json"
 ] as const;
 
+export const SEMANTIC_GENERATED_ARTIFACT_PATHS = [
+  "src/server/operation-registry/generated/semantic-registry.json",
+  "src/server/operation-registry/generated/semantic-fingerprints.json",
+  "src/server/operation-registry/generated/semantic-deferred-gates.json",
+  "src/server/operation-registry/generated/semantic-structural-exposure-coverage.json"
+] as const;
+
+export type SemanticGeneratedArtifactInput = {
+  readonly semanticRegistry: unknown;
+  readonly semanticFingerprints: unknown;
+  readonly semanticDeferredGates: unknown;
+  readonly semanticStructuralExposureCoverage: unknown;
+};
+
+export function renderSemanticGeneratedArtifacts(
+  input: SemanticGeneratedArtifactInput
+): Readonly<Record<(typeof SEMANTIC_GENERATED_ARTIFACT_PATHS)[number], string>> {
+  return {
+    [SEMANTIC_GENERATED_ARTIFACT_PATHS[0]]: stableJson(input.semanticRegistry),
+    [SEMANTIC_GENERATED_ARTIFACT_PATHS[1]]: stableJson(input.semanticFingerprints),
+    [SEMANTIC_GENERATED_ARTIFACT_PATHS[2]]: stableJson(input.semanticDeferredGates),
+    [SEMANTIC_GENERATED_ARTIFACT_PATHS[3]]: stableJson(input.semanticStructuralExposureCoverage)
+  };
+}
+
+export const SEMANTIC_SIDECAR_PATHS = [
+  "src/app/api/platform/registration/route.semantic.ts",
+  "src/app/api/settings/registration/route.semantic.ts",
+  "src/server/services/platform-authority.semantic.ts"
+] as const;
+
+export const SEMANTIC_ARTIFACT_VERSION = "semantic-artifact.v1" as const;
+export const SEMANTIC_ARTIFACT_AUTHORITY = "source_reviewed_subset" as const;
+export const SEMANTIC_ARTIFACT_SCOPE = "platform_registration" as const;
+
+export type SemanticRepositoryArtifacts = {
+  readonly artifacts: Readonly<Record<string, string>>;
+  readonly diagnostics: readonly OperationRegistryDiagnostic[];
+};
+
+export function buildSemanticRepositoryArtifacts(
+  repositoryRoot: string
+): SemanticRepositoryArtifacts {
+  const structuralRegistry = buildRepositoryRegistry(repositoryRoot);
+  const diagnostics: OperationRegistryDiagnostic[] = [...structuralRegistry.diagnostics];
+  const sidecars: Array<{ readonly fileName: string; readonly sourceText: string }> = [];
+  for (const fileName of SEMANTIC_SIDECAR_PATHS) {
+    const target = resolve(repositoryRoot, fileName);
+    if (!existsSync(target) || !statSync(target).isFile()) {
+      diagnostics.push({
+        code: "missing_sidecar",
+        file: fileName,
+        detail: "required_semantic_sidecar_is_missing"
+      });
+      continue;
+    }
+    sidecars.push({ fileName, sourceText: readCanonicalRepositoryText(target) });
+  }
+  if (diagnostics.length > 0) return { artifacts: {}, diagnostics };
+
+  const parsed = parseSemanticSidecarFamily(
+    sidecars,
+    structuralRegistry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  diagnostics.push(...parsed.diagnostics);
+  const declarations = [...(parsed.declarations ?? [])].sort(compareSemanticDeclarations);
+  if (diagnostics.length > 0 || declarations.length !== 12) {
+    if (diagnostics.length === 0) {
+      diagnostics.push({
+        code: "generated_artifact_mismatch",
+        file: SEMANTIC_GENERATED_ARTIFACT_PATHS[0],
+        detail: `semantic_declaration_count_mismatch:${declarations.length}`
+      });
+    }
+    return { artifacts: {}, diagnostics };
+  }
+
+  const fingerprint = computeSemanticFingerprint({ declarations, repositoryRoot });
+  diagnostics.push(...fingerprint.diagnostics);
+  if (diagnostics.length > 0 || fingerprint.digest === null) return { artifacts: {}, diagnostics };
+
+  const semanticDeclarationDigest = sha256(stableJson(declarations));
+  const coverage = buildSemanticStructuralExposureCoverage(
+    structuralRegistry,
+    declarations,
+    repositoryRoot
+  );
+  diagnostics.push(...coverage.diagnostics);
+  if (diagnostics.length > 0) return { artifacts: {}, diagnostics };
+  const declarationFingerprints = declarations.map((declaration) => ({
+      id: declaration.kind === "service"
+        ? `semantic-service:${declaration.id}`
+        : `semantic-exposure:${declaration.ownerModule}#${declaration.exportName}${
+            declaration.variant ? `@${declaration.variant.name}` : ""
+          }`,
+      fingerprint: computeSemanticFingerprint({ declarations: [declaration], repositoryRoot })
+    }));
+  diagnostics.push(...declarationFingerprints.flatMap(({ fingerprint }) => fingerprint.diagnostics));
+  if (diagnostics.length > 0 || declarationFingerprints.some(({ fingerprint }) => fingerprint.digest === null)) {
+    return { artifacts: {}, diagnostics };
+  }
+  const semanticCoverageDigest = sha256(stableJson(coverage.entries));
+  const deferredGateIds = [...new Set(
+    declarations.flatMap((declaration) => Object.values(declaration.axes).map((axis) => axis.target.gateId))
+  )].sort();
+  const semanticArtifactDigest = sha256(stableJson({
+    version: SEMANTIC_ARTIFACT_VERSION,
+    authority: SEMANTIC_ARTIFACT_AUTHORITY,
+    complete: false,
+    scope: SEMANTIC_ARTIFACT_SCOPE,
+    semanticDeclarationDigest,
+    semanticFingerprint: fingerprint.digest,
+    semanticCoverageDigest,
+    semanticSidecars: SEMANTIC_SIDECAR_PATHS,
+    deferredGateIds
+  }));
+  const metadata = {
+    schemaVersion: 1,
+    semanticArtifactVersion: SEMANTIC_ARTIFACT_VERSION,
+    authority: SEMANTIC_ARTIFACT_AUTHORITY,
+    complete: false,
+    readiness: {
+      authority: SEMANTIC_ARTIFACT_AUTHORITY,
+      complete: false,
+      scope: SEMANTIC_ARTIFACT_SCOPE
+    },
+    semanticDeclarationCount: declarations.length,
+    semanticDeclarationDigest,
+    semanticFingerprint: fingerprint.digest,
+    semanticCoverageDigest,
+    semanticArtifactDigest
+  };
+  const gates = buildDeferredGateRegistry().gates.filter((gate) => deferredGateIds.includes(gate.id));
+  return {
+    diagnostics,
+    artifacts: renderSemanticGeneratedArtifacts({
+      semanticRegistry: { ...metadata, declarations, semanticSidecars: SEMANTIC_SIDECAR_PATHS },
+      semanticFingerprints: {
+        ...metadata,
+        fingerprints: [
+          { id: "semantic:platform_registration", digest: fingerprint.digest },
+          ...declarationFingerprints.map(({ id, fingerprint }) => ({ id, digest: fingerprint.digest! }))
+        ].sort((left, right) => left.id.localeCompare(right.id))
+      },
+      semanticDeferredGates: { ...metadata, deferredGateIds, gates },
+      semanticStructuralExposureCoverage: { ...metadata, entries: coverage.entries }
+    })
+  };
+}
+
+type SemanticStructuralExposureCoverageEntry = {
+  readonly id: string;
+  readonly ownerId: string;
+  readonly ownerModule: string;
+  readonly sidecarPath: string;
+  readonly binding: { readonly kind: string; readonly symbol: string; readonly target: string };
+  readonly anchorFile: string;
+  readonly anchorStart: number;
+  readonly anchorEnd: number;
+  readonly anchorBytes: string;
+  readonly anchorDigest: string;
+  readonly coverage: "semantic_declared" | "structural_only";
+};
+
+function buildSemanticStructuralExposureCoverage(
+  structuralRegistry: RepositoryRegistry,
+  declarations: readonly SemanticDeclaration[],
+  repositoryRoot: string
+): { readonly entries: readonly SemanticStructuralExposureCoverageEntry[]; readonly diagnostics: readonly OperationRegistryDiagnostic[] } {
+  const semanticBindings = new Set(
+    declarations
+      .filter((declaration): declaration is Extract<SemanticDeclaration, { readonly kind: "exposure" }> =>
+        declaration.kind === "exposure"
+      )
+      .map((declaration) =>
+        `${declaration.ownerModule}\u0000${declaration.binding.kind}\u0000${declaration.binding.symbol}\u0000${declaration.binding.target}`
+      )
+  );
+  const diagnostics: OperationRegistryDiagnostic[] = [];
+  const entries = structuralRegistry.owners.flatMap((owner) => owner.bindings.map((binding) => {
+    const sourcePath = resolve(repositoryRoot, binding.anchorFile);
+    const source = existsSync(sourcePath) ? readCanonicalRepositoryText(sourcePath) : "";
+    const valid =
+      Number.isInteger(binding.anchorStart) && Number.isInteger(binding.anchorEnd) &&
+      binding.anchorStart >= 0 && binding.anchorEnd > binding.anchorStart && binding.anchorEnd <= source.length;
+    if (!valid) {
+      diagnostics.push({
+        code: "unresolved_fingerprint_anchor",
+        file: binding.anchorFile,
+        detail: `semantic_structural_coverage_anchor_unresolved:${owner.id}:${binding.kind}:${binding.symbol}`
+      });
+    }
+    const anchorBytes = valid ? source.slice(binding.anchorStart, binding.anchorEnd) : "";
+    const coverage = semanticBindings.has(
+      `${owner.ownerModule}\u0000${binding.kind}\u0000${binding.symbol}\u0000${binding.target}`
+    ) ? "semantic_declared" as const : "structural_only" as const;
+    return {
+      id: `${owner.id}:${binding.kind}:${binding.symbol}:${binding.target}`,
+      ownerId: owner.id,
+      ownerModule: owner.ownerModule,
+      sidecarPath: owner.sidecarPath,
+      binding: { kind: binding.kind, symbol: binding.symbol, target: binding.target },
+      anchorFile: binding.anchorFile,
+      anchorStart: binding.anchorStart,
+      anchorEnd: binding.anchorEnd,
+      anchorBytes,
+      anchorDigest: sha256(anchorBytes),
+      coverage
+    };
+  })).sort((left, right) => left.id.localeCompare(right.id));
+  return { entries, diagnostics };
+}
+
+function compareSemanticDeclarations(left: SemanticDeclaration, right: SemanticDeclaration): number {
+  const identity = (declaration: SemanticDeclaration) =>
+    declaration.kind === "service"
+      ? `service:${declaration.id}`
+      : `exposure:${declaration.ownerModule}#${declaration.exportName}${
+        declaration.variant ? `@${declaration.variant.name}` : ""
+      }`;
+  return identity(left).localeCompare(identity(right));
+}
+
 export type GeneratedArtifactInput = {
   readonly observationRegistry: unknown;
   readonly fingerprints: unknown;
@@ -6478,6 +6722,94 @@ export function renderGeneratedArtifacts(
   };
 }
 
+export function checkSemanticGeneratedArtifacts(
+  repositoryRoot: string,
+  expected: Readonly<Record<string, string>>
+): readonly OperationRegistryDiagnostic[] {
+  const diagnostics: OperationRegistryDiagnostic[] = [
+    ...checkUnexpectedGeneratedArtifacts(repositoryRoot)
+  ];
+  for (const [file, expectedContent] of Object.entries(expected)) {
+    const target = resolve(repositoryRoot, file);
+    if (!existsSync(target) || !statSync(target).isFile()) {
+      diagnostics.push({ code: "missing_generated_artifact", file, detail: "generated_artifact_is_missing" });
+      continue;
+    }
+    if (readCanonicalRepositoryText(target) !== canonicalizeRepositoryText(expectedContent)) {
+      diagnostics.push({ code: "generated_artifact_mismatch", file, detail: "generated_bytes_do_not_match" });
+    }
+  }
+
+  const parsedArtifacts: Array<{ readonly file: string; readonly value: Record<string, unknown> }> = [];
+  for (const file of SEMANTIC_GENERATED_ARTIFACT_PATHS) {
+    const target = resolve(repositoryRoot, file);
+    if (!existsSync(target) || !statSync(target).isFile()) continue;
+    try {
+      const value = JSON.parse(readCanonicalRepositoryText(target));
+      if (!isRecord(value)) throw new Error("semantic_generated_artifact_is_not_an_object");
+      parsedArtifacts.push({ file, value });
+    } catch {
+      diagnostics.push({
+        code: "generated_artifact_mismatch",
+        file,
+        detail: "semantic_generated_artifact_json_invalid"
+      });
+    }
+  }
+  if (parsedArtifacts.length !== SEMANTIC_GENERATED_ARTIFACT_PATHS.length) return diagnostics;
+
+  const sharedFields = [
+    "schemaVersion",
+    "semanticArtifactVersion",
+    "authority",
+    "complete",
+    "semanticDeclarationCount",
+    "semanticDeclarationDigest",
+    "semanticFingerprint",
+    "semanticArtifactDigest"
+  ] as const;
+  for (const field of sharedFields) {
+    const values = parsedArtifacts.map((artifact) => artifact.value[field]);
+    if (new Set(values.map((value) => stableJson(value))).size !== 1) {
+      diagnostics.push({
+        code: "generated_artifact_mismatch",
+        file: "src/server/operation-registry/generated",
+        detail: `semantic_aggregate_cross_file_mismatch:${field}`
+      });
+    }
+  }
+  for (const { file, value } of parsedArtifacts) {
+    if (value.authority !== SEMANTIC_ARTIFACT_AUTHORITY) {
+      diagnostics.push({
+        code: "generated_artifact_mismatch",
+        file,
+        detail: "semantic_authority_claim_is_not_allowed"
+      });
+    }
+    if (value.complete !== false) {
+      diagnostics.push({
+        code: "generated_artifact_mismatch",
+        file,
+        detail: "semantic_complete_claim_is_not_allowed"
+      });
+    }
+    if (
+      !isRecord(value.readiness) ||
+      value.readiness.authority !== SEMANTIC_ARTIFACT_AUTHORITY ||
+      value.readiness.complete !== false ||
+      value.readiness.scope !== SEMANTIC_ARTIFACT_SCOPE ||
+      Object.keys(value.readiness).sort().join(",") !== "authority,complete,scope"
+    ) {
+      diagnostics.push({
+        code: "generated_artifact_mismatch",
+        file,
+        detail: "semantic_readiness_claim_is_not_allowed"
+      });
+    }
+  }
+  return diagnostics;
+}
+
 export function checkGeneratedArtifacts(
   repositoryRoot: string,
   expected: Readonly<Record<string, string>>,
@@ -6651,7 +6983,10 @@ function checkUnexpectedGeneratedArtifacts(
     "src/server/operation-registry/generated"
   );
   if (!existsSync(generatedRoot) || !statSync(generatedRoot).isDirectory()) return [];
-  const allowed = new Set<string>(GENERATED_ARTIFACT_PATHS);
+  const allowed = new Set<string>([
+    ...GENERATED_ARTIFACT_PATHS,
+    ...SEMANTIC_GENERATED_ARTIFACT_PATHS
+  ]);
   const diagnostics: OperationRegistryDiagnostic[] = [];
   const visit = (directory: string) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })
@@ -6811,6 +7146,117 @@ export function validateStructuralFingerprint(
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+export type SemanticFingerprintInput = {
+  readonly declarations: readonly SemanticDeclaration[];
+  readonly repositoryRoot: string;
+};
+
+export type SemanticFingerprintResult = {
+  readonly digest: string | null;
+  readonly diagnostics: readonly OperationRegistryDiagnostic[];
+};
+
+export function computeSemanticFingerprint(
+  input: SemanticFingerprintInput
+): SemanticFingerprintResult {
+  const program = loadRepositoryProgram(input.repositoryRoot);
+  const checker = program.getTypeChecker();
+  const diagnostics: OperationRegistryDiagnostic[] = [];
+  const anchors: Array<{ file: string; start: number; end: number; bytes: string }> = [];
+  const schemaFile = "src/server/operation-registry/schema.ts";
+  const generatorFiles = [
+    "src/server/operation-registry/checker.ts",
+    schemaFile,
+    "scripts/operation-registry.ts"
+  ];
+  const dependencyBytes = new Map<string, string>();
+  for (const file of generatorFiles) {
+    const target = resolve(input.repositoryRoot, file);
+    if (!existsSync(target)) {
+      diagnostics.push({ code: "unresolved_fingerprint_anchor", file, detail: "missing_schema_or_generator_dependency" });
+      continue;
+    }
+    dependencyBytes.set(file, readCanonicalRepositoryText(target));
+  }
+  if (diagnostics.length > 0) return { digest: null, diagnostics };
+  const schemaDigest = sha256(dependencyBytes.get(schemaFile)!);
+  const generatorDigest = sha256(stableJson(
+    generatorFiles.map((file) => ({ file, digest: sha256(dependencyBytes.get(file)!) }))
+  ));
+  const captureAnchor = (anchor: ts.Node, referenceFile: string, detail: string): void => {
+    const anchorSourceFile = anchor.getSourceFile();
+    const file = posix.normalize(relative(input.repositoryRoot, anchorSourceFile.fileName).replaceAll("\\", "/"));
+    const start = anchor.getStart(anchorSourceFile);
+    const end = anchor.getEnd();
+    if (
+      file === "" ||
+      file === ".." ||
+      file.startsWith("../") ||
+      start < 0 ||
+      end <= start ||
+      end > anchorSourceFile.text.length
+    ) {
+      diagnostics.push({ code: "unresolved_fingerprint_anchor", file: referenceFile, detail });
+      return;
+    }
+    anchors.push({ file, start, end, bytes: anchorSourceFile.text.slice(start, end) });
+  };
+
+  for (const declaration of input.declarations) {
+    if (declaration.kind === "service") {
+      const sourceFile = program.getSourceFile(resolve(input.repositoryRoot, declaration.ownerModule));
+      const moduleSymbol = sourceFile && checker.getSymbolAtLocation(sourceFile);
+      const symbol = moduleSymbol && checker.getExportsOfModule(moduleSymbol).find((entry) => entry.name === declaration.exportName);
+      const resolved = symbol && (symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol);
+      const anchor = resolved?.valueDeclaration ?? resolved?.declarations?.[0];
+      if (!sourceFile || !anchor) {
+        diagnostics.push({ code: "unresolved_fingerprint_anchor", file: declaration.ownerModule, detail: `missing_service_export:${declaration.exportName}` });
+      } else {
+        captureAnchor(anchor, declaration.ownerModule, `invalid_service_export_anchor:${declaration.exportName}`);
+      }
+      continue;
+    }
+    for (const axis of Object.values(declaration.axes)) {
+      const state = axis.current;
+      if (state.authority === "deferred") continue;
+      for (const reference of state.sourceReferences) {
+        const sourceFile = program.getSourceFile(resolve(input.repositoryRoot, reference.file));
+        if (!sourceFile) {
+          diagnostics.push({ code: "unresolved_fingerprint_anchor", file: reference.file, detail: "missing_source_file" });
+          continue;
+        }
+        if (reference.kind === "span") {
+          if (reference.start < 0 || reference.end <= reference.start || reference.end > sourceFile.text.length) {
+            diagnostics.push({ code: "unresolved_fingerprint_anchor", file: reference.file, detail: "invalid_span" });
+            continue;
+          }
+          anchors.push({ file: reference.file, start: reference.start, end: reference.end, bytes: sourceFile.text.slice(reference.start, reference.end) });
+          continue;
+        }
+        const moduleSymbol = checker.getSymbolAtLocation(sourceFile);
+        const symbol = moduleSymbol && checker.getExportsOfModule(moduleSymbol).find((entry) => entry.name === reference.exportName);
+        const resolved = symbol && (symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol);
+        const anchor = resolved?.valueDeclaration ?? resolved?.declarations?.[0];
+        if (!anchor) {
+          diagnostics.push({ code: "unresolved_fingerprint_anchor", file: reference.file, detail: `missing_export:${reference.exportName}` });
+          continue;
+        }
+        captureAnchor(anchor, reference.file, `invalid_export_anchor:${reference.exportName}`);
+      }
+    }
+  }
+  if (diagnostics.length > 0) return { digest: null, diagnostics };
+  return {
+    digest: sha256(stableJson({
+      declarations: input.declarations,
+      anchors: anchors.sort((left, right) => stableJson(left).localeCompare(stableJson(right))),
+      schemaDigest,
+      generatorDigest
+    })),
+    diagnostics: []
+  };
 }
 
 export type DeferredGateRegistry = {
@@ -12332,6 +12778,532 @@ function resolveFrameworkHandlerTarget(
 
 function relativeModule(repositoryRoot: string, fileName: string): string {
   return relative(repositoryRoot, fileName).replaceAll("\\", "/");
+}
+
+export function parseSemanticSidecarSource(
+  fileName: string,
+  sourceText: string,
+  structuralDeclarations: readonly OperationDeclaration[] = [],
+  repositoryRoot?: string,
+  deferServiceRelations = false
+): ParsedSemanticSidecar {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  );
+  const unsupported = (detail: string): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "unsupported_semantic_sidecar_syntax", file: fileName, detail }]
+  });
+  const allowedSemanticSidecars = new Set([
+    "src/app/api/platform/registration/route.semantic.ts",
+    "src/app/api/settings/registration/route.semantic.ts",
+    "src/server/services/platform-authority.semantic.ts"
+  ]);
+  if (!allowedSemanticSidecars.has(fileName)) {
+    return unsupported("semantic_sidecar_path_is_not_allowed");
+  }
+  const invalidExposurePairing = (): ParsedSemanticSidecar => ({
+    diagnostics: [
+      {
+        code: "invalid_semantic_exposure_pairing",
+        file: fileName,
+        detail: "unresolved_structural_binding"
+      }
+    ]
+  });
+  const duplicateIdentity = (): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "duplicate_semantic_identity", file: fileName, detail: "duplicate_identity" }]
+  });
+  const missingExposureExportName = (): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "missing_semantic_exposure_export_name", file: fileName, detail: "exposure_export_name_is_required" }]
+  });
+  const missingServiceLinkage = (): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "missing_semantic_service_linkage", file: fileName, detail: "reviewed_service_linkage_is_required" }]
+  });
+  const invalidServiceLinkage = (): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "invalid_semantic_service_linkage", file: fileName, detail: "reviewed_service_linkage_is_invalid" }]
+  });
+  const unresolvedServiceReference = (): ParsedSemanticSidecar => ({
+    diagnostics: [
+      {
+        code: "unresolved_semantic_service_reference",
+        file: fileName,
+        detail: "service_operation_row_is_missing"
+      }
+    ]
+  });
+  const orphanServiceOperation = (): ParsedSemanticSidecar => ({
+    diagnostics: [
+      {
+        code: "orphan_semantic_service_operation",
+        file: fileName,
+        detail: "service_operation_has_no_exposure_reference"
+      }
+    ]
+  });
+  const unresolvedServiceSymbol = (): ParsedSemanticSidecar => ({
+    diagnostics: [
+      {
+        code: "unresolved_semantic_service_symbol",
+        file: fileName,
+        detail: "service_operation_export_is_unresolved"
+      }
+    ]
+  });
+  const crossFamilyServiceReference = (): ParsedSemanticSidecar => ({
+    diagnostics: [
+      {
+        code: "cross_family_semantic_service_reference",
+        file: fileName,
+        detail: "service_operation_is_outside_platform_registration_family"
+      }
+    ]
+  });
+  const unresolvedVariantAnchor = (): ParsedSemanticSidecar => ({
+    diagnostics: [
+      {
+        code: "unresolved_semantic_variant_anchor",
+        file: fileName,
+        detail: "query_parameter_branch_is_unresolved"
+      }
+    ]
+  });
+  const unresolvedAlias = (): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "unresolved_semantic_alias", file: fileName, detail: "direct_re_export_is_unresolved" }]
+  });
+  const incompleteAxisMap = (): ParsedSemanticSidecar => ({
+    diagnostics: [{ code: "incomplete_semantic_axis_map", file: fileName, detail: "fixed_axis_map_is_incomplete" }]
+  });
+  const semanticAxisNames = [
+    "carrier_authority_guard", "caller_controlled_scope", "service_operation_linkage",
+    "permission_commit_reauthorization", "tenant_relationship_invariants", "model_reads_writes_effects",
+    "variant_specific_outcomes", "worker_loop_claim_failure_containment",
+    "browser_immutable_binding_stale_behavior", "executable_evidence_strength"
+  ] as const;
+  let reviewedProgram: ts.Program | undefined;
+  const resolvesReviewedSymbol = (reference: unknown): boolean => {
+    if (!repositoryRoot || !isRecord(reference) || !isNonBlankString(reference.file) ||
+      reference.file.startsWith("/") || reference.file.includes("..")) return false;
+    try {
+      const program = reviewedProgram ??= loadRepositoryProgram(repositoryRoot);
+      const source = program.getSourceFile(resolve(repositoryRoot, reference.file));
+      if (!source) return false;
+      if (reference.kind === "span") {
+        const start = reference.start;
+        const end = reference.end;
+        return Object.keys(reference).sort().join(",") === "end,file,kind,start" &&
+          Number.isInteger(start) && Number.isInteger(end) &&
+          typeof start === "number" && typeof end === "number" &&
+          start >= 0 && end > start &&
+          end <= source.text.length && source.text.slice(start, end).trim().length > 0;
+      }
+      if (reference.kind !== "symbol" || !isNonBlankString(reference.exportName) ||
+        Object.keys(reference).sort().join(",") !== "exportName,file,kind") return false;
+      const moduleSymbol = program.getTypeChecker().getSymbolAtLocation(source);
+      return Boolean(moduleSymbol && program.getTypeChecker().getExportsOfModule(moduleSymbol).some((symbol) => symbol.name === reference.exportName));
+    } catch { return false; }
+  };
+
+  const parseDiagnostics = (sourceFile as ts.SourceFile & {
+    readonly parseDiagnostics: readonly ts.Diagnostic[];
+  }).parseDiagnostics;
+  if (parseDiagnostics.length > 0) return unsupported("typescript_parse_error");
+
+  let schemaImportCount = 0;
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    const moduleName = ts.isStringLiteral(statement.moduleSpecifier)
+      ? statement.moduleSpecifier.text
+      : "";
+    if (
+      !statement.importClause?.isTypeOnly ||
+      moduleName !== "@/server/operation-registry/schema"
+    ) {
+      return unsupported("only_registry_type_imports_are_allowed");
+    }
+    schemaImportCount += 1;
+  }
+  if (schemaImportCount !== 1) return unsupported("exactly_one_schema_type_import_is_required");
+
+  const declarationStatements = sourceFile.statements.filter(ts.isVariableStatement);
+  if (declarationStatements.length !== 1) {
+    return unsupported("exactly_one_exported_semantic_declaration_is_required");
+  }
+  const declarationStatement = declarationStatements[0];
+  const isExported = declarationStatement.modifiers?.some(
+    (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+  );
+  const isConst = (declarationStatement.declarationList.flags & ts.NodeFlags.Const) !== 0;
+  if (!isExported || !isConst || declarationStatement.declarationList.declarations.length !== 1) {
+    return unsupported("semantic_declaration_must_be_one_exported_const");
+  }
+  const variable = declarationStatement.declarationList.declarations[0];
+  if (!variable.initializer) return unsupported("semantic_declaration_initializer_is_required");
+  const initializer = unwrapParentheses(variable.initializer);
+  if (!ts.isSatisfiesExpression(initializer)) {
+    return unsupported("semantic_literal_declaration_required");
+  }
+  const asserted = unwrapParentheses(initializer.expression);
+  if (!ts.isAsExpression(asserted) || asserted.type.getText(sourceFile) !== "const") {
+    return unsupported("semantic_const_assertion_required");
+  }
+  const literal = readLiteral(unwrapParentheses(asserted.expression));
+  if (!literal.ok) return unsupported(literal.detail);
+  const declarations = Array.isArray(literal.value) ? literal.value : [literal.value];
+  for (const declaration of declarations) {
+    if (!isRecord(declaration)) continue;
+    if (declaration.kind !== "service") continue;
+    if (
+      !isNonBlankString(declaration.id) ||
+      !isNonBlankString(declaration.ownerModule) ||
+      !isNonBlankString(declaration.exportName)
+    ) {
+      return unsupported("service_operation_identity_is_required");
+    }
+    const serviceAxes = declaration.axes;
+    if (!isRecord(serviceAxes) || Object.keys(serviceAxes).length !== semanticAxisNames.length ||
+      semanticAxisNames.some((axis) => !Object.prototype.hasOwnProperty.call(serviceAxes, axis))) {
+      return incompleteAxisMap();
+    }
+    if (semanticAxisNames.some((axis) => {
+      const state = serviceAxes[axis];
+      const current = isRecord(state) ? state.current : undefined;
+      const target = isRecord(state) ? state.target : undefined;
+      const expectedGateId = axis === "browser_immutable_binding_stale_behavior"
+        ? "gate.browser_binding_staleness"
+        : axis === "executable_evidence_strength"
+          ? "gate.executable_evidence"
+          : undefined;
+      const deferredCurrent = expectedGateId !== undefined && isRecord(current) &&
+        Object.keys(current).sort().join(",") === "authority,gateId" &&
+        current.authority === "deferred" && current.gateId === expectedGateId;
+      const reviewed = isRecord(current) && Array.isArray(current.sourceReferences) &&
+        current.sourceReferences.length > 0 && current.sourceReferences.every(resolvesReviewedSymbol) &&
+        ((current.authority === "source_reviewed" && isNonBlankString(current.value)) ||
+          (current.authority === "not_applicable" && isNonBlankString(current.rationale)));
+      const validCurrent = expectedGateId === undefined ? reviewed : deferredCurrent;
+      return !isRecord(state) || Object.keys(state).sort().join(",") !== "current,target" || !validCurrent ||
+        !isRecord(target) || Object.keys(target).sort().join(",") !== "authority,gateId" ||
+        target.authority !== "deferred" || !isNonBlankString(target.gateId);
+    })) {
+      return { diagnostics: [{ code: "invalid_semantic_axis_state", file: fileName, detail: "service_axis_state_is_invalid" }] };
+    }
+    if (declaration.ownerModule !== "src/server/services/platform-authority.ts") {
+      return crossFamilyServiceReference();
+    }
+  }
+  if (repositoryRoot) {
+    for (const declaration of declarations) {
+      if (!isRecord(declaration) || declaration.kind !== "service") continue;
+      const servicePath = resolve(repositoryRoot, declaration.ownerModule as string);
+      const servicePathRelative = relative(repositoryRoot, servicePath);
+      if (
+        servicePathRelative.startsWith("..") ||
+        isAbsolute(servicePathRelative) ||
+        !existsSync(servicePath)
+      ) {
+        return unresolvedServiceSymbol();
+      }
+      const serviceSource = ts.createSourceFile(
+        servicePath,
+        readCanonicalRepositoryText(servicePath),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS
+      );
+      const hasServiceExport = serviceSource.statements.some((statement) => {
+        const isExported = ts.canHaveModifiers(statement)
+          ? ts
+              .getModifiers(statement)
+              ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+          : false;
+        if (!isExported) return false;
+        if (ts.isVariableStatement(statement)) {
+          return statement.declarationList.declarations.some(
+            (candidate) =>
+              ts.isIdentifier(candidate.name) && candidate.name.text === declaration.exportName
+          );
+        }
+        if (ts.isFunctionDeclaration(statement)) {
+          return statement.name?.text === declaration.exportName;
+        }
+        return false;
+      });
+      if (!hasServiceExport) return unresolvedServiceSymbol();
+    }
+  }
+  const serviceOperationIds = new Set(
+    declarations
+      .filter(
+        (declaration): declaration is Record<string, unknown> =>
+          isRecord(declaration) && declaration.kind === "service" && isNonBlankString(declaration.id)
+      )
+      .map((declaration) => declaration.id as string)
+  );
+  const referencedServiceOperationIds = new Set<string>();
+  for (const declaration of declarations) {
+    if (!isRecord(declaration) || declaration.kind !== "exposure") continue;
+    if (!Array.isArray(declaration.serviceOperationIds)) continue;
+    for (const serviceOperationId of declaration.serviceOperationIds) {
+      if (isNonBlankString(serviceOperationId)) referencedServiceOperationIds.add(serviceOperationId);
+    }
+  }
+  const identities = new Set<string>();
+  for (const declaration of declarations) {
+    if (!isRecord(declaration)) return { diagnostics: [] };
+    if (declaration.kind === "service") continue;
+    if (declaration.kind !== "exposure") return { diagnostics: [] };
+    const { ownerModule, exportName, binding } = declaration;
+    if (
+      !isNonBlankString(ownerModule) ||
+      !isRecord(binding) ||
+      !isNonBlankString(binding.kind) ||
+      !isNonBlankString(binding.symbol) ||
+      !isNonBlankString(binding.target)
+    ) {
+      return invalidExposurePairing();
+    }
+    if (!isNonBlankString(exportName)) return missingExposureExportName();
+    const isStructuralBinding = structuralDeclarations.some(
+      (structuralDeclaration) =>
+        structuralDeclaration.ownerModule === ownerModule &&
+        structuralDeclaration.bindings.some(
+          (structuralBinding) =>
+            structuralBinding.kind === binding.kind &&
+            structuralBinding.symbol === binding.symbol &&
+            structuralBinding.target === binding.target
+        )
+    );
+    if (!isStructuralBinding) return invalidExposurePairing();
+    let variantName: string | undefined;
+    if (declaration.variant !== undefined) {
+      if (
+        !isRecord(declaration.variant) ||
+        Object.keys(declaration.variant).length !== 2 ||
+        !isNonBlankString(declaration.variant.name) ||
+        !isRecord(declaration.variant.branchAnchor) ||
+        Object.keys(declaration.variant.branchAnchor).length !== 3 ||
+        declaration.variant.branchAnchor.kind !== "query_param_equals" ||
+        !isNonBlankString(declaration.variant.branchAnchor.parameter) ||
+        declaration.variant.branchAnchor.value !== "present"
+      ) {
+        return unsupported("semantic_variant_shape_is_invalid");
+      }
+      variantName = declaration.variant.name;
+      if (!repositoryRoot) return unresolvedVariantAnchor();
+      const aliasOf = isRecord(declaration.aliasOf) ? declaration.aliasOf : undefined;
+      const variantOwnerModule = aliasOf && isNonBlankString(aliasOf.ownerModule)
+        ? aliasOf.ownerModule
+        : ownerModule;
+      const variantExportName = aliasOf && isNonBlankString(aliasOf.exportName)
+        ? aliasOf.exportName
+        : exportName;
+      const exposurePath = resolve(repositoryRoot, variantOwnerModule);
+      const exposurePathRelative = relative(repositoryRoot, exposurePath);
+      if (
+        exposurePathRelative.startsWith("..") ||
+        isAbsolute(exposurePathRelative) ||
+        !existsSync(exposurePath)
+      ) {
+        return unresolvedVariantAnchor();
+      }
+      const exposureSource = ts.createSourceFile(
+        exposurePath,
+        readCanonicalRepositoryText(exposurePath),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS
+      );
+      const exportDeclaration = exposureSource.statements.find(
+        (statement): statement is ts.FunctionDeclaration =>
+          ts.isFunctionDeclaration(statement) && statement.name?.text === variantExportName
+      );
+      const functionText = exportDeclaration?.body?.getText(exposureSource) ?? "";
+      const parameter = declaration.variant.branchAnchor.parameter;
+      const escapedParameter = parameter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const parameterRead = new RegExp(
+        `searchParams\\.get\\(\\s*["']${escapedParameter}["']\\s*\\)`
+      );
+      const presentBranch = new RegExp(
+        `if\\s*\\(\\s*${escapedParameter}\\s*!==\\s*null\\s*\\)`
+      );
+      if (!parameterRead.test(functionText) || !presentBranch.test(functionText)) {
+        return unresolvedVariantAnchor();
+      }
+    }
+
+    if (declaration.aliasOf !== undefined) {
+      if (
+        !isRecord(declaration.aliasOf) ||
+        Object.keys(declaration.aliasOf).length !== 2 ||
+        !isNonBlankString(declaration.aliasOf.ownerModule) ||
+        !isNonBlankString(declaration.aliasOf.exportName) ||
+        !repositoryRoot
+      ) {
+        return unresolvedAlias();
+      }
+      const aliasPath = resolve(repositoryRoot, ownerModule);
+      const aliasPathRelative = relative(repositoryRoot, aliasPath);
+      if (
+        aliasPathRelative.startsWith("..") ||
+        isAbsolute(aliasPathRelative) ||
+        !existsSync(aliasPath)
+      ) {
+        return unresolvedAlias();
+      }
+      const expectedSpecifier = `@/${declaration.aliasOf.ownerModule
+        .replace(/^src\//, "")
+        .replace(/\.ts$/, "")}`;
+      const aliasSource = ts.createSourceFile(
+        aliasPath,
+        readCanonicalRepositoryText(aliasPath),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS
+      );
+      const directReExport = aliasSource.statements.some((statement) => {
+        if (
+          !ts.isExportDeclaration(statement) ||
+          !statement.moduleSpecifier ||
+          !ts.isStringLiteral(statement.moduleSpecifier) ||
+          statement.moduleSpecifier.text !== expectedSpecifier
+        ) {
+          return false;
+        }
+        const exportClause = statement.exportClause;
+        if (!exportClause || !ts.isNamedExports(exportClause)) return false;
+        return exportClause.elements.some(
+          (element) =>
+            element.name.text === exportName &&
+            (element.propertyName?.text ?? element.name.text) ===
+              ((declaration.aliasOf as Record<string, unknown>).exportName as string)
+        );
+      });
+      if (!directReExport) return unresolvedAlias();
+    }
+    if (declaration.serviceOperationIds === undefined) return missingServiceLinkage();
+    const reviewedNotApplicableLinkage = isRecord(declaration.serviceOperationIds) &&
+      Object.keys(declaration.serviceOperationIds).sort().join(",") === "authority,rationale,sourceReferences" &&
+      declaration.serviceOperationIds.authority === "not_applicable" &&
+      isNonBlankString(declaration.serviceOperationIds.rationale) &&
+      Array.isArray(declaration.serviceOperationIds.sourceReferences) &&
+      declaration.serviceOperationIds.sourceReferences.length > 0 &&
+      declaration.serviceOperationIds.sourceReferences.every(resolvesReviewedSymbol);
+    const linkedServiceOperationIds = Array.isArray(declaration.serviceOperationIds) &&
+      declaration.serviceOperationIds.length > 0 &&
+      declaration.serviceOperationIds.every(isNonBlankString);
+    if (!reviewedNotApplicableLinkage && !linkedServiceOperationIds) return invalidServiceLinkage();
+    if (!deferServiceRelations && linkedServiceOperationIds && (declaration.serviceOperationIds as readonly unknown[]).some(
+      (serviceOperationId) => !serviceOperationIds.has(serviceOperationId as string)
+    )) return unresolvedServiceReference();
+    if (declaration.kind === "exposure") {
+      const axes = declaration.axes;
+      if (
+        !isRecord(axes) ||
+        Object.keys(axes).length !== semanticAxisNames.length ||
+        semanticAxisNames.some((axis) => !Object.prototype.hasOwnProperty.call(axes, axis))
+      ) {
+        return incompleteAxisMap();
+      }
+      if (
+        semanticAxisNames.some((axis) => {
+          const state = axes[axis];
+          const expectedGateId: string = {
+            carrier_authority_guard: "gate.carrier_authority_guard",
+            caller_controlled_scope: "gate.caller_controlled_scope",
+            service_operation_linkage: "gate.service_operation_linkage",
+            permission_commit_reauthorization: "gate.permission_commit_reauthorization",
+            tenant_relationship_invariants: "gate.tenant_relationship_invariants",
+            model_reads_writes_effects: "gate.model_and_effects",
+            variant_specific_outcomes: "gate.variant_outcomes",
+            worker_loop_claim_failure_containment: "gate.worker_containment",
+            browser_immutable_binding_stale_behavior: "gate.browser_binding_staleness",
+            executable_evidence_strength: "gate.executable_evidence"
+          }[axis];
+          const current = isRecord(state) ? state.current : undefined;
+          const target = isRecord(state) ? state.target : undefined;
+          const isExpectedDeferred = (value: unknown) =>
+            isRecord(value) &&
+            Object.keys(value).sort().join(",") === "authority,gateId" &&
+            value.authority === "deferred" &&
+            value.gateId === expectedGateId;
+          const isReviewedCurrent = (value: unknown) =>
+            isRecord(value) &&
+            Object.keys(value).sort().join(",") === "authority,sourceReferences,value" &&
+            value.authority === "source_reviewed" &&
+            isNonBlankString(value.value) &&
+            Array.isArray(value.sourceReferences) &&
+            value.sourceReferences.length > 0 &&
+            value.sourceReferences.every(resolvesReviewedSymbol);
+          const isNotApplicableCurrent = (value: unknown) =>
+            isRecord(value) &&
+            Object.keys(value).sort().join(",") === "authority,rationale,sourceReferences" &&
+            value.authority === "not_applicable" &&
+            isNonBlankString(value.rationale) &&
+            Array.isArray(value.sourceReferences) &&
+            value.sourceReferences.length > 0 &&
+            value.sourceReferences.every(resolvesReviewedSymbol);
+          const requiresDeferredCurrent = axis === "permission_commit_reauthorization" ||
+            axis === "tenant_relationship_invariants" ||
+            axis === "model_reads_writes_effects" ||
+            axis === "browser_immutable_binding_stale_behavior" ||
+            axis === "executable_evidence_strength";
+          const validCurrent = requiresDeferredCurrent
+            ? isExpectedDeferred(current)
+            : isExpectedDeferred(current) || isReviewedCurrent(current) || isNotApplicableCurrent(current);
+          return (
+            !isRecord(state) ||
+            Object.keys(state).sort().join(",") !== "current,target" ||
+            !validCurrent ||
+            !isExpectedDeferred(target)
+          );
+        })
+      ) {
+        return {
+          diagnostics: [{ code: "invalid_semantic_axis_state", file: fileName, detail: "deferred_axis_state_is_invalid" }]
+        };
+      }
+    }
+    if (isNonBlankString(exportName)) {
+      const identity = `${ownerModule}#${exportName}${variantName ? `@${variantName}` : ""}`;
+      if (identities.has(identity)) return duplicateIdentity();
+      identities.add(identity);
+    }
+  }
+  if (
+    !deferServiceRelations &&
+    [...serviceOperationIds].some(
+      (serviceOperationId) => !referencedServiceOperationIds.has(serviceOperationId)
+    )
+  ) {
+    return orphanServiceOperation();
+  }
+  return { diagnostics: [], declarations: declarations as readonly SemanticDeclaration[] };
+}
+
+export function parseSemanticSidecarFamily(
+  sidecars: readonly { readonly fileName: string; readonly sourceText: string }[],
+  structuralDeclarations: readonly OperationDeclaration[] = [],
+  repositoryRoot?: string
+): ParsedSemanticSidecar {
+  const local = sidecars.map(({ fileName, sourceText }) =>
+    parseSemanticSidecarSource(fileName, sourceText, structuralDeclarations, repositoryRoot, true)
+  );
+  const diagnostics = local.flatMap((parsed) => parsed.diagnostics);
+  if (diagnostics.length > 0) return { diagnostics };
+  const declarations = local.flatMap((parsed) => parsed.declarations ?? []);
+  const aggregate = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticDeclaration } from "@/server/operation-registry/schema";\nexport const semantic = ${JSON.stringify(declarations)} as const satisfies readonly SemanticDeclaration[];`,
+    structuralDeclarations,
+    repositoryRoot
+  );
+  return aggregate.diagnostics.length > 0
+    ? { diagnostics: aggregate.diagnostics }
+    : { diagnostics: [], declarations };
 }
 
 export function parseSidecarSource(fileName: string, sourceText: string): ParsedSidecar {

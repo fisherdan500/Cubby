@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   unlinkSync,
   writeFileSync
 } from "node:fs";
@@ -18,11 +21,14 @@ const {
   checkRepositoryArtifacts,
   checkRegistryCompletion,
   checkGeneratedArtifacts,
+  checkSemanticGeneratedArtifacts,
   buildDeferredGateRegistry,
   buildRepositoryArtifacts,
+  buildSemanticRepositoryArtifacts,
   buildRepositoryRegistry,
   computeRegistryDigest,
   computeRuntimeInvocationLedgerDigest,
+  computeSemanticFingerprint,
   computeStructuralFingerprint,
   discoverClientBindings,
   discoverContainerCommandBindings,
@@ -33,10 +39,13 @@ const {
   discoverStructuralExclusions,
   discoverWorkerWiring,
   renderGeneratedArtifacts,
+  renderSemanticGeneratedArtifacts,
   validateStructuralFingerprint,
   validateGateEvidenceIntegrity,
   loadRepositoryProgram,
-  parseSidecarSource
+  parseSidecarSource,
+  parseSemanticSidecarSource,
+  parseSemanticSidecarFamily
 } = await import(new URL("./checker.ts", import.meta.url).href);
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
@@ -50,6 +59,38 @@ const validBody = `{
   disposition: "observed",
   deferredGateIds: []
 }`;
+
+const completeSemanticAxisMap = `axes: {
+  carrier_authority_guard: { current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }, target: { authority: "deferred", gateId: "gate.carrier_authority_guard" } },
+  caller_controlled_scope: { current: { authority: "deferred", gateId: "gate.caller_controlled_scope" }, target: { authority: "deferred", gateId: "gate.caller_controlled_scope" } },
+  service_operation_linkage: { current: { authority: "deferred", gateId: "gate.service_operation_linkage" }, target: { authority: "deferred", gateId: "gate.service_operation_linkage" } },
+  permission_commit_reauthorization: { current: { authority: "deferred", gateId: "gate.permission_commit_reauthorization" }, target: { authority: "deferred", gateId: "gate.permission_commit_reauthorization" } },
+  tenant_relationship_invariants: { current: { authority: "deferred", gateId: "gate.tenant_relationship_invariants" }, target: { authority: "deferred", gateId: "gate.tenant_relationship_invariants" } },
+  model_reads_writes_effects: { current: { authority: "deferred", gateId: "gate.model_and_effects" }, target: { authority: "deferred", gateId: "gate.model_and_effects" } },
+  variant_specific_outcomes: { current: { authority: "deferred", gateId: "gate.variant_outcomes" }, target: { authority: "deferred", gateId: "gate.variant_outcomes" } },
+  worker_loop_claim_failure_containment: { current: { authority: "deferred", gateId: "gate.worker_containment" }, target: { authority: "deferred", gateId: "gate.worker_containment" } },
+  browser_immutable_binding_stale_behavior: { current: { authority: "deferred", gateId: "gate.browser_binding_staleness" }, target: { authority: "deferred", gateId: "gate.browser_binding_staleness" } },
+  executable_evidence_strength: { current: { authority: "deferred", gateId: "gate.executable_evidence" }, target: { authority: "deferred", gateId: "gate.executable_evidence" } }
+}`;
+
+const completeSemanticServiceAxisMap = (exportName) => `axes: {
+  carrier_authority_guard: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.carrier_authority_guard" } },
+  caller_controlled_scope: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.caller_controlled_scope" } },
+  service_operation_linkage: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.service_operation_linkage" } },
+  permission_commit_reauthorization: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.permission_commit_reauthorization" } },
+  tenant_relationship_invariants: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.tenant_relationship_invariants" } },
+  model_reads_writes_effects: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.model_and_effects" } },
+  variant_specific_outcomes: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.variant_outcomes" } },
+  worker_loop_claim_failure_containment: { current: { authority: "source_reviewed", value: "fixture source fact", sourceReferences: [{ kind: "symbol", file: "src/server/services/platform-authority.ts", exportName: "${exportName}" }] }, target: { authority: "deferred", gateId: "gate.worker_containment" } },
+  browser_immutable_binding_stale_behavior: { current: { authority: "deferred", gateId: "gate.browser_binding_staleness" }, target: { authority: "deferred", gateId: "gate.browser_binding_staleness" } },
+  executable_evidence_strength: { current: { authority: "deferred", gateId: "gate.executable_evidence" }, target: { authority: "deferred", gateId: "gate.executable_evidence" } }
+}`;
+
+const completeSemanticServiceAxisMapFor = (file, exportName) =>
+  completeSemanticServiceAxisMap(exportName).replaceAll(
+    "src/server/services/platform-authority.ts",
+    file
+  );
 
 const tests = [];
 let declarationFamilyRegistry;
@@ -231,6 +272,1042 @@ test("rejects every executable or non-literal sidecar form", () => {
         )
       );
     }
+});
+
+test("semantic sidecars reject value imports", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import { platformAuthority } from "@/server/services/platform-authority";
+export const semantic = {} as const;`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic sidecars require one registry type import", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  }
+} as const satisfies SemanticExposureDeclaration;`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic sidecars require exactly one exported declaration", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  }
+} as const satisfies SemanticExposureDeclaration;
+const extra = "not permitted";`,
+    registry.declarations.map((entry) => entry.declaration)
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic sidecars reject nonliteral declaration indirection", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+const exposure = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  }
+};
+export const semantic = exposure as const satisfies SemanticExposureDeclaration;`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic sidecars require a const assertion", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  }
+} satisfies SemanticExposureDeclaration;`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic sidecars reject duplicate literal fields", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  ownerModule: "src/app/api/settings/registration/route.ts",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  }
+} as const satisfies SemanticExposureDeclaration;`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic sidecars reject unknown locations", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/health/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/health/route.ts",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/health/route.ts#GET"
+  }
+} as const satisfies SemanticExposureDeclaration;`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
+});
+
+test("semantic exposures reject nonstructural binding pairs", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  exportName: "DELETE",
+  serviceOperationIds: ["platform.registration.allocate"],
+  binding: {
+    kind: "route_method",
+    symbol: "DELETE",
+    target: "src/app/api/platform/registration/route.ts#DELETE"
+  },
+  ${completeSemanticAxisMap}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration)
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "invalid_semantic_exposure_pairing"
+    )
+  );
+});
+
+test("semantic exposures reject duplicate normalized identities", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["platform.registration.settings"],
+    ${completeSemanticAxisMap}
+  },
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["platform.registration.settings"],
+    ${completeSemanticAxisMap}
+  }
+] as const satisfies readonly SemanticExposureDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration),
+    undefined,
+    true
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "duplicate_semantic_identity"
+    )
+  );
+});
+
+test("semantic variants reject unresolved query parameter branches", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/platform/registration/route.ts",
+  exportName: "GET",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  },
+  variant: {
+    name: "status",
+    branchAnchor: {
+      kind: "query_param_equals",
+      parameter: "missingOperationId",
+      value: "present"
+    }
+  }
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unresolved_semantic_variant_anchor"
+    )
+  );
+});
+
+test("semantic variants receive distinct canonical identities", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["platform.registration.settings"],
+    ${completeSemanticAxisMap}
+  },
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    variant: {
+      name: "status",
+      branchAnchor: {
+        kind: "query_param_equals",
+        parameter: "operationId",
+        value: "present"
+      }
+    },
+    serviceOperationIds: ["platform.registration.operation-status"],
+    ${completeSemanticAxisMap}
+  }
+] as const satisfies readonly SemanticExposureDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+});
+
+test("semantic exposures require the complete fixed axis map", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"]
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "incomplete_semantic_axis_map"));
+});
+
+test("semantic sidecar families resolve service rows across allowed sidecars", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const family = parseSemanticSidecarFamily([
+    {
+      fileName: "src/app/api/platform/registration/route.semantic.ts",
+      sourceText: `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [{
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "POST",
+  binding: { kind: "route_method", symbol: "POST", target: "src/app/api/platform/registration/route.ts#POST" },
+  serviceOperationIds: ["platform.registration.allocate"],
+  ${completeSemanticAxisMap}
+}] as const satisfies readonly SemanticExposureDeclaration[];`
+    },
+    {
+      fileName: "src/server/services/platform-authority.semantic.ts",
+      sourceText: `import type { SemanticServiceOperationDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [{
+  kind: "service", id: "platform.registration.allocate", ownerModule: "src/server/services/platform-authority.ts", exportName: "allocatePlatformRegistrationOperation",
+  ${completeSemanticServiceAxisMap("allocatePlatformRegistrationOperation")}
+}] as const satisfies readonly SemanticServiceOperationDeclaration[];`
+    }
+  ], registry.declarations.map((entry) => entry.declaration), repositoryRoot);
+  assert.deepEqual(family.diagnostics, []);
+  assert.equal(family.declarations.length, 2);
+});
+
+test("authorized platform registration POST semantic pair closes", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const family = parseSemanticSidecarFamily([
+    {
+      fileName: "src/app/api/platform/registration/route.semantic.ts",
+      sourceText: readFileSync(resolve(repositoryRoot, "src/app/api/platform/registration/route.semantic.ts"), "utf8")
+    },
+    {
+      fileName: "src/server/services/platform-authority.semantic.ts",
+      sourceText: readFileSync(resolve(repositoryRoot, "src/server/services/platform-authority.semantic.ts"), "utf8")
+    }
+  ], registry.declarations.map((entry) => entry.declaration), repositoryRoot);
+  assert.deepEqual(family.diagnostics, []);
+  assert.equal(family.declarations.length, 8);
+  assert.ok(family.declarations.some((declaration) => declaration.kind === "exposure" && declaration.exportName === "POST"));
+  assert.ok(family.declarations.some((declaration) => declaration.kind === "service" && declaration.id === "platform.registration.allocate"));
+});
+
+test("authorized platform registration PUT semantic pair closes", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const family = parseSemanticSidecarFamily([
+    { fileName: "src/app/api/platform/registration/route.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/app/api/platform/registration/route.semantic.ts"), "utf8") },
+    { fileName: "src/server/services/platform-authority.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/server/services/platform-authority.semantic.ts"), "utf8") }
+  ], registry.declarations.map((entry) => entry.declaration), repositoryRoot);
+  assert.deepEqual(family.diagnostics, []);
+  assert.equal(family.declarations.length, 8);
+  assert.ok(family.declarations.some((declaration) => declaration.kind === "exposure" && declaration.exportName === "PUT"));
+  assert.ok(family.declarations.some((declaration) => declaration.kind === "service" && declaration.id === "platform.registration.complete"));
+});
+
+test("authorized semantic family contains exactly twelve selected declarations", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const family = parseSemanticSidecarFamily([
+    { fileName: "src/app/api/platform/registration/route.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/app/api/platform/registration/route.semantic.ts"), "utf8") },
+    { fileName: "src/app/api/settings/registration/route.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/app/api/settings/registration/route.semantic.ts"), "utf8") },
+    { fileName: "src/server/services/platform-authority.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/server/services/platform-authority.semantic.ts"), "utf8") }
+  ], registry.declarations.map((entry) => entry.declaration), repositoryRoot);
+  assert.deepEqual(family.diagnostics, []);
+  assert.equal(family.declarations.length, 12);
+  const exposures = family.declarations.filter((declaration) => declaration.kind === "exposure");
+  const services = family.declarations.filter((declaration) => declaration.kind === "service");
+  assert.equal(exposures.length, 8);
+  assert.equal(services.length, 4);
+  assert.deepEqual(
+    new Set(services.map((declaration) => declaration.id)),
+    new Set([
+      "platform.registration.allocate",
+      "platform.registration.complete",
+      "platform.registration.settings",
+      "platform.registration.operation-status"
+    ])
+  );
+  const exposureByIdentity = new Map(
+    exposures.map((declaration) => [
+      `${declaration.ownerModule}#${declaration.exportName}${declaration.variant ? `@${declaration.variant.name}` : ""}`,
+      declaration
+    ])
+  );
+  for (const [identity, operationId] of [
+    ["src/app/api/platform/registration/route.ts#POST", "platform.registration.allocate"],
+    ["src/app/api/platform/registration/route.ts#PUT", "platform.registration.complete"],
+    ["src/app/api/platform/registration/route.ts#GET", "platform.registration.settings"],
+    ["src/app/api/platform/registration/route.ts#GET@operation-status", "platform.registration.operation-status"]
+  ]) {
+    assert.deepEqual(exposureByIdentity.get(identity)?.serviceOperationIds, [operationId]);
+  }
+  assert.deepEqual(
+    exposureByIdentity.get("src/app/api/platform/registration/route.ts#GET@operation-status")?.variant,
+    { name: "operation-status", branchAnchor: { kind: "query_param_equals", parameter: "operationId", value: "present" } }
+  );
+  const aliases = exposures.filter((declaration) => declaration.aliasOf !== undefined);
+  assert.equal(aliases.length, 4);
+  assert.deepEqual(
+    new Set(aliases.map((declaration) => `${declaration.exportName}${declaration.variant ? `@${declaration.variant.name}` : ""}`)),
+    new Set(["GET", "GET@operation-status", "POST", "PUT"])
+  );
+  assert.ok(aliases.every((declaration) =>
+    declaration.ownerModule === "src/app/api/settings/registration/route.ts" &&
+    declaration.aliasOf?.ownerModule === "src/app/api/platform/registration/route.ts" &&
+    declaration.aliasOf.exportName === declaration.exportName
+  ));
+});
+
+test("semantic axes reject malformed deferred gate states", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace('authority: "deferred"', 'authority: "pending"')}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
+});
+
+test("semantic exposure axes retain R3/R4 phase fences", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  for (const [axis, gateId] of [
+    ["browser_immutable_binding_stale_behavior", "gate.browser_binding_staleness"],
+    ["executable_evidence_strength", "gate.executable_evidence"]
+  ]) {
+    const parsed = parseSemanticSidecarSource(
+      "src/app/api/platform/registration/route.semantic.ts",
+      `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    `current: { authority: "deferred", gateId: "${gateId}" }`,
+    'current: { authority: "source_reviewed", value: "promoted", sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "GET" }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+      registry.declarations.map((entry) => entry.declaration),
+      repositoryRoot,
+      true
+    );
+    assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"), axis);
+  }
+});
+
+test("semantic service axes retain R3/R4 phase fences", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/server/services/platform-authority.semantic.ts",
+    `import type { SemanticServiceOperationDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [{
+  kind: "service", id: "platform.registration.allocate", ownerModule: "src/server/services/platform-authority.ts", exportName: "allocatePlatformRegistrationOperation",
+  ${completeSemanticServiceAxisMap("allocatePlatformRegistrationOperation")}
+}] as const satisfies readonly SemanticServiceOperationDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+});
+
+test("semantic exposure axes retain exclusive service ownership", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  for (const [axis, gateId] of [
+    ["permission_commit_reauthorization", "gate.permission_commit_reauthorization"],
+    ["tenant_relationship_invariants", "gate.tenant_relationship_invariants"],
+    ["model_reads_writes_effects", "gate.model_and_effects"]
+  ]) {
+    const parsed = parseSemanticSidecarSource(
+      "src/app/api/platform/registration/route.semantic.ts",
+      `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    `${axis}: { current: { authority: "deferred", gateId: "${gateId}" }`,
+    `${axis}: { current: { authority: "not_applicable", rationale: "service-owned fact must remain deferred", sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "GET" }] }`
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+      registry.declarations.map((entry) => entry.declaration),
+      repositoryRoot,
+      true
+    );
+    assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"), axis);
+  }
+});
+
+test("semantic axes resolve reviewed local source symbols", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "GET" }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+  assert.equal(parsed.declarations?.[0]?.kind, "exposure");
+  assert.equal(parsed.declarations?.[0]?.axes.carrier_authority_guard.current.authority, "source_reviewed");
+});
+
+test("semantic fingerprints canonical parsed source anchors", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "GET" }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+  assert.ok(parsed.declarations);
+  const first = computeSemanticFingerprint({ declarations: parsed.declarations, repositoryRoot });
+  const second = computeSemanticFingerprint({ declarations: parsed.declarations, repositoryRoot });
+  assert.deepEqual(first.diagnostics, []);
+  assert.ok(first.digest);
+  assert.equal(first.digest, second.digest);
+
+  const unresolvedDeclarations = structuredClone(parsed.declarations);
+  unresolvedDeclarations[0].axes.carrier_authority_guard.current = {
+    authority: "source_reviewed",
+    value: "route_guard",
+    sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "MISSING" }]
+  };
+  const unresolved = computeSemanticFingerprint({ declarations: unresolvedDeclarations, repositoryRoot });
+  assert.equal(unresolved.digest, null);
+  assert.ok(unresolved.diagnostics.some((diagnostic) => diagnostic.code === "unresolved_fingerprint_anchor"));
+
+  const fixtureRoot = mkdtempSync(resolve(tmpdir(), "semantic-fingerprint-"));
+  try {
+    mkdirSync(resolve(fixtureRoot, "src/server/operation-registry"), { recursive: true });
+    mkdirSync(resolve(fixtureRoot, "scripts"), { recursive: true });
+    writeFileSync(resolve(fixtureRoot, "tsconfig.json"), '{"compilerOptions":{"target":"ES2022","module":"ESNext"},"include":["src/**/*.ts"]}\n');
+    writeFileSync(resolve(fixtureRoot, "src/route.ts"), "export function GET() { return \"baseline\"; }\n");
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/schema.ts"), "export type SemanticFixture = {};\n");
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/checker.ts"), "export {};\n");
+    writeFileSync(resolve(fixtureRoot, "scripts/operation-registry.ts"), "export {};\n");
+    const driftDeclarations = structuredClone(parsed.declarations);
+    driftDeclarations[0].axes.carrier_authority_guard.current = {
+      authority: "source_reviewed",
+      value: "route_guard",
+      sourceReferences: [{ kind: "symbol", file: "src/route.ts", exportName: "GET" }]
+    };
+    const baseline = computeSemanticFingerprint({ declarations: driftDeclarations, repositoryRoot: fixtureRoot });
+    writeFileSync(resolve(fixtureRoot, "src/route.ts"), "export function GET() { return \"changed\"; }\n");
+    const changed = computeSemanticFingerprint({ declarations: driftDeclarations, repositoryRoot: fixtureRoot });
+    assert.deepEqual(baseline.diagnostics, []);
+    assert.deepEqual(changed.diagnostics, []);
+    assert.ok(baseline.digest);
+    assert.ok(changed.digest);
+    assert.notEqual(baseline.digest, changed.digest);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("semantic fingerprints bind resolved canonical alias export bytes", () => {
+  const fixtureRoot = mkdtempSync(resolve(tmpdir(), "semantic-fingerprint-alias-anchor-"));
+  try {
+    mkdirSync(resolve(fixtureRoot, "src/server/operation-registry"), { recursive: true });
+    mkdirSync(resolve(fixtureRoot, "scripts"), { recursive: true });
+    writeFileSync(resolve(fixtureRoot, "tsconfig.json"), '{"compilerOptions":{"target":"ES2022","module":"ESNext"},"include":["src/**/*.ts"]}\n');
+    writeFileSync(resolve(fixtureRoot, "src/canonical.ts"), "export function GET() { return \"baseline canonical export with enough bytes\"; }\n");
+    writeFileSync(resolve(fixtureRoot, "src/alias.ts"), 'export { GET } from "./canonical";\n');
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/schema.ts"), "export type SemanticFixture = {};\n");
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/checker.ts"), "export {};\n");
+    writeFileSync(resolve(fixtureRoot, "scripts/operation-registry.ts"), "export {};\n");
+    const declarations = [
+      { kind: "service", id: "alias-service", ownerModule: "src/alias.ts", exportName: "GET" },
+      {
+        kind: "exposure",
+        ownerModule: "src/alias.ts",
+        exportName: "GET",
+        axes: {
+          carrier_authority_guard: {
+            current: {
+              authority: "source_reviewed",
+              value: "alias reference",
+              sourceReferences: [{ kind: "symbol", file: "src/alias.ts", exportName: "GET" }]
+            }
+          }
+        }
+      }
+    ];
+    const baseline = computeSemanticFingerprint({ declarations, repositoryRoot: fixtureRoot });
+    writeFileSync(resolve(fixtureRoot, "src/canonical.ts"), "export function GET() { return \"baseline canonical export with enough bytez\"; }\n");
+    const changed = computeSemanticFingerprint({ declarations, repositoryRoot: fixtureRoot });
+    assert.deepEqual(baseline.diagnostics, []);
+    assert.deepEqual(changed.diagnostics, []);
+    assert.ok(baseline.digest);
+    assert.ok(changed.digest);
+    assert.notEqual(baseline.digest, changed.digest);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("semantic fingerprints bind schema and generator bytes", () => {
+  const fixtureRoot = mkdtempSync(resolve(tmpdir(), "semantic-fingerprint-schema-generator-"));
+  try {
+    mkdirSync(resolve(fixtureRoot, "src/server/operation-registry"), { recursive: true });
+    mkdirSync(resolve(fixtureRoot, "scripts"), { recursive: true });
+    writeFileSync(resolve(fixtureRoot, "tsconfig.json"), '{"compilerOptions":{"target":"ES2022","module":"ESNext"},"include":["src/**/*.ts"]}\n');
+    writeFileSync(resolve(fixtureRoot, "src/route.ts"), "export function GET() { return \"baseline\"; }\n");
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/schema.ts"), "export type SemanticFixture = {};\n");
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/checker.ts"), "export {};\n");
+    writeFileSync(resolve(fixtureRoot, "scripts/operation-registry.ts"), "export {};\n");
+    const declarations = [{ kind: "service", id: "fixture", ownerModule: "src/route.ts", exportName: "GET" }];
+    const baseline = computeSemanticFingerprint({ declarations, repositoryRoot: fixtureRoot });
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/schema.ts"), "export type SemanticFixture = { changed: true };\n");
+    const schemaChanged = computeSemanticFingerprint({ declarations, repositoryRoot: fixtureRoot });
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/schema.ts"), "export type SemanticFixture = {};\n");
+    writeFileSync(resolve(fixtureRoot, "src/server/operation-registry/checker.ts"), "export const changed = true;\n");
+    const generatorChanged = computeSemanticFingerprint({ declarations, repositoryRoot: fixtureRoot });
+    assert.deepEqual(baseline.diagnostics, []);
+    assert.ok(baseline.digest);
+    assert.notEqual(baseline.digest, schemaChanged.digest);
+    assert.notEqual(baseline.digest, generatorChanged.digest);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test("semantic axes reject traversal source references", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [{ kind: "symbol", file: "../route.ts", exportName: "GET" }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
+});
+
+test("semantic axes reject unresolved source symbols", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "MISSING" }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
+});
+
+test("semantic axes resolve reviewed local source spans", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [{ kind: "span", file: "src/app/api/platform/registration/route.ts", start: 305, end: 330 }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+  assert.ok(parsed.declarations);
+  const fingerprint = computeSemanticFingerprint({ declarations: parsed.declarations, repositoryRoot });
+  assert.deepEqual(fingerprint.diagnostics, []);
+  assert.ok(fingerprint.digest);
+});
+
+test("semantic axes reject out-of-range source spans", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [{ kind: "span", file: "src/app/api/platform/registration/route.ts", start: 305, end: 999999 }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
+});
+
+test("semantic axes reject empty source-reference closures", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "source_reviewed", value: "route_guard", sourceReferences: [] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
+});
+
+test("semantic axes require evidence for not-applicable current states", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  serviceOperationIds: ["platform.registration.settings"],
+  ${completeSemanticAxisMap.replace(
+    'current: { authority: "deferred", gateId: "gate.carrier_authority_guard" }',
+    'current: { authority: "not_applicable", rationale: "framework_guard", sourceReferences: [{ kind: "symbol", file: "src/app/api/platform/registration/route.ts", exportName: "GET" }] }'
+  )}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+});
+
+test("semantic aliases reject unresolved direct re-exports", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/settings/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/settings/registration/route.ts",
+  exportName: "GET",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  },
+  aliasOf: {
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "missing"
+  }
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(
+    parsed.diagnostics.some((diagnostic) => diagnostic.code === "unresolved_semantic_alias")
+  );
+});
+
+test("semantic aliases resolve current direct re-exports", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/settings/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure",
+  ownerModule: "src/app/api/settings/registration/route.ts",
+  exportName: "GET",
+  binding: {
+    kind: "route_method",
+    symbol: "GET",
+    target: "src/app/api/platform/registration/route.ts#GET"
+  },
+  aliasOf: {
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET"
+  },
+  variant: {
+    name: "operation-status",
+    branchAnchor: {
+      kind: "query_param_equals",
+      parameter: "operationId",
+      value: "present"
+    }
+  },
+  serviceOperationIds: ["platform.registration.operation-status"],
+  ${completeSemanticAxisMap}
+} as const satisfies SemanticExposureDeclaration;`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot,
+    true
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+});
+
+test("semantic exposures reject missing service operation rows", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["service:platform-authority#getPlatformRegistrationSettings"]
+  }
+] as const satisfies readonly SemanticExposureDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration)
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unresolved_semantic_service_reference"
+    )
+  );
+});
+
+test("semantic service rows reject stale exported symbols", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["service:platform-authority#getPlatformRegistrationSettings"],
+    ${completeSemanticAxisMap}
+  },
+  {
+    kind: "service",
+    id: "service:platform-authority#getPlatformRegistrationSettings",
+    ownerModule: "src/server/services/platform-authority.ts",
+    exportName: "missingServiceSymbol",
+    ${completeSemanticServiceAxisMap("getPlatformRegistrationSettings")}
+  }
+] as const satisfies readonly SemanticExposureDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unresolved_semantic_service_symbol"
+    )
+  );
+});
+
+test("semantic exposures reject cross-family service operations", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["service:platform-constants#PLATFORM_SINGLETON_ID"]
+  },
+  {
+    kind: "service",
+    id: "service:platform-constants#PLATFORM_SINGLETON_ID",
+    ownerModule: "src/server/services/platform-constants.ts",
+    exportName: "PLATFORM_SINGLETON_ID",
+    ${completeSemanticServiceAxisMapFor(
+      "src/server/services/platform-constants.ts",
+      "PLATFORM_SINGLETON_ID"
+    )}
+  }
+] as const satisfies readonly SemanticExposureDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "cross_family_semantic_service_reference"
+    )
+  );
+});
+
+test("semantic service rows resolve current exported symbols", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const parsed = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "exposure",
+    ownerModule: "src/app/api/platform/registration/route.ts",
+    exportName: "GET",
+    binding: {
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/platform/registration/route.ts#GET"
+    },
+    serviceOperationIds: ["service:platform-authority#getPlatformRegistrationSettings"],
+    ${completeSemanticAxisMap}
+  },
+  {
+    kind: "service",
+    id: "service:platform-authority#getPlatformRegistrationSettings",
+    ownerModule: "src/server/services/platform-authority.ts",
+    exportName: "getPlatformRegistrationSettings",
+    ${completeSemanticServiceAxisMap("getPlatformRegistrationSettings")}
+  }
+] as const satisfies readonly SemanticExposureDeclaration[];`,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.deepEqual(parsed.diagnostics, []);
+});
+
+test("semantic service rows reject orphaned operations", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/server/services/platform-authority.semantic.ts",
+    `import type { SemanticServiceDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "service",
+    id: "service:platform-authority#getPlatformRegistrationSettings",
+    ownerModule: "src/server/services/platform-authority.ts",
+    exportName: "getPlatformRegistrationSettings",
+    ${completeSemanticServiceAxisMap("getPlatformRegistrationSettings")}
+  }
+] as const satisfies readonly SemanticServiceDeclaration[];`,
+    [],
+    repositoryRoot
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "orphan_semantic_service_operation"
+    )
+  );
+});
+
+test("semantic service rows require stable identities", () => {
+  const parsed = parseSemanticSidecarSource(
+    "src/server/services/platform-authority.semantic.ts",
+    `import type { SemanticServiceDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [
+  {
+    kind: "service",
+    ownerModule: "src/server/services/platform-authority.ts",
+    exportName: "getPlatformRegistrationSettings"
+  }
+] as const satisfies readonly SemanticServiceDeclaration[];`
+  );
+  assert.ok(
+    parsed.diagnostics.some(
+      (diagnostic) => diagnostic.code === "unsupported_semantic_sidecar_syntax"
+    )
+  );
 });
 
 test("enumerates registry-tree sidecars and requires the exact schema type import", () => {
@@ -1796,6 +2873,138 @@ test("rejects generated drift and tamper without writing", () => {
     assert.ok(codes.includes("stale_generated_row"));
     assert.ok(codes.includes("missing_sidecar"));
     assert.deepEqual(snapshotTree(temporaryRoot), before);
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("builds the bounded twelve-row semantic artifact family as incomplete source-reviewed output", () => {
+  const built = buildSemanticRepositoryArtifacts(repositoryRoot);
+  assert.deepEqual(built.diagnostics, []);
+  assert.deepEqual(Object.keys(built.artifacts), [
+    "src/server/operation-registry/generated/semantic-registry.json",
+    "src/server/operation-registry/generated/semantic-fingerprints.json",
+    "src/server/operation-registry/generated/semantic-deferred-gates.json",
+    "src/server/operation-registry/generated/semantic-structural-exposure-coverage.json"
+  ]);
+  for (const content of Object.values(built.artifacts)) {
+    const artifact = JSON.parse(content);
+    assert.equal(artifact.authority, "source_reviewed_subset");
+    assert.equal(artifact.complete, false);
+    assert.deepEqual(artifact.readiness, {
+      authority: "source_reviewed_subset",
+      complete: false,
+      scope: "platform_registration"
+    });
+    assert.equal(artifact.semanticDeclarationCount, 12);
+  }
+});
+
+test("semantic artifact validation fails closed for unexpected, mixed aggregate, and readiness claims", () => {
+  const built = buildSemanticRepositoryArtifacts(repositoryRoot);
+  assert.deepEqual(built.diagnostics, []);
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-semantic-artifact-validation-"));
+  try {
+    for (const [file, content] of Object.entries(built.artifacts)) {
+      const target = resolve(temporaryRoot, file);
+      mkdirSync(resolve(target, ".."), { recursive: true });
+      writeFileSync(target, content);
+    }
+    const registryPath = "src/server/operation-registry/generated/semantic-registry.json";
+    const registry = JSON.parse(readFileSync(resolve(temporaryRoot, registryPath), "utf8"));
+    registry.complete = true;
+    registry.readiness.complete = true;
+    writeFileSync(resolve(temporaryRoot, registryPath), `${JSON.stringify(registry, null, 2)}\n`);
+
+    const fingerprintsPath = "src/server/operation-registry/generated/semantic-fingerprints.json";
+    const fingerprints = JSON.parse(readFileSync(resolve(temporaryRoot, fingerprintsPath), "utf8"));
+    fingerprints.semanticArtifactDigest = "0".repeat(64);
+    writeFileSync(resolve(temporaryRoot, fingerprintsPath), `${JSON.stringify(fingerprints, null, 2)}\n`);
+    writeFileSync(
+      resolve(temporaryRoot, "src/server/operation-registry/generated/semantic-unexpected.json"),
+      "{}\n"
+    );
+
+    const diagnostics = checkSemanticGeneratedArtifacts(temporaryRoot, built.artifacts);
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.detail === "semantic_complete_claim_is_not_allowed"));
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.detail === "semantic_readiness_claim_is_not_allowed"));
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.detail === "semantic_aggregate_cross_file_mismatch:semanticArtifactDigest"));
+    assert.ok(diagnostics.some((diagnostic) => diagnostic.code === "unexpected_generated_artifact"));
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("CLI --check reports the independent semantic artifact family", () => {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-semantic-cli-check-"));
+  try {
+    cpSync(repositoryRoot, temporaryRoot, {
+      recursive: true,
+      filter: (source) => ![
+        resolve(repositoryRoot, ".git"),
+        resolve(repositoryRoot, ".next"),
+        resolve(repositoryRoot, "node_modules")
+      ].includes(source)
+    });
+    symlinkSync(
+      resolve(repositoryRoot, "node_modules"),
+      resolve(temporaryRoot, "node_modules"),
+      "junction"
+    );
+    const artifactPath = resolve(
+      temporaryRoot,
+      "src/server/operation-registry/generated/semantic-registry.json"
+    );
+    writeFileSync(artifactPath, "{}\n");
+    const result = spawnSync(
+      process.execPath,
+      ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/operation-registry.ts", "--check"],
+      { cwd: temporaryRoot, encoding: "utf8" }
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /semantic-registry\.json/);
+    assert.match(result.stderr, /generated_bytes_do_not_match/);
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("renders separate deterministic semantic artifacts", () => {
+  const input = {
+    semanticRegistry: { authority: "source_reviewed_subset", complete: false, rows: [] },
+    semanticFingerprints: { authority: "source_reviewed_subset", fingerprints: [] },
+    semanticDeferredGates: { authority: "source_reviewed_subset", rows: [] }
+  };
+  const artifacts = renderSemanticGeneratedArtifacts(input);
+  assert.deepEqual(Object.keys(artifacts), [
+    "src/server/operation-registry/generated/semantic-registry.json",
+    "src/server/operation-registry/generated/semantic-fingerprints.json",
+    "src/server/operation-registry/generated/semantic-deferred-gates.json",
+    "src/server/operation-registry/generated/semantic-structural-exposure-coverage.json"
+  ]);
+  assert.deepEqual(artifacts, renderSemanticGeneratedArtifacts({
+    semanticDeferredGates: { rows: [], authority: "source_reviewed_subset" },
+    semanticFingerprints: { fingerprints: [], authority: "source_reviewed_subset" },
+    semanticRegistry: { rows: [], complete: false, authority: "source_reviewed_subset" }
+  }));
+  assert.match(artifacts["src/server/operation-registry/generated/semantic-registry.json"], /"complete": false/);
+
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-semantic-artifacts-"));
+  try {
+    for (const [file, content] of Object.entries(artifacts)) {
+      const target = resolve(temporaryRoot, file);
+      mkdirSync(resolve(target, ".."), { recursive: true });
+      writeFileSync(target, content);
+    }
+    writeFileSync(
+      resolve(temporaryRoot, "src/server/operation-registry/generated/semantic-registry.json"),
+      "{}\n"
+    );
+    unlinkSync(resolve(temporaryRoot, "src/server/operation-registry/generated/semantic-fingerprints.json"));
+    const diagnostics = checkSemanticGeneratedArtifacts(temporaryRoot, artifacts);
+    const codes = diagnostics.map((diagnostic) => diagnostic.code);
+    assert.ok(codes.includes("generated_artifact_mismatch"));
+    assert.ok(codes.includes("missing_generated_artifact"));
   } finally {
     rmSync(temporaryRoot, { recursive: true, force: true });
   }
@@ -6117,6 +7326,98 @@ test("tenth remediation rejects every unclosed Compose build selector", () => {
   } finally {
     rmSync(temporaryRoot, { recursive: true, force: true });
   }
+});
+
+test("semantic exposures fail closed without an export name or reviewed service linkage policy", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const source = `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = {
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts",
+  binding: { kind: "route_method", symbol: "GET", target: "src/app/api/platform/registration/route.ts#GET" },
+  ${completeSemanticAxisMap}
+} as const satisfies SemanticExposureDeclaration;`;
+  const missingExport = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    source,
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(missingExport.diagnostics.some((diagnostic) => diagnostic.code === "missing_semantic_exposure_export_name"));
+
+  const missingLinkage = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    source.replace('kind: "exposure", ownerModule:', 'kind: "exposure", ownerModule:').replace(
+      'ownerModule: "src/app/api/platform/registration/route.ts",\n  binding:',
+      'ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",\n  binding:'
+    ),
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(missingLinkage.diagnostics.some((diagnostic) => diagnostic.code === "missing_semantic_service_linkage"));
+
+  const malformedNotApplicable = parseSemanticSidecarSource(
+    "src/app/api/platform/registration/route.semantic.ts",
+    source.replace(
+      'ownerModule: "src/app/api/platform/registration/route.ts",\n  binding:',
+      'ownerModule: "src/app/api/platform/registration/route.ts", exportName: "GET",\n  serviceOperationIds: { authority: "not_applicable", rationale: "no service" },\n  binding:',
+    ),
+    registry.declarations.map((entry) => entry.declaration),
+    repositoryRoot
+  );
+  assert.ok(malformedNotApplicable.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_service_linkage"));
+});
+
+test("semantic service declarations require the fixed reviewed ten-axis contract", () => {
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  const family = parseSemanticSidecarFamily([
+    {
+      fileName: "src/app/api/platform/registration/route.semantic.ts",
+      sourceText: `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [{
+  kind: "exposure", ownerModule: "src/app/api/platform/registration/route.ts", exportName: "POST",
+  binding: { kind: "route_method", symbol: "POST", target: "src/app/api/platform/registration/route.ts#POST" },
+  serviceOperationIds: ["platform.registration.allocate"],
+  ${completeSemanticAxisMap}
+}] as const satisfies readonly SemanticExposureDeclaration[];`
+    },
+    {
+      fileName: "src/server/services/platform-authority.semantic.ts",
+      sourceText: `import type { SemanticServiceOperationDeclaration } from "@/server/operation-registry/schema";
+export const semantic = [{
+  kind: "service", id: "platform.registration.allocate", ownerModule: "src/server/services/platform-authority.ts", exportName: "allocatePlatformRegistrationOperation"
+}] as const satisfies readonly SemanticServiceOperationDeclaration[];`
+    }
+  ], registry.declarations.map((entry) => entry.declaration), repositoryRoot);
+  assert.ok(family.diagnostics.some((diagnostic) => diagnostic.code === "incomplete_semantic_axis_map"));
+});
+
+test("semantic artifacts emit individual declaration fingerprints and byte-checked structural coverage", () => {
+  const built = buildSemanticRepositoryArtifacts(repositoryRoot);
+  assert.deepEqual(built.diagnostics, []);
+  const fingerprints = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-fingerprints.json"]);
+  assert.deepEqual(
+    new Set(fingerprints.fingerprints.map((entry) => entry.id)),
+    new Set([
+      "semantic:platform_registration",
+      "semantic-exposure:src/app/api/platform/registration/route.ts#GET",
+      "semantic-exposure:src/app/api/platform/registration/route.ts#GET@operation-status",
+      "semantic-exposure:src/app/api/platform/registration/route.ts#POST",
+      "semantic-exposure:src/app/api/platform/registration/route.ts#PUT",
+      "semantic-exposure:src/app/api/settings/registration/route.ts#GET",
+      "semantic-exposure:src/app/api/settings/registration/route.ts#GET@operation-status",
+      "semantic-exposure:src/app/api/settings/registration/route.ts#POST",
+      "semantic-exposure:src/app/api/settings/registration/route.ts#PUT",
+      "semantic-service:platform.registration.allocate",
+      "semantic-service:platform.registration.complete",
+      "semantic-service:platform.registration.settings",
+      "semantic-service:platform.registration.operation-status"
+    ])
+  );
+  const coverage = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-structural-exposure-coverage.json"]);
+  assert.ok(coverage.entries.length > 12);
+  assert.ok(coverage.entries.some((entry) => entry.coverage === "semantic_declared"));
+  assert.ok(coverage.entries.some((entry) => entry.coverage === "structural_only"));
+  assert.ok(coverage.entries.every((entry) => typeof entry.anchorBytes === "string" && entry.anchorBytes.length > 0));
 });
 
 function snapshotTree(root) {

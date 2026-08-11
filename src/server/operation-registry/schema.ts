@@ -122,3 +122,68 @@ export type DeferredGateDefinition = {
   readonly blockedAxes: readonly DeferredSemanticAxis[];
   readonly exitCriteria: string;
 };
+
+export type SemanticSourceReference =
+  | { readonly kind: "symbol"; readonly file: string; readonly exportName: string }
+  | { readonly kind: "span"; readonly file: string; readonly start: number; readonly end: number };
+
+export type SemanticAxisCurrent =
+  | { readonly authority: "deferred"; readonly gateId: DeferredGateId }
+  | { readonly authority: "source_reviewed"; readonly value: string; readonly sourceReferences: readonly SemanticSourceReference[] }
+  | { readonly authority: "not_applicable"; readonly rationale: string; readonly sourceReferences: readonly SemanticSourceReference[] };
+
+export type SemanticAxisTarget = {
+  readonly authority: "deferred";
+  readonly gateId: DeferredGateId;
+};
+
+export type SemanticAxisDeclaration = {
+  readonly current: SemanticAxisCurrent;
+  readonly target: SemanticAxisTarget;
+};
+
+export type SemanticExposureVariant = {
+  readonly name: string;
+  readonly branchAnchor: {
+    readonly kind: "query_param_equals";
+    readonly parameter: string;
+    readonly value: "present";
+  };
+};
+
+export type SemanticExposureAlias = {
+  readonly ownerModule: string;
+  readonly exportName: string;
+};
+
+export type SemanticServiceLinkage =
+  | readonly string[]
+  | {
+      readonly authority: "not_applicable";
+      readonly rationale: string;
+      readonly sourceReferences: readonly SemanticSourceReference[];
+    };
+
+export type SemanticServiceOperationDeclaration = {
+  readonly kind: "service";
+  readonly id: string;
+  readonly ownerModule: string;
+  readonly exportName: string;
+  readonly axes: Readonly<Record<DeferredSemanticAxis, SemanticAxisDeclaration>>;
+};
+
+export type SemanticExposureDeclaration = {
+  readonly kind: "exposure";
+  readonly ownerModule: string;
+  readonly exportName: string;
+  readonly binding: StructuralBindingDeclaration;
+  readonly axes: Readonly<Record<DeferredSemanticAxis, SemanticAxisDeclaration>>;
+  readonly variant?: SemanticExposureVariant;
+  readonly aliasOf?: SemanticExposureAlias;
+  /** Non-empty linked service IDs, or a reviewed no-service policy. */
+  readonly serviceOperationIds: SemanticServiceLinkage;
+};
+
+export type SemanticDeclaration =
+  | SemanticExposureDeclaration
+  | SemanticServiceOperationDeclaration;

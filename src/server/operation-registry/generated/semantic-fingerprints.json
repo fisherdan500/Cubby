@@ -1,0 +1,70 @@
+{
+  "authority": "source_reviewed_subset",
+  "complete": false,
+  "fingerprints": [
+    {
+      "digest": "5f73915389448bc529fc85eb48c76a53e93cf7b0fabe0afe0cd92c322679291e",
+      "id": "semantic-exposure:src/app/api/platform/registration/route.ts#GET"
+    },
+    {
+      "digest": "1e49ed865a4cc70edf37cd282b6e5e4fbb0293f1d5d8139d84c212f5d43f772b",
+      "id": "semantic-exposure:src/app/api/platform/registration/route.ts#GET@operation-status"
+    },
+    {
+      "digest": "3be66777d5918e407a0284d3a7bf4c7424f2f9d20872e92d1905a1c3a727c178",
+      "id": "semantic-exposure:src/app/api/platform/registration/route.ts#POST"
+    },
+    {
+      "digest": "86ab870db21a5df805ca0eaf92e593866fa0da1c44dd2d29f861537b26571a29",
+      "id": "semantic-exposure:src/app/api/platform/registration/route.ts#PUT"
+    },
+    {
+      "digest": "7e30f6f1af37e434df8f4dc2763ef5b0402e6d89e41ab2c277851647d4ea2652",
+      "id": "semantic-exposure:src/app/api/settings/registration/route.ts#GET"
+    },
+    {
+      "digest": "8af578b407e5b91c2c0a133aec2fb159101bbf612d4038b41398de37236fd4c0",
+      "id": "semantic-exposure:src/app/api/settings/registration/route.ts#GET@operation-status"
+    },
+    {
+      "digest": "d0caad04b1d96c4862235a7f499053112dbb75f6b0fe26f964a2b34a1ee22f70",
+      "id": "semantic-exposure:src/app/api/settings/registration/route.ts#POST"
+    },
+    {
+      "digest": "2b751e21ecef1a517a2a660ae41e4e8a8c69e1b41f8ba4ef392cf582103f772a",
+      "id": "semantic-exposure:src/app/api/settings/registration/route.ts#PUT"
+    },
+    {
+      "digest": "692293b6ccda582f28717808d98b2ec2609f0c55664dc285fabe9c3c52eda220",
+      "id": "semantic-service:platform.registration.allocate"
+    },
+    {
+      "digest": "2aefbe822add6a5f3e4550fb997b120d23d38b03300cb5a7b66057fa4a197786",
+      "id": "semantic-service:platform.registration.complete"
+    },
+    {
+      "digest": "c36a06b1d42f6659559eb5a6354fb292c59429849eaec269becac51b4266ba3a",
+      "id": "semantic-service:platform.registration.operation-status"
+    },
+    {
+      "digest": "6e1586e323000f289d86ee66a2a783476801c3d97ec57670b2f56758d4784631",
+      "id": "semantic-service:platform.registration.settings"
+    },
+    {
+      "digest": "7be972ede9d4cc3259f2821d8edfa9ba72c7024f6b89f4a87265f0bc6685d41b",
+      "id": "semantic:platform_registration"
+    }
+  ],
+  "readiness": {
+    "authority": "source_reviewed_subset",
+    "complete": false,
+    "scope": "platform_registration"
+  },
+  "schemaVersion": 1,
+  "semanticArtifactDigest": "8619983fedd3017ea00433373b9955029d308399ff729e0f347e3a26fdbbd391",
+  "semanticArtifactVersion": "semantic-artifact.v1",
+  "semanticCoverageDigest": "474f52e190ff3eb3308f319a1d15d6e03b082d995eb5d92e87aea5f051b6f864",
+  "semanticDeclarationCount": 12,
+  "semanticDeclarationDigest": "c3f40615e674f4c1a2b36e87643ba1bb01b1d22924b10a6465644b31c02e29ca",
+  "semanticFingerprint": "7be972ede9d4cc3259f2821d8edfa9ba72c7024f6b89f4a87265f0bc6685d41b"
+}
