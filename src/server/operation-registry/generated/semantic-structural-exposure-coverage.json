@@ -2045,9 +2045,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 1616,
+      "anchorEnd": 1717,
       "anchorFile": "package.json",
-      "anchorStart": 1607,
+      "anchorStart": 1708,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -2109,6 +2109,23 @@
       "ownerId": "package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerModule": "scripts/backup-recovery-rehearsal.ts",
       "sidecarPath": "scripts/backup-recovery-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:browser-operation-pilot\"",
+      "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
+      "anchorEnd": 1296,
+      "anchorFile": "package.json",
+      "anchorStart": 1264,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:browser-operation-pilot",
+        "target": "package.json#scripts.verify:browser-operation-pilot"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/browser-operation-pilot.acceptance-rehearsal.ts:package_script:verify:browser-operation-pilot:package.json#scripts.verify:browser-operation-pilot",
+      "ownerId": "package_command:scripts/browser-operation-pilot.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts"
     },
     {
       "anchorBytes": "COPY --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs",
@@ -2181,9 +2198,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 1717,
+      "anchorEnd": 1818,
       "anchorFile": "package.json",
-      "anchorStart": 1699,
+      "anchorStart": 1800,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -2385,9 +2402,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 1660,
+      "anchorEnd": 1761,
       "anchorFile": "package.json",
-      "anchorStart": 1644,
+      "anchorStart": 1745,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -2402,9 +2419,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 1294,
+      "anchorEnd": 1395,
       "anchorFile": "package.json",
-      "anchorStart": 1264,
+      "anchorStart": 1365,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -2419,9 +2436,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 1386,
+      "anchorEnd": 1487,
       "anchorFile": "package.json",
-      "anchorStart": 1361,
+      "anchorStart": 1462,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -3800,10 +3817,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "d3ab354052d7b229fe5a2e654aeca67e308bcb0e33337019d35076166475246c",
+  "semanticArtifactDigest": "5b78581123e9b6ef63e41236bd80c773c09db5af05d51318b86fed0146157630",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "1a9864d935cfeb725b77dfa721f0e33b71ce1c132d6cb691ae044a589b59f1c4",
+  "semanticCoverageDigest": "b03fb6253ca96992373d0f1a09e51d0dcd4ba0e55e89b7d350181f1e278a2f61",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "de74e2d466cb6760fcc9e0434736ded64978a74947385312ef3c947216431bd8",
-  "semanticFingerprint": "afede0fcaccf4032190f4d06cb11a198dbe3892e5dd592f1bc4cff407f249368"
+  "semanticFingerprint": "2eeb70a3e9d4ecdc276f6b17c3ccae88eaea5e649df8224a2df224a31795b8d4"
 }

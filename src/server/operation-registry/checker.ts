@@ -248,6 +248,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/server/sprout-source-retention-scheduler.operation.ts",
   "scripts/activity-update-safety-rehearsal.operation.ts",
   "scripts/backup-recovery-rehearsal.operation.ts",
+  "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
   "scripts/integrity-check.operation.ts",
   "scripts/platform-owner.operation.ts",
   "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
