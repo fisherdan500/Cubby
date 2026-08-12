@@ -5713,12 +5713,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "deactivateBaby accepts a baby id and an optional inactiveAt value"
+            "value": "submitDeactivateBabyBrowserOperation parses the submitted babyId and binds its immutable browser intent"
           },
           "target": {
             "authority": "deferred",
@@ -5730,12 +5730,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "deactivateBaby calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "submitDeactivateBabyBrowserOperation resolves its browser-operation context from the submitted selected baby"
           },
           "target": {
             "authority": "deferred",
@@ -5757,12 +5757,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the source checks for a running or paused ActivityLog, calls tx.baby.update for inactiveAt, and writes a baby.deactivate audit"
+            "value": "submitDeactivateBabyBrowserOperation checks active timers and writes the baby lifecycle transition and audit only in the browser-operation transaction callback"
           },
           "target": {
             "authority": "deferred",
@@ -5774,12 +5774,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "deactivateBaby requires baby.manage before its transaction and again after lockActorAndBabyForWrite"
+            "value": "submitDeactivateBabyBrowserOperation delegates transaction-local permission reauthorization to executeBrowserOperation"
           },
           "target": {
             "authority": "deferred",
@@ -5791,12 +5791,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "deactivateBaby is the exported baby deactivation service"
+            "value": "submitDeactivateBabyBrowserOperation is the browser-operation execution adapter for baby.deactivate"
           },
           "target": {
             "authority": "deferred",
@@ -5808,12 +5808,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "deactivateBaby uses lockActorAndBabyForWrite and scopes its active-timer lookup to the locked household and baby"
+            "value": "submitDeactivateBabyBrowserOperation validates the locked selected baby against its bound lifecycle snapshot"
           },
           "target": {
             "authority": "deferred",
@@ -5823,10 +5823,10 @@
         "variant_specific_outcomes": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "deactivateBaby has no declared semantic variant",
+            "rationale": "submitDeactivateBabyBrowserOperation has no declared semantic variant",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
@@ -5840,10 +5840,10 @@
         "worker_loop_claim_failure_containment": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "deactivateBaby does not contain a worker loop",
+            "rationale": "submitDeactivateBabyBrowserOperation does not contain a worker loop",
             "sourceReferences": [
               {
-                "exportName": "deactivateBaby",
+                "exportName": "submitDeactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
@@ -5855,7 +5855,7 @@
           }
         }
       },
-      "exportName": "deactivateBaby",
+      "exportName": "submitDeactivateBabyBrowserOperation",
       "id": "baby.deactivate",
       "kind": "service",
       "ownerModule": "src/server/services/households.ts"
@@ -5877,12 +5877,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "reactivateBaby accepts a baby id"
+            "value": "submitReactivateBabyBrowserOperation parses the submitted babyId and binds its immutable browser intent"
           },
           "target": {
             "authority": "deferred",
@@ -5894,12 +5894,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "reactivateBaby calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "submitReactivateBabyBrowserOperation resolves its browser-operation context from the submitted selected baby"
           },
           "target": {
             "authority": "deferred",
@@ -5921,12 +5921,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the source calls tx.baby.update to clear inactiveAt and writes a baby.reactivate audit"
+            "value": "submitReactivateBabyBrowserOperation writes the lifecycle transition and audit only in the browser-operation transaction callback"
           },
           "target": {
             "authority": "deferred",
@@ -5938,12 +5938,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "reactivateBaby requires baby.manage before its transaction and again after lockActorAndBabyForWrite"
+            "value": "submitReactivateBabyBrowserOperation delegates transaction-local permission reauthorization to executeBrowserOperation"
           },
           "target": {
             "authority": "deferred",
@@ -5955,12 +5955,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "reactivateBaby is the exported baby reactivation service"
+            "value": "submitReactivateBabyBrowserOperation is the browser-operation execution adapter for baby.reactivate"
           },
           "target": {
             "authority": "deferred",
@@ -5972,12 +5972,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "reactivateBaby obtains the target through lockActorAndBabyForWrite with the selected context and baby id"
+            "value": "submitReactivateBabyBrowserOperation validates the locked selected baby against its bound lifecycle snapshot"
           },
           "target": {
             "authority": "deferred",
@@ -5987,10 +5987,10 @@
         "variant_specific_outcomes": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "reactivateBaby has no declared semantic variant",
+            "rationale": "submitReactivateBabyBrowserOperation has no declared semantic variant",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
@@ -6004,10 +6004,10 @@
         "worker_loop_claim_failure_containment": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "reactivateBaby does not contain a worker loop",
+            "rationale": "submitReactivateBabyBrowserOperation does not contain a worker loop",
             "sourceReferences": [
               {
-                "exportName": "reactivateBaby",
+                "exportName": "submitReactivateBabyBrowserOperation",
                 "file": "src/server/services/households.ts",
                 "kind": "symbol"
               }
@@ -6019,7 +6019,7 @@
           }
         }
       },
-      "exportName": "reactivateBaby",
+      "exportName": "submitReactivateBabyBrowserOperation",
       "id": "baby.reactivate",
       "kind": "service",
       "ownerModule": "src/server/services/households.ts"
@@ -8491,12 +8491,12 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "5b78581123e9b6ef63e41236bd80c773c09db5af05d51318b86fed0146157630",
+  "semanticArtifactDigest": "61c5e96fde896bb7a342f47c71c640a114052841c9112fe3a97616094b134dcb",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "b03fb6253ca96992373d0f1a09e51d0dcd4ba0e55e89b7d350181f1e278a2f61",
+  "semanticCoverageDigest": "39d0d5e1ef89c5a911cb23aa9a02c5b1708ef551aef07fe622912790519857ab",
   "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "de74e2d466cb6760fcc9e0434736ded64978a74947385312ef3c947216431bd8",
-  "semanticFingerprint": "2eeb70a3e9d4ecdc276f6b17c3ccae88eaea5e649df8224a2df224a31795b8d4",
+  "semanticDeclarationDigest": "7650fde12d1b07d2b2e1e79bacd3729903329feff57bf7c47162dd040624bbc9",
+  "semanticFingerprint": "7038d4d7d3ca6d93ffd9388a7956f532b73914b61beea320df6fcdfbca7746d0",
   "semanticSidecars": [
     "src/app/api/activities/[id]/route.semantic.ts",
     "src/app/api/activities/route.semantic.ts",

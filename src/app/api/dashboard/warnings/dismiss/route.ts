@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const raw = await request.json() as Record<string, unknown>;
     operationId = raw.operationId;
     const issued = await issueDashboardWarningBrowserOperation(raw);
-    const result = issued.status === "pending"
+    const result = issued.status === "open"
       ? await dismissDashboardWarningBrowserOperation(raw)
       : issued;
     if (result.status === "completed") return ok({ status: "completed", operationId: result.operationId });

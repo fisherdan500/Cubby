@@ -122,11 +122,11 @@
       "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    return ok(await deactivateBaby(params.id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "3b6a17816cf9a99c66b9f9bfca986fdfb9cde3155dc11d5a7b4616162506a711",
-      "anchorEnd": 354,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, babyId: params.id };\n    const issued = await issueDeactivateBabyBrowserOperation(input);\n    const result = issued.status === \"open\" ? await submitDeactivateBabyBrowserOperation(input) : issued;\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "2d1198d775dd205b788025cd0884198fcc23226240c10437cf6b31e0eadc482a",
+      "anchorEnd": 1047,
       "anchorFile": "src/app/api/babies/[id]/deactivate/route.ts",
-      "anchorStart": 154,
+      "anchorStart": 303,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -139,11 +139,11 @@
       "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    return ok(await reactivateBaby(params.id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a8864ca8d6bb96c73a0939ab815ad2107a13ed509a5048f503ec3100d292dcd6",
-      "anchorEnd": 354,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, babyId: params.id };\n    const issued = await issueReactivateBabyBrowserOperation(input);\n    const result = issued.status === \"open\" ? await submitReactivateBabyBrowserOperation(input) : issued;\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "ea7e156cfe4d12568f6c3bd431d02ca3442cc3db405bbc3ec7d378a3f6d3a51b",
+      "anchorEnd": 1047,
       "anchorFile": "src/app/api/babies/[id]/reactivate/route.ts",
-      "anchorStart": 154,
+      "anchorStart": 303,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -326,9 +326,9 @@
       "sidecarPath": "src/app/api/backups/sprout/preview/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"pending\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok({ status: \"completed\", operationId: result.operationId });\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "e6c047f3c8933d7da936c536d83c7c86f6f1da587961033b4ba976e3e94b65c9",
-      "anchorEnd": 1081,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"open\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok({ status: \"completed\", operationId: result.operationId });\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
+      "anchorEnd": 1078,
       "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
       "anchorStart": 307,
       "binding": {
@@ -1125,11 +1125,11 @@
       "sidecarPath": "src/components/actions/activity-actions.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/babies/${babyId}/${inactive ? \"reactivate\" : \"deactivate\"}`, {\n        method: \"POST\"\n      })",
-      "anchorDigest": "2ec2bc7ac766fde63d38802c86b515a1c5be59360b33d6516d79140840d78f85",
-      "anchorEnd": 776,
+      "anchorBytes": "fetch(`/api/babies/${babyId}/${action}`, {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: next.operationId })\n      })",
+      "anchorDigest": "f752c5ea21324feac615a6efb1bae73214a05902e888dd8fc2d93a6a79362170",
+      "anchorEnd": 2583,
       "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
-      "anchorStart": 670,
+      "anchorStart": 2387,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2451,9 +2451,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     },
     {
-      "anchorBytes": "export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {\n  const input = Object.fromEntries(formData.entries());\n  try {\n    const issued = await issueCalendarEventBrowserOperation(input);\n    if (issued.status !== \"pending\") return toActionResult(issued);\n    return toActionResult(await submitCalendarEventBrowserOperation(input));\n  } catch (error) {\n    const failure = browserOperationFailureResult(input.operationId, error);\n    if (failure) return toActionResult(failure);\n    throw error;\n  }\n}",
-      "anchorDigest": "3c3dd06dddff815c69262404f992d7bc3a731e32b80d99f4ab86f2da0115768e",
-      "anchorEnd": 971,
+      "anchorBytes": "export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {\n  const input = Object.fromEntries(formData.entries());\n  try {\n    const issued = await issueCalendarEventBrowserOperation(input);\n    if (issued.status === \"open\") {\n      const submitted = await submitCalendarEventBrowserOperation(input);\n      return submitted.status === \"open\"\n        ? { status: \"stale\", operationId: submitted.operationId }\n        : toActionResult(submitted);\n    }\n    return toActionResult(issued);\n  } catch (error) {\n    const failure = browserOperationFailureResult(input.operationId, error);\n    if (failure) {\n      return failure.status === \"open\"\n        ? { status: \"stale\", operationId: failure.operationId }\n        : toActionResult(failure);\n    }\n    throw error;\n  }\n}",
+      "anchorDigest": "7878f7e0a7a3c4c833182555317a8c2728fe2f7bda2236e588d939cc703bb428",
+      "anchorEnd": 1235,
       "anchorFile": "src/app/app/calendar/actions.ts",
       "anchorStart": 425,
       "binding": {
@@ -3817,10 +3817,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "5b78581123e9b6ef63e41236bd80c773c09db5af05d51318b86fed0146157630",
+  "semanticArtifactDigest": "61c5e96fde896bb7a342f47c71c640a114052841c9112fe3a97616094b134dcb",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "b03fb6253ca96992373d0f1a09e51d0dcd4ba0e55e89b7d350181f1e278a2f61",
+  "semanticCoverageDigest": "39d0d5e1ef89c5a911cb23aa9a02c5b1708ef551aef07fe622912790519857ab",
   "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "de74e2d466cb6760fcc9e0434736ded64978a74947385312ef3c947216431bd8",
-  "semanticFingerprint": "2eeb70a3e9d4ecdc276f6b17c3ccae88eaea5e649df8224a2df224a31795b8d4"
+  "semanticDeclarationDigest": "7650fde12d1b07d2b2e1e79bacd3729903329feff57bf7c47162dd040624bbc9",
+  "semanticFingerprint": "7038d4d7d3ca6d93ffd9388a7956f532b73914b61beea320df6fcdfbca7746d0"
 }

@@ -30,7 +30,7 @@ beforeEach(() => vi.resetAllMocks());
 
 describe("POST /api/dashboard/warnings/dismiss", () => {
   it("uses one browser operation through issuance and terminal execution", async () => {
-    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "pending", operationId: body.operationId });
+    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "open", operationId: body.operationId, bindingId: "binding-1" });
     mocks.dismissDashboardWarningBrowserOperation.mockResolvedValue({ status: "completed", operationId: body.operationId, outcome: { kind: "warning_dismissed", code: "ok", warningKey: "feeding:baby-1:feeding:never" } });
 
     const response = await POST(new Request("http://localhost/api/dashboard/warnings/dismiss", {
@@ -44,7 +44,7 @@ describe("POST /api/dashboard/warnings/dismiss", () => {
   });
 
   it("returns a privacy-preserving stale result when the warning changed", async () => {
-    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "pending", operationId: body.operationId });
+    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "open", operationId: body.operationId, bindingId: "binding-1" });
     mocks.dismissDashboardWarningBrowserOperation.mockResolvedValue({ status: "stale", operationId: body.operationId, code: "stale_target" });
     const response = await POST(new Request("http://localhost/api/dashboard/warnings/dismiss", {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)

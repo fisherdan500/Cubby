@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
-import { BrowserMutationOperationStatus, BrowserOperationKey, type Prisma } from "@prisma/client";
+import {
+  BrowserMutationOperationStatus,
+  BrowserOperationKey,
+  BrowserOperationProtocolVersion,
+  type Prisma
+} from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireFreshSession } from "@/server/auth/session";
@@ -20,10 +25,23 @@ const terminalOutcomeSchemas = {
     kind: z.literal("warning_dismissed"),
     code: z.literal("ok"),
     warningKey: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.babyDeactivate]: z.object({
+    kind: z.literal("baby_lifecycle"),
+    code: z.literal("ok"),
+    babyId: z.string().min(1),
+    inactive: z.literal(true)
+  }).strict(),
+  [BrowserOperationKey.babyReactivate]: z.object({
+    kind: z.literal("baby_lifecycle"),
+    code: z.literal("ok"),
+    babyId: z.string().min(1),
+    inactive: z.literal(false)
   }).strict()
 };
 
 export type BrowserOperationResult =
+  | { status: "open"; operationId: string; bindingId: string }
   | { status: "pending"; operationId: string }
   | { status: "completed"; operationId: string; outcome: Record<string, unknown> }
   | { status: "rejected" | "stale"; operationId: string; code: string };
@@ -74,11 +92,11 @@ export function browserOperationFailureResult(operationId: unknown, error: unkno
   return null;
 }
 
-export async function getBrowserOperationContextForBaby(babyId: unknown): Promise<BrowserOperationContext> {
+async function getBrowserOperationContextForBabyScope(babyId: unknown, includeInactive: boolean): Promise<BrowserOperationContext> {
   const session = await requireFreshSession();
   const parsedBabyId = z.string().min(1).parse(babyId);
   const baby = await prisma.baby.findFirst({
-    where: { id: parsedBabyId, deletedAt: null },
+    where: { id: parsedBabyId, deletedAt: null, ...(includeInactive ? {} : { inactiveAt: null }) },
     select: { householdId: true }
   });
   if (!baby) throw new Error("not_found");
@@ -96,6 +114,14 @@ export async function getBrowserOperationContextForBaby(babyId: unknown): Promis
   });
   if (!member) throw new Error("not_found");
   return { userId: session.user.id, sessionId: session.session.id, householdId: member.householdId, memberId: member.id, role: member.role };
+}
+
+export function getBrowserOperationContextForBaby(babyId: unknown) {
+  return getBrowserOperationContextForBabyScope(babyId, true);
+}
+
+export function getBrowserOperationContextForLifecycleBaby(babyId: unknown) {
+  return getBrowserOperationContextForBabyScope(babyId, true);
 }
 
 function exactBindingMatches(
@@ -148,19 +174,20 @@ export async function issueBrowserOperation(input: {
   intent: unknown;
   babyId: string;
   permission: Parameters<typeof requirePermission>[1];
-  validate?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null }) => Promise<void>;
+  allowInactiveTarget?: boolean;
+  targetSnapshot?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null; updatedAt: Date }) => Promise<Record<string, unknown>> | Record<string, unknown>;
+  validate?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null; updatedAt: Date }) => Promise<void>;
 }): Promise<BrowserOperationResult> {
   const operationId = assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   const intentFingerprint = browserIntentFingerprint(input.intent);
   const expiresAt = new Date(Date.now() + browserOperationLeaseMs);
+  const openResult = (bindingId: string): Extract<BrowserOperationResult, { status: "open" }> => ({ status: "open", operationId, bindingId });
 
-  const issueOrReplay = async (tx: Prisma.TransactionClient, recoverOnly = false) => {
+  const issueOrReplay = async (tx: Prisma.TransactionClient, recoverOnly = false): Promise<BrowserOperationResult> => {
     const db = tx as unknown as BrowserOperationTransaction;
     const ctx = await lockCurrentActor(db, input.ctx);
     requirePermission(ctx, input.permission);
-    const baby = await lockBabyForOperation(db, ctx, input.babyId);
-    if (baby.inactiveAt) throw new Error("baby_inactive");
 
     const existing = await db.browserOperationBinding.findFirst({
       where: { householdId: ctx.householdId, operationId },
@@ -170,10 +197,15 @@ export async function issueBrowserOperation(input: {
       if (!exactBindingMatches(existing, ctx, { operationKey, intentFingerprint, babyId: input.babyId })) {
         throw new Error("idempotency_conflict");
       }
-      return toBrowserOperationResult(existing.operation);
+      if (existing.protocolVersion !== BrowserOperationProtocolVersion.browserV2) throw new Error("not_found");
+      return existing.operation
+        ? toBrowserOperationResult(existing.operation)
+        : openResult(existing.id);
     }
     if (recoverOnly) throw new Error("idempotency_conflict");
 
+    const baby = await lockBabyForOperation(db, ctx, input.babyId);
+    if (baby.inactiveAt && !input.allowInactiveTarget) throw new Error("baby_inactive");
     await input.validate?.(tx, ctx, baby);
 
     const binding = await db.browserOperationBinding.create({
@@ -186,22 +218,12 @@ export async function issueBrowserOperation(input: {
         operationKey,
         intentFingerprint,
         babyId: input.babyId,
+        targetSnapshot: await input.targetSnapshot?.(tx, ctx, baby),
+        protocolVersion: BrowserOperationProtocolVersion.browserV2,
         expiresAt
       }
     });
-    const operation = await db.browserMutationOperation.create({
-      data: {
-        bindingId: binding.id,
-        householdId: ctx.householdId,
-        operationId,
-        operationKey,
-        actorUserId: ctx.userId,
-        actorMemberId: ctx.memberId,
-        intentFingerprint,
-        babyId: input.babyId
-      }
-    });
-    return toBrowserOperationResult(operation);
+    return openResult(binding.id);
   };
 
   try {
@@ -282,8 +304,9 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
   intent: unknown;
   babyId: string;
   permission: Parameters<typeof requirePermission>[1];
-  validate?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null }) => Promise<void>;
-  execute: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null }) => Promise<T>;
+  allowInactiveTarget?: boolean;
+  validate?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null; updatedAt: Date }, binding: { targetSnapshot: unknown }) => Promise<void>;
+  execute: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null; updatedAt: Date }) => Promise<T>;
 }): Promise<BrowserOperationResult> {
   const operationId = assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
@@ -304,19 +327,54 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
     if (!exactBindingMatches(binding, lockedCtx, { operationKey, intentFingerprint, babyId: input.babyId })) {
       throw new Error("forbidden");
     }
-    if (binding.operation.status !== "pending" && binding.operation.status !== "unknown") return toBrowserOperationResult(binding.operation);
-    if (binding.state !== "open" || binding.expiresAt <= new Date()) {
-      return persistTerminalOperation(db, binding, { status: "stale", operationId, code: "stale_context" });
+    if (binding.protocolVersion !== BrowserOperationProtocolVersion.browserV2) throw new Error("not_found");
+    if (binding.state === "submitted" && !binding.operation) throw new Error("not_found");
+    if (binding.operation && binding.state === "open") throw new Error("not_found");
+    if (!binding.operation && (binding.state !== "open" || binding.expiresAt <= new Date())) {
+      await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "expired" } });
+      return { status: "stale", operationId, code: "stale_context" };
     }
+    if (binding.operation && binding.operation.status !== "pending" && binding.operation.status !== "unknown") return toBrowserOperationResult(binding.operation);
+    let operation = binding.operation;
     try {
       const baby = await lockBabyForOperation(db, lockedCtx, input.babyId);
-      if (baby.inactiveAt) throw new Error("baby_inactive");
-      await input.validate?.(tx, lockedCtx, baby);
+      if (baby.inactiveAt && !input.allowInactiveTarget) throw new Error("baby_inactive");
+      await input.validate?.(tx, lockedCtx, baby, binding);
+      operation ??= await db.browserMutationOperation.create({
+        data: {
+          bindingId: binding.id,
+          householdId: binding.householdId,
+          operationId: binding.operationId,
+          operationKey: binding.operationKey,
+          actorUserId: binding.actorUserId,
+          actorMemberId: binding.actorMemberId,
+          intentFingerprint: binding.intentFingerprint,
+          babyId: binding.babyId
+        }
+      });
+      if (!binding.operation) {
+        await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
+      }
       const outcome = terminalOutcomeSchemas[operationKey].parse(await input.execute(tx, lockedCtx, baby));
       return persistTerminalOperation(db, binding, { status: "completed", operationId, outcome });
     } catch (error) {
       const stale = staleResult(operationId, error);
       if (!stale) throw error;
+      if (!operation) {
+        operation = await db.browserMutationOperation.create({
+          data: {
+            bindingId: binding.id,
+            householdId: binding.householdId,
+            operationId: binding.operationId,
+            operationKey: binding.operationKey,
+            actorUserId: binding.actorUserId,
+            actorMemberId: binding.actorMemberId,
+            intentFingerprint: binding.intentFingerprint,
+            babyId: binding.babyId
+          }
+        });
+        await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
+      }
       return persistTerminalOperation(db, binding, stale);
     }
   }, { isolationLevel: "Serializable" });

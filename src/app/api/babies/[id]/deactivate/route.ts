@@ -1,12 +1,24 @@
 import { handleError, ok } from "@/server/http";
-import { deactivateBaby } from "@/server/services/households";
+import { browserOperationFailureResult } from "@/server/services/browser-operations";
+import {
+  issueDeactivateBabyBrowserOperation,
+  submitDeactivateBabyBrowserOperation
+} from "@/server/services/households";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: { id: string } }) {
+  let operationId: unknown;
   try {
-    return ok(await deactivateBaby(params.id));
+    const raw = await request.json() as Record<string, unknown>;
+    operationId = raw.operationId;
+    const input = { operationId, babyId: params.id };
+    const issued = await issueDeactivateBabyBrowserOperation(input);
+    const result = issued.status === "open" ? await submitDeactivateBabyBrowserOperation(input) : issued;
+    return ok({ status: result.status, operationId: result.operationId });
   } catch (error) {
+    const failure = browserOperationFailureResult(operationId, error);
+    if (failure) return ok({ status: failure.status, operationId: failure.operationId });
     return handleError(error);
   }
 }

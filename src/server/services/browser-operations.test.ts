@@ -26,7 +26,7 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-import { BrowserOperationKey } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationProtocolVersion } from "@prisma/client";
 import {
   assertBrowserOperationId,
   browserIntentFingerprint,
@@ -99,7 +99,7 @@ describe("browser operation bindings", () => {
     }));
   });
 
-  it("locks actor and target, reserves the opaque binding, and creates exactly one pending outcome row", async () => {
+  it("locks actor and target, reserves only an open opaque binding, and defers the pending operation until submit", async () => {
     const intent = { babyId: "baby-1", title: "Checkup", startDate: "2026-08-12", startTime: "09:00" };
 
     await expect(issueBrowserOperation({
@@ -109,7 +109,7 @@ describe("browser operation bindings", () => {
       intent,
       babyId: "baby-1",
       permission: "activity.create"
-    })).resolves.toEqual({ status: "pending", operationId });
+    })).resolves.toEqual({ status: "open", operationId, bindingId: "binding-1" });
 
     expect(mocks.queryRaw.mock.calls.map(([query]) => query.join(" "))).toEqual(
       expect.arrayContaining([expect.stringContaining('FROM "HouseholdMember"'), expect.stringContaining('FROM "Baby"')])
@@ -128,9 +128,7 @@ describe("browser operation bindings", () => {
         expiresAt: expect.any(Date)
       })
     });
-    expect(mocks.operationCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ bindingId: "binding-1", householdId: "household-1", operationId, babyId: "baby-1" })
-    });
+    expect(mocks.operationCreate).not.toHaveBeenCalled();
   });
 
   it("rejects a same-ID request whose opening binding differs", async () => {
@@ -159,13 +157,15 @@ describe("browser operation bindings", () => {
   it("replays the winning exact binding after a concurrent binding reservation", async () => {
     const intent = { babyId: "baby-1", title: "Checkup" };
     const winner = {
+      id: "binding-1",
       sessionId: "session-1",
       actorUserId: "user-1",
       actorMemberId: "member-1",
       operationKey: BrowserOperationKey.calendarEventCreate,
       intentFingerprint: browserIntentFingerprint(intent),
       babyId: "baby-1",
-      operation: { operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null }
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      operation: null
     };
     mocks.transaction.mockRejectedValueOnce({
       code: "P2002",
@@ -180,9 +180,29 @@ describe("browser operation bindings", () => {
       intent,
       babyId: "baby-1",
       permission: "activity.create"
-    })).resolves.toEqual({ status: "pending", operationId });
+    })).resolves.toEqual({ status: "open", operationId, bindingId: "binding-1" });
     expect(mocks.transaction).toHaveBeenCalledTimes(2);
     expect(mocks.bindingCreate).not.toHaveBeenCalled();
+  });
+
+  it("replays an exact completed binding before gating a now-inactive target", async () => {
+    const intent = { babyId: "baby-1", title: "Checkup" };
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
+      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
+      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1",
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      state: "terminal", expiresAt: new Date(Date.now() - 60_000),
+      operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } }
+    });
+
+    await expect(issueBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1",
+      permission: "activity.create"
+    })).resolves.toEqual({ status: "completed", operationId, outcome: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } });
+
+    expect(mocks.babyFindFirst).not.toHaveBeenCalled();
+    expect(mocks.operationCreate).not.toHaveBeenCalled();
   });
 
   it("rechecks the immutable binding under lock and persists a terminal replay result", async () => {
@@ -197,7 +217,8 @@ describe("browser operation bindings", () => {
       operationKey: BrowserOperationKey.calendarEventCreate,
       intentFingerprint: browserIntentFingerprint(intent),
       babyId: "baby-1",
-      state: "open",
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      state: "submitted",
       expiresAt: new Date(Date.now() + 60_000),
       operation: { operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null }
     });
@@ -227,6 +248,7 @@ describe("browser operation bindings", () => {
       id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
       actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
       intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "terminal",
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
       expiresAt: new Date(Date.now() - 60_000),
       operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } }
     });
@@ -247,6 +269,7 @@ describe("browser operation bindings", () => {
       id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
       actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
       intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "terminal",
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
       expiresAt: new Date(Date.now() - 60_000),
       operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } }
     });
@@ -262,16 +285,15 @@ describe("browser operation bindings", () => {
     expect(mocks.operationUpdate).not.toHaveBeenCalled();
   });
 
-  it("closes an expired open binding as stale without executing its mutation", async () => {
+  it("expires an open browser-v2 binding without creating an operation or executing its mutation", async () => {
     const intent = { babyId: "baby-1", title: "Checkup" };
     mocks.bindingFindFirst.mockResolvedValue({
       id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
       actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
       intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "open",
-      expiresAt: new Date(Date.now() - 60_000),
-      operation: { operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null }
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      expiresAt: new Date(Date.now() - 60_000), operation: null
     });
-    mocks.operationUpdate.mockResolvedValue({ operationId, status: "stale", outcomeCode: "stale_context", outcomeSnapshot: null });
     const execute = vi.fn();
 
     await expect(executeBrowserOperation({
@@ -280,8 +302,64 @@ describe("browser operation bindings", () => {
     })).resolves.toEqual({ status: "stale", operationId, code: "stale_context" });
 
     expect(execute).not.toHaveBeenCalled();
+    expect(mocks.operationCreate).not.toHaveBeenCalled();
+    expect(mocks.bindingUpdate).toHaveBeenCalledWith({ where: { id: "binding-1" }, data: { state: "expired" } });
+  });
+
+  it("persists a stale validation result as a terminal operation for same-ID replay", async () => {
+    const intent = { babyId: "baby-1", title: "Checkup" };
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
+      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
+      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "open",
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      expiresAt: new Date(Date.now() + 60_000), operation: null
+    });
+    mocks.operationCreate.mockResolvedValue({ operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null });
+    mocks.operationUpdate.mockResolvedValue({ operationId, status: "stale", outcomeCode: "stale_target", outcomeSnapshot: null });
+
+    await expect(executeBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1",
+      permission: "activity.create", validate: async () => { throw new Error("not_found"); }, execute: vi.fn()
+    })).resolves.toEqual({ status: "stale", operationId, code: "stale_target" });
+
+    expect(mocks.operationCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ bindingId: "binding-1", operationId }) });
     expect(mocks.operationUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ status: "stale", outcomeCode: "stale_context" })
+      data: expect.objectContaining({ status: "stale", outcomeCode: "stale_target" })
     }));
+
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
+      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
+      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "terminal",
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      expiresAt: new Date(Date.now() - 60_000),
+      operation: { operationId, status: "stale", outcomeCode: "stale_target", outcomeSnapshot: null }
+    });
+    await expect(issueBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1", permission: "activity.create"
+    })).resolves.toEqual({ status: "stale", operationId, code: "stale_target" });
+  });
+
+  it("fails closed for a legacy open plus pending row without executing or replacing it", async () => {
+    const intent = { babyId: "baby-1", title: "Checkup" };
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "legacy-binding", householdId: "household-1", operationId, sessionId: "session-1",
+      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
+      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "open",
+      protocolVersion: BrowserOperationProtocolVersion.browserV1,
+      expiresAt: new Date(Date.now() + 60_000),
+      operation: { operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null }
+    });
+    const execute = vi.fn();
+
+    await expect(executeBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1",
+      permission: "activity.create", execute
+    })).rejects.toThrow("not_found");
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(mocks.operationCreate).not.toHaveBeenCalled();
+    expect(mocks.operationUpdate).not.toHaveBeenCalled();
   });
 });

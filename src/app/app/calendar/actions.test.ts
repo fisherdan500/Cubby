@@ -34,7 +34,7 @@ describe("createCalendarEventAction", () => {
   beforeEach(() => vi.resetAllMocks());
 
   it("issues and submits the same client-created operation ID without redirecting", async () => {
-    mocks.issueCalendarEventBrowserOperation.mockResolvedValue({ status: "pending", operationId: "bmo_0123456789abcdefghjkmnpqrs" });
+    mocks.issueCalendarEventBrowserOperation.mockResolvedValue({ status: "open", operationId: "bmo_0123456789abcdefghjkmnpqrs", bindingId: "binding-1" });
     mocks.submitCalendarEventBrowserOperation.mockResolvedValue({
       status: "completed",
       operationId: "bmo_0123456789abcdefghjkmnpqrs",
@@ -51,7 +51,7 @@ describe("createCalendarEventAction", () => {
   });
 
   it("returns only a non-disclosing inline stale/error outcome", async () => {
-    mocks.issueCalendarEventBrowserOperation.mockResolvedValue({ status: "pending", operationId: "bmo_0123456789abcdefghjkmnpqrs" });
+    mocks.issueCalendarEventBrowserOperation.mockResolvedValue({ status: "open", operationId: "bmo_0123456789abcdefghjkmnpqrs", bindingId: "binding-1" });
     mocks.submitCalendarEventBrowserOperation.mockResolvedValue({ status: "stale", operationId: "bmo_0123456789abcdefghjkmnpqrs", code: "stale_target" });
 
     await expect(createCalendarEventAction(form())).resolves.toEqual({ status: "stale", operationId: "bmo_0123456789abcdefghjkmnpqrs" });
