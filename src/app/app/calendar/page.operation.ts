@@ -7,16 +7,6 @@ export const operation = {
   ownerKind: "server_loader",
   bindings: [
     {
-      kind: "form_action",
-      symbol: "createCalendarEventAction",
-      target: "src/app/app/calendar/actions.ts#createCalendarEventAction"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "createCalendarEvent",
-      target: "src/server/services/calendar.ts#createCalendarEvent"
-    },
-    {
       kind: "server_value_import",
       symbol: "getCalendar",
       target: "src/server/services/calendar.ts#getCalendar"
@@ -28,8 +18,23 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "issueCalendarEventBrowserOperation",
+      target: "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
+    },
+    {
+      kind: "server_value_import",
       symbol: "requireUserPage",
       target: "src/server/auth/session.ts#requireUserPage"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "submitCalendarEventBrowserOperation",
+      target: "src/server/services/calendar.ts#submitCalendarEventBrowserOperation"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "browserOperationFailureResult",
+      target: "src/server/services/browser-operations.ts#browserOperationFailureResult"
     }
   ],
   disposition: "observed",

@@ -106,6 +106,27 @@ enum DeliveryStatus {
   failed
 }
 
+enum BrowserOperationKey {
+  calendarEventCreate     @map("calendar_event.create")
+  dashboardWarningDismiss @map("dashboard.warning.dismiss")
+}
+
+enum BrowserOperationBindingState {
+  open
+  submitted
+  revoked
+  expired
+  terminal
+}
+
+enum BrowserMutationOperationStatus {
+  pending
+  completed
+  rejected
+  stale
+  unknown
+}
+
 model User {
   id            String            @id @default(cuid())
   name          String
@@ -127,6 +148,8 @@ model User {
   importBatches ImportBatch[]
   platformAuthority PlatformAuthority?
   platformRegistrationOperations PlatformRegistrationOperation[]
+  browserOperationBindings BrowserOperationBinding[]
+  browserMutationOperations BrowserMutationOperation[]
 }
 
 model PlatformAuthority {
@@ -264,6 +287,8 @@ model Household {
   medicineCatalog MedicineCatalog[]
   calendarEvents  CalendarEvent[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  browserOperationBindings BrowserOperationBinding[]
+  browserMutationOperations BrowserMutationOperation[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -289,6 +314,8 @@ model HouseholdMember {
   dashboardWarningDismissals DashboardWarningDismissal[]
   delegatedApiKeys ApiKey[] @relation("ApiKeyDelegatedBy")
   delegatedWebhookEndpoints WebhookEndpoint[] @relation("WebhookDelegatedBy")
+  browserOperationBindings BrowserOperationBinding[]
+  browserMutationOperations BrowserMutationOperation[]
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -341,6 +368,8 @@ model Baby {
   notificationPreferences NotificationPreference[]
   calendarLinks CalendarEventBaby[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  browserOperationBindings BrowserOperationBinding[]
+  browserMutationOperations BrowserMutationOperation[]
 
   @@index([householdId])
   @@unique([householdId, id])
@@ -609,6 +638,62 @@ model DashboardWarningDismissal {
   @@unique([householdId, babyId, type, fingerprint])
   @@index([householdId, babyId])
   @@index([dismissedByMemberId])
+}
+
+model BrowserOperationBinding {
+  id                String                       @id @default(cuid())
+  sessionId         String
+  actorUserId       String
+  actorMemberId     String
+  householdId       String
+  operationId       String
+  operationKey      BrowserOperationKey
+  intentFingerprint String
+  babyId            String?
+  expiresAt         DateTime
+  state             BrowserOperationBindingState @default(open)
+  issuedAt          DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  actorUser         User                         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorMember       HouseholdMember              @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
+  household         Household                    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby              Baby?                        @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
+  operation         BrowserMutationOperation?
+
+  @@unique([householdId, operationId])
+  @@index([sessionId])
+  @@index([householdId, actorMemberId])
+  @@index([householdId, babyId])
+  @@index([state, expiresAt])
+}
+
+model BrowserMutationOperation {
+  bindingId         String                         @unique
+  householdId       String
+  operationId       String
+  operationKey      BrowserOperationKey
+  actorUserId       String
+  actorMemberId     String
+  intentFingerprint String
+  babyId            String?
+  status            BrowserMutationOperationStatus @default(pending)
+  outcomeVersion    Int?
+  outcomeKind       String?
+  outcomeCode       String?
+  outcomeSnapshot   Json?
+  terminalAt        DateTime?
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
+  binding           BrowserOperationBinding        @relation(fields: [bindingId], references: [id], onDelete: Restrict)
+  actorUser         User                           @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorMember       HouseholdMember                @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
+  household         Household                      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby              Baby?                          @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
+
+  @@id([householdId, operationId])
+  @@index([householdId, actorMemberId])
+  @@index([householdId, babyId])
+  @@index([status, createdAt])
 }
 
 model ApiKey {

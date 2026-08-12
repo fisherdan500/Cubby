@@ -1,4 +1,4 @@
-import { ActivityType, DiaperKind, TimerState, type Prisma } from "@prisma/client";
+import { ActivityType, BrowserOperationKey, DiaperKind, TimerState, type Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import type { ActivityTypeName } from "@/domain/activity";
@@ -17,6 +17,11 @@ import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, normalizeTimeZone, zonedDateStart } from "@/lib/timezone";
 import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import {
+  executeBrowserOperation,
+  getBrowserOperationContextForBaby,
+  issueBrowserOperation
+} from "@/server/services/browser-operations";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
 
@@ -278,6 +283,66 @@ export async function dismissDashboardWarning(raw: unknown) {
       type: input.type,
       fingerprint: input.fingerprint,
       dismissedByMemberId: ctx.memberId
+    }
+  });
+}
+
+async function assertDashboardWarningCurrent(
+  tx: Prisma.TransactionClient,
+  ctx: { householdId: string },
+  input: z.infer<typeof dismissWarningSchema>
+) {
+  const [lastFeeding, lastDiaper, activeTimers, baby] = await Promise.all([
+    tx.activityLog.findFirst({
+      where: { householdId: ctx.householdId, babyId: input.babyId, deletedAt: null, type: ActivityType.feeding },
+      select: { occurredAt: true }, orderBy: { occurredAt: "desc" }
+    }),
+    tx.activityLog.findFirst({
+      where: { householdId: ctx.householdId, babyId: input.babyId, deletedAt: null, type: ActivityType.diaper },
+      select: { occurredAt: true }, orderBy: { occurredAt: "desc" }
+    }),
+    tx.activityLog.findMany({
+      where: { householdId: ctx.householdId, babyId: input.babyId, deletedAt: null, timerState: { in: [TimerState.running, TimerState.paused] } },
+      select: { id: true, startedAt: true, timerState: true, type: true }
+    }),
+    tx.baby.findFirst({
+      where: { id: input.babyId, householdId: ctx.householdId, deletedAt: null },
+      select: { feedingWarningMinutes: true, diaperWarningMinutes: true, sleepWarningMinutes: true }
+    })
+  ]);
+  if (!baby) throw new Error("not_found");
+  const current = buildDashboardWarningItems({
+    babyId: input.babyId, lastFeeding, lastDiaper, activeTimers,
+    feedingWarningMinutes: baby.feedingWarningMinutes,
+    diaperWarningMinutes: baby.diaperWarningMinutes,
+    sleepWarningMinutes: baby.sleepWarningMinutes
+  }).some((warning) => warning.type === input.type && warning.fingerprint === input.fingerprint);
+  if (!current) throw new Error("not_found");
+}
+
+export async function issueDashboardWarningBrowserOperation(raw: Record<string, unknown>) {
+  const input = dismissWarningSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForBaby(input.babyId);
+  return issueBrowserOperation({
+    ctx, operationId: raw.operationId, operationKey: BrowserOperationKey.dashboardWarningDismiss,
+    intent: input, babyId: input.babyId, permission: "activity.read"
+  });
+}
+
+export async function dismissDashboardWarningBrowserOperation(raw: Record<string, unknown>) {
+  const input = dismissWarningSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForBaby(input.babyId);
+  return executeBrowserOperation({
+    ctx, operationId: raw.operationId, operationKey: BrowserOperationKey.dashboardWarningDismiss,
+    intent: input, babyId: input.babyId, permission: "activity.read",
+    validate: async (tx, lockedCtx) => assertDashboardWarningCurrent(tx, lockedCtx, input),
+    execute: async (tx, lockedCtx) => {
+      await tx.dashboardWarningDismissal.upsert({
+        where: { householdId_babyId_type_fingerprint: { householdId: lockedCtx.householdId, babyId: input.babyId, type: input.type, fingerprint: input.fingerprint } },
+        update: { dismissedByMemberId: lockedCtx.memberId, dismissedAt: new Date() },
+        create: { householdId: lockedCtx.householdId, babyId: input.babyId, type: input.type, fingerprint: input.fingerprint, dismissedByMemberId: lockedCtx.memberId }
+      });
+      return { kind: "warning_dismissed", code: "ok", warningKey: `${input.type}:${input.fingerprint}` };
     }
   });
 }

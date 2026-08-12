@@ -23,6 +23,8 @@ const expectedDirectHouseholdModels = [
   "AuditEvent",
   "Baby",
   "BackupRecord",
+  "BrowserMutationOperation",
+  "BrowserOperationBinding",
   "CalendarEvent",
   "Contact",
   "DashboardWarningDismissal",
@@ -67,6 +69,16 @@ describe("tenant-isolation inventory", () => {
         expect.objectContaining({ model: "VaccineDocument", ownership: "inherited" }),
         expect.objectContaining({
           model: "DashboardWarningDismissal",
+          ownership: "direct",
+          disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "BrowserMutationOperation",
+          ownership: "direct",
+          disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "BrowserOperationBinding",
           ownership: "direct",
           disposition: "constraint_slice"
         }),
