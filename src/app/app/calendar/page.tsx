@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { CalendarDrawerShell } from "@/components/calendar-drawer-shell";
 import { CalendarFocusRestore } from "@/components/calendar-focus-restore";
 import { CalendarScrollPair } from "@/components/calendar-scroll-pair";
+import { CalendarEventSubmission } from "@/components/calendar-event-submission";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
@@ -14,7 +15,6 @@ import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calend
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getCalendar } from "@/server/services/calendar";
-import { createCalendarEventAction } from "@/app/app/calendar/actions";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const eventTypes = ["Appointment", "Birthday", "Reminder", "Checkup", "Visit", "Other"];
@@ -336,7 +336,10 @@ function NewEventForm({
   opener?: string;
 }) {
   return (
-    <form action={createCalendarEventAction} className="flex min-h-full flex-col">
+    <CalendarEventSubmission
+      fallbackError={error}
+      successHref={calendarHref(babyId, monthKey, { date: selectedDate, opener })}
+    >
       <input type="hidden" name="babyId" value={babyId} />
       <input type="hidden" name="month" value={monthKey} />
       <input type="hidden" name="opener" value={opener ?? ""} />
@@ -353,7 +356,8 @@ function NewEventForm({
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-5">
-        {error ? <div className="rounded-lg border border-danger/40 bg-danger/15 p-3 text-sm font-bold text-danger">{error}</div> : null}
+        {/* Server-provided fallback is retained only across non-JavaScript navigations. */}
+        {error ? <div className="sr-only">{error}</div> : null}
 
         <section className="space-y-4">
           <h3 className="text-lg font-black">Event Details</h3>
@@ -424,9 +428,9 @@ function NewEventForm({
         >
           Cancel
         </Link>
-        <Button>Save Event</Button>
+        <Button type="submit">Save Event</Button>
       </div>
-    </form>
+    </CalendarEventSubmission>
   );
 }
 

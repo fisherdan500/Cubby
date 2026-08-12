@@ -1644,6 +1644,7 @@ test("declares the remaining TypeScript package command family", () => {
   assertDeclarationFamily([
     "prisma/seed.operation.ts",
     "scripts/backup-recovery-rehearsal.operation.ts",
+    "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
     "scripts/integrity-check.operation.ts",
     "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
     "scripts/update-preflight.operation.ts"
@@ -2260,6 +2261,7 @@ test("discovers TypeScript package owners and exact CLI command variants", () =>
   const packageOwners = [
     "scripts/activity-update-safety-rehearsal.ts",
     "scripts/backup-recovery-rehearsal.ts",
+    "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
     "scripts/integrity-check.ts",
     "scripts/platform-owner.ts",
     "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
@@ -2766,6 +2768,11 @@ test("classifies rehearsal, fixture, build-tool, and registry exclusions exactly
         ownerModule: "scripts/activity-update-safety-rehearsal.ts",
         category: "rehearsal",
         packageScripts: ["verify:activity-update-safety"]
+      },
+      {
+        ownerModule: "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
+        category: "rehearsal",
+        packageScripts: ["verify:browser-operation-pilot"]
       },
       {
         ownerModule: "scripts/sprout-preview-commit.acceptance-rehearsal.ts",

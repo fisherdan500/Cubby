@@ -1,12 +1,18 @@
+import { BrowserOperationKey, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart, zonedDateTimeToDate } from "@/lib/timezone";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite } from "@/server/services/mutation-locks";
+import {
+  executeBrowserOperation,
+  getBrowserOperationContextForBaby,
+  issueBrowserOperation
+} from "@/server/services/browser-operations";
 
 const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
@@ -36,6 +42,86 @@ export type CalendarEventCreateResult = {
   date: string;
   month: string;
 };
+
+type CalendarEventInput = z.infer<typeof calendarEventSchema>;
+
+function calendarEventTimes(input: CalendarEventInput) {
+  const startTime = input.allDay
+    ? zonedDateStart(input.startDate, env.APP_TIMEZONE)
+    : zonedDateTimeToDate(`${input.startDate}T${input.startTime}`, env.APP_TIMEZONE);
+  const endTime = resolveEventEnd(input);
+  if (endTime && endTime <= startTime) throw new Error("invalid_date_range");
+  return { startTime, endTime };
+}
+
+async function createCalendarEventInTransaction(
+  tx: Prisma.TransactionClient,
+  ctx: HouseholdContext,
+  input: CalendarEventInput,
+  startTime: Date,
+  endTime: Date | undefined
+) {
+  const event = await tx.calendarEvent.create({
+    data: {
+      householdId: ctx.householdId,
+      title: input.title,
+      description: input.description,
+      startTime,
+      endTime,
+      allDay: input.allDay,
+      eventType: input.eventType,
+      location: input.location,
+      color: input.color,
+      babies: { create: { baby: { connect: { id: input.babyId } } } }
+    },
+    include: { babies: true }
+  });
+  await writeAudit(ctx, {
+    action: "calendar_event.create",
+    entityType: "calendar_event",
+    entityId: event.id,
+    after: {
+      id: event.id,
+      title: event.title,
+      babyId: input.babyId,
+      startTime: event.startTime.toISOString(),
+      endTime: event.endTime?.toISOString() ?? null
+    }
+  }, tx);
+  return { id: event.id, babyId: input.babyId, date: input.startDate, month: input.startDate.slice(0, 7) };
+}
+
+export async function issueCalendarEventBrowserOperation(raw: Record<string, unknown>) {
+  const input = calendarEventSchema.parse(raw);
+  calendarEventTimes(input);
+  const ctx = await getBrowserOperationContextForBaby(input.babyId);
+  return issueBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: BrowserOperationKey.calendarEventCreate,
+    intent: input,
+    babyId: input.babyId,
+    permission: "activity.create"
+  });
+}
+
+export async function submitCalendarEventBrowserOperation(raw: Record<string, unknown>) {
+  const input = calendarEventSchema.parse(raw);
+  const { startTime, endTime } = calendarEventTimes(input);
+  const ctx = await getBrowserOperationContextForBaby(input.babyId);
+  return executeBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: BrowserOperationKey.calendarEventCreate,
+    intent: input,
+    babyId: input.babyId,
+    permission: "activity.create",
+    execute: async (tx, lockedCtx) => {
+      const event = await createCalendarEventInTransaction(tx, lockedCtx, input, startTime, endTime);
+      return { kind: "calendar_event", code: "ok", eventId: event.id };
+    }
+  });
+}
 
 export async function getCalendar(
   userId: string,

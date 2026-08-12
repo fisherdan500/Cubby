@@ -223,6 +223,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/actions/baby-lifecycle-button.operation.ts",
   "src/components/actions/confirmed-activity-delete.operation.ts",
   "src/components/auth/auth-form.operation.ts",
+  "src/components/calendar-event-submission.operation.ts",
   "src/components/dashboard/dashboard-warnings.operation.ts",
   "src/components/forms/activity-form.operation.ts",
   "src/components/forms/baby-form.operation.ts",
@@ -247,6 +248,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/server/sprout-source-retention-scheduler.operation.ts",
   "scripts/activity-update-safety-rehearsal.operation.ts",
   "scripts/backup-recovery-rehearsal.operation.ts",
+  "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
   "scripts/integrity-check.operation.ts",
   "scripts/platform-owner.operation.ts",
   "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
@@ -6097,7 +6099,7 @@ const SEMANTIC_BROWSER_SERVICE_OPERATIONS = [
   ["baby.create", "src/server/services/households.ts", "addBaby"],
   ["baby.deactivate", "src/server/services/households.ts", "deactivateBaby"],
   ["baby.reactivate", "src/server/services/households.ts", "reactivateBaby"],
-  ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarning"],
+  ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarningBrowserOperation"],
   ["invite.create", "src/server/services/invites.ts", "createInvite"],
   ["invite.revoke_all", "src/server/services/invites.ts", "revokeAllPendingInvites"],
   ["member.restore", "src/server/services/invites.ts", "restoreMember"],
@@ -6107,7 +6109,7 @@ const SEMANTIC_BROWSER_SERVICE_OPERATIONS = [
   ["notification.preference.save", "src/server/services/integrations.ts", "saveNotificationPreference"],
   ["settings.appearance.update", "src/server/services/appearance.ts", "updateHouseholdAppearance"],
   ["settings.units.update", "src/server/services/unit-preferences.ts", "updateUnitPreferences"],
-  ["calendar_event.create", "src/server/services/calendar.ts", "createCalendarEvent"]
+  ["calendar_event.create", "src/server/services/calendar.ts", "submitCalendarEventBrowserOperation"]
 ] as const;
 
 export const SEMANTIC_ARTIFACT_VERSION = "semantic-artifact.v1" as const;

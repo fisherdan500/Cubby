@@ -1,52 +1,36 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { createCalendarEvent } from "@/server/services/calendar";
+import {
+  issueCalendarEventBrowserOperation,
+  submitCalendarEventBrowserOperation
+} from "@/server/services/calendar";
+import { browserOperationFailureResult } from "@/server/services/browser-operations";
 
-export async function createCalendarEventAction(formData: FormData) {
+type CalendarActionResult =
+  | { status: "completed"; operationId: string; eventId: string }
+  | { status: "pending"; operationId: string }
+  | { status: "stale" | "rejected"; operationId: string };
+
+export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {
   const input = Object.fromEntries(formData.entries());
-  const opener = validCalendarOpener(String(input.opener ?? ""));
-  const fallback = calendarUrl({
-    babyId: String(input.babyId ?? ""),
-    month: String(input.month ?? String(input.startDate ?? "").slice(0, 7)),
-    date: String(input.startDate ?? ""),
-    opener
-  });
-
-  let target = fallback;
   try {
-    const event = await createCalendarEvent(input);
-    target = calendarUrl({
-      babyId: event.babyId,
-      month: event.month,
-      date: event.date,
-      eventId: event.id,
-      opener
-    });
+    const issued = await issueCalendarEventBrowserOperation(input);
+    if (issued.status !== "pending") return toActionResult(issued);
+    return toActionResult(await submitCalendarEventBrowserOperation(input));
   } catch (error) {
-    target = `${fallback}&new=1&error=${encodeURIComponent(calendarErrorMessage(error))}`;
+    const failure = browserOperationFailureResult(input.operationId, error);
+    if (failure) return toActionResult(failure);
+    throw error;
   }
-
-  redirect(target);
 }
 
-function calendarUrl(input: { babyId: string; month: string; date?: string; eventId?: string; opener?: string }) {
-  const params = new URLSearchParams();
-  if (input.babyId) params.set("babyId", input.babyId);
-  if (input.month) params.set("month", input.month);
-  if (input.date) params.set("date", input.date);
-  if (input.eventId) params.set("eventId", input.eventId);
-  if (input.opener) params.set("opener", input.opener);
-  return `/app/calendar?${params.toString()}`;
-}
-
-function validCalendarOpener(value: string) {
-  return /^(?:add|(?:day|event|more|activity):[a-z0-9-]+)$/i.test(value) ? value : undefined;
-}
-
-function calendarErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message === "invalid_date_range") {
-    return "End time must be after start time.";
+function toActionResult(result: Awaited<ReturnType<typeof submitCalendarEventBrowserOperation>>): CalendarActionResult {
+  if (result.status === "completed") {
+    const eventId = typeof result.outcome.eventId === "string" ? result.outcome.eventId : "";
+    if (!eventId) return { status: "stale", operationId: result.operationId };
+    return { status: "completed", operationId: result.operationId, eventId };
   }
-  return "Could not save this event.";
+  return result.status === "pending"
+    ? { status: "pending", operationId: result.operationId }
+    : { status: result.status, operationId: result.operationId };
 }

@@ -1,12 +1,26 @@
 import { ok, handleError } from "@/server/http";
-import { dismissDashboardWarning } from "@/server/services/dashboard";
+import {
+  dismissDashboardWarningBrowserOperation,
+  issueDashboardWarningBrowserOperation
+} from "@/server/services/dashboard";
+import { browserOperationFailureResult } from "@/server/services/browser-operations";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  let operationId: unknown;
   try {
-    return ok(await dismissDashboardWarning(await request.json()));
+    const raw = await request.json() as Record<string, unknown>;
+    operationId = raw.operationId;
+    const issued = await issueDashboardWarningBrowserOperation(raw);
+    const result = issued.status === "pending"
+      ? await dismissDashboardWarningBrowserOperation(raw)
+      : issued;
+    if (result.status === "completed") return ok({ status: "completed", operationId: result.operationId });
+    return ok({ status: result.status, operationId: result.operationId });
   } catch (error) {
+    const failure = browserOperationFailureResult(operationId, error);
+    if (failure) return ok({ status: failure.status, operationId: failure.operationId });
     return handleError(error);
   }
 }
