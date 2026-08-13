@@ -1,4 +1,5 @@
-import { HouseholdRole, TimerState } from "@prisma/client";
+import { BrowserOperationKey, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
@@ -8,6 +9,11 @@ import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
+import {
+  executeBrowserOperation,
+  getBrowserOperationContextForLifecycleBaby,
+  issueBrowserOperation
+} from "@/server/services/browser-operations";
 
 type BabyQueryOptions = {
   includeInactive?: boolean;
@@ -208,4 +214,112 @@ export async function reactivateBaby(babyId: string) {
     );
     return updated;
   });
+}
+
+const browserLifecycleInputSchema = z.object({ babyId: z.string().min(1) });
+const lifecycleSnapshotSchema = z.object({
+  inactiveAt: z.string().datetime().nullable(),
+  updatedAt: z.string().datetime()
+}).strict();
+
+type BrowserLifecycleAction = "deactivate" | "reactivate";
+
+function lifecycleOperationKey(action: BrowserLifecycleAction) {
+  return action === "deactivate" ? BrowserOperationKey.babyDeactivate : BrowserOperationKey.babyReactivate;
+}
+
+function lifecycleSnapshot(baby: { inactiveAt: Date | null; updatedAt: Date }) {
+  return { inactiveAt: baby.inactiveAt?.toISOString() ?? null, updatedAt: baby.updatedAt.toISOString() };
+}
+
+function assertLifecycleSnapshot(action: BrowserLifecycleAction, snapshot: unknown, baby: { inactiveAt: Date | null; updatedAt: Date }) {
+  const expected = lifecycleSnapshotSchema.parse(snapshot);
+  const actual = lifecycleSnapshot(baby);
+  if (expected.updatedAt !== actual.updatedAt || expected.inactiveAt !== actual.inactiveAt) throw new Error("not_found");
+  if (action === "deactivate" && baby.inactiveAt) throw new Error("not_found");
+  if (action === "reactivate" && !baby.inactiveAt) throw new Error("not_found");
+}
+
+async function runBrowserLifecycleTransition(
+  tx: Prisma.TransactionClient,
+  ctx: Awaited<ReturnType<typeof getBrowserOperationContextForLifecycleBaby>>,
+  baby: { id: string; inactiveAt: Date | null },
+  action: BrowserLifecycleAction
+) {
+  if (action === "deactivate") {
+    const activeTimer = await tx.activityLog.findFirst({
+      where: {
+        householdId: ctx.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        timerState: { in: [TimerState.running, TimerState.paused] }
+      },
+      select: { id: true }
+    });
+    if (activeTimer) throw new Error("baby_has_active_timer");
+  }
+
+  const inactiveAt = action === "deactivate" ? new Date() : null;
+  await tx.baby.update({ where: { id: baby.id }, data: { inactiveAt } });
+  await writeAudit(ctx, {
+    action: `baby.${action}`,
+    entityType: "baby",
+    entityId: baby.id,
+    before: { inactiveAt: baby.inactiveAt },
+    after: { inactiveAt }
+  }, tx);
+}
+
+async function issueBrowserLifecycleOperation(raw: Record<string, unknown>, action: BrowserLifecycleAction) {
+  const { babyId } = browserLifecycleInputSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForLifecycleBaby(babyId);
+  return issueBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: lifecycleOperationKey(action),
+    intent: { babyId },
+    babyId,
+    permission: "baby.manage",
+    allowInactiveTarget: action === "reactivate",
+    targetSnapshot: (_tx, _ctx, baby) => lifecycleSnapshot(baby),
+    validate: async (_tx, _ctx, baby) => {
+      if (action === "deactivate" && baby.inactiveAt) throw new Error("not_found");
+      if (action === "reactivate" && !baby.inactiveAt) throw new Error("not_found");
+    }
+  });
+}
+
+async function submitBrowserLifecycleOperation(raw: Record<string, unknown>, action: BrowserLifecycleAction) {
+  const { babyId } = browserLifecycleInputSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForLifecycleBaby(babyId);
+  return executeBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: lifecycleOperationKey(action),
+    intent: { babyId },
+    babyId,
+    permission: "baby.manage",
+    allowInactiveTarget: action === "reactivate",
+    validate: async (_tx, _ctx, baby, binding) => assertLifecycleSnapshot(action, binding.targetSnapshot, baby),
+    execute: async (tx, lockedCtx, baby) => {
+      await runBrowserLifecycleTransition(tx, lockedCtx, baby, action);
+      return { kind: "baby_lifecycle", code: "ok", babyId: baby.id, inactive: action === "deactivate" };
+    }
+  });
+}
+
+export function issueDeactivateBabyBrowserOperation(raw: Record<string, unknown>) {
+  return issueBrowserLifecycleOperation(raw, "deactivate");
+}
+
+export function submitDeactivateBabyBrowserOperation(raw: Record<string, unknown>) {
+  return submitBrowserLifecycleOperation(raw, "deactivate");
+}
+
+export function issueReactivateBabyBrowserOperation(raw: Record<string, unknown>) {
+  return issueBrowserLifecycleOperation(raw, "reactivate");
+}
+
+export function submitReactivateBabyBrowserOperation(raw: Record<string, unknown>) {
+  return submitBrowserLifecycleOperation(raw, "reactivate");
 }

@@ -109,6 +109,13 @@ enum DeliveryStatus {
 enum BrowserOperationKey {
   calendarEventCreate     @map("calendar_event.create")
   dashboardWarningDismiss @map("dashboard.warning.dismiss")
+  babyDeactivate          @map("baby.deactivate")
+  babyReactivate          @map("baby.reactivate")
+}
+
+enum BrowserOperationProtocolVersion {
+  browserV1 @map("browser_v1")
+  browserV2 @map("browser_v2")
 }
 
 enum BrowserOperationBindingState {
@@ -650,6 +657,8 @@ model BrowserOperationBinding {
   operationKey      BrowserOperationKey
   intentFingerprint String
   babyId            String?
+  targetSnapshot    Json?
+  protocolVersion  BrowserOperationProtocolVersion @default(browserV1)
   expiresAt         DateTime
   state             BrowserOperationBindingState @default(open)
   issuedAt          DateTime                     @default(now())

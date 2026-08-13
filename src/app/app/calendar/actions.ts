@@ -15,16 +15,25 @@ export async function createCalendarEventAction(formData: FormData): Promise<Cal
   const input = Object.fromEntries(formData.entries());
   try {
     const issued = await issueCalendarEventBrowserOperation(input);
-    if (issued.status !== "pending") return toActionResult(issued);
-    return toActionResult(await submitCalendarEventBrowserOperation(input));
+    if (issued.status === "open") {
+      const submitted = await submitCalendarEventBrowserOperation(input);
+      return submitted.status === "open"
+        ? { status: "stale", operationId: submitted.operationId }
+        : toActionResult(submitted);
+    }
+    return toActionResult(issued);
   } catch (error) {
     const failure = browserOperationFailureResult(input.operationId, error);
-    if (failure) return toActionResult(failure);
+    if (failure) {
+      return failure.status === "open"
+        ? { status: "stale", operationId: failure.operationId }
+        : toActionResult(failure);
+    }
     throw error;
   }
 }
 
-function toActionResult(result: Awaited<ReturnType<typeof submitCalendarEventBrowserOperation>>): CalendarActionResult {
+function toActionResult(result: Exclude<Awaited<ReturnType<typeof submitCalendarEventBrowserOperation>>, { status: "open" }>): CalendarActionResult {
   if (result.status === "completed") {
     const eventId = typeof result.outcome.eventId === "string" ? result.outcome.eventId : "";
     if (!eventId) return { status: "stale", operationId: result.operationId };

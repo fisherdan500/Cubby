@@ -3890,7 +3890,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "1e4a5c55617adaf434775e7130a80b325ccc752d87d62a7ad9b49b11c2593194",
+  "generatorDigest": "c19fe2af1d8683390569828bcabda290540047357077de5e01e77736c5790740",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -3999,10 +3999,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "3b6a17816cf9a99c66b9f9bfca986fdfb9cde3155dc11d5a7b4616162506a711",
-          "anchorEnd": 354,
+          "anchorDigest": "2d1198d775dd205b788025cd0884198fcc23226240c10437cf6b31e0eadc482a",
+          "anchorEnd": 1047,
           "anchorFile": "src/app/api/babies/[id]/deactivate/route.ts",
-          "anchorStart": 154,
+          "anchorStart": 303,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/babies/[id]/deactivate/route.ts#POST"
@@ -4018,10 +4018,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "a8864ca8d6bb96c73a0939ab815ad2107a13ed509a5048f503ec3100d292dcd6",
-          "anchorEnd": 354,
+          "anchorDigest": "ea7e156cfe4d12568f6c3bd431d02ca3442cc3db405bbc3ec7d378a3f6d3a51b",
+          "anchorEnd": 1047,
           "anchorFile": "src/app/api/babies/[id]/reactivate/route.ts",
-          "anchorStart": 154,
+          "anchorStart": 303,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/babies/[id]/reactivate/route.ts#POST"
@@ -4207,8 +4207,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "e6c047f3c8933d7da936c536d83c7c86f6f1da587961033b4ba976e3e94b65c9",
-          "anchorEnd": 1081,
+          "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
+          "anchorEnd": 1078,
           "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
           "anchorStart": 307,
           "kind": "route_method",
@@ -5850,10 +5850,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "2ec2bc7ac766fde63d38802c86b515a1c5be59360b33d6516d79140840d78f85",
-          "anchorEnd": 776,
+          "anchorDigest": "f752c5ea21324feac615a6efb1bae73214a05902e888dd8fc2d93a6a79362170",
+          "anchorEnd": 2583,
           "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
-          "anchorStart": 670,
+          "anchorStart": 2387,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -6492,8 +6492,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "3c3dd06dddff815c69262404f992d7bc3a731e32b80d99f4ab86f2da0115768e",
-          "anchorEnd": 971,
+          "anchorDigest": "7878f7e0a7a3c4c833182555317a8c2728fe2f7bda2236e588d939cc703bb428",
+          "anchorEnd": 1235,
           "anchorFile": "src/app/app/calendar/actions.ts",
           "anchorStart": 425,
           "kind": "server_action",
@@ -7017,7 +7017,7 @@
     }
   ],
   "observationCount": 107,
-  "observationDigest": "6519ebac448e9137b0114a2a1cabb5994308675bac07fdd18463f0d798f8aa16",
+  "observationDigest": "9195611b29e14825dd5a62e63b0502549f16564f67a4f99b7e18ede6596959b7",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -7123,9 +7123,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 354,
+          "anchorEnd": 1047,
           "anchorFile": "src/app/api/babies/[id]/deactivate/route.ts",
-          "anchorStart": 154,
+          "anchorStart": 303,
           "kind": "route_method",
           "ownerModule": "src/app/api/babies/[id]/deactivate/route.ts",
           "symbol": "POST",
@@ -7141,9 +7141,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 354,
+          "anchorEnd": 1047,
           "anchorFile": "src/app/api/babies/[id]/reactivate/route.ts",
-          "anchorStart": 154,
+          "anchorStart": 303,
           "kind": "route_method",
           "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
           "symbol": "POST",
@@ -7321,7 +7321,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1081,
+          "anchorEnd": 1078,
           "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
           "anchorStart": 307,
           "kind": "route_method",
@@ -8905,9 +8905,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 776,
+          "anchorEnd": 2583,
           "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
-          "anchorStart": 670,
+          "anchorStart": 2387,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
           "symbol": "fetch[1]",
@@ -9526,7 +9526,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 971,
+          "anchorEnd": 1235,
           "anchorFile": "src/app/app/calendar/actions.ts",
           "anchorStart": 425,
           "kind": "server_action",
@@ -10647,7 +10647,7 @@
   ],
   "ownerSetDigest": "98123d57e97cf6162b02f6f8bf33cc5b0ea517fc4d0a829d93b7e918573353c3",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "b191dc26abd5473f314739be3e61a7d551bfe725bf351adad2bf314354a22b37",
+  "registryDigest": "ddfd27e456605c3ffdb9ccc5ba0c760d1ce11d4b094bde985fea262ff6655caf",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
