@@ -186,6 +186,8 @@ in `src/styles/globals.css` provide light and dark palettes for the five curated
 accent choices. Appearance changes go through `src/server/services/appearance.ts`
 and require `household.manage`.
 
+Personal appearance mode is separate global account state: `system`, `light`, or `dark`, defaulting to `system`. It is loaded independently of household selection and persisted through the separate account browser-operation ledger with Session/User reauthorization and revision compare-and-swap. `/account/appearance` remains available to authenticated users without a selected household. Signing out forces system/device behavior; Family accent remains household data and never supplies a personal mode.
+
 Activity recognition uses Cubby-original raster artwork under
 `public/activity-art` through the shared `ActivityArtwork` component. Utility
 actions such as navigation, settings, editing, and deletion continue to use

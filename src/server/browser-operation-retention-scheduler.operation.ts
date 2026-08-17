@@ -19,7 +19,7 @@ export const operation = {
     {
       kind: "worker_tick",
       symbol: "tick",
-      target: "src/server/services/browser-operation-retention.ts#runHouseholdBrowserOperationRetention"
+      target: "src/server/services/browser-operation-retention.ts#runBrowserOperationRetention"
     }
   ],
   disposition: "observed",

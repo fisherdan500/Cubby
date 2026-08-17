@@ -12,7 +12,7 @@ calendar planning, backups, and integrations.
 - Protected household ownership, delegated admins, role-based member access, invites, personal session management, audit records, and server-side permission checks.
 - Baby profiles and activity logging for feeding, diaper, sleep, pumping, medicine, measurement, milestone, note, bath, play, mood, supplement, vaccine, and milk inventory.
 - Persistent timers for feeding, sleep, pumping, and play.
-- Mobile-first light/dark app shell with Log Entry, Full Log, Calendar, Reports, Nursery, and Settings areas.
+- Mobile-first system/light/dark app shell with a durable personal account preference, plus Log Entry, Full Log, Calendar, Reports, Nursery, and Settings areas.
 - Original illustrated activity artwork and a household-selectable sage, rose, powder, butter, or terracotta accent.
 - Dashboard quick actions, elapsed badges, daily summary, warning dismissal, active timers, and selected-day timeline.
 - Calendar month view with events, Reports tabs including stats, milestones, growth trends, activity, heatmaps, and routine rhythm.

@@ -2,25 +2,11 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/settings/appearance/page.tsx",
-  ownerModule: "src/app/app/settings/appearance/page.tsx",
+  id: "server_loader:src/app/layout.tsx",
+  ownerModule: "src/app/layout.tsx",
   ownerKind: "server_loader",
   bindings: [
-    {
-      kind: "server_value_import",
-      symbol: "getAccountAppearance",
-      target: "src/server/services/account-appearance.ts#getAccountAppearance"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "getHouseholdAppearance",
-      target: "src/server/services/appearance.ts#getHouseholdAppearance"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "requireSettingsPage",
-      target: "src/server/auth/page-access.ts#requireSettingsPage"
-    }
+    { kind: "server_value_import", symbol: "getCurrentAuthenticatedAppearanceMode", target: "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode" },
   ],
   disposition: "observed",
   deferredGateIds: [

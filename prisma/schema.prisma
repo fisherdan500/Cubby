@@ -106,6 +106,16 @@ enum DeliveryStatus {
   failed
 }
 
+enum AppearanceMode {
+  system
+  light
+  dark
+}
+
+enum AccountOperationKey {
+  accountAppearanceUpdate @map("account.appearance.update")
+}
+
 enum BrowserOperationKey {
   activityCreate             @map("activity.create")
   activityUpdate             @map("activity.update")
@@ -172,6 +182,8 @@ model User {
   image         String?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
+  appearanceMode AppearanceMode   @default(system)
+  appearanceRevision Int          @default(0)
   sessions      Session[]
   accounts      Account[]
   memberships   HouseholdMember[]
@@ -188,6 +200,9 @@ model User {
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
+  accountOperationBindings AccountOperationBinding[]
+  accountMutationOperations AccountMutationOperation[]
+  accountMutationOperationTombstones AccountMutationOperationTombstone[]
 }
 
 model PlatformAuthority {
@@ -768,6 +783,71 @@ model BrowserMutationOperationTombstone {
 
   @@id([householdId, operationId])
   @@index([householdId, actorMemberId])
+  @@index([compactedAt])
+}
+
+model AccountOperationBinding {
+  id                 String                       @id @default(cuid())
+  sessionId          String
+  userId             String
+  operationId        String
+  operationKey       AccountOperationKey
+  openingFingerprint String
+  persistenceVersion Int                          @default(2)
+  targetSnapshot     Json
+  protocolVersion    BrowserOperationProtocolVersion @default(browserV2)
+  expiresAt          DateTime
+  state              BrowserOperationBindingState @default(open)
+  issuedAt           DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  user               User                         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  operation          AccountMutationOperation?
+
+  @@unique([userId, operationId])
+  @@index([sessionId])
+  @@index([state, expiresAt])
+  @@index([state, updatedAt, userId, operationId])
+}
+
+model AccountMutationOperation {
+  bindingId          String                         @unique
+  userId             String
+  operationId        String
+  operationKey       AccountOperationKey
+  openingFingerprint String
+  intentFingerprint  String
+  persistenceVersion Int                            @default(2)
+  status             BrowserMutationOperationStatus @default(pending)
+  outcomeVersion     Int?
+  outcomeKind        String?
+  outcomeCode        String?
+  outcomeSnapshot    Json?
+  auditCorrelation   String?
+  terminalAt         DateTime?
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
+  binding            AccountOperationBinding        @relation(fields: [bindingId], references: [id], onDelete: Restrict)
+  user               User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([userId, operationId])
+  @@index([status, createdAt])
+  @@index([terminalAt, userId, operationId])
+}
+
+model AccountMutationOperationTombstone {
+  userId            String
+  operationId       String
+  operationKey      AccountOperationKey
+  intentFingerprint String
+  terminalStatus    BrowserMutationOperationStatus
+  terminalCode      String
+  createdAt         DateTime
+  terminalAt        DateTime
+  compactedAt       DateTime                         @default(now())
+  auditCorrelation  String?
+  user              User                             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([userId, operationId])
   @@index([compactedAt])
 }
 

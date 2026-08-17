@@ -147,6 +147,9 @@ export type StructuralIdentityAnchor = {
 };
 
 export const APPENDIX_A_SIDECAR_PATHS = [
+  "src/app/api/account/appearance/issue/route.operation.ts",
+  "src/app/api/account/appearance/route.operation.ts",
+  "src/app/api/account/browser-operations/[operationId]/route.operation.ts",
   "src/app/api/activities/[id]/route.operation.ts",
   "src/app/api/activities/route.operation.ts",
   "src/app/api/activities/undo-last/route.operation.ts",
@@ -214,7 +217,9 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/app/settings/page.operation.ts",
   "src/app/app/settings/sessions/page.operation.ts",
   "src/app/app/settings/units/page.operation.ts",
+  "src/app/account/appearance/page.operation.ts",
   "src/app/invite/[token]/page.operation.ts",
+  "src/app/layout.operation.ts",
   "src/app/login/page.operation.ts",
   "src/app/onboarding/page.operation.ts",
   "src/app/page.operation.ts",
@@ -232,6 +237,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/forms/invite-form.operation.ts",
   "src/components/forms/onboarding-form.operation.ts",
   "src/components/household-selection-control.operation.ts",
+  "src/components/personal-appearance-form.operation.ts",
   "src/components/settings/appearance-form.operation.ts",
   "src/components/settings/backup-download-button.operation.ts",
   "src/components/settings/backup-restore-form.operation.ts",

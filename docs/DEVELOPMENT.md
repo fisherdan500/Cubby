@@ -363,6 +363,8 @@ It runs against generated credentials in a loopback-only project and never reads
 
 Household browser-operation schema, status, retention, compaction, and tombstone changes require focused source contracts plus the separately authorized disposable PostgreSQL acceptance. Ordinary Cubby JSON household backups deliberately exclude browser-operation bindings, full receipts, tombstones, and integrity state; full-system recovery must restore that database infrastructure before readiness enables writes.
 
+Global account appearance uses a separate non-household operation binding/full/tombstone ledger. Tests must prove no household lookup or member authority enters Personal appearance, while Session/User revision reauthorization, same-ID status, compaction, and 410 behavior remain equivalent to the household operation contract.
+
 ## Common Development Notes
 
 ### Activities

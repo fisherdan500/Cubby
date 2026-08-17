@@ -8,6 +8,7 @@ import "@fontsource/manrope/700.css";
 import "@/styles/globals.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
+import { getCurrentAuthenticatedAppearanceMode } from "@/server/services/account-appearance";
 
 export const metadata: Metadata = {
   title: "Cubby",
@@ -37,11 +38,12 @@ export const viewport: Viewport = {
   initialScale: 1
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const appearanceMode = await getCurrentAuthenticatedAppearanceMode();
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={appearanceMode}>
           <PwaRegister />
           {children}
         </ThemeProvider>

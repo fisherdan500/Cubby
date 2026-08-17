@@ -1,6 +1,6 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
-  "Account", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "CalendarEvent",
+  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "FeedingLog",
   "Household", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog",
@@ -25,6 +25,9 @@ export type TenantIsolationInventoryEntry = {
 
 export const tenantIsolationInventory = [
   { model: "Account", ownership: "global", operationClasses: ["auth_account"], disposition: "excluded" },
+  { model: "AccountMutationOperation", ownership: "global", operationClasses: ["account_browser_operation"], disposition: "excluded" },
+  { model: "AccountMutationOperationTombstone", ownership: "global", operationClasses: ["account_browser_operation_tombstone"], disposition: "excluded" },
+  { model: "AccountOperationBinding", ownership: "global", operationClasses: ["account_browser_operation_binding"], disposition: "excluded" },
   { model: "ActivityLog", ownership: "direct", operationClasses: ["activity_write", "import", "restore"], disposition: "constraint_slice" },
   { model: "ApiKey", ownership: "direct", operationClasses: ["integration_write", "api_auth"], disposition: "deferred_constraint" },
   { model: "AuditEvent", ownership: "direct", operationClasses: ["audit_write"], disposition: "deferred_constraint" },

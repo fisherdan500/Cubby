@@ -3,6 +3,74 @@
   "complete": false,
   "entries": [
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const input = await request.json() as { operationId?: unknown };\n    const result = await issueAccountAppearanceBrowserOperation(input);\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "cc191c5f860bb041dc7e2f93f86787be0f081ed7e42a9f00dd8f47890a14e05c",
+      "anchorEnd": 602,
+      "anchorFile": "src/app/api/account/appearance/issue/route.ts",
+      "anchorStart": 186,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/appearance/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/appearance/issue/route.ts:route_method:POST:src/app/api/account/appearance/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/appearance/issue/route.ts",
+      "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/issue/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getAccountAppearance());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "aa959c5b808cd5429d8062cb26b610235d28116c3703de7cad67978115c23b81",
+      "anchorEnd": 352,
+      "anchorFile": "src/app/api/account/appearance/route.ts",
+      "anchorStart": 213,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/appearance/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/appearance/route.ts:route_method:GET:src/app/api/account/appearance/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    const input = await request.json() as { operationId?: unknown; appearanceMode?: unknown };\n    const result = await submitAccountAppearanceBrowserOperation(input);\n    const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "8311295eb8556f13888d9dccd94efe33f23955bc207d556283bb5df55383398d",
+      "anchorEnd": 765,
+      "anchorFile": "src/app/api/account/appearance/route.ts",
+      "anchorStart": 354,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PATCH",
+        "target": "src/app/api/account/appearance/route.ts#PATCH"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/appearance/route.ts:route_method:PATCH:src/app/api/account/appearance/route.ts#PATCH",
+      "ownerId": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET(\n  _request: Request,\n  { params }: { params: { operationId: string } }\n) {\n  try {\n    const result = await getAccountBrowserOperationStatus(params.operationId);\n    const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "038d3dd69da9a1a97afcf42e4c03708618319b1adedb7c9b94b52218bea13f66",
+      "anchorEnd": 570,
+      "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "anchorStart": 194,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/browser-operations/[operationId]/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts:route_method:GET:src/app/api/account/browser-operations/[operationId]/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n    }\n    return ok(await deleteActivity(params.id, body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "3c2571a64b2dcba9109143a6a2371ce682053476d7364eea943bce071368fbce",
       "anchorEnd": 1184,
@@ -1448,6 +1516,57 @@
       "sidecarPath": "src/components/household-selection-control.operation.ts"
     },
     {
+      "anchorBytes": "fetch(`/api/account/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "214306fc794dd87b9487b5c3145c5bc87d3f5dd3f6d62f8d6e53f6457ac74f95",
+      "anchorEnd": 2784,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 2706,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/appearance/issue\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId })\n      })",
+      "anchorDigest": "5062997427e7204d15060282b274ec57ead29dd138253b041c8cf781fba8dcc6",
+      "anchorEnd": 3582,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 3406,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/appearance\", {\n        method: \"PATCH\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId, appearanceMode: selected })\n      })",
+      "anchorDigest": "b0e13a3ac9d52b92d6c37765ce6bf087a76549d0f89f725171d9b56d53af6062",
+      "anchorEnd": 4013,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 3816,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
       "anchorBytes": "fetch(\"/api/settings/appearance\", {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ accentTheme: selected })\n    })",
       "anchorDigest": "741e2c1af49bebc36e40b0b1fd9604359e8befb2d45696ddfea84270315d51c9",
       "anchorEnd": 851,
@@ -2553,6 +2672,40 @@
       "sidecarPath": "src/app/app/calendar/actions.operation.ts"
     },
     {
+      "anchorBytes": "getAccountAppearance",
+      "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
+      "anchorEnd": 241,
+      "anchorFile": "src/app/account/appearance/page.tsx",
+      "anchorStart": 221,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getAccountAppearance",
+        "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/appearance/page.tsx:server_value_import:getAccountAppearance:src/server/services/account-appearance.ts#getAccountAppearance",
+      "ownerId": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 179,
+      "anchorFile": "src/app/account/appearance/page.tsx",
+      "anchorStart": 164,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/appearance/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
       "anchorBytes": "getActivityForEdit",
       "anchorDigest": "84878e1856af36f94bb807228b977b169e48fffe0ac6f04e6afc412fd68b6ed7",
       "anchorEnd": 698,
@@ -3080,11 +3233,28 @@
       "sidecarPath": "src/app/app/reports/page.operation.ts"
     },
     {
+      "anchorBytes": "getAccountAppearance",
+      "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
+      "anchorEnd": 413,
+      "anchorFile": "src/app/app/settings/appearance/page.tsx",
+      "anchorStart": 393,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getAccountAppearance",
+        "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/appearance/page.tsx:server_value_import:getAccountAppearance:src/server/services/account-appearance.ts#getAccountAppearance",
+      "ownerId": "server_loader:src/app/app/settings/appearance/page.tsx",
+      "ownerModule": "src/app/app/settings/appearance/page.tsx",
+      "sidecarPath": "src/app/app/settings/appearance/page.operation.ts"
+    },
+    {
       "anchorBytes": "getHouseholdAppearance",
       "anchorDigest": "9ae9352945a8894a7a5c9351ed2025b37ef0af95a5e8486dcfd40910e649b7e1",
-      "anchorEnd": 264,
+      "anchorEnd": 344,
       "anchorFile": "src/app/app/settings/appearance/page.tsx",
-      "anchorStart": 242,
+      "anchorStart": 322,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdAppearance",
@@ -3099,9 +3269,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 196,
+      "anchorEnd": 276,
       "anchorFile": "src/app/app/settings/appearance/page.tsx",
-      "anchorStart": 177,
+      "anchorStart": 257,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -3522,6 +3692,23 @@
       "sidecarPath": "src/app/invite/[token]/page.operation.ts"
     },
     {
+      "anchorBytes": "getCurrentAuthenticatedAppearanceMode",
+      "anchorDigest": "0d1bb8bc5cd61eff21fd5a0de71d8d94c091c040a93eb0a284d959e6294f5040",
+      "anchorEnd": 473,
+      "anchorFile": "src/app/layout.tsx",
+      "anchorStart": 436,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getCurrentAuthenticatedAppearanceMode",
+        "target": "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/layout.tsx:server_value_import:getCurrentAuthenticatedAppearanceMode:src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode",
+      "ownerId": "server_loader:src/app/layout.tsx",
+      "ownerModule": "src/app/layout.tsx",
+      "sidecarPath": "src/app/layout.operation.ts"
+    },
+    {
       "anchorBytes": "extractInviteToken",
       "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
       "anchorEnd": 208,
@@ -3813,9 +4000,9 @@
     {
       "anchorBytes": "setInterval(() => void tick(), pollMs)",
       "anchorDigest": "ee263c2120094fed9d78fdab67b7429faa8bdd63f122f53ee7a53ed9041c48d3",
-      "anchorEnd": 1464,
+      "anchorEnd": 1644,
       "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
-      "anchorStart": 1426,
+      "anchorStart": 1606,
       "binding": {
         "kind": "worker_schedule",
         "symbol": "tick",
@@ -3828,11 +4015,11 @@
       "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
     },
     {
-      "anchorBytes": "export async function startBrowserOperationRetentionScheduler() {\n  const state = schedulerState();\n  if (state.started) return state;\n  state.started = true;\n\n  const tick = async () => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runHouseholdBrowserOperationRetention({ batchSize: 100 });\n      console.info(\n        \"browser_operation_retention_result\",\n        result.unresolvedAlertCount,\n        result.compactedCount,\n        result.deletedBindingCount\n      );\n    } catch {\n      console.error(\"browser_operation_retention_tick_failed\", \"browser_operation_retention_failed\");\n    } finally {\n      state.running = false;\n    }\n  };\n\n  await tick();\n  state.timer = setInterval(() => void tick(), pollMs);\n  state.timer.unref?.();\n  return state;\n}",
-      "anchorDigest": "3b96c901fd3aa900ab67fdb69579eb38df2555c747a1766b96f96a5634f592fe",
-      "anchorEnd": 1508,
+      "anchorBytes": "export async function startBrowserOperationRetentionScheduler() {\n  const state = schedulerState();\n  if (state.started) return state;\n  state.started = true;\n\n  const tick = async () => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runBrowserOperationRetention({ batchSize: 100 });\n      console.info(\n        \"browser_operation_retention_result\",\n        \"household\",\n        result.household.unresolvedAlertCount,\n        result.household.compactedCount,\n        result.household.deletedBindingCount,\n        \"account\",\n        result.account.unresolvedAlertCount,\n        result.account.compactedCount,\n        result.account.deletedBindingCount\n      );\n    } catch {\n      console.error(\"browser_operation_retention_tick_failed\", \"browser_operation_retention_failed\");\n    } finally {\n      state.running = false;\n    }\n  };\n\n  await tick();\n  state.timer = setInterval(() => void tick(), pollMs);\n  state.timer.unref?.();\n  return state;\n}",
+      "anchorDigest": "5d667b5b4a35e9d997dfe2ff961d427c6165097dd2d27475cd7071520d33444a",
+      "anchorEnd": 1688,
       "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
-      "anchorStart": 701,
+      "anchorStart": 692,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startBrowserOperationRetentionScheduler",
@@ -3845,18 +4032,18 @@
       "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
     },
     {
-      "anchorBytes": "runHouseholdBrowserOperationRetention({ batchSize: 100 })",
-      "anchorDigest": "de5a63c6bc7a617a489cf262680994e0c046b655a5c6eb6a577c419d37d717d4",
-      "anchorEnd": 1041,
+      "anchorBytes": "runBrowserOperationRetention({ batchSize: 100 })",
+      "anchorDigest": "ce98564dbc4fefd649eb704f0a82ffcf1a9bd30e078ef7bfe1ba46925742b21b",
+      "anchorEnd": 1023,
       "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
-      "anchorStart": 984,
+      "anchorStart": 975,
       "binding": {
         "kind": "worker_tick",
         "symbol": "tick",
-        "target": "src/server/services/browser-operation-retention.ts#runHouseholdBrowserOperationRetention"
+        "target": "src/server/services/browser-operation-retention.ts#runBrowserOperationRetention"
       },
       "coverage": "structural_only",
-      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_tick:tick:src/server/services/browser-operation-retention.ts#runHouseholdBrowserOperationRetention",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_tick:tick:src/server/services/browser-operation-retention.ts#runBrowserOperationRetention",
       "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
       "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
       "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
@@ -3970,10 +4157,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "aa0fdae488639849d824ee23ab19710a33448a149b5c1a0b5f9dcdbd09f63fd9",
+  "semanticArtifactDigest": "4060352f531560deab853941127555707b57bd6ffcd0e8dee85b2339e801b544",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "0989ce66e72b820ce8b210f99f6b47713490e9ec2aa0e516a6e2b269b42345ae",
+  "semanticCoverageDigest": "7088bf462f21a06be48c99f58e752c26f14af337d600ae86ef0e9a812363ca06",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "23714ceac571ba8fe4517a4b76dfe3fb4dd3ffe1a031b905dac7a9ecac029fbf",
-  "semanticFingerprint": "144710b68f191390502f72ff170efc045c91213df9102bb9500172a255187edb"
+  "semanticFingerprint": "f80c3197ed4fd566e7326fbe4f553107f329db708ecc83d3b77d09299ddc6a5d"
 }

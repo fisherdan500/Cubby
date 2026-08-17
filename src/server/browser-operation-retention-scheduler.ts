@@ -1,4 +1,4 @@
-import { runHouseholdBrowserOperationRetention } from "@/server/services/browser-operation-retention";
+import { runBrowserOperationRetention } from "@/server/services/browser-operation-retention";
 
 const pollMs = 15 * 60 * 1000;
 
@@ -28,12 +28,17 @@ export async function startBrowserOperationRetentionScheduler() {
     if (state.running) return;
     state.running = true;
     try {
-      const result = await runHouseholdBrowserOperationRetention({ batchSize: 100 });
+      const result = await runBrowserOperationRetention({ batchSize: 100 });
       console.info(
         "browser_operation_retention_result",
-        result.unresolvedAlertCount,
-        result.compactedCount,
-        result.deletedBindingCount
+        "household",
+        result.household.unresolvedAlertCount,
+        result.household.compactedCount,
+        result.household.deletedBindingCount,
+        "account",
+        result.account.unresolvedAlertCount,
+        result.account.compactedCount,
+        result.account.deletedBindingCount
       );
     } catch {
       console.error("browser_operation_retention_tick_failed", "browser_operation_retention_failed");
