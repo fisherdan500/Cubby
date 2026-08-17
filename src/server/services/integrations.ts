@@ -29,14 +29,6 @@ const subscriptionSchema = z.object({
   userAgent: z.string().optional()
 });
 
-const preferencesSchema = z.object({
-  babyId: z.string().optional(),
-  timerOverdue: z.coerce.boolean().default(true),
-  activityCreated: z.coerce.boolean().default(false),
-  reminders: z.coerce.boolean().default(true),
-  quietHoursStart: z.string().optional(),
-  quietHoursEnd: z.string().optional()
-});
 
 export function hashSecret(value: string) {
   return createHash("sha256").update(value).digest("hex");
@@ -191,38 +183,6 @@ export async function savePushSubscription(raw: unknown) {
         p256dh: input.keys.p256dh,
         auth: input.keys.auth,
         userAgent: input.userAgent
-      }
-    });
-  });
-}
-
-export async function listNotificationPreferences() {
-  const ctx = await getEffectiveHouseholdContext();
-  requirePermission(ctx, "notification.manage");
-  return prisma.notificationPreference.findMany({
-    where: { householdId: ctx.householdId, userId: ctx.userId },
-    include: { baby: true },
-    orderBy: { createdAt: "desc" }
-  });
-}
-
-export async function saveNotificationPreference(raw: unknown) {
-  const ctx = await getEffectiveHouseholdContext();
-  requirePermission(ctx, "notification.manage");
-  const input = preferencesSchema.parse(raw);
-  return prisma.$transaction(async (tx) => {
-    const lockedCtx = await lockActorForWrite(tx, ctx);
-    requirePermission(lockedCtx, "notification.manage");
-    return tx.notificationPreference.create({
-      data: {
-        householdId: lockedCtx.householdId,
-        userId: lockedCtx.userId,
-        babyId: input.babyId,
-        timerOverdue: input.timerOverdue,
-        activityCreated: input.activityCreated,
-        reminders: input.reminders,
-        quietHoursStart: input.quietHoursStart,
-        quietHoursEnd: input.quietHoursEnd
       }
     });
   });

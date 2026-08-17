@@ -365,31 +365,36 @@ async function queueActivitySideEffects(
 
   if (event === WebhookEvent.activity_created) {
     const preferences = await db.notificationPreference.findMany({
-      where: { householdId: ctx.householdId, activityCreated: true },
-      select: { userId: true }
+      where: {
+        householdId: ctx.householdId,
+        status: "active",
+        categories: { has: "activity_created" },
+        channels: { has: "browser_push" },
+        member: { is: { householdId: ctx.householdId, disabledAt: null, deletedAt: null } }
+      },
+      select: { memberId: true }
     });
     const activeRecipientUserIds = new Set<string>();
-    for (const userId of [...new Set(preferences.map((preference) => preference.userId))].sort()) {
-      const recipients = await db.$queryRaw<Array<{ id: string }>>`
-        SELECT "id"
+    for (const preference of [...preferences].sort((left, right) => left.memberId.localeCompare(right.memberId))) {
+      const recipients = await db.$queryRaw<Array<{ userId: string }>>`
+        SELECT "userId"
         FROM "HouseholdMember"
-        WHERE "householdId" = ${ctx.householdId}
-          AND "userId" = ${userId}
+        WHERE "id" = ${preference.memberId}
+          AND "householdId" = ${ctx.householdId}
           AND "disabledAt" IS NULL
           AND "deletedAt" IS NULL
         -- A concurrent closure owns this row exclusively; omit the outbox side effect
         -- rather than waiting behind the actor lock and forming an inverse lock cycle.
         FOR SHARE SKIP LOCKED
       `;
-      if (recipients.length) activeRecipientUserIds.add(userId);
+      if (recipients.length) activeRecipientUserIds.add(recipients[0]!.userId);
     }
-    const activePreferences = preferences.filter((preference) => activeRecipientUserIds.has(preference.userId));
-    if (activePreferences.length) {
+    if (activeRecipientUserIds.size) {
       await db.notificationLog.createMany({
-        data: activePreferences.map((preference) => ({
+        data: [...activeRecipientUserIds].sort().map((userId) => ({
           householdId: ctx.householdId,
           activityId: activity.id,
-          userId: preference.userId,
+          userId,
           kind: "activity_created",
           title: "New Cubby activity",
           body: activity.type

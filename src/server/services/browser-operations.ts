@@ -49,6 +49,13 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     kind: z.literal("units_updated"),
     code: z.literal("ok"),
     settingsScope: z.literal("household")
+  }).strict(),
+  [BrowserOperationKey.notificationPreferenceSave]: z.object({
+    kind: z.literal("notification_preference"),
+    code: z.literal("ok"),
+    revision: z.number().int().positive(),
+    status: z.literal("active"),
+    externalDeliveryEnabled: z.boolean()
   }).strict()
 };
 

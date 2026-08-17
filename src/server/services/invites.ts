@@ -453,7 +453,7 @@ async function containClosedMemberAuthority(
     },
     data: { revokedAt: closedAt }
   });
-  await tx.notificationPreference.deleteMany({ where: { householdId, userId } });
+  await tx.notificationPreference.deleteMany({ where: { householdId, memberId } });
   await tx.pushSubscription.updateMany({
     where: { householdId, userId, deletedAt: null },
     data: { deletedAt: closedAt }

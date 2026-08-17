@@ -1,11 +1,14 @@
 import { ok, handleError } from "@/server/http";
-import { listNotificationPreferences, saveNotificationPreference } from "@/server/services/integrations";
+import {
+  getOwnNotificationPreference,
+  submitNotificationPreferenceBrowserOperation
+} from "@/server/services/notification-preferences";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return ok(await listNotificationPreferences());
+    return ok(await getOwnNotificationPreference());
   } catch (error) {
     return handleError(error);
   }
@@ -13,7 +16,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    return ok(await saveNotificationPreference(await request.json()), { status: 201 });
+    const result = await submitNotificationPreferenceBrowserOperation(await request.json() as Record<string, unknown>);
+    return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
   } catch (error) {
     return handleError(error);
   }

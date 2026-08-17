@@ -7517,12 +7517,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference parses raw input with preferencesSchema, including caller-supplied babyId and preference fields"
+            "value": "Does not accept a household or member target from the payload; selected baby ids are validated inside the transaction against the locked household."
           },
           "target": {
             "authority": "deferred",
@@ -7534,12 +7534,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
+            "value": "Uses the validated effective household membership episode from the browser-operation context."
           },
           "target": {
             "authority": "deferred",
@@ -7561,12 +7561,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the source calls tx.notificationPreference.create inside the actor-lock transaction"
+            "value": "Locks and snapshots the membership-episode document, then writes its replacement and selected-baby joins transactionally with an audit record."
           },
           "target": {
             "authority": "deferred",
@@ -7578,12 +7578,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference requires notification.manage before its transaction, locks the actor, and requires the permission again before create"
+            "value": "Delegates notification.manage reauthorization and current-actor locking to executeHouseholdBrowserOperation."
           },
           "target": {
             "authority": "deferred",
@@ -7595,12 +7595,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference is the exported notification preference creation service"
+            "value": "Submits notification.preference.save through the household browser-operation adapter."
           },
           "target": {
             "authority": "deferred",
@@ -7612,12 +7612,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the create data uses the locked household and user ids with the caller-supplied babyId; this export contains no explicit baby-household lookup"
+            "value": "Binds one document to the locked membership episode and validates each selected baby against the locked household before create or replacement."
           },
           "target": {
             "authority": "deferred",
@@ -7626,15 +7626,15 @@
         },
         "variant_specific_outcomes": {
           "current": {
-            "authority": "not_applicable",
-            "rationale": "saveNotificationPreference has no declared semantic variant",
+            "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
-            ]
+            ],
+            "value": "Returns the allowlisted active notification-preference outcome; stale targets are persisted by the browser-operation adapter."
           },
           "target": {
             "authority": "deferred",
@@ -7644,11 +7644,11 @@
         "worker_loop_claim_failure_containment": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "saveNotificationPreference does not contain a worker loop",
+            "rationale": "No worker loop.",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ]
@@ -7659,10 +7659,10 @@
           }
         }
       },
-      "exportName": "saveNotificationPreference",
+      "exportName": "submitNotificationPreferenceBrowserOperation",
       "id": "notification.preference.save",
       "kind": "service",
-      "ownerModule": "src/server/services/integrations.ts"
+      "ownerModule": "src/server/services/notification-preferences.ts"
     },
     {
       "axes": {
@@ -8491,12 +8491,12 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "ba37a09b2163e1f42b37dd4cbd58b2efb4be00fcc675785bd2cbddd05ff1887c",
+  "semanticArtifactDigest": "3f3f48f3f7efe5724d290783939b5fc051b4c8e22b0f5a60aa1e045d83f7d99e",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "d3c22d306156b08f9055d9b19becaf9cd6923c8bdedc98ea777527b26bfb3a85",
+  "semanticCoverageDigest": "352b8927792421fd1a993d007bb138293b380393bb5228b1f4d5fcc9d9e71638",
   "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "ef9cd82ead93a258b079a43455a4afe46297ca16fe5fe632b974c71d351a95aa",
-  "semanticFingerprint": "e70d8f791b5a1b3f0016dbb6e2762415399c3eefec3ef3ca18b609d83234a86e",
+  "semanticDeclarationDigest": "9f92ee916a59eebff3312fdda5a6de2ecbac57b4ca574917eab8579cc1259086",
+  "semanticFingerprint": "e32039dfc5b6ee08c97ed7e96d8cf850af53b8b54e7482baed9a517877f6dd2c",
   "semanticSidecars": [
     "src/app/api/activities/[id]/route.semantic.ts",
     "src/app/api/activities/route.semantic.ts",
@@ -8524,7 +8524,7 @@
     "src/server/services/calendar.semantic.ts",
     "src/server/services/dashboard.semantic.ts",
     "src/server/services/households.semantic.ts",
-    "src/server/services/integrations.semantic.ts",
+    "src/server/services/notification-preferences.semantic.ts",
     "src/server/services/invites.semantic.ts",
     "src/server/services/platform-authority.semantic.ts",
     "src/server/services/unit-preferences.semantic.ts"

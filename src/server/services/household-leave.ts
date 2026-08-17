@@ -129,7 +129,7 @@ export async function getHouseholdLeavePreview(householdId: string) {
         ]
       }
     }),
-    prisma.notificationPreference.count({ where: { householdId, userId: user.id } }),
+    prisma.notificationPreference.count({ where: { householdId, memberId: member.id } }),
     prisma.pushSubscription.count({ where: { householdId, userId: user.id, deletedAt: null } }),
     prisma.apiKey.count({
       where: {
@@ -271,7 +271,7 @@ export async function leaveHousehold(raw: unknown) {
       data: { status: InviteStatus.revoked, revokedAt: leftAt }
     });
     await tx.notificationPreference.deleteMany({
-      where: { householdId: input.householdId, userId: freshSession.user.id }
+      where: { householdId: input.householdId, memberId: member.id }
     });
     await tx.pushSubscription.updateMany({
       where: {

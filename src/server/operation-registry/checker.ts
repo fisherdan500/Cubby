@@ -183,6 +183,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/members/[id]/restore/route.operation.ts",
   "src/app/api/members/[id]/route.operation.ts",
   "src/app/api/members/[id]/suspend/route.operation.ts",
+  "src/app/api/notifications/preferences/issue/route.operation.ts",
   "src/app/api/notifications/preferences/route.operation.ts",
   "src/app/api/notifications/subscribe/route.operation.ts",
   "src/app/api/onboarding/route.operation.ts",
@@ -6052,7 +6053,7 @@ export const SEMANTIC_SIDECAR_PATHS = [
   "src/server/services/calendar.semantic.ts",
   "src/server/services/dashboard.semantic.ts",
   "src/server/services/households.semantic.ts",
-  "src/server/services/integrations.semantic.ts",
+  "src/server/services/notification-preferences.semantic.ts",
   "src/server/services/invites.semantic.ts",
   "src/server/services/platform-authority.semantic.ts",
   "src/server/services/unit-preferences.semantic.ts"
@@ -6070,7 +6071,7 @@ const SEMANTIC_SERVICE_OWNER_MODULES = new Set([
   "src/server/services/calendar.ts",
   "src/server/services/dashboard.ts",
   "src/server/services/households.ts",
-  "src/server/services/integrations.ts",
+  "src/server/services/notification-preferences.ts",
   "src/server/services/invites.ts",
   "src/server/services/platform-authority.ts",
   "src/server/services/unit-preferences.ts"
@@ -6118,7 +6119,7 @@ const SEMANTIC_BROWSER_SERVICE_OPERATIONS = [
   ["member.remove", "src/server/services/invites.ts", "removeMember"],
   ["member.role.update", "src/server/services/invites.ts", "updateMemberRole"],
   ["member.suspend", "src/server/services/invites.ts", "suspendMember"],
-  ["notification.preference.save", "src/server/services/integrations.ts", "saveNotificationPreference"],
+  ["notification.preference.save", "src/server/services/notification-preferences.ts", "submitNotificationPreferenceBrowserOperation"],
   ["household.accent.update", "src/server/services/appearance.ts", "submitHouseholdAppearanceBrowserOperation"],
   ["settings.units.update", "src/server/services/unit-preferences.ts", "submitUnitPreferencesBrowserOperation"],
   ["calendar_event.create", "src/server/services/calendar.ts", "submitCalendarEventBrowserOperation"]

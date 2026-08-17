@@ -3038,7 +3038,7 @@ test("builds the combined platform and browser household mutation semantic aggre
     ["member.restore", "src/server/services/invites.ts", "restoreMember"],
     ["member.role.update", "src/server/services/invites.ts", "updateMemberRole"],
     ["member.suspend", "src/server/services/invites.ts", "suspendMember"],
-    ["notification.preference.save", "src/server/services/integrations.ts", "saveNotificationPreference"],
+    ["notification.preference.save", "src/server/services/notification-preferences.ts", "submitNotificationPreferenceBrowserOperation"],
     ["settings.appearance.update", "src/server/services/appearance.ts", "updateHouseholdAppearance"],
     ["settings.units.update", "src/server/services/unit-preferences.ts", "updateUnitPreferences"]
   ].sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))));
@@ -3050,7 +3050,7 @@ test("builds the combined platform and browser household mutation semantic aggre
       "src/server/services/calendar.ts",
       "src/server/services/dashboard.ts",
       "src/server/services/households.ts",
-      "src/server/services/integrations.ts",
+      "src/server/services/notification-preferences.ts",
       "src/server/services/invites.ts",
       "src/server/services/unit-preferences.ts"
     ])

@@ -1,7 +1,7 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 52,
+    "api_route": 53,
     "client_binding": 25,
     "instrumentation": 1,
     "package_command": 8,
@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "7ad7ae7351aa84b6dd76238e1d40febdceaafe13085412bdbe9c2f3ad45f8fd1",
+  "declarationDigest": "7a9e798c997c2d59141ef86442aee399fbe13c070cf4427cbd51363bc430aa8b",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1512,6 +1512,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "GET",
             "target": "src/app/api/notifications/preferences/route.ts#GET"
           },
@@ -2707,8 +2737,8 @@
           },
           {
             "kind": "server_value_import",
-            "symbol": "listNotificationPreferences",
-            "target": "src/server/services/integrations.ts#listNotificationPreferences"
+            "symbol": "getOwnNotificationPreference",
+            "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
           },
           {
             "kind": "server_value_import",
@@ -3804,6 +3834,16 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -4320,7 +4360,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "9de1da375cf134d18c98b72ab4561b13580048b0cc5d246f5d5ecaef63856d3f",
+  "generatorDigest": "fd6a4304259e1795b29cb81b1f44d4f938d7b1243cdae902d6f09ac80d976f45",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -5082,19 +5122,38 @@
     {
       "bindings": [
         {
-          "anchorDigest": "052357e3b3ad922d3ae3c141ea64de6913624e850b58388817f9de9fbb9cd806",
-          "anchorEnd": 343,
-          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorDigest": "230d104e4c28f15ca10e215d9af050d58e6a3d745c258de37717fc7d1449fa6e",
+          "anchorEnd": 541,
+          "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
           "anchorStart": 197,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "5b71226679bd0c0cee95312a86de531ccc9fb853e9535527e4239a982f621c5a",
+          "anchorEnd": 379,
+          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorStart": 232,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/notifications/preferences/route.ts#GET"
         },
         {
-          "anchorDigest": "7e79ca35765f2cd1f42c0a24543e6a142a0807ae5ff91fa4ca5a9eabd606dd3a",
-          "anchorEnd": 544,
+          "anchorDigest": "11fbfd518b5aa319e214262f3504f8f1ae19d1662a0e94fbd89d55f10e9fd6c0",
+          "anchorEnd": 724,
           "anchorFile": "src/app/api/notifications/preferences/route.ts",
-          "anchorStart": 345,
+          "anchorStart": 381,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/notifications/preferences/route.ts#POST"
@@ -6087,13 +6146,13 @@
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorDigest": "a1e33fcb55fa7827754fb2c32cb462069f0bdb33e8bc8cdd89e027d5655f8d0f",
-          "anchorEnd": 359,
+          "anchorDigest": "5cf81e8d1685ffb3a223564f2a28fce40eef2775e1c39fce66e7d7f0c182f5d0",
+          "anchorEnd": 360,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
           "anchorStart": 332,
           "kind": "server_value_import",
-          "symbol": "listNotificationPreferences",
-          "target": "src/server/services/integrations.ts#listNotificationPreferences"
+          "symbol": "getOwnNotificationPreference",
+          "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
         },
         {
           "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
@@ -7000,20 +7059,38 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 1184,
+          "anchorEnd": 3929,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 1169,
+          "anchorStart": 3914,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/settings/notification-preference-form.tsx#submit"
         },
         {
-          "anchorDigest": "8627d3eda1b65b71acff2b74686448b2aeac02c6019f56aafc69c01231534e26",
-          "anchorEnd": 997,
+          "anchorDigest": "5329d1c1818c5445a435c219486012197fdd77c785f7cd03d2d800afd7e31627",
+          "anchorEnd": 1124,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 461,
+          "anchorStart": 1063,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "455f81845be6ded7e050ae2d88bf9b97699ad999e6167d57b422168ff4d70fdd",
+          "anchorEnd": 1947,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 1790,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "b8e379c4fc7dca0909a4a0104617ea84d3b967a314a0ea27fd86659f0bb26de8",
+          "anchorEnd": 3228,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 2425,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         }
       ],
@@ -7800,8 +7877,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 119,
-  "observationDigest": "8aff92ad3d37c555ceeb7ceafc4d227b85d7d3a1db90911db75740b1361835d8",
+  "observationCount": 120,
+  "observationDigest": "7923be516d0c31e4c2e220cf1c85a5c887e59f6f3aaa90085d7ddac6ba6d22fd",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -8528,18 +8605,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 343,
-          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorEnd": 541,
+          "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
           "anchorStart": 197,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 379,
+          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorStart": 232,
           "kind": "route_method",
           "ownerModule": "src/app/api/notifications/preferences/route.ts",
           "symbol": "GET",
           "target": "src/app/api/notifications/preferences/route.ts#GET"
         },
         {
-          "anchorEnd": 544,
+          "anchorEnd": 724,
           "anchorFile": "src/app/api/notifications/preferences/route.ts",
-          "anchorStart": 345,
+          "anchorStart": 381,
           "kind": "route_method",
           "ownerModule": "src/app/api/notifications/preferences/route.ts",
           "symbol": "POST",
@@ -9500,13 +9595,13 @@
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 359,
+          "anchorEnd": 360,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
           "anchorStart": 332,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
-          "symbol": "listNotificationPreferences",
-          "target": "src/server/services/integrations.ts#listNotificationPreferences"
+          "symbol": "getOwnNotificationPreference",
+          "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
         },
         {
           "anchorEnd": 221,
@@ -10382,21 +10477,39 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1184,
+          "anchorEnd": 3929,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 1169,
+          "anchorStart": 3914,
           "kind": "form_action",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "submit",
           "target": "src/components/settings/notification-preference-form.tsx#submit"
         },
         {
-          "anchorEnd": 997,
+          "anchorEnd": 1124,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 461,
+          "anchorStart": 1063,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 1947,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 1790,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/notification-preference-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3228,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 2425,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/notification-preference-form.tsx",
+          "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         }
       ],
@@ -11345,6 +11458,12 @@
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/notifications/preferences/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/notifications/preferences/route.ts",
@@ -11843,9 +11962,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "a864548c4b9ec977953330d2b0ed578c2d96c1142222612a01bdab1c2ec9a00d",
+  "ownerSetDigest": "58b59f5d5675e8296639fb92f4260fbc24c15b5873effba1ced363d6c96339ea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "41b953643a1f2c1223cce8a456874bce1490805eedef0961beb07de1fbf535de",
+  "registryDigest": "32296acdf0756d2ff66006fa3da6bfebec3d3ba00c8ffed5e841557ac857adc6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

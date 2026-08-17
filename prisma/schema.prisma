@@ -106,6 +106,22 @@ enum DeliveryStatus {
   failed
 }
 
+enum NotificationPreferenceStatus {
+  active
+  needsReview @map("needs_review")
+}
+
+enum NotificationBabyScope {
+  all
+  selected
+}
+
+enum NotificationInterruptionLevel {
+  passive
+  normal
+  timeSensitive @map("time_sensitive")
+}
+
 enum AppearanceMode {
   system
   light
@@ -191,7 +207,6 @@ model User {
   acceptedInvites Invite[]        @relation("InviteAccepter")
   auditEvents   AuditEvent[]
   pushSubscriptions PushSubscription[]
-  notificationPreferences NotificationPreference[]
   notificationLogs NotificationLog[]
   backupRecords BackupRecord[]
   importBatches ImportBatch[]
@@ -368,6 +383,7 @@ model HouseholdMember {
   dashboardWarningDismissals DashboardWarningDismissal[]
   delegatedApiKeys ApiKey[] @relation("ApiKeyDelegatedBy")
   delegatedWebhookEndpoints WebhookEndpoint[] @relation("WebhookDelegatedBy")
+  notificationPreference NotificationPreference?
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
@@ -420,7 +436,7 @@ model Baby {
   household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   activities  ActivityLog[]
   reminders   Reminder[]
-  notificationPreferences NotificationPreference[]
+  notificationPreferenceSelections NotificationPreferenceBaby[]
   calendarLinks CalendarEventBaby[]
   dashboardWarningDismissals DashboardWarningDismissal[]
   browserOperationBindings BrowserOperationBinding[]
@@ -933,7 +949,6 @@ model PushSubscription {
   deletedAt   DateTime?
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  preferences NotificationPreference[]
 
   @@index([householdId])
   @@index([userId])
@@ -941,26 +956,42 @@ model PushSubscription {
 }
 
 model NotificationPreference {
-  id          String    @id @default(cuid())
-  householdId String
-  subscriptionId String?
-  babyId      String?
-  userId      String
-  timerOverdue Boolean @default(true)
-  activityCreated Boolean @default(false)
-  reminders   Boolean @default(true)
-  quietHoursStart String?
-  quietHoursEnd String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  subscription PushSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  baby        Baby? @relation(fields: [babyId], references: [id], onDelete: Cascade)
-  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String                        @id @default(cuid())
+  householdId             String
+  memberId                String
+  status                  NotificationPreferenceStatus  @default(active)
+  schemaVersion           Int                           @default(1)
+  revision                Int                           @default(1)
+  externalDeliveryEnabled Boolean                       @default(false)
+  babyScope               NotificationBabyScope        @default(all)
+  categories              String[]                      @default([])
+  channels                String[]                      @default([])
+  quietHoursStart         String?
+  quietHoursEnd           String?
+  interruptionLevel       NotificationInterruptionLevel @default(normal)
+  destinationIds          String[]                      @default([])
+  migrationEvidence       Json?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  household               Household                     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  member                  HouseholdMember               @relation(fields: [householdId, memberId], references: [householdId, id], onDelete: Restrict)
+  selectedBabies          NotificationPreferenceBaby[]
 
-  @@index([householdId])
-  @@index([userId])
-  @@index([babyId])
+  @@unique([householdId, id])
+  @@unique([householdId, memberId])
+  @@index([householdId, status])
+  @@index([memberId])
+}
+
+model NotificationPreferenceBaby {
+  householdId  String
+  preferenceId String
+  babyId       String
+  preference   NotificationPreference @relation(fields: [householdId, preferenceId], references: [householdId, id], onDelete: Cascade)
+  baby         Baby                   @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
+
+  @@id([preferenceId, babyId])
+  @@index([householdId, babyId])
 }
 
 model NotificationLog {

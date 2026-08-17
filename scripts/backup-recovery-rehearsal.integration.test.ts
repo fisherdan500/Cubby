@@ -410,11 +410,21 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     await prisma.webhookDelivery.create({
       data: { householdId: source.household.id, endpointId: endpoint.id, event: "activity_created", activityId: stoppedPlay.id, status: "pending" }
     });
-    const subscription = await prisma.pushSubscription.create({
-      data: { householdId: source.household.id, userId: source.user.id, endpoint: "https://push.rehearsal.invalid/source", p256dh: "source-p256dh", auth: "source-auth" }
-    });
     await prisma.notificationPreference.create({
-      data: { householdId: source.household.id, userId: source.user.id, subscriptionId: subscription.id, babyId: activeBaby.id }
+      data: {
+        householdId: source.household.id,
+        memberId: source.member.id,
+        status: "active",
+        schemaVersion: 1,
+        revision: 1,
+        externalDeliveryEnabled: false,
+        babyScope: "selected",
+        categories: ["activity_created"],
+        channels: [],
+        interruptionLevel: "normal",
+        destinationIds: [],
+        selectedBabies: { create: { babyId: activeBaby.id } }
+      }
     });
     await prisma.notificationLog.create({
       data: { householdId: source.household.id, userId: source.user.id, activityId: stoppedPlay.id, kind: "activity", title: "Source only", status: "pending" }

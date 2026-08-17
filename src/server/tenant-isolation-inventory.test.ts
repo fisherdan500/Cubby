@@ -38,6 +38,7 @@ const expectedDirectHouseholdModels = [
   "MutationReceipt",
   "NotificationLog",
   "NotificationPreference",
+  "NotificationPreferenceBaby",
   "PushSubscription",
   "Reminder",
   "WebhookDelivery",
@@ -90,6 +91,11 @@ describe("tenant-isolation inventory", () => {
         }),
         expect.objectContaining({
           model: "NotificationPreference",
+          ownership: "direct",
+          disposition: "constraint_slice"
+        }),
+        expect.objectContaining({
+          model: "NotificationPreferenceBaby",
           ownership: "direct",
           disposition: "constraint_slice"
         }),

@@ -44,7 +44,7 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, saveNotificationPreference, savePushSubscription } from "@/server/services/integrations";
+import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, savePushSubscription } from "@/server/services/integrations";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -156,63 +156,5 @@ describe("capability mutation serialization", () => {
     expect(mocks.apiKeyUpdate).not.toHaveBeenCalled();
     expect(mocks.webhookCreate).not.toHaveBeenCalled();
     expect(mocks.webhookUpdate).not.toHaveBeenCalled();
-  });
-});
-
-describe("notification preference creation", () => {
-  it("does not recreate notification authority after the member is closed", async () => {
-    mocks.txMemberFindUnique.mockResolvedValue({
-      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: new Date()
-    });
-
-    await expect(savePushSubscription({
-      endpoint: "https://example.test/push",
-      keys: { p256dh: "p256dh", auth: "auth" }
-    })).rejects.toThrow("forbidden");
-    await expect(saveNotificationPreference({ activityCreated: true })).rejects.toThrow("forbidden");
-
-    expect(mocks.txPushSubscriptionUpsert).not.toHaveBeenCalled();
-    expect(mocks.txNotificationPreferenceCreate).not.toHaveBeenCalled();
-  });
-
-  it("writes the current household with an explicitly scoped Baby preference", async () => {
-    await saveNotificationPreference({
-      babyId: "baby-1",
-      timerOverdue: false,
-      activityCreated: true,
-      reminders: false,
-      quietHoursStart: "22:00",
-      quietHoursEnd: "07:00"
-    });
-
-    expect(mocks.txNotificationPreferenceCreate).toHaveBeenCalledWith({
-      data: {
-        householdId: "household-1",
-        userId: "owner-user",
-        babyId: "baby-1",
-        timerOverdue: false,
-        activityCreated: true,
-        reminders: false,
-        quietHoursStart: "22:00",
-        quietHoursEnd: "07:00"
-      }
-    });
-  });
-
-  it("preserves the optional Baby scope for a household-wide preference", async () => {
-    await saveNotificationPreference({});
-
-    expect(mocks.txNotificationPreferenceCreate).toHaveBeenCalledWith({
-      data: {
-        householdId: "household-1",
-        userId: "owner-user",
-        babyId: undefined,
-        timerOverdue: true,
-        activityCreated: false,
-        reminders: true,
-        quietHoursStart: undefined,
-        quietHoursEnd: undefined
-      }
-    });
   });
 });

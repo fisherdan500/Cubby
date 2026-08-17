@@ -323,10 +323,10 @@ describe("activity page access", () => {
     );
   });
 
-  it("does not queue a notification for a recipient whose membership closes before the notification lock", async () => {
-    mocks.notificationFindMany.mockResolvedValue([{ userId: "departed-user" }]);
+  it("does not queue a notification for an exact recipient episode that closes before the notification lock", async () => {
+    mocks.notificationFindMany.mockResolvedValue([{ memberId: "departed-episode" }]);
     mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
-      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"userId"')
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"id"')
         ? []
         : [{ id: "locked" }]
     );
@@ -335,8 +335,40 @@ describe("activity page access", () => {
 
     expect(mocks.notificationCreateMany).not.toHaveBeenCalled();
     expect(String(mocks.activityLock.mock.calls.find(([query]) =>
-      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"userId"')
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes("FOR SHARE SKIP LOCKED")
     )?.[0])).toContain("FOR SHARE SKIP LOCKED");
+  });
+
+  it("queues an activity log only for an active episode that explicitly selects its category and browser channel", async () => {
+    mocks.notificationFindMany.mockResolvedValue([{ memberId: "recipient-episode" }]);
+    mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"id"')
+        ? [{ userId: "recipient-user" }]
+        : [{ id: "locked" }]
+    );
+
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    expect(mocks.notificationFindMany).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        status: "active",
+        categories: { has: "activity_created" },
+        channels: { has: "browser_push" },
+        member: { is: { householdId: "household-1", disabledAt: null, deletedAt: null } }
+      },
+      select: { memberId: true }
+    });
+    expect(mocks.notificationCreateMany).toHaveBeenCalledWith({
+      data: [{
+        householdId: "household-1",
+        activityId: "activity-created",
+        userId: "recipient-user",
+        kind: "activity_created",
+        title: "New Cubby activity",
+        body: "feeding"
+      }]
+    });
   });
 
   it("restores stopped timer metadata without recomputing duration", async () => {

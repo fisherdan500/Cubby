@@ -190,6 +190,8 @@ Personal appearance mode is separate global account state: `system`, `light`, or
 
 Family accent and the complete household unit-preference document use the household browser-operation ledger. Their opening bindings freeze the selected household/member episode plus an absent-or-`updatedAt` HouseholdSettings snapshot; submission reauthorizes `household.manage`, replaces only the intended settings value under compare-and-swap, writes audit data atomically, and retains same-ID status/replay behavior. Neither setting may use the account operation ledger or silently merge stale form fields.
 
+Notification preferences are one versioned complete document per exact active household-member episode. External delivery defaults off; the document has either `all` active babies or an explicit selected set, never both. Legacy ambiguity becomes inactive content-minimized needs-review evidence rather than a broader union. A later rejoin is a new episode and cannot inherit the former document. Current source work persists and reconciles the preference operation only; it does not deliver any external notification.
+
 Activity recognition uses Cubby-original raster artwork under
 `public/activity-art` through the shared `ActivityArtwork` component. Utility
 actions such as navigation, settings, editing, and deletion continue to use

@@ -13,8 +13,8 @@ export const operation = {
     },
     {
       kind: "server_value_import",
-      symbol: "listNotificationPreferences",
-      target: "src/server/services/integrations.ts#listNotificationPreferences"
+      symbol: "getOwnNotificationPreference",
+      target: "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
     },
     {
       kind: "server_value_import",
