@@ -137,6 +137,7 @@ data. Important model groups include:
 - Settings and admin: `AuditEvent`, `BackupRecord`.
 - Integrations: `ApiKey`, `WebhookEndpoint`, `WebhookDelivery`.
 - Notifications: `PushSubscription`, `NotificationPreference`, `NotificationLog`.
+- Browser mutation infrastructure: `BrowserOperationBinding`, `BrowserMutationOperation`, and lifetime household operation tombstones. These rows are implementation/security state, not ordinary user history or logical household-export content.
 - Imports: `ImportBatch`, `ImportedRecord`.
 - Reference and calendar data: `Contact`, `MedicineCatalog`, `CalendarEvent`, event join tables, `VaccineDocument`.
 
@@ -213,8 +214,14 @@ undo behavior, timer transitions, and webhook/notification side effects. Pages
 and API routes should call this service instead of writing activity tables
 directly. Activity/timer writes lock and re-read the current actor membership
 and baby inside the mutation transaction and fail closed when the baby is
-inactive. Historical edits remain allowed for inactive babies, but editing must
+Historical edits remain allowed for inactive babies, but editing must
 not start or restart timers.
+
+### Browser Mutation Operations
+
+Ordinary household browser mutations use a versioned `bmo_` identity. Issuance stores a payload-free opening fingerprint over the current household/member episode, operation key, target, revision/state, and schema policy. First submit stores a separate intent fingerprint over the complete normalized payload plus that opening fingerprint. Existing Calendar, Dashboard Warning, and Baby lifecycle adapters use this contract; other declared operation keys remain fail-closed until their adapters are delivered.
+
+Pending or unknown operations reconcile only under the same identity. Terminal safe results replay for 30 days, after which retention compacts them through the guarded database function into immutable content-free tombstones. Authorized compacted lookup returns HTTP-410-style `operation_result_expired`; foreign or former-member lookup remains existence-neutral. The retention scheduler emits only content-free counts. Startup readiness verifies required operation tables, compaction function, and binding/operation equality before reporting ready.
 
 ### Calendar
 

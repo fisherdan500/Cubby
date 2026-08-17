@@ -326,6 +326,23 @@
       "sidecarPath": "src/app/api/backups/sprout/preview/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function GET(\n  _request: Request,\n  { params }: { params: { operationId: string } }\n) {\n  try {\n    const result = await getHouseholdBrowserOperationStatus(params.operationId);\n    const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "8ab70ca146a63e2ebabf1421c156e9d46c8168905bd8e547364564cdb22c0176",
+      "anchorEnd": 566,
+      "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+      "anchorStart": 188,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/browser-operations/[operationId]/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts:route_method:GET:src/app/api/browser-operations/[operationId]/route.ts#GET",
+      "ownerId": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"open\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok({ status: \"completed\", operationId: result.operationId });\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
       "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
       "anchorEnd": 1078,
@@ -377,11 +394,11 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET() {\n  try {\n    await prisma.$queryRaw`SELECT 1`;\n    return NextResponse.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return NextResponse.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
-      "anchorDigest": "515c3c16e5b85ddc7f9adc5ca2dd378c231ab0e753309f64d67e8538371fd4c7",
-      "anchorEnd": 462,
+      "anchorBytes": "export async function GET() {\n  try {\n    await verifyBrowserOperationInfrastructure();\n    return NextResponse.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return NextResponse.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
+      "anchorDigest": "ee3e06264c34341ff81c8967f79fb1f39f567fe318a9f4fd7d965cdb4bc8fa32",
+      "anchorEnd": 534,
       "anchorFile": "src/app/api/health/route.ts",
-      "anchorStart": 195,
+      "anchorStart": 255,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -1977,9 +1994,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler",
       "anchorDigest": "f1c4d682bbc4d40fcbdeda2e11b76dc78b52ef556523385fc564eadc56fecf7e",
-      "anchorEnd": 124,
+      "anchorEnd": 131,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 95,
+      "anchorStart": 102,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startAutomatedBackupScheduler",
@@ -1992,11 +2009,28 @@
       "sidecarPath": "src/instrumentation.operation.ts"
     },
     {
+      "anchorBytes": "startBrowserOperationRetentionScheduler",
+      "anchorDigest": "939653699352c733103de51a00c789a20c350e97bd86313ce79aec0402f44914",
+      "anchorEnd": 264,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 225,
+      "binding": {
+        "kind": "worker_dynamic_import",
+        "symbol": "startBrowserOperationRetentionScheduler",
+        "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_dynamic_import:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
       "anchorBytes": "startIntegrityScheduler",
       "anchorDigest": "1717bc9d903bf11d59fc23f79d07eac0ae893ae39fe128decd23ed185e24548e",
-      "anchorEnd": 153,
+      "anchorEnd": 166,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 130,
+      "anchorStart": 143,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startIntegrityScheduler",
@@ -2011,9 +2045,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler",
       "anchorDigest": "bd7dfaa9223fc1679c9fac61f1adcda2fafb6ecd65f665a5b6f3bf4ffa4e117c",
-      "anchorEnd": 194,
+      "anchorEnd": 213,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 159,
+      "anchorStart": 178,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -2028,9 +2062,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler()",
       "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
-      "anchorEnd": 440,
+      "anchorEnd": 586,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 409,
+      "anchorStart": 555,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startAutomatedBackupScheduler",
@@ -2043,11 +2077,28 @@
       "sidecarPath": "src/instrumentation.operation.ts"
     },
     {
+      "anchorBytes": "startBrowserOperationRetentionScheduler()",
+      "anchorDigest": "8a6c4bc59c0a9ace67575338516ce74f1ddefee1604c8358de407952b119157c",
+      "anchorEnd": 713,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 672,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startBrowserOperationRetentionScheduler",
+        "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_start_call:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
       "anchorBytes": "startIntegrityScheduler()",
       "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
-      "anchorEnd": 467,
+      "anchorEnd": 619,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 442,
+      "anchorStart": 594,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startIntegrityScheduler",
@@ -2062,9 +2113,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler()",
       "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
-      "anchorEnd": 506,
+      "anchorEnd": 664,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 469,
+      "anchorStart": 627,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -3760,6 +3811,57 @@
       "sidecarPath": "src/server/automated-backup-scheduler.operation.ts"
     },
     {
+      "anchorBytes": "setInterval(() => void tick(), pollMs)",
+      "anchorDigest": "ee263c2120094fed9d78fdab67b7429faa8bdd63f122f53ee7a53ed9041c48d3",
+      "anchorEnd": 1464,
+      "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+      "anchorStart": 1426,
+      "binding": {
+        "kind": "worker_schedule",
+        "symbol": "tick",
+        "target": "src/server/browser-operation-retention-scheduler.ts#tick"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_schedule:tick:src/server/browser-operation-retention-scheduler.ts#tick",
+      "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function startBrowserOperationRetentionScheduler() {\n  const state = schedulerState();\n  if (state.started) return state;\n  state.started = true;\n\n  const tick = async () => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runHouseholdBrowserOperationRetention({ batchSize: 100 });\n      console.info(\n        \"browser_operation_retention_result\",\n        result.unresolvedAlertCount,\n        result.compactedCount,\n        result.deletedBindingCount\n      );\n    } catch {\n      console.error(\"browser_operation_retention_tick_failed\", \"browser_operation_retention_failed\");\n    } finally {\n      state.running = false;\n    }\n  };\n\n  await tick();\n  state.timer = setInterval(() => void tick(), pollMs);\n  state.timer.unref?.();\n  return state;\n}",
+      "anchorDigest": "3b96c901fd3aa900ab67fdb69579eb38df2555c747a1766b96f96a5634f592fe",
+      "anchorEnd": 1508,
+      "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+      "anchorStart": 701,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startBrowserOperationRetentionScheduler",
+        "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_start_call:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "runHouseholdBrowserOperationRetention({ batchSize: 100 })",
+      "anchorDigest": "de5a63c6bc7a617a489cf262680994e0c046b655a5c6eb6a577c419d37d717d4",
+      "anchorEnd": 1041,
+      "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+      "anchorStart": 984,
+      "binding": {
+        "kind": "worker_tick",
+        "symbol": "tick",
+        "target": "src/server/services/browser-operation-retention.ts#runHouseholdBrowserOperationRetention"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_tick:tick:src/server/services/browser-operation-retention.ts#runHouseholdBrowserOperationRetention",
+      "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
       "anchorBytes": "setInterval(() => {\n    void tick();\n  }, integrityConfig.intervalHours * 60 * 60 * 1000)",
       "anchorDigest": "2257db7e57fb2cab48745afdc801353e9319dd051a3d54685ee007baeb35a63e",
       "anchorEnd": 1366,
@@ -3868,10 +3970,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "cc90e13f310dc497d8c872b50d99b691b5b71487a085de3005b815773f1cd69b",
+  "semanticArtifactDigest": "aa0fdae488639849d824ee23ab19710a33448a149b5c1a0b5f9dcdbd09f63fd9",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "e68167381c92a0a0d4c39307dd602784ad847069eafd9985bc3a7bfa2823d982",
+  "semanticCoverageDigest": "0989ce66e72b820ce8b210f99f6b47713490e9ec2aa0e516a6e2b269b42345ae",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "23714ceac571ba8fe4517a4b76dfe3fb4dd3ffe1a031b905dac7a9ecac029fbf",
-  "semanticFingerprint": "f067bdff0944b1afaa2c7484f75af0714220ecebaba0bf103a0fc94870e1c590"
+  "semanticFingerprint": "144710b68f191390502f72ff170efc045c91213df9102bb9500172a255187edb"
 }

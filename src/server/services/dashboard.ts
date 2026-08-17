@@ -325,7 +325,9 @@ export async function issueDashboardWarningBrowserOperation(raw: Record<string, 
   const ctx = await getBrowserOperationContextForBaby(input.babyId);
   return issueBrowserOperation({
     ctx, operationId: raw.operationId, operationKey: BrowserOperationKey.dashboardWarningDismiss,
-    intent: input, babyId: input.babyId, permission: "activity.read"
+    opening: { babyId: input.babyId, type: input.type, fingerprint: input.fingerprint },
+    babyId: input.babyId, targetKind: "warning",
+    targetId: `${input.type}:${input.fingerprint}`, permission: "activity.read"
   });
 }
 

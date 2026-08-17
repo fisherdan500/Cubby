@@ -22,6 +22,11 @@ export const operation = {
       target: "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
     },
     {
+      kind: "worker_dynamic_import",
+      symbol: "startBrowserOperationRetentionScheduler",
+      target: "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+    },
+    {
       kind: "worker_start_call",
       symbol: "startAutomatedBackupScheduler",
       target: "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -35,6 +40,11 @@ export const operation = {
       kind: "worker_start_call",
       symbol: "startSproutSourceRetentionScheduler",
       target: "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
+    },
+    {
+      kind: "worker_start_call",
+      symbol: "startBrowserOperationRetentionScheduler",
+      target: "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
     }
   ],
   disposition: "observed",

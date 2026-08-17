@@ -107,10 +107,40 @@ enum DeliveryStatus {
 }
 
 enum BrowserOperationKey {
-  calendarEventCreate     @map("calendar_event.create")
-  dashboardWarningDismiss @map("dashboard.warning.dismiss")
-  babyDeactivate          @map("baby.deactivate")
-  babyReactivate          @map("baby.reactivate")
+  activityCreate             @map("activity.create")
+  activityUpdate             @map("activity.update")
+  activityDelete             @map("activity.delete")
+  activityUndoLast           @map("activity.undo_last")
+  activityTimerPause         @map("activity.timer.pause")
+  activityTimerResume        @map("activity.timer.resume")
+  activityTimerStop          @map("activity.timer.stop")
+  babyCreate                 @map("baby.create")
+  babyDeactivate             @map("baby.deactivate")
+  babyReactivate             @map("baby.reactivate")
+  dashboardWarningDismiss    @map("dashboard.warning.dismiss")
+  inviteCreate               @map("invite.create")
+  inviteRevoke               @map("invite.revoke")
+  inviteRevokeAll            @map("invite.revoke_all")
+  memberRestore              @map("member.restore")
+  memberRemove               @map("member.remove")
+  memberRoleUpdate           @map("member.role.update")
+  memberSuspend              @map("member.suspend")
+  notificationPreferenceSave @map("notification.preference.save")
+  settingsUnitsUpdate        @map("settings.units.update")
+  calendarEventCreate        @map("calendar_event.create")
+  householdAccentUpdate      @map("household.accent.update")
+}
+
+enum BrowserOperationTargetKind {
+  household
+  activity
+  baby
+  warning
+  invite
+  member
+  preference
+  settings
+  calendar
 }
 
 enum BrowserOperationProtocolVersion {
@@ -157,6 +187,7 @@ model User {
   platformRegistrationOperations PlatformRegistrationOperation[]
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
+  browserMutationOperationTombstones BrowserMutationOperationTombstone[]
 }
 
 model PlatformAuthority {
@@ -296,6 +327,7 @@ model Household {
   dashboardWarningDismissals DashboardWarningDismissal[]
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
+  browserMutationOperationTombstones BrowserMutationOperationTombstone[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -323,6 +355,7 @@ model HouseholdMember {
   delegatedWebhookEndpoints WebhookEndpoint[] @relation("WebhookDelegatedBy")
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
+  browserMutationOperationTombstones BrowserMutationOperationTombstone[]
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -648,61 +681,94 @@ model DashboardWarningDismissal {
 }
 
 model BrowserOperationBinding {
-  id                String                       @id @default(cuid())
-  sessionId         String
-  actorUserId       String
-  actorMemberId     String
-  householdId       String
-  operationId       String
-  operationKey      BrowserOperationKey
-  intentFingerprint String
-  babyId            String?
-  targetSnapshot    Json?
-  protocolVersion  BrowserOperationProtocolVersion @default(browserV1)
-  expiresAt         DateTime
-  state             BrowserOperationBindingState @default(open)
-  issuedAt          DateTime                     @default(now())
-  updatedAt         DateTime                     @updatedAt
-  actorUser         User                         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
-  actorMember       HouseholdMember              @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
-  household         Household                    @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  baby              Baby?                        @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
-  operation         BrowserMutationOperation?
+  id                      String                       @id @default(cuid())
+  sessionId               String
+  actorUserId             String
+  actorMemberId           String
+  householdId             String
+  operationId             String
+  operationKey            BrowserOperationKey
+  legacyIntentFingerprint String?                      @map("intentFingerprint")
+  openingFingerprint      String?
+  persistenceVersion      Int                          @default(1)
+  targetKind              BrowserOperationTargetKind?
+  targetId                String?
+  babyId                  String?
+  targetSnapshot          Json?
+  protocolVersion         BrowserOperationProtocolVersion @default(browserV1)
+  expiresAt               DateTime
+  state                   BrowserOperationBindingState @default(open)
+  issuedAt                DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  actorUser               User                         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorMember             HouseholdMember              @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
+  household               Household                    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby                    Baby?                        @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
+  operation               BrowserMutationOperation?
 
   @@unique([householdId, operationId])
   @@index([sessionId])
   @@index([householdId, actorMemberId])
   @@index([householdId, babyId])
   @@index([state, expiresAt])
+  @@index([state, updatedAt, householdId, operationId])
 }
 
 model BrowserMutationOperation {
-  bindingId         String                         @unique
+  bindingId          String                         @unique
+  householdId        String
+  operationId        String
+  operationKey       BrowserOperationKey
+  actorUserId        String
+  actorMemberId      String
+  openingFingerprint String?
+  intentFingerprint  String
+  persistenceVersion Int                            @default(1)
+  targetKind         BrowserOperationTargetKind?
+  targetId           String?
+  babyId             String?
+  status             BrowserMutationOperationStatus @default(pending)
+  outcomeVersion     Int?
+  outcomeKind        String?
+  outcomeCode        String?
+  outcomeSnapshot    Json?
+  auditCorrelation   String?
+  terminalAt         DateTime?
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
+  binding            BrowserOperationBinding        @relation(fields: [bindingId], references: [id], onDelete: Restrict)
+  actorUser          User                           @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorMember        HouseholdMember                @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
+  household          Household                      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby               Baby?                          @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
+
+  @@id([householdId, operationId])
+  @@index([householdId, actorMemberId])
+  @@index([householdId, babyId])
+  @@index([status, createdAt])
+  @@index([terminalAt, householdId, operationId])
+}
+
+model BrowserMutationOperationTombstone {
   householdId       String
   operationId       String
   operationKey      BrowserOperationKey
   actorUserId       String
   actorMemberId     String
   intentFingerprint String
-  babyId            String?
-  status            BrowserMutationOperationStatus @default(pending)
-  outcomeVersion    Int?
-  outcomeKind       String?
-  outcomeCode       String?
-  outcomeSnapshot   Json?
-  terminalAt        DateTime?
-  createdAt         DateTime                       @default(now())
-  updatedAt         DateTime                       @updatedAt
-  binding           BrowserOperationBinding        @relation(fields: [bindingId], references: [id], onDelete: Restrict)
-  actorUser         User                           @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
-  actorMember       HouseholdMember                @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
-  household         Household                      @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  baby              Baby?                          @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
+  terminalStatus    BrowserMutationOperationStatus
+  terminalCode      String
+  createdAt         DateTime
+  terminalAt        DateTime
+  compactedAt       DateTime                         @default(now())
+  auditCorrelation  String?
+  household         Household                       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  actorUser         User                            @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorMember       HouseholdMember                 @relation(fields: [householdId, actorMemberId], references: [householdId, id], onDelete: Restrict)
 
   @@id([householdId, operationId])
   @@index([householdId, actorMemberId])
-  @@index([householdId, babyId])
-  @@index([status, createdAt])
+  @@index([compactedAt])
 }
 
 model ApiKey {

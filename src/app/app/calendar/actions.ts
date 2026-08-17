@@ -39,7 +39,6 @@ function toActionResult(result: Exclude<Awaited<ReturnType<typeof submitCalendar
     if (!eventId) return { status: "stale", operationId: result.operationId };
     return { status: "completed", operationId: result.operationId, eventId };
   }
-  return result.status === "pending"
-    ? { status: "pending", operationId: result.operationId }
-    : { status: result.status, operationId: result.operationId };
+  if (result.status === "pending") return { status: "pending", operationId: result.operationId };
+  return { status: result.status === "expired" ? "stale" : result.status, operationId: result.operationId };
 }

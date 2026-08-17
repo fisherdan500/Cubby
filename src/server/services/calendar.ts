@@ -99,8 +99,9 @@ export async function issueCalendarEventBrowserOperation(raw: Record<string, unk
     ctx,
     operationId: raw.operationId,
     operationKey: BrowserOperationKey.calendarEventCreate,
-    intent: input,
+    opening: { babyId: input.babyId },
     babyId: input.babyId,
+    targetKind: "calendar",
     permission: "activity.create"
   });
 }

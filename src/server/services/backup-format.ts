@@ -6,7 +6,8 @@ export const BACKUP_EXCLUSIONS = [
   "Users, credentials, sessions, and household memberships",
   "Invitations and registration policy",
   "API keys, webhooks, and push/notification state",
-  "Audit, import, backup history, warning dismissals, and vaccine attachments"
+  "Audit, import, backup history, warning dismissals, and vaccine attachments",
+  "Browser operation bindings, receipts, tombstones, and integrity state"
 ] as const;
 
 const id = z.string().min(1).max(200);

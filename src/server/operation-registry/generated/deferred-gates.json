@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "6769308724e1e3c57fe8ac1ad66f8bb98a76107ba164d6bf33b064e7f1a26fc5",
+  "declarationDigest": "fa863e5da77768175a8ad714e2f292ecd0ff284abbc4224df441ccea2916e295",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -107,13 +107,13 @@
       "status": "deferred"
     }
   ],
-  "generatorDigest": "3144e964ddc4a8a77275c4a1231e60cfd9c266b74bf060df40f7a727fdb1dc7c",
+  "generatorDigest": "6ac327a153c09af46db771515de283c0daf05a49b136d89ff0a85df921cb6a6a",
   "generatorVersion": "r0.1",
-  "observationDigest": "309ea6cb02212b905dac63ff9b8c7927bdd5f14c4977e818d30d8c602d15d1fb",
+  "observationDigest": "60d7953220d130a35a8997c141657ec2a2a0962a052fcdea2f4a320f35ea2868",
   "observationDigestVersion": "normalized-observation.v1",
-  "ownerSetDigest": "d1a0d7735503f01049e9e4d247a07309d6e8df5dcfbed505d9f33cdd0d8e7873",
+  "ownerSetDigest": "1988542a2b135d5ef0de54943b7eb05184a2b713bd1de0538695058c3b5987ab",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "73cf6d03bfd7f180de901e23bfbb745cf857d67b26f4743b8de67a188434662f",
+  "registryDigest": "69cadd006a0b8e465de7a50f9928e7ad849f7c189b3ad0c6aa987988a3f80a14",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedgerDigest": "491db24ab322cbef5887ce048e29a0e721b139f93ffe93bcb6bacf1f709cfbbe",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",

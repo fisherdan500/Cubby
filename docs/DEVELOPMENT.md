@@ -361,6 +361,8 @@ npm run verify:activity-update-safety
 It runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
+Household browser-operation schema, status, retention, compaction, and tombstone changes require focused source contracts plus the separately authorized disposable PostgreSQL acceptance. Ordinary Cubby JSON household backups deliberately exclude browser-operation bindings, full receipts, tombstones, and integrity state; full-system recovery must restore that database infrastructure before readiness enables writes.
+
 ## Common Development Notes
 
 ### Activities

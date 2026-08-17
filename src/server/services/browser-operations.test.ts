@@ -26,10 +26,11 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-import { BrowserOperationKey, BrowserOperationProtocolVersion } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationProtocolVersion, BrowserOperationTargetKind } from "@prisma/client";
 import {
   assertBrowserOperationId,
   browserIntentFingerprint,
+  browserOperationFailureResult,
   getBrowserOperationContextForBaby,
   issueBrowserOperation,
   executeBrowserOperation
@@ -43,6 +44,55 @@ const ctx = {
   memberId: "member-1",
   role: "parent" as const
 };
+
+function calendarOpeningFingerprint(opening: unknown) {
+  return browserIntentFingerprint({
+    version: 2,
+    operationKey: BrowserOperationKey.calendarEventCreate,
+    householdId: ctx.householdId,
+    memberId: ctx.memberId,
+    babyId: "baby-1",
+    targetKind: BrowserOperationTargetKind.calendar,
+    targetId: null,
+    opening
+  });
+}
+
+function calendarBinding(opening: unknown, overrides: Record<string, unknown> = {}) {
+  return {
+    id: "binding-1",
+    householdId: ctx.householdId,
+    operationId,
+    sessionId: ctx.sessionId,
+    actorUserId: ctx.userId,
+    actorMemberId: ctx.memberId,
+    operationKey: BrowserOperationKey.calendarEventCreate,
+    legacyIntentFingerprint: null,
+    openingFingerprint: calendarOpeningFingerprint(opening),
+    persistenceVersion: 2,
+    targetKind: BrowserOperationTargetKind.calendar,
+    targetId: null,
+    babyId: "baby-1",
+    protocolVersion: BrowserOperationProtocolVersion.browserV2,
+    state: "open",
+    expiresAt: new Date(Date.now() + 60_000),
+    operation: null,
+    ...overrides
+  };
+}
+
+function calendarOperation(opening: unknown, intent: unknown, overrides: Record<string, unknown> = {}) {
+  const openingFingerprint = calendarOpeningFingerprint(opening);
+  return {
+    operationId,
+    status: "pending",
+    openingFingerprint,
+    intentFingerprint: browserIntentFingerprint({ openingFingerprint, payload: intent }),
+    outcomeCode: null,
+    outcomeSnapshot: null,
+    ...overrides
+  };
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -79,6 +129,94 @@ beforeEach(() => {
 });
 
 describe("browser operation bindings", () => {
+  it("fails closed for expanded keys without adapters before reserving or executing", async () => {
+    const execute = vi.fn();
+
+    await expect(issueBrowserOperation({
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.activityCreate,
+      opening: { babyId: "baby-1", revision: "opening-v1" },
+      babyId: "baby-1",
+      targetKind: "baby",
+      targetId: "baby-1",
+      permission: "activity.create"
+    })).rejects.toThrow("browser_operation_adapter_unavailable");
+    await expect(executeBrowserOperation({
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.activityCreate,
+      intent: { babyId: "baby-1", type: "feeding" },
+      babyId: "baby-1",
+      permission: "activity.create",
+      execute
+    })).rejects.toThrow("browser_operation_adapter_unavailable");
+
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.bindingCreate).not.toHaveBeenCalled();
+    expect(mocks.operationCreate).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+    expect(browserOperationFailureResult(operationId, new Error("browser_operation_adapter_unavailable"))).toEqual({
+      status: "rejected",
+      operationId,
+      code: "operation_integrity_error"
+    });
+  });
+
+  it("stores only the opening fingerprint and claims the submit intent from payload plus opening fingerprint", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
+    await issueBrowserOperation({
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.calendarEventCreate,
+      opening,
+      babyId: "baby-1",
+      targetKind: "calendar",
+      permission: "activity.create"
+    });
+
+    const createData = mocks.bindingCreate.mock.calls[0]?.[0]?.data;
+    expect(createData).toMatchObject({
+      persistenceVersion: 2,
+      targetKind: "calendar",
+      targetId: null,
+      legacyIntentFingerprint: null,
+      openingFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/)
+    });
+    expect(createData).not.toHaveProperty("intentFingerprint");
+
+    const intent = { babyId: "baby-1", title: "Changed after opening" };
+    mocks.bindingFindFirst.mockResolvedValue({
+      ...createData,
+      id: "binding-1",
+      householdId: "household-1",
+      operationId,
+      actorUserId: "user-1",
+      actorMemberId: "member-1",
+      sessionId: "session-1",
+      state: "open",
+      expiresAt: new Date(Date.now() + 60_000),
+      operation: null
+    });
+    await executeBrowserOperation({
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.calendarEventCreate,
+      intent,
+      babyId: "baby-1",
+      permission: "activity.create",
+      execute: async () => ({ kind: "calendar_event", code: "ok", eventId: "event-1" })
+    });
+
+    expect(mocks.operationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        persistenceVersion: 2,
+        openingFingerprint: createData.openingFingerprint,
+        intentFingerprint: browserIntentFingerprint({ openingFingerprint: createData.openingFingerprint, payload: intent })
+      })
+    });
+  });
+
   it("accepts only canonical browser-v2 operation IDs and fingerprints canonical object order", () => {
     expect(assertBrowserOperationId(operationId)).toBe(operationId);
     expect(() => assertBrowserOperationId("bmo_not-canonical")).toThrow();
@@ -100,14 +238,15 @@ describe("browser operation bindings", () => {
   });
 
   it("locks actor and target, reserves only an open opaque binding, and defers the pending operation until submit", async () => {
-    const intent = { babyId: "baby-1", title: "Checkup", startDate: "2026-08-12", startTime: "09:00" };
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
 
     await expect(issueBrowserOperation({
       ctx,
       operationId,
       operationKey: BrowserOperationKey.calendarEventCreate,
-      intent,
+      opening,
       babyId: "baby-1",
+      targetKind: BrowserOperationTargetKind.calendar,
       permission: "activity.create"
     })).resolves.toEqual({ status: "open", operationId, bindingId: "binding-1" });
 
@@ -124,7 +263,11 @@ describe("browser operation bindings", () => {
         operationId,
         operationKey: BrowserOperationKey.calendarEventCreate,
         babyId: "baby-1",
-        intentFingerprint: browserIntentFingerprint(intent),
+        legacyIntentFingerprint: null,
+        openingFingerprint: calendarOpeningFingerprint(opening),
+        persistenceVersion: 2,
+        targetKind: BrowserOperationTargetKind.calendar,
+        targetId: null,
         expiresAt: expect.any(Date)
       })
     });
@@ -132,22 +275,18 @@ describe("browser operation bindings", () => {
   });
 
   it("rejects a same-ID request whose opening binding differs", async () => {
-    mocks.bindingFindFirst.mockResolvedValue({
-      sessionId: "session-1",
-      actorUserId: "user-1",
-      actorMemberId: "member-1",
-      operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint({ title: "original" }),
-      babyId: "baby-1",
-      operation: { operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null }
-    });
+    const originalOpening = { title: "original" };
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(originalOpening, {
+      operation: calendarOperation(originalOpening, { title: "submitted" })
+    }));
 
     await expect(issueBrowserOperation({
       ctx,
       operationId,
       operationKey: BrowserOperationKey.calendarEventCreate,
-      intent: { title: "changed" },
+      opening: { title: "changed" },
       babyId: "baby-1",
+      targetKind: BrowserOperationTargetKind.calendar,
       permission: "activity.create"
     })).rejects.toThrow("idempotency_conflict");
     expect(mocks.bindingCreate).not.toHaveBeenCalled();
@@ -155,18 +294,8 @@ describe("browser operation bindings", () => {
   });
 
   it("replays the winning exact binding after a concurrent binding reservation", async () => {
-    const intent = { babyId: "baby-1", title: "Checkup" };
-    const winner = {
-      id: "binding-1",
-      sessionId: "session-1",
-      actorUserId: "user-1",
-      actorMemberId: "member-1",
-      operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent),
-      babyId: "baby-1",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
-      operation: null
-    };
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
+    const winner = calendarBinding(opening);
     mocks.transaction.mockRejectedValueOnce({
       code: "P2002",
       meta: { target: ["householdId", "operationId"] }
@@ -177,8 +306,9 @@ describe("browser operation bindings", () => {
       ctx,
       operationId,
       operationKey: BrowserOperationKey.calendarEventCreate,
-      intent,
+      opening,
       babyId: "baby-1",
+      targetKind: BrowserOperationTargetKind.calendar,
       permission: "activity.create"
     })).resolves.toEqual({ status: "open", operationId, bindingId: "binding-1" });
     expect(mocks.transaction).toHaveBeenCalledTimes(2);
@@ -186,18 +316,25 @@ describe("browser operation bindings", () => {
   });
 
   it("replays an exact completed binding before gating a now-inactive target", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
     const intent = { babyId: "baby-1", title: "Checkup" };
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
-      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
-      state: "terminal", expiresAt: new Date(Date.now() - 60_000),
-      operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } }
-    });
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening, {
+      state: "terminal",
+      expiresAt: new Date(Date.now() - 60_000),
+      operation: calendarOperation(opening, intent, {
+        status: "completed",
+        outcomeCode: "ok",
+        outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" }
+      })
+    }));
 
     await expect(issueBrowserOperation({
-      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1",
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.calendarEventCreate,
+      opening,
+      babyId: "baby-1",
+      targetKind: BrowserOperationTargetKind.calendar,
       permission: "activity.create"
     })).resolves.toEqual({ status: "completed", operationId, outcome: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } });
 
@@ -206,22 +343,12 @@ describe("browser operation bindings", () => {
   });
 
   it("rechecks the immutable binding under lock and persists a terminal replay result", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
     const intent = { babyId: "baby-1", title: "Checkup" };
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1",
-      householdId: "household-1",
-      operationId,
-      sessionId: "session-1",
-      actorUserId: "user-1",
-      actorMemberId: "member-1",
-      operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent),
-      babyId: "baby-1",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening, {
       state: "submitted",
-      expiresAt: new Date(Date.now() + 60_000),
-      operation: { operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null }
-    });
+      operation: calendarOperation(opening, intent)
+    }));
     const execute = vi.fn().mockResolvedValue({ kind: "calendar_event", code: "ok", eventId: "event-1" });
 
     await expect(executeBrowserOperation({
@@ -243,15 +370,13 @@ describe("browser operation bindings", () => {
   });
 
   it("replays a durable terminal outcome without recomputing or executing a replacement mutation", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
     const intent = { babyId: "baby-1", title: "Checkup" };
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
-      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "terminal",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening, {
+      state: "terminal",
       expiresAt: new Date(Date.now() - 60_000),
-      operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } }
-    });
+      operation: calendarOperation(opening, intent, { status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } })
+    }));
     const execute = vi.fn();
 
     await expect(executeBrowserOperation({
@@ -264,15 +389,13 @@ describe("browser operation bindings", () => {
   });
 
   it("refuses a terminal replay when its persisted session is no longer current", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
     const intent = { babyId: "baby-1", title: "Checkup" };
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
-      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "terminal",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening, {
+      state: "terminal",
       expiresAt: new Date(Date.now() - 60_000),
-      operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } }
-    });
+      operation: calendarOperation(opening, intent, { status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } })
+    }));
     mocks.sessionFindFirst.mockResolvedValue(null);
     const execute = vi.fn();
 
@@ -286,14 +409,11 @@ describe("browser operation bindings", () => {
   });
 
   it("expires an open browser-v2 binding without creating an operation or executing its mutation", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
     const intent = { babyId: "baby-1", title: "Checkup" };
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
-      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "open",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening, {
       expiresAt: new Date(Date.now() - 60_000), operation: null
-    });
+    }));
     const execute = vi.fn();
 
     await expect(executeBrowserOperation({
@@ -307,14 +427,9 @@ describe("browser operation bindings", () => {
   });
 
   it("persists a stale validation result as a terminal operation for same-ID replay", async () => {
+    const opening = { babyId: "baby-1", revision: "opening-v1" };
     const intent = { babyId: "baby-1", title: "Checkup" };
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
-      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "open",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
-      expiresAt: new Date(Date.now() + 60_000), operation: null
-    });
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening));
     mocks.operationCreate.mockResolvedValue({ operationId, status: "pending", outcomeCode: null, outcomeSnapshot: null });
     mocks.operationUpdate.mockResolvedValue({ operationId, status: "stale", outcomeCode: "stale_target", outcomeSnapshot: null });
 
@@ -328,16 +443,19 @@ describe("browser operation bindings", () => {
       data: expect.objectContaining({ status: "stale", outcomeCode: "stale_target" })
     }));
 
-    mocks.bindingFindFirst.mockResolvedValue({
-      id: "binding-1", householdId: "household-1", operationId, sessionId: "session-1",
-      actorUserId: "user-1", actorMemberId: "member-1", operationKey: BrowserOperationKey.calendarEventCreate,
-      intentFingerprint: browserIntentFingerprint(intent), babyId: "baby-1", state: "terminal",
-      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding(opening, {
+      state: "terminal",
       expiresAt: new Date(Date.now() - 60_000),
-      operation: { operationId, status: "stale", outcomeCode: "stale_target", outcomeSnapshot: null }
-    });
+      operation: calendarOperation(opening, intent, { status: "stale", outcomeCode: "stale_target", outcomeSnapshot: null })
+    }));
     await expect(issueBrowserOperation({
-      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1", permission: "activity.create"
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.calendarEventCreate,
+      opening,
+      babyId: "baby-1",
+      targetKind: BrowserOperationTargetKind.calendar,
+      permission: "activity.create"
     })).resolves.toEqual({ status: "stale", operationId, code: "stale_target" });
   });
 

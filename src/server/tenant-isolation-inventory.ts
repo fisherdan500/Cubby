@@ -1,6 +1,6 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
-  "Account", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserOperationBinding", "CalendarEvent",
+  "Account", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "FeedingLog",
   "Household", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog",
@@ -31,6 +31,7 @@ export const tenantIsolationInventory = [
   { model: "Baby", ownership: "direct", operationClasses: ["baby_lifecycle", "activity_parent"], disposition: "constraint_slice" },
   { model: "BackupRecord", ownership: "direct", operationClasses: ["backup", "restore", "import"], disposition: "deferred_constraint" },
   { model: "BrowserMutationOperation", ownership: "direct", operationClasses: ["browser_mutation_operation"], disposition: "constraint_slice" },
+  { model: "BrowserMutationOperationTombstone", ownership: "direct", operationClasses: ["browser_mutation_tombstone"], disposition: "constraint_slice" },
   { model: "BrowserOperationBinding", ownership: "direct", operationClasses: ["browser_mutation_binding"], disposition: "constraint_slice" },
   { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "deferred_constraint" },
   { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "deferred_constraint" },
