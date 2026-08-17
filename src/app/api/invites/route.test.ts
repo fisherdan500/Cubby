@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  createInvite: vi.fn()
+  createInvite: vi.fn(),
+  issueInviteCreateBrowserOperation: vi.fn(),
+  submitInviteCreateBrowserOperation: vi.fn(),
+  browserOperationFailureResult: vi.fn()
 }));
 
-vi.mock("@/server/services/invites", () => ({ createInvite: mocks.createInvite }));
+vi.mock("@/server/services/invites", () => ({
+  createInvite: mocks.createInvite,
+  issueInviteCreateBrowserOperation: mocks.issueInviteCreateBrowserOperation,
+  submitInviteCreateBrowserOperation: mocks.submitInviteCreateBrowserOperation
+}));
+vi.mock("@/server/services/browser-operations", () => ({ browserOperationFailureResult: mocks.browserOperationFailureResult }));
 
 import { POST } from "@/app/api/invites/route";
 

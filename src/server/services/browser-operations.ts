@@ -22,6 +22,24 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     code: z.literal("ok"),
     babyId: z.string().min(1)
   }).strict(),
+  [BrowserOperationKey.inviteCreate]: z.object({
+    kind: z.literal("invite"),
+    code: z.literal("created"),
+    inviteId: z.string().min(1),
+    email: z.string().email(),
+    role: z.enum(["admin", "parent", "caretaker", "read_only"]),
+    expiresAt: z.string().datetime()
+  }).strict(),
+  [BrowserOperationKey.inviteRevoke]: z.object({
+    kind: z.literal("invite"),
+    code: z.literal("revoked"),
+    inviteId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.inviteRevokeAll]: z.object({
+    kind: z.literal("invite_bulk"),
+    code: z.literal("revoked"),
+    revokedCount: z.number().int().nonnegative()
+  }).strict(),
   [BrowserOperationKey.calendarEventCreate]: z.object({
     kind: z.literal("calendar_event"),
     code: z.literal("ok"),

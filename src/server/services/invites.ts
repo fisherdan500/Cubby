@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
-import { HouseholdRole, InviteStatus, Prisma } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationTargetKind, HouseholdRole, InviteStatus, Prisma } from "@prisma/client";
+import { z } from "zod";
 import {
   canAssignHouseholdRole,
   canManageHouseholdRole
@@ -14,6 +15,11 @@ import {
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { requireFreshSession, requireUser } from "@/server/auth/session";
 import { writeAudit } from "@/server/services/audit";
+import {
+  executeHouseholdBrowserOperation,
+  getBrowserOperationContextForHousehold,
+  issueHouseholdBrowserOperation
+} from "@/server/services/browser-operations";
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
 
 export function hashInviteToken(token: string) {
@@ -21,6 +27,15 @@ export function hashInviteToken(token: string) {
 }
 
 export const BULK_INVITE_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
+
+const inviteRevokeBrowserSchema = z.object({
+  inviteId: z.string().trim().min(1),
+  operationId: z.unknown()
+}).strict();
+const bulkInviteRevokeBrowserSchema = z.object({
+  acknowledgement: z.string(),
+  operationId: z.unknown()
+}).strict();
 
 type MembershipState =
   | "absent"
@@ -50,6 +65,275 @@ export function resolveInviteExpiry(role: HouseholdRole, requestedHours?: number
   }
 
   return new Date(now.getTime() + hours * 60 * 60 * 1000);
+}
+
+export async function issueInviteCreateBrowserOperation(raw: unknown) {
+  const input = inviteSchema.parse(raw);
+  const expiresInHours = input.expiresInHours ?? (input.role === "admin" ? 24 : 24 * 7);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: (raw as { operationId?: unknown }).operationId,
+    operationKey: BrowserOperationKey.inviteCreate,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "invite.create",
+    targetSnapshot: () => ({
+      version: 1,
+      role: input.role,
+      expiresInHours,
+      expiresAt: resolveInviteExpiry(input.role as HouseholdRole, expiresInHours).toISOString()
+    })
+  });
+}
+
+export async function submitInviteCreateBrowserOperation(raw: unknown) {
+  const input = inviteSchema.parse(raw);
+  const expiresInHours = input.expiresInHours ?? (input.role === "admin" ? 24 : 24 * 7);
+  const freshSession = input.role === "admin" ? await requireFreshSession() : null;
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession && freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  let acceptUrl: string | null = null;
+  const result = await executeHouseholdBrowserOperation({
+    ctx,
+    operationId: (raw as { operationId?: unknown }).operationId,
+    operationKey: BrowserOperationKey.inviteCreate,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "invite.create",
+    intent: { email: input.email.toLowerCase(), role: input.role, expiresInHours },
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as {
+        version?: unknown;
+        role?: unknown;
+        expiresInHours?: unknown;
+        expiresAt?: unknown;
+      };
+      if (
+        opening.version !== 1 ||
+        opening.role !== input.role ||
+        opening.expiresInHours !== expiresInHours ||
+        typeof opening.expiresAt !== "string"
+      ) {
+        throw new Error("stale_revision");
+      }
+      const expiresAt = new Date(opening.expiresAt);
+      if (Number.isNaN(expiresAt.getTime()) || expiresAt <= new Date()) throw new Error("stale_revision");
+      if (!canAssignHouseholdRole(lockedCtx.role, input.role)) throw new Error("forbidden");
+      if (freshSession) {
+        await lockAndRevalidateFreshSession(tx, freshSession);
+        if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      }
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      const normalizedEmail = input.email.toLowerCase();
+      const rotatedIds = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Invite"
+        WHERE "householdId" = ${lockedCtx.householdId}
+          AND LOWER(BTRIM("email")) = ${normalizedEmail}
+          AND "status" = ${InviteStatus.pending}::"InviteStatus"
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      const rotatedInvites = rotatedIds.length === 0
+        ? []
+        : await tx.invite.findMany({
+            where: { id: { in: rotatedIds.map(({ id }) => id) } },
+            orderBy: { id: "asc" }
+          });
+      const rotatedAt = new Date();
+      for (const rotated of rotatedInvites) {
+        await tx.invite.update({
+          where: { id: rotated.id },
+          data: { status: InviteStatus.revoked, revokedAt: rotatedAt }
+        });
+        await writeAudit(lockedCtx, {
+          action: "invite.rotate",
+          entityType: "invite",
+          entityId: rotated.id,
+          before: { email: rotated.email, role: rotated.role, status: rotated.status },
+          after: { status: InviteStatus.revoked, revokedAt: rotatedAt }
+        }, tx);
+      }
+      const token = randomBytes(32).toString("base64url");
+      const invite = await tx.invite.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          email: normalizedEmail,
+          role: input.role as HouseholdRole,
+          tokenHash: hashInviteToken(token),
+          invitedByUserId: lockedCtx.userId,
+          expiresAt
+        }
+      });
+      await writeAudit(lockedCtx, {
+        action: "invite.create",
+        entityType: "invite",
+        entityId: invite.id,
+        after: { email: invite.email, role: invite.role, expiresAt: invite.expiresAt }
+      }, tx);
+      acceptUrl = `/invite/${token}`;
+      return {
+        kind: "invite",
+        code: "created",
+        inviteId: invite.id,
+        email: invite.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt.toISOString()
+      } as const;
+    }
+  });
+  if (acceptUrl && result.status === "completed") {
+    return { ...result, outcome: { ...result.outcome, acceptUrl } };
+  }
+  return result;
+}
+
+export async function issueInviteRevokeBrowserOperation(raw: unknown) {
+  const input = inviteRevokeBrowserSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevoke,
+    targetKind: BrowserOperationTargetKind.invite,
+    targetId: input.inviteId,
+    permission: "member.manage",
+    targetSnapshot: async (tx, lockedCtx) => {
+      const invite = await lockInviteById(tx, input.inviteId);
+      if (!invite || invite.householdId !== lockedCtx.householdId || invite.status !== InviteStatus.pending) {
+        throw new Error("not_found");
+      }
+      if (!canManageHouseholdRole(lockedCtx.role, invite.role)) throw new Error("forbidden");
+      return { version: 1, status: invite.status, updatedAt: invite.updatedAt.toISOString() };
+    }
+  });
+}
+
+export async function submitInviteRevokeBrowserOperation(raw: unknown) {
+  const input = inviteRevokeBrowserSchema.parse(raw);
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevoke,
+    targetKind: BrowserOperationTargetKind.invite,
+    targetId: input.inviteId,
+    permission: "member.manage",
+    intent: {},
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as { version?: unknown; status?: unknown; updatedAt?: unknown };
+      if (opening.version !== 1 || opening.status !== InviteStatus.pending || typeof opening.updatedAt !== "string") {
+        throw new Error("stale_revision");
+      }
+      await lockAndRevalidateFreshSession(tx, freshSession);
+      if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      const invite = await lockInviteById(tx, input.inviteId);
+      if (!invite || invite.householdId !== lockedCtx.householdId) throw new Error("not_found");
+      if (invite.status !== InviteStatus.pending || invite.updatedAt.toISOString() !== opening.updatedAt) {
+        throw new Error("stale_revision");
+      }
+      if (!canManageHouseholdRole(lockedCtx.role, invite.role)) throw new Error("forbidden");
+      const revokedAt = new Date();
+      await tx.invite.update({
+        where: { id: invite.id },
+        data: { status: InviteStatus.revoked, revokedAt }
+      });
+      await writeAudit(lockedCtx, {
+        action: "invite.revoke",
+        entityType: "invite",
+        entityId: invite.id,
+        before: { email: invite.email, role: invite.role, status: invite.status },
+        after: { status: InviteStatus.revoked, revokedAt }
+      }, tx);
+      return { kind: "invite", code: "revoked", inviteId: invite.id } as const;
+    }
+  });
+}
+
+export async function issueInviteRevokeAllBrowserOperation(raw: unknown) {
+  const input = bulkInviteRevokeBrowserSchema.parse(raw);
+  if (input.acknowledgement !== BULK_INVITE_REVOKE_ACKNOWLEDGEMENT) {
+    throw new Error("bulk_invite_revoke_acknowledgement_required");
+  }
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevokeAll,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "household.manage",
+    targetSnapshot: (_tx, lockedCtx) => {
+      if (lockedCtx.role !== HouseholdRole.owner) throw new Error("forbidden");
+      return { version: 1, acknowledgement: input.acknowledgement, policy: "all_pending_at_submit" };
+    }
+  });
+}
+
+export async function submitInviteRevokeAllBrowserOperation(raw: unknown) {
+  const input = bulkInviteRevokeBrowserSchema.parse(raw);
+  if (input.acknowledgement !== BULK_INVITE_REVOKE_ACKNOWLEDGEMENT) {
+    throw new Error("bulk_invite_revoke_acknowledgement_required");
+  }
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevokeAll,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "household.manage",
+    intent: { acknowledgement: input.acknowledgement },
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as { version?: unknown; acknowledgement?: unknown; policy?: unknown };
+      if (
+        opening.version !== 1 ||
+        opening.acknowledgement !== input.acknowledgement ||
+        opening.policy !== "all_pending_at_submit"
+      ) {
+        throw new Error("stale_revision");
+      }
+      if (lockedCtx.role !== HouseholdRole.owner) throw new Error("forbidden");
+      await lockAndRevalidateFreshSession(tx, freshSession);
+      if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      const lockedIds = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Invite"
+        WHERE "householdId" = ${lockedCtx.householdId}
+          AND "status" = ${InviteStatus.pending}::"InviteStatus"
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      if (lockedIds.length === 0) return { kind: "invite_bulk", code: "revoked", revokedCount: 0 } as const;
+      const invites = await tx.invite.findMany({
+        where: { id: { in: lockedIds.map(({ id }) => id) } },
+        orderBy: { id: "asc" }
+      });
+      const revokedAt = new Date();
+      for (const invite of invites) {
+        await tx.invite.update({
+          where: { id: invite.id },
+          data: { status: InviteStatus.revoked, revokedAt }
+        });
+        await writeAudit(lockedCtx, {
+          action: "invite.emergency_revoke",
+          entityType: "invite",
+          entityId: invite.id,
+          before: { email: invite.email, role: invite.role, status: invite.status },
+          after: { status: InviteStatus.revoked, revokedAt }
+        }, tx);
+      }
+      await writeAudit(lockedCtx, {
+        action: "invite.emergency_revoke_all",
+        entityType: "household",
+        entityId: lockedCtx.householdId,
+        after: { revokedCount: invites.length, revokedAt }
+      }, tx);
+      return { kind: "invite_bulk", code: "revoked", revokedCount: invites.length } as const;
+    }
+  });
 }
 
 async function lockAndRevalidateFreshSession(

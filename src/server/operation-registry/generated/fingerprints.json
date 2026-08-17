@@ -504,33 +504,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "8688af07b9802cf00237e255653209a7bff3c389ef0a9ab5476a3efe8a11e99d",
+          "digest": "160133acb8a1b8b7e6f0596becd0077a29ede3313d0847251d6196c9690e51aa",
           "file": "src/app/api/invites/[token]/revoke/route.ts"
         }
       ],
       "declarationDigest": "f77fefddc2878059d4dd7439d0469a755596278676e9981cac9cdc1165fe1add",
-      "fingerprint": "242a4ea7c750e333278d6f5d989f674ab2af7aceea7f6602e16d7131670f8fc5",
+      "fingerprint": "e68fcae40f733de893150841ed0ef1b1b9fb849c6bce0b922f0f3b329b6b510d",
       "id": "fingerprint:api_route:src/app/api/invites/[token]/revoke/route.ts",
       "ownerId": "api_route:src/app/api/invites/[token]/revoke/route.ts",
       "ownerModule": "src/app/api/invites/[token]/revoke/route.ts",
       "sidecarPath": "src/app/api/invites/[token]/revoke/route.operation.ts",
-      "sourceDigest": "f4106efc2b2c1edcaff020e3d1094bc9f6385810fd26e333ccb6d07622774c54",
+      "sourceDigest": "7c9226450af0d84287b5acb230b0b9f7ce8c80c9d01ca0ac99136cf414e4af67",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "155f050281aeff6d454268e1dd3572c6c7c8bc4099cca855687b134663161a9d",
+          "digest": "b79decc60c6b64e20dec7e4be14a5f62f351a3880f9eae2841ff98a112ecaa02",
           "file": "src/app/api/invites/revoke-all/route.ts"
         }
       ],
       "declarationDigest": "5ef801454d511786146e8be9da3aab2729147fafee0e75370b7447e9ab6abe90",
-      "fingerprint": "da1e8d001989590158b4d6553446d12ff8539104f7b7b44dc7f53b9dbf593382",
+      "fingerprint": "43b8d3c728c8603e1036072d7aaf5d00ab5c56fb26bfe0a9745d0d604b9b2671",
       "id": "fingerprint:api_route:src/app/api/invites/revoke-all/route.ts",
       "ownerId": "api_route:src/app/api/invites/revoke-all/route.ts",
       "ownerModule": "src/app/api/invites/revoke-all/route.ts",
       "sidecarPath": "src/app/api/invites/revoke-all/route.operation.ts",
-      "sourceDigest": "3a3621e4552bbb47e5579f9184865d126c93db936630bd8f2b1bbea66ea26348",
+      "sourceDigest": "097b4faa2006b8fe88de9b23522add8ed8c86cd8387edb501ed69d2a89402125",
       "status": "declared"
     },
     {
@@ -2008,11 +2008,11 @@
   ],
   "generatorDigest": "341d673d7ae0be09ecdb20f644fd09dd654d344d04e49d9f550a288a152560ce",
   "generatorVersion": "r0.1",
-  "observationDigest": "00c315dc3fc22c731a8ec519a64a98a9f4fc31588ab42a6f154a9edbf8a4dcd6",
+  "observationDigest": "d501bb938bc327f0d30b2cfbde006514e7bb9fa237a08fbcc8dcbed6607e1878",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "9b10432520d812f8ef46ceee1480830a59dc68d91e10e1f8d4998e2a26f0b3d0",
+  "registryDigest": "9e3136419a6145537046f3116ef4a02439bbd2f96eb9b8df20b6c97cf5db772f",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

@@ -649,11 +649,11 @@
       "sidecarPath": "src/app/api/invites/[token]/accept/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(_request: Request, { params }: { params: { token: string } }) {\n  try {\n    return ok(await revokeInvite(params.token));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "4d72c19f68537766e67f2ea772abed81e41c482fa4d1e609101720beb9629193",
-      "anchorEnd": 353,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { token: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: Record<string, unknown> | undefined;\n    if (text.length > 0) {\n      const parsed = JSON.parse(text) as unknown;\n      if (!parsed || typeof parsed !== \"object\" || Array.isArray(parsed)) throw new Error(\"validation_error\");\n      body = parsed as Record<string, unknown>;\n    }\n    operationId = body?.operationId;\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const input = { ...body, operationId, inviteId: params.token };\n      const issued = await issueInviteRevokeBrowserOperation(input);\n      const result = issued.status === \"open\" ? await submitInviteRevokeBrowserOperation(input) : issued;\n      return ok(result);\n    }\n    return ok(await revokeInvite(params.token));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "adc9e225c160cc1ffe06e8cb03c02324d70ca5b227c6434b6d50aac867ec164e",
+      "anchorEnd": 1373,
       "anchorFile": "src/app/api/invites/[token]/revoke/route.ts",
-      "anchorStart": 149,
+      "anchorStart": 312,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -666,11 +666,11 @@
       "sidecarPath": "src/app/api/invites/[token]/revoke/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    return ok(await revokeAllPendingInvites(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "f20bd8e848cf93039adef90c826e6a9c8289cea48af58c87ecea3a3e99e9953c",
-      "anchorEnd": 476,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null || typeof body !== \"object\" || Array.isArray(body)) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    operationId = (body as Record<string, unknown>).operationId;\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteRevokeAllBrowserOperation(body);\n      const result = issued.status === \"open\" ? await submitInviteRevokeAllBrowserOperation(body) : issued;\n      return ok(result);\n    }\n    return ok(await revokeAllPendingInvites(body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "4a823cc363d27413e24b1dd1418d0150deb1fe49f3c28b0eb3e3805f40875c1a",
+      "anchorEnd": 1184,
       "anchorFile": "src/app/api/invites/revoke-all/route.ts",
-      "anchorStart": 166,
+      "anchorStart": 335,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -4327,10 +4327,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "e1fad2bbbe405ca5c86cff5ba798ac09ad84685958fa99097d01bd5d1cb5d277",
+  "semanticArtifactDigest": "6a63dda585bcd6bb722ac6e73c0c366cb07eea6fabaa5a51f7a346273d77ad3f",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c152e8dce4ff14557ad743f80f94ca59bb2ed773c5f252afd68132985649565f",
+  "semanticCoverageDigest": "cb330692c2040731655405682f4ee7989174ba9ace4201a583a2620ebc68f363",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "9f92ee916a59eebff3312fdda5a6de2ecbac57b4ca574917eab8579cc1259086",
-  "semanticFingerprint": "558e88d0d0c57a19e843a7cdbdc46d938e3e7dc8870e703764682dc00b12b7d5"
+  "semanticFingerprint": "8fbde41d5f25a395023cb6e67a0488ff16dabbca3d3f3753f34c40134669365c"
 }
