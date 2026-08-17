@@ -17,6 +17,11 @@ const operationIdPattern = /^bmo_[0-9abcdefghjkmnpqrstvwxyz]{26}$/;
 const operationIdSchema = z.string().regex(operationIdPattern);
 const browserOperationKeySchema = z.nativeEnum(BrowserOperationKey);
 const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Record<string, unknown>>>> = {
+  [BrowserOperationKey.babyCreate]: z.object({
+    kind: z.literal("baby_create"),
+    code: z.literal("ok"),
+    babyId: z.string().min(1)
+  }).strict(),
   [BrowserOperationKey.calendarEventCreate]: z.object({
     kind: z.literal("calendar_event"),
     code: z.literal("ok"),

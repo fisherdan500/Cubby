@@ -224,11 +224,28 @@
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueCreateBabyBrowserOperation(await request.json() as Record<string, unknown>);\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "417d58a335f345d792c0570e58a65cd5e4367db8ab977c4df685926ad7298519",
+      "anchorEnd": 553,
+      "anchorFile": "src/app/api/babies/issue/route.ts",
+      "anchorStart": 171,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/babies/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/babies/issue/route.ts:route_method:POST:src/app/api/babies/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/babies/issue/route.ts",
+      "ownerModule": "src/app/api/babies/issue/route.ts",
+      "sidecarPath": "src/app/api/babies/issue/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await listBabies({ includeInactive: true }));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "06e1ac779917a85c31591afdcd6948ae55e46aa0c59126d3f2db8324179fa91f",
-      "anchorEnd": 313,
+      "anchorEnd": 347,
       "anchorFile": "src/app/api/babies/route.ts",
-      "anchorStart": 159,
+      "anchorStart": 193,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -241,11 +258,11 @@
       "sidecarPath": "src/app/api/babies/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    return ok(await addBaby(await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "51f20d526c803957efbc6224be19dd648d3b91f4bdab4dbb9640253fe4e8c787",
-      "anchorEnd": 478,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    if (typeof raw.operationId === \"string\" && raw.operationId.startsWith(\"bmo_\")) {\n      const result = await submitCreateBabyBrowserOperation(raw);\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await addBaby(raw));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c948f61cfbb7a366513386a9c98fcb63027970be6d2de9b96fb8c0457fd5d07b",
+      "anchorEnd": 831,
       "anchorFile": "src/app/api/babies/route.ts",
-      "anchorStart": 315,
+      "anchorStart": 349,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1416,9 +1433,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 838,
+      "anchorEnd": 3385,
       "anchorFile": "src/components/forms/baby-form.tsx",
-      "anchorStart": 823,
+      "anchorStart": 3370,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -1431,11 +1448,11 @@
       "sidecarPath": "src/components/forms/baby-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/babies\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify(Object.fromEntries(formData))\n    })",
-      "anchorDigest": "0240576f9feb3735778d1ae643427d76abfb8c3b1919bf4997b3d03e6ac8d9e2",
-      "anchorEnd": 557,
+      "anchorBytes": "fetch(`/api/browser-operations/${id}`, { cache: \"no-store\" })",
+      "anchorDigest": "5329d1c1818c5445a435c219486012197fdd77c785f7cd03d2d800afd7e31627",
+      "anchorEnd": 1515,
       "anchorFile": "src/components/forms/baby-form.tsx",
-      "anchorStart": 394,
+      "anchorStart": 1454,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1443,6 +1460,40 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/forms/baby-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/baby-form.tsx",
+      "ownerModule": "src/components/forms/baby-form.tsx",
+      "sidecarPath": "src/components/forms/baby-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/babies/issue\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: id })\n      })",
+      "anchorDigest": "95a67af4475ff88a421b3bd4ca505e53a723bf56a052e104af72e86da566e645",
+      "anchorEnd": 2191,
+      "anchorFile": "src/components/forms/baby-form.tsx",
+      "anchorStart": 2023,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/baby-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/baby-form.tsx",
+      "ownerModule": "src/components/forms/baby-form.tsx",
+      "sidecarPath": "src/components/forms/baby-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/babies\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ ...Object.fromEntries(formData), operationId: id })\n      })",
+      "anchorDigest": "eed7dacce9e3f7b0d31ece884c8bab17ae0897a7aa0e6d1035eb886a7d46178b",
+      "anchorEnd": 2795,
+      "anchorFile": "src/components/forms/baby-form.tsx",
+      "anchorStart": 2600,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/baby-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
       "ownerId": "client_binding:src/components/forms/baby-form.tsx",
       "ownerModule": "src/components/forms/baby-form.tsx",
       "sidecarPath": "src/components/forms/baby-form.operation.ts"
@@ -4276,10 +4327,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "324d5f75531053667dae198aedc58ea017a8ee8829dc67e9f96985c988a8f4e0",
+  "semanticArtifactDigest": "e1fad2bbbe405ca5c86cff5ba798ac09ad84685958fa99097d01bd5d1cb5d277",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "7a435195776113e42a4847f3f42b0e8f80fa2abd4d33a12ac178315bd650f211",
+  "semanticCoverageDigest": "c152e8dce4ff14557ad743f80f94ca59bb2ed773c5f252afd68132985649565f",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "9f92ee916a59eebff3312fdda5a6de2ecbac57b4ca574917eab8579cc1259086",
-  "semanticFingerprint": "88fc4dc9916f0f1f25004c8d601541350093828b9f2dec29c619f2cd4faf2a0a"
+  "semanticFingerprint": "558e88d0d0c57a19e843a7cdbdc46d938e3e7dc8870e703764682dc00b12b7d5"
 }

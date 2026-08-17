@@ -1,4 +1,4 @@
-import { BrowserOperationKey, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationTargetKind, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
@@ -11,8 +11,11 @@ import { getAppRegistrationPolicy } from "@/server/services/registration";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 import {
   executeBrowserOperation,
+  executeHouseholdBrowserOperation,
+  getBrowserOperationContextForHousehold,
   getBrowserOperationContextForLifecycleBaby,
-  issueBrowserOperation
+  issueBrowserOperation,
+  issueHouseholdBrowserOperation
 } from "@/server/services/browser-operations";
 
 type BabyQueryOptions = {
@@ -104,6 +107,61 @@ export async function addBaby(raw: unknown) {
     after: baby
   });
   return baby;
+}
+
+const babyCreateSnapshot = { kind: "baby-create", schemaVersion: 1 } as const;
+
+export async function issueCreateBabyBrowserOperation(raw: Record<string, unknown>) {
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: BrowserOperationKey.babyCreate,
+    targetKind: BrowserOperationTargetKind.baby,
+    permission: "baby.manage",
+    targetSnapshot: () => babyCreateSnapshot
+  });
+}
+
+export async function submitCreateBabyBrowserOperation(raw: Record<string, unknown>) {
+  const { operationId, ...inputRaw } = raw;
+  const input = babySchema.parse(inputRaw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId,
+    operationKey: BrowserOperationKey.babyCreate,
+    targetKind: BrowserOperationTargetKind.baby,
+    permission: "baby.manage",
+    intent: input,
+    validate: async (_tx, _ctx, binding) => {
+      const opening = binding.targetSnapshot as typeof babyCreateSnapshot;
+      if (opening.kind !== babyCreateSnapshot.kind || opening.schemaVersion !== babyCreateSnapshot.schemaVersion) {
+        throw new Error("stale_revision");
+      }
+    },
+    execute: async (tx, lockedCtx) => {
+      const baby = await tx.baby.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          name: input.name,
+          birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+          timezone: env.APP_TIMEZONE,
+          notes: input.notes || undefined,
+          feedingWarningMinutes: input.feedingWarningMinutes,
+          diaperWarningMinutes: input.diaperWarningMinutes,
+          sleepWarningMinutes: input.sleepWarningMinutes
+        }
+      });
+      await writeAudit(lockedCtx, {
+        action: "baby.create",
+        entityType: "baby",
+        entityId: baby.id,
+        after: baby
+      }, tx);
+      return { kind: "baby_create", code: "ok", babyId: baby.id } as const;
+    }
+  });
 }
 
 function babyWhereClause(householdId: string, options?: BabyQueryOptions) {

@@ -156,6 +156,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/auth/[...all]/route.operation.ts",
   "src/app/api/babies/[id]/deactivate/route.operation.ts",
   "src/app/api/babies/[id]/reactivate/route.operation.ts",
+  "src/app/api/babies/issue/route.operation.ts",
   "src/app/api/babies/route.operation.ts",
   "src/app/api/backups/export/route.operation.ts",
   "src/app/api/backups/local/[filename]/route.operation.ts",
