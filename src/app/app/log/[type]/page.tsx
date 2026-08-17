@@ -18,7 +18,7 @@ export default async function LogActivityPage({
   const type = params.type as ActivityTypeName;
   if (!activityTypes.includes(type)) notFound();
   const user = await requireUserPage();
-  const home = await getHouseholdHome(user.id);
+  const home = await getHouseholdHome();
   if (!home) redirect("/onboarding");
   const unitSettings = await getActivityUnitPreferences();
   const babies = home.household.babies.map((baby) => ({

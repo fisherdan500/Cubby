@@ -16,7 +16,7 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, normalizeTimeZone, zonedDateStart } from "@/lib/timezone";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import {
   executeBrowserOperation,
   getBrowserOperationContextForBaby,
@@ -58,7 +58,7 @@ type DashboardParams = string | { babyId?: string; date?: string };
 type HouseholdHome = NonNullable<Awaited<ReturnType<typeof getHouseholdHome>>>;
 
 export async function getDashboard(userId: string, params?: DashboardParams) {
-  const home = await getHouseholdHome(userId);
+  const home = await getHouseholdHome();
   if (!home) return null;
   return getDashboardForHome(home, params);
 }
@@ -67,7 +67,7 @@ export async function getDashboardPageData(
   userId: string,
   params?: { babyId?: string; date?: string }
 ) {
-  const home = await getHouseholdHome(userId);
+  const home = await getHouseholdHome();
   if (!home) return null;
 
   const activeBabies = home.household.babies.filter((baby) => !baby.inactiveAt);
@@ -255,7 +255,7 @@ export function filterDismissedWarnings(
 }
 
 export async function dismissDashboardWarning(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   const input = dismissWarningSchema.parse(raw);
   const baby = await prisma.baby.findFirst({

@@ -5,7 +5,7 @@ import { durationSeconds } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { zonedDateTimeToDate } from "@/lib/timezone";
 import { activityCreateSchema, activityUpdateSchema, type ActivityRestoreInput } from "@/lib/validation/activity";
-import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockActorForWrite, lockApiKeyForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
@@ -400,7 +400,7 @@ async function queueActivitySideEffects(
 }
 
 export async function createActivity(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return createActivityForContext(raw, ctx);
 }
 
@@ -556,7 +556,7 @@ export async function listActivities(params?: {
   search?: string;
   page?: ActivityListPage;
 }) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   return prisma.activityLog.findMany({
     where: {
@@ -588,7 +588,7 @@ export async function listActivities(params?: {
 }
 
 export async function getActivityView(id: string) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   const activity = await prisma.activityLog.findFirst({
     where: { id, householdId: ctx.householdId, deletedAt: null },
@@ -746,7 +746,7 @@ async function findActivityUpdateReplayInTransaction(
 }
 
 async function findActivityUpdateReplay(id: string, input: ReturnType<typeof activityUpdateSchema.parse>) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return prisma.$transaction(async (tx) => findActivityUpdateReplayInTransaction(tx, await lockActorForWrite(tx, ctx), id, input));
 }
 
@@ -759,7 +759,7 @@ async function rejectLegacyActivityCreateReservation(tx: Prisma.TransactionClien
 }
 
 export async function updateActivity(id: string, raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const medicineContactWasProvided = typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.prototype.hasOwnProperty.call(raw, "contactId");
   const input = activityUpdateSchema.parse({ ...(raw as object), id });
   const replay = await findActivityUpdateReplay(id, input);
@@ -852,7 +852,7 @@ async function findActivityDeleteReplayInTransaction(
 }
 
 async function findActivityDeleteReplay(id: string, mutation: ReturnType<typeof timerMutationInput>) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     return findActivityDeleteReplayInTransaction(tx, lockedCtx, id, mutation);
@@ -863,7 +863,7 @@ export async function deleteActivity(id: string, raw?: unknown) {
   const mutation = timerMutationInput(raw);
   const replay = await findActivityDeleteReplay(id, mutation);
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   try {
     return await prisma.$transaction(async (tx) => {
       const lockedCtx = await lockActorForWrite(tx, ctx);
@@ -942,7 +942,7 @@ async function findTimerReplay(
   mutation: ReturnType<typeof timerMutationInput>,
   operation: "timer.stop" | "timer.pause" | "timer.resume"
 ) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const fingerprint = timerMutationFingerprint(operation, id);
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
@@ -963,7 +963,7 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.stop");
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if ((activity.timerState !== TimerState.running && activity.timerState !== TimerState.paused) || !activity.startedAt) {
     throw new Error("not_found");
@@ -1013,7 +1013,7 @@ export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRac
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.pause");
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.running || !activity.startedAt) throw new Error("not_found");
   try {
@@ -1056,7 +1056,7 @@ export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRa
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.resume");
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.paused || !activity.pausedAt) throw new Error("not_found");
   try {
@@ -1136,7 +1136,7 @@ async function findActivityUndoReplayInTransaction(
 }
 
 async function findActivityUndoReplay(mutation: ReturnType<typeof timerMutationInput>) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     return findActivityUndoReplayInTransaction(tx, lockedCtx, mutation);
@@ -1147,7 +1147,7 @@ export async function undoLastActivity(raw?: unknown) {
   const mutation = timerMutationInput(raw);
   const replay = await findActivityUndoReplay(mutation);
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   try {
     return await prisma.$transaction(async (tx) => {
       const lockedCtx = await lockActorForWrite(tx, ctx);

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
@@ -23,7 +23,7 @@ export async function listHouseholdsForUser(userId: string) {
   return prisma.householdMember.findMany({
     where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
     include: { household: true },
-    orderBy: { joinedAt: "asc" }
+    orderBy: [{ household: { name: "asc" } }, { id: "asc" }]
   });
 }
 
@@ -82,7 +82,7 @@ export async function createOnboardingHousehold(raw: unknown) {
 }
 
 export async function addBaby(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "baby.manage");
   const input = babySchema.parse(raw);
   const baby = await prisma.baby.create({
@@ -122,7 +122,7 @@ function nestedBabyWhereClause(options?: BabyQueryOptions) {
 }
 
 export async function listBabies(options?: BabyQueryOptions) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   return prisma.baby.findMany({
     where: babyWhereClause(ctx.householdId, options),
@@ -130,9 +130,16 @@ export async function listBabies(options?: BabyQueryOptions) {
   });
 }
 
-export async function getHouseholdHome(userId: string, options?: BabyQueryOptions) {
+export async function getHouseholdHome(options?: BabyQueryOptions) {
+  const ctx = await getEffectiveHouseholdContext();
   const member = await prisma.householdMember.findFirst({
-    where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
+    where: {
+      id: ctx.memberId,
+      userId: ctx.userId,
+      disabledAt: null,
+      deletedAt: null,
+      household: { deletedAt: null }
+    },
     include: {
       household: {
         include: {
@@ -143,14 +150,13 @@ export async function getHouseholdHome(userId: string, options?: BabyQueryOption
           }
         }
       }
-    },
-    orderBy: { joinedAt: "asc" }
+    }
   });
   return member;
 }
 
 export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "baby.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -189,7 +195,7 @@ export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
 }
 
 export async function reactivateBaby(babyId: string) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "baby.manage");
 
   return prisma.$transaction(async (tx) => {

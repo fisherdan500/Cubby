@@ -49,6 +49,8 @@ export function handleError(error: unknown) {
     if (error.message === "validation_error") return fail("validation_error", "Please check the submitted request.", 422);
     if (error.message === "forbidden") return fail("forbidden", "You do not have access.", 403);
     if (error.message === "fresh_authentication_required") return fail("fresh_authentication_required", "Sign in again to continue.", 403);
+    if (error.message === "household_selection_required") return fail("household_selection_required", "Select a household to continue.", 409);
+    if (error.message === "household_selection_stale") return fail("household_selection_stale", "Your selected household is no longer available. Choose another household.", 409);
     if (error.message === "invite_membership_conflict") return fail("invite_membership_conflict", "This invitation cannot change an existing or suspended membership. Ask the household owner to review access.", 409);
     if (error.message === "invite_expiry_invalid") return fail("invite_expiry_invalid", "Choose an allowed invitation expiry.", 422);
     if (error.message === "bulk_invite_revoke_acknowledgement_required") return fail("bulk_invite_revoke_acknowledgement_required", "Type the exact acknowledgement to revoke all pending invitations.", 422);

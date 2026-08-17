@@ -11,7 +11,7 @@ import {
   inviteSchema,
   memberRoleSchema
 } from "@/lib/validation/onboarding";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { requireFreshSession, requireUser } from "@/server/auth/session";
 import { writeAudit } from "@/server/services/audit";
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
@@ -77,7 +77,7 @@ async function lockAndRevalidateFreshSession(
 }
 
 export async function createInvite(raw: unknown) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "invite.create");
   const input = inviteSchema.parse(raw);
   const freshSession = input.role === "admin" ? await requireFreshSession() : null;
@@ -314,7 +314,7 @@ export async function acceptInvite(token: string) {
 }
 
 export async function listMembersAndInvites() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "member.manage");
   const household = await prisma.household.findUniqueOrThrow({
     where: { id: ctx.householdId },
@@ -338,7 +338,7 @@ export async function listMembersAndInvites() {
 }
 
 export async function updateMemberRole(memberId: string, raw: unknown) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
   const input = memberRoleSchema.parse(raw);
 
@@ -371,7 +371,7 @@ export async function updateMemberRole(memberId: string, raw: unknown) {
 }
 
 export async function removeMember(memberId: string) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -462,7 +462,7 @@ async function containClosedMemberAuthority(
 }
 
 export async function suspendMember(memberId: string, disabledAt = new Date()) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -497,7 +497,7 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
 }
 
 export async function restoreMember(memberId: string) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -529,7 +529,7 @@ export async function restoreMember(memberId: string) {
 }
 
 export async function revokeInvite(inviteId: string) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -563,7 +563,7 @@ export async function revokeAllPendingInvites(raw: unknown) {
   }
 
   const freshSession = await requireFreshSession();
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   if (freshSession.user.id !== requestContext.userId) throw new Error("forbidden");
 
   return prisma.$transaction(async (tx) => {
@@ -613,7 +613,7 @@ export async function revokeAllPendingInvites(raw: unknown) {
 
 async function lockMemberMutation(
   tx: Prisma.TransactionClient,
-  requestContext: Awaited<ReturnType<typeof getHouseholdContext>>,
+  requestContext: Awaited<ReturnType<typeof getEffectiveHouseholdContext>>,
   memberId: string
 ) {
   const memberIds = [...new Set([requestContext.memberId, memberId])].sort();

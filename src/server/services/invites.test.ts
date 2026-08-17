@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   requireUser: vi.fn(),
   assertFreshSession: vi.fn(),
@@ -45,7 +45,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 vi.mock("@/server/auth/session", () => ({
@@ -78,7 +78,7 @@ beforeEach(() => {
     email: "invitee@example.test"
   });
   mocks.requireFreshSession.mockResolvedValue({ user: { id: "owner-user" }, session: { id: "session-owner", createdAt: now } });
-  mocks.getHouseholdContext.mockResolvedValue({
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({
     userId: "owner-user",
     householdId: "household-1",
     memberId: "owner-member",

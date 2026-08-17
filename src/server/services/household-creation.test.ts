@@ -20,7 +20,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "America/New_York" } }));
 vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
-vi.mock("@/server/auth/context", () => ({ getHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
+vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: vi.fn() }));
 vi.mock("@/server/services/mutation-locks", () => ({
   lockActorAndBabyForWrite: vi.fn(),

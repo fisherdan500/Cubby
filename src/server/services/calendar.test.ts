@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   babyFindFirst: vi.fn(),
   memberFindUnique: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock("@/lib/env", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 
@@ -38,7 +38,7 @@ import { createCalendarEvent } from "@/server/services/calendar";
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.getHouseholdContext.mockResolvedValue({
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({
     userId: "user-1",
     householdId: "household-1",
     memberId: "member-1",

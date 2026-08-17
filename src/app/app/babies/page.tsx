@@ -8,7 +8,7 @@ import { getHouseholdHome } from "@/server/services/households";
 
 export default async function BabiesPage() {
   const { user } = await requireSettingsPage("baby.manage");
-  const home = await getHouseholdHome(user.id, { includeInactive: true });
+  const home = await getHouseholdHome({ includeInactive: true });
   if (!home) redirect("/onboarding");
 
   return (

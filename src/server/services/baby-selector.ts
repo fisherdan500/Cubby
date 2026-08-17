@@ -15,7 +15,7 @@ export async function getHeaderBabySelector(
   requestedBabyId?: string | null,
   options?: { includeInactive?: boolean }
 ): Promise<HeaderBabySelectorData | null> {
-  const home = await getHouseholdHome(userId, { includeInactive: options?.includeInactive });
+  const home = await getHouseholdHome({ includeInactive: options?.includeInactive });
   if (!home) return null;
 
   const cachedBabyId = cookies().get(SELECTED_BABY_COOKIE)?.value;

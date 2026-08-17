@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   settingsFindUnique: vi.fn(),
   settingsUpsert: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 
@@ -52,7 +52,7 @@ const preferences = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.getHouseholdContext.mockResolvedValue(ctx);
+  mocks.getEffectiveHouseholdContext.mockResolvedValue(ctx);
   mocks.settingsFindUnique.mockResolvedValue(null);
   mocks.medicineFindMany.mockResolvedValue([]);
   mocks.supplementFindMany.mockResolvedValue([]);

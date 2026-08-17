@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireUserPage: vi.fn(),
-  getHouseholdHome: vi.fn(),
+  listHouseholdsForUser: vi.fn(),
   getHouseholdLeaveOptions: vi.fn(),
   isPlatformOwner: vi.fn(),
   getAppRegistrationPolicy: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@/components/brand", () => ({
 }));
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/households", () => ({
-  getHouseholdHome: mocks.getHouseholdHome
+  listHouseholdsForUser: mocks.listHouseholdsForUser
 }));
 vi.mock("@/server/services/household-leave", () => ({
   getHouseholdLeaveOptions: mocks.getHouseholdLeaveOptions
@@ -34,7 +34,7 @@ vi.mock("@/server/services/registration", () => ({
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.getHouseholdHome.mockResolvedValue(null);
+  mocks.listHouseholdsForUser.mockResolvedValue([]);
   mocks.getHouseholdLeaveOptions.mockResolvedValue([]);
   mocks.isPlatformOwner.mockResolvedValue(false);
   mocks.getAppRegistrationPolicy.mockResolvedValue({ newHouseholdCreationAllowed: true });

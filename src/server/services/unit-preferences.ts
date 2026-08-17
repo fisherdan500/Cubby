@@ -6,17 +6,17 @@ import {
   type UnitPreferences
 } from "@/domain/unit-preferences";
 import { prisma } from "@/lib/db/prisma";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
 
 export async function getActivityUnitPreferences() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   return readPreferenceCatalog(ctx.householdId);
 }
 
 export async function getUnitPreferenceSettings() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "household.manage");
   return readPreferenceCatalog(ctx.householdId);
 }
@@ -46,7 +46,7 @@ async function readPreferenceCatalog(householdId: string) {
 }
 
 export async function updateUnitPreferences(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "household.manage");
   const preferences = unitPreferencesSchema.parse(raw);
   const unitPreferences = preferences as Prisma.InputJsonValue;

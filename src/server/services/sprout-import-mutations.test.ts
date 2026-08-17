@@ -40,7 +40,7 @@ const mocks = vi.hoisted(() => ({
     }
   },
   transaction: vi.fn(),
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   lockActor: vi.fn(),
   lockBaby: vi.fn(),
   requirePermission: vi.fn(),
@@ -68,7 +68,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/db/prisma", () => ({ prisma: transactionClient() }));
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 vi.mock("@/server/services/mutation-locks", () => ({
@@ -91,7 +91,7 @@ beforeEach(() => {
   previewRecords.clear();
   mocks.stagedPayloads.clear();
   nextBatchId = 1;
-  mocks.getHouseholdContext.mockResolvedValue(context("owner"));
+  mocks.getEffectiveHouseholdContext.mockResolvedValue(context("owner"));
   mocks.requirePermission.mockImplementation((ctx, permission) => {
     if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
   });

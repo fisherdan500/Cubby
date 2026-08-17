@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 45,
-    "client_binding": 23,
+    "api_route": 46,
+    "client_binding": 24,
     "instrumentation": 1,
     "package_command": 8,
     "server_action": 1,
     "server_loader": 26,
     "worker": 3
   },
-  "declarationDigest": "848d5d69957fd8a47b8053556d333630dc260332874f3b1d0fc04e40f410ed22",
+  "declarationDigest": "6769308724e1e3c57fe8ac1ad66f8bb98a76107ba164d6bf33b064e7f1a26fc5",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1078,6 +1078,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/household-selection/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/household-selection/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/household-selection/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/households/leave/route.ts#POST"
           }
         ],
@@ -2032,8 +2062,13 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "getCurrentAppearanceTheme",
-            "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+            "symbol": "getHouseholdSelectionState",
+            "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
           }
         ],
         "deferredGateIds": [
@@ -2482,8 +2517,8 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "getHouseholdContext",
-            "target": "src/server/auth/context.ts#getHouseholdContext"
+            "symbol": "getEffectiveHouseholdContext",
+            "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
           },
           {
             "kind": "server_value_import",
@@ -2667,8 +2702,8 @@
           },
           {
             "kind": "server_value_import",
-            "symbol": "getHouseholdHome",
-            "target": "src/server/services/households.ts#getHouseholdHome"
+            "symbol": "listHouseholdsForUser",
+            "target": "src/server/services/households.ts#listHouseholdsForUser"
           },
           {
             "kind": "server_value_import",
@@ -3191,6 +3226,36 @@
       },
       "id": "client_binding:src/components/forms/onboarding-form.tsx",
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/household-selection-control.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/household-selection-control.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
     },
     {
       "declaration": {
@@ -3890,7 +3955,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "c19fe2af1d8683390569828bcabda290540047357077de5e01e77736c5790740",
+  "generatorDigest": "3144e964ddc4a8a77275c4a1231e60cfd9c266b74bf060df40f7a727fdb1dc7c",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -4383,6 +4448,25 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/hooks/v1/babies/route.ts",
       "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "7dca96dd8b8644fcfdcb8c7aba5c56d82083eed20c2f83c612e7aa054ebe5c4a",
+          "anchorEnd": 1288,
+          "anchorFile": "src/app/api/household-selection/route.ts",
+          "anchorStart": 375,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/household-selection/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
     },
     {
       "bindings": [
@@ -5107,13 +5191,22 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ffb62ca5ea8d1f58e951f645683231d79c290297c95b65c2188918f06ddd3c9e",
-          "anchorEnd": 34,
+          "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
+          "anchorEnd": 178,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 9,
+          "anchorStart": 152,
           "kind": "server_value_import",
-          "symbol": "getCurrentAppearanceTheme",
-          "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+          "symbol": "getHouseholdSelectionState",
+          "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 110,
+          "anchorFile": "src/app/app/layout.tsx",
+          "anchorStart": 95,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -5497,28 +5590,28 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4ba370f25645cbe6cd86b20e33cdb55c0884372f34861a521c45971d8566679f",
-          "anchorEnd": 351,
+          "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+          "anchorEnd": 360,
           "anchorFile": "src/app/app/settings/page.tsx",
           "anchorStart": 332,
           "kind": "server_value_import",
-          "symbol": "getHouseholdContext",
-          "target": "src/server/auth/context.ts#getHouseholdContext"
+          "symbol": "getEffectiveHouseholdContext",
+          "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
         },
         {
           "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-          "anchorEnd": 465,
+          "anchorEnd": 474,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 450,
+          "anchorStart": 459,
           "kind": "server_value_import",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 408,
+          "anchorEnd": 417,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 393,
+          "anchorStart": 402,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -5647,21 +5740,12 @@
       "bindings": [
         {
           "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-          "anchorEnd": 543,
+          "anchorEnd": 548,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 519,
+          "anchorStart": 524,
           "kind": "server_value_import",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 398,
-          "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 382,
-          "kind": "server_value_import",
-          "symbol": "getHouseholdHome",
-          "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "3e34d97bbb19562ad66492682f355c3846b066da7ceec4e288107dac3b34450c",
@@ -5674,12 +5758,21 @@
         },
         {
           "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-          "anchorEnd": 462,
+          "anchorEnd": 467,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 447,
+          "anchorStart": 452,
           "kind": "server_value_import",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
+        },
+        {
+          "anchorDigest": "37c77ac1072b62d2108f29115d68db3d3a1af072d65bd064b80caa2ab3a33c9b",
+          "anchorEnd": 403,
+          "anchorFile": "src/app/onboarding/page.tsx",
+          "anchorStart": 382,
+          "kind": "server_value_import",
+          "symbol": "listHouseholdsForUser",
+          "target": "src/server/services/households.ts#listHouseholdsForUser"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
@@ -6080,6 +6173,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/onboarding-form.tsx",
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "38670c6b403554fa95aebd74054409899a865ad6633fc205dcc92d0496128247",
+          "anchorEnd": 1005,
+          "anchorFile": "src/components/household-selection-control.tsx",
+          "anchorStart": 920,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
     },
     {
       "bindings": [
@@ -7016,8 +7128,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 107,
-  "observationDigest": "9195611b29e14825dd5a62e63b0502549f16564f67a4f99b7e18ede6596959b7",
+  "observationCount": 109,
+  "observationDigest": "309ea6cb02212b905dac63ff9b8c7927bdd5f14c4977e818d30d8c602d15d1fb",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -7488,6 +7600,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/hooks/v1/babies/route.ts",
       "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1288,
+          "anchorFile": "src/app/api/household-selection/route.ts",
+          "anchorStart": 375,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/household-selection/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/household-selection/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
     },
     {
       "bindings": [
@@ -8185,13 +8315,22 @@
     {
       "bindings": [
         {
-          "anchorEnd": 34,
+          "anchorEnd": 178,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 9,
+          "anchorStart": 152,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
-          "symbol": "getCurrentAppearanceTheme",
-          "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+          "symbol": "getHouseholdSelectionState",
+          "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
+        },
+        {
+          "anchorEnd": 110,
+          "anchorFile": "src/app/app/layout.tsx",
+          "anchorStart": 95,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/layout.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -8563,27 +8702,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 351,
+          "anchorEnd": 360,
           "anchorFile": "src/app/app/settings/page.tsx",
           "anchorStart": 332,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
-          "symbol": "getHouseholdContext",
-          "target": "src/server/auth/context.ts#getHouseholdContext"
+          "symbol": "getEffectiveHouseholdContext",
+          "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
         },
         {
-          "anchorEnd": 465,
+          "anchorEnd": 474,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 450,
+          "anchorStart": 459,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
         },
         {
-          "anchorEnd": 408,
+          "anchorEnd": 417,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 393,
+          "anchorStart": 402,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "requireUserPage",
@@ -8707,22 +8846,13 @@
     {
       "bindings": [
         {
-          "anchorEnd": 543,
+          "anchorEnd": 548,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 519,
+          "anchorStart": 524,
           "kind": "server_value_import",
           "ownerModule": "src/app/onboarding/page.tsx",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorEnd": 398,
-          "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 382,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/onboarding/page.tsx",
-          "symbol": "getHouseholdHome",
-          "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorEnd": 328,
@@ -8734,13 +8864,22 @@
           "target": "src/server/services/household-leave.ts#getHouseholdLeaveOptions"
         },
         {
-          "anchorEnd": 462,
+          "anchorEnd": 467,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 447,
+          "anchorStart": 452,
           "kind": "server_value_import",
           "ownerModule": "src/app/onboarding/page.tsx",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
+        },
+        {
+          "anchorEnd": 403,
+          "anchorFile": "src/app/onboarding/page.tsx",
+          "anchorStart": 382,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/onboarding/page.tsx",
+          "symbol": "listHouseholdsForUser",
+          "target": "src/server/services/households.ts#listHouseholdsForUser"
         },
         {
           "anchorEnd": 262,
@@ -9126,6 +9265,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/onboarding-form.tsx",
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1005,
+          "anchorFile": "src/components/household-selection-control.tsx",
+          "anchorStart": 920,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/household-selection-control.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
     },
     {
       "bindings": [
@@ -10141,6 +10298,12 @@
       "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/households/leave/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/households/leave/route.ts",
@@ -10495,6 +10658,12 @@
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/settings/appearance-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/appearance-form.tsx",
@@ -10645,9 +10814,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "98123d57e97cf6162b02f6f8bf33cc5b0ea517fc4d0a829d93b7e918573353c3",
+  "ownerSetDigest": "d1a0d7735503f01049e9e4d247a07309d6e8df5dcfbed505d9f33cdd0d8e7873",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "ddfd27e456605c3ffdb9ccc5ba0c760d1ce11d4b094bde985fea262ff6655caf",
+  "registryDigest": "73cf6d03bfd7f180de901e23bfbb745cf857d67b26f4743b8de67a188434662f",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

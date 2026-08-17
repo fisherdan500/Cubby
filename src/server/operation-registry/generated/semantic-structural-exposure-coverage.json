@@ -496,6 +496,23 @@
       "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    assertSameOrigin(request);\n    const form = await request.formData();\n    const intent = form.get(\"intent\");\n    const returnTo = safeReturnTo(form.get(\"returnTo\"));\n    const response = NextResponse.redirect(new URL(returnTo, request.url), 303);\n\n    if (intent === \"clear\") {\n      await clearHouseholdSelection();\n      response.cookies.set(SELECTED_HOUSEHOLD_MEMBER_COOKIE, \"\", cookieOptions(request, 0));\n      return response;\n    }\n\n    const memberId = form.get(\"memberId\");\n    if (typeof memberId !== \"string\") throw new Error(\"validation_error\");\n    const context = await authorizeHouseholdSelection(memberId);\n    response.cookies.set(\n      SELECTED_HOUSEHOLD_MEMBER_COOKIE,\n      context.memberId,\n      cookieOptions(request, persistentCandidateSeconds)\n    );\n    return response;\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "7dca96dd8b8644fcfdcb8c7aba5c56d82083eed20c2f83c612e7aa054ebe5c4a",
+      "anchorEnd": 1288,
+      "anchorFile": "src/app/api/household-selection/route.ts",
+      "anchorStart": 375,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/household-selection/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/household-selection/route.ts:route_method:POST:src/app/api/household-selection/route.ts#POST",
+      "ownerId": "api_route:src/app/api/household-selection/route.ts",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    return ok(await leaveHousehold(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "5e1e29ba225a54a0c8b43b8bb75fbebe85ccc8f9d9e34c4a8085b4dd4b6fe890",
       "anchorEnd": 466,
@@ -1395,6 +1412,23 @@
       "ownerId": "client_binding:src/components/forms/onboarding-form.tsx",
       "ownerModule": "src/components/forms/onboarding-form.tsx",
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/household-selection\", {\n      method: \"POST\",\n      body: formData\n    })",
+      "anchorDigest": "38670c6b403554fa95aebd74054409899a865ad6633fc205dcc92d0496128247",
+      "anchorEnd": 1005,
+      "anchorFile": "src/components/household-selection-control.tsx",
+      "anchorStart": 920,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/household-selection-control.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/household-selection-control.tsx",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
     },
     {
       "anchorBytes": "fetch(\"/api/settings/appearance\", {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ accentTheme: selected })\n    })",
@@ -2774,18 +2808,35 @@
       "sidecarPath": "src/app/app/history/page.operation.ts"
     },
     {
-      "anchorBytes": "getCurrentAppearanceTheme",
-      "anchorDigest": "ffb62ca5ea8d1f58e951f645683231d79c290297c95b65c2188918f06ddd3c9e",
-      "anchorEnd": 34,
+      "anchorBytes": "getHouseholdSelectionState",
+      "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
+      "anchorEnd": 178,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 9,
+      "anchorStart": 152,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "getCurrentAppearanceTheme",
-        "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+        "symbol": "getHouseholdSelectionState",
+        "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/layout.tsx:server_value_import:getCurrentAppearanceTheme:src/server/services/appearance.ts#getCurrentAppearanceTheme",
+      "id": "server_loader:src/app/app/layout.tsx:server_value_import:getHouseholdSelectionState:src/server/services/household-selection.ts#getHouseholdSelectionState",
+      "ownerId": "server_loader:src/app/app/layout.tsx",
+      "ownerModule": "src/app/app/layout.tsx",
+      "sidecarPath": "src/app/app/layout.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 110,
+      "anchorFile": "src/app/app/layout.tsx",
+      "anchorStart": 95,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/layout.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
       "ownerId": "server_loader:src/app/app/layout.tsx",
       "ownerModule": "src/app/app/layout.tsx",
       "sidecarPath": "src/app/app/layout.operation.ts"
@@ -3284,18 +3335,18 @@
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts"
     },
     {
-      "anchorBytes": "getHouseholdContext",
-      "anchorDigest": "4ba370f25645cbe6cd86b20e33cdb55c0884372f34861a521c45971d8566679f",
-      "anchorEnd": 351,
+      "anchorBytes": "getEffectiveHouseholdContext",
+      "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+      "anchorEnd": 360,
       "anchorFile": "src/app/app/settings/page.tsx",
       "anchorStart": 332,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "getHouseholdContext",
-        "target": "src/server/auth/context.ts#getHouseholdContext"
+        "symbol": "getEffectiveHouseholdContext",
+        "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getHouseholdContext:src/server/auth/context.ts#getHouseholdContext",
+      "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getEffectiveHouseholdContext:src/server/auth/context.ts#getEffectiveHouseholdContext",
       "ownerId": "server_loader:src/app/app/settings/page.tsx",
       "ownerModule": "src/app/app/settings/page.tsx",
       "sidecarPath": "src/app/app/settings/page.operation.ts"
@@ -3303,9 +3354,9 @@
     {
       "anchorBytes": "isPlatformOwner",
       "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-      "anchorEnd": 465,
+      "anchorEnd": 474,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 450,
+      "anchorStart": 459,
       "binding": {
         "kind": "server_value_import",
         "symbol": "isPlatformOwner",
@@ -3320,9 +3371,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 408,
+      "anchorEnd": 417,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 393,
+      "anchorStart": 402,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -3473,9 +3524,9 @@
     {
       "anchorBytes": "getAppRegistrationPolicy",
       "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 543,
+      "anchorEnd": 548,
       "anchorFile": "src/app/onboarding/page.tsx",
-      "anchorStart": 519,
+      "anchorStart": 524,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getAppRegistrationPolicy",
@@ -3483,23 +3534,6 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:getAppRegistrationPolicy:src/server/services/registration.ts#getAppRegistrationPolicy",
-      "ownerId": "server_loader:src/app/onboarding/page.tsx",
-      "ownerModule": "src/app/onboarding/page.tsx",
-      "sidecarPath": "src/app/onboarding/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getHouseholdHome",
-      "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 398,
-      "anchorFile": "src/app/onboarding/page.tsx",
-      "anchorStart": 382,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getHouseholdHome",
-        "target": "src/server/services/households.ts#getHouseholdHome"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:getHouseholdHome:src/server/services/households.ts#getHouseholdHome",
       "ownerId": "server_loader:src/app/onboarding/page.tsx",
       "ownerModule": "src/app/onboarding/page.tsx",
       "sidecarPath": "src/app/onboarding/page.operation.ts"
@@ -3524,9 +3558,9 @@
     {
       "anchorBytes": "isPlatformOwner",
       "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-      "anchorEnd": 462,
+      "anchorEnd": 467,
       "anchorFile": "src/app/onboarding/page.tsx",
-      "anchorStart": 447,
+      "anchorStart": 452,
       "binding": {
         "kind": "server_value_import",
         "symbol": "isPlatformOwner",
@@ -3534,6 +3568,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:isPlatformOwner:src/server/services/platform-authority.ts#isPlatformOwner",
+      "ownerId": "server_loader:src/app/onboarding/page.tsx",
+      "ownerModule": "src/app/onboarding/page.tsx",
+      "sidecarPath": "src/app/onboarding/page.operation.ts"
+    },
+    {
+      "anchorBytes": "listHouseholdsForUser",
+      "anchorDigest": "37c77ac1072b62d2108f29115d68db3d3a1af072d65bd064b80caa2ab3a33c9b",
+      "anchorEnd": 403,
+      "anchorFile": "src/app/onboarding/page.tsx",
+      "anchorStart": 382,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listHouseholdsForUser",
+        "target": "src/server/services/households.ts#listHouseholdsForUser"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:listHouseholdsForUser:src/server/services/households.ts#listHouseholdsForUser",
       "ownerId": "server_loader:src/app/onboarding/page.tsx",
       "ownerModule": "src/app/onboarding/page.tsx",
       "sidecarPath": "src/app/onboarding/page.operation.ts"
@@ -3817,10 +3868,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "61c5e96fde896bb7a342f47c71c640a114052841c9112fe3a97616094b134dcb",
+  "semanticArtifactDigest": "cc90e13f310dc497d8c872b50d99b691b5b71487a085de3005b815773f1cd69b",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "39d0d5e1ef89c5a911cb23aa9a02c5b1708ef551aef07fe622912790519857ab",
+  "semanticCoverageDigest": "e68167381c92a0a0d4c39307dd602784ad847069eafd9985bc3a7bfa2823d982",
   "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "7650fde12d1b07d2b2e1e79bacd3729903329feff57bf7c47162dd040624bbc9",
-  "semanticFingerprint": "7038d4d7d3ca6d93ffd9388a7956f532b73914b61beea320df6fcdfbca7746d0"
+  "semanticDeclarationDigest": "23714ceac571ba8fe4517a4b76dfe3fb4dd3ffe1a031b905dac7a9ecac029fbf",
+  "semanticFingerprint": "f067bdff0944b1afaa2c7484f75af0714220ecebaba0bf103a0fc94870e1c590"
 }

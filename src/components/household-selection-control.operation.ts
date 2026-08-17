@@ -2,19 +2,14 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/layout.tsx",
-  ownerModule: "src/app/app/layout.tsx",
-  ownerKind: "server_loader",
+  id: "client_binding:src/components/household-selection-control.tsx",
+  ownerModule: "src/components/household-selection-control.tsx",
+  ownerKind: "client_binding",
   bindings: [
     {
-      kind: "server_value_import",
-      symbol: "getHouseholdSelectionState",
-      target: "src/server/services/household-selection.ts#getHouseholdSelectionState"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "requireUserPage",
-      target: "src/server/auth/session.ts#requireUserPage"
+      kind: "global_fetch",
+      symbol: "fetch[1]",
+      target: "globalThis.fetch"
     }
   ],
   disposition: "observed",

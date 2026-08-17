@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart, zonedDateTimeToDate } from "@/lib/timezone";
-import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
@@ -127,9 +127,9 @@ export async function getCalendar(
   userId: string,
   input?: { babyId?: string; month?: string; date?: string; eventId?: string }
 ) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
-  const home = await getHouseholdHome(userId, { includeInactive: true });
+  const home = await getHouseholdHome({ includeInactive: true });
   if (!home) return null;
   const baby = home.household.babies.find((item) => item.id === input?.babyId) ?? home.household.babies[0];
   if (!baby) {
@@ -243,7 +243,7 @@ export async function getCalendar(
 }
 
 export async function createCalendarEvent(raw: unknown): Promise<CalendarEventCreateResult> {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.create");
   const input = calendarEventSchema.parse(raw);
   const startTime = input.allDay

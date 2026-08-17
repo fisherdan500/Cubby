@@ -13,8 +13,8 @@ export const operation = {
     },
     {
       kind: "server_value_import",
-      symbol: "getHouseholdHome",
-      target: "src/server/services/households.ts#getHouseholdHome"
+      symbol: "listHouseholdsForUser",
+      target: "src/server/services/households.ts#listHouseholdsForUser"
     },
     {
       kind: "server_value_import",

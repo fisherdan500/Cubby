@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hasPermission } from "@/domain/roles";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   babyFindFirst: vi.fn(),
   babyFindMany: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 
@@ -40,7 +40,7 @@ import { deactivateBaby, reactivateBaby } from "@/server/services/households";
 describe("reversible baby inactivity", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.getHouseholdContext.mockResolvedValue({
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
       userId: "user-owner",
       householdId: "household-1",
       memberId: "member-owner",

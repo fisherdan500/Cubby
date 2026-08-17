@@ -14,4 +14,17 @@ describe("handleError", () => {
       }
     });
   });
+
+  it.each([
+    ["household_selection_required", "Select a household to continue."],
+    ["household_selection_stale", "Your selected household is no longer available. Choose another household."]
+  ] as const)("returns an explicit conflict response for %s", async (code, message) => {
+    const response = handleError(new Error(code));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: { code, message }
+    });
+  });
 });

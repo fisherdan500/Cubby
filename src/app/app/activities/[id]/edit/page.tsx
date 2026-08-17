@@ -15,7 +15,7 @@ import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
 export default async function EditActivityPage({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string | string[] } }) {
   const user = await requireUserPage();
-  const home = await getHouseholdHome(user.id, { includeInactive: true });
+  const home = await getHouseholdHome({ includeInactive: true });
   if (!home) redirect("/onboarding");
   const [activity, unitSettings] = await Promise.all([
     getActivityForEdit(params.id).catch(activityUnavailableOrThrow),

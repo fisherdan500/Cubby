@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   writeAudit: vi.fn(),
   transaction: vi.fn(),
@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
@@ -48,7 +48,7 @@ import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, saveNotificat
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getHouseholdContext.mockResolvedValue({ userId: "owner-user", householdId: "household-1", memberId: "owner-member", role: "owner" });
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({ userId: "owner-user", householdId: "household-1", memberId: "owner-member", role: "owner" });
   mocks.memberLock.mockResolvedValue([{ id: "owner-member" }]);
   mocks.txMemberFindUnique.mockResolvedValue({ id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null });
   const key = { id: "key-1", name: "Rehearsal", prefix: "cubby_test", scopes: ["read"] };

@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   cookieGet: vi.fn(),
   dismissalFindMany: vi.fn(),
   dismissalUpsert: vi.fn(),
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   getHouseholdHome: vi.fn(),
   requirePermission: vi.fn()
 }));
@@ -32,7 +32,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 
@@ -110,7 +110,7 @@ function householdHome() {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.getHouseholdContext.mockResolvedValue({
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({
     userId: "user-1",
     householdId: "household-1",
     memberId: "member-1",

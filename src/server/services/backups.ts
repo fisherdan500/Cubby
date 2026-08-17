@@ -6,7 +6,7 @@ import { automatedBackupConfig } from "@/lib/env";
 import { parseAccentTheme } from "@/domain/appearance";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import { activityRestoreSchema } from "@/lib/validation/activity";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { activityInclude, restoreHistoricalActivityForContext } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
@@ -110,7 +110,7 @@ const restoreSchema = z.object({
 
 type FreshState = { actorIsSoleOwner: boolean; operationalCount: bigint | number };
 
-async function isFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getHouseholdContext>>) {
+async function isFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getEffectiveHouseholdContext>>) {
   const rows = await db.$queryRaw<FreshState[]>`
     SELECT
       ((SELECT COUNT(*) FROM "HouseholdMember" WHERE "householdId" = ${ctx.householdId} AND "deletedAt" IS NULL AND "disabledAt" IS NULL) = 1
@@ -134,12 +134,12 @@ async function isFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ct
   return Boolean(state?.actorIsSoleOwner && Number(state.operationalCount) === 0);
 }
 
-async function assertFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getHouseholdContext>>) {
+async function assertFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ctx: Awaited<ReturnType<typeof getEffectiveHouseholdContext>>) {
   if (!(await isFreshTarget(db, ctx))) throw new Error("backup_target_not_empty");
 }
 
 export async function previewBackupJson(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const parsed = parseRecoveryBackup(raw);
   if (parsed.version === 1) prepareLegacyRecovery(parsed);
@@ -148,7 +148,7 @@ export async function previewBackupJson(raw: unknown) {
 }
 
 export async function exportBackupJson() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const snapshot = await prisma.$transaction(
     (tx: Prisma.TransactionClient) => buildHouseholdV2Snapshot(tx, ctx.householdId),
@@ -328,7 +328,7 @@ function compactDetail(source: Record<string, unknown>, keys: string[]) {
 type RestoreConfirmation = { confirmation?: string; previewChecksum?: string };
 
 export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfirmation = {}) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const parsed = parseRecoveryBackup(raw);
   const legacy = parsed.version === 1 ? prepareLegacyRecovery(parsed) : null;
@@ -642,7 +642,7 @@ async function applyRestoredBabyLifecycle(
 }
 
 export async function listBackupRecords() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   return prisma.backupRecord.findMany({
     where: { householdId: ctx.householdId },
@@ -652,7 +652,7 @@ export async function listBackupRecords() {
 }
 
 export async function getBackupRestoreTargetName() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   return (await prisma.household.findUniqueOrThrow({
     where: { id: ctx.householdId },
@@ -681,7 +681,7 @@ async function scanLocalBackupsForStatus(filenames: readonly string[]) {
 }
 
 export async function getAutomatedBackupStatus() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
 
   const recordSelect = {
@@ -792,7 +792,7 @@ export async function getAutomatedBackupStatus() {
 }
 
 export async function downloadLocalBackupFile(filename: string) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   if (!isLocalBackupFilename(filename)) throw new Error("not_found");
   const linkedRecord = await prisma.backupRecord.findFirst({

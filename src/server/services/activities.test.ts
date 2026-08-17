@@ -3,7 +3,7 @@ import { hasPermission } from "@/domain/roles";
 import { activityCreateSchema, activityUpdateSchema } from "@/lib/validation/activity";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   activityFindFirst: vi.fn(),
   activityCreate: vi.fn(),
@@ -48,7 +48,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 
@@ -72,7 +72,7 @@ import {
 describe("activity page access", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getHouseholdContext.mockResolvedValue(context("parent"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("parent"));
     mocks.requirePermission.mockImplementation((ctx, permission) => {
       if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
     });
@@ -126,13 +126,13 @@ describe("activity page access", () => {
   });
 
   it.each(["owner", "admin", "parent"] as const)("allows %s to update and delete any activity", async (role) => {
-    mocks.getHouseholdContext.mockResolvedValue(context(role));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context(role));
 
     await expect(getActivityView("activity-1")).resolves.toMatchObject({ canUpdate: true, canDelete: true });
   });
 
   it("allows a caretaker to mutate only an activity they recorded", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(context("caretaker"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("caretaker"));
     mocks.activityFindFirst.mockResolvedValueOnce(activity("member-current")).mockResolvedValueOnce(activity("member-other"));
 
     await expect(getActivityView("activity-own")).resolves.toMatchObject({ canUpdate: true, canDelete: true });
@@ -140,20 +140,20 @@ describe("activity page access", () => {
   });
 
   it("lets read-only members view without mutation actions", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("read_only"));
 
     await expect(getActivityView("activity-1")).resolves.toMatchObject({ canUpdate: false, canDelete: false });
   });
 
   it("fails closed before rendering an unauthorized edit form", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(context("caretaker"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("caretaker"));
     mocks.activityFindFirst.mockResolvedValue(activity("member-other"));
 
     await expect(getActivityForEdit("activity-1")).rejects.toThrow("forbidden");
   });
 
   it("fails closed before rendering an edit form for a read-only member", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("read_only"));
 
     await expect(getActivityForEdit("activity-1")).rejects.toThrow("forbidden");
   });
@@ -1143,7 +1143,7 @@ describe("activity page access", () => {
   });
 
   it("denies undo when the current role can no longer delete the activity", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("read_only"));
     mocks.memberFindUnique.mockResolvedValue({
       id: "member-current",
       householdId: "household-1",
@@ -1280,7 +1280,7 @@ describe("activity page access", () => {
   });
 
   it("reauthorizes the actor before replaying an activity-undo receipt", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(context("read_only"));
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("read_only"));
     mocks.memberFindUnique.mockResolvedValue({
       id: "member-current",
       householdId: "household-1",

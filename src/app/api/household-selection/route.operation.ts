@@ -2,19 +2,14 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/layout.tsx",
-  ownerModule: "src/app/app/layout.tsx",
-  ownerKind: "server_loader",
+  id: "api_route:src/app/api/household-selection/route.ts",
+  ownerModule: "src/app/api/household-selection/route.ts",
+  ownerKind: "api_route",
   bindings: [
     {
-      kind: "server_value_import",
-      symbol: "getHouseholdSelectionState",
-      target: "src/server/services/household-selection.ts#getHouseholdSelectionState"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "requireUserPage",
-      target: "src/server/auth/session.ts#requireUserPage"
+      kind: "route_method",
+      symbol: "POST",
+      target: "src/app/api/household-selection/route.ts#POST"
     }
   ],
   disposition: "observed",
