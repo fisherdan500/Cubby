@@ -22,6 +22,13 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     code: z.literal("ok"),
     eventId: z.string().min(1)
   }).strict(),
+  [BrowserOperationKey.activityCreate]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("create") }).strict(),
+  [BrowserOperationKey.activityUpdate]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("update") }).strict(),
+  [BrowserOperationKey.activityDelete]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("delete") }).strict(),
+  [BrowserOperationKey.activityUndoLast]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("undo") }).strict(),
+  [BrowserOperationKey.activityTimerPause]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("timer.pause") }).strict(),
+  [BrowserOperationKey.activityTimerResume]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("timer.resume") }).strict(),
+  [BrowserOperationKey.activityTimerStop]: z.object({ kind: z.literal("activity"), code: z.literal("ok"), activityId: z.string().min(1), action: z.literal("timer.stop") }).strict(),
   [BrowserOperationKey.dashboardWarningDismiss]: z.object({
     kind: z.literal("warning_dismissed"),
     code: z.literal("ok"),

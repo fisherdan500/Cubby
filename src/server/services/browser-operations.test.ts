@@ -230,20 +230,20 @@ describe("browser operation bindings", () => {
     await expect(issueBrowserOperation({
       ctx,
       operationId,
-      operationKey: BrowserOperationKey.activityCreate,
-      opening: { babyId: "baby-1", revision: "opening-v1" },
+      operationKey: BrowserOperationKey.inviteCreate,
+      opening: { target: "invite" },
       babyId: "baby-1",
-      targetKind: "baby",
-      targetId: "baby-1",
-      permission: "activity.create"
+      targetKind: "invite",
+      targetId: undefined,
+      permission: "household.manage"
     })).rejects.toThrow("browser_operation_adapter_unavailable");
     await expect(executeBrowserOperation({
       ctx,
       operationId,
-      operationKey: BrowserOperationKey.activityCreate,
-      intent: { babyId: "baby-1", type: "feeding" },
+      operationKey: BrowserOperationKey.inviteCreate,
+      intent: { email: "example@example.invalid" },
       babyId: "baby-1",
-      permission: "activity.create",
+      permission: "household.manage",
       execute
     })).rejects.toThrow("browser_operation_adapter_unavailable");
 

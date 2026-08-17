@@ -13,7 +13,7 @@ export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo
   const hasOpened = useRef(false);
   const triggerContainer = useRef<HTMLDivElement>(null);
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
-  const mutationId = useRef<string>();
+  const operationId = useRef<string>();
 
   useEffect(() => {
     if (confirming) confirmationHeading.current?.focus();
@@ -25,11 +25,15 @@ export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo
     setError("");
 
     try {
-      mutationId.current ??= crypto.randomUUID();
+      if (!operationId.current) {
+        const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+        const bytes = crypto.getRandomValues(new Uint8Array(26));
+        operationId.current = `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+      }
       const response = await fetch(`/api/activities/${encodeURIComponent(id)}`, {
         method: "DELETE",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ clientMutationId: mutationId.current })
+        body: JSON.stringify({ operationId: operationId.current })
       });
       const result = await response.json().catch(() => null);
       const message = activityDeleteError(response.ok, result);
@@ -37,7 +41,7 @@ export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo
         setError(message);
         return;
       }
-      mutationId.current = undefined;
+      operationId.current = undefined;
       router.replace(returnTo);
       router.refresh();
     } catch {

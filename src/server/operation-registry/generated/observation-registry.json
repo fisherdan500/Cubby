@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "7a9e798c997c2d59141ef86442aee399fbe13c070cf4427cbd51363bc430aa8b",
+  "declarationDigest": "4def0b93ace26a400c60b31249adac0699d63918588adc1d5e2812e30c18cb40",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -3174,16 +3174,6 @@
             "kind": "global_fetch",
             "symbol": "fetch[2]",
             "target": "globalThis.fetch"
-          },
-          {
-            "kind": "global_fetch",
-            "symbol": "fetch[3]",
-            "target": "globalThis.fetch"
-          },
-          {
-            "kind": "global_fetch",
-            "symbol": "fetch[4]",
-            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -4432,19 +4422,19 @@
     {
       "bindings": [
         {
-          "anchorDigest": "3c2571a64b2dcba9109143a6a2371ce682053476d7364eea943bce071368fbce",
-          "anchorEnd": 1184,
+          "anchorDigest": "9ee5e09742b7070fe5e6fced8ec3b9c62a5b8445961301359b850a8c483ae94f",
+          "anchorEnd": 3081,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 757,
+          "anchorStart": 1963,
           "kind": "route_method",
           "symbol": "DELETE",
           "target": "src/app/api/activities/[id]/route.ts#DELETE"
         },
         {
-          "anchorDigest": "718f2cf48c921b850b1012ab7aa78741bf35d38f74eda281350c62cf92e6488c",
-          "anchorEnd": 755,
+          "anchorDigest": "8957a0ce3c2fad19bd45fa451acaf78668dcbe998bad4c514c9d8b4c99e57872",
+          "anchorEnd": 1961,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 236,
+          "anchorStart": 751,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/activities/[id]/route.ts#PATCH"
@@ -4461,18 +4451,18 @@
       "bindings": [
         {
           "anchorDigest": "6ca6c4a41e1ecc6b72fa4aaf838a7b3c476ff7c7cbf858d40d0261bc446e5976",
-          "anchorEnd": 556,
+          "anchorEnd": 725,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 170,
+          "anchorStart": 339,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/activities/route.ts#GET"
         },
         {
-          "anchorDigest": "de33eaf99f266005cbeba6f2ce5c7d8b98fd65bc2add23851c74374046864041",
-          "anchorEnd": 745,
+          "anchorDigest": "375ca1fc6b6e2c01cf97cd8cba48c10ccac358dd98a5fd9b63e70a5adb702b22",
+          "anchorEnd": 1687,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 558,
+          "anchorStart": 727,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/activities/route.ts#POST"
@@ -4488,10 +4478,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d37f0a733c39fad232820f9c25e65c6bc2e3d99ece8e5302f81aa4ac5b42c268",
-          "anchorEnd": 532,
+          "anchorDigest": "c94e0d973ed9acbf10756392f5c672a1b9be45b40622663b0153ff528147b13f",
+          "anchorEnd": 1488,
           "anchorFile": "src/app/api/activities/undo-last/route.ts",
-          "anchorStart": 156,
+          "anchorStart": 327,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/activities/undo-last/route.ts#POST"
@@ -5469,10 +5459,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "0bb94c02debabdefd8795320d67b90502d714158125ce9ff4289ab72be00ad9b",
-          "anchorEnd": 735,
+          "anchorDigest": "d18daee78301d952674412f3d2aa8cf747a883fe75d96d81dc6cea65e55de173",
+          "anchorEnd": 1692,
           "anchorFile": "src/app/api/timers/[id]/pause/route.ts",
-          "anchorStart": 150,
+          "anchorStart": 309,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/timers/[id]/pause/route.ts#POST"
@@ -5488,10 +5478,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "47601a1a83464d8ace0e8ea46492e40732477837cd68bd20c417545d1c663c65",
-          "anchorEnd": 737,
+          "anchorDigest": "b959911f6333d422d9956178150fecaf10d9329cdf662eea31392a1c06d51966",
+          "anchorEnd": 1696,
           "anchorFile": "src/app/api/timers/[id]/resume/route.ts",
-          "anchorStart": 151,
+          "anchorStart": 310,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/timers/[id]/resume/route.ts#POST"
@@ -5507,10 +5497,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "03e3c72340c6bd8fc6d0d8c117fef261d7e1da0d3293fb5f3d81b206b1388a66",
-          "anchorEnd": 733,
+          "anchorDigest": "328712bf5d395d87f77eec97b6b497e7f77c9374af448875159cff5d7936f2b2",
+          "anchorEnd": 1688,
           "anchorFile": "src/app/api/timers/[id]/stop/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 308,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/timers/[id]/stop/route.ts#POST"
@@ -6500,39 +6490,21 @@
     {
       "bindings": [
         {
-          "anchorDigest": "60a1a14a3b56ef8e9eb7a4a71cbe969cbd977ceebf00a9a4e0a68ec9f6452023",
-          "anchorEnd": 652,
+          "anchorDigest": "bee834624c2fba5f3632affe7e505cdc14b74704e0fc378241c3a89ee53d99bb",
+          "anchorEnd": 878,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 450,
+          "anchorStart": 710,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "c8d1fa915a912bc1c94df1239f7aae81bbfc701e430be2390f067a46f57a01e4",
-          "anchorEnd": 1320,
+          "anchorDigest": "749c71a5b8484ca6409a291817024035a465410824223c6088524125fa913b5a",
+          "anchorEnd": 1935,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1117,
+          "anchorStart": 1772,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
-          "target": "globalThis.fetch"
-        },
-        {
-          "anchorDigest": "15eeac734ab1d8e908efe2b86e6051b32e1986e30b775fb09741427d70a34067",
-          "anchorEnd": 1985,
-          "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1781,
-          "kind": "global_fetch",
-          "symbol": "fetch[3]",
-          "target": "globalThis.fetch"
-        },
-        {
-          "anchorDigest": "077717b558263509de06b8bbe4d2f267bb7d59a226b054dff93f2f8b4fa42894",
-          "anchorEnd": 2627,
-          "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 2422,
-          "kind": "global_fetch",
-          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6565,10 +6537,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "523c7dafaa818cd67b14b11d82a244c530ac13f05cbfb54d47726ae410d15282",
-          "anchorEnd": 1263,
+          "anchorDigest": "4aef599f0a77ed4371c0fd3d2f686a313930993dafb3cd42fc7a40078d6dbe21",
+          "anchorEnd": 1477,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 1048,
+          "anchorStart": 1266,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -6669,18 +6641,18 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 3329,
+          "anchorEnd": 3498,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 3314,
+          "anchorStart": 3483,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "64597b0cc1f0c71f336283b1baa13d98036a7ccc0ca90f5f6def62f88db5ec5a",
-          "anchorEnd": 2474,
+          "anchorEnd": 2643,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2253,
+          "anchorStart": 2422,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -7878,7 +7850,7 @@
     }
   ],
   "observationCount": 120,
-  "observationDigest": "7923be516d0c31e4c2e220cf1c85a5c887e59f6f3aaa90085d7ddac6ba6d22fd",
+  "observationDigest": "3fbdc0a96e44b9f070362ef42cd64d60a30a48740e72b799fec1b6417efb48be",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -7948,18 +7920,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1184,
+          "anchorEnd": 3081,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 757,
+          "anchorStart": 1963,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/[id]/route.ts",
           "symbol": "DELETE",
           "target": "src/app/api/activities/[id]/route.ts#DELETE"
         },
         {
-          "anchorEnd": 755,
+          "anchorEnd": 1961,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 236,
+          "anchorStart": 751,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/[id]/route.ts",
           "symbol": "PATCH",
@@ -7975,18 +7947,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 556,
+          "anchorEnd": 725,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 170,
+          "anchorStart": 339,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/route.ts",
           "symbol": "GET",
           "target": "src/app/api/activities/route.ts#GET"
         },
         {
-          "anchorEnd": 745,
+          "anchorEnd": 1687,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 558,
+          "anchorStart": 727,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/route.ts",
           "symbol": "POST",
@@ -8002,9 +7974,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 532,
+          "anchorEnd": 1488,
           "anchorFile": "src/app/api/activities/undo-last/route.ts",
-          "anchorStart": 156,
+          "anchorStart": 327,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/undo-last/route.ts",
           "symbol": "POST",
@@ -8938,9 +8910,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 735,
+          "anchorEnd": 1692,
           "anchorFile": "src/app/api/timers/[id]/pause/route.ts",
-          "anchorStart": 150,
+          "anchorStart": 309,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/[id]/pause/route.ts",
           "symbol": "POST",
@@ -8956,9 +8928,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 737,
+          "anchorEnd": 1696,
           "anchorFile": "src/app/api/timers/[id]/resume/route.ts",
-          "anchorStart": 151,
+          "anchorStart": 310,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/[id]/resume/route.ts",
           "symbol": "POST",
@@ -8974,9 +8946,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 733,
+          "anchorEnd": 1688,
           "anchorFile": "src/app/api/timers/[id]/stop/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 308,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
           "symbol": "POST",
@@ -9937,39 +9909,21 @@
     {
       "bindings": [
         {
-          "anchorEnd": 652,
+          "anchorEnd": 878,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 450,
+          "anchorStart": 710,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 1320,
+          "anchorEnd": 1935,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1117,
+          "anchorStart": 1772,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[2]",
-          "target": "globalThis.fetch"
-        },
-        {
-          "anchorEnd": 1985,
-          "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1781,
-          "kind": "global_fetch",
-          "ownerModule": "src/components/actions/activity-actions.tsx",
-          "symbol": "fetch[3]",
-          "target": "globalThis.fetch"
-        },
-        {
-          "anchorEnd": 2627,
-          "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 2422,
-          "kind": "global_fetch",
-          "ownerModule": "src/components/actions/activity-actions.tsx",
-          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -10000,9 +9954,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1263,
+          "anchorEnd": 1477,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 1048,
+          "anchorStart": 1266,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[1]",
@@ -10099,18 +10053,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3329,
+          "anchorEnd": 3498,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 3314,
+          "anchorStart": 3483,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2474,
+          "anchorEnd": 2643,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2253,
+          "anchorStart": 2422,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
@@ -11964,7 +11918,7 @@
   ],
   "ownerSetDigest": "58b59f5d5675e8296639fb92f4260fbc24c15b5873effba1ced363d6c96339ea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "32296acdf0756d2ff66006fa3da6bfebec3d3ba00c8ffed5e841557ac857adc6",
+  "registryDigest": "8f2f815cfd69767ada441fa6d3991ba968f8a2b8ba3db0241b9f34fffd8f0fa5",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
