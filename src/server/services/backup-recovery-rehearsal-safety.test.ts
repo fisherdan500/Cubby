@@ -77,6 +77,12 @@ describe("backup recovery rehearsal safety", () => {
     );
   });
 
+  it("excludes every named environment file from the Docker build context", () => {
+    const dockerignore = readFileSync(new URL("../../../.dockerignore", import.meta.url), "utf8");
+
+    expect(dockerignore.split(/\r?\n/)).toContain(".env*");
+  });
+
   it("uses one explicit timezone for the disposable app and host-side timer probe", () => {
     const compose = readFileSync(
       new URL("../../../scripts/backup-recovery-rehearsal.compose.yml", import.meta.url),
@@ -116,8 +122,8 @@ describe("backup recovery rehearsal safety", () => {
       "utf8"
     );
 
-    expect(runner).toContain("--outfile=dist/platform-owner.mjs");
-    expect(integration).toContain("dist/platform-owner.mjs");
+    expect(runner).toContain('resolve(migrationCwd, "platform-owner.mjs")');
+    expect(integration).toContain("REHEARSAL_PLATFORM_OWNER_CLI");
     expect(integration).toContain('"provision-backup-recovery-target"');
     expect(integration).toContain('"inspect-backup-recovery"');
     expect(integration).toContain('"authorize-backup-recovery"');

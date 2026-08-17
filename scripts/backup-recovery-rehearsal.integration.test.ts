@@ -64,7 +64,13 @@ if (!backupDirectory || !rehearsalHandoffFile) {
   throw new Error("rehearsal_environment_not_set");
 }
 
-const packagedPlatformOwnerCli = fileURLToPath(new URL("../dist/platform-owner.mjs", import.meta.url));
+function requirePackagedPlatformOwnerCli() {
+  const cli = process.env.REHEARSAL_PLATFORM_OWNER_CLI;
+  if (!cli) throw new Error("rehearsal_platform_owner_cli_not_set");
+  return cli;
+}
+
+const packagedPlatformOwnerCli = requirePackagedPlatformOwnerCli();
 
 function runPackagedPlatformOwner(args: string[]) {
   return spawnSync(process.execPath, [packagedPlatformOwnerCli, ...args], {
@@ -382,10 +388,24 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       }
     });
     await prisma.apiKey.create({
-      data: { householdId: source.household.id, name: "Source key", keyHash: "source-api-key-hash", prefix: "cubby_src", scopes: ["activity:write"] }
+      data: {
+        householdId: source.household.id,
+        delegatedByMemberId: source.member.id,
+        name: "Source key",
+        keyHash: "source-api-key-hash",
+        prefix: "cubby_src",
+        scopes: ["activity:write"]
+      }
     });
     const endpoint = await prisma.webhookEndpoint.create({
-      data: { householdId: source.household.id, name: "Source webhook", url: "https://rehearsal.invalid/hook", secret: "source-webhook-secret", events: ["activity_created"] }
+      data: {
+        householdId: source.household.id,
+        delegatedByMemberId: source.member.id,
+        name: "Source webhook",
+        url: "https://rehearsal.invalid/hook",
+        secret: "source-webhook-secret",
+        events: ["activity_created"]
+      }
     });
     await prisma.webhookDelivery.create({
       data: { householdId: source.household.id, endpointId: endpoint.id, event: "activity_created", activityId: stoppedPlay.id, status: "pending" }

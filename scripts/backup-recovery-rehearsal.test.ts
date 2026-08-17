@@ -4,6 +4,7 @@ import {
   assertMigrationFailureContract,
   cleanupResultFailed,
   cleanupTemporaryPaths,
+  createIsolatedClientSchema,
   parseImmutableImageId,
   selectMigrationPrefix
 } from "./backup-recovery-rehearsal";
@@ -117,5 +118,48 @@ describe("update rehearsal cleanup contract", () => {
 
     expect(failed).toBe(true);
     expect(attempted).toEqual(["first", "second"]);
+  });
+});
+
+describe("backup recovery host Prisma client schema", () => {
+  it("rewrites only the client generator to an explicit isolated-output destination", () => {
+    const source = `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}`;
+
+    expect(createIsolatedClientSchema(source, "C:\\workspace\\node_modules\\.prisma\\client")).toBe(`generator client {
+  provider = "prisma-client-js"
+  output   = "C:/workspace/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}`);
+  });
+
+  it("normalizes Windows line endings before rewriting the client generator", () => {
+    const source = [
+      "generator client {",
+      '  provider = "prisma-client-js"',
+      "}",
+      "",
+      "datasource db {",
+      '  provider = "postgresql"',
+      "}"
+    ].join(String.fromCharCode(13, 10));
+
+    expect(createIsolatedClientSchema(source, "C:/workspace/node_modules/.prisma/client")).toContain(
+      "output   = \"C:/workspace/node_modules/.prisma/client\""
+    );
+  });
+
+  it("rejects an unexpected client generator contract", () => {
+    expect(() => createIsolatedClientSchema("generator client {}", "C:/workspace/node_modules/.prisma/client")).toThrow(
+      "backup_rehearsal_client_generator_contract_invalid"
+    );
   });
 });

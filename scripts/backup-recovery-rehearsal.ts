@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { cpSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -72,6 +72,25 @@ export function cleanupTemporaryPaths(
     }
   }
   return failed;
+}
+
+const prismaClientGenerator = `generator client {
+  provider = "prisma-client-js"
+}`;
+
+export function createIsolatedClientSchema(schema: string, clientOutputDirectory: string) {
+  const normalizedSchema = schema.split(String.fromCharCode(13, 10)).join(String.fromCharCode(10));
+  if (!normalizedSchema.startsWith(prismaClientGenerator)) {
+    throw new Error("backup_rehearsal_client_generator_contract_invalid");
+  }
+  const normalizedOutputDirectory = clientOutputDirectory.replaceAll("\\", "/");
+  return normalizedSchema.replace(
+    prismaClientGenerator,
+    `generator client {
+  provider = "prisma-client-js"
+  output   = ${JSON.stringify(normalizedOutputDirectory)}
+}`
+  );
 }
 
 type DisposableConfig = {
@@ -205,6 +224,7 @@ export function runBackupRecoveryRehearsal() {
     assertDisposableRehearsalConfig(config);
     dockerEnv = isolatedDockerEnvironment(rehearsalPassword, rehearsalAuthSecret, config.backupDirectory);
     migrationCwd = mkdtempSync(resolve(tmpdir(), "cubby-backup-rehearsal-"));
+    symlinkSync(resolve(repositoryRoot, "node_modules"), resolve(migrationCwd, "node_modules"), "junction");
     const isolatedPrismaDir = resolve(migrationCwd, "prisma");
     const handoffFile = resolve(migrationCwd, "app-probe-handoff.json");
 
@@ -240,7 +260,12 @@ export function runBackupRecoveryRehearsal() {
     const baselineMigrations = selectMigrationPrefix(committedMigrations);
     mkdirSync(resolve(isolatedPrismaDir, "migrations"), { recursive: true });
     const schema = resolve(isolatedPrismaDir, "schema.prisma");
-    copyFileSync(resolve(repositoryRoot, "prisma/schema.prisma"), schema);
+    const generatedClientDirectory = resolve(migrationCwd, "generated-prisma-client");
+    const fullSchema = createIsolatedClientSchema(
+      readFileSync(resolve(repositoryRoot, "prisma/schema.prisma"), "utf8"),
+      generatedClientDirectory
+    );
+    writeFileSync(schema, fullSchema);
     copyFileSync(
       resolve(repositoryRoot, "prisma/migrations/migration_lock.toml"),
       resolve(isolatedPrismaDir, "migrations/migration_lock.toml")
@@ -252,7 +277,20 @@ export function runBackupRecoveryRehearsal() {
         { recursive: true }
       );
     }
+    const prismaGenerateEnv = {
+      ...env,
+      NODE_PATH: resolve(repositoryRoot, "node_modules"),
+      PRISMA_GENERATE_SKIP_AUTOINSTALL: "true"
+    };
+    const packagedPlatformOwnerCli = resolve(migrationCwd, "platform-owner.mjs");
+    const testEnv = {
+      ...env,
+      REHEARSAL_PRISMA_CLIENT_PATH: generatedClientDirectory,
+      REHEARSAL_PLATFORM_OWNER_CLI: packagedPlatformOwnerCli
+    };
     run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", schema], { cwd: migrationCwd, env });
+    run(process.execPath, [prismaCli, "db", "pull", "--schema", schema], { cwd: migrationCwd, env });
+    run(process.execPath, [prismaCli, "generate", "--schema", schema], { cwd: migrationCwd, env: prismaGenerateEnv });
     const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
     const esbuildCli = resolve(repositoryRoot, "node_modules/esbuild/bin/esbuild");
     run(process.execPath, [
@@ -263,11 +301,11 @@ export function runBackupRecoveryRehearsal() {
       "--format=esm",
       "--target=node22",
       "--packages=external",
-      "--outfile=dist/platform-owner.mjs"
+      `--outfile=${packagedPlatformOwnerCli}`
     ], { cwd: repositoryRoot, env });
     run(process.execPath, [vitestCli, "run", "--config", "scripts/update-baseline-fixture.vitest.config.ts"], {
       cwd: repositoryRoot,
-      env: { ...env, UPDATE_BASELINE_PHASE: "seed" }
+      env: { ...testEnv, UPDATE_BASELINE_PHASE: "seed" }
     });
 
     // The image entrypoint, not the host, applies the migrations after the fixed baseline.
@@ -275,10 +313,12 @@ export function runBackupRecoveryRehearsal() {
       cwd: repositoryRoot,
       env: dockerEnv
     });
+    writeFileSync(schema, fullSchema);
+    run(process.execPath, [prismaCli, "generate", "--schema", schema], { cwd: migrationCwd, env: prismaGenerateEnv });
     run(process.execPath, [vitestCli, "run", "--config", "scripts/update-baseline-fixture.vitest.config.ts"], {
       cwd: repositoryRoot,
       env: {
-        ...env,
+        ...testEnv,
         UPDATE_BASELINE_PHASE: "verify",
         UPDATE_COMMITTED_MIGRATIONS: committedMigrations.join(",")
       }
@@ -286,7 +326,7 @@ export function runBackupRecoveryRehearsal() {
     run(
       process.execPath,
       [vitestCli, "run", "--config", "scripts/backup-recovery-rehearsal.vitest.config.ts"],
-      { cwd: repositoryRoot, env }
+      { cwd: repositoryRoot, env: testEnv }
     );
 
     const publishedApp = run("docker", [...composeArgs, "port", "app", "3000"], {
