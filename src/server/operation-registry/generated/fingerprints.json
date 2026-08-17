@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "4b4c30e94f41477bf06d0afeb11d00da9c1d3e4510524ae4557a992f9a2def14",
+  "declarationDigest": "f96528c6cef866513f46fd391d23c6d5413e12805d1f7ec5c5575c8fe927793d",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -312,17 +312,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "c1a3698f617dcaef3749f917abb342510d203b2de693f3d8f3c2a39ceccc8b16",
+          "digest": "24eb58b647a629df18e80602b2401e319be55bad42868bf466546a98b3e37dca",
           "file": "src/app/api/dashboard/warnings/dismiss/route.ts"
         }
       ],
       "declarationDigest": "ee8db6cf59088f63f0a7351281d3118f167b89d16f62956e575bee32e0e979e4",
-      "fingerprint": "7f8bcc783e249ef679f9fab184fcba7a76fafa3b20dfa17cc2237e9a50304dfe",
+      "fingerprint": "49f58086545445cfb41a2fad750118097101f3349604763f516b85727e6e8cc9",
       "id": "fingerprint:api_route:src/app/api/dashboard/warnings/dismiss/route.ts",
       "ownerId": "api_route:src/app/api/dashboard/warnings/dismiss/route.ts",
       "ownerModule": "src/app/api/dashboard/warnings/dismiss/route.ts",
       "sidecarPath": "src/app/api/dashboard/warnings/dismiss/route.operation.ts",
-      "sourceDigest": "c71e8d439ede7a9cd4e34dc48bfce96b994efa7b16bc8a950a731f742642e281",
+      "sourceDigest": "3249a5a14e2674759539a5f7355d51e41904db708ca87cb001a0413dfc4e781a",
       "status": "declared"
     },
     {
@@ -940,7 +940,7 @@
     {
       "anchorFiles": [
         {
-          "digest": "3361e5f5c9117fd0526c16f71bb2d16a904421782a0d2d02e1dbdce802cda1a2",
+          "digest": "a4751155dea9dcb4fd7c16a9dbe58bf1ec0c57a6875449196417a1ed58a5cbeb",
           "file": "src/app/app/calendar/actions.ts"
         },
         {
@@ -948,13 +948,13 @@
           "file": "src/app/app/calendar/page.tsx"
         }
       ],
-      "declarationDigest": "5bf26c7a462312e565b36cbaadeb71e161e84fd5fe486e310e27d21af35769bd",
-      "fingerprint": "0de34071cb9645ca9ccb51f4977bb084507b7e0059f4fcfbf30f62cb93417053",
+      "declarationDigest": "19c37a3926df789f72a86b7a0e445a13dc81d4e7169d26e20c35df4e5503b5cc",
+      "fingerprint": "54bb761ca7310dd9811a2c7641e8db55093b4982416b564625c6a840b3bfeffe",
       "id": "fingerprint:server_loader:src/app/app/calendar/page.tsx",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts",
-      "sourceDigest": "d47b864b8cb9b96faaa3bf1a4df595274e55cf7d993dfe1e3a404f01ee1ca887",
+      "sourceDigest": "dc69a230949050a8050112d363e3f6d9603c062be6ff6b9bac2c48130afcba2e",
       "status": "declared"
     },
     {
@@ -1408,33 +1408,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "58153a4f20930a708b0ba6ed98e01297c2dfa88a863589d7c2c9a7a5b83e167c",
+          "digest": "0c766e415c01d5511a7555f6cb8f07d3486328aca2a443395f95d532a89fb94d",
           "file": "src/components/calendar-event-submission.tsx"
         }
       ],
-      "declarationDigest": "9c7aa85887a700c8b466a32957a32390703dfdeb114587ad8fbd87dcbb7c6a4d",
-      "fingerprint": "96dad0de1c5390b3639006bd54a0fd5b006e92494f9c27bc61ea5903ca620505",
+      "declarationDigest": "96ec4645570d3e033e7d59107f2c10b733dab4d772c2b43305a16e961c96837c",
+      "fingerprint": "5bdb2237cc17aa9bc44f6b4ca791f15715e4171283aede9c7987b6aa39eb7dbf",
       "id": "fingerprint:client_binding:src/components/calendar-event-submission.tsx",
       "ownerId": "client_binding:src/components/calendar-event-submission.tsx",
       "ownerModule": "src/components/calendar-event-submission.tsx",
       "sidecarPath": "src/components/calendar-event-submission.operation.ts",
-      "sourceDigest": "c6eff209e90606bd30a47c252e09777787cd9b7da63ee7e99081112dffad8dc0",
+      "sourceDigest": "e7aa9839a270a912b51e469af6153ccd59277adce494b1abdbddaeed94bbb454",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "4d2fe73dd63e81073b54b45fa9562e1143772036c4dee8e33df035f8597a7b5b",
+          "digest": "52cb127f4408f51659f86a4543093884dc02adcd94ab69cab3db1020e5fb9c78",
           "file": "src/components/dashboard/dashboard-warnings.tsx"
         }
       ],
-      "declarationDigest": "8dcf15b6beb483dac8b0f8a49badf87139c3efe2bd9010388094525548c615ba",
-      "fingerprint": "51f387bd35d6a56867c2e982b02f6b3bfdd1866bd3e69660101cebce7132f36f",
+      "declarationDigest": "09a5e7e0e808daf8da4e81ded5bd4ef756280d0a3279228a903421498cc886a2",
+      "fingerprint": "8d08fb6fb4a56ba809940875fad230bdbe7ab1188f263f17557286898c6d379e",
       "id": "fingerprint:client_binding:src/components/dashboard/dashboard-warnings.tsx",
       "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
       "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts",
-      "sourceDigest": "26b8e1fb001d952d0bb00f649fdeb5c18e510339df22fd6f2df08a98b71210bf",
+      "sourceDigest": "a298126fb6843b6a0ab75e5820b20c24565e767d63e805ff69a6d41dd52cfff8",
       "status": "declared"
     },
     {
@@ -1728,17 +1728,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "3361e5f5c9117fd0526c16f71bb2d16a904421782a0d2d02e1dbdce802cda1a2",
+          "digest": "a4751155dea9dcb4fd7c16a9dbe58bf1ec0c57a6875449196417a1ed58a5cbeb",
           "file": "src/app/app/calendar/actions.ts"
         }
       ],
       "declarationDigest": "3e68e74dc441ecf0be1ddc1fb695b88225d92ce05aafaf01be117250a9ea9ae4",
-      "fingerprint": "225ca3d06d58d5c3235324321f8213b39c3b4977b68d2345e76fc287634a5100",
+      "fingerprint": "ff96b4243e3f17b10839e0f1719f778f859f836b9c03319cf4bb6356bab907a4",
       "id": "fingerprint:server_action:src/app/app/calendar/actions.ts",
       "ownerId": "server_action:src/app/app/calendar/actions.ts",
       "ownerModule": "src/app/app/calendar/actions.ts",
       "sidecarPath": "src/app/app/calendar/actions.operation.ts",
-      "sourceDigest": "62b9367070229798b0f91c7f1e06cf87e74e93bb423ee095c4e06dbcfdaab63a",
+      "sourceDigest": "dab0db4e6d761b0738e382aca5bc06ca89251c816910076d90d17f225e7d6378",
       "status": "declared"
     },
     {
@@ -2008,11 +2008,11 @@
   ],
   "generatorDigest": "341d673d7ae0be09ecdb20f644fd09dd654d344d04e49d9f550a288a152560ce",
   "generatorVersion": "r0.1",
-  "observationDigest": "6764c2d157664da2ccbe1b73f8f1771c9c6d7615bb29c6c30ef2c6d2b2be2e49",
+  "observationDigest": "bedbb59c8456d9e5b3e5997bd02ca2bfbd84bacb781ac0a7c905ec43ac78ec25",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "2df0d67930f14a2974e42bb4fa9665bcb71428bd5b1068e4adbd915c2537698e",
+  "registryDigest": "7aa25713cb9ea756f01dde2cb44ef6fb18c2e0c89d752fc1e5021be90e97722c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

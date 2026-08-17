@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  createCalendarEvent: vi.fn(),
   issueCalendarEventBrowserOperation: vi.fn(),
   submitCalendarEventBrowserOperation: vi.fn(),
   browserOperationFailureResult: vi.fn((operationId: unknown, error: unknown) =>
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/services/calendar", () => ({
+  createCalendarEvent: mocks.createCalendarEvent,
   issueCalendarEventBrowserOperation: mocks.issueCalendarEventBrowserOperation,
   submitCalendarEventBrowserOperation: mocks.submitCalendarEventBrowserOperation
 }));
@@ -48,6 +50,34 @@ describe("createCalendarEventAction", () => {
     });
     expect(mocks.issueCalendarEventBrowserOperation).toHaveBeenCalledWith(expect.objectContaining({ operationId: "bmo_0123456789abcdefghjkmnpqrs" }));
     expect(mocks.submitCalendarEventBrowserOperation).toHaveBeenCalledWith(expect.objectContaining({ operationId: "bmo_0123456789abcdefghjkmnpqrs" }));
+  });
+
+  it("preserves every selected contact in the BMO intent and never dual-writes through the legacy creator", async () => {
+    mocks.issueCalendarEventBrowserOperation.mockResolvedValue({ status: "open", operationId: "bmo_0123456789abcdefghjkmnpqrs", bindingId: "binding-1" });
+    mocks.submitCalendarEventBrowserOperation.mockResolvedValue({
+      status: "completed",
+      operationId: "bmo_0123456789abcdefghjkmnpqrs",
+      outcome: { kind: "calendar_event", code: "ok", eventId: "event-1" }
+    });
+    const data = form();
+    data.append("contactIds", "contact-2");
+    data.append("contactIds", "contact-1");
+
+    await expect(createCalendarEventAction(data)).resolves.toMatchObject({ status: "completed" });
+    expect(mocks.issueCalendarEventBrowserOperation).toHaveBeenCalledWith(expect.objectContaining({ contactIds: ["contact-2", "contact-1"] }));
+    expect(mocks.submitCalendarEventBrowserOperation).toHaveBeenCalledWith(expect.objectContaining({ contactIds: ["contact-2", "contact-1"] }));
+    expect(mocks.createCalendarEvent).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy no-BMO form path as one direct creation", async () => {
+    mocks.createCalendarEvent.mockResolvedValue({ id: "event-legacy" });
+    const data = form();
+    data.delete("operationId");
+
+    await expect(createCalendarEventAction(data)).resolves.toEqual({ status: "completed", operationId: "", eventId: "event-legacy" });
+    expect(mocks.createCalendarEvent).toHaveBeenCalledWith(expect.objectContaining({ babyId: "baby-1" }));
+    expect(mocks.issueCalendarEventBrowserOperation).not.toHaveBeenCalled();
+    expect(mocks.submitCalendarEventBrowserOperation).not.toHaveBeenCalled();
   });
 
   it("returns only a non-disclosing inline stale/error outcome", async () => {

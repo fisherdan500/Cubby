@@ -4,6 +4,12 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createCalendarEventAction } from "@/app/app/calendar/actions";
 
+type CalendarOperationStatus = {
+  status: "open" | "pending" | "completed" | "rejected" | "stale" | "expired";
+  operationId: string;
+  outcome?: { eventId?: string };
+};
+
 function createBrowserOperationId() {
   const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
   const bytes = crypto.getRandomValues(new Uint8Array(26));
@@ -63,31 +69,78 @@ export function CalendarEventSubmission({
   const [error, setError] = useState(fallbackError ?? "");
   const [submitting, setSubmitting] = useState(false);
 
+  function clearOperation(intentKey: string) {
+    clearRetainedOperationId(intentKey);
+    operation.current = undefined;
+  }
+
+  function complete(intentKey: string, eventId: string) {
+    clearOperation(intentKey);
+    router.push(`${successHref}&eventId=${encodeURIComponent(eventId)}`);
+    router.refresh();
+  }
+
+  async function reconcile(intentKey: string, operationId: string) {
+    const response = await fetch(`/api/browser-operations/${operationId}`, { cache: "no-store" });
+    const result = await response.json().catch(() => null) as { ok?: boolean; data?: CalendarOperationStatus } | null;
+    if (response.status === 404) {
+      clearOperation(intentKey);
+      setError("This event request is no longer available. Review the form and try again.");
+      return false;
+    }
+    if (response.status === 410) {
+      clearOperation(intentKey);
+      setError(inlineMessage("stale"));
+      return false;
+    }
+    if (!response.ok || !result?.ok || !result.data) throw new Error("calendar_operation_status_unavailable");
+    if (result.data.status === "completed") {
+      const eventId = result.data.outcome?.eventId;
+      if (!eventId) {
+        clearOperation(intentKey);
+        setError(inlineMessage("stale"));
+        return false;
+      }
+      complete(intentKey, eventId);
+      return false;
+    }
+    if (result.data.status === "pending") {
+      setError("Saving is still in progress. Keep this form open and try again.");
+      return false;
+    }
+    if (result.data.status === "stale" || result.data.status === "rejected" || result.data.status === "expired") {
+      clearOperation(intentKey);
+      setError(inlineMessage(result.data.status === "rejected" ? "rejected" : "stale"));
+      return false;
+    }
+    return result.data.status === "open";
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const intentKey = calendarIntentKey(formData);
+    const retained = operation.current?.intentKey === intentKey
+      ? operation.current.id
+      : readRetainedOperationId(intentKey);
     setError("");
     setSubmitting(true);
-    if (operation.current?.intentKey !== intentKey) {
-      operation.current = { intentKey, id: readRetainedOperationId(intentKey) ?? createBrowserOperationId() };
-      retainOperationId(intentKey, operation.current.id);
-    }
-    formData.set("operationId", operation.current.id);
+    const operationId = retained ?? createBrowserOperationId();
+    operation.current = { intentKey, id: operationId };
+    retainOperationId(intentKey, operationId);
+    formData.set("operationId", operationId);
     try {
+      if (retained && !await reconcile(intentKey, operationId)) return;
       const result = await createCalendarEventAction(formData);
       if (result.status === "completed") {
-        clearRetainedOperationId(intentKey);
-        router.push(`${successHref}&eventId=${encodeURIComponent(result.eventId)}`);
-        router.refresh();
+        complete(intentKey, result.eventId);
         return;
       }
       if (result.status === "pending") {
         setError("Saving is still in progress. Keep this form open and try again.");
         return;
       }
-      clearRetainedOperationId(intentKey);
-      operation.current = undefined;
+      clearOperation(intentKey);
       setError(inlineMessage(result.status));
     } catch {
       setError("Could not reach Cubby. Check your connection and try again.");

@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "4b4c30e94f41477bf06d0afeb11d00da9c1d3e4510524ae4557a992f9a2def14",
+  "declarationDigest": "f96528c6cef866513f46fd391d23c6d5413e12805d1f7ec5c5575c8fe927793d",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -2247,6 +2247,16 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "browserOperationFailureResult",
+            "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "createCalendarEvent",
+            "target": "src/server/services/calendar.ts#createCalendarEvent"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getCalendar",
             "target": "src/server/services/calendar.ts#getCalendar"
           },
@@ -2269,11 +2279,6 @@
             "kind": "server_value_import",
             "symbol": "submitCalendarEventBrowserOperation",
             "target": "src/server/services/calendar.ts#submitCalendarEventBrowserOperation"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "browserOperationFailureResult",
-            "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
           }
         ],
         "deferredGateIds": [
@@ -3336,6 +3341,11 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
             "kind": "server_action",
             "symbol": "createCalendarEventAction[1]",
             "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
@@ -3368,6 +3378,11 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
             "target": "globalThis.fetch"
           }
         ],
@@ -4811,10 +4826,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
-          "anchorEnd": 1078,
+          "anchorDigest": "4fb67172a72ed2ada97913626a6d31fc28ed3e60e5363967629bb2114dbbfa35",
+          "anchorEnd": 1219,
           "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
-          "anchorStart": 307,
+          "anchorStart": 334,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/dashboard/warnings/dismiss/route.ts#POST"
@@ -5715,12 +5730,21 @@
       "bindings": [
         {
           "anchorDigest": "41543e6978fa330d5755442da137138a37a6c7a7911f29f7c244ae978eadbb93",
-          "anchorEnd": 175,
+          "anchorEnd": 198,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 146,
+          "anchorStart": 169,
           "kind": "server_value_import",
           "symbol": "browserOperationFailureResult",
           "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
+        },
+        {
+          "anchorDigest": "2b55a59d7405c31ac0caea390a481466757febfbebefa628ecbc1a83fdc23e1b",
+          "anchorEnd": 45,
+          "anchorFile": "src/app/app/calendar/actions.ts",
+          "anchorStart": 26,
+          "kind": "server_value_import",
+          "symbol": "createCalendarEvent",
+          "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
           "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
@@ -5742,9 +5766,9 @@
         },
         {
           "anchorDigest": "b277667254e7c850ff4e585e7bf2c30567756ac7f72feb2c065390f706520b29",
-          "anchorEnd": 60,
+          "anchorEnd": 83,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 26,
+          "anchorStart": 49,
           "kind": "server_value_import",
           "symbol": "issueCalendarEventBrowserOperation",
           "target": "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
@@ -5760,9 +5784,9 @@
         },
         {
           "anchorDigest": "32d4182f066e7f5fb683fe7e437e7d3f3561217850cca132d4a9615d094e1204",
-          "anchorEnd": 99,
+          "anchorEnd": 122,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 64,
+          "anchorStart": 87,
           "kind": "server_value_import",
           "symbol": "submitCalendarEventBrowserOperation",
           "target": "src/server/services/calendar.ts#submitCalendarEventBrowserOperation"
@@ -6661,10 +6685,19 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d1a3d4a61b3e52a725f0668c540fc02bdeeee63a9666cee89fe1ec396b716037",
-          "anchorEnd": 2606,
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 2668,
           "anchorFile": "src/components/calendar-event-submission.tsx",
-          "anchorStart": 2571,
+          "anchorStart": 2598,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d1a3d4a61b3e52a725f0668c540fc02bdeeee63a9666cee89fe1ec396b716037",
+          "anchorEnd": 4706,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 4671,
           "kind": "server_action",
           "symbol": "createCalendarEventAction[1]",
           "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
@@ -6680,12 +6713,21 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
-          "anchorEnd": 1749,
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 2297,
           "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
-          "anchorStart": 1445,
+          "anchorStart": 2227,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
+          "anchorEnd": 4440,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 4136,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         }
       ],
@@ -7347,10 +7389,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "7878f7e0a7a3c4c833182555317a8c2728fe2f7bda2236e588d939cc703bb428",
-          "anchorEnd": 1235,
+          "anchorDigest": "523e0b369607c63c0af76d79f2bc3c3db73c852bc3e916a04c44afd8408f757b",
+          "anchorEnd": 1403,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 425,
+          "anchorStart": 448,
           "kind": "server_action",
           "symbol": "createCalendarEventAction",
           "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
@@ -7927,7 +7969,7 @@
     }
   ],
   "observationCount": 121,
-  "observationDigest": "6764c2d157664da2ccbe1b73f8f1771c9c6d7615bb29c6c30ef2c6d2b2be2e49",
+  "observationDigest": "bedbb59c8456d9e5b3e5997bd02ca2bfbd84bacb781ac0a7c905ec43ac78ec25",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -8330,9 +8372,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1078,
+          "anchorEnd": 1219,
           "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
-          "anchorStart": 307,
+          "anchorStart": 334,
           "kind": "route_method",
           "ownerModule": "src/app/api/dashboard/warnings/dismiss/route.ts",
           "symbol": "POST",
@@ -9194,13 +9236,22 @@
     {
       "bindings": [
         {
-          "anchorEnd": 175,
+          "anchorEnd": 198,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 146,
+          "anchorStart": 169,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "browserOperationFailureResult",
           "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
+        },
+        {
+          "anchorEnd": 45,
+          "anchorFile": "src/app/app/calendar/actions.ts",
+          "anchorStart": 26,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/calendar/page.tsx",
+          "symbol": "createCalendarEvent",
+          "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
           "anchorEnd": 1087,
@@ -9221,9 +9272,9 @@
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 60,
+          "anchorEnd": 83,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 26,
+          "anchorStart": 49,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "issueCalendarEventBrowserOperation",
@@ -9239,9 +9290,9 @@
           "target": "src/server/auth/session.ts#requireUserPage"
         },
         {
-          "anchorEnd": 99,
+          "anchorEnd": 122,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 64,
+          "anchorStart": 87,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "submitCalendarEventBrowserOperation",
@@ -10112,9 +10163,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2606,
+          "anchorEnd": 2668,
           "anchorFile": "src/components/calendar-event-submission.tsx",
-          "anchorStart": 2571,
+          "anchorStart": 2598,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/calendar-event-submission.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4706,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 4671,
           "kind": "server_action",
           "ownerModule": "src/components/calendar-event-submission.tsx",
           "symbol": "createCalendarEventAction[1]",
@@ -10130,12 +10190,21 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1749,
+          "anchorEnd": 2297,
           "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
-          "anchorStart": 1445,
+          "anchorStart": 2227,
           "kind": "global_fetch",
           "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4440,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 4136,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+          "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         }
       ],
@@ -10778,9 +10847,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1235,
+          "anchorEnd": 1403,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 425,
+          "anchorStart": 448,
           "kind": "server_action",
           "ownerModule": "src/app/app/calendar/actions.ts",
           "symbol": "createCalendarEventAction",
@@ -12037,7 +12106,7 @@
   ],
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "2df0d67930f14a2974e42bb4fa9665bcb71428bd5b1068e4adbd915c2537698e",
+  "registryDigest": "7aa25713cb9ea756f01dde2cb44ef6fb18c2e0c89d752fc1e5021be90e97722c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

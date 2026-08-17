@@ -428,11 +428,11 @@
       "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"open\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok({ status: \"completed\", operationId: result.operationId });\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
-      "anchorEnd": 1078,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    if (!operationId) {\n      await dismissDashboardWarning(raw);\n      return ok({ status: \"completed\" });\n    }\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"open\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok({ status: \"completed\", operationId: result.operationId });\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "4fb67172a72ed2ada97913626a6d31fc28ed3e60e5363967629bb2114dbbfa35",
+      "anchorEnd": 1219,
       "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
-      "anchorStart": 307,
+      "anchorStart": 334,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1363,11 +1363,28 @@
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
     },
     {
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 2668,
+      "anchorFile": "src/components/calendar-event-submission.tsx",
+      "anchorStart": 2598,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/calendar-event-submission.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/calendar-event-submission.tsx",
+      "ownerModule": "src/components/calendar-event-submission.tsx",
+      "sidecarPath": "src/components/calendar-event-submission.operation.ts"
+    },
+    {
       "anchorBytes": "createCalendarEventAction(formData)",
       "anchorDigest": "d1a3d4a61b3e52a725f0668c540fc02bdeeee63a9666cee89fe1ec396b716037",
-      "anchorEnd": 2606,
+      "anchorEnd": 4706,
       "anchorFile": "src/components/calendar-event-submission.tsx",
-      "anchorStart": 2571,
+      "anchorStart": 4671,
       "binding": {
         "kind": "server_action",
         "symbol": "createCalendarEventAction[1]",
@@ -1380,11 +1397,11 @@
       "sidecarPath": "src/components/calendar-event-submission.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/dashboard/warnings/dismiss\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          operationId,\n          babyId: warning.babyId,\n          type: warning.type,\n          fingerprint: warning.fingerprint\n        })\n      })",
-      "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
-      "anchorEnd": 1749,
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 2297,
       "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
-      "anchorStart": 1445,
+      "anchorStart": 2227,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1392,6 +1409,23 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/dashboard/dashboard-warnings.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
+      "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+      "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/dashboard/warnings/dismiss\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          operationId,\n          babyId: warning.babyId,\n          type: warning.type,\n          fingerprint: warning.fingerprint\n        })\n      })",
+      "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
+      "anchorEnd": 4440,
+      "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+      "anchorStart": 4136,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/dashboard/dashboard-warnings.tsx:global_fetch:fetch[2]:globalThis.fetch",
       "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
       "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
@@ -2825,11 +2859,11 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     },
     {
-      "anchorBytes": "export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {\n  const input = Object.fromEntries(formData.entries());\n  try {\n    const issued = await issueCalendarEventBrowserOperation(input);\n    if (issued.status === \"open\") {\n      const submitted = await submitCalendarEventBrowserOperation(input);\n      return submitted.status === \"open\"\n        ? { status: \"stale\", operationId: submitted.operationId }\n        : toActionResult(submitted);\n    }\n    return toActionResult(issued);\n  } catch (error) {\n    const failure = browserOperationFailureResult(input.operationId, error);\n    if (failure) {\n      return failure.status === \"open\"\n        ? { status: \"stale\", operationId: failure.operationId }\n        : toActionResult(failure);\n    }\n    throw error;\n  }\n}",
-      "anchorDigest": "7878f7e0a7a3c4c833182555317a8c2728fe2f7bda2236e588d939cc703bb428",
-      "anchorEnd": 1235,
+      "anchorBytes": "export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {\n  const input = calendarFormInput(formData);\n  if (!input.operationId) {\n    const event = await createCalendarEvent(input);\n    return { status: \"completed\", operationId: \"\", eventId: event.id };\n  }\n  try {\n    const issued = await issueCalendarEventBrowserOperation(input);\n    if (issued.status === \"open\") {\n      const submitted = await submitCalendarEventBrowserOperation(input);\n      return submitted.status === \"open\"\n        ? { status: \"stale\", operationId: submitted.operationId }\n        : toActionResult(submitted);\n    }\n    return toActionResult(issued);\n  } catch (error) {\n    const failure = browserOperationFailureResult(input.operationId, error);\n    if (failure) {\n      return failure.status === \"open\"\n        ? { status: \"stale\", operationId: failure.operationId }\n        : toActionResult(failure);\n    }\n    throw error;\n  }\n}",
+      "anchorDigest": "523e0b369607c63c0af76d79f2bc3c3db73c852bc3e916a04c44afd8408f757b",
+      "anchorEnd": 1403,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 425,
+      "anchorStart": 448,
       "binding": {
         "kind": "server_action",
         "symbol": "createCalendarEventAction",
@@ -3031,9 +3065,9 @@
     {
       "anchorBytes": "browserOperationFailureResult",
       "anchorDigest": "41543e6978fa330d5755442da137138a37a6c7a7911f29f7c244ae978eadbb93",
-      "anchorEnd": 175,
+      "anchorEnd": 198,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 146,
+      "anchorStart": 169,
       "binding": {
         "kind": "server_value_import",
         "symbol": "browserOperationFailureResult",
@@ -3041,6 +3075,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/app/calendar/page.tsx:server_value_import:browserOperationFailureResult:src/server/services/browser-operations.ts#browserOperationFailureResult",
+      "ownerId": "server_loader:src/app/app/calendar/page.tsx",
+      "ownerModule": "src/app/app/calendar/page.tsx",
+      "sidecarPath": "src/app/app/calendar/page.operation.ts"
+    },
+    {
+      "anchorBytes": "createCalendarEvent",
+      "anchorDigest": "2b55a59d7405c31ac0caea390a481466757febfbebefa628ecbc1a83fdc23e1b",
+      "anchorEnd": 45,
+      "anchorFile": "src/app/app/calendar/actions.ts",
+      "anchorStart": 26,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "createCalendarEvent",
+        "target": "src/server/services/calendar.ts#createCalendarEvent"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/calendar/page.tsx:server_value_import:createCalendarEvent:src/server/services/calendar.ts#createCalendarEvent",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
@@ -3082,9 +3133,9 @@
     {
       "anchorBytes": "issueCalendarEventBrowserOperation",
       "anchorDigest": "b277667254e7c850ff4e585e7bf2c30567756ac7f72feb2c065390f706520b29",
-      "anchorEnd": 60,
+      "anchorEnd": 83,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 26,
+      "anchorStart": 49,
       "binding": {
         "kind": "server_value_import",
         "symbol": "issueCalendarEventBrowserOperation",
@@ -3116,9 +3167,9 @@
     {
       "anchorBytes": "submitCalendarEventBrowserOperation",
       "anchorDigest": "32d4182f066e7f5fb683fe7e437e7d3f3561217850cca132d4a9615d094e1204",
-      "anchorEnd": 99,
+      "anchorEnd": 122,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 64,
+      "anchorStart": 87,
       "binding": {
         "kind": "server_value_import",
         "symbol": "submitCalendarEventBrowserOperation",
@@ -4327,10 +4378,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "5c90aec3b2615895fcfd527e3cf8ed21bc4ec03fe2bf35aba242b2b34852cc87",
+  "semanticArtifactDigest": "f218f8f5a3ed6fa4e4a0586b2d4badca140a1cea25ee3c92ccd03a84f2a1d988",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c5f700ab29363a8cf6e4796c3bcfdf6e38e61249400b07239423c3f6002186c8",
+  "semanticCoverageDigest": "c0ba5d62e973796a5f709bde00b51e2f3caee0553c7d82fd6efc316a71d5668c",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "9f92ee916a59eebff3312fdda5a6de2ecbac57b4ca574917eab8579cc1259086",
-  "semanticFingerprint": "c025b8ddedd8a50277de6ea4c8912e8df82a2094b6940a6aefcbc85ced229102"
+  "semanticFingerprint": "d53d1960662745b8ddc68445a3ae1501c7f56d459e8ea371739f4b2b4eb1b44f"
 }

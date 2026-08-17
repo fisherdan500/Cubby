@@ -6,6 +6,45 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import type { DashboardWarningItem } from "@/server/services/dashboard";
 
+type WarningOperationStatus = {
+  status: "open" | "pending" | "completed" | "rejected" | "stale" | "expired";
+  operationId: string;
+};
+
+function operationStorageKey(key: string) {
+  return `cubby:dashboard-warning-operation:${key}`;
+}
+
+function createBrowserOperationId() {
+  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+  const bytes = crypto.getRandomValues(new Uint8Array(26));
+  return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+}
+
+function readOperationId(key: string) {
+  try {
+    return sessionStorage.getItem(operationStorageKey(key)) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function retainOperationId(key: string, operationId: string) {
+  try {
+    sessionStorage.setItem(operationStorageKey(key), operationId);
+  } catch {
+    // Storage failure must not affect the request path.
+  }
+}
+
+function clearOperationId(key: string) {
+  try {
+    sessionStorage.removeItem(operationStorageKey(key));
+  } catch {
+    // Storage failure must not affect the terminal server outcome.
+  }
+}
+
 export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem[] }) {
   const router = useRouter();
   const operationIds = useRef(new Map<string, string>());
@@ -14,25 +53,70 @@ export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem
   const visible = warnings.filter((warning) => !hidden.has(warning.fingerprint));
   if (!visible.length) return null;
 
+  function hideWarning(warning: DashboardWarningItem) {
+    setHidden((current) => new Set(current).add(warning.fingerprint));
+  }
+
+  function restoreWarning(warning: DashboardWarningItem) {
+    setHidden((current) => {
+      const next = new Set(current);
+      next.delete(warning.fingerprint);
+      return next;
+    });
+  }
+
+  function clearOperation(key: string) {
+    operationIds.current.delete(key);
+    clearOperationId(key);
+  }
+
+  async function status(operationId: string) {
+    const response = await fetch(`/api/browser-operations/${operationId}`, { cache: "no-store" });
+    const result = await response.json().catch(() => null) as { ok?: boolean; data?: WarningOperationStatus } | null;
+    return { response, result };
+  }
+
   async function dismiss(warning: DashboardWarningItem) {
     setError("");
-    setHidden((current) => new Set(current).add(warning.fingerprint));
+    hideWarning(warning);
     const key = `${warning.type}:${warning.fingerprint}`;
-    let operationId = operationIds.current.get(key);
-    if (!operationId) {
-      const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-      const bytes = crypto.getRandomValues(new Uint8Array(26));
-      operationId = `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
-      operationIds.current.set(key, operationId);
-    }
-    const restoreWarning = () => {
-      setHidden((current) => {
-        const next = new Set(current);
-        next.delete(warning.fingerprint);
-        return next;
-      });
-    };
+    const retained = operationIds.current.get(key) ?? readOperationId(key);
+    const operationId = retained ?? createBrowserOperationId();
+    operationIds.current.set(key, operationId);
+    retainOperationId(key, operationId);
     try {
+      if (retained) {
+        const { response, result } = await status(operationId);
+        if (response.status === 404) {
+          clearOperation(key);
+          restoreWarning(warning);
+          setError("This warning request is no longer available. Refresh and try again.");
+          return;
+        }
+        if (response.status === 410) {
+          clearOperation(key);
+          restoreWarning(warning);
+          setError("This warning request is no longer available. Refresh and try again.");
+          return;
+        }
+        if (!response.ok || !result?.ok || !result.data) throw new Error("warning_operation_status_unavailable");
+        if (result.data.status === "completed") {
+          clearOperation(key);
+          router.refresh();
+          return;
+        }
+        if (result.data.status === "pending") {
+          setError("Saving is still in progress. Keep this page open and try again.");
+          return;
+        }
+        if (result.data.status === "stale" || result.data.status === "rejected" || result.data.status === "expired") {
+          clearOperation(key);
+          restoreWarning(warning);
+          setError("This warning could not be dismissed. Refresh and try again.");
+          return;
+        }
+      }
+
       const response = await fetch("/api/dashboard/warnings/dismiss", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -43,16 +127,28 @@ export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem
           fingerprint: warning.fingerprint
         })
       });
-      const result = await response.json().catch(() => null) as { ok?: boolean; data?: { status?: string } } | null;
-      if (!response.ok || !result?.ok || result.data?.status !== "completed") {
-        operationIds.current.delete(key);
-        restoreWarning();
-        setError("This warning could not be dismissed. Try again.");
+      const result = await response.json().catch(() => null) as { ok?: boolean; data?: WarningOperationStatus } | null;
+      if (response.status === 410 || response.status === 404) {
+        clearOperation(key);
+        restoreWarning(warning);
+        setError("This warning could not be dismissed. Refresh and try again.");
         return;
       }
-      router.refresh();
+      if (!response.ok || !result?.ok || !result.data) throw new Error("warning_dismissal_unavailable");
+      if (result.data.status === "completed") {
+        clearOperation(key);
+        router.refresh();
+        return;
+      }
+      if (result.data.status === "pending") {
+        setError("Saving is still in progress. Keep this page open and try again.");
+        return;
+      }
+      clearOperation(key);
+      restoreWarning(warning);
+      setError("This warning could not be dismissed. Refresh and try again.");
     } catch {
-      restoreWarning();
+      restoreWarning(warning);
       setError("Could not reach Cubby. Check your connection and try again.");
     }
   }

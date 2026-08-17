@@ -18,8 +18,14 @@ const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 const monthKeyPattern = /^\d{4}-\d{2}$/;
 const timePattern = /^\d{2}:\d{2}$/;
 
+const contactIdsSchema = z.preprocess(
+  (value) => Array.isArray(value) ? value : typeof value === "string" && value ? [value] : [],
+  z.array(z.string().min(1).max(200)).max(50)
+).transform((ids) => [...new Set(ids)].sort());
+
 const calendarEventSchema = z.object({
   babyId: z.string().min(1),
+  contactIds: contactIdsSchema,
   title: z.string().trim().min(1).max(200),
   eventType: z.string().trim().max(80).optional().transform(emptyToUndefined),
   description: z.string().trim().max(2000).optional().transform(emptyToUndefined),
@@ -36,6 +42,18 @@ const calendarEventSchema = z.object({
   endTime: z.string().regex(timePattern).optional().or(z.literal("")).transform(emptyToUndefined)
 });
 
+const calendarEventOpeningSchema = z.object({
+  babyId: z.string().min(1),
+  contactIds: contactIdsSchema
+});
+
+const calendarEventOpeningSnapshotSchema = z.object({
+  kind: z.literal("calendar-event-create"),
+  schemaVersion: z.literal(1),
+  baby: z.object({ id: z.string().min(1), revision: z.string().datetime() }),
+  contacts: z.array(z.object({ id: z.string().min(1), revision: z.string().datetime() }))
+});
+
 export type CalendarEventCreateResult = {
   id: string;
   babyId: string;
@@ -44,6 +62,7 @@ export type CalendarEventCreateResult = {
 };
 
 type CalendarEventInput = z.infer<typeof calendarEventSchema>;
+type CalendarEventOpeningInput = z.infer<typeof calendarEventOpeningSchema>;
 
 function calendarEventTimes(input: CalendarEventInput) {
   const startTime = input.allDay
@@ -72,7 +91,10 @@ async function createCalendarEventInTransaction(
       eventType: input.eventType,
       location: input.location,
       color: input.color,
-      babies: { create: { baby: { connect: { id: input.babyId } } } }
+      babies: { create: { baby: { connect: { id: input.babyId } } } },
+      contacts: input.contactIds.length
+        ? { create: input.contactIds.map((contactId) => ({ contact: { connect: { id: contactId } } })) }
+        : undefined
     },
     include: { babies: true }
   });
@@ -92,17 +114,17 @@ async function createCalendarEventInTransaction(
 }
 
 export async function issueCalendarEventBrowserOperation(raw: Record<string, unknown>) {
-  const input = calendarEventSchema.parse(raw);
-  calendarEventTimes(input);
+  const input = calendarEventOpeningSchema.parse(raw);
   const ctx = await getBrowserOperationContextForBaby(input.babyId);
   return issueBrowserOperation({
     ctx,
     operationId: raw.operationId,
     operationKey: BrowserOperationKey.calendarEventCreate,
-    opening: { babyId: input.babyId },
+    opening: { babyId: input.babyId, contactIds: input.contactIds },
     babyId: input.babyId,
     targetKind: "calendar",
-    permission: "activity.create"
+    permission: "activity.create",
+    targetSnapshot: (tx, openingCtx, baby) => calendarEventOpeningSnapshot(tx, openingCtx, baby, input)
   });
 }
 
@@ -117,11 +139,62 @@ export async function submitCalendarEventBrowserOperation(raw: Record<string, un
     intent: input,
     babyId: input.babyId,
     permission: "activity.create",
+    validate: (tx, lockedCtx, baby, binding) =>
+      assertCalendarEventOpeningCurrent(tx, lockedCtx, baby, binding.targetSnapshot, input),
     execute: async (tx, lockedCtx) => {
       const event = await createCalendarEventInTransaction(tx, lockedCtx, input, startTime, endTime);
       return { kind: "calendar_event", code: "ok", eventId: event.id };
     }
   });
+}
+
+async function calendarEventOpeningSnapshot(
+  tx: Prisma.TransactionClient,
+  ctx: HouseholdContext,
+  baby: { id: string; updatedAt: Date },
+  input: CalendarEventOpeningInput
+) {
+  const contacts = await currentCalendarContacts(tx, ctx.householdId, input.contactIds);
+  return {
+    kind: "calendar-event-create" as const,
+    schemaVersion: 1 as const,
+    baby: { id: baby.id, revision: baby.updatedAt.toISOString() },
+    contacts: contacts.map((contact) => ({ id: contact.id, revision: contact.updatedAt.toISOString() }))
+  };
+}
+
+async function assertCalendarEventOpeningCurrent(
+  tx: Prisma.TransactionClient,
+  ctx: HouseholdContext,
+  baby: { id: string; updatedAt: Date },
+  rawSnapshot: unknown,
+  input: CalendarEventInput
+) {
+  const snapshot = calendarEventOpeningSnapshotSchema.safeParse(rawSnapshot);
+  if (!snapshot.success || snapshot.data.baby.id !== input.babyId || snapshot.data.baby.revision !== baby.updatedAt.toISOString()) {
+    throw new Error("stale_revision");
+  }
+  const expectedContactIds = snapshot.data.contacts.map((contact) => contact.id);
+  if (expectedContactIds.length !== input.contactIds.length || expectedContactIds.some((id, index) => id !== input.contactIds[index])) {
+    throw new Error("stale_revision");
+  }
+  const contacts = await currentCalendarContacts(tx, ctx.householdId, input.contactIds);
+  if (contacts.some((contact, index) => contact.id !== snapshot.data.contacts[index]?.id || contact.updatedAt.toISOString() !== snapshot.data.contacts[index]?.revision)) {
+    throw new Error("stale_revision");
+  }
+}
+
+async function currentCalendarContacts(tx: Prisma.TransactionClient, householdId: string, contactIds: string[]) {
+  for (const contactId of contactIds) {
+    await tx.$queryRaw`SELECT "id" FROM "Contact" WHERE "id" = ${contactId} AND "householdId" = ${householdId} AND "deletedAt" IS NULL FOR UPDATE`;
+  }
+  const contacts = await tx.contact.findMany({
+    where: { id: { in: contactIds }, householdId, deletedAt: null },
+    select: { id: true, updatedAt: true },
+    orderBy: { id: "asc" }
+  });
+  if (contacts.length !== contactIds.length) throw new Error("not_found");
+  return contacts;
 }
 
 export async function getCalendar(
@@ -273,7 +346,10 @@ export async function createCalendarEvent(raw: unknown): Promise<CalendarEventCr
           create: {
             baby: { connect: { id: input.babyId } }
           }
-        }
+        },
+        contacts: input.contactIds.length
+          ? { create: input.contactIds.map((contactId) => ({ contact: { connect: { id: contactId } } })) }
+          : undefined
       },
       include: { babies: true }
     });

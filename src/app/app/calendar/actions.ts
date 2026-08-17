@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  createCalendarEvent,
   issueCalendarEventBrowserOperation,
   submitCalendarEventBrowserOperation
 } from "@/server/services/calendar";
@@ -12,7 +13,11 @@ type CalendarActionResult =
   | { status: "stale" | "rejected"; operationId: string };
 
 export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {
-  const input = Object.fromEntries(formData.entries());
+  const input = calendarFormInput(formData);
+  if (!input.operationId) {
+    const event = await createCalendarEvent(input);
+    return { status: "completed", operationId: "", eventId: event.id };
+  }
   try {
     const issued = await issueCalendarEventBrowserOperation(input);
     if (issued.status === "open") {
@@ -31,6 +36,14 @@ export async function createCalendarEventAction(formData: FormData): Promise<Cal
     }
     throw error;
   }
+}
+
+function calendarFormInput(formData: FormData) {
+  return {
+    ...Object.fromEntries(formData.entries()),
+    operationId: formData.get("operationId") ?? undefined,
+    contactIds: formData.getAll("contactIds").filter((value): value is string => typeof value === "string")
+  };
 }
 
 function toActionResult(result: Exclude<Awaited<ReturnType<typeof submitCalendarEventBrowserOperation>>, { status: "open" }>): CalendarActionResult {

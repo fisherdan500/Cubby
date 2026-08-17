@@ -44,6 +44,17 @@ const dismissWarningSchema = z.object({
   fingerprint: z.string().min(1).max(500)
 });
 
+const dashboardWarningOpeningSnapshotSchema = z.object({
+  kind: z.literal("dashboard-warning-dismiss"),
+  schemaVersion: z.literal(1),
+  baby: z.object({ id: z.string().min(1), revision: z.string().datetime() }),
+  warning: z.object({
+    babyId: z.string().min(1),
+    type: z.enum(warningTypes),
+    fingerprint: z.string().min(1).max(500)
+  })
+});
+
 export type DashboardDate = {
   key: string;
   label: string;
@@ -320,6 +331,22 @@ async function assertDashboardWarningCurrent(
   if (!current) throw new Error("not_found");
 }
 
+function assertDashboardWarningOpeningCurrent(
+  baby: { id: string; updatedAt: Date },
+  rawSnapshot: unknown,
+  input: z.infer<typeof dismissWarningSchema>
+) {
+  const snapshot = dashboardWarningOpeningSnapshotSchema.safeParse(rawSnapshot);
+  if (!snapshot.success ||
+      snapshot.data.baby.id !== baby.id ||
+      snapshot.data.baby.revision !== baby.updatedAt.toISOString() ||
+      snapshot.data.warning.babyId !== input.babyId ||
+      snapshot.data.warning.type !== input.type ||
+      snapshot.data.warning.fingerprint !== input.fingerprint) {
+    throw new Error("stale_revision");
+  }
+}
+
 export async function issueDashboardWarningBrowserOperation(raw: Record<string, unknown>) {
   const input = dismissWarningSchema.parse(raw);
   const ctx = await getBrowserOperationContextForBaby(input.babyId);
@@ -327,7 +354,14 @@ export async function issueDashboardWarningBrowserOperation(raw: Record<string, 
     ctx, operationId: raw.operationId, operationKey: BrowserOperationKey.dashboardWarningDismiss,
     opening: { babyId: input.babyId, type: input.type, fingerprint: input.fingerprint },
     babyId: input.babyId, targetKind: "warning",
-    targetId: `${input.type}:${input.fingerprint}`, permission: "activity.read"
+    targetId: `${input.type}:${input.fingerprint}`, permission: "activity.read",
+    validate: (tx, lockedCtx) => assertDashboardWarningCurrent(tx, lockedCtx, input),
+    targetSnapshot: (_tx, _ctx, baby) => ({
+      kind: "dashboard-warning-dismiss",
+      schemaVersion: 1,
+      baby: { id: baby.id, revision: baby.updatedAt.toISOString() },
+      warning: { babyId: input.babyId, type: input.type, fingerprint: input.fingerprint }
+    })
   });
 }
 
@@ -337,7 +371,10 @@ export async function dismissDashboardWarningBrowserOperation(raw: Record<string
   return executeBrowserOperation({
     ctx, operationId: raw.operationId, operationKey: BrowserOperationKey.dashboardWarningDismiss,
     intent: input, babyId: input.babyId, permission: "activity.read",
-    validate: async (tx, lockedCtx) => assertDashboardWarningCurrent(tx, lockedCtx, input),
+    validate: async (tx, lockedCtx, baby, binding) => {
+      assertDashboardWarningOpeningCurrent(baby, binding.targetSnapshot, input);
+      await assertDashboardWarningCurrent(tx, lockedCtx, input);
+    },
     execute: async (tx, lockedCtx) => {
       await tx.dashboardWarningDismissal.upsert({
         where: { householdId_babyId_type_fingerprint: { householdId: lockedCtx.householdId, babyId: input.babyId, type: input.type, fingerprint: input.fingerprint } },

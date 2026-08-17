@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  dismissDashboardWarning: vi.fn(),
   issueDashboardWarningBrowserOperation: vi.fn(),
   dismissDashboardWarningBrowserOperation: vi.fn(),
   browserOperationFailureResult: vi.fn((operationId: unknown, error: unknown) =>
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   )
 }));
 vi.mock("@/server/services/dashboard", () => ({
+  dismissDashboardWarning: mocks.dismissDashboardWarning,
   issueDashboardWarningBrowserOperation: mocks.issueDashboardWarningBrowserOperation,
   dismissDashboardWarningBrowserOperation: mocks.dismissDashboardWarningBrowserOperation
 }));
@@ -41,6 +43,21 @@ describe("POST /api/dashboard/warnings/dismiss", () => {
     expect(await response.json()).toEqual({ ok: true, data: { status: "completed", operationId: body.operationId } });
     expect(mocks.issueDashboardWarningBrowserOperation).toHaveBeenCalledWith(body);
     expect(mocks.dismissDashboardWarningBrowserOperation).toHaveBeenCalledWith(body);
+    expect(mocks.dismissDashboardWarning).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy no-BMO request as one direct dismissal", async () => {
+    mocks.dismissDashboardWarning.mockResolvedValue({ id: "legacy-dismissal" });
+    const { operationId: _operationId, ...legacyBody } = body;
+    const response = await POST(new Request("http://localhost/api/dashboard/warnings/dismiss", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(legacyBody)
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, data: { status: "completed" } });
+    expect(mocks.dismissDashboardWarning).toHaveBeenCalledWith(legacyBody);
+    expect(mocks.issueDashboardWarningBrowserOperation).not.toHaveBeenCalled();
+    expect(mocks.dismissDashboardWarningBrowserOperation).not.toHaveBeenCalled();
   });
 
   it("returns a privacy-preserving stale result when the warning changed", async () => {

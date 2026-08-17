@@ -1,5 +1,6 @@
 import { ok, handleError } from "@/server/http";
 import {
+  dismissDashboardWarning,
   dismissDashboardWarningBrowserOperation,
   issueDashboardWarningBrowserOperation
 } from "@/server/services/dashboard";
@@ -12,6 +13,10 @@ export async function POST(request: Request) {
   try {
     const raw = await request.json() as Record<string, unknown>;
     operationId = raw.operationId;
+    if (!operationId) {
+      await dismissDashboardWarning(raw);
+      return ok({ status: "completed" });
+    }
     const issued = await issueDashboardWarningBrowserOperation(raw);
     const result = issued.status === "open"
       ? await dismissDashboardWarningBrowserOperation(raw)
