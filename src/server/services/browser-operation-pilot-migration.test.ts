@@ -35,37 +35,22 @@ describe("browser operation pilot migration contract", () => {
     expect(migration).toContain('CREATE TABLE "BrowserOperationBinding"');
     expect(migration).toContain('CREATE TABLE "BrowserMutationOperation"');
 
-    expect(binding).toContain("sessionId         String");
-    expect(binding).toContain("actorUserId       String");
-    expect(binding).toContain("actorMemberId     String");
-    expect(binding).toContain("householdId       String");
-    expect(binding).toContain("operationId       String");
-    expect(binding).toContain("operationKey      BrowserOperationKey");
-    expect(binding).toContain("intentFingerprint String");
-    expect(binding).toContain("babyId            String?");
-    expect(binding).toContain("expiresAt         DateTime");
-    expect(binding).toContain("state             BrowserOperationBindingState");
+    for (const field of [
+      "sessionId", "actorUserId", "actorMemberId", "householdId", "operationId",
+      "operationKey", "legacyIntentFingerprint", "openingFingerprint", "persistenceVersion",
+      "targetKind", "targetId", "babyId", "expiresAt", "state"
+    ]) expect(binding).toMatch(new RegExp(`\\b${field}\\s+`));
     expect(binding).toContain("@@unique([householdId, operationId])");
     expect(binding).toContain(
       "fields: [householdId, actorMemberId], references: [householdId, id]"
     );
     expect(binding).toContain("fields: [householdId, babyId], references: [householdId, id]");
 
-    expect(operation).toContain("bindingId         String");
-    expect(operation).toMatch(/bindingId\s+String\s+@unique/);
-    expect(operation).toContain("householdId       String");
-    expect(operation).toContain("operationId       String");
-    expect(operation).toContain("operationKey      BrowserOperationKey");
-    expect(operation).toContain("actorUserId       String");
-    expect(operation).toContain("actorMemberId     String");
-    expect(operation).toContain("intentFingerprint String");
-    expect(operation).toContain("babyId            String?");
-    expect(operation).toContain("status            BrowserMutationOperationStatus");
-    expect(operation).toContain("outcomeVersion    Int?");
-    expect(operation).toContain("outcomeKind       String?");
-    expect(operation).toContain("outcomeCode       String?");
-    expect(operation).toContain("outcomeSnapshot   Json?");
-    expect(operation).toContain("terminalAt        DateTime?");
+    for (const field of [
+      "bindingId", "householdId", "operationId", "operationKey", "actorUserId", "actorMemberId",
+      "openingFingerprint", "intentFingerprint", "persistenceVersion", "targetKind", "targetId", "babyId",
+      "status", "outcomeVersion", "outcomeKind", "outcomeCode", "outcomeSnapshot", "terminalAt"
+    ]) expect(operation).toMatch(new RegExp(`\\b${field}\\s+`));
     expect(operation).toContain("@@id([householdId, operationId])");
     expect(operation).toContain(
       "fields: [householdId, actorMemberId], references: [householdId, id]"

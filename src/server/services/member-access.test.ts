@@ -258,7 +258,7 @@ describe("household member access management", () => {
       data: { revokedAt: expect.any(Date) }
     });
     expect(mocks.notificationPreferenceDeleteMany).toHaveBeenCalledWith({
-      where: { householdId: "household-1", userId: member.userId }
+      where: { householdId: "household-1", memberId: member.id }
     });
     expect(mocks.pushSubscriptionUpdateMany).toHaveBeenCalledWith({
       where: { householdId: "household-1", userId: member.userId, deletedAt: null },
