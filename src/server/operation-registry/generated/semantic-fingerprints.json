@@ -39,23 +39,23 @@
       "id": "semantic-exposure:src/app/api/invites/revoke-all/route.ts#POST"
     },
     {
-      "digest": "524f1b6d47904aff644a34c69e2bef703c60366b1d4f52998f89ec0c8891834d",
+      "digest": "a225f10c7a74a1fc657e93465a0c9758421675a825181836b0f8313359135b41",
       "id": "semantic-exposure:src/app/api/invites/route.ts#POST"
     },
     {
-      "digest": "649e1228acd10d7fd47903100bb4186d7d81c8be0f5f72b1a0cbc4ac388d9407",
+      "digest": "28ce3e161512eae4b377a98a0f3e4458ae8d479a3fe379246feb6d484cd3b35d",
       "id": "semantic-exposure:src/app/api/members/[id]/restore/route.ts#POST"
     },
     {
-      "digest": "b41d19f1c1b943e7a8e50399e4f3193ddab20e7ea7e42e120edaca4641843d9c",
+      "digest": "5e2e88b9e39ba4213bad47c096508279970e497dbae2319dc074c3bab9d8b2e7",
       "id": "semantic-exposure:src/app/api/members/[id]/route.ts#DELETE"
     },
     {
-      "digest": "1acd14045ef5b8e81e8a81c4160e6c0b7667f31492c67ac244c94df868737552",
+      "digest": "2525a8a393c6faf07b795368a675bb205489a146d0ae3fd28f166146825eecd3",
       "id": "semantic-exposure:src/app/api/members/[id]/route.ts#PATCH"
     },
     {
-      "digest": "d38691ed075088116d37cd517529042b49f282fcadd690431f1e9ebce8ef97a5",
+      "digest": "7e0711ef568f9d65f3679b9faa8b798b08ca496684292658fbaac1f73934657b",
       "id": "semantic-exposure:src/app/api/members/[id]/suspend/route.ts#POST"
     },
     {
@@ -175,23 +175,23 @@
       "id": "semantic-service:invite.create"
     },
     {
-      "digest": "ff77ebabc7c6cff09d78a1117d218067e66cd76cdbf2b24159298d1ab0c2d6a3",
+      "digest": "935807c9fa39933a6990321566985f71beebf213960423bc6c23a78c64f8976f",
       "id": "semantic-service:invite.revoke_all"
     },
     {
-      "digest": "3ade0eae1d47c247dd168693810dd9a8da9ffefc9bda5a43a328ee01dfef0fdf",
+      "digest": "fc16d7f4b6132e881494388905cc534e33e50d96a332d34b28b09eca2165834e",
       "id": "semantic-service:member.remove"
     },
     {
-      "digest": "f5b4ed689bbfe5742da6d138afa19892b910b0ffbc0350e076c13e1fc9db8551",
+      "digest": "adad7c320303b0153b6d7c4d9f15f845c464f3df322a8647a7d9d5fdc0eee2c6",
       "id": "semantic-service:member.restore"
     },
     {
-      "digest": "1d797b61ab1dbca222eaad6dad11c098c9b1a351e8c3b787e3dcb3dad867d71c",
+      "digest": "2f7626cf17381110d9dfb2eb0548e855e0a4797dcde00c1e71edbfb3d3e48a4c",
       "id": "semantic-service:member.role.update"
     },
     {
-      "digest": "a3a1e4b700a7f11df2f80698036dd1955574a503525d5807e7c6cf5c88176ade",
+      "digest": "7e9a99ccf314f26445fa2ba9a5752ec9cec98efc81035cf4898348b7cefabb8f",
       "id": "semantic-service:member.suspend"
     },
     {
@@ -219,7 +219,7 @@
       "id": "semantic-service:settings.units.update"
     },
     {
-      "digest": "b3b181cde6743156a85a7df048abf32a7ddf3e21d548d372f2ddbb5cdeac99ee",
+      "digest": "8a36bb097b22cd824641e7bf11d977e3d47c3a0652c5ae2adca18a32348e1ac8",
       "id": "semantic:browser_household_mutations"
     },
     {
@@ -233,10 +233,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "6a63dda585bcd6bb722ac6e73c0c366cb07eea6fabaa5a51f7a346273d77ad3f",
+  "semanticArtifactDigest": "5c90aec3b2615895fcfd527e3cf8ed21bc4ec03fe2bf35aba242b2b34852cc87",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "cb330692c2040731655405682f4ee7989174ba9ace4201a583a2620ebc68f363",
+  "semanticCoverageDigest": "c5f700ab29363a8cf6e4796c3bcfdf6e38e61249400b07239423c3f6002186c8",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "9f92ee916a59eebff3312fdda5a6de2ecbac57b4ca574917eab8579cc1259086",
-  "semanticFingerprint": "8fbde41d5f25a395023cb6e67a0488ff16dabbca3d3f3753f34c40134669365c"
+  "semanticFingerprint": "c025b8ddedd8a50277de6ea4c8912e8df82a2094b6940a6aefcbc85ced229102"
 }

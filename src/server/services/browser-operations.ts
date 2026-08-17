@@ -80,6 +80,10 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     code: z.literal("ok"),
     settingsScope: z.literal("household")
   }).strict(),
+  [BrowserOperationKey.memberRestore]: z.object({ kind: z.literal("member"), code: z.literal("restored"), memberId: z.string().min(1) }).strict(),
+  [BrowserOperationKey.memberRemove]: z.object({ kind: z.literal("member"), code: z.literal("removed"), memberId: z.string().min(1) }).strict(),
+  [BrowserOperationKey.memberRoleUpdate]: z.object({ kind: z.literal("member"), code: z.literal("role_updated"), memberId: z.string().min(1), role: z.enum(["admin", "parent", "caretaker", "read_only"]) }).strict(),
+  [BrowserOperationKey.memberSuspend]: z.object({ kind: z.literal("member"), code: z.literal("suspended"), memberId: z.string().min(1) }).strict(),
   [BrowserOperationKey.notificationPreferenceSave]: z.object({
     kind: z.literal("notification_preference"),
     code: z.literal("ok"),

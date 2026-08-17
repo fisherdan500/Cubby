@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -8,7 +10,17 @@ import { MemberAccessManager } from "@/components/settings/member-access-manager
 
 globalThis.React = React;
 
+const source = readFileSync(fileURLToPath(new URL("./member-access-manager.tsx", import.meta.url)), "utf8");
+
 describe("MemberAccessManager", () => {
+  it("sends a retained browser-v2 operation identity for every member mutation", () => {
+    expect(source).toContain("const memberOperationIds = useRef(new Map<string, string>());");
+    expect(source).toContain("operationId: memberOperationId(memberId, \"role.update\")");
+    expect(source).toContain("operationId: memberOperationId(member.id, suspending ? \"suspend\" : \"restore\")");
+    expect(source).toContain("operationId: memberOperationId(member.id, \"remove\")");
+    expect(source).toContain("headers: { \"content-type\": \"application/json\" }");
+  });
+
   it("clearly distinguishes active and suspended members with reversible controls", () => {
     const html = renderToStaticMarkup(createElement(MemberAccessManager, {
       viewerRole: "owner",

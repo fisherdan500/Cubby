@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw, ShieldCheck, Trash2, UserRoundX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,23 @@ export function MemberAccessManager({
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [busyId, setBusyId] = useState("");
+  const memberOperationIds = useRef(new Map<string, string>());
+
+  function memberOperationId(memberId: string, action: "role.update" | "suspend" | "restore" | "remove") {
+    const key = `${memberId}:${action}`;
+    let operationId = memberOperationIds.current.get(key);
+    if (!operationId) {
+      const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+      const bytes = crypto.getRandomValues(new Uint8Array(26));
+      operationId = `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+      memberOperationIds.current.set(key, operationId);
+    }
+    return operationId;
+  }
+
+  function clearMemberOperationId(memberId: string, action: "role.update" | "suspend" | "restore" | "remove") {
+    memberOperationIds.current.delete(`${memberId}:${action}`);
+  }
 
   async function updateRole(memberId: string, formData: FormData) {
     setMessage("");
@@ -49,7 +66,7 @@ export function MemberAccessManager({
     const response = await fetch(`/api/members/${memberId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ role: formData.get("role") })
+      body: JSON.stringify({ operationId: memberOperationId(memberId, "role.update"), role: formData.get("role") })
     });
     const result = await response.json();
     setBusyId("");
@@ -57,16 +74,20 @@ export function MemberAccessManager({
       setMessage(result.error.message);
       return;
     }
+    clearMemberOperationId(memberId, "role.update");
     router.refresh();
   }
 
   async function updateStatus(member: MemberRow) {
     const suspending = !member.disabledAt;
+    const action = suspending ? "suspend" : "restore";
     if (suspending && !window.confirm(`Suspend ${member.name}'s access and sign them out?`)) return;
     setMessage("");
     setBusyId(member.id);
-    const response = await fetch(`/api/members/${member.id}/${suspending ? "suspend" : "restore"}`, {
-      method: "POST"
+    const response = await fetch(`/api/members/${member.id}/${action}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ operationId: memberOperationId(member.id, suspending ? "suspend" : "restore") })
     });
     const result = await response.json();
     setBusyId("");
@@ -74,6 +95,7 @@ export function MemberAccessManager({
       setMessage(result.error.message);
       return;
     }
+    clearMemberOperationId(member.id, action);
     router.refresh();
   }
 
@@ -81,13 +103,18 @@ export function MemberAccessManager({
     if (!window.confirm(`Remove ${member.name} from this household?`)) return;
     setMessage("");
     setBusyId(member.id);
-    const response = await fetch(`/api/members/${member.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/members/${member.id}`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ operationId: memberOperationId(member.id, "remove") })
+    });
     const result = await response.json();
     setBusyId("");
     if (!result.ok) {
       setMessage(result.error.message);
       return;
     }
+    clearMemberOperationId(member.id, "remove");
     router.refresh();
   }
 

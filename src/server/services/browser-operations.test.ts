@@ -224,37 +224,23 @@ describe("browser operation bindings", () => {
     expect(mocks.babyFindFirst).not.toHaveBeenCalled();
   });
 
-  it("fails closed for expanded keys without adapters before reserving or executing", async () => {
-    const execute = vi.fn();
+  it.each(Object.values(BrowserOperationKey).map((operationKey, index) => ({
+    operationKey,
+    operationId: `bmo_${"0".repeat(25)}${"abcdefghjkmnpqrstvwxyz"[index]}`
+  })))("opens every registered ordinary adapter key", async ({ operationKey, operationId: adapterOperationId }) => {
 
-    await expect(issueBrowserOperation({
+    await expect(issueHouseholdBrowserOperation({
       ctx,
-      operationId,
-      operationKey: BrowserOperationKey.memberRestore,
-      opening: { target: "member" },
-      babyId: "baby-1",
-      targetKind: "member",
-      targetId: "member-2",
-      permission: "member.manage"
-    })).rejects.toThrow("browser_operation_adapter_unavailable");
-    await expect(executeBrowserOperation({
-      ctx,
-      operationId,
-      operationKey: BrowserOperationKey.memberRestore,
-      intent: { memberId: "member-2" },
-      babyId: "baby-1",
+      operationId: adapterOperationId,
+      operationKey,
+      targetKind: BrowserOperationTargetKind.household,
+      targetId: operationKey,
       permission: "member.manage",
-      execute
-    })).rejects.toThrow("browser_operation_adapter_unavailable");
+      targetSnapshot: () => ({ version: 1, operationKey })
+    })).resolves.toEqual({ status: "open", operationId: adapterOperationId, bindingId: "binding-1" });
 
-    expect(mocks.transaction).not.toHaveBeenCalled();
-    expect(mocks.bindingCreate).not.toHaveBeenCalled();
-    expect(mocks.operationCreate).not.toHaveBeenCalled();
-    expect(execute).not.toHaveBeenCalled();
-    expect(browserOperationFailureResult(operationId, new Error("browser_operation_adapter_unavailable"))).toEqual({
-      status: "rejected",
-      operationId,
-      code: "operation_integrity_error"
+    expect(mocks.bindingCreate).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({ operationId: adapterOperationId, operationKey })
     });
   });
 
