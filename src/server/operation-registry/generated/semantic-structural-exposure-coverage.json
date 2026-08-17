@@ -921,11 +921,28 @@
       "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueHouseholdAppearanceBrowserOperation(await request.json() as { operationId?: unknown });\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "d92d343129aee810d2c827e499c3c8320542b46a56ba5b1127db2d9784caf590",
+      "anchorEnd": 573,
+      "anchorFile": "src/app/api/settings/appearance/issue/route.ts",
+      "anchorStart": 180,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts:route_method:POST:src/app/api/settings/appearance/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getHouseholdAppearance());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "50df48391dd9e32ca982bc39b73cd5c9646ba7ffd64700cde7f5f00144f2ca1c",
-      "anchorEnd": 330,
+      "anchorEnd": 350,
       "anchorFile": "src/app/api/settings/appearance/route.ts",
-      "anchorStart": 189,
+      "anchorStart": 209,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -938,11 +955,11 @@
       "sidecarPath": "src/app/api/settings/appearance/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    return ok(await updateHouseholdAppearance(await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "2179282f6e2243987cfc595c930433c460e1ef1a1d9e4c48bd17fbd4d45db666",
-      "anchorEnd": 514,
+      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    const result = await submitHouseholdAppearanceBrowserOperation(await request.json());\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "d853cc084f689ac161872d1d66e8a6ea3321cd839231bc7d75398cc4f38040e2",
+      "anchorEnd": 666,
       "anchorFile": "src/app/api/settings/appearance/route.ts",
-      "anchorStart": 332,
+      "anchorStart": 352,
       "binding": {
         "kind": "route_method",
         "symbol": "PATCH",
@@ -1006,11 +1023,28 @@
       "sidecarPath": "src/app/api/settings/registration/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueUnitPreferencesBrowserOperation(await request.json() as { operationId?: unknown });\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "ea192855687159c7eb5dfd51b710ff5a159370c9d980b7022f67b93a58597e12",
+      "anchorEnd": 571,
+      "anchorFile": "src/app/api/settings/units/issue/route.ts",
+      "anchorStart": 182,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/settings/units/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/settings/units/issue/route.ts:route_method:POST:src/app/api/settings/units/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getUnitPreferenceSettings());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "1e4807e512161a47ff7c265721c72c89a8550057a5942ea6b66063f641e71c15",
-      "anchorEnd": 342,
+      "anchorEnd": 358,
       "anchorFile": "src/app/api/settings/units/route.ts",
-      "anchorStart": 198,
+      "anchorStart": 214,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -1023,11 +1057,11 @@
       "sidecarPath": "src/app/api/settings/units/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    return ok(await updateUnitPreferences(await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a9cedf396b3cee40be8163dffa7e3a9e5a41a6cbc4a3c58f96a832c7a990bfab",
-      "anchorEnd": 522,
+      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    const result = await submitUnitPreferencesBrowserOperation(await request.json() as Record<string, unknown>);\n    const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "039cd26c31cc40fe55a13e104672709700ca0a1472174543c585a9bde9a2fa3a",
+      "anchorEnd": 716,
       "anchorFile": "src/app/api/settings/units/route.ts",
-      "anchorStart": 344,
+      "anchorStart": 360,
       "binding": {
         "kind": "route_method",
         "symbol": "PATCH",
@@ -1567,11 +1601,11 @@
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/settings/appearance\", {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ accentTheme: selected })\n    })",
-      "anchorDigest": "741e2c1af49bebc36e40b0b1fd9604359e8befb2d45696ddfea84270315d51c9",
-      "anchorEnd": 851,
+      "anchorBytes": "fetch(`/api/browser-operations/${id}`, { cache: \"no-store\" })",
+      "anchorDigest": "5329d1c1818c5445a435c219486012197fdd77c785f7cd03d2d800afd7e31627",
+      "anchorEnd": 1445,
       "anchorFile": "src/components/settings/appearance-form.tsx",
-      "anchorStart": 677,
+      "anchorStart": 1384,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1579,6 +1613,40 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
+      "ownerModule": "src/components/settings/appearance-form.tsx",
+      "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/appearance/issue\", {\n        method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ operationId: id })\n      })",
+      "anchorDigest": "4ce9639b702a90906c2346aa24cb79c15f315d5bcc3b582fb50896ce0b203f3d",
+      "anchorEnd": 2519,
+      "anchorFile": "src/components/settings/appearance-form.tsx",
+      "anchorStart": 2354,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
+      "ownerModule": "src/components/settings/appearance-form.tsx",
+      "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/appearance\", {\n        method: \"PATCH\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ operationId: id, accentTheme: selected })\n      })",
+      "anchorDigest": "6d7286675f59aafe5b5db32b32fc8f236ab923447c44afcce1600b860031f743",
+      "anchorEnd": 3137,
+      "anchorFile": "src/components/settings/appearance-form.tsx",
+      "anchorStart": 2954,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
       "ownerModule": "src/components/settings/appearance-form.tsx",
       "sidecarPath": "src/components/settings/appearance-form.operation.ts"
@@ -2062,9 +2130,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 1861,
+      "anchorEnd": 3478,
       "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-      "anchorStart": 1846,
+      "anchorStart": 3463,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -2077,11 +2145,11 @@
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/settings/units\", {\n        method: \"PATCH\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          volume: formData.get(\"volume\"),\n          weight: formData.get(\"weight\"),\n          length: formData.get(\"length\"),\n          temperature: formData.get(\"temperature\"),\n          medicineUnits: itemUnits(formData, \"medicine\", medicineNames),\n          supplementUnits: itemUnits(formData, \"supplement\", supplementNames)\n        })\n      })",
-      "anchorDigest": "f3b24ea3361051639e6c7c143e07236f3c7aecb8fff122a617fef1648b9de558",
-      "anchorEnd": 1272,
+      "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
+      "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+      "anchorEnd": 1190,
       "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-      "anchorStart": 780,
+      "anchorStart": 1123,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2089,6 +2157,40 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+      "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/units/issue\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ operationId: id }) })",
+      "anchorDigest": "c74257374e81c7c135a58a8e227a6277db9a49ee1cd83d53605f2a29bfd26526",
+      "anchorEnd": 2012,
+      "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+      "anchorStart": 1866,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+      "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/units\", {\n        method: \"PATCH\", headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: id, volume: formData.get(\"volume\"), weight: formData.get(\"weight\"), length: formData.get(\"length\"), temperature: formData.get(\"temperature\"), medicineUnits: itemUnits(formData, \"medicine\", medicineNames), supplementUnits: itemUnits(formData, \"supplement\", supplementNames) })\n      })",
+      "anchorDigest": "d0a53bde7dcec0d4e1b05a6a08986f92ca464299b6bf3e06c832673cc88d686e",
+      "anchorEnd": 2839,
+      "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+      "anchorStart": 2406,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
       "ownerModule": "src/components/settings/unit-preferences-form.tsx",
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
@@ -4157,10 +4259,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "4060352f531560deab853941127555707b57bd6ffcd0e8dee85b2339e801b544",
+  "semanticArtifactDigest": "ba37a09b2163e1f42b37dd4cbd58b2efb4be00fcc675785bd2cbddd05ff1887c",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "7088bf462f21a06be48c99f58e752c26f14af337d600ae86ef0e9a812363ca06",
+  "semanticCoverageDigest": "d3c22d306156b08f9055d9b19becaf9cd6923c8bdedc98ea777527b26bfb3a85",
   "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "23714ceac571ba8fe4517a4b76dfe3fb4dd3ffe1a031b905dac7a9ecac029fbf",
-  "semanticFingerprint": "f80c3197ed4fd566e7326fbe4f553107f329db708ecc83d3b77d09299ddc6a5d"
+  "semanticDeclarationDigest": "ef9cd82ead93a258b079a43455a4afe46297ca16fe5fe632b974c71d351a95aa",
+  "semanticFingerprint": "e70d8f791b5a1b3f0016dbb6e2762415399c3eefec3ef3ca18b609d83234a86e"
 }

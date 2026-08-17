@@ -365,6 +365,8 @@ Household browser-operation schema, status, retention, compaction, and tombstone
 
 Global account appearance uses a separate non-household operation binding/full/tombstone ledger. Tests must prove no household lookup or member authority enters Personal appearance, while Session/User revision reauthorization, same-ID status, compaction, and 410 behavior remain equivalent to the household operation contract.
 
+Family accent and Units forms require a browser operation identity before submit. Tests must cover retained-ID reconciliation, stale HouseholdSettings snapshots, expired/unknown status, and full-document Units replacement. Do not reintroduce the pre-P1-2 direct `PATCH` mutation path.
+
 ## Common Development Notes
 
 ### Activities

@@ -1,7 +1,7 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 50,
+    "api_route": 52,
     "client_binding": 25,
     "instrumentation": 1,
     "package_command": 8,
@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "71e32864c4527d548aea1784f6385cd511a887b8f3d8570426ebc2abbec87c97",
+  "declarationDigest": "7ad7ae7351aa84b6dd76238e1d40febdceaafe13085412bdbe9c2f3ad45f8fd1",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1712,6 +1712,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "GET",
             "target": "src/app/api/settings/appearance/route.ts#GET"
           },
@@ -1781,6 +1811,36 @@
       },
       "id": "api_route:src/app/api/settings/registration/route.ts",
       "sidecarPath": "src/app/api/settings/registration/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/settings/units/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/settings/units/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/settings/units/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
     },
     {
       "declaration": {
@@ -3499,6 +3559,16 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -3899,6 +3969,16 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -4240,7 +4320,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "4bac1dee99e2032d4101c1c19d92f5ce31f781c7ab5012c227533e16fba2d5c9",
+  "generatorDigest": "9de1da375cf134d18c98b72ab4561b13580048b0cc5d246f5d5ecaef63856d3f",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -5152,19 +5232,38 @@
     {
       "bindings": [
         {
+          "anchorDigest": "d92d343129aee810d2c827e499c3c8320542b46a56ba5b1127db2d9784caf590",
+          "anchorEnd": 573,
+          "anchorFile": "src/app/api/settings/appearance/issue/route.ts",
+          "anchorStart": 180,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "50df48391dd9e32ca982bc39b73cd5c9646ba7ffd64700cde7f5f00144f2ca1c",
-          "anchorEnd": 330,
+          "anchorEnd": 350,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 189,
+          "anchorStart": 209,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/settings/appearance/route.ts#GET"
         },
         {
-          "anchorDigest": "2179282f6e2243987cfc595c930433c460e1ef1a1d9e4c48bd17fbd4d45db666",
-          "anchorEnd": 514,
+          "anchorDigest": "d853cc084f689ac161872d1d66e8a6ea3321cd839231bc7d75398cc4f38040e2",
+          "anchorEnd": 666,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 332,
+          "anchorStart": 352,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/settings/appearance/route.ts#PATCH"
@@ -5217,19 +5316,38 @@
     {
       "bindings": [
         {
+          "anchorDigest": "ea192855687159c7eb5dfd51b710ff5a159370c9d980b7022f67b93a58597e12",
+          "anchorEnd": 571,
+          "anchorFile": "src/app/api/settings/units/issue/route.ts",
+          "anchorStart": 182,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/settings/units/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "1e4807e512161a47ff7c265721c72c89a8550057a5942ea6b66063f641e71c15",
-          "anchorEnd": 342,
+          "anchorEnd": 358,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 198,
+          "anchorStart": 214,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/settings/units/route.ts#GET"
         },
         {
-          "anchorDigest": "a9cedf396b3cee40be8163dffa7e3a9e5a41a6cbc4a3c58f96a832c7a990bfab",
-          "anchorEnd": 522,
+          "anchorDigest": "039cd26c31cc40fe55a13e104672709700ca0a1472174543c585a9bde9a2fa3a",
+          "anchorEnd": 716,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 344,
+          "anchorStart": 360,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/settings/units/route.ts#PATCH"
@@ -6659,12 +6777,30 @@
     {
       "bindings": [
         {
-          "anchorDigest": "741e2c1af49bebc36e40b0b1fd9604359e8befb2d45696ddfea84270315d51c9",
-          "anchorEnd": 851,
+          "anchorDigest": "5329d1c1818c5445a435c219486012197fdd77c785f7cd03d2d800afd7e31627",
+          "anchorEnd": 1445,
           "anchorFile": "src/components/settings/appearance-form.tsx",
-          "anchorStart": 677,
+          "anchorStart": 1384,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "4ce9639b702a90906c2346aa24cb79c15f315d5bcc3b582fb50896ce0b203f3d",
+          "anchorEnd": 2519,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2354,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "6d7286675f59aafe5b5db32b32fc8f236ab923447c44afcce1600b860031f743",
+          "anchorEnd": 3137,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2954,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         }
       ],
@@ -7021,20 +7157,38 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 1861,
+          "anchorEnd": 3478,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 1846,
+          "anchorStart": 3463,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/settings/unit-preferences-form.tsx#submit"
         },
         {
-          "anchorDigest": "f3b24ea3361051639e6c7c143e07236f3c7aecb8fff122a617fef1648b9de558",
-          "anchorEnd": 1272,
+          "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+          "anchorEnd": 1190,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 780,
+          "anchorStart": 1123,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "c74257374e81c7c135a58a8e227a6277db9a49ee1cd83d53605f2a29bfd26526",
+          "anchorEnd": 2012,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 1866,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d0a53bde7dcec0d4e1b05a6a08986f92ca464299b6bf3e06c832673cc88d686e",
+          "anchorEnd": 2839,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 2406,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         }
       ],
@@ -7646,8 +7800,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 117,
-  "observationDigest": "4f2c5bd16c24f4c4c30fba2f7e8d7c95412a0eda097fdbfcb05e6d1def245ee6",
+  "observationCount": 119,
+  "observationDigest": "8aff92ad3d37c555ceeb7ceafc4d227b85d7d3a1db90911db75740b1361835d8",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -8518,18 +8672,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 330,
+          "anchorEnd": 573,
+          "anchorFile": "src/app/api/settings/appearance/issue/route.ts",
+          "anchorStart": 180,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 350,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 189,
+          "anchorStart": 209,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/appearance/route.ts",
           "symbol": "GET",
           "target": "src/app/api/settings/appearance/route.ts#GET"
         },
         {
-          "anchorEnd": 514,
+          "anchorEnd": 666,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 332,
+          "anchorStart": 352,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/appearance/route.ts",
           "symbol": "PATCH",
@@ -8581,18 +8753,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 342,
+          "anchorEnd": 571,
+          "anchorFile": "src/app/api/settings/units/issue/route.ts",
+          "anchorStart": 182,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/settings/units/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/settings/units/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 358,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 198,
+          "anchorStart": 214,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/units/route.ts",
           "symbol": "GET",
           "target": "src/app/api/settings/units/route.ts#GET"
         },
         {
-          "anchorEnd": 522,
+          "anchorEnd": 716,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 344,
+          "anchorStart": 360,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/units/route.ts",
           "symbol": "PATCH",
@@ -9976,12 +10166,30 @@
     {
       "bindings": [
         {
-          "anchorEnd": 851,
+          "anchorEnd": 1445,
           "anchorFile": "src/components/settings/appearance-form.tsx",
-          "anchorStart": 677,
+          "anchorStart": 1384,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/appearance-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2519,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2354,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/appearance-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3137,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2954,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/appearance-form.tsx",
+          "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         }
       ],
@@ -10327,21 +10535,39 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1861,
+          "anchorEnd": 3478,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 1846,
+          "anchorStart": 3463,
           "kind": "form_action",
           "ownerModule": "src/components/settings/unit-preferences-form.tsx",
           "symbol": "submit",
           "target": "src/components/settings/unit-preferences-form.tsx#submit"
         },
         {
-          "anchorEnd": 1272,
+          "anchorEnd": 1190,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 780,
+          "anchorStart": 1123,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/unit-preferences-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2012,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 1866,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2839,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 2406,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+          "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         }
       ],
@@ -11155,6 +11381,12 @@
       "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/settings/appearance/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/settings/appearance/route.ts",
@@ -11165,6 +11397,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/settings/registration/route.ts",
       "sidecarPath": "src/app/api/settings/registration/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/settings/units/route.ts",
@@ -11605,9 +11843,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "06325224bfa3c913f5e36088c5f4a6b4bff3a02f5fac4c2761c65c872c33f497",
+  "ownerSetDigest": "a864548c4b9ec977953330d2b0ed578c2d96c1142222612a01bdab1c2ec9a00d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "0a982c1df02e42388e705afaf599c99bea4ba29b94d249feede4f471cf707960",
+  "registryDigest": "41b953643a1f2c1223cce8a456874bce1490805eedef0961beb07de1fbf535de",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

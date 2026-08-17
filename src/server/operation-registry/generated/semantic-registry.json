@@ -3007,7 +3007,7 @@
       "kind": "exposure",
       "ownerModule": "src/app/api/settings/appearance/route.ts",
       "serviceOperationIds": [
-        "settings.appearance.update"
+        "household.accent.update"
       ]
     },
     {
@@ -6369,6 +6369,170 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Does not accept a household ID from request payload."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Uses the validated effective household member episode."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Writes HouseholdSettings and audit state with the durable result."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Reauthorizes household.manage in the browser operation transaction."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Submits household.accent.update."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Writes only the locked effective household settings row."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Returns allowlisted operation outcomes."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "No worker loop.",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "submitHouseholdAppearanceBrowserOperation",
+      "id": "household.accent.update",
+      "kind": "service",
+      "ownerModule": "src/server/services/appearance.ts"
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
                 "exportName": "createInvite",
                 "file": "src/server/services/invites.ts",
                 "kind": "symbol"
@@ -8173,12 +8337,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance reads accentTheme from raw input and parses it with accentThemeSchema"
+            "value": "Does not accept a household ID from request payload."
           },
           "target": {
             "authority": "deferred",
@@ -8190,12 +8354,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
+            "value": "Uses the validated effective household member episode."
           },
           "target": {
             "authority": "deferred",
@@ -8217,12 +8381,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the source calls prisma.householdSettings.upsert and then writeAudit with settings.appearance.update"
+            "value": "Writes complete unit preferences and audit state with the durable result."
           },
           "target": {
             "authority": "deferred",
@@ -8234,12 +8398,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance requires household.manage before its upsert and contains no transaction-local membership recheck"
+            "value": "Reauthorizes household.manage in the browser operation transaction."
           },
           "target": {
             "authority": "deferred",
@@ -8251,12 +8415,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance is the exported appearance update service"
+            "value": "Submits settings.units.update."
           },
           "target": {
             "authority": "deferred",
@@ -8268,12 +8432,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the HouseholdSettings upsert key and create data use the selected context householdId"
+            "value": "Writes only the locked effective household settings row."
           },
           "target": {
             "authority": "deferred",
@@ -8282,15 +8446,15 @@
         },
         "variant_specific_outcomes": {
           "current": {
-            "authority": "not_applicable",
-            "rationale": "updateHouseholdAppearance has no declared semantic variant",
+            "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
-            ]
+            ],
+            "value": "Returns allowlisted operation outcomes."
           },
           "target": {
             "authority": "deferred",
@@ -8300,174 +8464,10 @@
         "worker_loop_claim_failure_containment": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "updateHouseholdAppearance does not contain a worker loop",
+            "rationale": "No worker loop.",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
-                "kind": "symbol"
-              }
-            ]
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.worker_containment"
-          }
-        }
-      },
-      "exportName": "updateHouseholdAppearance",
-      "id": "settings.appearance.update",
-      "kind": "service",
-      "ownerModule": "src/server/services/appearance.ts"
-    },
-    {
-      "axes": {
-        "browser_immutable_binding_stale_behavior": {
-          "current": {
-            "authority": "deferred",
-            "gateId": "gate.browser_binding_staleness"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.browser_binding_staleness"
-          }
-        },
-        "caller_controlled_scope": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences parses raw input with unitPreferencesSchema"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.caller_controlled_scope"
-          }
-        },
-        "carrier_authority_guard": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.carrier_authority_guard"
-          }
-        },
-        "executable_evidence_strength": {
-          "current": {
-            "authority": "deferred",
-            "gateId": "gate.executable_evidence"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.executable_evidence"
-          }
-        },
-        "model_reads_writes_effects": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "the source calls prisma.householdSettings.upsert and then writeAudit with settings.units.update"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.model_and_effects"
-          }
-        },
-        "permission_commit_reauthorization": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences requires household.manage before its upsert and contains no transaction-local membership recheck"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.permission_commit_reauthorization"
-          }
-        },
-        "service_operation_linkage": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences is the exported unit-preference update service"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.service_operation_linkage"
-          }
-        },
-        "tenant_relationship_invariants": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "the HouseholdSettings upsert key and create data use the selected context householdId"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.tenant_relationship_invariants"
-          }
-        },
-        "variant_specific_outcomes": {
-          "current": {
-            "authority": "not_applicable",
-            "rationale": "updateUnitPreferences has no declared semantic variant",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ]
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.variant_outcomes"
-          }
-        },
-        "worker_loop_claim_failure_containment": {
-          "current": {
-            "authority": "not_applicable",
-            "rationale": "updateUnitPreferences does not contain a worker loop",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
+                "exportName": "submitUnitPreferencesBrowserOperation",
                 "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
@@ -8479,7 +8479,7 @@
           }
         }
       },
-      "exportName": "updateUnitPreferences",
+      "exportName": "submitUnitPreferencesBrowserOperation",
       "id": "settings.units.update",
       "kind": "service",
       "ownerModule": "src/server/services/unit-preferences.ts"
@@ -8491,12 +8491,12 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "4060352f531560deab853941127555707b57bd6ffcd0e8dee85b2339e801b544",
+  "semanticArtifactDigest": "ba37a09b2163e1f42b37dd4cbd58b2efb4be00fcc675785bd2cbddd05ff1887c",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "7088bf462f21a06be48c99f58e752c26f14af337d600ae86ef0e9a812363ca06",
+  "semanticCoverageDigest": "d3c22d306156b08f9055d9b19becaf9cd6923c8bdedc98ea777527b26bfb3a85",
   "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "23714ceac571ba8fe4517a4b76dfe3fb4dd3ffe1a031b905dac7a9ecac029fbf",
-  "semanticFingerprint": "f80c3197ed4fd566e7326fbe4f553107f329db708ecc83d3b77d09299ddc6a5d",
+  "semanticDeclarationDigest": "ef9cd82ead93a258b079a43455a4afe46297ca16fe5fe632b974c71d351a95aa",
+  "semanticFingerprint": "e70d8f791b5a1b3f0016dbb6e2762415399c3eefec3ef3ca18b609d83234a86e",
   "semanticSidecars": [
     "src/app/api/activities/[id]/route.semantic.ts",
     "src/app/api/activities/route.semantic.ts",

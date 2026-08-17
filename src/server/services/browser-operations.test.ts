@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireFreshSession: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   sessionFindFirst: vi.fn(),
+  householdFindFirst: vi.fn(),
   babyFindFirst: vi.fn(),
   memberFindFirst: vi.fn(),
   bindingFindFirst: vi.fn(),
@@ -16,7 +18,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/auth/session", () => ({ requireFreshSession: mocks.requireFreshSession }));
-vi.mock("@/server/auth/context", () => ({ requirePermission: mocks.requirePermission }));
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
+  requirePermission: mocks.requirePermission
+}));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     session: { findFirst: mocks.sessionFindFirst },
@@ -32,8 +37,11 @@ import {
   browserIntentFingerprint,
   browserOperationFailureResult,
   getBrowserOperationContextForBaby,
+  getBrowserOperationContextForHousehold,
   issueBrowserOperation,
-  executeBrowserOperation
+  issueHouseholdBrowserOperation,
+  executeBrowserOperation,
+  executeHouseholdBrowserOperation
 } from "@/server/services/browser-operations";
 
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
@@ -97,7 +105,9 @@ function calendarOperation(opening: unknown, intent: unknown, overrides: Record<
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.requireFreshSession.mockResolvedValue({ user: { id: "user-1" }, session: { id: "session-1" } });
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({ ...ctx, sessionId: undefined });
   mocks.sessionFindFirst.mockResolvedValue({ id: "session-1", userId: "user-1", expiresAt: new Date(Date.now() + 60_000) });
+  mocks.householdFindFirst.mockResolvedValue({ id: "household-1", deletedAt: null });
   mocks.babyFindFirst.mockResolvedValue({ id: "baby-1", householdId: "household-1", inactiveAt: null });
   mocks.memberFindFirst.mockResolvedValue({ id: "member-1", householdId: "household-1", userId: "user-1", role: "parent" });
   mocks.bindingFindFirst.mockResolvedValue(null);
@@ -120,6 +130,7 @@ beforeEach(() => {
     callback({
       $queryRaw: mocks.queryRaw,
       session: { findFirst: mocks.sessionFindFirst },
+      household: { findFirst: mocks.householdFindFirst },
       baby: { findFirst: mocks.babyFindFirst },
       householdMember: { findFirst: mocks.memberFindFirst },
       browserOperationBinding: { findFirst: mocks.bindingFindFirst, create: mocks.bindingCreate, update: mocks.bindingUpdate },
@@ -129,6 +140,90 @@ beforeEach(() => {
 });
 
 describe("browser operation bindings", () => {
+  it("binds a selected household settings target without a dummy baby", async () => {
+    await expect(getBrowserOperationContextForHousehold()).resolves.toEqual(ctx);
+    const targetSnapshot = vi.fn().mockResolvedValue({ settingsState: "absent", updatedAt: null, schemaVersion: 1 });
+
+    await expect(issueHouseholdBrowserOperation({
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.householdAccentUpdate,
+      targetKind: BrowserOperationTargetKind.settings,
+      permission: "household.manage",
+      targetSnapshot
+    })).resolves.toEqual({ status: "open", operationId, bindingId: "binding-1" });
+
+    expect(mocks.bindingCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        operationKey: BrowserOperationKey.householdAccentUpdate,
+        targetKind: BrowserOperationTargetKind.settings,
+        targetId: null,
+        babyId: null,
+        targetSnapshot: { settingsState: "absent", updatedAt: null, schemaVersion: 1 }
+      })
+    });
+    expect(mocks.queryRaw.mock.calls.map(([query]) => query.join(" "))).toEqual(
+      expect.arrayContaining([expect.stringContaining('FROM "Household"')])
+    );
+    expect(mocks.babyFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("submits a settings target with exact non-baby locks and an allowlisted outcome", async () => {
+    const opening = { settingsState: "absent", updatedAt: null, schemaVersion: 1 };
+    const openingFingerprint = browserIntentFingerprint({
+      version: 2,
+      operationKey: BrowserOperationKey.settingsUnitsUpdate,
+      householdId: ctx.householdId,
+      memberId: ctx.memberId,
+      babyId: null,
+      targetKind: BrowserOperationTargetKind.settings,
+      targetId: null,
+      opening
+    });
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "binding-1",
+      householdId: ctx.householdId,
+      operationId,
+      sessionId: ctx.sessionId,
+      actorUserId: ctx.userId,
+      actorMemberId: ctx.memberId,
+      operationKey: BrowserOperationKey.settingsUnitsUpdate,
+      openingFingerprint,
+      persistenceVersion: 2,
+      targetKind: BrowserOperationTargetKind.settings,
+      targetId: null,
+      babyId: null,
+      targetSnapshot: opening,
+      protocolVersion: BrowserOperationProtocolVersion.browserV2,
+      state: "open",
+      expiresAt: new Date(Date.now() + 60_000),
+      operation: null
+    });
+    mocks.operationUpdate.mockResolvedValue({
+      operationId,
+      status: "completed",
+      outcomeCode: "ok",
+      outcomeSnapshot: { operationId, kind: "units_updated", code: "ok", settingsScope: "household" }
+    });
+    const execute = vi.fn().mockResolvedValue({ kind: "units_updated", code: "ok", settingsScope: "household" });
+
+    await expect(executeHouseholdBrowserOperation({
+      ctx,
+      operationId,
+      operationKey: BrowserOperationKey.settingsUnitsUpdate,
+      intent: { volume: "mL" },
+      targetKind: BrowserOperationTargetKind.settings,
+      permission: "household.manage",
+      execute
+    })).resolves.toMatchObject({ status: "completed", outcome: { kind: "units_updated" } });
+
+    expect(execute).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(ctx), expect.objectContaining({ targetSnapshot: opening }));
+    expect(mocks.operationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ targetKind: BrowserOperationTargetKind.settings, targetId: null, babyId: null })
+    });
+    expect(mocks.babyFindFirst).not.toHaveBeenCalled();
+  });
+
   it("fails closed for expanded keys without adapters before reserving or executing", async () => {
     const execute = vi.fn();
 

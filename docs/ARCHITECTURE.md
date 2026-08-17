@@ -188,6 +188,8 @@ and require `household.manage`.
 
 Personal appearance mode is separate global account state: `system`, `light`, or `dark`, defaulting to `system`. It is loaded independently of household selection and persisted through the separate account browser-operation ledger with Session/User reauthorization and revision compare-and-swap. `/account/appearance` remains available to authenticated users without a selected household. Signing out forces system/device behavior; Family accent remains household data and never supplies a personal mode.
 
+Family accent and the complete household unit-preference document use the household browser-operation ledger. Their opening bindings freeze the selected household/member episode plus an absent-or-`updatedAt` HouseholdSettings snapshot; submission reauthorizes `household.manage`, replaces only the intended settings value under compare-and-swap, writes audit data atomically, and retains same-ID status/replay behavior. Neither setting may use the account operation ledger or silently merge stale form fields.
+
 Activity recognition uses Cubby-original raster artwork under
 `public/activity-art` through the shared `ActivityArtwork` component. Utility
 actions such as navigation, settings, editing, and deletion continue to use

@@ -9,7 +9,7 @@ import {
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireFreshSession } from "@/server/auth/session";
-import { requirePermission, type HouseholdContext } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 
 export const browserOperationLeaseMs = 30 * 60 * 1000;
 
@@ -38,6 +38,17 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     code: z.literal("ok"),
     babyId: z.string().min(1),
     inactive: z.literal(false)
+  }).strict(),
+  [BrowserOperationKey.householdAccentUpdate]: z.object({
+    kind: z.literal("household_accent"),
+    code: z.literal("ok"),
+    settingsScope: z.literal("household"),
+    accentTheme: z.enum(["sage", "rose", "powder", "butter", "terracotta"])
+  }).strict(),
+  [BrowserOperationKey.settingsUnitsUpdate]: z.object({
+    kind: z.literal("units_updated"),
+    code: z.literal("ok"),
+    settingsScope: z.literal("household")
   }).strict()
 };
 
@@ -58,6 +69,7 @@ export type BrowserOperationContext = HouseholdContext & { sessionId: string };
 
 type BrowserOperationTransaction = Pick<Prisma.TransactionClient, "$queryRaw"> & {
   session: { findFirst: any };
+  household: { findFirst: any };
   baby: { findFirst: any };
   householdMember: { findFirst: any };
   browserOperationBinding: { create: any; findFirst: any; update: any };
@@ -135,6 +147,13 @@ export function getBrowserOperationContextForLifecycleBaby(babyId: unknown) {
   return getBrowserOperationContextForBabyScope(babyId, true);
 }
 
+export async function getBrowserOperationContextForHousehold(): Promise<BrowserOperationContext> {
+  const session = await requireFreshSession();
+  const ctx = await getEffectiveHouseholdContext();
+  if (session.user.id !== ctx.userId) throw new Error("forbidden");
+  return { ...ctx, sessionId: session.session.id };
+}
+
 function exactBindingMatches(
   binding: {
     sessionId: string;
@@ -210,6 +229,111 @@ async function lockBabyForOperation(tx: BrowserOperationTransaction, ctx: Browse
   const baby = await tx.baby.findFirst({ where: { id: babyId, householdId: ctx.householdId, deletedAt: null } });
   if (!baby) throw new Error("not_found");
   return baby;
+}
+
+async function lockHouseholdForOperation(tx: BrowserOperationTransaction, ctx: BrowserOperationContext) {
+  await tx.$queryRaw`SELECT "id" FROM "Household" WHERE "id" = ${ctx.householdId} AND "deletedAt" IS NULL FOR UPDATE`;
+  const household = await tx.household.findFirst({ where: { id: ctx.householdId, deletedAt: null } });
+  if (!household) throw new Error("not_found");
+  return household;
+}
+
+function householdBindingMatches(
+  binding: {
+    sessionId: string;
+    actorUserId: string;
+    actorMemberId: string;
+    operationKey: BrowserOperationKey;
+    persistenceVersion: number;
+    protocolVersion: BrowserOperationProtocolVersion;
+    targetKind: BrowserOperationTargetKind | null;
+    targetId: string | null;
+    babyId: string | null;
+  },
+  ctx: BrowserOperationContext,
+  input: { operationKey: BrowserOperationKey; targetKind: BrowserOperationTargetKind; targetId?: string }
+) {
+  return binding.sessionId === ctx.sessionId &&
+    binding.actorUserId === ctx.userId &&
+    binding.actorMemberId === ctx.memberId &&
+    binding.operationKey === input.operationKey &&
+    binding.persistenceVersion === 2 &&
+    binding.protocolVersion === BrowserOperationProtocolVersion.browserV2 &&
+    binding.targetKind === input.targetKind &&
+    binding.targetId === (input.targetId ?? null) &&
+    binding.babyId === null;
+}
+
+export async function issueHouseholdBrowserOperation(input: {
+  ctx: BrowserOperationContext;
+  operationId: unknown;
+  operationKey: BrowserOperationKey;
+  targetKind: BrowserOperationTargetKind;
+  targetId?: string;
+  permission: Parameters<typeof requirePermission>[1];
+  targetSnapshot: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<Record<string, unknown>> | Record<string, unknown>;
+}): Promise<BrowserOperationResult> {
+  const operationId = assertBrowserOperationId(input.operationId);
+  const operationKey = browserOperationKeySchema.parse(input.operationKey);
+  terminalOutcomeSchemaFor(operationKey);
+  const expiresAt = new Date(Date.now() + browserOperationLeaseMs);
+  const openResult = (bindingId: string): Extract<BrowserOperationResult, { status: "open" }> => ({ status: "open", operationId, bindingId });
+
+  const issueOrReplay = async (transaction: Prisma.TransactionClient, recoverOnly = false): Promise<BrowserOperationResult> => {
+    const db = transaction as unknown as BrowserOperationTransaction;
+    await db.$queryRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+    const ctx = await lockCurrentActor(db, input.ctx);
+    requirePermission(ctx, input.permission);
+    const existing = await db.browserOperationBinding.findFirst({
+      where: { householdId: ctx.householdId, operationId },
+      include: { operation: true }
+    });
+    if (existing) {
+      if (!householdBindingMatches(existing, ctx, input)) throw new Error("idempotency_conflict");
+      return existing.operation ? browserOperationResultFromPersistence(existing.operation) : openResult(existing.id);
+    }
+    if (recoverOnly) throw new Error("idempotency_conflict");
+
+    await lockHouseholdForOperation(db, ctx);
+    const targetSnapshot = await input.targetSnapshot(transaction, ctx);
+    const openingFingerprint = browserIntentFingerprint({
+      version: 2,
+      operationKey,
+      householdId: ctx.householdId,
+      memberId: ctx.memberId,
+      babyId: null,
+      targetKind: input.targetKind,
+      targetId: input.targetId ?? null,
+      opening: targetSnapshot
+    });
+    const binding = await db.browserOperationBinding.create({
+      data: {
+        sessionId: ctx.sessionId,
+        actorUserId: ctx.userId,
+        actorMemberId: ctx.memberId,
+        householdId: ctx.householdId,
+        operationId,
+        operationKey,
+        legacyIntentFingerprint: null,
+        openingFingerprint,
+        persistenceVersion: 2,
+        targetKind: input.targetKind,
+        targetId: input.targetId ?? null,
+        babyId: null,
+        targetSnapshot,
+        protocolVersion: BrowserOperationProtocolVersion.browserV2,
+        expiresAt
+      }
+    });
+    return openResult(binding.id);
+  };
+
+  try {
+    return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
+  } catch (error) {
+    if (!isBrowserOperationBindingUniqueError(error)) throw error;
+    return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+  }
 }
 
 export async function issueBrowserOperation(input: {
@@ -361,7 +485,94 @@ function staleResult(operationId: string, error: unknown): { status: "stale"; op
   if (message === "forbidden") return { status: "stale", operationId, code: "stale_context" };
   if (message === "not_found") return { status: "stale", operationId, code: "stale_target" };
   if (message === "baby_inactive") return { status: "stale", operationId, code: "inactive_baby" };
+  if (message === "stale_revision") return { status: "stale", operationId, code: "stale_revision" };
+  if (message === "state_conflict") return { status: "stale", operationId, code: "state_conflict" };
   return null;
+}
+
+export async function executeHouseholdBrowserOperation<T extends Record<string, unknown>>(input: {
+  ctx: BrowserOperationContext;
+  operationId: unknown;
+  operationKey: BrowserOperationKey;
+  intent: unknown;
+  targetKind: BrowserOperationTargetKind;
+  targetId?: string;
+  permission: Parameters<typeof requirePermission>[1];
+  validate?: (
+    tx: Prisma.TransactionClient,
+    ctx: BrowserOperationContext,
+    binding: { targetSnapshot: unknown }
+  ) => Promise<void>;
+  execute: (
+    tx: Prisma.TransactionClient,
+    ctx: BrowserOperationContext,
+    binding: { targetSnapshot: unknown }
+  ) => Promise<T>;
+}): Promise<BrowserOperationResult> {
+  const operationId = assertBrowserOperationId(input.operationId);
+  const operationKey = browserOperationKeySchema.parse(input.operationKey);
+  const outcomeSchema = terminalOutcomeSchemaFor(operationKey);
+
+  return prisma.$transaction(async (transaction) => {
+    const db = transaction as unknown as BrowserOperationTransaction;
+    await db.$queryRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+    await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${input.ctx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
+    const binding = await db.browserOperationBinding.findFirst({
+      where: { householdId: input.ctx.householdId, operationId },
+      include: { operation: true }
+    });
+    if (!binding || !householdBindingMatches(binding, input.ctx, input)) throw new Error("not_found");
+
+    const lockedCtx = await lockCurrentActor(db, input.ctx);
+    requirePermission(lockedCtx, input.permission);
+    if (!householdBindingMatches(binding, lockedCtx, input)) throw new Error("forbidden");
+    await lockHouseholdForOperation(db, lockedCtx);
+
+    if (binding.state === "submitted" && !binding.operation) throw new Error("operation_integrity_error");
+    if (binding.operation && binding.state === "open") throw new Error("operation_integrity_error");
+    if (!binding.operation && (binding.state !== "open" || binding.expiresAt <= new Date())) {
+      await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "expired" } });
+      return { status: "stale", operationId, code: "stale_context" };
+    }
+
+    const intentFingerprint = browserIntentFingerprint({ openingFingerprint: binding.openingFingerprint, payload: input.intent });
+    if (binding.operation && binding.operation.intentFingerprint !== intentFingerprint) throw new Error("idempotency_conflict");
+    if (binding.operation && binding.operation.status !== "pending" && binding.operation.status !== "unknown") {
+      return browserOperationResultFromPersistence(binding.operation);
+    }
+    if (binding.operation) return { status: "pending", operationId, code: "operation_unknown" };
+
+    const operationData = {
+      bindingId: binding.id,
+      householdId: binding.householdId,
+      operationId: binding.operationId,
+      operationKey: binding.operationKey,
+      actorUserId: binding.actorUserId,
+      actorMemberId: binding.actorMemberId,
+      openingFingerprint: binding.openingFingerprint,
+      intentFingerprint,
+      persistenceVersion: 2,
+      targetKind: binding.targetKind,
+      targetId: binding.targetId,
+      babyId: null
+    };
+    let operation: { operationId: string; status: BrowserMutationOperationStatus; outcomeCode: string | null; outcomeSnapshot: unknown } | null = null;
+    try {
+      await input.validate?.(transaction, lockedCtx, binding);
+      operation = await db.browserMutationOperation.create({ data: operationData });
+      await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
+      const outcome = outcomeSchema.parse(await input.execute(transaction, lockedCtx, binding));
+      return persistTerminalOperation(db, binding, { status: "completed", operationId, outcome });
+    } catch (error) {
+      const stale = staleResult(operationId, error);
+      if (!stale) throw error;
+      if (!operation) {
+        operation = await db.browserMutationOperation.create({ data: operationData });
+        await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
+      }
+      return persistTerminalOperation(db, binding, stale);
+    }
+  }, { isolationLevel: "Serializable" });
 }
 
 export async function executeBrowserOperation<T extends Record<string, unknown>>(input: {

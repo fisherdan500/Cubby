@@ -2,24 +2,14 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "client_binding:src/components/settings/appearance-form.tsx",
-  ownerModule: "src/components/settings/appearance-form.tsx",
-  ownerKind: "client_binding",
+  id: "api_route:src/app/api/settings/units/issue/route.ts",
+  ownerModule: "src/app/api/settings/units/issue/route.ts",
+  ownerKind: "api_route",
   bindings: [
     {
-      kind: "global_fetch",
-      symbol: "fetch[1]",
-      target: "globalThis.fetch"
-    },
-    {
-      kind: "global_fetch",
-      symbol: "fetch[2]",
-      target: "globalThis.fetch"
-    },
-    {
-      kind: "global_fetch",
-      symbol: "fetch[3]",
-      target: "globalThis.fetch"
+      kind: "route_method",
+      symbol: "POST",
+      target: "src/app/api/settings/units/issue/route.ts#POST"
     }
   ],
   disposition: "observed",

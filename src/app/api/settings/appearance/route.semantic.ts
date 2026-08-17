@@ -11,7 +11,7 @@ export const semantic = [
       "target": "src/app/api/settings/appearance/route.ts#PATCH"
     },
     "serviceOperationIds": [
-      "settings.appearance.update"
+      "household.accent.update"
     ],
     "axes": {
       "carrier_authority_guard": {

@@ -190,8 +190,10 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/settings/api-keys/[id]/revoke/route.operation.ts",
   "src/app/api/settings/api-keys/route.operation.ts",
   "src/app/api/settings/appearance/route.operation.ts",
+  "src/app/api/settings/appearance/issue/route.operation.ts",
   "src/app/api/settings/registration/route.operation.ts",
   "src/app/api/settings/units/route.operation.ts",
+  "src/app/api/settings/units/issue/route.operation.ts",
   "src/app/api/settings/webhooks/[id]/route.operation.ts",
   "src/app/api/settings/webhooks/route.operation.ts",
   "src/app/api/timers/[id]/pause/route.operation.ts",
@@ -6090,7 +6092,7 @@ const SEMANTIC_BROWSER_EXPOSURE_SERVICE_LINKS = [
   ["src/app/api/members/[id]/route.ts", "PATCH", "member.role.update"],
   ["src/app/api/members/[id]/suspend/route.ts", "POST", "member.suspend"],
   ["src/app/api/notifications/preferences/route.ts", "POST", "notification.preference.save"],
-  ["src/app/api/settings/appearance/route.ts", "PATCH", "settings.appearance.update"],
+  ["src/app/api/settings/appearance/route.ts", "PATCH", "household.accent.update"],
   ["src/app/api/settings/units/route.ts", "PATCH", "settings.units.update"],
   ["src/app/api/timers/[id]/pause/route.ts", "POST", "activity.timer.pause"],
   ["src/app/api/timers/[id]/resume/route.ts", "POST", "activity.timer.resume"],
@@ -6117,8 +6119,8 @@ const SEMANTIC_BROWSER_SERVICE_OPERATIONS = [
   ["member.role.update", "src/server/services/invites.ts", "updateMemberRole"],
   ["member.suspend", "src/server/services/invites.ts", "suspendMember"],
   ["notification.preference.save", "src/server/services/integrations.ts", "saveNotificationPreference"],
-  ["settings.appearance.update", "src/server/services/appearance.ts", "updateHouseholdAppearance"],
-  ["settings.units.update", "src/server/services/unit-preferences.ts", "updateUnitPreferences"],
+  ["household.accent.update", "src/server/services/appearance.ts", "submitHouseholdAppearanceBrowserOperation"],
+  ["settings.units.update", "src/server/services/unit-preferences.ts", "submitUnitPreferencesBrowserOperation"],
   ["calendar_event.create", "src/server/services/calendar.ts", "submitCalendarEventBrowserOperation"]
 ] as const;
 

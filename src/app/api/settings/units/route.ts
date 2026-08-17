@@ -1,7 +1,7 @@
 import { ok, handleError } from "@/server/http";
 import {
   getUnitPreferenceSettings,
-  updateUnitPreferences
+  submitUnitPreferencesBrowserOperation
 } from "@/server/services/unit-preferences";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,9 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    return ok(await updateUnitPreferences(await request.json()));
+    const result = await submitUnitPreferencesBrowserOperation(await request.json() as Record<string, unknown>);
+    const status = result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200;
+    return ok(result, { status });
   } catch (error) {
     return handleError(error);
   }
