@@ -252,10 +252,7 @@ export async function submitInviteRevokeBrowserOperation(raw: unknown) {
 }
 
 export async function issueInviteRevokeAllBrowserOperation(raw: unknown) {
-  const input = bulkInviteRevokeBrowserSchema.parse(raw);
-  if (input.acknowledgement !== BULK_INVITE_REVOKE_ACKNOWLEDGEMENT) {
-    throw new Error("bulk_invite_revoke_acknowledgement_required");
-  }
+  const input = z.object({ operationId: z.unknown() }).strict().parse(raw);
   const ctx = await getBrowserOperationContextForHousehold();
   return issueHouseholdBrowserOperation({
     ctx,
@@ -265,7 +262,7 @@ export async function issueInviteRevokeAllBrowserOperation(raw: unknown) {
     permission: "household.manage",
     targetSnapshot: (_tx, lockedCtx) => {
       if (lockedCtx.role !== HouseholdRole.owner) throw new Error("forbidden");
-      return { version: 1, acknowledgement: input.acknowledgement, policy: "all_pending_at_submit" };
+      return { version: 1, policy: "all_pending_at_submit" };
     }
   });
 }
@@ -286,12 +283,8 @@ export async function submitInviteRevokeAllBrowserOperation(raw: unknown) {
     permission: "household.manage",
     intent: { acknowledgement: input.acknowledgement },
     execute: async (tx, lockedCtx, binding) => {
-      const opening = binding.targetSnapshot as { version?: unknown; acknowledgement?: unknown; policy?: unknown };
-      if (
-        opening.version !== 1 ||
-        opening.acknowledgement !== input.acknowledgement ||
-        opening.policy !== "all_pending_at_submit"
-      ) {
+      const opening = binding.targetSnapshot as { version?: unknown; policy?: unknown };
+      if (opening.version !== 1 || opening.policy !== "all_pending_at_submit") {
         throw new Error("stale_revision");
       }
       if (lockedCtx.role !== HouseholdRole.owner) throw new Error("forbidden");

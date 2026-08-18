@@ -117,10 +117,10 @@ describe("invite browser-v2 operations", () => {
     }, ctx);
     expect(snapshot).toEqual({ version: 1, status: "pending", updatedAt: "2026-08-17T12:00:00.000Z" });
 
-    await issueInviteRevokeAllBrowserOperation({ operationId, acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" });
+    await issueInviteRevokeAllBrowserOperation({ operationId });
     const bulk = mocks.issue.mock.calls[1][0];
     expect(bulk).toMatchObject({ operationKey: "inviteRevokeAll", targetKind: "invite", permission: "household.manage" });
-    expect(await bulk.targetSnapshot({}, ctx)).toEqual({ version: 1, acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS", policy: "all_pending_at_submit" });
+    expect(await bulk.targetSnapshot({}, ctx)).toEqual({ version: 1, policy: "all_pending_at_submit" });
     expect(JSON.stringify(await bulk.targetSnapshot({}, ctx))).not.toContain("invite-1");
   });
 
@@ -169,7 +169,7 @@ describe("invite browser-v2 operations", () => {
           { id: "invite-a", email: "a@example.test", role: "parent", status: "pending" },
           { id: "invite-b", email: "b@example.test", role: "caretaker", status: "pending" }
         ]), update }
-      }, ctx, { targetSnapshot: { version: 1, acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS", policy: "all_pending_at_submit" } });
+      }, ctx, { targetSnapshot: { version: 1, policy: "all_pending_at_submit" } });
       expect(outcome).toEqual({ kind: "invite_bulk", code: "revoked", revokedCount: 2 });
       expect(JSON.stringify(outcome)).not.toContain("invite-a");
       expect(JSON.stringify(mocks.execute.mock.calls)).not.toContain("a@example.test");

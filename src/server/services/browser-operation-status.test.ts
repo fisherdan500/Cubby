@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getContext: vi.fn(),
+  getSession: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn(),
+  sessionFindFirst: vi.fn(),
+  memberFindFirst: vi.fn(),
   bindingFindFirst: vi.fn(),
   tombstoneFindUnique: vi.fn()
 }));
@@ -11,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/server/auth/context", () => ({
   getEffectiveHouseholdContext: mocks.getContext
 }));
+vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: { $transaction: mocks.transaction }
 }));
@@ -23,11 +27,16 @@ const ctx = { userId: "user-1", householdId: "household-1", memberId: "member-1"
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.getContext.mockResolvedValue(ctx);
+  mocks.getSession.mockResolvedValue({ user: { id: "user-1" }, session: { id: "session-1" } });
   mocks.queryRaw.mockResolvedValue([]);
+  mocks.sessionFindFirst.mockResolvedValue({ id: "session-1" });
+  mocks.memberFindFirst.mockResolvedValue({ id: "member-1" });
   mocks.bindingFindFirst.mockResolvedValue(null);
   mocks.tombstoneFindUnique.mockResolvedValue(null);
   mocks.transaction.mockImplementation((callback) => callback({
     $queryRaw: mocks.queryRaw,
+    session: { findFirst: mocks.sessionFindFirst },
+    householdMember: { findFirst: mocks.memberFindFirst },
     browserOperationBinding: { findFirst: mocks.bindingFindFirst },
     browserMutationOperationTombstone: { findUnique: mocks.tombstoneFindUnique }
   }));
