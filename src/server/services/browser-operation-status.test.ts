@@ -45,6 +45,7 @@ beforeEach(() => {
 describe("household browser operation status", () => {
   it("returns operation_unknown for a currently authorized pending or unknown operation", async () => {
     mocks.bindingFindFirst.mockResolvedValue({
+      sessionId: "session-1",
       actorUserId: "user-1",
       actorMemberId: "member-1",
       operation: { operationId, status: "unknown", outcomeCode: null, outcomeSnapshot: null }
@@ -60,6 +61,7 @@ describe("household browser operation status", () => {
 
   it("replays only the allowlisted persisted terminal result", async () => {
     mocks.bindingFindFirst.mockResolvedValue({
+      sessionId: "session-1",
       actorUserId: "user-1",
       actorMemberId: "member-1",
       operation: {

@@ -6,9 +6,9 @@ const terminalRetentionMs = 30 * dayMs;
 
 type RetentionTransaction = Pick<Prisma.TransactionClient, "$queryRaw"> & {
   browserMutationOperation: { count: any; findMany: any };
-  browserOperationBinding: { findMany: any; deleteMany: any };
+  browserOperationBinding: { findMany: any; updateMany: any; deleteMany: any };
   accountMutationOperation: { count: any; findMany: any };
-  accountOperationBinding: { findMany: any; deleteMany: any };
+  accountOperationBinding: { findMany: any; updateMany: any; deleteMany: any };
 };
 
 export type BrowserOperationRetentionScopeResult = {
@@ -72,6 +72,8 @@ export async function runBrowserOperationRetention({
       if (rows[0]?.compacted) accountCompacted += 1;
     }
 
+    await expireOpenBindings(tx.browserOperationBinding, now);
+    await expireOpenBindings(tx.accountOperationBinding, now);
     const householdDeleted = await deleteOldBindings(
       tx.browserOperationBinding,
       terminalBefore,
@@ -96,6 +98,13 @@ export async function runBrowserOperationRetention({
       }
     };
   }, { isolationLevel: "Serializable" });
+}
+
+async function expireOpenBindings(model: { updateMany: any }, now: Date) {
+  await model.updateMany({
+    where: { state: "open", expiresAt: { lte: now }, operation: null },
+    data: { state: "expired" }
+  });
 }
 
 async function deleteOldBindings(

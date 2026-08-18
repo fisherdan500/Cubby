@@ -36,7 +36,7 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
       include: { operation: true }
     });
     if (binding) {
-      if (binding.actorUserId !== ctx.userId || binding.actorMemberId !== ctx.memberId || !binding.operation) {
+      if (binding.actorUserId !== ctx.userId || binding.actorMemberId !== ctx.memberId || binding.sessionId !== authSession.session.id || !binding.operation) {
         throw new Error("not_found");
       }
       const result = browserOperationResultFromPersistence(binding.operation);

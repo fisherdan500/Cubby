@@ -5,10 +5,12 @@ const mocks = vi.hoisted(() => ({
   householdOperationCount: vi.fn(),
   householdOperationFindMany: vi.fn(),
   householdBindingFindMany: vi.fn(),
+  householdBindingUpdateMany: vi.fn(),
   householdBindingDeleteMany: vi.fn(),
   accountOperationCount: vi.fn(),
   accountOperationFindMany: vi.fn(),
   accountBindingFindMany: vi.fn(),
+  accountBindingUpdateMany: vi.fn(),
   accountBindingDeleteMany: vi.fn(),
   queryRaw: vi.fn()
 }));
@@ -25,16 +27,16 @@ beforeEach(() => {
     mocks.accountOperationFindMany,
     mocks.accountBindingFindMany
   ]) findMany.mockResolvedValue([]);
-  for (const deleteMany of [mocks.householdBindingDeleteMany, mocks.accountBindingDeleteMany]) {
-    deleteMany.mockResolvedValue({ count: 0 });
+  for (const mutation of [mocks.householdBindingUpdateMany, mocks.accountBindingUpdateMany, mocks.householdBindingDeleteMany, mocks.accountBindingDeleteMany]) {
+    mutation.mockResolvedValue({ count: 0 });
   }
   mocks.queryRaw.mockResolvedValue([{ compacted: false }]);
   mocks.transaction.mockImplementation((callback) => callback({
     $queryRaw: mocks.queryRaw,
     browserMutationOperation: { count: mocks.householdOperationCount, findMany: mocks.householdOperationFindMany },
-    browserOperationBinding: { findMany: mocks.householdBindingFindMany, deleteMany: mocks.householdBindingDeleteMany },
+    browserOperationBinding: { findMany: mocks.householdBindingFindMany, updateMany: mocks.householdBindingUpdateMany, deleteMany: mocks.householdBindingDeleteMany },
     accountMutationOperation: { count: mocks.accountOperationCount, findMany: mocks.accountOperationFindMany },
-    accountOperationBinding: { findMany: mocks.accountBindingFindMany, deleteMany: mocks.accountBindingDeleteMany }
+    accountOperationBinding: { findMany: mocks.accountBindingFindMany, updateMany: mocks.accountBindingUpdateMany, deleteMany: mocks.accountBindingDeleteMany }
   }));
 });
 
@@ -84,5 +86,13 @@ describe("browser operation retention", () => {
     expect(mocks.accountBindingDeleteMany).toHaveBeenCalledWith({
       where: { id: "binding-a", state: { in: ["expired", "revoked"] }, operation: null }
     });
+  });
+
+  it("expires abandoned open bindings before their delayed deletion window in both scopes", async () => {
+    const now = new Date("2026-08-17T12:00:00Z");
+    await runBrowserOperationRetention({ now, batchSize: 25 });
+    const expected = { where: { state: "open", expiresAt: { lte: now }, operation: null }, data: { state: "expired" } };
+    expect(mocks.householdBindingUpdateMany).toHaveBeenCalledWith(expected);
+    expect(mocks.accountBindingUpdateMany).toHaveBeenCalledWith(expected);
   });
 });
