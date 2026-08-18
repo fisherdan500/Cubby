@@ -8,6 +8,11 @@ import { Input } from "@/components/ui/input";
 export function InviteForm({ canInviteAdmin }: { canInviteAdmin: boolean }) {
   const router = useRouter();
   const [acceptUrl, setAcceptUrl] = useState("");
+  const [operationId] = useState(() => {
+    const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+    const bytes = crypto.getRandomValues(new Uint8Array(26));
+    return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+  });
   const [error, setError] = useState("");
 
   async function submit(formData: FormData) {
@@ -16,7 +21,7 @@ export function InviteForm({ canInviteAdmin }: { canInviteAdmin: boolean }) {
     const response = await fetch("/api/invites", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(formData))
+      body: JSON.stringify({ ...Object.fromEntries(formData), operationId })
     });
     const result = await response.json();
     if (!result.ok) {

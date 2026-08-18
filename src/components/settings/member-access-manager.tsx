@@ -43,6 +43,7 @@ export function MemberAccessManager({
   const [message, setMessage] = useState("");
   const [busyId, setBusyId] = useState("");
   const memberOperationIds = useRef(new Map<string, string>());
+  const inviteOperationIds = useRef(new Map<string, string>());
 
   function memberOperationId(memberId: string, action: "role.update" | "suspend" | "restore" | "remove") {
     const key = `${memberId}:${action}`;
@@ -58,6 +59,17 @@ export function MemberAccessManager({
 
   function clearMemberOperationId(memberId: string, action: "role.update" | "suspend" | "restore" | "remove") {
     memberOperationIds.current.delete(`${memberId}:${action}`);
+  }
+
+  function inviteOperationId(key: string) {
+    let operationId = inviteOperationIds.current.get(key);
+    if (!operationId) {
+      const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+      const bytes = crypto.getRandomValues(new Uint8Array(26));
+      operationId = `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+      inviteOperationIds.current.set(key, operationId);
+    }
+    return operationId;
   }
 
   async function updateRole(memberId: string, formData: FormData) {
@@ -121,13 +133,14 @@ export function MemberAccessManager({
   async function revoke(invite: InviteRow) {
     setMessage("");
     setBusyId(invite.id);
-    const response = await fetch(`/api/invites/${invite.id}/revoke`, { method: "POST" });
+    const response = await fetch(`/api/invites/${invite.id}/revoke`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operationId: inviteOperationId(`revoke:${invite.id}`) }) });
     const result = await response.json();
     setBusyId("");
     if (!result.ok) {
       setMessage(result.error.message);
       return;
     }
+    inviteOperationIds.current.delete(`revoke:${invite.id}`);
     router.refresh();
   }
 
@@ -137,7 +150,7 @@ export function MemberAccessManager({
     const response = await fetch("/api/invites/revoke-all", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ acknowledgement: formData.get("acknowledgement") })
+      body: JSON.stringify({ operationId: inviteOperationId("revoke-all"), acknowledgement: formData.get("acknowledgement") })
     });
     const result = await response.json();
     setBusyId("");
@@ -145,6 +158,7 @@ export function MemberAccessManager({
       setMessage(result.error.message);
       return;
     }
+    inviteOperationIds.current.delete("revoke-all");
     setMessage(`Revoked ${result.data.revokedCount} pending invitation${result.data.revokedCount === 1 ? "" : "s"}.`);
     router.refresh();
   }
