@@ -90,9 +90,16 @@ describe("browser operation retention", () => {
 
   it("expires abandoned open bindings before their delayed deletion window in both scopes", async () => {
     const now = new Date("2026-08-17T12:00:00Z");
+    mocks.householdBindingFindMany.mockResolvedValueOnce([{ id: "binding-h", householdId: "household-1", operationId: "bmo_00000000000000000000000001" }]);
+    mocks.accountBindingFindMany.mockResolvedValueOnce([{ id: "binding-a", userId: "user-1", operationId: "bmo_00000000000000000000000002" }]);
     await runBrowserOperationRetention({ now, batchSize: 25 });
-    const expected = { where: { state: "open", expiresAt: { lte: now }, operation: null }, data: { state: "expired" } };
-    expect(mocks.householdBindingUpdateMany).toHaveBeenCalledWith(expected);
-    expect(mocks.accountBindingUpdateMany).toHaveBeenCalledWith(expected);
+    const householdExpected = { where: { id: "binding-h", state: "open", operation: null }, data: { state: "expired" } };
+    const accountExpected = { where: { id: "binding-a", state: "open", operation: null }, data: { state: "expired" } };
+    expect(mocks.householdBindingUpdateMany).toHaveBeenCalledWith(householdExpected);
+    expect(mocks.accountBindingUpdateMany).toHaveBeenCalledWith(accountExpected);
+    expect(mocks.queryRaw.mock.calls.map(([query]) => query.join(" "))).toEqual(expect.arrayContaining([
+      expect.stringContaining('lock_household_browser_operation_identity'),
+      expect.stringContaining('lock_account_browser_operation_identity')
+    ]));
   });
 });

@@ -72,8 +72,8 @@ export async function runBrowserOperationRetention({
       if (rows[0]?.compacted) accountCompacted += 1;
     }
 
-    await expireOpenBindings(tx.browserOperationBinding, now);
-    await expireOpenBindings(tx.accountOperationBinding, now);
+    await expireHouseholdOpenBindings(tx, now, batchSize);
+    await expireAccountOpenBindings(tx, now, batchSize);
     const householdDeleted = await deleteOldBindings(
       tx.browserOperationBinding,
       terminalBefore,
@@ -100,11 +100,30 @@ export async function runBrowserOperationRetention({
   }, { isolationLevel: "Serializable" });
 }
 
-async function expireOpenBindings(model: { updateMany: any }, now: Date) {
-  await model.updateMany({
+async function expireHouseholdOpenBindings(tx: RetentionTransaction, now: Date, batchSize: number) {
+  const bindings = await tx.browserOperationBinding.findMany({
     where: { state: "open", expiresAt: { lte: now }, operation: null },
-    data: { state: "expired" }
+    select: { id: true, householdId: true, operationId: true },
+    orderBy: [{ householdId: "asc" }, { operationId: "asc" }],
+    take: batchSize
   });
+  for (const binding of bindings) {
+    await tx.$queryRaw`SELECT "lock_household_browser_operation_identity"(${binding.householdId}, ${binding.operationId})`;
+    await tx.browserOperationBinding.updateMany({ where: { id: binding.id, state: "open", operation: null }, data: { state: "expired" } });
+  }
+}
+
+async function expireAccountOpenBindings(tx: RetentionTransaction, now: Date, batchSize: number) {
+  const bindings = await tx.accountOperationBinding.findMany({
+    where: { state: "open", expiresAt: { lte: now }, operation: null },
+    select: { id: true, userId: true, operationId: true },
+    orderBy: [{ userId: "asc" }, { operationId: "asc" }],
+    take: batchSize
+  });
+  for (const binding of bindings) {
+    await tx.$queryRaw`SELECT "lock_account_browser_operation_identity"(${binding.userId}, ${binding.operationId})`;
+    await tx.accountOperationBinding.updateMany({ where: { id: binding.id, state: "open", operation: null }, data: { state: "expired" } });
+  }
 }
 
 async function deleteOldBindings(
