@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "f96528c6cef866513f46fd391d23c6d5413e12805d1f7ec5c5575c8fe927793d",
+  "declarationDigest": "b67f784e7253d97c68dfd8205dc5c2b9aa8441d379de281f56280be0971df68c",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -2777,8 +2777,8 @@
           },
           {
             "kind": "server_value_import",
-            "symbol": "requireSettingsPage",
-            "target": "src/server/auth/page-access.ts#requireSettingsPage"
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
           }
         ],
         "deferredGateIds": [
@@ -6211,30 +6211,30 @@
       "bindings": [
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 283,
+          "anchorEnd": 275,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 267,
+          "anchorStart": 259,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "5cf81e8d1685ffb3a223564f2a28fce40eef2775e1c39fce66e7d7f0c182f5d0",
-          "anchorEnd": 360,
+          "anchorEnd": 352,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 332,
+          "anchorStart": 324,
           "kind": "server_value_import",
           "symbol": "getOwnNotificationPreference",
           "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
         },
         {
-          "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 221,
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 217,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
           "anchorStart": 202,
           "kind": "server_value_import",
-          "symbol": "requireSettingsPage",
-          "target": "src/server/auth/page-access.ts#requireSettingsPage"
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -7969,7 +7969,7 @@
     }
   ],
   "observationCount": 121,
-  "observationDigest": "81d8c4b4c8cf2900895d123336df76a3bef858b21c1f9f5c21ddd1a544471607",
+  "observationDigest": "9cff8cfd1d6e88fc0e3d1c5ef4a4cd301ff83a1b13a9ffac5458f47422c44613",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -9704,31 +9704,31 @@
     {
       "bindings": [
         {
-          "anchorEnd": 283,
+          "anchorEnd": 275,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 267,
+          "anchorStart": 259,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 360,
+          "anchorEnd": 352,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 332,
+          "anchorStart": 324,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
           "symbol": "getOwnNotificationPreference",
           "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
         },
         {
-          "anchorEnd": 221,
+          "anchorEnd": 217,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
           "anchorStart": 202,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
-          "symbol": "requireSettingsPage",
-          "target": "src/server/auth/page-access.ts#requireSettingsPage"
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -12106,7 +12106,7 @@
   ],
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "6325761687ad07070e3a32b189ded12f693ffedda84b307788fe35c731c90a9b",
+  "registryDigest": "92a9f47e8dc4be33e2d3b1dfc316f948981d86eeade7fc38fa371b4bccae19e3",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

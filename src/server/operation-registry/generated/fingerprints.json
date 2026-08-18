@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "f96528c6cef866513f46fd391d23c6d5413e12805d1f7ec5c5575c8fe927793d",
+  "declarationDigest": "b67f784e7253d97c68dfd8205dc5c2b9aa8441d379de281f56280be0971df68c",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -1152,17 +1152,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "f77d2f2d4207f1c32025a3ef239c02592c4dae4c0d28cd12a770bdd9875e8b7e",
+          "digest": "e8d0601e8a6631935843b9e01489193ebe88ad4d8efb0aff8e179605a6a55023",
           "file": "src/app/app/settings/notifications/page.tsx"
         }
       ],
-      "declarationDigest": "db521392c2b63e9ccc541cba80cb6fa29b0a5642ee538a3276db35378286565c",
-      "fingerprint": "80b7c865ccafd00b4649b59d042e36222cc3f32e2863523bd9350cbd52dc54da",
+      "declarationDigest": "a6d88a37b02e60e6f5eef1c2012dbd7ff10c052822a1bf7e24b55ace8bc999c4",
+      "fingerprint": "42115ce56c0fe449178934c9bb81152f46ccf21100adc10cdc6ae4f6332cc5a0",
       "id": "fingerprint:server_loader:src/app/app/settings/notifications/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/notifications/page.tsx",
       "ownerModule": "src/app/app/settings/notifications/page.tsx",
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts",
-      "sourceDigest": "c33d8ca2d6d6f520003b96b3dc01ad650fec12846b97380bf12765a997ea372b",
+      "sourceDigest": "8523c0f97c08b3aca712a6d6bc886abb0e2c8e693b39b64fcafaf781f46616db",
       "status": "declared"
     },
     {
@@ -2008,11 +2008,11 @@
   ],
   "generatorDigest": "341d673d7ae0be09ecdb20f644fd09dd654d344d04e49d9f550a288a152560ce",
   "generatorVersion": "r0.1",
-  "observationDigest": "81d8c4b4c8cf2900895d123336df76a3bef858b21c1f9f5c21ddd1a544471607",
+  "observationDigest": "9cff8cfd1d6e88fc0e3d1c5ef4a4cd301ff83a1b13a9ffac5458f47422c44613",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "6325761687ad07070e3a32b189ded12f693ffedda84b307788fe35c731c90a9b",
+  "registryDigest": "92a9f47e8dc4be33e2d3b1dfc316f948981d86eeade7fc38fa371b4bccae19e3",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
