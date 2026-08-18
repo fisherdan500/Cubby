@@ -633,6 +633,7 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
 
   return prisma.$transaction(async (tx) => {
     const db = tx as unknown as BrowserOperationTransaction;
+    await db.$queryRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${input.ctx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
     const binding = await db.browserOperationBinding.findFirst({
       where: { householdId: input.ctx.householdId, operationId },
