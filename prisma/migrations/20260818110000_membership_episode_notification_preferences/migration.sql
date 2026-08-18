@@ -3,6 +3,7 @@
 BEGIN;
 
 ALTER TABLE "NotificationPreference" RENAME TO "LegacyNotificationPreference";
+ALTER TABLE "LegacyNotificationPreference" RENAME CONSTRAINT "NotificationPreference_pkey" TO "LegacyNotificationPreference_pkey";
 
 CREATE TYPE "NotificationPreferenceStatus" AS ENUM ('active', 'needs_review');
 CREATE TYPE "NotificationBabyScope" AS ENUM ('all', 'selected');

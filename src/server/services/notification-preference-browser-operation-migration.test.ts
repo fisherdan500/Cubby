@@ -21,6 +21,7 @@ describe("membership-episode preference browser-operation migration", () => {
     expect(block(schema, "enum", "BrowserOperationKey")).toContain('@map("notification.preference.save")');
 
     const migration = readFileSync(migrationUrl, "utf8");
+    expect(migration).toContain('ALTER TABLE "LegacyNotificationPreference" RENAME CONSTRAINT "NotificationPreference_pkey" TO "LegacyNotificationPreference_pkey"');
     expect(migration).toContain('DROP CONSTRAINT "BrowserOperationBinding_target_shape_check"');
     expect(migration).toMatch(/WHEN 'notification\.preference\.save' THEN "targetKind" = 'preference' AND "targetId" IS NOT NULL AND "babyId" IS NULL/);
   });
