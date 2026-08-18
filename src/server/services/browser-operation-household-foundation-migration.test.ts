@@ -101,7 +101,8 @@ describe("generalized household browser-operation foundation migration", () => {
     expect(migration).toContain('enforce_browser_mutation_operation_transition');
     expect(migration).toContain('compact_household_browser_operation');
     expect(migration).toContain('terminal_browser_mutation_operation_immutable');
-    expect(migration).toContain('browser_operation_tombstone_immutable');
+    expect(migration).toContain("browser_operation_tombstone_immutable");
+    expect(migration).not.toContain('NEW."operationId""');
     expect(migration).toContain("Existing browser_v1 and persistenceVersion 1 rows are not rewritten or reinterpreted");
     expect(migration).not.toMatch(/\bTRUNCATE\b/i);
   });
