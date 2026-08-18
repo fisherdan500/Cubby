@@ -1535,9 +1535,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 927,
+      "anchorEnd": 1192,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 912,
+      "anchorStart": 1177,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -1550,11 +1550,11 @@
       "sidecarPath": "src/components/forms/invite-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/invites\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify(Object.fromEntries(formData))\n    })",
-      "anchorDigest": "8aeab697f910583047fec05f233e41a2f9adfdc98a189d1eca897287ee7cf521",
-      "anchorEnd": 669,
+      "anchorBytes": "fetch(\"/api/invites\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ ...Object.fromEntries(formData), operationId })\n    })",
+      "anchorDigest": "fe33cbd43ef1934492846ec4a26d249fae1aa14a9f253f15dfae1c7c412b61f2",
+      "anchorEnd": 934,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 505,
+      "anchorStart": 750,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1892,9 +1892,9 @@
     {
       "anchorBytes": "fetch(`/api/members/${memberId}`, {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId: memberOperationId(memberId, \"role.update\"), role: formData.get(\"role\") })\n    })",
       "anchorDigest": "7fad2ebb1b6f14423a8c4a5a56c1f04340d08eb0c2237851db04d2682bb9f455",
-      "anchorEnd": 2177,
+      "anchorEnd": 2670,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 1941,
+      "anchorStart": 2434,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1909,9 +1909,9 @@
     {
       "anchorBytes": "fetch(`/api/members/${member.id}/${action}`, {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId: memberOperationId(member.id, suspending ? \"suspend\" : \"restore\") })\n    })",
       "anchorDigest": "5690042435796428dce7ce1745b9d4e95fe048c425dfc6cd0b056277a39d2cb7",
-      "anchorEnd": 2965,
+      "anchorEnd": 3458,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 2725,
+      "anchorStart": 3218,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -1926,9 +1926,9 @@
     {
       "anchorBytes": "fetch(`/api/members/${member.id}`, {\n      method: \"DELETE\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId: memberOperationId(member.id, \"remove\") })\n    })",
       "anchorDigest": "3a4f2863087920faa2a184dfb7f5af4bd8bbf51a9888f36e760c09e7a57275af",
-      "anchorEnd": 3587,
+      "anchorEnd": 4080,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 3381,
+      "anchorStart": 3874,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -1941,11 +1941,11 @@
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/invites/${invite.id}/revoke`, { method: \"POST\" })",
-      "anchorDigest": "28a831422bffaa9ffc8ded9a92eaeefe9f9f9f8e974bb1e7f3006913a48a6d73",
-      "anchorEnd": 3987,
+      "anchorBytes": "fetch(`/api/invites/${invite.id}/revoke`, { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ operationId: inviteOperationId(`revoke:${invite.id}`) }) })",
+      "anchorDigest": "f4b0741ffe391c3639f1b873d6cd0af8d4121adceb297a49f9c6fcc9032bb9c8",
+      "anchorEnd": 4610,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 3926,
+      "anchorStart": 4419,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -1958,11 +1958,11 @@
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/invites/revoke-all\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ acknowledgement: formData.get(\"acknowledgement\") })\n    })",
-      "anchorDigest": "2a26015a5a1f2e28c3f553a2be83dd6dad69a52a6669599ff532818d9aede997",
-      "anchorEnd": 4483,
+      "anchorBytes": "fetch(\"/api/invites/revoke-all\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId: inviteOperationId(\"revoke-all\"), acknowledgement: formData.get(\"acknowledgement\") })\n    })",
+      "anchorDigest": "6f60c2230d52bb5dd76435ff980883a4557718128f5dffb0489be8e4ecd6188c",
+      "anchorEnd": 5214,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 4284,
+      "anchorStart": 4969,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[5]",
@@ -4378,9 +4378,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "96b3004b242aef722a3f6de3c7c113ca33078c98c61bc1423982efb7bfc66632",
+  "semanticArtifactDigest": "30f586c60bac75dc9a3d0e346832d54038ac70785cfb865e48384c92ae16a133",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c0ba5d62e973796a5f709bde00b51e2f3caee0553c7d82fd6efc316a71d5668c",
+  "semanticCoverageDigest": "bcb6e903dac938844b43511825cb8f0572091213b152157770187aeb307a8a19",
   "semanticDeclarationCount": 54,
   "semanticDeclarationDigest": "9f92ee916a59eebff3312fdda5a6de2ecbac57b4ca574917eab8579cc1259086",
   "semanticFingerprint": "2a74b1199a514e87be551b5acbf86e18d4ebe2263d7ad0ed70d55d177d1cf857"

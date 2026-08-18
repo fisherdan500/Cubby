@@ -6816,18 +6816,18 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 927,
+          "anchorEnd": 1192,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 912,
+          "anchorStart": 1177,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/invite-form.tsx#submit"
         },
         {
-          "anchorDigest": "8aeab697f910583047fec05f233e41a2f9adfdc98a189d1eca897287ee7cf521",
-          "anchorEnd": 669,
+          "anchorDigest": "fe33cbd43ef1934492846ec4a26d249fae1aa14a9f253f15dfae1c7c412b61f2",
+          "anchorEnd": 934,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 505,
+          "anchorStart": 750,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -7095,45 +7095,45 @@
       "bindings": [
         {
           "anchorDigest": "7fad2ebb1b6f14423a8c4a5a56c1f04340d08eb0c2237851db04d2682bb9f455",
-          "anchorEnd": 2177,
+          "anchorEnd": 2670,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 1941,
+          "anchorStart": 2434,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "5690042435796428dce7ce1745b9d4e95fe048c425dfc6cd0b056277a39d2cb7",
-          "anchorEnd": 2965,
+          "anchorEnd": 3458,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2725,
+          "anchorStart": 3218,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "3a4f2863087920faa2a184dfb7f5af4bd8bbf51a9888f36e760c09e7a57275af",
-          "anchorEnd": 3587,
+          "anchorEnd": 4080,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 3381,
+          "anchorStart": 3874,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "28a831422bffaa9ffc8ded9a92eaeefe9f9f9f8e974bb1e7f3006913a48a6d73",
-          "anchorEnd": 3987,
+          "anchorDigest": "f4b0741ffe391c3639f1b873d6cd0af8d4121adceb297a49f9c6fcc9032bb9c8",
+          "anchorEnd": 4610,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 3926,
+          "anchorStart": 4419,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "2a26015a5a1f2e28c3f553a2be83dd6dad69a52a6669599ff532818d9aede997",
-          "anchorEnd": 4483,
+          "anchorDigest": "6f60c2230d52bb5dd76435ff980883a4557718128f5dffb0489be8e4ecd6188c",
+          "anchorEnd": 5214,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 4284,
+          "anchorStart": 4969,
           "kind": "global_fetch",
           "symbol": "fetch[5]",
           "target": "globalThis.fetch"
@@ -7969,7 +7969,7 @@
     }
   ],
   "observationCount": 121,
-  "observationDigest": "bedbb59c8456d9e5b3e5997bd02ca2bfbd84bacb781ac0a7c905ec43ac78ec25",
+  "observationDigest": "81d8c4b4c8cf2900895d123336df76a3bef858b21c1f9f5c21ddd1a544471607",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -10289,18 +10289,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 927,
+          "anchorEnd": 1192,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 912,
+          "anchorStart": 1177,
           "kind": "form_action",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/invite-form.tsx#submit"
         },
         {
-          "anchorEnd": 669,
+          "anchorEnd": 934,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 505,
+          "anchorStart": 750,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "fetch[1]",
@@ -10559,45 +10559,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2177,
+          "anchorEnd": 2670,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 1941,
+          "anchorStart": 2434,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2965,
+          "anchorEnd": 3458,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2725,
+          "anchorStart": 3218,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3587,
+          "anchorEnd": 4080,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 3381,
+          "anchorStart": 3874,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3987,
+          "anchorEnd": 4610,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 3926,
+          "anchorStart": 4419,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4483,
+          "anchorEnd": 5214,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 4284,
+          "anchorStart": 4969,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[5]",
@@ -12106,7 +12106,7 @@
   ],
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "7aa25713cb9ea756f01dde2cb44ef6fb18c2e0c89d752fc1e5021be90e97722c",
+  "registryDigest": "6325761687ad07070e3a32b189ded12f693ffedda84b307788fe35c731c90a9b",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

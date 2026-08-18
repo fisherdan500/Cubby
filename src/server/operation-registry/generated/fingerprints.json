@@ -1472,17 +1472,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "85195e6984f6d15aa9fbb0a15de14c7f973c67f8fad901e696b620bcafff2af8",
+          "digest": "05815517c86964319c3f387fffd1eff7ad3447997747b3aa29c373eac70937a8",
           "file": "src/components/forms/invite-form.tsx"
         }
       ],
       "declarationDigest": "5a571c84d4808d573dbfee82f40afeeb9b9967128fba367bd5f2458001071cb0",
-      "fingerprint": "a65bdc7f65b4865537ff68f60a7447e0920e24a9613d5deea9e311e7ed9a9b70",
+      "fingerprint": "8e4d39ad56957ea0aaed9cf1e0fe6cb29ba74ce2b678faf7b42bdef9a7e934bd",
       "id": "fingerprint:client_binding:src/components/forms/invite-form.tsx",
       "ownerId": "client_binding:src/components/forms/invite-form.tsx",
       "ownerModule": "src/components/forms/invite-form.tsx",
       "sidecarPath": "src/components/forms/invite-form.operation.ts",
-      "sourceDigest": "53da83d4d0b8eb6878c78681baec64b4e4d86787993b003c08f724783dd4de56",
+      "sourceDigest": "cf6d68a2120f9232687664830c59817b536aed3383c70ddebfc138b430803805",
       "status": "declared"
     },
     {
@@ -1616,17 +1616,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "07d4b961b6e90eef8b8b174f1ac9d16a90005fbb1dfb17d8892a73e9ac8c3c36",
+          "digest": "61c675d96716ce8512fe7df20fcfb324f3f4040784ca2abf61e0d193d742fca6",
           "file": "src/components/settings/member-access-manager.tsx"
         }
       ],
       "declarationDigest": "a1c88d6ef3efff01f39cf9307471c6dbf5a125bbe5e0b48b3fcaec11f05ce817",
-      "fingerprint": "9f261281aac8e2abf8a269a919162bb62ec31743aa9cd26cea26b74f08edad17",
+      "fingerprint": "3482edec0386635ab8981c6358e46b3cdfb60fff84b3f33260672f89b2ab8e5b",
       "id": "fingerprint:client_binding:src/components/settings/member-access-manager.tsx",
       "ownerId": "client_binding:src/components/settings/member-access-manager.tsx",
       "ownerModule": "src/components/settings/member-access-manager.tsx",
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts",
-      "sourceDigest": "b5f6e7aeb923e04a6448bd9904c0e5dbb86920f9c462d6f0df8fae5a645a9307",
+      "sourceDigest": "88e1ad2cd0792d21818d29d09e30f23a0b8d87f74cb64a91e8a762174de7b6c0",
       "status": "declared"
     },
     {
@@ -2008,11 +2008,11 @@
   ],
   "generatorDigest": "341d673d7ae0be09ecdb20f644fd09dd654d344d04e49d9f550a288a152560ce",
   "generatorVersion": "r0.1",
-  "observationDigest": "bedbb59c8456d9e5b3e5997bd02ca2bfbd84bacb781ac0a7c905ec43ac78ec25",
+  "observationDigest": "81d8c4b4c8cf2900895d123336df76a3bef858b21c1f9f5c21ddd1a544471607",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "44875247c68ead76b81479fba49dc4415c40dffcc3ad79741118d44ac74fb267",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "7aa25713cb9ea756f01dde2cb44ef6fb18c2e0c89d752fc1e5021be90e97722c",
+  "registryDigest": "6325761687ad07070e3a32b189ded12f693ffedda84b307788fe35c731c90a9b",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
