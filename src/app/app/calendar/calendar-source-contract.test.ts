@@ -40,4 +40,8 @@ describe("calendar interaction contracts", () => {
     expect(source).toContain('calendar.selected || (searchParams.new === "1" && canAddEvent)');
     expect(source).toContain("canAddEvent ? (");
   });
+
+  it("keeps calendar contact input optional until the calendar page exposes household contacts", () => {
+    expect(source).not.toContain('name="contactIds"');
+  });
 });

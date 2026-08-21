@@ -1,12 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ deleteActivity: vi.fn(), updateActivity: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  deleteActivity: vi.fn(),
+  updateActivity: vi.fn(),
+  issueActivityUpdateBrowserOperation: vi.fn(),
+  submitActivityUpdateBrowserOperation: vi.fn(),
+  issueActivityDeleteBrowserOperation: vi.fn(),
+  submitActivityDeleteBrowserOperation: vi.fn()
+}));
 vi.mock("@/server/services/activities", () => mocks);
 
 import { DELETE, PATCH } from "@/app/api/activities/[id]/route";
 
 describe("PATCH /api/activities/[id]", () => {
   beforeEach(() => vi.resetAllMocks());
+
+  it("uses one browser-v2 update operation without a receipt write", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    mocks.issueActivityUpdateBrowserOperation.mockResolvedValue({ status: "open", operationId, bindingId: "binding-1" });
+    mocks.submitActivityUpdateBrowserOperation.mockResolvedValue({ status: "completed", operationId, outcome: { kind: "activity", code: "ok", activityId: "activity-1", action: "update" } });
+    const body = { babyId: "baby-1", occurredAt: "2026-07-14T12:00:00.000Z", type: "feeding", mode: "bottle", expectedUpdatedAt: "2026-07-14T10:00:00.000Z", operationId };
+
+    const response = await PATCH(new Request("http://localhost/api/activities/activity-1", {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+    }), { params: { id: "activity-1" } });
+
+    expect(response.status).toBe(200);
+    expect(mocks.issueActivityUpdateBrowserOperation).toHaveBeenCalledWith({ ...body, activityId: "activity-1" });
+    expect(mocks.submitActivityUpdateBrowserOperation).toHaveBeenCalledWith({ ...body, activityId: "activity-1" });
+    expect(mocks.updateActivity).not.toHaveBeenCalled();
+  });
 
   it("forwards the update payload and stable mutation ID", async () => {
     mocks.updateActivity.mockResolvedValue({ id: "activity-1" });

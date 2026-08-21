@@ -26,7 +26,7 @@ vi.mock("@/lib/db/prisma", () => ({
 
 vi.mock("@/lib/env", () => ({ env: mocks.env, trustedOrigins: () => [] }));
 vi.mock("@/server/services/invites", () => ({ hashInviteToken: mocks.hashInviteToken }));
-vi.mock("@/server/auth/context", () => ({ getHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
+vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: vi.fn() }));
 
 import {

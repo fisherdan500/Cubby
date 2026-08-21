@@ -1,18 +1,21 @@
-import { BrowserOperationKey, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationTargetKind, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 import {
   executeBrowserOperation,
+  executeHouseholdBrowserOperation,
+  getBrowserOperationContextForHousehold,
   getBrowserOperationContextForLifecycleBaby,
-  issueBrowserOperation
+  issueBrowserOperation,
+  issueHouseholdBrowserOperation
 } from "@/server/services/browser-operations";
 
 type BabyQueryOptions = {
@@ -23,7 +26,7 @@ export async function listHouseholdsForUser(userId: string) {
   return prisma.householdMember.findMany({
     where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
     include: { household: true },
-    orderBy: { joinedAt: "asc" }
+    orderBy: [{ household: { name: "asc" } }, { id: "asc" }]
   });
 }
 
@@ -82,7 +85,7 @@ export async function createOnboardingHousehold(raw: unknown) {
 }
 
 export async function addBaby(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "baby.manage");
   const input = babySchema.parse(raw);
   const baby = await prisma.baby.create({
@@ -106,6 +109,61 @@ export async function addBaby(raw: unknown) {
   return baby;
 }
 
+const babyCreateSnapshot = { kind: "baby-create", schemaVersion: 1 } as const;
+
+export async function issueCreateBabyBrowserOperation(raw: Record<string, unknown>) {
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: BrowserOperationKey.babyCreate,
+    targetKind: BrowserOperationTargetKind.baby,
+    permission: "baby.manage",
+    targetSnapshot: () => babyCreateSnapshot
+  });
+}
+
+export async function submitCreateBabyBrowserOperation(raw: Record<string, unknown>) {
+  const { operationId, ...inputRaw } = raw;
+  const input = babySchema.parse(inputRaw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId,
+    operationKey: BrowserOperationKey.babyCreate,
+    targetKind: BrowserOperationTargetKind.baby,
+    permission: "baby.manage",
+    intent: input,
+    validate: async (_tx, _ctx, binding) => {
+      const opening = binding.targetSnapshot as typeof babyCreateSnapshot;
+      if (opening.kind !== babyCreateSnapshot.kind || opening.schemaVersion !== babyCreateSnapshot.schemaVersion) {
+        throw new Error("stale_revision");
+      }
+    },
+    execute: async (tx, lockedCtx) => {
+      const baby = await tx.baby.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          name: input.name,
+          birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+          timezone: env.APP_TIMEZONE,
+          notes: input.notes || undefined,
+          feedingWarningMinutes: input.feedingWarningMinutes,
+          diaperWarningMinutes: input.diaperWarningMinutes,
+          sleepWarningMinutes: input.sleepWarningMinutes
+        }
+      });
+      await writeAudit(lockedCtx, {
+        action: "baby.create",
+        entityType: "baby",
+        entityId: baby.id,
+        after: baby
+      }, tx);
+      return { kind: "baby_create", code: "ok", babyId: baby.id } as const;
+    }
+  });
+}
+
 function babyWhereClause(householdId: string, options?: BabyQueryOptions) {
   return {
     householdId,
@@ -122,7 +180,7 @@ function nestedBabyWhereClause(options?: BabyQueryOptions) {
 }
 
 export async function listBabies(options?: BabyQueryOptions) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   return prisma.baby.findMany({
     where: babyWhereClause(ctx.householdId, options),
@@ -130,9 +188,16 @@ export async function listBabies(options?: BabyQueryOptions) {
   });
 }
 
-export async function getHouseholdHome(userId: string, options?: BabyQueryOptions) {
+export async function getHouseholdHome(options?: BabyQueryOptions) {
+  const ctx = await getEffectiveHouseholdContext();
   const member = await prisma.householdMember.findFirst({
-    where: { userId, disabledAt: null, deletedAt: null, household: { deletedAt: null } },
+    where: {
+      id: ctx.memberId,
+      userId: ctx.userId,
+      disabledAt: null,
+      deletedAt: null,
+      household: { deletedAt: null }
+    },
     include: {
       household: {
         include: {
@@ -143,14 +208,13 @@ export async function getHouseholdHome(userId: string, options?: BabyQueryOption
           }
         }
       }
-    },
-    orderBy: { joinedAt: "asc" }
+    }
   });
   return member;
 }
 
 export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "baby.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -189,7 +253,7 @@ export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
 }
 
 export async function reactivateBaby(babyId: string) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "baby.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -277,8 +341,10 @@ async function issueBrowserLifecycleOperation(raw: Record<string, unknown>, acti
     ctx,
     operationId: raw.operationId,
     operationKey: lifecycleOperationKey(action),
-    intent: { babyId },
+    opening: { babyId },
     babyId,
+    targetKind: "baby",
+    targetId: babyId,
     permission: "baby.manage",
     allowInactiveTarget: action === "reactivate",
     targetSnapshot: (_tx, _ctx, baby) => lifecycleSnapshot(baby),

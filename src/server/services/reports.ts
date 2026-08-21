@@ -16,7 +16,7 @@ import {
 import { formatDuration } from "@/lib/activity-format";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, dateTimePartsInTimeZone, zonedDateStart } from "@/lib/timezone";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
 
@@ -37,9 +37,9 @@ const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
 };
 
 export async function getReports(userId: string, input?: { babyId?: string; start?: string; end?: string; routineWindow?: string }) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
-  const home = await getHouseholdHome(userId, { includeInactive: true });
+  const home = await getHouseholdHome({ includeInactive: true });
   if (!home) return null;
   const baby = home.household.babies.find((item) => item.id === input?.babyId) ?? home.household.babies[0];
   const todayKey = dateKeyInTimeZone(new Date(), env.APP_TIMEZONE);

@@ -5,7 +5,8 @@ import path from "node:path";
 const mocks = vi.hoisted(() => ({
   startBackup: vi.fn(),
   startIntegrity: vi.fn(),
-  startSproutRetention: vi.fn()
+  startSproutRetention: vi.fn(),
+  startBrowserOperationRetention: vi.fn()
 }));
 
 vi.mock("@/server/automated-backup-scheduler", () => ({
@@ -16,6 +17,9 @@ vi.mock("@/server/integrity-scheduler", () => ({
 }));
 vi.mock("@/server/sprout-source-retention-scheduler", () => ({
   startSproutSourceRetentionScheduler: mocks.startSproutRetention
+}));
+vi.mock("@/server/browser-operation-retention-scheduler", () => ({
+  startBrowserOperationRetentionScheduler: mocks.startBrowserOperationRetention
 }));
 
 describe("instrumentation", () => {
@@ -31,5 +35,6 @@ describe("instrumentation", () => {
     expect(mocks.startBackup).toHaveBeenCalledOnce();
     expect(mocks.startIntegrity).toHaveBeenCalledOnce();
     expect(mocks.startSproutRetention).toHaveBeenCalledOnce();
+    expect(mocks.startBrowserOperationRetention).toHaveBeenCalledOnce();
   });
 });

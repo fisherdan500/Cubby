@@ -1,14 +1,29 @@
 import { createHash, randomUUID } from "node:crypto";
-import { ActivityType, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
+import { ActivityType, BrowserOperationKey, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { durationSeconds } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { zonedDateTimeToDate } from "@/lib/timezone";
-import { activityCreateSchema, activityUpdateSchema, type ActivityRestoreInput } from "@/lib/validation/activity";
-import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
+import {
+  activityBrowserCreateSchema,
+  activityBrowserUpdateSchema,
+  activityCreateSchema,
+  activityUpdateSchema,
+  type ActivityRestoreInput
+} from "@/lib/validation/activity";
+import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockActorForWrite, lockApiKeyForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
+import {
+  executeBrowserOperation,
+  executeHouseholdBrowserOperation,
+  getBrowserOperationContextForBaby,
+  getBrowserOperationContextForHousehold,
+  issueBrowserOperation,
+  issueHouseholdBrowserOperation,
+  type BrowserOperationResult
+} from "@/server/services/browser-operations";
 
 export const activityInclude = {
   actorMember: { include: { user: true } },
@@ -306,7 +321,7 @@ function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft {
 
 async function queueActivitySideEffects(
   ctx: HouseholdContext,
-  activity: { id: string; type: ActivityType },
+  activity: { id: string; babyId: string; type: ActivityType },
   event: WebhookEvent,
   db: Pick<Prisma.TransactionClient, "$queryRaw" | "webhookEndpoint" | "webhookDelivery" | "notificationPreference" | "notificationLog"> = prisma
 ) {
@@ -365,31 +380,41 @@ async function queueActivitySideEffects(
 
   if (event === WebhookEvent.activity_created) {
     const preferences = await db.notificationPreference.findMany({
-      where: { householdId: ctx.householdId, activityCreated: true },
-      select: { userId: true }
+      where: {
+        householdId: ctx.householdId,
+        status: "active",
+        externalDeliveryEnabled: true,
+        categories: { has: "activity_created" },
+        channels: { has: "browser_push" },
+        OR: [
+          { babyScope: "all" },
+          { babyScope: "selected", selectedBabies: { some: { babyId: activity.babyId } } }
+        ],
+        member: { is: { householdId: ctx.householdId, disabledAt: null, deletedAt: null } }
+      },
+      select: { memberId: true }
     });
     const activeRecipientUserIds = new Set<string>();
-    for (const userId of [...new Set(preferences.map((preference) => preference.userId))].sort()) {
-      const recipients = await db.$queryRaw<Array<{ id: string }>>`
-        SELECT "id"
+    for (const preference of [...preferences].sort((left, right) => left.memberId.localeCompare(right.memberId))) {
+      const recipients = await db.$queryRaw<Array<{ userId: string }>>`
+        SELECT "userId"
         FROM "HouseholdMember"
-        WHERE "householdId" = ${ctx.householdId}
-          AND "userId" = ${userId}
+        WHERE "id" = ${preference.memberId}
+          AND "householdId" = ${ctx.householdId}
           AND "disabledAt" IS NULL
           AND "deletedAt" IS NULL
         -- A concurrent closure owns this row exclusively; omit the outbox side effect
         -- rather than waiting behind the actor lock and forming an inverse lock cycle.
         FOR SHARE SKIP LOCKED
       `;
-      if (recipients.length) activeRecipientUserIds.add(userId);
+      if (recipients.length) activeRecipientUserIds.add(recipients[0]!.userId);
     }
-    const activePreferences = preferences.filter((preference) => activeRecipientUserIds.has(preference.userId));
-    if (activePreferences.length) {
+    if (activeRecipientUserIds.size) {
       await db.notificationLog.createMany({
-        data: activePreferences.map((preference) => ({
+        data: [...activeRecipientUserIds].sort().map((userId) => ({
           householdId: ctx.householdId,
           activityId: activity.id,
-          userId: preference.userId,
+          userId,
           kind: "activity_created",
           title: "New Cubby activity",
           body: activity.type
@@ -400,7 +425,7 @@ async function queueActivitySideEffects(
 }
 
 export async function createActivity(raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return createActivityForContext(raw, ctx);
 }
 
@@ -556,7 +581,7 @@ export async function listActivities(params?: {
   search?: string;
   page?: ActivityListPage;
 }) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   return prisma.activityLog.findMany({
     where: {
@@ -588,7 +613,7 @@ export async function listActivities(params?: {
 }
 
 export async function getActivityView(id: string) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   const activity = await prisma.activityLog.findFirst({
     where: { id, householdId: ctx.householdId, deletedAt: null },
@@ -746,7 +771,7 @@ async function findActivityUpdateReplayInTransaction(
 }
 
 async function findActivityUpdateReplay(id: string, input: ReturnType<typeof activityUpdateSchema.parse>) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return prisma.$transaction(async (tx) => findActivityUpdateReplayInTransaction(tx, await lockActorForWrite(tx, ctx), id, input));
 }
 
@@ -759,7 +784,7 @@ async function rejectLegacyActivityCreateReservation(tx: Prisma.TransactionClien
 }
 
 export async function updateActivity(id: string, raw: unknown) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const medicineContactWasProvided = typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.prototype.hasOwnProperty.call(raw, "contactId");
   const input = activityUpdateSchema.parse({ ...(raw as object), id });
   const replay = await findActivityUpdateReplay(id, input);
@@ -852,7 +877,7 @@ async function findActivityDeleteReplayInTransaction(
 }
 
 async function findActivityDeleteReplay(id: string, mutation: ReturnType<typeof timerMutationInput>) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     return findActivityDeleteReplayInTransaction(tx, lockedCtx, id, mutation);
@@ -863,7 +888,7 @@ export async function deleteActivity(id: string, raw?: unknown) {
   const mutation = timerMutationInput(raw);
   const replay = await findActivityDeleteReplay(id, mutation);
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   try {
     return await prisma.$transaction(async (tx) => {
       const lockedCtx = await lockActorForWrite(tx, ctx);
@@ -942,7 +967,7 @@ async function findTimerReplay(
   mutation: ReturnType<typeof timerMutationInput>,
   operation: "timer.stop" | "timer.pause" | "timer.resume"
 ) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const fingerprint = timerMutationFingerprint(operation, id);
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
@@ -963,7 +988,7 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.stop");
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if ((activity.timerState !== TimerState.running && activity.timerState !== TimerState.paused) || !activity.startedAt) {
     throw new Error("not_found");
@@ -1013,7 +1038,7 @@ export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRac
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.pause");
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.running || !activity.startedAt) throw new Error("not_found");
   try {
@@ -1056,7 +1081,7 @@ export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRa
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.resume");
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const activity = await getEditableActivity(ctx, id, "update");
   if (activity.timerState !== TimerState.paused || !activity.pausedAt) throw new Error("not_found");
   try {
@@ -1136,7 +1161,7 @@ async function findActivityUndoReplayInTransaction(
 }
 
 async function findActivityUndoReplay(mutation: ReturnType<typeof timerMutationInput>) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     return findActivityUndoReplayInTransaction(tx, lockedCtx, mutation);
@@ -1147,7 +1172,7 @@ export async function undoLastActivity(raw?: unknown) {
   const mutation = timerMutationInput(raw);
   const replay = await findActivityUndoReplay(mutation);
   if (replay) return replay;
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   try {
     return await prisma.$transaction(async (tx) => {
       const lockedCtx = await lockActorForWrite(tx, ctx);
@@ -1251,4 +1276,289 @@ export async function undoLastActivity(raw?: unknown) {
     }
     throw error;
   }
+}
+
+function activityBrowserOpeningInput(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("validation_error");
+  return raw as Record<string, unknown>;
+}
+
+function requiredActivityBrowserId(raw: Record<string, unknown>, field: "activityId" | "babyId") {
+  const value = raw[field];
+  if (typeof value !== "string" || !value) throw new Error("validation_error");
+  return value;
+}
+
+async function lockActivityBrowserTargets(
+  tx: Prisma.TransactionClient,
+  ctx: HouseholdContext,
+  activityId: string,
+  replacementBabyId?: string
+) {
+  const candidate = await tx.activityLog.findFirst({
+    where: { id: activityId, householdId: ctx.householdId },
+    select: { babyId: true }
+  });
+  if (!candidate) throw new Error("not_found");
+
+  const babyIds = [...new Set([candidate.babyId, replacementBabyId].filter((id): id is string => Boolean(id)))].sort();
+  const babies = [] as Array<{ id: string; updatedAt: Date; inactiveAt: Date | null }>;
+  for (const babyId of babyIds) {
+    const babyLock = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "Baby" WHERE "id" = ${babyId} AND "householdId" = ${ctx.householdId} AND "deletedAt" IS NULL FOR UPDATE
+    `;
+    if (babyLock.length !== 1) throw new Error("not_found");
+    const baby = await tx.baby.findFirst({
+      where: { id: babyId, householdId: ctx.householdId, deletedAt: null },
+      select: { id: true, updatedAt: true, inactiveAt: true }
+    });
+    if (!baby) throw new Error("not_found");
+    babies.push(baby);
+  }
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id" FROM "ActivityLog" WHERE "id" = ${activityId} AND "householdId" = ${ctx.householdId} FOR UPDATE
+  `;
+  if (locked.length !== 1) throw new Error("not_found");
+  const activity = await tx.activityLog.findFirst({
+    where: { id: activityId, householdId: ctx.householdId },
+    include: activityInclude
+  });
+  if (!activity || activity.babyId !== candidate.babyId) throw new Error("stale_revision");
+  return { activity, babies };
+}
+
+async function activityBindingSnapshot(tx: Prisma.TransactionClient, ctx: HouseholdContext, activityId: string, replacementBabyId?: string) {
+  const { activity, babies } = await lockActivityBrowserTargets(tx, ctx, activityId, replacementBabyId);
+  return {
+    activity: {
+      id: activity.id,
+      babyId: activity.babyId,
+      updatedAt: activity.updatedAt.toISOString(),
+      deletedAt: activity.deletedAt?.toISOString() ?? null,
+      timerState: activity.timerState,
+      actorMemberId: activity.actorMemberId
+    },
+    babies: babies.map((baby) => ({
+      id: baby.id,
+      updatedAt: baby.updatedAt.toISOString(),
+      inactiveAt: baby.inactiveAt?.toISOString() ?? null
+    }))
+  };
+}
+
+export async function issueActivityCreateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const input = activityBrowserOpeningInput(raw);
+  const babyId = requiredActivityBrowserId(input, "babyId");
+  const ctx = await getBrowserOperationContextForBaby(babyId);
+  return issueBrowserOperation({ ctx, operationId: input.operationId, operationKey: BrowserOperationKey.activityCreate, opening: { babyId }, babyId, targetKind: "baby", targetId: babyId, permission: "activity.create", targetSnapshot: async (_tx, _ctx, baby) => ({ id: baby.id, updatedAt: baby.updatedAt.toISOString(), inactiveAt: baby.inactiveAt?.toISOString() ?? null }) });
+}
+
+export async function issueActivityUpdateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const input = activityBrowserOpeningInput(raw);
+  const activityId = requiredActivityBrowserId(input, "activityId");
+  const replacementBabyId = requiredActivityBrowserId(input, "babyId");
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({ ctx, operationId: input.operationId, operationKey: BrowserOperationKey.activityUpdate, targetKind: "activity", targetId: activityId, permission: "activity.read", targetSnapshot: (tx, lockedCtx) => activityBindingSnapshot(tx, lockedCtx, activityId, replacementBabyId) });
+}
+
+export async function issueActivityDeleteBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const input = activityBrowserOpeningInput(raw);
+  const activityId = requiredActivityBrowserId(input, "activityId");
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({ ctx, operationId: input.operationId, operationKey: BrowserOperationKey.activityDelete, targetKind: "activity", targetId: activityId, permission: "activity.read", targetSnapshot: (tx, lockedCtx) => activityBindingSnapshot(tx, lockedCtx, activityId) });
+}
+
+export async function issueActivityTimerBrowserOperation(operation: "pause" | "resume" | "stop", raw: unknown): Promise<BrowserOperationResult> {
+  const input = activityBrowserOpeningInput(raw);
+  const activityId = requiredActivityBrowserId(input, "activityId");
+  const ctx = await getBrowserOperationContextForHousehold();
+  const operationKey = operation === "pause" ? BrowserOperationKey.activityTimerPause : operation === "resume" ? BrowserOperationKey.activityTimerResume : BrowserOperationKey.activityTimerStop;
+  return issueHouseholdBrowserOperation({ ctx, operationId: input.operationId, operationKey, targetKind: "activity", targetId: activityId, permission: "activity.read", targetSnapshot: (tx, lockedCtx) => activityBindingSnapshot(tx, lockedCtx, activityId) });
+}
+
+export async function issueActivityUndoLastBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const input = activityBrowserOpeningInput(raw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  const candidate = await prisma.auditEvent.findFirst({
+    where: { householdId: ctx.householdId, actorMemberId: ctx.memberId, entityType: "activity", action: { in: ["activity.create", "activity.delete"] } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { id: true, entityId: true }
+  });
+  if (!candidate) throw new Error("not_found");
+  return issueHouseholdBrowserOperation({
+    ctx, operationId: input.operationId, operationKey: BrowserOperationKey.activityUndoLast, targetKind: "activity", targetId: candidate.entityId, permission: "activity.read",
+    targetSnapshot: async (tx, lockedCtx) => {
+      const latest = await tx.auditEvent.findFirst({ where: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, entityType: "activity", action: { in: ["activity.create", "activity.delete"] } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, action: true, entityId: true, createdAt: true, after: true } });
+      if (!latest || latest.id !== candidate.id || latest.entityId !== candidate.entityId) throw new Error("stale_revision");
+      return { latest: { id: latest.id, action: latest.action, entityId: latest.entityId, createdAt: latest.createdAt.toISOString(), state: auditActivityState(latest.after) }, binding: await activityBindingSnapshot(tx, lockedCtx, latest.entityId) };
+    }
+  });
+}
+
+function bindingActivityId(snapshot: unknown) {
+  const record = snapshot as { activity?: { id?: unknown; updatedAt?: unknown; deletedAt?: unknown; timerState?: unknown; babyId?: unknown } };
+  const activity = record?.activity;
+  if (!activity || typeof activity.id !== "string" || typeof activity.updatedAt !== "string" || typeof activity.babyId !== "string") throw new Error("not_found");
+  return activity as { id: string; updatedAt: string; deletedAt: string | null; timerState: TimerState; babyId: string };
+}
+
+async function assertCurrentActivityBinding(
+  tx: Prisma.TransactionClient,
+  ctx: HouseholdContext,
+  snapshot: unknown,
+  id: string,
+  replacementBabyId?: string
+) {
+  const expected = bindingActivityId(snapshot);
+  if (expected.id !== id) throw new Error("not_found");
+  const { activity: current } = await lockActivityBrowserTargets(tx, ctx, id, replacementBabyId);
+  if (
+    current.updatedAt.toISOString() !== expected.updatedAt ||
+    (current.deletedAt?.toISOString() ?? null) !== expected.deletedAt ||
+    current.timerState !== expected.timerState ||
+    current.babyId !== expected.babyId
+  ) throw new Error("stale_revision");
+  return current;
+}
+
+export async function submitActivityCreateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const input = activityBrowserCreateSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForBaby(input.babyId);
+  return executeBrowserOperation({
+    ctx, operationId: (raw as Record<string, unknown>).operationId, operationKey: BrowserOperationKey.activityCreate, intent: input, babyId: input.babyId, permission: "activity.create",
+    validate: async (_tx, _ctx, baby, binding) => {
+      const snapshot = binding.targetSnapshot as { id?: unknown; updatedAt?: unknown };
+      if (snapshot.id !== baby.id || snapshot.updatedAt !== baby.updatedAt.toISOString()) throw new Error("stale_revision");
+    },
+    execute: async (tx, lockedCtx) => {
+      const activity = await createActivityInTransaction({ ...input, clientMutationId: undefined }, lockedCtx, tx, true);
+      return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };
+    }
+  });
+}
+
+export async function submitActivityUpdateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const record = activityBrowserOpeningInput(raw);
+  const id = requiredActivityBrowserId(record, "activityId");
+  const medicineContactWasProvided = Object.prototype.hasOwnProperty.call(record, "contactId");
+  const input = activityBrowserUpdateSchema.parse({ ...record, id });
+  const ctx = await getBrowserOperationContextForHousehold();
+  return executeHouseholdBrowserOperation({
+    ctx, operationId: record.operationId, operationKey: BrowserOperationKey.activityUpdate, intent: input, targetKind: "activity", targetId: id, permission: "activity.read",
+    validate: async (tx, lockedCtx, binding) => {
+      const before = await assertCurrentActivityBinding(tx, lockedCtx, binding.targetSnapshot, id, input.babyId);
+      if (toDate(input.expectedUpdatedAt)?.toISOString() !== before.updatedAt.toISOString()) throw new Error("stale_revision");
+      const snapshot = binding.targetSnapshot as { babies?: Array<{ id?: string; updatedAt?: string; inactiveAt?: string | null }> };
+      const ids = [before.babyId, input.babyId].sort();
+      for (const babyId of ids) {
+        const expected = snapshot.babies?.find((item) => item.id === babyId);
+        const baby = await tx.baby.findFirst({ where: { id: babyId, householdId: lockedCtx.householdId, deletedAt: null } });
+        if (!expected || !baby || baby.updatedAt.toISOString() !== expected.updatedAt || (baby.inactiveAt?.toISOString() ?? null) !== (expected.inactiveAt ?? null)) throw new Error("stale_revision");
+      }
+    },
+    execute: async (tx, lockedCtx, binding) => {
+      const before = await assertCurrentActivityBinding(tx, lockedCtx, binding.targetSnapshot, id, input.babyId);
+      if (!canMutateOwnOrAny(lockedCtx.role, "update", before.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      const next = specificCreate(input);
+      const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
+      if (before.timerState !== TimerState.none && input.type !== before.type) throw new Error("state_conflict");
+      const startsTimer = before.timerState === TimerState.none && next.timerState === TimerState.running;
+      const replacementBaby = await tx.baby.findFirst({
+        where: { id: input.babyId, householdId: lockedCtx.householdId, deletedAt: null },
+        select: { inactiveAt: true }
+      });
+      if (!replacementBaby) throw new Error("not_found");
+      if (replacementBaby.inactiveAt && (input.babyId !== before.babyId || startsTimer || activeTimer)) throw new Error("baby_inactive");
+      if (input.type === "medicine" && medicineContactWasProvided && input.contactId) {
+        await requireHouseholdMedicineContact(tx, lockedCtx, input);
+      }
+      const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: { babyId: input.babyId, type: next.type, occurredAt: next.occurredAt, startedAt: activeTimer ? before.startedAt : next.startedAt, endedAt: activeTimer ? before.endedAt : next.endedAt, durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds, timezone: next.timezone, notes: next.notes, timerState: before.timerState === TimerState.none ? next.timerState : before.timerState } });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
+      const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+      await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: id, before, after: updated }, tx);
+      await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.activity_updated, tx);
+      return { kind: "activity", code: "ok", activityId: id, action: "update" as const };
+    }
+  });
+}
+
+export async function submitActivityDeleteBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const record = activityBrowserOpeningInput(raw);
+  const id = requiredActivityBrowserId(record, "activityId");
+  const ctx = await getBrowserOperationContextForHousehold();
+  return executeHouseholdBrowserOperation({
+    ctx, operationId: record.operationId, operationKey: BrowserOperationKey.activityDelete, intent: { activityId: id }, targetKind: "activity", targetId: id, permission: "activity.read",
+    validate: (tx, lockedCtx, binding) => assertCurrentActivityBinding(tx, lockedCtx, binding.targetSnapshot, id).then(() => undefined),
+    execute: async (tx, lockedCtx, binding) => {
+      const before = await assertCurrentActivityBinding(tx, lockedCtx, binding.targetSnapshot, id);
+      if (!canMutateOwnOrAny(lockedCtx.role, "delete", before.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId } });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const deleted = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+      await writeAudit(lockedCtx, { action: "activity.delete", entityType: "activity", entityId: id, before, after: deleted }, tx);
+      await queueActivitySideEffects(lockedCtx, deleted, WebhookEvent.activity_deleted, tx);
+      return { kind: "activity", code: "ok", activityId: id, action: "delete" as const };
+    }
+  });
+}
+
+export async function submitActivityTimerBrowserOperation(operation: "pause" | "resume" | "stop", raw: unknown): Promise<BrowserOperationResult> {
+  const record = activityBrowserOpeningInput(raw);
+  const id = requiredActivityBrowserId(record, "activityId");
+  const ctx = await getBrowserOperationContextForHousehold();
+  const operationKey = operation === "pause" ? BrowserOperationKey.activityTimerPause : operation === "resume" ? BrowserOperationKey.activityTimerResume : BrowserOperationKey.activityTimerStop;
+  return executeHouseholdBrowserOperation({
+    ctx, operationId: record.operationId, operationKey, intent: { activityId: id, operation }, targetKind: "activity", targetId: id, permission: "activity.read",
+    validate: (tx, lockedCtx, binding) => assertCurrentActivityBinding(tx, lockedCtx, binding.targetSnapshot, id).then(() => undefined),
+    execute: async (tx, lockedCtx, binding) => {
+      const before = await assertCurrentActivityBinding(tx, lockedCtx, binding.targetSnapshot, id);
+      if (!canMutateOwnOrAny(lockedCtx.role, "update", before.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      if (!before.startedAt || (operation === "pause" && before.timerState !== TimerState.running) || (operation === "resume" && (before.timerState !== TimerState.paused || !before.pausedAt)) || (operation === "stop" && before.timerState !== TimerState.running && before.timerState !== TimerState.paused)) throw new Error("state_conflict");
+      const now = new Date();
+      const data = operation === "pause"
+        ? { timerState: TimerState.paused, pausedAt: now }
+        : operation === "resume"
+          ? { timerState: TimerState.running, pausedAt: null, pausedSeconds: before.pausedSeconds + durationSeconds(before.pausedAt!, now) }
+          : { timerState: TimerState.stopped, endedAt: now, occurredAt: before.startedAt, pausedAt: null, pausedSeconds: before.pausedSeconds + (before.pausedAt ? durationSeconds(before.pausedAt, now) : 0), durationSeconds: Math.max(0, durationSeconds(before.startedAt, now) - before.pausedSeconds - (before.pausedAt ? durationSeconds(before.pausedAt, now) : 0)) };
+      const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt, ...(operation === "pause" ? { timerState: TimerState.running } : operation === "resume" ? { timerState: TimerState.paused } : { timerState: { in: [TimerState.running, TimerState.paused] } }) }, data });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
+      await writeAudit(lockedCtx, { action: `activity.timer.${operation}`, entityType: "activity", entityId: id, before, after: updated }, tx);
+      if (operation === "stop") await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.timer_stopped, tx);
+      return { kind: "activity", code: "ok", activityId: id, action: `timer.${operation}` as "timer.pause" | "timer.resume" | "timer.stop" };
+    }
+  });
+}
+
+export async function submitActivityUndoLastBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
+  const record = activityBrowserOpeningInput(raw);
+  const activityId = requiredActivityBrowserId(record, "activityId");
+  const ctx = await getBrowserOperationContextForHousehold();
+  return executeHouseholdBrowserOperation({
+    ctx, operationId: record.operationId, operationKey: BrowserOperationKey.activityUndoLast, intent: { activityId }, targetKind: "activity", targetId: activityId, permission: "activity.read",
+    validate: async (tx, lockedCtx, binding) => {
+      const snapshot = binding.targetSnapshot as { latest?: { id?: string; entityId?: string; action?: string; state?: ReturnType<typeof auditActivityState> }; binding?: unknown };
+      if (!snapshot.latest || snapshot.latest.entityId !== activityId) throw new Error("not_found");
+      const latest = await tx.auditEvent.findFirst({ where: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, entityType: "activity", action: { in: ["activity.create", "activity.delete"] } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, action: true, entityId: true } });
+      if (!latest || latest.id !== snapshot.latest.id || latest.entityId !== activityId || latest.action !== snapshot.latest.action) throw new Error("stale_revision");
+      await assertCurrentActivityBinding(tx, lockedCtx, snapshot.binding, activityId);
+    },
+    execute: async (tx, lockedCtx, binding) => {
+      const snapshot = binding.targetSnapshot as { latest: { action: string; state: ReturnType<typeof auditActivityState> }; binding: unknown };
+      const before = await assertCurrentActivityBinding(tx, lockedCtx, snapshot.binding, activityId);
+      const undoCreate = snapshot.latest.action === "activity.create";
+      const expected = snapshot.latest.state;
+      if (!expected || (undoCreate ? expected.deletedAt !== null : expected.deletedAt === null)) throw new Error("not_found");
+      if (!canMutateOwnOrAny(lockedCtx.role, undoCreate ? "delete" : "update", before.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      const baby = await tx.baby.findFirst({ where: { id: before.babyId, householdId: lockedCtx.householdId, deletedAt: null }, select: { inactiveAt: true } });
+      if (!baby) throw new Error("not_found");
+      if (!undoCreate && (before.timerState === TimerState.running || before.timerState === TimerState.paused) && baby.inactiveAt) throw new Error("baby_inactive");
+      const claimed = await tx.activityLog.updateMany({ where: { id: before.id, householdId: lockedCtx.householdId, deletedAt: before.deletedAt, updatedAt: before.updatedAt }, data: undoCreate ? { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId } : { deletedAt: null, deletedByMemberId: null } });
+      if (claimed.count !== 1) throw new Error("stale_revision");
+      const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
+      await writeAudit(lockedCtx, { action: "activity.undo", entityType: "activity", entityId: before.id, before, after }, tx);
+      return { kind: "activity", code: "ok", activityId: before.id, action: "undo" as const };
+    }
+  });
 }

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
-import { HouseholdRole, InviteStatus, Prisma } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationTargetKind, HouseholdRole, InviteStatus, Prisma } from "@prisma/client";
+import { z } from "zod";
 import {
   canAssignHouseholdRole,
   canManageHouseholdRole
@@ -11,9 +12,14 @@ import {
   inviteSchema,
   memberRoleSchema
 } from "@/lib/validation/onboarding";
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { requireFreshSession, requireUser } from "@/server/auth/session";
 import { writeAudit } from "@/server/services/audit";
+import {
+  executeHouseholdBrowserOperation,
+  getBrowserOperationContextForHousehold,
+  issueHouseholdBrowserOperation
+} from "@/server/services/browser-operations";
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
 
 export function hashInviteToken(token: string) {
@@ -21,6 +27,15 @@ export function hashInviteToken(token: string) {
 }
 
 export const BULK_INVITE_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
+
+const inviteRevokeBrowserSchema = z.object({
+  inviteId: z.string().trim().min(1),
+  operationId: z.unknown()
+}).strict();
+const bulkInviteRevokeBrowserSchema = z.object({
+  acknowledgement: z.string(),
+  operationId: z.unknown()
+}).strict();
 
 type MembershipState =
   | "absent"
@@ -52,6 +67,276 @@ export function resolveInviteExpiry(role: HouseholdRole, requestedHours?: number
   return new Date(now.getTime() + hours * 60 * 60 * 1000);
 }
 
+async function lockInvitePlatform(tx: Prisma.TransactionClient) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+}
+
+export async function issueInviteCreateBrowserOperation(raw: unknown) {
+  const input = inviteSchema.parse(raw);
+  const expiresInHours = input.expiresInHours ?? (input.role === "admin" ? 24 : 24 * 7);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: (raw as { operationId?: unknown }).operationId,
+    operationKey: BrowserOperationKey.inviteCreate,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "invite.create",
+    targetSnapshot: () => ({
+      version: 1,
+      role: input.role,
+      expiresInHours,
+      expiresAt: resolveInviteExpiry(input.role as HouseholdRole, expiresInHours).toISOString()
+    })
+  });
+}
+
+export async function submitInviteCreateBrowserOperation(raw: unknown) {
+  const input = inviteSchema.parse(raw);
+  const expiresInHours = input.expiresInHours ?? (input.role === "admin" ? 24 : 24 * 7);
+  const freshSession = input.role === "admin" ? await requireFreshSession() : null;
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession && freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  let acceptUrl: string | null = null;
+  const result = await executeHouseholdBrowserOperation({
+    ctx,
+    operationId: (raw as { operationId?: unknown }).operationId,
+    operationKey: BrowserOperationKey.inviteCreate,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "invite.create",
+    preActorLock: lockInvitePlatform,
+    intent: { email: input.email.toLowerCase(), role: input.role, expiresInHours },
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as {
+        version?: unknown;
+        role?: unknown;
+        expiresInHours?: unknown;
+        expiresAt?: unknown;
+      };
+      if (
+        opening.version !== 1 ||
+        opening.role !== input.role ||
+        opening.expiresInHours !== expiresInHours ||
+        typeof opening.expiresAt !== "string"
+      ) {
+        throw new Error("stale_revision");
+      }
+      const expiresAt = new Date(opening.expiresAt);
+      if (Number.isNaN(expiresAt.getTime()) || expiresAt <= new Date()) throw new Error("stale_revision");
+      if (!canAssignHouseholdRole(lockedCtx.role, input.role)) throw new Error("forbidden");
+      if (freshSession) {
+        await lockAndRevalidateFreshSession(tx, freshSession);
+        if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      }
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      const normalizedEmail = input.email.toLowerCase();
+      const rotatedIds = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Invite"
+        WHERE "householdId" = ${lockedCtx.householdId}
+          AND LOWER(BTRIM("email")) = ${normalizedEmail}
+          AND "status" = ${InviteStatus.pending}::"InviteStatus"
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      const rotatedInvites = rotatedIds.length === 0
+        ? []
+        : await tx.invite.findMany({
+            where: { id: { in: rotatedIds.map(({ id }) => id) } },
+            orderBy: { id: "asc" }
+          });
+      const rotatedAt = new Date();
+      for (const rotated of rotatedInvites) {
+        await tx.invite.update({
+          where: { id: rotated.id },
+          data: { status: InviteStatus.revoked, revokedAt: rotatedAt }
+        });
+        await writeAudit(lockedCtx, {
+          action: "invite.rotate",
+          entityType: "invite",
+          entityId: rotated.id,
+          before: { email: rotated.email, role: rotated.role, status: rotated.status },
+          after: { status: InviteStatus.revoked, revokedAt: rotatedAt }
+        }, tx);
+      }
+      const token = randomBytes(32).toString("base64url");
+      const invite = await tx.invite.create({
+        data: {
+          householdId: lockedCtx.householdId,
+          email: normalizedEmail,
+          role: input.role as HouseholdRole,
+          tokenHash: hashInviteToken(token),
+          invitedByUserId: lockedCtx.userId,
+          expiresAt
+        }
+      });
+      await writeAudit(lockedCtx, {
+        action: "invite.create",
+        entityType: "invite",
+        entityId: invite.id,
+        after: { email: invite.email, role: invite.role, expiresAt: invite.expiresAt }
+      }, tx);
+      acceptUrl = `/invite/${token}`;
+      return {
+        kind: "invite",
+        code: "created",
+        inviteId: invite.id,
+        email: invite.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt.toISOString()
+      } as const;
+    }
+  });
+  if (acceptUrl && result.status === "completed") {
+    return { ...result, outcome: { ...result.outcome, acceptUrl } };
+  }
+  return result;
+}
+
+export async function issueInviteRevokeBrowserOperation(raw: unknown) {
+  const input = inviteRevokeBrowserSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevoke,
+    targetKind: BrowserOperationTargetKind.invite,
+    targetId: input.inviteId,
+    permission: "member.manage",
+    preActorLock: lockInvitePlatform,
+    targetSnapshot: async (tx, lockedCtx) => {
+      const invite = await lockInviteById(tx, input.inviteId);
+      if (!invite || invite.householdId !== lockedCtx.householdId || invite.status !== InviteStatus.pending) {
+        throw new Error("not_found");
+      }
+      if (!canManageHouseholdRole(lockedCtx.role, invite.role)) throw new Error("forbidden");
+      return { version: 1, status: invite.status, updatedAt: invite.updatedAt.toISOString() };
+    }
+  });
+}
+
+export async function submitInviteRevokeBrowserOperation(raw: unknown) {
+  const input = inviteRevokeBrowserSchema.parse(raw);
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevoke,
+    targetKind: BrowserOperationTargetKind.invite,
+    targetId: input.inviteId,
+    permission: "member.manage",
+    preActorLock: lockInvitePlatform,
+    intent: {},
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as { version?: unknown; status?: unknown; updatedAt?: unknown };
+      if (opening.version !== 1 || opening.status !== InviteStatus.pending || typeof opening.updatedAt !== "string") {
+        throw new Error("stale_revision");
+      }
+      await lockAndRevalidateFreshSession(tx, freshSession);
+      if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      const invite = await lockInviteById(tx, input.inviteId);
+      if (!invite || invite.householdId !== lockedCtx.householdId) throw new Error("not_found");
+      if (invite.status !== InviteStatus.pending || invite.updatedAt.toISOString() !== opening.updatedAt) {
+        throw new Error("stale_revision");
+      }
+      if (!canManageHouseholdRole(lockedCtx.role, invite.role)) throw new Error("forbidden");
+      const revokedAt = new Date();
+      await tx.invite.update({
+        where: { id: invite.id },
+        data: { status: InviteStatus.revoked, revokedAt }
+      });
+      await writeAudit(lockedCtx, {
+        action: "invite.revoke",
+        entityType: "invite",
+        entityId: invite.id,
+        before: { email: invite.email, role: invite.role, status: invite.status },
+        after: { status: InviteStatus.revoked, revokedAt }
+      }, tx);
+      return { kind: "invite", code: "revoked", inviteId: invite.id } as const;
+    }
+  });
+}
+
+export async function issueInviteRevokeAllBrowserOperation(raw: unknown) {
+  const input = z.object({ operationId: z.unknown() }).strict().parse(raw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevokeAll,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "household.manage",
+    targetSnapshot: (_tx, lockedCtx) => {
+      if (lockedCtx.role !== HouseholdRole.owner) throw new Error("forbidden");
+      return { version: 1, policy: "all_pending_at_submit" };
+    }
+  });
+}
+
+export async function submitInviteRevokeAllBrowserOperation(raw: unknown) {
+  const input = bulkInviteRevokeBrowserSchema.parse(raw);
+  if (input.acknowledgement !== BULK_INVITE_REVOKE_ACKNOWLEDGEMENT) {
+    throw new Error("bulk_invite_revoke_acknowledgement_required");
+  }
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId: input.operationId,
+    operationKey: BrowserOperationKey.inviteRevokeAll,
+    targetKind: BrowserOperationTargetKind.invite,
+    permission: "household.manage",
+    preActorLock: lockInvitePlatform,
+    intent: { acknowledgement: input.acknowledgement },
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as { version?: unknown; policy?: unknown };
+      if (opening.version !== 1 || opening.policy !== "all_pending_at_submit") {
+        throw new Error("stale_revision");
+      }
+      if (lockedCtx.role !== HouseholdRole.owner) throw new Error("forbidden");
+      await lockAndRevalidateFreshSession(tx, freshSession);
+      if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      const lockedIds = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Invite"
+        WHERE "householdId" = ${lockedCtx.householdId}
+          AND "status" = ${InviteStatus.pending}::"InviteStatus"
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      if (lockedIds.length === 0) return { kind: "invite_bulk", code: "revoked", revokedCount: 0 } as const;
+      const invites = await tx.invite.findMany({
+        where: { id: { in: lockedIds.map(({ id }) => id) } },
+        orderBy: { id: "asc" }
+      });
+      const revokedAt = new Date();
+      for (const invite of invites) {
+        await tx.invite.update({
+          where: { id: invite.id },
+          data: { status: InviteStatus.revoked, revokedAt }
+        });
+        await writeAudit(lockedCtx, {
+          action: "invite.emergency_revoke",
+          entityType: "invite",
+          entityId: invite.id,
+          before: { email: invite.email, role: invite.role, status: invite.status },
+          after: { status: InviteStatus.revoked, revokedAt }
+        }, tx);
+      }
+      await writeAudit(lockedCtx, {
+        action: "invite.emergency_revoke_all",
+        entityType: "household",
+        entityId: lockedCtx.householdId,
+        after: { revokedCount: invites.length, revokedAt }
+      }, tx);
+      return { kind: "invite_bulk", code: "revoked", revokedCount: invites.length } as const;
+    }
+  });
+}
+
 async function lockAndRevalidateFreshSession(
   tx: Prisma.TransactionClient,
   freshSession: Awaited<ReturnType<typeof requireFreshSession>>
@@ -77,7 +362,7 @@ async function lockAndRevalidateFreshSession(
 }
 
 export async function createInvite(raw: unknown) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "invite.create");
   const input = inviteSchema.parse(raw);
   const freshSession = input.role === "admin" ? await requireFreshSession() : null;
@@ -88,10 +373,10 @@ export async function createInvite(raw: unknown) {
 
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    if (freshSession) await lockAndRevalidateFreshSession(tx, freshSession);
     const { ctx } = await lockMemberMutation(tx, requestContext, requestContext.memberId);
     requirePermission(ctx, "invite.create");
     if (freshSession) {
-      await lockAndRevalidateFreshSession(tx, freshSession);
       if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
     }
     if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
@@ -194,10 +479,12 @@ export async function acceptInvite(token: string) {
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
-    const invite = await lockInviteByToken(tx, token);
-    if (!invite || invite.status !== InviteStatus.pending) {
+    const tokenHash = hashInviteToken(token);
+    const candidate = await tx.invite.findUnique({ where: { tokenHash } });
+    if (!candidate) {
       throw new Error("not_found");
     }
+    let invite = candidate;
     const expireInvite = async () => {
       const expiredAt = new Date();
       await tx.invite.update({
@@ -217,7 +504,7 @@ export async function acceptInvite(token: string) {
       });
       return { expired: true } as const;
     };
-    if (invite.expiresAt <= new Date()) return expireInvite();
+
 
     await tx.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
@@ -226,6 +513,10 @@ export async function acceptInvite(token: string) {
       ORDER BY "id"
       FOR UPDATE
     `;
+    const lockedInvite = await lockInviteById(tx, candidate.id);
+    if (!lockedInvite || lockedInvite.tokenHash !== tokenHash || lockedInvite.status !== InviteStatus.pending) throw new Error("not_found");
+    invite = lockedInvite;
+    if (invite.expiresAt <= new Date()) return expireInvite();
     const existing = await tx.householdMember.findFirst({
       where: {
         householdId: invite.householdId,
@@ -314,7 +605,7 @@ export async function acceptInvite(token: string) {
 }
 
 export async function listMembersAndInvites() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "member.manage");
   const household = await prisma.household.findUniqueOrThrow({
     where: { id: ctx.householdId },
@@ -337,8 +628,119 @@ export async function listMembersAndInvites() {
   };
 }
 
+type MemberBrowserAction = "restore" | "remove" | "role.update" | "suspend";
+
+const memberBrowserInputSchema = z.object({
+  memberId: z.string().trim().min(1),
+  operationId: z.unknown(),
+  role: z.enum(["admin", "parent", "caretaker", "read_only"]).optional()
+}).strict();
+
+function memberBrowserOperationKey(action: MemberBrowserAction) {
+  return { restore: BrowserOperationKey.memberRestore, remove: BrowserOperationKey.memberRemove, "role.update": BrowserOperationKey.memberRoleUpdate, suspend: BrowserOperationKey.memberSuspend }[action];
+}
+
+function memberBrowserCode(action: MemberBrowserAction) {
+  return { restore: "restored", remove: "removed", "role.update": "role_updated", suspend: "suspended" }[action];
+}
+
+function memberSnapshot(member: { id: string; role: HouseholdRole; disabledAt: Date | null; deletedAt: Date | null; updatedAt: Date }) {
+  return { version: 1, memberId: member.id, role: member.role, disabledAt: member.disabledAt?.toISOString() ?? null, deletedAt: member.deletedAt?.toISOString() ?? null, updatedAt: member.updatedAt.toISOString() };
+}
+
+function assertMemberSnapshot(snapshot: unknown, member: { id: string; role: HouseholdRole; disabledAt: Date | null; deletedAt: Date | null; updatedAt: Date }) {
+  const expected = z.object({ version: z.literal(1), memberId: z.string().min(1), role: z.nativeEnum(HouseholdRole), disabledAt: z.string().datetime().nullable(), deletedAt: z.string().datetime().nullable(), updatedAt: z.string().datetime() }).strict().parse(snapshot);
+  if (JSON.stringify(expected) !== JSON.stringify(memberSnapshot(member))) throw new Error("stale_revision");
+}
+
+async function lockTargetMemberSessions(tx: Prisma.TransactionClient, householdId: string, memberId: string) {
+  const target = await tx.householdMember.findFirst({
+    where: { id: memberId, householdId, disabledAt: null, deletedAt: null },
+    select: { userId: true }
+  });
+  if (!target) throw new Error("not_found");
+  await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id" FROM "Session" WHERE "userId" = ${target.userId} ORDER BY "id" FOR UPDATE
+  `;
+  return target.userId;
+}
+
+async function lockBrowserMemberTarget(tx: Prisma.TransactionClient, ctx: { householdId: string; memberId: string }, memberId: string, expectedUserId?: string) {
+  const memberIds = [...new Set([ctx.memberId, memberId])].sort();
+  await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "HouseholdMember" WHERE "id" IN (${Prisma.join(memberIds)}) ORDER BY "id" FOR UPDATE`;
+  const member = await tx.householdMember.findUnique({ where: { id: memberId } });
+  if (!member || member.householdId !== ctx.householdId || member.deletedAt || (expectedUserId && member.userId !== expectedUserId)) throw new Error("not_found");
+  return member;
+}
+
+function assertMemberBrowserPolicy(action: MemberBrowserAction, ctx: { memberId: string; role: HouseholdRole }, member: { id: string; role: HouseholdRole; disabledAt: Date | null }, role?: HouseholdRole) {
+  if (member.id === ctx.memberId || !canManageHouseholdRole(ctx.role, member.role)) throw new Error("forbidden");
+  if (action === "role.update" && (member.disabledAt || !role || role === HouseholdRole.owner || !canAssignHouseholdRole(ctx.role, role))) throw new Error("forbidden");
+  if (action === "remove" && member.disabledAt) throw new Error("forbidden");
+}
+
+export async function issueMemberBrowserOperation(action: MemberBrowserAction, raw: unknown) {
+  const input = memberBrowserInputSchema.parse(raw);
+  if (action === "role.update" && !input.role) throw new Error("validation_error");
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx, operationId: input.operationId, operationKey: memberBrowserOperationKey(action), targetKind: BrowserOperationTargetKind.member,
+    targetId: input.memberId, permission: "member.manage",
+    targetSnapshot: async (tx, lockedCtx) => {
+      const member = await lockBrowserMemberTarget(tx, lockedCtx, input.memberId);
+      assertMemberBrowserPolicy(action, lockedCtx, member, input.role as HouseholdRole | undefined);
+      return memberSnapshot(member);
+    }
+  });
+}
+
+export async function submitMemberBrowserOperation(action: MemberBrowserAction, raw: unknown) {
+  const input = memberBrowserInputSchema.parse(raw);
+  if (action === "role.update" && !input.role) throw new Error("validation_error");
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  let suspendedTargetUserId: string | undefined;
+  return executeHouseholdBrowserOperation({
+    ctx, operationId: input.operationId, operationKey: memberBrowserOperationKey(action), targetKind: BrowserOperationTargetKind.member,
+    targetId: input.memberId, permission: "member.manage", intent: action === "role.update" ? { role: input.role } : {},
+    preActorLock: action === "suspend" ? async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      suspendedTargetUserId = await lockTargetMemberSessions(tx, ctx.householdId, input.memberId);
+    } : undefined,
+    execute: async (tx, lockedCtx, binding) => {
+      await lockAndRevalidateFreshSession(tx, freshSession);
+      if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
+      const member = await lockBrowserMemberTarget(tx, lockedCtx, input.memberId, suspendedTargetUserId);
+      assertMemberSnapshot(binding.targetSnapshot, member);
+      assertMemberBrowserPolicy(action, lockedCtx, member, input.role as HouseholdRole | undefined);
+      if (action === "restore" && member.disabledAt) {
+        await tx.householdMember.update({ where: { id: member.id }, data: { disabledAt: null } });
+        await writeAudit(lockedCtx, { action: "member.restore", entityType: "household_member", entityId: member.id, before: { userId: member.userId, role: member.role, disabledAt: member.disabledAt }, after: { userId: member.userId, role: member.role, disabledAt: null } }, tx);
+      } else if (action === "role.update" && member.role !== input.role) {
+        const updated = await tx.householdMember.update({ where: { id: member.id }, data: { role: input.role as HouseholdRole } });
+        await writeAudit(lockedCtx, { action: input.role === "admin" ? "member.admin.grant" : member.role === HouseholdRole.admin ? "member.admin.revoke" : "member.role.update", entityType: "household_member", entityId: member.id, before: { role: member.role }, after: { role: updated.role } }, tx);
+      } else if (action === "remove") {
+        const removedAt = new Date();
+        await tx.householdMember.update({ where: { id: member.id }, data: { deletedAt: removedAt } });
+        await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, removedAt, "endpoint_owner_removed");
+        await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, removedAt);
+        await writeAudit(lockedCtx, { action: "member.remove", entityType: "household_member", entityId: member.id, before: { role: member.role, userId: member.userId }, after: { deletedAt: removedAt } }, tx);
+      } else if (action === "suspend" && !member.disabledAt) {
+        const disabledAt = new Date();
+        await tx.householdMember.update({ where: { id: member.id }, data: { disabledAt } });
+        await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
+        await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, disabledAt);
+        await tx.session.deleteMany({ where: { userId: member.userId } });
+        await writeAudit(lockedCtx, { action: "member.suspend", entityType: "household_member", entityId: member.id, before: { userId: member.userId, role: member.role, disabledAt: null }, after: { userId: member.userId, role: member.role, disabledAt } }, tx);
+      }
+      return action === "role.update" ? { kind: "member", code: memberBrowserCode(action), memberId: member.id, role: input.role as string } : { kind: "member", code: memberBrowserCode(action), memberId: member.id };
+    }
+  });
+}
+
 export async function updateMemberRole(memberId: string, raw: unknown) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
   const input = memberRoleSchema.parse(raw);
 
@@ -371,7 +773,7 @@ export async function updateMemberRole(memberId: string, raw: unknown) {
 }
 
 export async function removeMember(memberId: string) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -453,7 +855,7 @@ async function containClosedMemberAuthority(
     },
     data: { revokedAt: closedAt }
   });
-  await tx.notificationPreference.deleteMany({ where: { householdId, userId } });
+  await tx.notificationPreference.deleteMany({ where: { householdId, memberId } });
   await tx.pushSubscription.updateMany({
     where: { householdId, userId, deletedAt: null },
     data: { deletedAt: closedAt }
@@ -462,11 +864,13 @@ async function containClosedMemberAuthority(
 }
 
 export async function suspendMember(memberId: string, disabledAt = new Date()) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
-    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId);
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    const targetUserId = await lockTargetMemberSessions(tx, requestContext.householdId, memberId);
+    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId, targetUserId);
     requirePermission(ctx, "member.manage");
     if (member.id === ctx.memberId || !canManageHouseholdRole(ctx.role, member.role)) {
       throw new Error("forbidden");
@@ -497,7 +901,7 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
 }
 
 export async function restoreMember(memberId: string) {
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -529,7 +933,7 @@ export async function restoreMember(memberId: string) {
 }
 
 export async function revokeInvite(inviteId: string) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "member.manage");
 
   return prisma.$transaction(async (tx) => {
@@ -563,14 +967,14 @@ export async function revokeAllPendingInvites(raw: unknown) {
   }
 
   const freshSession = await requireFreshSession();
-  const requestContext = await getHouseholdContext();
+  const requestContext = await getEffectiveHouseholdContext();
   if (freshSession.user.id !== requestContext.userId) throw new Error("forbidden");
 
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    await lockAndRevalidateFreshSession(tx, freshSession);
     const { ctx } = await lockMemberMutation(tx, requestContext, requestContext.memberId);
     if (ctx.role !== HouseholdRole.owner) throw new Error("forbidden");
-    await lockAndRevalidateFreshSession(tx, freshSession);
     if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
 
     const lockedIds = await tx.$queryRaw<Array<{ id: string }>>`
@@ -613,8 +1017,9 @@ export async function revokeAllPendingInvites(raw: unknown) {
 
 async function lockMemberMutation(
   tx: Prisma.TransactionClient,
-  requestContext: Awaited<ReturnType<typeof getHouseholdContext>>,
-  memberId: string
+  requestContext: Awaited<ReturnType<typeof getEffectiveHouseholdContext>>,
+  memberId: string,
+  expectedUserId?: string
 ) {
   const memberIds = [...new Set([requestContext.memberId, memberId])].sort();
   await tx.$queryRaw<Array<{ id: string }>>`
@@ -639,7 +1044,7 @@ async function lockMemberMutation(
     where: { id: memberId },
     include: { user: true }
   });
-  if (!member || member.deletedAt) throw new Error("not_found");
+  if (!member || member.deletedAt || (expectedUserId && member.userId !== expectedUserId)) throw new Error("not_found");
   if (member.householdId !== actor.householdId) throw new Error("forbidden");
 
   return {

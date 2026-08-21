@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  dismissDashboardWarning: vi.fn(),
   issueDashboardWarningBrowserOperation: vi.fn(),
   dismissDashboardWarningBrowserOperation: vi.fn(),
   browserOperationFailureResult: vi.fn((operationId: unknown, error: unknown) =>
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   )
 }));
 vi.mock("@/server/services/dashboard", () => ({
+  dismissDashboardWarning: mocks.dismissDashboardWarning,
   issueDashboardWarningBrowserOperation: mocks.issueDashboardWarningBrowserOperation,
   dismissDashboardWarningBrowserOperation: mocks.dismissDashboardWarningBrowserOperation
 }));
@@ -29,8 +31,8 @@ const body = {
 beforeEach(() => vi.resetAllMocks());
 
 describe("POST /api/dashboard/warnings/dismiss", () => {
-  it("uses one browser operation through issuance and terminal execution", async () => {
-    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "open", operationId: body.operationId, bindingId: "binding-1" });
+  it("uses one prepared browser operation through issuance and terminal execution", async () => {
+    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "prepared", operationId: body.operationId, code: "operation_prepared" });
     mocks.dismissDashboardWarningBrowserOperation.mockResolvedValue({ status: "completed", operationId: body.operationId, outcome: { kind: "warning_dismissed", code: "ok", warningKey: "feeding:baby-1:feeding:never" } });
 
     const response = await POST(new Request("http://localhost/api/dashboard/warnings/dismiss", {
@@ -38,9 +40,35 @@ describe("POST /api/dashboard/warnings/dismiss", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, data: { status: "completed", operationId: body.operationId } });
+    expect(await response.json()).toEqual({ ok: true, data: { status: "completed", operationId: body.operationId, outcome: { kind: "warning_dismissed", code: "ok", warningKey: "feeding:baby-1:feeding:never" } } });
     expect(mocks.issueDashboardWarningBrowserOperation).toHaveBeenCalledWith(body);
     expect(mocks.dismissDashboardWarningBrowserOperation).toHaveBeenCalledWith(body);
+    expect(mocks.dismissDashboardWarning).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy no-BMO request as one direct dismissal", async () => {
+    mocks.dismissDashboardWarning.mockResolvedValue({ id: "legacy-dismissal" });
+    const { operationId: _operationId, ...legacyBody } = body;
+    const response = await POST(new Request("http://localhost/api/dashboard/warnings/dismiss", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(legacyBody)
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, data: { status: "completed" } });
+    expect(mocks.dismissDashboardWarning).toHaveBeenCalledWith(legacyBody);
+    expect(mocks.issueDashboardWarningBrowserOperation).not.toHaveBeenCalled();
+    expect(mocks.dismissDashboardWarningBrowserOperation).not.toHaveBeenCalled();
+  });
+
+  it("returns 410 for a compacted warning-dismissal operation", async () => {
+    mocks.issueDashboardWarningBrowserOperation.mockResolvedValue({ status: "expired", operationId: body.operationId, code: "operation_result_expired" });
+
+    const response = await POST(new Request("http://localhost/api/dashboard/warnings/dismiss", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+    }));
+
+    expect(response.status).toBe(410);
+    expect(mocks.dismissDashboardWarningBrowserOperation).not.toHaveBeenCalled();
   });
 
   it("returns a privacy-preserving stale result when the warning changed", async () => {
@@ -51,7 +79,7 @@ describe("POST /api/dashboard/warnings/dismiss", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, data: { status: "stale", operationId: body.operationId } });
+    expect(await response.json()).toEqual({ ok: true, data: { status: "stale", operationId: body.operationId, code: "stale_target" } });
     expect(mocks.dismissDashboardWarningBrowserOperation).toHaveBeenCalledWith(body);
   });
 
@@ -67,7 +95,7 @@ describe("POST /api/dashboard/warnings/dismiss", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, data: { status: "rejected", operationId: body.operationId } });
+    expect(await response.json()).toEqual({ ok: true, data: { status: "rejected", operationId: body.operationId, code: "idempotency_conflict" } });
     expect(mocks.dismissDashboardWarningBrowserOperation).not.toHaveBeenCalled();
   });
 });

@@ -361,6 +361,14 @@ npm run verify:activity-update-safety
 It runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
+Household browser-operation schema, status, retention, compaction, and tombstone changes require focused source contracts plus the separately authorized disposable PostgreSQL acceptance. Ordinary Cubby JSON household backups deliberately exclude browser-operation bindings, full receipts, tombstones, and integrity state; full-system recovery must restore that database infrastructure before readiness enables writes.
+
+Global account appearance uses a separate non-household operation binding/full/tombstone ledger. Tests must prove no household lookup or member authority enters Personal appearance, while Session/User revision reauthorization, same-ID status, compaction, and 410 behavior remain equivalent to the household operation contract.
+
+Family accent and Units forms require a browser operation identity before submit. Tests must cover retained-ID reconciliation, stale HouseholdSettings snapshots, expired/unknown status, and full-document Units replacement. Do not reintroduce the pre-P1-2 direct `PATCH` mutation path.
+
+Notification-preference migration and service tests must preserve zero-legacy-row = no document/external delivery off, exactly-one deterministic translation only, and content-minimized inactive needs-review evidence for ambiguous legacy groups. Do not run this migration against a normal database; the required PostgreSQL migration/deduplication/delivery acceptance remains a separately authorized disposable gate.
+
 ## Common Development Notes
 
 ### Activities

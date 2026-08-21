@@ -1,5 +1,5 @@
 import { ok, handleError } from "@/server/http";
-import { addBaby, listBabies } from "@/server/services/households";
+import { addBaby, listBabies, submitCreateBabyBrowserOperation } from "@/server/services/households";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    return ok(await addBaby(await request.json()));
+    const raw = await request.json() as Record<string, unknown>;
+    if (typeof raw.operationId === "string" && raw.operationId.startsWith("bmo_")) {
+      const result = await submitCreateBabyBrowserOperation(raw);
+      return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
+    }
+    return ok(await addBaby(raw));
   } catch (error) {
     return handleError(error);
   }

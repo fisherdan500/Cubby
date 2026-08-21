@@ -10,6 +10,11 @@ export const operation = {
       kind: "server_action",
       symbol: "createCalendarEventAction",
       target: "src/app/app/calendar/actions.ts#createCalendarEventAction"
+    },
+    {
+      kind: "server_action",
+      symbol: "issueCalendarEventAction",
+      target: "src/app/app/calendar/actions.ts#issueCalendarEventAction"
     }
   ],
   disposition: "observed",

@@ -137,6 +137,7 @@ data. Important model groups include:
 - Settings and admin: `AuditEvent`, `BackupRecord`.
 - Integrations: `ApiKey`, `WebhookEndpoint`, `WebhookDelivery`.
 - Notifications: `PushSubscription`, `NotificationPreference`, `NotificationLog`.
+- Browser mutation infrastructure: `BrowserOperationBinding`, `BrowserMutationOperation`, and lifetime household operation tombstones. These rows are implementation/security state, not ordinary user history or logical household-export content.
 - Imports: `ImportBatch`, `ImportedRecord`.
 - Reference and calendar data: `Contact`, `MedicineCatalog`, `CalendarEvent`, event join tables, `VaccineDocument`.
 
@@ -185,6 +186,12 @@ in `src/styles/globals.css` provide light and dark palettes for the five curated
 accent choices. Appearance changes go through `src/server/services/appearance.ts`
 and require `household.manage`.
 
+Personal appearance mode is separate global account state: `system`, `light`, or `dark`, defaulting to `system`. It is loaded independently of household selection and persisted through the separate account browser-operation ledger with Session/User reauthorization and revision compare-and-swap. `/account/appearance` remains available to authenticated users without a selected household. Signing out forces system/device behavior; Family accent remains household data and never supplies a personal mode.
+
+Family accent and the complete household unit-preference document use the household browser-operation ledger. Their opening bindings freeze the selected household/member episode plus an absent-or-`updatedAt` HouseholdSettings snapshot; submission reauthorizes `household.manage`, replaces only the intended settings value under compare-and-swap, writes audit data atomically, and retains same-ID status/replay behavior. Neither setting may use the account operation ledger or silently merge stale form fields.
+
+Notification preferences are one versioned complete document per exact active household-member episode. External delivery defaults off; the document has either `all` active babies or an explicit selected set, never both. Legacy ambiguity becomes inactive content-minimized needs-review evidence rather than a broader union. A later rejoin is a new episode and cannot inherit the former document. Current source work persists and reconciles the preference operation only; it does not deliver any external notification.
+
 Activity recognition uses Cubby-original raster artwork under
 `public/activity-art` through the shared `ActivityArtwork` component. Utility
 actions such as navigation, settings, editing, and deletion continue to use
@@ -213,8 +220,14 @@ undo behavior, timer transitions, and webhook/notification side effects. Pages
 and API routes should call this service instead of writing activity tables
 directly. Activity/timer writes lock and re-read the current actor membership
 and baby inside the mutation transaction and fail closed when the baby is
-inactive. Historical edits remain allowed for inactive babies, but editing must
+Historical edits remain allowed for inactive babies, but editing must
 not start or restart timers.
+
+### Browser Mutation Operations
+
+Ordinary household browser mutations use a versioned `bmo_` identity. Issuance stores a payload-free opening fingerprint over the current household/member episode, operation key, target, revision/state, and schema policy. First submit stores a separate intent fingerprint over the complete normalized payload plus that opening fingerprint. Existing Calendar, Dashboard Warning, and Baby lifecycle adapters use this contract; other declared operation keys remain fail-closed until their adapters are delivered.
+
+Pending or unknown operations reconcile only under the same identity. Terminal safe results replay for 30 days, after which retention compacts them through the guarded database function into immutable content-free tombstones. Authorized compacted lookup returns HTTP-410-style `operation_result_expired`; foreign or former-member lookup remains existence-neutral. The retention scheduler emits only content-free counts. Startup readiness verifies required operation tables, compaction function, and binding/operation equality before reporting ready.
 
 ### Calendar
 

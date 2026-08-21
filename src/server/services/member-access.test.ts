@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hasPermission } from "@/domain/roles";
 
 const mocks = vi.hoisted(() => ({
-  getHouseholdContext: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   assertFreshSession: vi.fn(),
   requireFreshSession: vi.fn(),
@@ -51,7 +51,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
-  getHouseholdContext: mocks.getHouseholdContext,
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
 }));
 
@@ -74,7 +74,7 @@ import {
 describe("household member access management", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.getHouseholdContext.mockResolvedValue({
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
       userId: "user-owner",
       householdId: "household-1",
       memberId: "member-owner",
@@ -107,6 +107,7 @@ describe("household member access management", () => {
         },
         $executeRaw: mocks.memberLock,
         householdMember: {
+          findFirst: mocks.memberFindUnique,
           findUnique: mocks.txMemberFindUnique,
           findUniqueOrThrow: mocks.memberFindUniqueOrThrow,
           update: mocks.memberUpdate,
@@ -154,13 +155,15 @@ describe("household member access management", () => {
       role: "admin",
       acceptUrl: expect.stringMatching(/^\/invite\//)
     });
+    const actorMemberLock = mocks.memberLock.mock.calls.findIndex(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'));
+    expect(mocks.sessionLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.memberLock.mock.invocationCallOrder[actorMemberLock]);
 
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     await expect(createInvite({ email: "other@example.com", role: "admin" })).rejects.toThrow("forbidden");
   });
 
   it("prevents an admin from granting admin access", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     mocks.memberFindUnique.mockResolvedValue(activeMember("member-parent", "parent"));
 
     await expect(updateMemberRole("member-parent", { role: "admin" })).rejects.toThrow("forbidden");
@@ -178,7 +181,7 @@ describe("household member access management", () => {
   });
 
   it("prevents admins from changing or removing protected roles", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     mocks.memberFindUnique.mockResolvedValue(activeMember("member-admin-2", "admin"));
 
     await expect(updateMemberRole("member-admin-2", { role: "parent" })).rejects.toThrow("forbidden");
@@ -189,7 +192,7 @@ describe("household member access management", () => {
   });
 
   it("lets an admin manage a lower access role", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     mocks.memberFindUnique.mockResolvedValue(activeMember("member-care", "caretaker"));
     mocks.memberUpdate.mockResolvedValue({ ...activeMember("member-care", "parent"), user: { email: "care@example.com" } });
 
@@ -197,7 +200,7 @@ describe("household member access management", () => {
   });
 
   it("authorizes suspension from the target role locked inside the transaction", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     const staleParent = activeMember("member-target", "parent");
     mocks.memberFindUnique.mockResolvedValue(staleParent);
     mocks.txMemberFindUnique
@@ -207,7 +210,7 @@ describe("household member access management", () => {
     mocks.memberFindUniqueOrThrow.mockResolvedValue({ ...staleParent, disabledAt: new Date(), user: {} });
 
     await expect(suspendMember(staleParent.id)).rejects.toThrow("forbidden");
-    expect(mocks.memberLock).toHaveBeenCalledOnce();
+    expect(mocks.memberLock.mock.calls.filter(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'))).toHaveLength(1);
     expect(mocks.memberUpdateMany).not.toHaveBeenCalled();
   });
 
@@ -225,14 +228,14 @@ describe("household member access management", () => {
   });
 
   it("denies parents before member data is read", async () => {
-    mocks.getHouseholdContext.mockResolvedValue({ ...adminContext(), role: "parent" });
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({ ...adminContext(), role: "parent" });
 
     await expect(updateMemberRole("member-care", { role: "caretaker" })).rejects.toThrow("forbidden");
     expect(mocks.memberFindUnique).not.toHaveBeenCalled();
   });
 
   it("soft deletes lower access members and preserves their record", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     mocks.memberFindUnique.mockResolvedValue(activeMember("member-care", "caretaker"));
     mocks.memberUpdate.mockResolvedValue({ ...activeMember("member-care", "caretaker"), deletedAt: new Date(), user: { email: "care@example.com" } });
 
@@ -241,7 +244,7 @@ describe("household member access management", () => {
   });
 
   it("contains a removed member's notification preferences, subscriptions, and queued notifications", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     const member = activeMember("member-care", "caretaker");
     mocks.memberFindUnique.mockResolvedValue(member);
     mocks.memberUpdate.mockResolvedValue({ ...member, deletedAt: new Date(), user: {} });
@@ -258,7 +261,7 @@ describe("household member access management", () => {
       data: { revokedAt: expect.any(Date) }
     });
     expect(mocks.notificationPreferenceDeleteMany).toHaveBeenCalledWith({
-      where: { householdId: "household-1", userId: member.userId }
+      where: { householdId: "household-1", memberId: member.id }
     });
     expect(mocks.pushSubscriptionUpdateMany).toHaveBeenCalledWith({
       where: { householdId: "household-1", userId: member.userId, deletedAt: null },
@@ -291,7 +294,7 @@ describe("household member access management", () => {
   });
 
   it("requires a suspended member to be restored before removal", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     const member = activeMember("member-care", "caretaker");
     mocks.memberFindUnique.mockResolvedValue(member);
     mocks.txMemberFindUnique
@@ -340,6 +343,13 @@ describe("household member access management", () => {
     await expect(suspendMember(member.id, disabledAt)).resolves.toMatchObject({ disabledAt });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
+    expect(mocks.memberFindUnique).toHaveBeenCalledWith({
+      where: { id: member.id, householdId: "household-1", disabledAt: null, deletedAt: null },
+      select: { userId: true }
+    });
+    const targetMemberLock = mocks.memberLock.mock.calls.findIndex(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'));
+    expect(targetMemberLock).toBeGreaterThanOrEqual(0);
+    expect(mocks.sessionLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.memberLock.mock.invocationCallOrder[targetMemberLock]);
     expect(mocks.memberUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: member.id },
       data: { disabledAt }
@@ -392,7 +402,7 @@ describe("household member access management", () => {
   });
 
   it("lets admins suspend lower roles but not admins", async () => {
-    mocks.getHouseholdContext.mockResolvedValue(adminContext());
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     const caretaker = activeMember("member-care", "caretaker");
     mocks.memberFindUnique.mockResolvedValue(caretaker);
     mocks.memberUpdate.mockResolvedValue({ ...caretaker, disabledAt: new Date(), user: {} });

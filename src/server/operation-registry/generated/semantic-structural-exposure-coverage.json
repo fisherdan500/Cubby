@@ -3,11 +3,113 @@
   "complete": false,
   "entries": [
     {
-      "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n    }\n    return ok(await deleteActivity(params.id, body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "3c2571a64b2dcba9109143a6a2371ce682053476d7364eea943bce071368fbce",
-      "anchorEnd": 1184,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const input = await request.json() as { operationId?: unknown };\n    const result = await issueAccountAppearanceBrowserOperation(input);\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "cc191c5f860bb041dc7e2f93f86787be0f081ed7e42a9f00dd8f47890a14e05c",
+      "anchorEnd": 602,
+      "anchorFile": "src/app/api/account/appearance/issue/route.ts",
+      "anchorStart": 186,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/appearance/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/appearance/issue/route.ts:route_method:POST:src/app/api/account/appearance/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/appearance/issue/route.ts",
+      "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/issue/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getAccountAppearance());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "aa959c5b808cd5429d8062cb26b610235d28116c3703de7cad67978115c23b81",
+      "anchorEnd": 352,
+      "anchorFile": "src/app/api/account/appearance/route.ts",
+      "anchorStart": 213,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/appearance/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/appearance/route.ts:route_method:GET:src/app/api/account/appearance/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    const input = await request.json() as { operationId?: unknown; appearanceMode?: unknown };\n    const result = await submitAccountAppearanceBrowserOperation(input);\n    const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "8311295eb8556f13888d9dccd94efe33f23955bc207d556283bb5df55383398d",
+      "anchorEnd": 765,
+      "anchorFile": "src/app/api/account/appearance/route.ts",
+      "anchorStart": 354,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PATCH",
+        "target": "src/app/api/account/appearance/route.ts#PATCH"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/appearance/route.ts:route_method:PATCH:src/app/api/account/appearance/route.ts#PATCH",
+      "ownerId": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function DELETE(\n  _request: Request,\n  { params }: { params: { operationId: string } }\n) {\n  try {\n    return ok(await abandonAccountAppearanceBrowserOperation({ operationId: params.operationId }), { status: 410 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c9a97f34efd18e3e15b1ab42e5e88c82372808fb9c965e9de4f003a946942429",
+      "anchorEnd": 987,
+      "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "anchorStart": 701,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "DELETE",
+        "target": "src/app/api/account/browser-operations/[operationId]/route.ts#DELETE"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts:route_method:DELETE:src/app/api/account/browser-operations/[operationId]/route.ts#DELETE",
+      "ownerId": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET(\n  _request: Request,\n  { params }: { params: { operationId: string } }\n) {\n  try {\n    const result = await getAccountBrowserOperationStatus(params.operationId);\n    const status = result.status === \"pending\" || result.status === \"prepared\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "4ef66bd91ac8e6b52a63fc70aa44f1d2faf80971c4f469de1a7f839c28aeafb3",
+      "anchorEnd": 699,
+      "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "anchorStart": 291,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/browser-operations/[operationId]/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts:route_method:GET:src/app/api/account/browser-operations/[operationId]/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getAccountBrowserOperationPartition());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "915a04b5a17add9f9d913705a6ded867801f34c7ba651f8c5e20c91109d6450a",
+      "anchorEnd": 346,
+      "anchorFile": "src/app/api/account/browser-operations/partition/route.ts",
+      "anchorStart": 192,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/browser-operations/partition/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/browser-operations/partition/route.ts:route_method:GET:src/app/api/account/browser-operations/partition/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/browser-operations/partition/route.ts",
+      "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n    }\n    const record = typeof body === \"object\" && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : null;\n    operationId = record?.operationId;\n    const input = { ...record, activityId: params.id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityDeleteBrowserOperation(input);\n      return browserOperationResponse(issued);\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityDeleteBrowserOperation(input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityDeleteBrowserOperation(input) : issued;\n      return browserOperationResponse(result);\n    }\n    return ok(await deleteActivity(params.id, body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return browserOperationResponse(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "a7f652b14e07aa14f7a5e723e4cce851e6510386551e87c76b272a5caa0f8f4f",
+      "anchorEnd": 3519,
       "anchorFile": "src/app/api/activities/[id]/route.ts",
-      "anchorStart": 757,
+      "anchorStart": 2181,
       "binding": {
         "kind": "route_method",
         "symbol": "DELETE",
@@ -20,11 +122,11 @@
       "sidecarPath": "src/app/api/activities/[id]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  try {\n    const text = await request.text();\n    if (text.length === 0) throw new Error(\"validation_error\");\n    let body: unknown;\n    try {\n      body = JSON.parse(text) as unknown;\n    } catch {\n      throw new Error(\"validation_error\");\n    }\n    activityUpdateSchema.parse({ ...(body as object), id: params.id });\n    return ok(await updateActivity(params.id, body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "718f2cf48c921b850b1012ab7aa78741bf35d38f74eda281350c62cf92e6488c",
-      "anchorEnd": 755,
+      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    if (text.length === 0) throw new Error(\"validation_error\");\n    let body: unknown;\n    try {\n      body = JSON.parse(text) as unknown;\n    } catch {\n      throw new Error(\"validation_error\");\n    }\n    const record = typeof body === \"object\" && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : null;\n    operationId = record?.operationId;\n    const input = { ...record, activityId: params.id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityUpdateBrowserOperation(input);\n      return browserOperationResponse(issued);\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityUpdateBrowserOperation(input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityUpdateBrowserOperation(input) : issued;\n      return browserOperationResponse(result);\n    }\n    activityUpdateSchema.parse({ ...(body as object), id: params.id });\n    return ok(await updateActivity(params.id, body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return browserOperationResponse(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "93655bd4c964596e7b1667e4b401f1a1dc84d1c8d35e28c18eec91e73d764fbd",
+      "anchorEnd": 2179,
       "anchorFile": "src/app/api/activities/[id]/route.ts",
-      "anchorStart": 236,
+      "anchorStart": 749,
       "binding": {
         "kind": "route_method",
         "symbol": "PATCH",
@@ -39,9 +141,9 @@
     {
       "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const url = new URL(request.url);\n    return ok(\n      await listActivities({\n        babyId: url.searchParams.get(\"babyId\") ?? undefined,\n        type: url.searchParams.get(\"type\") ?? undefined,\n        search: url.searchParams.get(\"search\") ?? undefined\n      })\n    );\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "6ca6c4a41e1ecc6b72fa4aaf838a7b3c476ff7c7cbf858d40d0261bc446e5976",
-      "anchorEnd": 556,
+      "anchorEnd": 725,
       "anchorFile": "src/app/api/activities/route.ts",
-      "anchorStart": 170,
+      "anchorStart": 339,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -54,11 +156,11 @@
       "sidecarPath": "src/app/api/activities/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    return ok(await createActivity(await request.json()), { status: 201 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "de33eaf99f266005cbeba6f2ce5c7d8b98fd65bc2add23851c74374046864041",
-      "anchorEnd": 745,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json();\n    operationId = typeof raw === \"object\" && raw !== null ? (raw as Record<string, unknown>).operationId : undefined;\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityCreateBrowserOperation(raw);\n      const status = issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200;\n      return ok(issued, { status });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityCreateBrowserOperation(raw);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityCreateBrowserOperation(raw) : issued;\n      const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n      return ok(result, { status });\n    }\n    return ok(await createActivity(raw), { status: 201 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "cdacc0272ffe0baa793525d09bbdb37f3fd0a837c5d94671773e57ce30121180",
+      "anchorEnd": 1922,
       "anchorFile": "src/app/api/activities/route.ts",
-      "anchorStart": 558,
+      "anchorStart": 727,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -71,11 +173,11 @@
       "sidecarPath": "src/app/api/activities/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n    }\n    return ok(await undoLastActivity(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "d37f0a733c39fad232820f9c25e65c6bc2e3d99ece8e5302f81aa4ac5b42c268",
-      "anchorEnd": 532,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n    }\n    operationId = typeof body === \"object\" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).operationId : undefined;\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityUndoLastBrowserOperation(body);\n      const status = issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200;\n      return ok(issued, { status });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityUndoLastBrowserOperation(body);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityUndoLastBrowserOperation(body) : issued;\n      const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n      return ok(result, { status });\n    }\n    return ok(await undoLastActivity(body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "11fdc736235a3827cbb4048a4a05368e5105ba920b486a43117f4d2b5966fc0f",
+      "anchorEnd": 1726,
       "anchorFile": "src/app/api/activities/undo-last/route.ts",
-      "anchorStart": 156,
+      "anchorStart": 327,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -122,9 +224,9 @@
       "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, babyId: params.id };\n    const issued = await issueDeactivateBabyBrowserOperation(input);\n    const result = issued.status === \"open\" ? await submitDeactivateBabyBrowserOperation(input) : issued;\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "2d1198d775dd205b788025cd0884198fcc23226240c10437cf6b31e0eadc482a",
-      "anchorEnd": 1047,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, babyId: params.id };\n    const issued = await issueDeactivateBabyBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitDeactivateBabyBrowserOperation(input) : issued;\n    return ok(result,\n      { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 }\n    );\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "93837977a0f1cc3cc22766ed3021c701af3417598e4b73e320b2eaa15b2b1b8c",
+      "anchorEnd": 1292,
       "anchorFile": "src/app/api/babies/[id]/deactivate/route.ts",
       "anchorStart": 303,
       "binding": {
@@ -139,9 +241,9 @@
       "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, babyId: params.id };\n    const issued = await issueReactivateBabyBrowserOperation(input);\n    const result = issued.status === \"open\" ? await submitReactivateBabyBrowserOperation(input) : issued;\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "ea7e156cfe4d12568f6c3bd431d02ca3442cc3db405bbc3ec7d378a3f6d3a51b",
-      "anchorEnd": 1047,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, babyId: params.id };\n    const issued = await issueReactivateBabyBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitReactivateBabyBrowserOperation(input) : issued;\n    return ok(result,\n      { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 }\n    );\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "8b5c5848b3eb1c4a66d8cbb263e8aa70dff6f6a3f36c700cf16c8b95ec9410f7",
+      "anchorEnd": 1292,
       "anchorFile": "src/app/api/babies/[id]/reactivate/route.ts",
       "anchorStart": 303,
       "binding": {
@@ -156,11 +258,28 @@
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueCreateBabyBrowserOperation(await request.json() as Record<string, unknown>);\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" || result.status === \"prepared\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "9d065c4f4384a56de0394ff45f2274d32cb24bde35565b9ffeada4716daf454c",
+      "anchorEnd": 585,
+      "anchorFile": "src/app/api/babies/issue/route.ts",
+      "anchorStart": 171,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/babies/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/babies/issue/route.ts:route_method:POST:src/app/api/babies/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/babies/issue/route.ts",
+      "ownerModule": "src/app/api/babies/issue/route.ts",
+      "sidecarPath": "src/app/api/babies/issue/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await listBabies({ includeInactive: true }));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "06e1ac779917a85c31591afdcd6948ae55e46aa0c59126d3f2db8324179fa91f",
-      "anchorEnd": 313,
+      "anchorEnd": 347,
       "anchorFile": "src/app/api/babies/route.ts",
-      "anchorStart": 159,
+      "anchorStart": 193,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -173,11 +292,11 @@
       "sidecarPath": "src/app/api/babies/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    return ok(await addBaby(await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "51f20d526c803957efbc6224be19dd648d3b91f4bdab4dbb9640253fe4e8c787",
-      "anchorEnd": 478,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    if (typeof raw.operationId === \"string\" && raw.operationId.startsWith(\"bmo_\")) {\n      const result = await submitCreateBabyBrowserOperation(raw);\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await addBaby(raw));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c948f61cfbb7a366513386a9c98fcb63027970be6d2de9b96fb8c0457fd5d07b",
+      "anchorEnd": 831,
       "anchorFile": "src/app/api/babies/route.ts",
-      "anchorStart": 315,
+      "anchorStart": 349,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -326,11 +445,79 @@
       "sidecarPath": "src/app/api/backups/sprout/preview/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"open\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok({ status: \"completed\", operationId: result.operationId });\n    return ok({ status: result.status, operationId: result.operationId });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok({ status: failure.status, operationId: failure.operationId });\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
-      "anchorEnd": 1078,
+      "anchorBytes": "export async function DELETE(\n  _request: Request,\n  { params }: { params: { operationId: string } }\n) {\n  try {\n    return ok(await abandonCurrentHouseholdBrowserOperation(params.operationId), { status: 410 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c141b6c3676d8e522e53de848c2637e97b2542b6d0f707985ecce338c9192914",
+      "anchorEnd": 909,
+      "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+      "anchorStart": 641,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "DELETE",
+        "target": "src/app/api/browser-operations/[operationId]/route.ts#DELETE"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts:route_method:DELETE:src/app/api/browser-operations/[operationId]/route.ts#DELETE",
+      "ownerId": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET(\n  _request: Request,\n  { params }: { params: { operationId: string } }\n) {\n  try {\n    const result = await getHouseholdBrowserOperationStatus(params.operationId);\n    const status = result.status === \"pending\" || result.status === \"prepared\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "5ff02f5f66a27f02ae1991b10749f6ebe6755d1f175e94fbe266f678b7b47188",
+      "anchorEnd": 639,
+      "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+      "anchorStart": 229,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/browser-operations/[operationId]/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts:route_method:GET:src/app/api/browser-operations/[operationId]/route.ts#GET",
+      "ownerId": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getHouseholdBrowserOperationPartition());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "47d25590b9093dc7d3b8152259804f8e398bbf22e43d25a92003cc0fa24112f8",
+      "anchorEnd": 350,
+      "anchorFile": "src/app/api/browser-operations/partition/route.ts",
+      "anchorStart": 194,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/browser-operations/partition/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/browser-operations/partition/route.ts:route_method:GET:src/app/api/browser-operations/partition/route.ts#GET",
+      "ownerId": "api_route:src/app/api/browser-operations/partition/route.ts",
+      "ownerModule": "src/app/api/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const result = await issueDashboardWarningBrowserOperation(raw);\n    return ok(result, { status: result.status === \"pending\" || result.status === \"prepared\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "06c5981ca388f09372676543b092f425cf2d304fbf8160be74debb9ec87f8c22",
+      "anchorEnd": 822,
+      "anchorFile": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "anchorStart": 262,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/dashboard/warnings/dismiss/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts:route_method:POST:src/app/api/dashboard/warnings/dismiss/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "ownerModule": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "sidecarPath": "src/app/api/dashboard/warnings/dismiss/issue/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    if (!operationId) {\n      await dismissDashboardWarning(raw);\n      return ok({ status: \"completed\" });\n    }\n    const issued = await issueDashboardWarningBrowserOperation(raw);\n    const result = issued.status === \"open\" || issued.status === \"prepared\"\n      ? await dismissDashboardWarningBrowserOperation(raw)\n      : issued;\n    if (result.status === \"completed\") return ok(result);\n    return ok(\n      result,\n      { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 }\n    );\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "40d1303366b1046a7bf01f03b4e3af9800150018f2007ada40fef3059e168f12",
+      "anchorEnd": 1203,
       "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
-      "anchorStart": 307,
+      "anchorStart": 334,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -377,11 +564,11 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET() {\n  try {\n    await prisma.$queryRaw`SELECT 1`;\n    return NextResponse.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return NextResponse.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
-      "anchorDigest": "515c3c16e5b85ddc7f9adc5ca2dd378c231ab0e753309f64d67e8538371fd4c7",
-      "anchorEnd": 462,
+      "anchorBytes": "export async function GET() {\n  try {\n    await verifyBrowserOperationInfrastructure();\n    return NextResponse.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return NextResponse.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
+      "anchorDigest": "ee3e06264c34341ff81c8967f79fb1f39f567fe318a9f4fd7d965cdb4bc8fa32",
+      "anchorEnd": 534,
       "anchorFile": "src/app/api/health/route.ts",
-      "anchorStart": 195,
+      "anchorStart": 255,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -496,6 +683,23 @@
       "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const requestOrigin = authorizedRequestOrigin(request);\n    const form = await request.formData();\n    const intent = form.get(\"intent\");\n    const returnTo = safeReturnTo(form.get(\"returnTo\"));\n    const response = NextResponse.redirect(new URL(returnTo, requestOrigin), 303);\n\n    if (intent === \"clear\") {\n      await clearHouseholdSelection();\n      response.cookies.set(SELECTED_HOUSEHOLD_MEMBER_COOKIE, \"\", cookieOptions(requestOrigin, 0));\n      return response;\n    }\n\n    const memberId = form.get(\"memberId\");\n    if (typeof memberId !== \"string\") throw new Error(\"validation_error\");\n    const context = await authorizeHouseholdSelection(memberId);\n    response.cookies.set(\n      SELECTED_HOUSEHOLD_MEMBER_COOKIE,\n      context.memberId,\n      cookieOptions(requestOrigin, persistentCandidateSeconds)\n    );\n    return response;\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "f25b644a0e5d78b260d59f3d9a1765239e8a2a3dbc02fe5ddcb8941d70612fc7",
+      "anchorEnd": 1375,
+      "anchorFile": "src/app/api/household-selection/route.ts",
+      "anchorStart": 419,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/household-selection/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/household-selection/route.ts:route_method:POST:src/app/api/household-selection/route.ts#POST",
+      "ownerId": "api_route:src/app/api/household-selection/route.ts",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    return ok(await leaveHousehold(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "5e1e29ba225a54a0c8b43b8bb75fbebe85ccc8f9d9e34c4a8085b4dd4b6fe890",
       "anchorEnd": 466,
@@ -530,28 +734,28 @@
       "sidecarPath": "src/app/api/invites/[token]/accept/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(_request: Request, { params }: { params: { token: string } }) {\n  try {\n    return ok(await revokeInvite(params.token));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "4d72c19f68537766e67f2ea772abed81e41c482fa4d1e609101720beb9629193",
-      "anchorEnd": 353,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { token: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: Record<string, unknown> | undefined;\n    if (text.length > 0) {\n      const parsed = JSON.parse(text) as unknown;\n      if (!parsed || typeof parsed !== \"object\" || Array.isArray(parsed)) throw new Error(\"validation_error\");\n      body = parsed as Record<string, unknown>;\n    }\n    operationId = body?.operationId;\n    const input = { ...body, operationId, inviteId: params.token };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueInviteRevokeBrowserOperation(input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteRevokeBrowserOperation(input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitInviteRevokeBrowserOperation(input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await revokeInvite(params.token));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "97be65ab230c6d6dfb8dde45f6fb2312ec74a33a0d670debb14fc1de7b3b708d",
+      "anchorEnd": 1779,
       "anchorFile": "src/app/api/invites/[token]/revoke/route.ts",
-      "anchorStart": 149,
+      "anchorStart": 312,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
         "target": "src/app/api/invites/[token]/revoke/route.ts#POST"
       },
-      "coverage": "structural_only",
+      "coverage": "semantic_declared",
       "id": "api_route:src/app/api/invites/[token]/revoke/route.ts:route_method:POST:src/app/api/invites/[token]/revoke/route.ts#POST",
       "ownerId": "api_route:src/app/api/invites/[token]/revoke/route.ts",
       "ownerModule": "src/app/api/invites/[token]/revoke/route.ts",
       "sidecarPath": "src/app/api/invites/[token]/revoke/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    return ok(await revokeAllPendingInvites(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "f20bd8e848cf93039adef90c826e6a9c8289cea48af58c87ecea3a3e99e9953c",
-      "anchorEnd": 476,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null || typeof body !== \"object\" || Array.isArray(body)) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    operationId = (body as Record<string, unknown>).operationId;\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueInviteRevokeAllBrowserOperation({});\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteRevokeAllBrowserOperation({ operationId });\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitInviteRevokeAllBrowserOperation(body) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await revokeAllPendingInvites(body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "b41036aaaf8729013d0d3ed9b409bd1c9252ed809b39dd917e6f6f7cb399f304",
+      "anchorEnd": 1603,
       "anchorFile": "src/app/api/invites/revoke-all/route.ts",
-      "anchorStart": 166,
+      "anchorStart": 335,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -564,11 +768,11 @@
       "sidecarPath": "src/app/api/invites/revoke-all/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    return ok(await createInvite(body), { status: 201 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "2bb1d3b7e43fa594695dbda171fd77674b7771aaf37f827d3b1b74230089d385",
-      "anchorEnd": 471,
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null || typeof body !== \"object\" || Array.isArray(body)) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    operationId = (body as Record<string, unknown>).operationId;\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueInviteCreateBrowserOperation(body);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 201 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteCreateBrowserOperation(body);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitInviteCreateBrowserOperation(body) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : result.status === \"open\" ? 201 : 200 });\n    }\n    return ok(await createInvite(body), { status: 201 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "a7c8a1f98198854ce4848e4af43566513acf250f2bd9750471b264e61b71a546",
+      "anchorEnd": 1601,
       "anchorFile": "src/app/api/invites/route.ts",
-      "anchorStart": 155,
+      "anchorStart": 312,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -581,11 +785,11 @@
       "sidecarPath": "src/app/api/invites/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(\n  _request: Request,\n  { params }: { params: Promise<{ id: string }> }\n) {\n  try {\n    const { id } = await params;\n    return ok(await restoreMember(id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "47ba276386a5b9e22841593e3a5499940ce918f281fb9d2c4f98bc31d6ae324e",
-      "anchorEnd": 349,
+      "anchorBytes": "export async function POST(\n  request: Request,\n  { params }: { params: Promise<{ id: string }> }\n) {\n  let operationId: unknown;\n  try {\n    const { id } = await params;\n    const raw = await request.json().catch(() => ({})) as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { ...raw, memberId: id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueMemberBrowserOperation(\"restore\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueMemberBrowserOperation(\"restore\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitMemberBrowserOperation(\"restore\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await restoreMember(id));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    return failure ? ok(failure) : handleError(error);\n  }\n}",
+      "anchorDigest": "df0d210dd90155a140be8ebc505db23638942889a326bfa91be2c6f8adbfbca5",
+      "anchorEnd": 1490,
       "anchorFile": "src/app/api/members/[id]/restore/route.ts",
-      "anchorStart": 109,
+      "anchorStart": 260,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -598,11 +802,11 @@
       "sidecarPath": "src/app/api/members/[id]/restore/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function DELETE(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    return ok(await removeMember(params.id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "4f214848c562a7a54ae3fee5dff3552b9d9aaf92278a8d2cdd1d702f81100714",
-      "anchorEnd": 593,
+      "anchorBytes": "export async function DELETE(request: Request, { params }: Params) {\n  let operationId: unknown;\n  try {\n    const id = await memberId(params);\n    const body = await request.json().catch(() => ({})) as Record<string, unknown>;\n    operationId = body.operationId;\n    const input = { ...body, memberId: id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueMemberBrowserOperation(\"remove\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueMemberBrowserOperation(\"remove\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitMemberBrowserOperation(\"remove\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await removeMember(id));\n  } catch (error) { const failure = browserOperationFailureResult(operationId, error); return failure ? ok(failure) : handleError(error); }\n}",
+      "anchorDigest": "10e3a625cb474ee56baa435fba1ccbdba904217a65fdd3eb014be3883b81cedb",
+      "anchorEnd": 2852,
       "anchorFile": "src/app/api/members/[id]/route.ts",
-      "anchorStart": 393,
+      "anchorStart": 1660,
       "binding": {
         "kind": "route_method",
         "symbol": "DELETE",
@@ -615,11 +819,11 @@
       "sidecarPath": "src/app/api/members/[id]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  try {\n    return ok(await updateMemberRole(params.id, await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "bf7f77da563404d4b8b4206069f3466b8903475797044d5850c5baec364207d2",
-      "anchorEnd": 391,
+      "anchorBytes": "export async function PATCH(request: Request, { params }: Params) {\n  let operationId: unknown;\n  try {\n    const id = await memberId(params);\n    const body = await request.json() as Record<string, unknown>;\n    operationId = body.operationId;\n    const input = { ...body, memberId: id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueMemberBrowserOperation(\"role.update\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueMemberBrowserOperation(\"role.update\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitMemberBrowserOperation(\"role.update\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await updateMemberRole(id, body));\n  } catch (error) { const failure = browserOperationFailureResult(operationId, error); return failure ? ok(failure) : handleError(error); }\n}",
+      "anchorDigest": "7a4609f563b515b99b2147b9c570457864a74ff3ea12c1c0c7cef2f710f0b5b1",
+      "anchorEnd": 1658,
       "anchorFile": "src/app/api/members/[id]/route.ts",
-      "anchorStart": 167,
+      "anchorStart": 460,
       "binding": {
         "kind": "route_method",
         "symbol": "PATCH",
@@ -632,11 +836,11 @@
       "sidecarPath": "src/app/api/members/[id]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(\n  _request: Request,\n  { params }: { params: Promise<{ id: string }> }\n) {\n  try {\n    const { id } = await params;\n    return ok(await suspendMember(id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "9c314abfcf98a49672c3df2b0195261ee9cf52b15abad5e46582db7704335c2d",
-      "anchorEnd": 349,
+      "anchorBytes": "export async function POST(\n  request: Request,\n  { params }: { params: Promise<{ id: string }> }\n) {\n  let operationId: unknown;\n  try {\n    const { id } = await params;\n    const raw = await request.json().catch(() => ({})) as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { ...raw, memberId: id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueMemberBrowserOperation(\"suspend\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueMemberBrowserOperation(\"suspend\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitMemberBrowserOperation(\"suspend\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await suspendMember(id));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    return failure ? ok(failure) : handleError(error);\n  }\n}",
+      "anchorDigest": "2c4d676c573835f7bbbc96bb2390cebbf70875bfe34a0bb0f48ee3d5bef6cea6",
+      "anchorEnd": 1490,
       "anchorFile": "src/app/api/members/[id]/suspend/route.ts",
-      "anchorStart": 109,
+      "anchorStart": 260,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -649,11 +853,28 @@
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET() {\n  try {\n    return ok(await listNotificationPreferences());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "052357e3b3ad922d3ae3c141ea64de6913624e850b58388817f9de9fbb9cd806",
-      "anchorEnd": 343,
-      "anchorFile": "src/app/api/notifications/preferences/route.ts",
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueNotificationPreferenceBrowserOperation(await request.json() as { operationId?: unknown });\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "230d104e4c28f15ca10e215d9af050d58e6a3d745c258de37717fc7d1449fa6e",
+      "anchorEnd": 541,
+      "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
       "anchorStart": 197,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts:route_method:POST:src/app/api/notifications/preferences/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getOwnNotificationPreference());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "5b71226679bd0c0cee95312a86de531ccc9fb853e9535527e4239a982f621c5a",
+      "anchorEnd": 379,
+      "anchorFile": "src/app/api/notifications/preferences/route.ts",
+      "anchorStart": 232,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -666,11 +887,11 @@
       "sidecarPath": "src/app/api/notifications/preferences/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    return ok(await saveNotificationPreference(await request.json()), { status: 201 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "7e79ca35765f2cd1f42c0a24543e6a142a0807ae5ff91fa4ca5a9eabd606dd3a",
-      "anchorEnd": 544,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await submitNotificationPreferenceBrowserOperation(await request.json() as Record<string, unknown>);\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "11fbfd518b5aa319e214262f3504f8f1ae19d1662a0e94fbd89d55f10e9fd6c0",
+      "anchorEnd": 724,
       "anchorFile": "src/app/api/notifications/preferences/route.ts",
-      "anchorStart": 345,
+      "anchorStart": 381,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -819,11 +1040,28 @@
       "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueHouseholdAppearanceBrowserOperation(await request.json() as { operationId?: unknown });\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "d92d343129aee810d2c827e499c3c8320542b46a56ba5b1127db2d9784caf590",
+      "anchorEnd": 573,
+      "anchorFile": "src/app/api/settings/appearance/issue/route.ts",
+      "anchorStart": 180,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts:route_method:POST:src/app/api/settings/appearance/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getHouseholdAppearance());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "50df48391dd9e32ca982bc39b73cd5c9646ba7ffd64700cde7f5f00144f2ca1c",
-      "anchorEnd": 330,
+      "anchorEnd": 350,
       "anchorFile": "src/app/api/settings/appearance/route.ts",
-      "anchorStart": 189,
+      "anchorStart": 209,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -836,11 +1074,11 @@
       "sidecarPath": "src/app/api/settings/appearance/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    return ok(await updateHouseholdAppearance(await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "2179282f6e2243987cfc595c930433c460e1ef1a1d9e4c48bd17fbd4d45db666",
-      "anchorEnd": 514,
+      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    const result = await submitHouseholdAppearanceBrowserOperation(await request.json());\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "d853cc084f689ac161872d1d66e8a6ea3321cd839231bc7d75398cc4f38040e2",
+      "anchorEnd": 666,
       "anchorFile": "src/app/api/settings/appearance/route.ts",
-      "anchorStart": 332,
+      "anchorStart": 352,
       "binding": {
         "kind": "route_method",
         "symbol": "PATCH",
@@ -904,11 +1142,28 @@
       "sidecarPath": "src/app/api/settings/registration/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueUnitPreferencesBrowserOperation(await request.json() as { operationId?: unknown });\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "ea192855687159c7eb5dfd51b710ff5a159370c9d980b7022f67b93a58597e12",
+      "anchorEnd": 571,
+      "anchorFile": "src/app/api/settings/units/issue/route.ts",
+      "anchorStart": 182,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/settings/units/issue/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/settings/units/issue/route.ts:route_method:POST:src/app/api/settings/units/issue/route.ts#POST",
+      "ownerId": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await getUnitPreferenceSettings());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "1e4807e512161a47ff7c265721c72c89a8550057a5942ea6b66063f641e71c15",
-      "anchorEnd": 342,
+      "anchorEnd": 358,
       "anchorFile": "src/app/api/settings/units/route.ts",
-      "anchorStart": 198,
+      "anchorStart": 214,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -921,11 +1176,11 @@
       "sidecarPath": "src/app/api/settings/units/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    return ok(await updateUnitPreferences(await request.json()));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a9cedf396b3cee40be8163dffa7e3a9e5a41a6cbc4a3c58f96a832c7a990bfab",
-      "anchorEnd": 522,
+      "anchorBytes": "export async function PATCH(request: Request) {\n  try {\n    const result = await submitUnitPreferencesBrowserOperation(await request.json() as Record<string, unknown>);\n    const status = result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "039cd26c31cc40fe55a13e104672709700ca0a1472174543c585a9bde9a2fa3a",
+      "anchorEnd": 716,
       "anchorFile": "src/app/api/settings/units/route.ts",
-      "anchorStart": 344,
+      "anchorStart": 360,
       "binding": {
         "kind": "route_method",
         "symbol": "PATCH",
@@ -989,11 +1244,11 @@
       "sidecarPath": "src/app/api/settings/webhooks/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n      if (typeof body !== \"object\" || body === null || Array.isArray(body) || !(\"clientMutationId\" in body)) {\n        throw new Error(\"validation_error\");\n      }\n    }\n    return ok(await pauseTimer(params.id, body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "0bb94c02debabdefd8795320d67b90502d714158125ce9ff4289ab72be00ad9b",
-      "anchorEnd": 735,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try { body = JSON.parse(text) as unknown; } catch { throw new Error(\"validation_error\"); }\n      if (!body || typeof body !== \"object\" || Array.isArray(body)) throw new Error(\"validation_error\");\n    }\n    operationId = typeof body === \"object\" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).operationId : undefined;\n    const input = { ...(body as Record<string, unknown>), activityId: params.id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityTimerBrowserOperation(\"pause\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityTimerBrowserOperation(\"pause\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityTimerBrowserOperation(\"pause\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    if (body !== undefined && !(\"clientMutationId\" in (body as Record<string, unknown>))) throw new Error(\"validation_error\");\n    return ok(await pauseTimer(params.id, body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "b2bb89b85744e6d0721dc5224feb50e03ed740cf00b6a0219b36f9bfb9ed92b2",
+      "anchorEnd": 2019,
       "anchorFile": "src/app/api/timers/[id]/pause/route.ts",
-      "anchorStart": 150,
+      "anchorStart": 309,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1006,11 +1261,11 @@
       "sidecarPath": "src/app/api/timers/[id]/pause/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n      if (typeof body !== \"object\" || body === null || Array.isArray(body) || !(\"clientMutationId\" in body)) {\n        throw new Error(\"validation_error\");\n      }\n    }\n    return ok(await resumeTimer(params.id, body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "47601a1a83464d8ace0e8ea46492e40732477837cd68bd20c417545d1c663c65",
-      "anchorEnd": 737,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try { body = JSON.parse(text) as unknown; } catch { throw new Error(\"validation_error\"); }\n      if (!body || typeof body !== \"object\" || Array.isArray(body)) throw new Error(\"validation_error\");\n    }\n    operationId = typeof body === \"object\" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).operationId : undefined;\n    const input = { ...(body as Record<string, unknown>), activityId: params.id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityTimerBrowserOperation(\"resume\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityTimerBrowserOperation(\"resume\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityTimerBrowserOperation(\"resume\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    if (body !== undefined && !(\"clientMutationId\" in (body as Record<string, unknown>))) throw new Error(\"validation_error\");\n    return ok(await resumeTimer(params.id, body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "7ae20b7bdf2fb80d1765253a375f318102dbb83381a83064ae52bed5cd16d045",
+      "anchorEnd": 2024,
       "anchorFile": "src/app/api/timers/[id]/resume/route.ts",
-      "anchorStart": 151,
+      "anchorStart": 310,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1023,11 +1278,11 @@
       "sidecarPath": "src/app/api/timers/[id]/resume/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n      if (typeof body !== \"object\" || body === null || Array.isArray(body) || !(\"clientMutationId\" in body)) {\n        throw new Error(\"validation_error\");\n      }\n    }\n    return ok(await stopTimer(params.id, body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "03e3c72340c6bd8fc6d0d8c117fef261d7e1da0d3293fb5f3d81b206b1388a66",
-      "anchorEnd": 733,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try { body = JSON.parse(text) as unknown; } catch { throw new Error(\"validation_error\"); }\n      if (!body || typeof body !== \"object\" || Array.isArray(body)) throw new Error(\"validation_error\");\n    }\n    operationId = typeof body === \"object\" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).operationId : undefined;\n    const input = { ...(body as Record<string, unknown>), activityId: params.id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityTimerBrowserOperation(\"stop\", input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityTimerBrowserOperation(\"stop\", input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityTimerBrowserOperation(\"stop\", input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    if (body !== undefined && !(\"clientMutationId\" in (body as Record<string, unknown>))) throw new Error(\"validation_error\");\n    return ok(await stopTimer(params.id, body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "41e91a733258743c8f8cf5e0da8816ddba4d48fe2015075b5ebf7cecd6c07f3b",
+      "anchorEnd": 2014,
       "anchorFile": "src/app/api/timers/[id]/stop/route.ts",
-      "anchorStart": 149,
+      "anchorStart": 308,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1057,11 +1312,11 @@
       "sidecarPath": "src/components/actions/accept-invite-button.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/timers/${id}/stop`, {\n          method: \"POST\",\n          headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({ clientMutationId: mutationId.current })\n        })",
-      "anchorDigest": "60a1a14a3b56ef8e9eb7a4a71cbe969cbd977ceebf00a9a4e0a68ec9f6452023",
-      "anchorEnd": 652,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 765,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 450,
+      "anchorStart": 700,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1074,11 +1329,11 @@
       "sidecarPath": "src/components/actions/activity-actions.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/timers/${id}/pause`, {\n          method: \"POST\",\n          headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({ clientMutationId: mutationId.current })\n        })",
-      "anchorDigest": "c8d1fa915a912bc1c94df1239f7aae81bbfc701e430be2390f067a46f57a01e4",
-      "anchorEnd": 1320,
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 2991,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 1117,
+      "anchorStart": 2921,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -1091,11 +1346,11 @@
       "sidecarPath": "src/components/actions/activity-actions.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/timers/${id}/resume`, {\n          method: \"POST\",\n          headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({ clientMutationId: mutationId.current })\n        })",
-      "anchorDigest": "15eeac734ab1d8e908efe2b86e6051b32e1986e30b775fb09741427d70a34067",
-      "anchorEnd": 1985,
+      "anchorBytes": "fetch(`${endpoint}?issue=1`, {\n          method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n        })",
+      "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
+      "anchorEnd": 4251,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 1781,
+      "anchorStart": 4110,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -1108,11 +1363,11 @@
       "sidecarPath": "src/components/actions/activity-actions.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/activities/undo-last\", {\n          method: \"POST\",\n          headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({ clientMutationId: mutationId.current })\n        })",
-      "anchorDigest": "077717b558263509de06b8bbe4d2f267bb7d59a226b054dff93f2f8b4fa42894",
-      "anchorEnd": 2627,
+      "anchorBytes": "fetch(endpoint, {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId })\n      })",
+      "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
+      "anchorEnd": 4958,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 2422,
+      "anchorStart": 4805,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -1125,11 +1380,11 @@
       "sidecarPath": "src/components/actions/activity-actions.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/babies/${babyId}/${action}`, {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: next.operationId })\n      })",
-      "anchorDigest": "f752c5ea21324feac615a6efb1bae73214a05902e888dd8fc2d93a6a79362170",
-      "anchorEnd": 2583,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 805,
       "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
-      "anchorStart": 2387,
+      "anchorStart": 740,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1142,11 +1397,62 @@
       "sidecarPath": "src/components/actions/baby-lifecycle-button.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/activities/${encodeURIComponent(id)}`, {\n        method: \"DELETE\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ clientMutationId: mutationId.current })\n      })",
-      "anchorDigest": "523c7dafaa818cd67b14b11d82a244c530ac13f05cbfb54d47726ae410d15282",
-      "anchorEnd": 1263,
+      "anchorBytes": "fetch(`/api/browser-operations/${next.operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "68b018460d80a91f81a3f0b688dbbb64912f333a175d5da865509714a3d428ed",
+      "anchorEnd": 3274,
+      "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+      "anchorStart": 3199,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/actions/baby-lifecycle-button.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/actions/baby-lifecycle-button.tsx",
+      "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+      "sidecarPath": "src/components/actions/baby-lifecycle-button.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/babies/${babyId}/${action}?issue=1`, {\n          method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n        })",
+      "anchorDigest": "c2fade1e19f4ffe335be76dc8f6db1b15187aba54f778a8610ca403c6ff35a3c",
+      "anchorEnd": 4631,
+      "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+      "anchorStart": 4470,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/actions/baby-lifecycle-button.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/actions/baby-lifecycle-button.tsx",
+      "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+      "sidecarPath": "src/components/actions/baby-lifecycle-button.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/babies/${babyId}/${next.action}`, {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: next.operationId })\n      })",
+      "anchorDigest": "f00ff85c9516e8b42a10071a9dcf1b59837a17b74595700d868af6b72b91b8c6",
+      "anchorEnd": 5628,
+      "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+      "anchorStart": 5427,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/actions/baby-lifecycle-button.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/actions/baby-lifecycle-button.tsx",
+      "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+      "sidecarPath": "src/components/actions/baby-lifecycle-button.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 965,
       "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-      "anchorStart": 1048,
+      "anchorStart": 900,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1154,6 +1460,57 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/actions/confirmed-activity-delete.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
+      "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+      "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${current}`, { cache: \"no-store\" })",
+      "anchorDigest": "502e6e619bb789d0f922219c1e8244d4097f05c081f0fbd1b2b47b97500135ff",
+      "anchorEnd": 3969,
+      "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+      "anchorStart": 3903,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/actions/confirmed-activity-delete.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
+      "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+      "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`${target}?issue=1`, {\n          method: \"DELETE\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n        })",
+      "anchorDigest": "7527928970a5790d8524ff83ec97d40552755c28bf5fb2056dd27e957976fef3",
+      "anchorEnd": 5105,
+      "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+      "anchorStart": 4964,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/actions/confirmed-activity-delete.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
+      "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+      "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(target, {\n        method: \"DELETE\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: current })\n      })",
+      "anchorDigest": "bc84519e43d1ba89b830fdd377b37af4d862c6e11a589fdf3e6d5a34366a2984",
+      "anchorEnd": 5784,
+      "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+      "anchorStart": 5622,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/actions/confirmed-activity-delete.tsx:global_fetch:fetch[4]:globalThis.fetch",
       "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
@@ -1227,11 +1584,62 @@
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
     },
     {
+      "anchorBytes": "fetch(`${prefix}/${operation.operationId}`, { method: \"DELETE\" })",
+      "anchorDigest": "f57c190b751a91663e583a620613ebefd0557569b5df47d69bd55ed153824423",
+      "anchorEnd": 3750,
+      "anchorFile": "src/components/browser-operation-recovery.tsx",
+      "anchorStart": 3685,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/browser-operation-recovery.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/browser-operation-recovery.tsx",
+      "ownerModule": "src/components/browser-operation-recovery.tsx",
+      "sidecarPath": "src/components/browser-operation-recovery.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 946,
+      "anchorFile": "src/components/calendar-event-submission.tsx",
+      "anchorStart": 881,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/calendar-event-submission.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/calendar-event-submission.tsx",
+      "ownerModule": "src/components/calendar-event-submission.tsx",
+      "sidecarPath": "src/components/calendar-event-submission.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 3385,
+      "anchorFile": "src/components/calendar-event-submission.tsx",
+      "anchorStart": 3315,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/calendar-event-submission.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/calendar-event-submission.tsx",
+      "ownerModule": "src/components/calendar-event-submission.tsx",
+      "sidecarPath": "src/components/calendar-event-submission.operation.ts"
+    },
+    {
       "anchorBytes": "createCalendarEventAction(formData)",
       "anchorDigest": "d1a3d4a61b3e52a725f0668c540fc02bdeeee63a9666cee89fe1ec396b716037",
-      "anchorEnd": 2606,
+      "anchorEnd": 6384,
       "anchorFile": "src/components/calendar-event-submission.tsx",
-      "anchorStart": 2571,
+      "anchorStart": 6349,
       "binding": {
         "kind": "server_action",
         "symbol": "createCalendarEventAction[1]",
@@ -1244,11 +1652,28 @@
       "sidecarPath": "src/components/calendar-event-submission.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/dashboard/warnings/dismiss\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          operationId,\n          babyId: warning.babyId,\n          type: warning.type,\n          fingerprint: warning.fingerprint\n        })\n      })",
-      "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
-      "anchorEnd": 1749,
+      "anchorBytes": "issueCalendarEventAction(formData)",
+      "anchorDigest": "b37c9a7b44c78ff42f15f83b1e7edaf44a6df84ecfe7aa27419b0218efa29ec7",
+      "anchorEnd": 5914,
+      "anchorFile": "src/components/calendar-event-submission.tsx",
+      "anchorStart": 5880,
+      "binding": {
+        "kind": "server_action",
+        "symbol": "issueCalendarEventAction[1]",
+        "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/calendar-event-submission.tsx:server_action:issueCalendarEventAction[1]:src/app/app/calendar/actions.ts#issueCalendarEventAction",
+      "ownerId": "client_binding:src/components/calendar-event-submission.tsx",
+      "ownerModule": "src/components/calendar-event-submission.tsx",
+      "sidecarPath": "src/components/calendar-event-submission.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 1022,
       "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
-      "anchorStart": 1445,
+      "anchorStart": 957,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1261,11 +1686,62 @@
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
     },
     {
+      "anchorBytes": "fetch(\"/api/dashboard/warnings/dismiss/issue\", {\n    method: \"POST\",\n    headers: { \"content-type\": \"application/json\" },\n    body: JSON.stringify({ babyId: warning.babyId, type: warning.type, fingerprint: warning.fingerprint })\n  })",
+      "anchorDigest": "440b1873192786cbeb3cfde4d110716ccc05ad8d98773f39f95b57247c85b385",
+      "anchorEnd": 2279,
+      "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+      "anchorStart": 2046,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/dashboard/dashboard-warnings.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
+      "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+      "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 3644,
+      "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+      "anchorStart": 3574,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/dashboard/dashboard-warnings.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
+      "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+      "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/dashboard/warnings/dismiss\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          operationId,\n          babyId: warning.babyId,\n          type: warning.type,\n          fingerprint: warning.fingerprint\n        })\n      })",
+      "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
+      "anchorEnd": 6481,
+      "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+      "anchorStart": 6177,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/dashboard/dashboard-warnings.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
+      "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+      "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 3329,
+      "anchorEnd": 7530,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 3314,
+      "anchorStart": 7515,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -1278,11 +1754,11 @@
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(activityId ? `/api/activities/${activityId}` : \"/api/activities\", {\n        method: activityId ? \"PATCH\" : \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify(body)\n      })",
-      "anchorDigest": "64597b0cc1f0c71f336283b1baa13d98036a7ccc0ca90f5f6def62f88db5ec5a",
-      "anchorEnd": 2474,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 1582,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 2253,
+      "anchorStart": 1517,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1295,28 +1771,79 @@
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
     },
     {
-      "anchorBytes": "action={submit}",
-      "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 838,
-      "anchorFile": "src/components/forms/baby-form.tsx",
-      "anchorStart": 823,
+      "anchorBytes": "fetch(`/api/browser-operations/${currentOperationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
+      "anchorEnd": 4497,
+      "anchorFile": "src/components/forms/activity-form.tsx",
+      "anchorStart": 4420,
       "binding": {
-        "kind": "form_action",
-        "symbol": "submit",
-        "target": "src/components/forms/baby-form.tsx#submit"
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
       },
       "coverage": "structural_only",
-      "id": "client_binding:src/components/forms/baby-form.tsx:form_action:submit:src/components/forms/baby-form.tsx#submit",
+      "id": "client_binding:src/components/forms/activity-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/activity-form.tsx",
+      "ownerModule": "src/components/forms/activity-form.tsx",
+      "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(endpoint, {\n          method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ babyId: body.babyId })\n        })",
+      "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
+      "anchorEnd": 5776,
+      "anchorFile": "src/components/forms/activity-form.tsx",
+      "anchorStart": 5604,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/activity-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/activity-form.tsx",
+      "ownerModule": "src/components/forms/activity-form.tsx",
+      "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(activityId ? `/api/activities/${activityId}` : \"/api/activities\", {\n        method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(body)\n      })",
+      "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
+      "anchorEnd": 6529,
+      "anchorFile": "src/components/forms/activity-form.tsx",
+      "anchorStart": 6324,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/activity-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/activity-form.tsx",
+      "ownerModule": "src/components/forms/activity-form.tsx",
+      "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "anchorBytes": "action={onSubmit}",
+      "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
+      "anchorEnd": 4730,
+      "anchorFile": "src/components/forms/baby-form.tsx",
+      "anchorStart": 4713,
+      "binding": {
+        "kind": "form_action",
+        "symbol": "onSubmit",
+        "target": "src/components/forms/baby-form.tsx#onSubmit"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/baby-form.tsx:form_action:onSubmit:src/components/forms/baby-form.tsx#onSubmit",
       "ownerId": "client_binding:src/components/forms/baby-form.tsx",
       "ownerModule": "src/components/forms/baby-form.tsx",
       "sidecarPath": "src/components/forms/baby-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/babies\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify(Object.fromEntries(formData))\n    })",
-      "anchorDigest": "0240576f9feb3735778d1ae643427d76abfb8c3b1919bf4997b3d03e6ac8d9e2",
-      "anchorEnd": 557,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 849,
       "anchorFile": "src/components/forms/baby-form.tsx",
-      "anchorStart": 394,
+      "anchorStart": 784,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1329,11 +1856,62 @@
       "sidecarPath": "src/components/forms/baby-form.operation.ts"
     },
     {
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 2176,
+      "anchorFile": "src/components/forms/baby-form.tsx",
+      "anchorStart": 2106,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/baby-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/baby-form.tsx",
+      "ownerModule": "src/components/forms/baby-form.tsx",
+      "sidecarPath": "src/components/forms/baby-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/babies/issue\", {\n          method: \"POST\",\n          headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({})\n        })",
+      "anchorDigest": "623083c05e902701fcc2d9a898fe74e81262a58024645c95d450ab76b0454d3a",
+      "anchorEnd": 3164,
+      "anchorFile": "src/components/forms/baby-form.tsx",
+      "anchorStart": 3005,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/baby-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/baby-form.tsx",
+      "ownerModule": "src/components/forms/baby-form.tsx",
+      "sidecarPath": "src/components/forms/baby-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/babies\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ ...Object.fromEntries(formData), operationId })\n      })",
+      "anchorDigest": "0cdcd1b9aba2c1f7294dee435c16c6d1dd2590e55c23cd68e0efb6400eef0484",
+      "anchorEnd": 3912,
+      "anchorFile": "src/components/forms/baby-form.tsx",
+      "anchorStart": 3721,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/baby-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/baby-form.tsx",
+      "ownerModule": "src/components/forms/baby-form.tsx",
+      "sidecarPath": "src/components/forms/baby-form.operation.ts"
+    },
+    {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 927,
+      "anchorEnd": 5955,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 912,
+      "anchorStart": 5940,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -1346,11 +1924,11 @@
       "sidecarPath": "src/components/forms/invite-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/invites\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify(Object.fromEntries(formData))\n    })",
-      "anchorDigest": "8aeab697f910583047fec05f233e41a2f9adfdc98a189d1eca897287ee7cf521",
-      "anchorEnd": 669,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 801,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 505,
+      "anchorStart": 736,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1358,6 +1936,57 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/forms/invite-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/invite-form.tsx",
+      "ownerModule": "src/components/forms/invite-form.tsx",
+      "sidecarPath": "src/components/forms/invite-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${currentOperationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
+      "anchorEnd": 2517,
+      "anchorFile": "src/components/forms/invite-form.tsx",
+      "anchorStart": 2440,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/invite-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/invite-form.tsx",
+      "ownerModule": "src/components/forms/invite-form.tsx",
+      "sidecarPath": "src/components/forms/invite-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/invites?issue=1\", {\n          method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(input)\n        })",
+      "anchorDigest": "e84ac0b9d27e7351ee448775db45ab9e1dda386542e6da317f13ea79a205bc26",
+      "anchorEnd": 3975,
+      "anchorFile": "src/components/forms/invite-form.tsx",
+      "anchorStart": 3830,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/invite-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/invite-form.tsx",
+      "ownerModule": "src/components/forms/invite-form.tsx",
+      "sidecarPath": "src/components/forms/invite-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/invites\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ ...input, operationId: currentOperationId })\n      })",
+      "anchorDigest": "b928837e232b2bc92dadc06c13c466ccabde700b3d02cf8a56eee3a20d2f6b66",
+      "anchorEnd": 4572,
+      "anchorFile": "src/components/forms/invite-form.tsx",
+      "anchorStart": 4383,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/invite-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
       "ownerId": "client_binding:src/components/forms/invite-form.tsx",
       "ownerModule": "src/components/forms/invite-form.tsx",
       "sidecarPath": "src/components/forms/invite-form.operation.ts"
@@ -1397,11 +2026,96 @@
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/settings/appearance\", {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ accentTheme: selected })\n    })",
-      "anchorDigest": "741e2c1af49bebc36e40b0b1fd9604359e8befb2d45696ddfea84270315d51c9",
-      "anchorEnd": 851,
+      "anchorBytes": "fetch(\"/api/household-selection\", {\n      method: \"POST\",\n      body: formData\n    })",
+      "anchorDigest": "38670c6b403554fa95aebd74054409899a865ad6633fc205dcc92d0496128247",
+      "anchorEnd": 1005,
+      "anchorFile": "src/components/household-selection-control.tsx",
+      "anchorStart": 920,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/household-selection-control.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/household-selection-control.tsx",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "8c160fa57e73ca5990932149bf8f9a2be47bb2c34437d02ed517954c43131ca9",
+      "anchorEnd": 1347,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 1274,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/account/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "214306fc794dd87b9487b5c3145c5bc87d3f5dd3f6d62f8d6e53f6457ac74f95",
+      "anchorEnd": 3774,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 3696,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/appearance\", {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId, appearanceMode: selected })\n    })",
+      "anchorDigest": "03605abe4df6885295142f4bfdc6938938d41ee00d58810e0ff80d8655a78346",
+      "anchorEnd": 4254,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 4065,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/appearance/issue\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({})\n      })",
+      "anchorDigest": "14ea6c52e1f895b4217cf7cd7a0ceabbe0095864fe12229df6dfb43a3b3ebc75",
+      "anchorEnd": 5163,
+      "anchorFile": "src/components/personal-appearance-form.tsx",
+      "anchorStart": 5000,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/personal-appearance-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 974,
       "anchorFile": "src/components/settings/appearance-form.tsx",
-      "anchorStart": 677,
+      "anchorStart": 909,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1409,6 +2123,57 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
+      "ownerModule": "src/components/settings/appearance-form.tsx",
+      "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${id}`, { cache: \"no-store\" })",
+      "anchorDigest": "5329d1c1818c5445a435c219486012197fdd77c785f7cd03d2d800afd7e31627",
+      "anchorEnd": 2146,
+      "anchorFile": "src/components/settings/appearance-form.tsx",
+      "anchorStart": 2085,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
+      "ownerModule": "src/components/settings/appearance-form.tsx",
+      "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/appearance\", {\n      method: \"PATCH\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ operationId: id, accentTheme: selected })\n    })",
+      "anchorDigest": "8d491ddbe6088366a7f6c70e72da0d863d9d724cce634fa133c3b715263e09a2",
+      "anchorEnd": 2481,
+      "anchorFile": "src/components/settings/appearance-form.tsx",
+      "anchorStart": 2302,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
+      "ownerModule": "src/components/settings/appearance-form.tsx",
+      "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/appearance/issue\", {\n        method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n      })",
+      "anchorDigest": "9a1d3665c3043ab8bcb7788cc18d57aae1313862b5dfe63b0f1f6d9ec7cc8e0e",
+      "anchorEnd": 4730,
+      "anchorFile": "src/components/settings/appearance-form.tsx",
+      "anchorStart": 4582,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/appearance-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/appearance-form.tsx",
       "ownerModule": "src/components/settings/appearance-form.tsx",
       "sidecarPath": "src/components/settings/appearance-form.operation.ts"
@@ -1584,11 +2349,11 @@
       "sidecarPath": "src/components/settings/leave-household-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/members/${memberId}`, {\n      method: \"PATCH\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ role: formData.get(\"role\") })\n    })",
-      "anchorDigest": "abf207629969608221553acfa3badfd218f5bb359c237168db3edbbf8f4daf19",
-      "anchorEnd": 1334,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 1128,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 1155,
+      "anchorStart": 1063,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1601,11 +2366,11 @@
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/members/${member.id}/${suspending ? \"suspend\" : \"restore\"}`, {\n      method: \"POST\"\n    })",
-      "anchorDigest": "fcbc7f1f18412a867a32d8c952400445e1a445c8c7863722c9c27d0774e78f1d",
-      "anchorEnd": 1876,
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 3602,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 1774,
+      "anchorStart": 3532,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -1618,11 +2383,11 @@
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/members/${member.id}`, { method: \"DELETE\" })",
-      "anchorDigest": "9494083d26e18eea9904577ea414479f7d3025aa994e23e6b6cd0eba2024f9f5",
-      "anchorEnd": 2301,
+      "anchorBytes": "fetch(`${endpoint}?issue=1`, {\n          method, headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload ?? {})\n        })",
+      "anchorDigest": "08064cb09f1af36aaf1f4f246cc3d133d06aecf2a41005e26d8273ea6949a208",
+      "anchorEnd": 5037,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 2245,
+      "anchorStart": 4893,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -1635,11 +2400,11 @@
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/invites/${invite.id}/revoke`, { method: \"POST\" })",
-      "anchorDigest": "28a831422bffaa9ffc8ded9a92eaeefe9f9f9f8e974bb1e7f3006913a48a6d73",
-      "anchorEnd": 2652,
+      "anchorBytes": "fetch(endpoint, {\n        method,\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId, ...payload })\n      })",
+      "anchorDigest": "31f34aaeb1ccb26601bc9f406a0445bde7f924e214b3cadf80fd407bdc74202e",
+      "anchorEnd": 5778,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 2591,
+      "anchorStart": 5621,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -1652,28 +2417,11 @@
       "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/invites/revoke-all\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ acknowledgement: formData.get(\"acknowledgement\") })\n    })",
-      "anchorDigest": "2a26015a5a1f2e28c3f553a2be83dd6dad69a52a6669599ff532818d9aede997",
-      "anchorEnd": 3148,
-      "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 2949,
-      "binding": {
-        "kind": "global_fetch",
-        "symbol": "fetch[5]",
-        "target": "globalThis.fetch"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/member-access-manager.tsx:global_fetch:fetch[5]:globalThis.fetch",
-      "ownerId": "client_binding:src/components/settings/member-access-manager.tsx",
-      "ownerModule": "src/components/settings/member-access-manager.tsx",
-      "sidecarPath": "src/components/settings/member-access-manager.operation.ts"
-    },
-    {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 1184,
+      "anchorEnd": 6417,
       "anchorFile": "src/components/settings/notification-preference-form.tsx",
-      "anchorStart": 1169,
+      "anchorStart": 6402,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -1686,11 +2434,11 @@
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/notifications/preferences\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({\n        babyId: formData.get(\"babyId\") || undefined,\n        timerOverdue: formData.get(\"timerOverdue\") === \"on\",\n        activityCreated: formData.get(\"activityCreated\") === \"on\",\n        reminders: formData.get(\"reminders\") === \"on\",\n        quietHoursStart: formData.get(\"quietHoursStart\") || undefined,\n        quietHoursEnd: formData.get(\"quietHoursEnd\") || undefined\n      })\n    })",
-      "anchorDigest": "8627d3eda1b65b71acff2b74686448b2aeac02c6019f56aafc69c01231534e26",
-      "anchorEnd": 997,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 896,
       "anchorFile": "src/components/settings/notification-preference-form.tsx",
-      "anchorStart": 461,
+      "anchorStart": 831,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1698,6 +2446,57 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/notification-preference-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
+      "ownerModule": "src/components/settings/notification-preference-form.tsx",
+      "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/notifications/preferences\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({\n        operationId: id,\n        externalDeliveryEnabled: formData.get(\"externalDeliveryEnabled\") === \"on\",\n        babyScope: formData.get(\"babyScope\") === \"selected\" ? { mode: \"selected\", babyIds } : { mode: \"all\" },\n        categories: [\"timer_overdue\", \"activity_created\", \"reminder_due\"].filter((value) => formData.get(value) === \"on\"),\n        channels: formData.get(\"browser_push\") === \"on\" ? [\"browser_push\"] : [],\n        quietHoursStart: formData.get(\"quietHoursStart\") || undefined,\n        quietHoursEnd: formData.get(\"quietHoursEnd\") || undefined,\n        interruptionLevel: formData.get(\"interruptionLevel\")\n      })\n    })",
+      "anchorDigest": "8e6589ca2d19fa4ad2ecfc5c1029f07ba02d490fe885c0dd77410f1ad8117af8",
+      "anchorEnd": 2967,
+      "anchorFile": "src/components/settings/notification-preference-form.tsx",
+      "anchorStart": 2182,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/notification-preference-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
+      "ownerModule": "src/components/settings/notification-preference-form.tsx",
+      "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
+      "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+      "anchorEnd": 4289,
+      "anchorFile": "src/components/settings/notification-preference-form.tsx",
+      "anchorStart": 4222,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/notification-preference-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
+      "ownerModule": "src/components/settings/notification-preference-form.tsx",
+      "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/notifications/preferences/issue\", {\n        method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n      })",
+      "anchorDigest": "03a9a9415149cb9444ac32fac10560c6b7924e665ab8b0b8e769994640b7b56a",
+      "anchorEnd": 5519,
+      "anchorFile": "src/components/settings/notification-preference-form.tsx",
+      "anchorStart": 5365,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/notification-preference-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
       "ownerModule": "src/components/settings/notification-preference-form.tsx",
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
@@ -1892,9 +2691,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 1861,
+      "anchorEnd": 5898,
       "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-      "anchorStart": 1846,
+      "anchorStart": 5883,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -1907,11 +2706,11 @@
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/settings/units\", {\n        method: \"PATCH\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          volume: formData.get(\"volume\"),\n          weight: formData.get(\"weight\"),\n          length: formData.get(\"length\"),\n          temperature: formData.get(\"temperature\"),\n          medicineUnits: itemUnits(formData, \"medicine\", medicineNames),\n          supplementUnits: itemUnits(formData, \"supplement\", supplementNames)\n        })\n      })",
-      "anchorDigest": "f3b24ea3361051639e6c7c143e07236f3c7aecb8fff122a617fef1648b9de558",
-      "anchorEnd": 1272,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 974,
       "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-      "anchorStart": 780,
+      "anchorStart": 909,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -1919,6 +2718,57 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+      "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/units\", {\n      method: \"PATCH\", headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId: id, volume: formData.get(\"volume\"), weight: formData.get(\"weight\"), length: formData.get(\"length\"), temperature: formData.get(\"temperature\"), medicineUnits: itemUnits(formData, \"medicine\", medicineNames), supplementUnits: itemUnits(formData, \"supplement\", supplementNames) })\n    })",
+      "anchorDigest": "a5628fe2b82bd1dbb44d2e45f74ec40c174cb893dceefc1655976eb2539e1dbe",
+      "anchorEnd": 2616,
+      "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+      "anchorStart": 2189,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+      "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
+      "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+      "anchorEnd": 3875,
+      "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+      "anchorStart": 3808,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
+      "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+      "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/units/issue\", {\n        method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n      })",
+      "anchorDigest": "30d7e562933de6152d6ccf6c46ab8131e661955bd01ca76d1437fff5f2ed6503",
+      "anchorEnd": 5020,
+      "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+      "anchorStart": 4877,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/unit-preferences-form.tsx:global_fetch:fetch[4]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/unit-preferences-form.tsx",
       "ownerModule": "src/components/settings/unit-preferences-form.tsx",
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
@@ -1943,9 +2793,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler",
       "anchorDigest": "f1c4d682bbc4d40fcbdeda2e11b76dc78b52ef556523385fc564eadc56fecf7e",
-      "anchorEnd": 124,
+      "anchorEnd": 131,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 95,
+      "anchorStart": 102,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startAutomatedBackupScheduler",
@@ -1958,11 +2808,28 @@
       "sidecarPath": "src/instrumentation.operation.ts"
     },
     {
+      "anchorBytes": "startBrowserOperationRetentionScheduler",
+      "anchorDigest": "939653699352c733103de51a00c789a20c350e97bd86313ce79aec0402f44914",
+      "anchorEnd": 264,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 225,
+      "binding": {
+        "kind": "worker_dynamic_import",
+        "symbol": "startBrowserOperationRetentionScheduler",
+        "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_dynamic_import:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
       "anchorBytes": "startIntegrityScheduler",
       "anchorDigest": "1717bc9d903bf11d59fc23f79d07eac0ae893ae39fe128decd23ed185e24548e",
-      "anchorEnd": 153,
+      "anchorEnd": 166,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 130,
+      "anchorStart": 143,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startIntegrityScheduler",
@@ -1977,9 +2844,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler",
       "anchorDigest": "bd7dfaa9223fc1679c9fac61f1adcda2fafb6ecd65f665a5b6f3bf4ffa4e117c",
-      "anchorEnd": 194,
+      "anchorEnd": 213,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 159,
+      "anchorStart": 178,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -1994,9 +2861,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler()",
       "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
-      "anchorEnd": 440,
+      "anchorEnd": 586,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 409,
+      "anchorStart": 555,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startAutomatedBackupScheduler",
@@ -2009,11 +2876,28 @@
       "sidecarPath": "src/instrumentation.operation.ts"
     },
     {
+      "anchorBytes": "startBrowserOperationRetentionScheduler()",
+      "anchorDigest": "8a6c4bc59c0a9ace67575338516ce74f1ddefee1604c8358de407952b119157c",
+      "anchorEnd": 713,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 672,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startBrowserOperationRetentionScheduler",
+        "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_start_call:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
       "anchorBytes": "startIntegrityScheduler()",
       "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
-      "anchorEnd": 467,
+      "anchorEnd": 619,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 442,
+      "anchorStart": 594,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startIntegrityScheduler",
@@ -2028,9 +2912,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler()",
       "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
-      "anchorEnd": 506,
+      "anchorEnd": 664,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 469,
+      "anchorStart": 627,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -2451,11 +3335,11 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     },
     {
-      "anchorBytes": "export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {\n  const input = Object.fromEntries(formData.entries());\n  try {\n    const issued = await issueCalendarEventBrowserOperation(input);\n    if (issued.status === \"open\") {\n      const submitted = await submitCalendarEventBrowserOperation(input);\n      return submitted.status === \"open\"\n        ? { status: \"stale\", operationId: submitted.operationId }\n        : toActionResult(submitted);\n    }\n    return toActionResult(issued);\n  } catch (error) {\n    const failure = browserOperationFailureResult(input.operationId, error);\n    if (failure) {\n      return failure.status === \"open\"\n        ? { status: \"stale\", operationId: failure.operationId }\n        : toActionResult(failure);\n    }\n    throw error;\n  }\n}",
-      "anchorDigest": "7878f7e0a7a3c4c833182555317a8c2728fe2f7bda2236e588d939cc703bb428",
-      "anchorEnd": 1235,
+      "anchorBytes": "export async function createCalendarEventAction(formData: FormData): Promise<CalendarActionResult> {\n  const input = calendarFormInput(formData);\n  if (!input.operationId) {\n    const event = await createCalendarEvent(input);\n    return { status: \"completed\", operationId: \"\", eventId: event.id };\n  }\n  try {\n    const issued = await issueCalendarEventBrowserOperation(input);\n    if (issued.status === \"open\" || issued.status === \"prepared\") {\n      const submitted = await submitCalendarEventBrowserOperation(input);\n      return submitted.status === \"open\" || submitted.status === \"prepared\"\n        ? { status: \"pending\", operationId: submitted.operationId }\n        : toActionResult(submitted);\n    }\n    return toActionResult(issued);\n  } catch (error) {\n    const failure = browserOperationFailureResult(input.operationId, error);\n    if (failure) {\n      return failure.status === \"open\"\n        ? { status: \"stale\", operationId: failure.operationId, code: \"stale_context\" }\n        : toActionResult(failure);\n    }\n    throw error;\n  }\n}",
+      "anchorDigest": "25f01de0157fd57b225d7eadb70c27a4d8d7d2a3fa06a9424b7e7ff7542561e3",
+      "anchorEnd": 1916,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 425,
+      "anchorStart": 869,
       "binding": {
         "kind": "server_action",
         "symbol": "createCalendarEventAction",
@@ -2466,6 +3350,57 @@
       "ownerId": "server_action:src/app/app/calendar/actions.ts",
       "ownerModule": "src/app/app/calendar/actions.ts",
       "sidecarPath": "src/app/app/calendar/actions.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function issueCalendarEventAction(formData: FormData): Promise<{ status: string; operationId: string }> {\n  const input = calendarFormInput(formData);\n  const result = await issueCalendarEventBrowserOperation(input);\n  return { status: result.status, operationId: result.operationId };\n}",
+      "anchorDigest": "12a9ca9d25362f3a08587126289b11c750ef8e5690a806b06378bbf1bb714fa9",
+      "anchorEnd": 867,
+      "anchorFile": "src/app/app/calendar/actions.ts",
+      "anchorStart": 567,
+      "binding": {
+        "kind": "server_action",
+        "symbol": "issueCalendarEventAction",
+        "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
+      },
+      "coverage": "structural_only",
+      "id": "server_action:src/app/app/calendar/actions.ts:server_action:issueCalendarEventAction:src/app/app/calendar/actions.ts#issueCalendarEventAction",
+      "ownerId": "server_action:src/app/app/calendar/actions.ts",
+      "ownerModule": "src/app/app/calendar/actions.ts",
+      "sidecarPath": "src/app/app/calendar/actions.operation.ts"
+    },
+    {
+      "anchorBytes": "getAccountAppearance",
+      "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
+      "anchorEnd": 325,
+      "anchorFile": "src/app/account/appearance/page.tsx",
+      "anchorStart": 305,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getAccountAppearance",
+        "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/appearance/page.tsx:server_value_import:getAccountAppearance:src/server/services/account-appearance.ts#getAccountAppearance",
+      "ownerId": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 263,
+      "anchorFile": "src/app/account/appearance/page.tsx",
+      "anchorStart": 248,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/appearance/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
     },
     {
       "anchorBytes": "getActivityForEdit",
@@ -2623,9 +3558,9 @@
     {
       "anchorBytes": "browserOperationFailureResult",
       "anchorDigest": "41543e6978fa330d5755442da137138a37a6c7a7911f29f7c244ae978eadbb93",
-      "anchorEnd": 175,
+      "anchorEnd": 198,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 146,
+      "anchorStart": 169,
       "binding": {
         "kind": "server_value_import",
         "symbol": "browserOperationFailureResult",
@@ -2633,6 +3568,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/app/calendar/page.tsx:server_value_import:browserOperationFailureResult:src/server/services/browser-operations.ts#browserOperationFailureResult",
+      "ownerId": "server_loader:src/app/app/calendar/page.tsx",
+      "ownerModule": "src/app/app/calendar/page.tsx",
+      "sidecarPath": "src/app/app/calendar/page.operation.ts"
+    },
+    {
+      "anchorBytes": "createCalendarEvent",
+      "anchorDigest": "2b55a59d7405c31ac0caea390a481466757febfbebefa628ecbc1a83fdc23e1b",
+      "anchorEnd": 45,
+      "anchorFile": "src/app/app/calendar/actions.ts",
+      "anchorStart": 26,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "createCalendarEvent",
+        "target": "src/server/services/calendar.ts#createCalendarEvent"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/calendar/page.tsx:server_value_import:createCalendarEvent:src/server/services/calendar.ts#createCalendarEvent",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
@@ -2674,9 +3626,9 @@
     {
       "anchorBytes": "issueCalendarEventBrowserOperation",
       "anchorDigest": "b277667254e7c850ff4e585e7bf2c30567756ac7f72feb2c065390f706520b29",
-      "anchorEnd": 60,
+      "anchorEnd": 83,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 26,
+      "anchorStart": 49,
       "binding": {
         "kind": "server_value_import",
         "symbol": "issueCalendarEventBrowserOperation",
@@ -2708,9 +3660,9 @@
     {
       "anchorBytes": "submitCalendarEventBrowserOperation",
       "anchorDigest": "32d4182f066e7f5fb683fe7e437e7d3f3561217850cca132d4a9615d094e1204",
-      "anchorEnd": 99,
+      "anchorEnd": 122,
       "anchorFile": "src/app/app/calendar/actions.ts",
-      "anchorStart": 64,
+      "anchorStart": 87,
       "binding": {
         "kind": "server_value_import",
         "symbol": "submitCalendarEventBrowserOperation",
@@ -2774,18 +3726,35 @@
       "sidecarPath": "src/app/app/history/page.operation.ts"
     },
     {
-      "anchorBytes": "getCurrentAppearanceTheme",
-      "anchorDigest": "ffb62ca5ea8d1f58e951f645683231d79c290297c95b65c2188918f06ddd3c9e",
-      "anchorEnd": 34,
+      "anchorBytes": "getHouseholdSelectionState",
+      "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
+      "anchorEnd": 178,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 9,
+      "anchorStart": 152,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "getCurrentAppearanceTheme",
-        "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+        "symbol": "getHouseholdSelectionState",
+        "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/layout.tsx:server_value_import:getCurrentAppearanceTheme:src/server/services/appearance.ts#getCurrentAppearanceTheme",
+      "id": "server_loader:src/app/app/layout.tsx:server_value_import:getHouseholdSelectionState:src/server/services/household-selection.ts#getHouseholdSelectionState",
+      "ownerId": "server_loader:src/app/app/layout.tsx",
+      "ownerModule": "src/app/app/layout.tsx",
+      "sidecarPath": "src/app/app/layout.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 110,
+      "anchorFile": "src/app/app/layout.tsx",
+      "anchorStart": 95,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/layout.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
       "ownerId": "server_loader:src/app/app/layout.tsx",
       "ownerModule": "src/app/app/layout.tsx",
       "sidecarPath": "src/app/app/layout.operation.ts"
@@ -2978,11 +3947,28 @@
       "sidecarPath": "src/app/app/reports/page.operation.ts"
     },
     {
+      "anchorBytes": "getAccountAppearance",
+      "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
+      "anchorEnd": 413,
+      "anchorFile": "src/app/app/settings/appearance/page.tsx",
+      "anchorStart": 393,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getAccountAppearance",
+        "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/appearance/page.tsx:server_value_import:getAccountAppearance:src/server/services/account-appearance.ts#getAccountAppearance",
+      "ownerId": "server_loader:src/app/app/settings/appearance/page.tsx",
+      "ownerModule": "src/app/app/settings/appearance/page.tsx",
+      "sidecarPath": "src/app/app/settings/appearance/page.operation.ts"
+    },
+    {
       "anchorBytes": "getHouseholdAppearance",
       "anchorDigest": "9ae9352945a8894a7a5c9351ed2025b37ef0af95a5e8486dcfd40910e649b7e1",
-      "anchorEnd": 264,
+      "anchorEnd": 344,
       "anchorFile": "src/app/app/settings/appearance/page.tsx",
-      "anchorStart": 242,
+      "anchorStart": 322,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdAppearance",
@@ -2997,9 +3983,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 196,
+      "anchorEnd": 276,
       "anchorFile": "src/app/app/settings/appearance/page.tsx",
-      "anchorStart": 177,
+      "anchorStart": 257,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -3235,9 +4221,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 283,
+      "anchorEnd": 275,
       "anchorFile": "src/app/app/settings/notifications/page.tsx",
-      "anchorStart": 267,
+      "anchorStart": 259,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -3250,52 +4236,52 @@
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts"
     },
     {
-      "anchorBytes": "listNotificationPreferences",
-      "anchorDigest": "a1e33fcb55fa7827754fb2c32cb462069f0bdb33e8bc8cdd89e027d5655f8d0f",
-      "anchorEnd": 359,
+      "anchorBytes": "getOwnNotificationPreference",
+      "anchorDigest": "5cf81e8d1685ffb3a223564f2a28fce40eef2775e1c39fce66e7d7f0c182f5d0",
+      "anchorEnd": 352,
       "anchorFile": "src/app/app/settings/notifications/page.tsx",
-      "anchorStart": 332,
+      "anchorStart": 324,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "listNotificationPreferences",
-        "target": "src/server/services/integrations.ts#listNotificationPreferences"
+        "symbol": "getOwnNotificationPreference",
+        "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/settings/notifications/page.tsx:server_value_import:listNotificationPreferences:src/server/services/integrations.ts#listNotificationPreferences",
+      "id": "server_loader:src/app/app/settings/notifications/page.tsx:server_value_import:getOwnNotificationPreference:src/server/services/notification-preferences.ts#getOwnNotificationPreference",
       "ownerId": "server_loader:src/app/app/settings/notifications/page.tsx",
       "ownerModule": "src/app/app/settings/notifications/page.tsx",
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts"
     },
     {
-      "anchorBytes": "requireSettingsPage",
-      "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 221,
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 217,
       "anchorFile": "src/app/app/settings/notifications/page.tsx",
       "anchorStart": 202,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "requireSettingsPage",
-        "target": "src/server/auth/page-access.ts#requireSettingsPage"
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/settings/notifications/page.tsx:server_value_import:requireSettingsPage:src/server/auth/page-access.ts#requireSettingsPage",
+      "id": "server_loader:src/app/app/settings/notifications/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
       "ownerId": "server_loader:src/app/app/settings/notifications/page.tsx",
       "ownerModule": "src/app/app/settings/notifications/page.tsx",
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts"
     },
     {
-      "anchorBytes": "getHouseholdContext",
-      "anchorDigest": "4ba370f25645cbe6cd86b20e33cdb55c0884372f34861a521c45971d8566679f",
-      "anchorEnd": 351,
+      "anchorBytes": "getEffectiveHouseholdContext",
+      "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+      "anchorEnd": 360,
       "anchorFile": "src/app/app/settings/page.tsx",
       "anchorStart": 332,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "getHouseholdContext",
-        "target": "src/server/auth/context.ts#getHouseholdContext"
+        "symbol": "getEffectiveHouseholdContext",
+        "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getHouseholdContext:src/server/auth/context.ts#getHouseholdContext",
+      "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getEffectiveHouseholdContext:src/server/auth/context.ts#getEffectiveHouseholdContext",
       "ownerId": "server_loader:src/app/app/settings/page.tsx",
       "ownerModule": "src/app/app/settings/page.tsx",
       "sidecarPath": "src/app/app/settings/page.operation.ts"
@@ -3303,9 +4289,9 @@
     {
       "anchorBytes": "isPlatformOwner",
       "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-      "anchorEnd": 465,
+      "anchorEnd": 474,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 450,
+      "anchorStart": 459,
       "binding": {
         "kind": "server_value_import",
         "symbol": "isPlatformOwner",
@@ -3320,9 +4306,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 408,
+      "anchorEnd": 417,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 393,
+      "anchorStart": 402,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -3420,6 +4406,23 @@
       "sidecarPath": "src/app/invite/[token]/page.operation.ts"
     },
     {
+      "anchorBytes": "getCurrentAuthenticatedAppearanceMode",
+      "anchorDigest": "0d1bb8bc5cd61eff21fd5a0de71d8d94c091c040a93eb0a284d959e6294f5040",
+      "anchorEnd": 473,
+      "anchorFile": "src/app/layout.tsx",
+      "anchorStart": 436,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getCurrentAuthenticatedAppearanceMode",
+        "target": "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/layout.tsx:server_value_import:getCurrentAuthenticatedAppearanceMode:src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode",
+      "ownerId": "server_loader:src/app/layout.tsx",
+      "ownerModule": "src/app/layout.tsx",
+      "sidecarPath": "src/app/layout.operation.ts"
+    },
+    {
       "anchorBytes": "extractInviteToken",
       "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
       "anchorEnd": 208,
@@ -3473,9 +4476,9 @@
     {
       "anchorBytes": "getAppRegistrationPolicy",
       "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 543,
+      "anchorEnd": 548,
       "anchorFile": "src/app/onboarding/page.tsx",
-      "anchorStart": 519,
+      "anchorStart": 524,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getAppRegistrationPolicy",
@@ -3483,23 +4486,6 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:getAppRegistrationPolicy:src/server/services/registration.ts#getAppRegistrationPolicy",
-      "ownerId": "server_loader:src/app/onboarding/page.tsx",
-      "ownerModule": "src/app/onboarding/page.tsx",
-      "sidecarPath": "src/app/onboarding/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getHouseholdHome",
-      "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 398,
-      "anchorFile": "src/app/onboarding/page.tsx",
-      "anchorStart": 382,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getHouseholdHome",
-        "target": "src/server/services/households.ts#getHouseholdHome"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:getHouseholdHome:src/server/services/households.ts#getHouseholdHome",
       "ownerId": "server_loader:src/app/onboarding/page.tsx",
       "ownerModule": "src/app/onboarding/page.tsx",
       "sidecarPath": "src/app/onboarding/page.operation.ts"
@@ -3524,9 +4510,9 @@
     {
       "anchorBytes": "isPlatformOwner",
       "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-      "anchorEnd": 462,
+      "anchorEnd": 467,
       "anchorFile": "src/app/onboarding/page.tsx",
-      "anchorStart": 447,
+      "anchorStart": 452,
       "binding": {
         "kind": "server_value_import",
         "symbol": "isPlatformOwner",
@@ -3534,6 +4520,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:isPlatformOwner:src/server/services/platform-authority.ts#isPlatformOwner",
+      "ownerId": "server_loader:src/app/onboarding/page.tsx",
+      "ownerModule": "src/app/onboarding/page.tsx",
+      "sidecarPath": "src/app/onboarding/page.operation.ts"
+    },
+    {
+      "anchorBytes": "listHouseholdsForUser",
+      "anchorDigest": "37c77ac1072b62d2108f29115d68db3d3a1af072d65bd064b80caa2ab3a33c9b",
+      "anchorEnd": 403,
+      "anchorFile": "src/app/onboarding/page.tsx",
+      "anchorStart": 382,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listHouseholdsForUser",
+        "target": "src/server/services/households.ts#listHouseholdsForUser"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:listHouseholdsForUser:src/server/services/households.ts#listHouseholdsForUser",
       "ownerId": "server_loader:src/app/onboarding/page.tsx",
       "ownerModule": "src/app/onboarding/page.tsx",
       "sidecarPath": "src/app/onboarding/page.operation.ts"
@@ -3709,6 +4712,57 @@
       "sidecarPath": "src/server/automated-backup-scheduler.operation.ts"
     },
     {
+      "anchorBytes": "setInterval(() => void tick(), pollMs)",
+      "anchorDigest": "ee263c2120094fed9d78fdab67b7429faa8bdd63f122f53ee7a53ed9041c48d3",
+      "anchorEnd": 1644,
+      "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+      "anchorStart": 1606,
+      "binding": {
+        "kind": "worker_schedule",
+        "symbol": "tick",
+        "target": "src/server/browser-operation-retention-scheduler.ts#tick"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_schedule:tick:src/server/browser-operation-retention-scheduler.ts#tick",
+      "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function startBrowserOperationRetentionScheduler() {\n  const state = schedulerState();\n  if (state.started) return state;\n  state.started = true;\n\n  const tick = async () => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runBrowserOperationRetention({ batchSize: 100 });\n      console.info(\n        \"browser_operation_retention_result\",\n        \"household\",\n        result.household.unresolvedAlertCount,\n        result.household.compactedCount,\n        result.household.deletedBindingCount,\n        \"account\",\n        result.account.unresolvedAlertCount,\n        result.account.compactedCount,\n        result.account.deletedBindingCount\n      );\n    } catch {\n      console.error(\"browser_operation_retention_tick_failed\", \"browser_operation_retention_failed\");\n    } finally {\n      state.running = false;\n    }\n  };\n\n  await tick();\n  state.timer = setInterval(() => void tick(), pollMs);\n  state.timer.unref?.();\n  return state;\n}",
+      "anchorDigest": "5d667b5b4a35e9d997dfe2ff961d427c6165097dd2d27475cd7071520d33444a",
+      "anchorEnd": 1688,
+      "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+      "anchorStart": 692,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startBrowserOperationRetentionScheduler",
+        "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_start_call:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "runBrowserOperationRetention({ batchSize: 100 })",
+      "anchorDigest": "ce98564dbc4fefd649eb704f0a82ffcf1a9bd30e078ef7bfe1ba46925742b21b",
+      "anchorEnd": 1023,
+      "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+      "anchorStart": 975,
+      "binding": {
+        "kind": "worker_tick",
+        "symbol": "tick",
+        "target": "src/server/services/browser-operation-retention.ts#runBrowserOperationRetention"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts:worker_tick:tick:src/server/services/browser-operation-retention.ts#runBrowserOperationRetention",
+      "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
       "anchorBytes": "setInterval(() => {\n    void tick();\n  }, integrityConfig.intervalHours * 60 * 60 * 1000)",
       "anchorDigest": "2257db7e57fb2cab48745afdc801353e9319dd051a3d54685ee007baeb35a63e",
       "anchorEnd": 1366,
@@ -3817,10 +4871,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "61c5e96fde896bb7a342f47c71c640a114052841c9112fe3a97616094b134dcb",
+  "semanticArtifactDigest": "66f2a792712376d8592e5ef93b0a8b519aa224c1f3b0337735d3c506a0489263",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "39d0d5e1ef89c5a911cb23aa9a02c5b1708ef551aef07fe622912790519857ab",
-  "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "7650fde12d1b07d2b2e1e79bacd3729903329feff57bf7c47162dd040624bbc9",
-  "semanticFingerprint": "7038d4d7d3ca6d93ffd9388a7956f532b73914b61beea320df6fcdfbca7746d0"
+  "semanticCoverageDigest": "2ea5769d82fa57ccc18755682d52095cbb529309cf49ab86116d0c505bb38a80",
+  "semanticDeclarationCount": 56,
+  "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
+  "semanticFingerprint": "8be805ac227d49fd5b87bf3c46bb5ecd23647aa3116967b8b31e5025147ece84"
 }

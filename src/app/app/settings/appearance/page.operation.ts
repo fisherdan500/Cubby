@@ -8,6 +8,11 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "getAccountAppearance",
+      target: "src/server/services/account-appearance.ts#getAccountAppearance"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getHouseholdAppearance",
       target: "src/server/services/appearance.ts#getHouseholdAppearance"
     },

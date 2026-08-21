@@ -1,4 +1,4 @@
-import { getHouseholdContext, requirePermission } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { describeActivity } from "@/lib/activity-format";
 import { listActivities } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
@@ -10,7 +10,7 @@ function csvValue(value: unknown) {
 }
 
 export async function activityCsv() {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "export.create");
   const activities = await listActivities();
   const headers = [

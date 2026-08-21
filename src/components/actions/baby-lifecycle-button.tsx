@@ -3,23 +3,29 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 
 type LifecycleAction = "deactivate" | "reactivate";
 type RetainedLifecycleOperation = { operationId: string; action: LifecycleAction };
+type InMemoryLifecycleOperation = RetainedLifecycleOperation & { partition: string; storageKey: string; babyId: string };
 
-function createBrowserOperationId() {
-  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-  const bytes = crypto.getRandomValues(new Uint8Array(26));
-  return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+type Partition = { version: 1; scope: "household"; partition: string };
+
+async function householdPartition(): Promise<Partition> {
+  const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
+  const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition } | null;
+  if (!response.ok || !body?.ok || !body.data || body.data.scope !== "household") throw new Error("operation_partition_unavailable");
+  return body.data;
 }
 
-function lifecycleOperationStorageKey(babyId: string) {
-  return `cubby:baby-lifecycle-operation:${babyId}`;
+function lifecycleOperationStorageKey(partition: string, babyId: string) {
+  return `cubby:baby-lifecycle-operation:${partition}:${babyId}`;
 }
 
-function readRetainedOperation(babyId: string): RetainedLifecycleOperation | undefined {
+function readRetainedOperation(storageKey: string): RetainedLifecycleOperation | undefined {
   try {
-    const raw = window.sessionStorage.getItem(lifecycleOperationStorageKey(babyId));
+    const raw = window.sessionStorage.getItem(storageKey);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw) as Partial<RetainedLifecycleOperation>;
     if (
@@ -28,7 +34,7 @@ function readRetainedOperation(babyId: string): RetainedLifecycleOperation | und
     ) {
       return { operationId: parsed.operationId, action: parsed.action };
     }
-    window.sessionStorage.removeItem(lifecycleOperationStorageKey(babyId));
+    window.sessionStorage.removeItem(storageKey);
   } catch {
     // Storage failure must not affect the request path.
   }
@@ -47,27 +53,74 @@ export function BabyLifecycleButton({
   className?: string;
 }) {
   const router = useRouter();
-  const operation = useRef<RetainedLifecycleOperation>();
+  const operation = useRef<InMemoryLifecycleOperation>();
+  const storageKeyRef = useRef<string>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   async function submit() {
-    const retained = operation.current ?? readRetainedOperation(babyId);
-    const action = retained?.action ?? (inactive ? "reactivate" : "deactivate");
+    const action = inactive ? "reactivate" : "deactivate";
     if (action === "deactivate" && !window.confirm(`Deactivate ${babyName}? Existing history will remain available.`)) return;
 
     setSubmitting(true);
     setError("");
-    const next = retained ?? { operationId: createBrowserOperationId(), action };
-    operation.current = next;
-    try {
-      window.sessionStorage.setItem(lifecycleOperationStorageKey(babyId), JSON.stringify(next));
-    } catch {
-      // A browser that blocks session storage still retains the in-memory retry.
-    }
 
     try {
-      const response = await fetch(`/api/babies/${babyId}/${action}`, {
+      const { partition } = await householdPartition();
+      const storageKey = await tabScopedBrowserOperationStorageKey(partition, lifecycleOperationStorageKey(partition, babyId));
+      storageKeyRef.current = storageKey;
+      if (operation.current && (
+        operation.current.partition !== partition ||
+        operation.current.storageKey !== storageKey ||
+        operation.current.babyId !== babyId ||
+        operation.current.action !== action
+      )) operation.current = undefined;
+      const retained = operation.current ?? readRetainedOperation(storageKey);
+      let next = retained ?? { operationId: "", action };
+      if (retained) {
+        const response = await fetch(`/api/browser-operations/${next.operationId}`, { cache: "no-store" });
+        const result = await response.json().catch(() => null) as { ok?: boolean; data?: { status?: string } } | null;
+        const status = result?.ok ? result.data?.status : undefined;
+        if (isAuthorizedBrowserOperation410(response.status, result, next.operationId)) {
+          clearOperation();
+          next = { operationId: "", action };
+          operation.current = { ...next, partition, storageKey, babyId };
+        } else if (status === "completed") {
+          clearOperation();
+          router.refresh();
+          return;
+        } else if (status === "prepared") {
+          operation.current = { ...next, partition, storageKey, babyId };
+        } else if (status === "pending") {
+          setError("Saving is still in progress. Reconcile this baby request before trying again.");
+          return;
+        } else if (status === "stale" || status === "rejected") {
+          setError("This baby request is no longer current. Refresh before trying again.");
+          return;
+        } else {
+          setError("Reconcile this baby request before trying again.");
+          return;
+        }
+      }
+
+      if (!next.operationId) {
+        const issueResponse = await fetch(`/api/babies/${babyId}/${action}?issue=1`, {
+          method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({})
+        });
+        const issueResult = await issueResponse.json().catch(() => null) as { ok?: boolean; data?: { operationId?: string; status?: string } } | null;
+        if (!issueResponse.ok || !issueResult?.ok || typeof issueResult.data?.operationId !== "string" ||
+          (issueResult.data.status !== "open" && issueResult.data.status !== "prepared")) {
+          throw new Error("baby_operation_issue_unavailable");
+        }
+        next = { operationId: issueResult.data.operationId, action };
+        operation.current = { ...next, partition, storageKey, babyId };
+      }
+      try {
+        window.sessionStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {
+        // A browser that blocks session storage still retains the in-memory retry.
+      }
+      const response = await fetch(`/api/babies/${babyId}/${next.action}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ operationId: next.operationId })
@@ -76,23 +129,30 @@ export function BabyLifecycleButton({
         | { ok: true; data?: { status?: string } }
         | { ok: false; error?: { message?: string } }
         | null;
-      if (!response.ok || !result?.ok) {
-        setError(result && !result.ok ? result.error?.message ?? "Could not update this baby." : "Could not update this baby.");
+      const status = result?.ok ? result.data?.status : undefined;
+      if (isAuthorizedBrowserOperation410(response.status, result, next.operationId)) {
+        clearOperation();
+        setError("This baby request expired. Try again to open a new request.");
         return;
       }
-      if (result.data?.status === "completed") {
+      if (status === "completed") {
         clearOperation();
         router.refresh();
         return;
       }
-      if (result.data?.status === "pending") {
-        setError("Saving is still in progress. Keep this page open and try again.");
+      if (status === "pending") {
+        setError("Saving is still in progress. Reconcile this baby request before trying again.");
         return;
       }
-      clearOperation();
-      setError("This baby changed before your request completed. Refresh and try again.");
+      if (status === "stale" || status === "rejected") {
+        setError("This baby request is no longer current. Refresh before trying again.");
+        return;
+      }
+      setError(result && !result.ok
+        ? result.error?.message ?? "Reconcile this baby request before trying again."
+        : "Reconcile this baby request before trying again.");
     } catch {
-      setError("Could not reach Cubby. Check your connection and try again.");
+      setError("Reconcile this baby request before trying again.");
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +160,7 @@ export function BabyLifecycleButton({
 
   function clearOperation() {
     try {
-      window.sessionStorage.removeItem(lifecycleOperationStorageKey(babyId));
+      if (storageKeyRef.current) window.sessionStorage.removeItem(storageKeyRef.current);
     } catch {
       // Storage failure must not affect the terminal server outcome.
     }

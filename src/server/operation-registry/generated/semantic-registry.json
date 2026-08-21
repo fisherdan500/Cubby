@@ -1220,6 +1220,156 @@
             "sourceReferences": [
               {
                 "exportName": "POST",
+                "file": "src/app/api/invites/[token]/revoke/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Current exposure accepts input at this binding; caller-controlled scope remains unresolved by this declaration."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/invites/[token]/revoke/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Current exposure delegates household selection to the linked service; no explicit effective-household carrier is established here."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/invites/[token]/revoke/route.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Current exposure directly invokes the linked source-reviewed service operation."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "This binding has no declared semantic variant.",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/invites/[token]/revoke/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "This browser exposure is not a worker-loop claim boundary.",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
+                "file": "src/app/api/invites/[token]/revoke/route.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invites/[token]/revoke/route.ts#POST"
+      },
+      "exportName": "POST",
+      "kind": "exposure",
+      "ownerModule": "src/app/api/invites/[token]/revoke/route.ts",
+      "serviceOperationIds": [
+        "invite.revoke"
+      ]
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "POST",
                 "file": "src/app/api/invites/revoke-all/route.ts",
                 "kind": "symbol"
               }
@@ -3007,7 +3157,7 @@
       "kind": "exposure",
       "ownerModule": "src/app/api/settings/appearance/route.ts",
       "serviceOperationIds": [
-        "settings.appearance.update"
+        "household.accent.update"
       ]
     },
     {
@@ -4423,7 +4573,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "createActivity calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "createActivity calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -4587,7 +4737,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "deleteActivity calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "deleteActivity calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -4751,7 +4901,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "pauseTimer calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "pauseTimer calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -4915,7 +5065,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "resumeTimer calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "resumeTimer calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -5079,7 +5229,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "stopTimer calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "stopTimer calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -5243,7 +5393,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "undoLastActivity calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "undoLastActivity calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -5407,7 +5557,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "updateActivity calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "updateActivity calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -5571,7 +5721,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "addBaby calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "addBaby calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -6369,6 +6519,170 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Does not accept a household ID from request payload."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Uses the validated effective household member episode."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Writes HouseholdSettings and audit state with the durable result."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Reauthorizes household.manage in the browser operation transaction."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Submits household.accent.update."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Writes only the locked effective household settings row."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "Returns allowlisted operation outcomes."
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "No worker loop.",
+            "sourceReferences": [
+              {
+                "exportName": "submitHouseholdAppearanceBrowserOperation",
+                "file": "src/server/services/appearance.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "submitHouseholdAppearanceBrowserOperation",
+      "id": "household.accent.update",
+      "kind": "service",
+      "ownerModule": "src/server/services/appearance.ts"
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
                 "exportName": "createInvite",
                 "file": "src/server/services/invites.ts",
                 "kind": "symbol"
@@ -6391,7 +6705,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "createInvite calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "createInvite calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -6533,6 +6847,170 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "submitInviteRevokeBrowserOperation accepts one invite ID from the linked route path"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.caller_controlled_scope"
+          }
+        },
+        "carrier_authority_guard": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "submitInviteRevokeBrowserOperation calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.carrier_authority_guard"
+          }
+        },
+        "executable_evidence_strength": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.executable_evidence"
+          }
+        },
+        "model_reads_writes_effects": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "submitInviteRevokeBrowserOperation updates one pending Invite to revoked and writes an invite.revoke audit"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.model_and_effects"
+          }
+        },
+        "permission_commit_reauthorization": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "submitInviteRevokeBrowserOperation locks and rereads the acting member inside its transaction before rechecking member.manage and the target-role boundary"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.permission_commit_reauthorization"
+          }
+        },
+        "service_operation_linkage": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "submitInviteRevokeBrowserOperation is the exported single-invitation revocation service"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.service_operation_linkage"
+          }
+        },
+        "tenant_relationship_invariants": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ],
+            "value": "submitInviteRevokeBrowserOperation locks the target Invite and rejects an invite outside the locked actor household"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.tenant_relationship_invariants"
+          }
+        },
+        "variant_specific_outcomes": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "submitInviteRevokeBrowserOperation has no declared semantic variant",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.variant_outcomes"
+          }
+        },
+        "worker_loop_claim_failure_containment": {
+          "current": {
+            "authority": "not_applicable",
+            "rationale": "submitInviteRevokeBrowserOperation does not contain a worker loop",
+            "sourceReferences": [
+              {
+                "exportName": "submitInviteRevokeBrowserOperation",
+                "file": "src/server/services/invites.ts",
+                "kind": "symbol"
+              }
+            ]
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.worker_containment"
+          }
+        }
+      },
+      "exportName": "submitInviteRevokeBrowserOperation",
+      "id": "invite.revoke",
+      "kind": "service",
+      "ownerModule": "src/server/services/invites.ts"
+    },
+    {
+      "axes": {
+        "browser_immutable_binding_stale_behavior": {
+          "current": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          },
+          "target": {
+            "authority": "deferred",
+            "gateId": "gate.browser_binding_staleness"
+          }
+        },
+        "caller_controlled_scope": {
+          "current": {
+            "authority": "source_reviewed",
+            "sourceReferences": [
+              {
                 "exportName": "revokeAllPendingInvites",
                 "file": "src/server/services/invites.ts",
                 "kind": "symbol"
@@ -6555,7 +7033,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "revokeAllPendingInvites calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "revokeAllPendingInvites calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -6719,7 +7197,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "removeMember calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "removeMember calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -6883,7 +7361,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "restoreMember calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "restoreMember calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -7047,7 +7525,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "updateMemberRole calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "updateMemberRole calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -7211,7 +7689,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "suspendMember calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "suspendMember calls getEffectiveHouseholdContext(), which requires the request's validated membership-episode cookie candidate and does not fall back to another membership"
           },
           "target": {
             "authority": "deferred",
@@ -7353,12 +7831,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference parses raw input with preferencesSchema, including caller-supplied babyId and preference fields"
+            "value": "Does not accept a household or member target from the payload; selected baby ids are validated inside the transaction against the locked household."
           },
           "target": {
             "authority": "deferred",
@@ -7370,12 +7848,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "Uses the validated effective household membership episode from the browser-operation context."
           },
           "target": {
             "authority": "deferred",
@@ -7397,12 +7875,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the source calls tx.notificationPreference.create inside the actor-lock transaction"
+            "value": "Locks and snapshots the membership-episode document, then writes its replacement and selected-baby joins transactionally with an audit record."
           },
           "target": {
             "authority": "deferred",
@@ -7414,12 +7892,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference requires notification.manage before its transaction, locks the actor, and requires the permission again before create"
+            "value": "Delegates notification.manage reauthorization and current-actor locking to executeHouseholdBrowserOperation."
           },
           "target": {
             "authority": "deferred",
@@ -7431,12 +7909,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "saveNotificationPreference is the exported notification preference creation service"
+            "value": "Submits notification.preference.save through the household browser-operation adapter."
           },
           "target": {
             "authority": "deferred",
@@ -7448,12 +7926,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the create data uses the locked household and user ids with the caller-supplied babyId; this export contains no explicit baby-household lookup"
+            "value": "Binds one document to the locked membership episode and validates each selected baby against the locked household before create or replacement."
           },
           "target": {
             "authority": "deferred",
@@ -7462,15 +7940,15 @@
         },
         "variant_specific_outcomes": {
           "current": {
-            "authority": "not_applicable",
-            "rationale": "saveNotificationPreference has no declared semantic variant",
+            "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
-            ]
+            ],
+            "value": "Returns the allowlisted active notification-preference outcome; stale targets are persisted by the browser-operation adapter."
           },
           "target": {
             "authority": "deferred",
@@ -7480,11 +7958,11 @@
         "worker_loop_claim_failure_containment": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "saveNotificationPreference does not contain a worker loop",
+            "rationale": "No worker loop.",
             "sourceReferences": [
               {
-                "exportName": "saveNotificationPreference",
-                "file": "src/server/services/integrations.ts",
+                "exportName": "submitNotificationPreferenceBrowserOperation",
+                "file": "src/server/services/notification-preferences.ts",
                 "kind": "symbol"
               }
             ]
@@ -7495,10 +7973,10 @@
           }
         }
       },
-      "exportName": "saveNotificationPreference",
+      "exportName": "submitNotificationPreferenceBrowserOperation",
       "id": "notification.preference.save",
       "kind": "service",
-      "ownerModule": "src/server/services/integrations.ts"
+      "ownerModule": "src/server/services/notification-preferences.ts"
     },
     {
       "axes": {
@@ -8173,12 +8651,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance reads accentTheme from raw input and parses it with accentThemeSchema"
+            "value": "Does not accept a household ID from request payload."
           },
           "target": {
             "authority": "deferred",
@@ -8190,12 +8668,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
+            "value": "Uses the validated effective household member episode."
           },
           "target": {
             "authority": "deferred",
@@ -8217,12 +8695,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the source calls prisma.householdSettings.upsert and then writeAudit with settings.appearance.update"
+            "value": "Writes complete unit preferences and audit state with the durable result."
           },
           "target": {
             "authority": "deferred",
@@ -8234,12 +8712,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance requires household.manage before its upsert and contains no transaction-local membership recheck"
+            "value": "Reauthorizes household.manage in the browser operation transaction."
           },
           "target": {
             "authority": "deferred",
@@ -8251,12 +8729,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "updateHouseholdAppearance is the exported appearance update service"
+            "value": "Submits settings.units.update."
           },
           "target": {
             "authority": "deferred",
@@ -8268,12 +8746,12 @@
             "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
             ],
-            "value": "the HouseholdSettings upsert key and create data use the selected context householdId"
+            "value": "Writes only the locked effective household settings row."
           },
           "target": {
             "authority": "deferred",
@@ -8282,15 +8760,15 @@
         },
         "variant_specific_outcomes": {
           "current": {
-            "authority": "not_applicable",
-            "rationale": "updateHouseholdAppearance has no declared semantic variant",
+            "authority": "source_reviewed",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
+                "exportName": "submitUnitPreferencesBrowserOperation",
+                "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
-            ]
+            ],
+            "value": "Returns allowlisted operation outcomes."
           },
           "target": {
             "authority": "deferred",
@@ -8300,174 +8778,10 @@
         "worker_loop_claim_failure_containment": {
           "current": {
             "authority": "not_applicable",
-            "rationale": "updateHouseholdAppearance does not contain a worker loop",
+            "rationale": "No worker loop.",
             "sourceReferences": [
               {
-                "exportName": "updateHouseholdAppearance",
-                "file": "src/server/services/appearance.ts",
-                "kind": "symbol"
-              }
-            ]
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.worker_containment"
-          }
-        }
-      },
-      "exportName": "updateHouseholdAppearance",
-      "id": "settings.appearance.update",
-      "kind": "service",
-      "ownerModule": "src/server/services/appearance.ts"
-    },
-    {
-      "axes": {
-        "browser_immutable_binding_stale_behavior": {
-          "current": {
-            "authority": "deferred",
-            "gateId": "gate.browser_binding_staleness"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.browser_binding_staleness"
-          }
-        },
-        "caller_controlled_scope": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences parses raw input with unitPreferencesSchema"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.caller_controlled_scope"
-          }
-        },
-        "carrier_authority_guard": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences calls getHouseholdContext() without a household id, so the helper's current first active membership ordered by joinedAt ascending is selected"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.carrier_authority_guard"
-          }
-        },
-        "executable_evidence_strength": {
-          "current": {
-            "authority": "deferred",
-            "gateId": "gate.executable_evidence"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.executable_evidence"
-          }
-        },
-        "model_reads_writes_effects": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "the source calls prisma.householdSettings.upsert and then writeAudit with settings.units.update"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.model_and_effects"
-          }
-        },
-        "permission_commit_reauthorization": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences requires household.manage before its upsert and contains no transaction-local membership recheck"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.permission_commit_reauthorization"
-          }
-        },
-        "service_operation_linkage": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "updateUnitPreferences is the exported unit-preference update service"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.service_operation_linkage"
-          }
-        },
-        "tenant_relationship_invariants": {
-          "current": {
-            "authority": "source_reviewed",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ],
-            "value": "the HouseholdSettings upsert key and create data use the selected context householdId"
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.tenant_relationship_invariants"
-          }
-        },
-        "variant_specific_outcomes": {
-          "current": {
-            "authority": "not_applicable",
-            "rationale": "updateUnitPreferences has no declared semantic variant",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
-                "file": "src/server/services/unit-preferences.ts",
-                "kind": "symbol"
-              }
-            ]
-          },
-          "target": {
-            "authority": "deferred",
-            "gateId": "gate.variant_outcomes"
-          }
-        },
-        "worker_loop_claim_failure_containment": {
-          "current": {
-            "authority": "not_applicable",
-            "rationale": "updateUnitPreferences does not contain a worker loop",
-            "sourceReferences": [
-              {
-                "exportName": "updateUnitPreferences",
+                "exportName": "submitUnitPreferencesBrowserOperation",
                 "file": "src/server/services/unit-preferences.ts",
                 "kind": "symbol"
               }
@@ -8479,7 +8793,7 @@
           }
         }
       },
-      "exportName": "updateUnitPreferences",
+      "exportName": "submitUnitPreferencesBrowserOperation",
       "id": "settings.units.update",
       "kind": "service",
       "ownerModule": "src/server/services/unit-preferences.ts"
@@ -8491,12 +8805,12 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "61c5e96fde896bb7a342f47c71c640a114052841c9112fe3a97616094b134dcb",
+  "semanticArtifactDigest": "66f2a792712376d8592e5ef93b0a8b519aa224c1f3b0337735d3c506a0489263",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "39d0d5e1ef89c5a911cb23aa9a02c5b1708ef551aef07fe622912790519857ab",
-  "semanticDeclarationCount": 54,
-  "semanticDeclarationDigest": "7650fde12d1b07d2b2e1e79bacd3729903329feff57bf7c47162dd040624bbc9",
-  "semanticFingerprint": "7038d4d7d3ca6d93ffd9388a7956f532b73914b61beea320df6fcdfbca7746d0",
+  "semanticCoverageDigest": "2ea5769d82fa57ccc18755682d52095cbb529309cf49ab86116d0c505bb38a80",
+  "semanticDeclarationCount": 56,
+  "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
+  "semanticFingerprint": "8be805ac227d49fd5b87bf3c46bb5ecd23647aa3116967b8b31e5025147ece84",
   "semanticSidecars": [
     "src/app/api/activities/[id]/route.semantic.ts",
     "src/app/api/activities/route.semantic.ts",
@@ -8505,6 +8819,7 @@
     "src/app/api/babies/[id]/reactivate/route.semantic.ts",
     "src/app/api/babies/route.semantic.ts",
     "src/app/api/dashboard/warnings/dismiss/route.semantic.ts",
+    "src/app/api/invites/[token]/revoke/route.semantic.ts",
     "src/app/api/invites/revoke-all/route.semantic.ts",
     "src/app/api/invites/route.semantic.ts",
     "src/app/api/members/[id]/restore/route.semantic.ts",
@@ -8524,7 +8839,7 @@
     "src/server/services/calendar.semantic.ts",
     "src/server/services/dashboard.semantic.ts",
     "src/server/services/households.semantic.ts",
-    "src/server/services/integrations.semantic.ts",
+    "src/server/services/notification-preferences.semantic.ts",
     "src/server/services/invites.semantic.ts",
     "src/server/services/platform-authority.semantic.ts",
     "src/server/services/unit-preferences.semantic.ts"

@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 45,
-    "client_binding": 23,
+    "api_route": 57,
+    "client_binding": 26,
     "instrumentation": 1,
     "package_command": 8,
     "server_action": 1,
-    "server_loader": 26,
-    "worker": 3
+    "server_loader": 28,
+    "worker": 4
   },
-  "declarationDigest": "848d5d69957fd8a47b8053556d333630dc260332874f3b1d0fc04e40f410ed22",
+  "declarationDigest": "14837b9ddf0361b871f2af619b48c68fc1bdceb5f1b77abc81b8f463fb1ca4f6",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -356,6 +356,171 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "server_value_import",
+            "symbol": "getAccountAppearance",
+            "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/account/appearance/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/account/appearance/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/appearance/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/appearance/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/issue/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/account/appearance/route.ts#GET"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "PATCH",
+            "target": "src/app/api/account/appearance/route.ts#PATCH"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/appearance/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/appearance/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/account/browser-operations/[operationId]/route.ts#GET"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "DELETE",
+            "target": "src/app/api/account/browser-operations/[operationId]/route.ts#DELETE"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/account/browser-operations/partition/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/browser-operations/partition/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "route_method",
             "symbol": "DELETE",
             "target": "src/app/api/activities/[id]/route.ts#DELETE"
@@ -546,6 +711,36 @@
       },
       "id": "api_route:src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/babies/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/babies/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/babies/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/babies/issue/route.ts",
+      "sidecarPath": "src/app/api/babies/issue/route.operation.ts"
     },
     {
       "declaration": {
@@ -796,6 +991,101 @@
       },
       "id": "api_route:src/app/api/backups/sprout/preview/route.ts",
       "sidecarPath": "src/app/api/backups/sprout/preview/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/browser-operations/[operationId]/route.ts#GET"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "DELETE",
+            "target": "src/app/api/browser-operations/[operationId]/route.ts#DELETE"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/browser-operations/partition/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/browser-operations/partition/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/browser-operations/partition/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/dashboard/warnings/dismiss/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "sidecarPath": "src/app/api/dashboard/warnings/dismiss/issue/route.operation.ts"
     },
     {
       "declaration": {
@@ -1078,6 +1368,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/household-selection/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/household-selection/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/household-selection/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/households/leave/route.ts#POST"
           }
         ],
@@ -1322,6 +1642,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "GET",
             "target": "src/app/api/notifications/preferences/route.ts#GET"
           },
@@ -1522,6 +1872,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "GET",
             "target": "src/app/api/settings/appearance/route.ts#GET"
           },
@@ -1591,6 +1971,36 @@
       },
       "id": "api_route:src/app/api/settings/registration/route.ts",
       "sidecarPath": "src/app/api/settings/registration/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/settings/units/issue/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/settings/units/issue/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/settings/units/issue/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
     },
     {
       "declaration": {
@@ -1909,6 +2319,11 @@
             "kind": "server_action",
             "symbol": "createCalendarEventAction",
             "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
+          },
+          {
+            "kind": "server_action",
+            "symbol": "issueCalendarEventAction",
+            "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
           }
         ],
         "deferredGateIds": [
@@ -1937,6 +2352,16 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "browserOperationFailureResult",
+            "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "createCalendarEvent",
+            "target": "src/server/services/calendar.ts#createCalendarEvent"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getCalendar",
             "target": "src/server/services/calendar.ts#getCalendar"
           },
@@ -1959,11 +2384,6 @@
             "kind": "server_value_import",
             "symbol": "submitCalendarEventBrowserOperation",
             "target": "src/server/services/calendar.ts#submitCalendarEventBrowserOperation"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "browserOperationFailureResult",
-            "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
           }
         ],
         "deferredGateIds": [
@@ -2032,8 +2452,13 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "getCurrentAppearanceTheme",
-            "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+            "symbol": "getHouseholdSelectionState",
+            "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
           }
         ],
         "deferredGateIds": [
@@ -2215,6 +2640,11 @@
     {
       "declaration": {
         "bindings": [
+          {
+            "kind": "server_value_import",
+            "symbol": "getAccountAppearance",
+            "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+          },
           {
             "kind": "server_value_import",
             "symbol": "getHouseholdAppearance",
@@ -2447,13 +2877,13 @@
           },
           {
             "kind": "server_value_import",
-            "symbol": "listNotificationPreferences",
-            "target": "src/server/services/integrations.ts#listNotificationPreferences"
+            "symbol": "getOwnNotificationPreference",
+            "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
           },
           {
             "kind": "server_value_import",
-            "symbol": "requireSettingsPage",
-            "target": "src/server/auth/page-access.ts#requireSettingsPage"
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
           }
         ],
         "deferredGateIds": [
@@ -2482,8 +2912,8 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "getHouseholdContext",
-            "target": "src/server/auth/context.ts#getHouseholdContext"
+            "symbol": "getEffectiveHouseholdContext",
+            "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
           },
           {
             "kind": "server_value_import",
@@ -2622,6 +3052,36 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getCurrentAuthenticatedAppearanceMode",
+            "target": "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/layout.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/layout.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/layout.tsx",
+      "sidecarPath": "src/app/layout.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
             "symbol": "extractInviteToken",
             "target": "src/server/services/registration.ts#extractInviteToken"
           },
@@ -2667,8 +3127,8 @@
           },
           {
             "kind": "server_value_import",
-            "symbol": "getHouseholdHome",
-            "target": "src/server/services/households.ts#getHouseholdHome"
+            "symbol": "listHouseholdsForUser",
+            "target": "src/server/services/households.ts#listHouseholdsForUser"
           },
           {
             "kind": "server_value_import",
@@ -2894,6 +3354,21 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -2923,6 +3398,21 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
             "target": "globalThis.fetch"
           }
         ],
@@ -2996,6 +3486,51 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/browser-operation-recovery.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/browser-operation-recovery.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/browser-operation-recovery.tsx",
+      "sidecarPath": "src/components/browser-operation-recovery.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "server_action",
+            "symbol": "issueCalendarEventAction[1]",
+            "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
+          },
+          {
             "kind": "server_action",
             "symbol": "createCalendarEventAction[1]",
             "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
@@ -3028,6 +3563,21 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
             "target": "globalThis.fetch"
           }
         ],
@@ -3064,6 +3614,21 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -3092,12 +3657,27 @@
         "bindings": [
           {
             "kind": "form_action",
-            "symbol": "submit",
-            "target": "src/components/forms/baby-form.tsx#submit"
+            "symbol": "onSubmit",
+            "target": "src/components/forms/baby-form.tsx#onSubmit"
           },
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
             "target": "globalThis.fetch"
           }
         ],
@@ -3133,6 +3713,21 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
             "target": "globalThis.fetch"
           }
         ],
@@ -3198,6 +3793,96 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/household-selection-control.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/household-selection-control.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/personal-appearance-form.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/personal-appearance-form.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
             "target": "globalThis.fetch"
           }
         ],
@@ -3394,11 +4079,6 @@
             "kind": "global_fetch",
             "symbol": "fetch[4]",
             "target": "globalThis.fetch"
-          },
-          {
-            "kind": "global_fetch",
-            "symbol": "fetch[5]",
-            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -3433,6 +4113,21 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
             "target": "globalThis.fetch"
           }
         ],
@@ -3599,6 +4294,21 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -3671,6 +4381,11 @@
             "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
           },
           {
+            "kind": "worker_dynamic_import",
+            "symbol": "startBrowserOperationRetentionScheduler",
+            "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+          },
+          {
             "kind": "worker_start_call",
             "symbol": "startAutomatedBackupScheduler",
             "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -3684,6 +4399,11 @@
             "kind": "worker_start_call",
             "symbol": "startSproutSourceRetentionScheduler",
             "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startBrowserOperationRetentionScheduler",
+            "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
           }
         ],
         "deferredGateIds": [
@@ -3746,6 +4466,46 @@
       },
       "id": "worker:src/server/automated-backup-scheduler.ts",
       "sidecarPath": "src/server/automated-backup-scheduler.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "worker_schedule",
+            "symbol": "tick",
+            "target": "src/server/browser-operation-retention-scheduler.ts#tick"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startBrowserOperationRetentionScheduler",
+            "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+          },
+          {
+            "kind": "worker_tick",
+            "symbol": "tick",
+            "target": "src/server/services/browser-operation-retention.ts#runBrowserOperationRetention"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "worker:src/server/browser-operation-retention-scheduler.ts",
+        "ownerKind": "worker",
+        "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+        "schemaVersion": 1
+      },
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
     },
     {
       "declaration": {
@@ -3890,25 +4650,119 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "c19fe2af1d8683390569828bcabda290540047357077de5e01e77736c5790740",
+  "generatorDigest": "01cc58690c12886dbfcf218e3ccb7c29967ea4814fee9de6843edf6e7227b8d3",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
       "bindings": [
         {
-          "anchorDigest": "3c2571a64b2dcba9109143a6a2371ce682053476d7364eea943bce071368fbce",
-          "anchorEnd": 1184,
+          "anchorDigest": "cc191c5f860bb041dc7e2f93f86787be0f081ed7e42a9f00dd8f47890a14e05c",
+          "anchorEnd": 602,
+          "anchorFile": "src/app/api/account/appearance/issue/route.ts",
+          "anchorStart": 186,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/appearance/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "aa959c5b808cd5429d8062cb26b610235d28116c3703de7cad67978115c23b81",
+          "anchorEnd": 352,
+          "anchorFile": "src/app/api/account/appearance/route.ts",
+          "anchorStart": 213,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/account/appearance/route.ts#GET"
+        },
+        {
+          "anchorDigest": "8311295eb8556f13888d9dccd94efe33f23955bc207d556283bb5df55383398d",
+          "anchorEnd": 765,
+          "anchorFile": "src/app/api/account/appearance/route.ts",
+          "anchorStart": 354,
+          "kind": "route_method",
+          "symbol": "PATCH",
+          "target": "src/app/api/account/appearance/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "c9a97f34efd18e3e15b1ab42e5e88c82372808fb9c965e9de4f003a946942429",
+          "anchorEnd": 987,
+          "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+          "anchorStart": 701,
+          "kind": "route_method",
+          "symbol": "DELETE",
+          "target": "src/app/api/account/browser-operations/[operationId]/route.ts#DELETE"
+        },
+        {
+          "anchorDigest": "4ef66bd91ac8e6b52a63fc70aa44f1d2faf80971c4f469de1a7f839c28aeafb3",
+          "anchorEnd": 699,
+          "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+          "anchorStart": 291,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/account/browser-operations/[operationId]/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "915a04b5a17add9f9d913705a6ded867801f34c7ba651f8c5e20c91109d6450a",
+          "anchorEnd": 346,
+          "anchorFile": "src/app/api/account/browser-operations/partition/route.ts",
+          "anchorStart": 192,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/account/browser-operations/partition/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/browser-operations/partition/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "a7f652b14e07aa14f7a5e723e4cce851e6510386551e87c76b272a5caa0f8f4f",
+          "anchorEnd": 3519,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 757,
+          "anchorStart": 2181,
           "kind": "route_method",
           "symbol": "DELETE",
           "target": "src/app/api/activities/[id]/route.ts#DELETE"
         },
         {
-          "anchorDigest": "718f2cf48c921b850b1012ab7aa78741bf35d38f74eda281350c62cf92e6488c",
-          "anchorEnd": 755,
+          "anchorDigest": "93655bd4c964596e7b1667e4b401f1a1dc84d1c8d35e28c18eec91e73d764fbd",
+          "anchorEnd": 2179,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 236,
+          "anchorStart": 749,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/activities/[id]/route.ts#PATCH"
@@ -3925,18 +4779,18 @@
       "bindings": [
         {
           "anchorDigest": "6ca6c4a41e1ecc6b72fa4aaf838a7b3c476ff7c7cbf858d40d0261bc446e5976",
-          "anchorEnd": 556,
+          "anchorEnd": 725,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 170,
+          "anchorStart": 339,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/activities/route.ts#GET"
         },
         {
-          "anchorDigest": "de33eaf99f266005cbeba6f2ce5c7d8b98fd65bc2add23851c74374046864041",
-          "anchorEnd": 745,
+          "anchorDigest": "cdacc0272ffe0baa793525d09bbdb37f3fd0a837c5d94671773e57ce30121180",
+          "anchorEnd": 1922,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 558,
+          "anchorStart": 727,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/activities/route.ts#POST"
@@ -3952,10 +4806,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d37f0a733c39fad232820f9c25e65c6bc2e3d99ece8e5302f81aa4ac5b42c268",
-          "anchorEnd": 532,
+          "anchorDigest": "11fdc736235a3827cbb4048a4a05368e5105ba920b486a43117f4d2b5966fc0f",
+          "anchorEnd": 1726,
           "anchorFile": "src/app/api/activities/undo-last/route.ts",
-          "anchorStart": 156,
+          "anchorStart": 327,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/activities/undo-last/route.ts#POST"
@@ -3999,8 +4853,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "2d1198d775dd205b788025cd0884198fcc23226240c10437cf6b31e0eadc482a",
-          "anchorEnd": 1047,
+          "anchorDigest": "93837977a0f1cc3cc22766ed3021c701af3417598e4b73e320b2eaa15b2b1b8c",
+          "anchorEnd": 1292,
           "anchorFile": "src/app/api/babies/[id]/deactivate/route.ts",
           "anchorStart": 303,
           "kind": "route_method",
@@ -4018,8 +4872,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ea7e156cfe4d12568f6c3bd431d02ca3442cc3db405bbc3ec7d378a3f6d3a51b",
-          "anchorEnd": 1047,
+          "anchorDigest": "8b5c5848b3eb1c4a66d8cbb263e8aa70dff6f6a3f36c700cf16c8b95ec9410f7",
+          "anchorEnd": 1292,
           "anchorFile": "src/app/api/babies/[id]/reactivate/route.ts",
           "anchorStart": 303,
           "kind": "route_method",
@@ -4037,19 +4891,38 @@
     {
       "bindings": [
         {
+          "anchorDigest": "9d065c4f4384a56de0394ff45f2274d32cb24bde35565b9ffeada4716daf454c",
+          "anchorEnd": 585,
+          "anchorFile": "src/app/api/babies/issue/route.ts",
+          "anchorStart": 171,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/babies/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/babies/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/issue/route.ts",
+      "sidecarPath": "src/app/api/babies/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "06e1ac779917a85c31591afdcd6948ae55e46aa0c59126d3f2db8324179fa91f",
-          "anchorEnd": 313,
+          "anchorEnd": 347,
           "anchorFile": "src/app/api/babies/route.ts",
-          "anchorStart": 159,
+          "anchorStart": 193,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/babies/route.ts#GET"
         },
         {
-          "anchorDigest": "51f20d526c803957efbc6224be19dd648d3b91f4bdab4dbb9640253fe4e8c787",
-          "anchorEnd": 478,
+          "anchorDigest": "c948f61cfbb7a366513386a9c98fcb63027970be6d2de9b96fb8c0457fd5d07b",
+          "anchorEnd": 831,
           "anchorFile": "src/app/api/babies/route.ts",
-          "anchorStart": 315,
+          "anchorStart": 349,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/babies/route.ts#POST"
@@ -4207,10 +5080,76 @@
     {
       "bindings": [
         {
-          "anchorDigest": "a0786b21e04d41f0d3ba78c8fbeb2f28198a95191c78a4b688cfc64540469d30",
-          "anchorEnd": 1078,
+          "anchorDigest": "c141b6c3676d8e522e53de848c2637e97b2542b6d0f707985ecce338c9192914",
+          "anchorEnd": 909,
+          "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+          "anchorStart": 641,
+          "kind": "route_method",
+          "symbol": "DELETE",
+          "target": "src/app/api/browser-operations/[operationId]/route.ts#DELETE"
+        },
+        {
+          "anchorDigest": "5ff02f5f66a27f02ae1991b10749f6ebe6755d1f175e94fbe266f678b7b47188",
+          "anchorEnd": 639,
+          "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+          "anchorStart": 229,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/browser-operations/[operationId]/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "47d25590b9093dc7d3b8152259804f8e398bbf22e43d25a92003cc0fa24112f8",
+          "anchorEnd": 350,
+          "anchorFile": "src/app/api/browser-operations/partition/route.ts",
+          "anchorStart": 194,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/browser-operations/partition/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/browser-operations/partition/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "06c5981ca388f09372676543b092f425cf2d304fbf8160be74debb9ec87f8c22",
+          "anchorEnd": 822,
+          "anchorFile": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+          "anchorStart": 262,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/dashboard/warnings/dismiss/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "sidecarPath": "src/app/api/dashboard/warnings/dismiss/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "40d1303366b1046a7bf01f03b4e3af9800150018f2007ada40fef3059e168f12",
+          "anchorEnd": 1203,
           "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
-          "anchorStart": 307,
+          "anchorStart": 334,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/dashboard/warnings/dismiss/route.ts#POST"
@@ -4264,10 +5203,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "515c3c16e5b85ddc7f9adc5ca2dd378c231ab0e753309f64d67e8538371fd4c7",
-          "anchorEnd": 462,
+          "anchorDigest": "ee3e06264c34341ff81c8967f79fb1f39f567fe318a9f4fd7d965cdb4bc8fa32",
+          "anchorEnd": 534,
           "anchorFile": "src/app/api/health/route.ts",
-          "anchorStart": 195,
+          "anchorStart": 255,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/health/route.ts#GET"
@@ -4387,6 +5326,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "f25b644a0e5d78b260d59f3d9a1765239e8a2a3dbc02fe5ddcb8941d70612fc7",
+          "anchorEnd": 1375,
+          "anchorFile": "src/app/api/household-selection/route.ts",
+          "anchorStart": 419,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/household-selection/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "5e1e29ba225a54a0c8b43b8bb75fbebe85ccc8f9d9e34c4a8085b4dd4b6fe890",
           "anchorEnd": 466,
           "anchorFile": "src/app/api/households/leave/route.ts",
@@ -4425,10 +5383,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4d72c19f68537766e67f2ea772abed81e41c482fa4d1e609101720beb9629193",
-          "anchorEnd": 353,
+          "anchorDigest": "97be65ab230c6d6dfb8dde45f6fb2312ec74a33a0d670debb14fc1de7b3b708d",
+          "anchorEnd": 1779,
           "anchorFile": "src/app/api/invites/[token]/revoke/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 312,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/invites/[token]/revoke/route.ts#POST"
@@ -4444,10 +5402,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f20bd8e848cf93039adef90c826e6a9c8289cea48af58c87ecea3a3e99e9953c",
-          "anchorEnd": 476,
+          "anchorDigest": "b41036aaaf8729013d0d3ed9b409bd1c9252ed809b39dd917e6f6f7cb399f304",
+          "anchorEnd": 1603,
           "anchorFile": "src/app/api/invites/revoke-all/route.ts",
-          "anchorStart": 166,
+          "anchorStart": 335,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/invites/revoke-all/route.ts#POST"
@@ -4463,10 +5421,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "2bb1d3b7e43fa594695dbda171fd77674b7771aaf37f827d3b1b74230089d385",
-          "anchorEnd": 471,
+          "anchorDigest": "a7c8a1f98198854ce4848e4af43566513acf250f2bd9750471b264e61b71a546",
+          "anchorEnd": 1601,
           "anchorFile": "src/app/api/invites/route.ts",
-          "anchorStart": 155,
+          "anchorStart": 312,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/invites/route.ts#POST"
@@ -4482,10 +5440,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "47ba276386a5b9e22841593e3a5499940ce918f281fb9d2c4f98bc31d6ae324e",
-          "anchorEnd": 349,
+          "anchorDigest": "df0d210dd90155a140be8ebc505db23638942889a326bfa91be2c6f8adbfbca5",
+          "anchorEnd": 1490,
           "anchorFile": "src/app/api/members/[id]/restore/route.ts",
-          "anchorStart": 109,
+          "anchorStart": 260,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/members/[id]/restore/route.ts#POST"
@@ -4501,19 +5459,19 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4f214848c562a7a54ae3fee5dff3552b9d9aaf92278a8d2cdd1d702f81100714",
-          "anchorEnd": 593,
+          "anchorDigest": "10e3a625cb474ee56baa435fba1ccbdba904217a65fdd3eb014be3883b81cedb",
+          "anchorEnd": 2852,
           "anchorFile": "src/app/api/members/[id]/route.ts",
-          "anchorStart": 393,
+          "anchorStart": 1660,
           "kind": "route_method",
           "symbol": "DELETE",
           "target": "src/app/api/members/[id]/route.ts#DELETE"
         },
         {
-          "anchorDigest": "bf7f77da563404d4b8b4206069f3466b8903475797044d5850c5baec364207d2",
-          "anchorEnd": 391,
+          "anchorDigest": "7a4609f563b515b99b2147b9c570457864a74ff3ea12c1c0c7cef2f710f0b5b1",
+          "anchorEnd": 1658,
           "anchorFile": "src/app/api/members/[id]/route.ts",
-          "anchorStart": 167,
+          "anchorStart": 460,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/members/[id]/route.ts#PATCH"
@@ -4529,10 +5487,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "9c314abfcf98a49672c3df2b0195261ee9cf52b15abad5e46582db7704335c2d",
-          "anchorEnd": 349,
+          "anchorDigest": "2c4d676c573835f7bbbc96bb2390cebbf70875bfe34a0bb0f48ee3d5bef6cea6",
+          "anchorEnd": 1490,
           "anchorFile": "src/app/api/members/[id]/suspend/route.ts",
-          "anchorStart": 109,
+          "anchorStart": 260,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/members/[id]/suspend/route.ts#POST"
@@ -4548,19 +5506,38 @@
     {
       "bindings": [
         {
-          "anchorDigest": "052357e3b3ad922d3ae3c141ea64de6913624e850b58388817f9de9fbb9cd806",
-          "anchorEnd": 343,
-          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorDigest": "230d104e4c28f15ca10e215d9af050d58e6a3d745c258de37717fc7d1449fa6e",
+          "anchorEnd": 541,
+          "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
           "anchorStart": 197,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "5b71226679bd0c0cee95312a86de531ccc9fb853e9535527e4239a982f621c5a",
+          "anchorEnd": 379,
+          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorStart": 232,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/notifications/preferences/route.ts#GET"
         },
         {
-          "anchorDigest": "7e79ca35765f2cd1f42c0a24543e6a142a0807ae5ff91fa4ca5a9eabd606dd3a",
-          "anchorEnd": 544,
+          "anchorDigest": "11fbfd518b5aa319e214262f3504f8f1ae19d1662a0e94fbd89d55f10e9fd6c0",
+          "anchorEnd": 724,
           "anchorFile": "src/app/api/notifications/preferences/route.ts",
-          "anchorStart": 345,
+          "anchorStart": 381,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/notifications/preferences/route.ts#POST"
@@ -4698,19 +5675,38 @@
     {
       "bindings": [
         {
+          "anchorDigest": "d92d343129aee810d2c827e499c3c8320542b46a56ba5b1127db2d9784caf590",
+          "anchorEnd": 573,
+          "anchorFile": "src/app/api/settings/appearance/issue/route.ts",
+          "anchorStart": 180,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "50df48391dd9e32ca982bc39b73cd5c9646ba7ffd64700cde7f5f00144f2ca1c",
-          "anchorEnd": 330,
+          "anchorEnd": 350,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 189,
+          "anchorStart": 209,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/settings/appearance/route.ts#GET"
         },
         {
-          "anchorDigest": "2179282f6e2243987cfc595c930433c460e1ef1a1d9e4c48bd17fbd4d45db666",
-          "anchorEnd": 514,
+          "anchorDigest": "d853cc084f689ac161872d1d66e8a6ea3321cd839231bc7d75398cc4f38040e2",
+          "anchorEnd": 666,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 332,
+          "anchorStart": 352,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/settings/appearance/route.ts#PATCH"
@@ -4763,19 +5759,38 @@
     {
       "bindings": [
         {
+          "anchorDigest": "ea192855687159c7eb5dfd51b710ff5a159370c9d980b7022f67b93a58597e12",
+          "anchorEnd": 571,
+          "anchorFile": "src/app/api/settings/units/issue/route.ts",
+          "anchorStart": 182,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/settings/units/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "1e4807e512161a47ff7c265721c72c89a8550057a5942ea6b66063f641e71c15",
-          "anchorEnd": 342,
+          "anchorEnd": 358,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 198,
+          "anchorStart": 214,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/settings/units/route.ts#GET"
         },
         {
-          "anchorDigest": "a9cedf396b3cee40be8163dffa7e3a9e5a41a6cbc4a3c58f96a832c7a990bfab",
-          "anchorEnd": 522,
+          "anchorDigest": "039cd26c31cc40fe55a13e104672709700ca0a1472174543c585a9bde9a2fa3a",
+          "anchorEnd": 716,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 344,
+          "anchorStart": 360,
           "kind": "route_method",
           "symbol": "PATCH",
           "target": "src/app/api/settings/units/route.ts#PATCH"
@@ -4838,10 +5853,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "0bb94c02debabdefd8795320d67b90502d714158125ce9ff4289ab72be00ad9b",
-          "anchorEnd": 735,
+          "anchorDigest": "b2bb89b85744e6d0721dc5224feb50e03ed740cf00b6a0219b36f9bfb9ed92b2",
+          "anchorEnd": 2019,
           "anchorFile": "src/app/api/timers/[id]/pause/route.ts",
-          "anchorStart": 150,
+          "anchorStart": 309,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/timers/[id]/pause/route.ts#POST"
@@ -4857,10 +5872,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "47601a1a83464d8ace0e8ea46492e40732477837cd68bd20c417545d1c663c65",
-          "anchorEnd": 737,
+          "anchorDigest": "7ae20b7bdf2fb80d1765253a375f318102dbb83381a83064ae52bed5cd16d045",
+          "anchorEnd": 2024,
           "anchorFile": "src/app/api/timers/[id]/resume/route.ts",
-          "anchorStart": 151,
+          "anchorStart": 310,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/timers/[id]/resume/route.ts#POST"
@@ -4876,10 +5891,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "03e3c72340c6bd8fc6d0d8c117fef261d7e1da0d3293fb5f3d81b206b1388a66",
-          "anchorEnd": 733,
+          "anchorDigest": "41e91a733258743c8f8cf5e0da8816ddba4d48fe2015075b5ebf7cecd6c07f3b",
+          "anchorEnd": 2014,
           "anchorFile": "src/app/api/timers/[id]/stop/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 308,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/timers/[id]/stop/route.ts#POST"
@@ -4891,6 +5906,34 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
+          "anchorEnd": 325,
+          "anchorFile": "src/app/account/appearance/page.tsx",
+          "anchorStart": 305,
+          "kind": "server_value_import",
+          "symbol": "getAccountAppearance",
+          "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 263,
+          "anchorFile": "src/app/account/appearance/page.tsx",
+          "anchorStart": 248,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
     },
     {
       "bindings": [
@@ -5007,12 +6050,21 @@
       "bindings": [
         {
           "anchorDigest": "41543e6978fa330d5755442da137138a37a6c7a7911f29f7c244ae978eadbb93",
-          "anchorEnd": 175,
+          "anchorEnd": 198,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 146,
+          "anchorStart": 169,
           "kind": "server_value_import",
           "symbol": "browserOperationFailureResult",
           "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
+        },
+        {
+          "anchorDigest": "2b55a59d7405c31ac0caea390a481466757febfbebefa628ecbc1a83fdc23e1b",
+          "anchorEnd": 45,
+          "anchorFile": "src/app/app/calendar/actions.ts",
+          "anchorStart": 26,
+          "kind": "server_value_import",
+          "symbol": "createCalendarEvent",
+          "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
           "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
@@ -5034,9 +6086,9 @@
         },
         {
           "anchorDigest": "b277667254e7c850ff4e585e7bf2c30567756ac7f72feb2c065390f706520b29",
-          "anchorEnd": 60,
+          "anchorEnd": 83,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 26,
+          "anchorStart": 49,
           "kind": "server_value_import",
           "symbol": "issueCalendarEventBrowserOperation",
           "target": "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
@@ -5052,9 +6104,9 @@
         },
         {
           "anchorDigest": "32d4182f066e7f5fb683fe7e437e7d3f3561217850cca132d4a9615d094e1204",
-          "anchorEnd": 99,
+          "anchorEnd": 122,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 64,
+          "anchorStart": 87,
           "kind": "server_value_import",
           "symbol": "submitCalendarEventBrowserOperation",
           "target": "src/server/services/calendar.ts#submitCalendarEventBrowserOperation"
@@ -5107,13 +6159,22 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ffb62ca5ea8d1f58e951f645683231d79c290297c95b65c2188918f06ddd3c9e",
-          "anchorEnd": 34,
+          "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
+          "anchorEnd": 178,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 9,
+          "anchorStart": 152,
           "kind": "server_value_import",
-          "symbol": "getCurrentAppearanceTheme",
-          "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+          "symbol": "getHouseholdSelectionState",
+          "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 110,
+          "anchorFile": "src/app/app/layout.tsx",
+          "anchorStart": 95,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -5265,19 +6326,28 @@
     {
       "bindings": [
         {
-          "anchorDigest": "9ae9352945a8894a7a5c9351ed2025b37ef0af95a5e8486dcfd40910e649b7e1",
-          "anchorEnd": 264,
+          "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
+          "anchorEnd": 413,
           "anchorFile": "src/app/app/settings/appearance/page.tsx",
-          "anchorStart": 242,
+          "anchorStart": 393,
+          "kind": "server_value_import",
+          "symbol": "getAccountAppearance",
+          "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+        },
+        {
+          "anchorDigest": "9ae9352945a8894a7a5c9351ed2025b37ef0af95a5e8486dcfd40910e649b7e1",
+          "anchorEnd": 344,
+          "anchorFile": "src/app/app/settings/appearance/page.tsx",
+          "anchorStart": 322,
           "kind": "server_value_import",
           "symbol": "getHouseholdAppearance",
           "target": "src/server/services/appearance.ts#getHouseholdAppearance"
         },
         {
           "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 196,
+          "anchorEnd": 276,
           "anchorFile": "src/app/app/settings/appearance/page.tsx",
-          "anchorStart": 177,
+          "anchorStart": 257,
           "kind": "server_value_import",
           "symbol": "requireSettingsPage",
           "target": "src/server/auth/page-access.ts#requireSettingsPage"
@@ -5461,30 +6531,30 @@
       "bindings": [
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 283,
+          "anchorEnd": 275,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 267,
+          "anchorStart": 259,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorDigest": "a1e33fcb55fa7827754fb2c32cb462069f0bdb33e8bc8cdd89e027d5655f8d0f",
-          "anchorEnd": 359,
+          "anchorDigest": "5cf81e8d1685ffb3a223564f2a28fce40eef2775e1c39fce66e7d7f0c182f5d0",
+          "anchorEnd": 352,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 332,
+          "anchorStart": 324,
           "kind": "server_value_import",
-          "symbol": "listNotificationPreferences",
-          "target": "src/server/services/integrations.ts#listNotificationPreferences"
+          "symbol": "getOwnNotificationPreference",
+          "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
         },
         {
-          "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 221,
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 217,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
           "anchorStart": 202,
           "kind": "server_value_import",
-          "symbol": "requireSettingsPage",
-          "target": "src/server/auth/page-access.ts#requireSettingsPage"
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -5497,28 +6567,28 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4ba370f25645cbe6cd86b20e33cdb55c0884372f34861a521c45971d8566679f",
-          "anchorEnd": 351,
+          "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+          "anchorEnd": 360,
           "anchorFile": "src/app/app/settings/page.tsx",
           "anchorStart": 332,
           "kind": "server_value_import",
-          "symbol": "getHouseholdContext",
-          "target": "src/server/auth/context.ts#getHouseholdContext"
+          "symbol": "getEffectiveHouseholdContext",
+          "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
         },
         {
           "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-          "anchorEnd": 465,
+          "anchorEnd": 474,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 450,
+          "anchorStart": 459,
           "kind": "server_value_import",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 408,
+          "anchorEnd": 417,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 393,
+          "anchorStart": 402,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -5609,6 +6679,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "0d1bb8bc5cd61eff21fd5a0de71d8d94c091c040a93eb0a284d959e6294f5040",
+          "anchorEnd": 473,
+          "anchorFile": "src/app/layout.tsx",
+          "anchorStart": 436,
+          "kind": "server_value_import",
+          "symbol": "getCurrentAuthenticatedAppearanceMode",
+          "target": "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/layout.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/layout.tsx",
+      "sidecarPath": "src/app/layout.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
           "anchorEnd": 208,
           "anchorFile": "src/app/login/page.tsx",
@@ -5647,21 +6736,12 @@
       "bindings": [
         {
           "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-          "anchorEnd": 543,
+          "anchorEnd": 548,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 519,
+          "anchorStart": 524,
           "kind": "server_value_import",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 398,
-          "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 382,
-          "kind": "server_value_import",
-          "symbol": "getHouseholdHome",
-          "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "3e34d97bbb19562ad66492682f355c3846b066da7ceec4e288107dac3b34450c",
@@ -5674,12 +6754,21 @@
         },
         {
           "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-          "anchorEnd": 462,
+          "anchorEnd": 467,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 447,
+          "anchorStart": 452,
           "kind": "server_value_import",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
+        },
+        {
+          "anchorDigest": "37c77ac1072b62d2108f29115d68db3d3a1af072d65bd064b80caa2ab3a33c9b",
+          "anchorEnd": 403,
+          "anchorFile": "src/app/onboarding/page.tsx",
+          "anchorStart": 382,
+          "kind": "server_value_import",
+          "symbol": "listHouseholdsForUser",
+          "target": "src/server/services/households.ts#listHouseholdsForUser"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
@@ -5804,37 +6893,37 @@
     {
       "bindings": [
         {
-          "anchorDigest": "60a1a14a3b56ef8e9eb7a4a71cbe969cbd977ceebf00a9a4e0a68ec9f6452023",
-          "anchorEnd": 652,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 765,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 450,
+          "anchorStart": 700,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "c8d1fa915a912bc1c94df1239f7aae81bbfc701e430be2390f067a46f57a01e4",
-          "anchorEnd": 1320,
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 2991,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1117,
+          "anchorStart": 2921,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "15eeac734ab1d8e908efe2b86e6051b32e1986e30b775fb09741427d70a34067",
-          "anchorEnd": 1985,
+          "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
+          "anchorEnd": 4251,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1781,
+          "anchorStart": 4110,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "077717b558263509de06b8bbe4d2f267bb7d59a226b054dff93f2f8b4fa42894",
-          "anchorEnd": 2627,
+          "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
+          "anchorEnd": 4958,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 2422,
+          "anchorStart": 4805,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -5850,12 +6939,39 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f752c5ea21324feac615a6efb1bae73214a05902e888dd8fc2d93a6a79362170",
-          "anchorEnd": 2583,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 805,
           "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
-          "anchorStart": 2387,
+          "anchorStart": 740,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "68b018460d80a91f81a3f0b688dbbb64912f333a175d5da865509714a3d428ed",
+          "anchorEnd": 3274,
+          "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+          "anchorStart": 3199,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "c2fade1e19f4ffe335be76dc8f6db1b15187aba54f778a8610ca403c6ff35a3c",
+          "anchorEnd": 4631,
+          "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+          "anchorStart": 4470,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "f00ff85c9516e8b42a10071a9dcf1b59837a17b74595700d868af6b72b91b8c6",
+          "anchorEnd": 5628,
+          "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+          "anchorStart": 5427,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -5869,12 +6985,39 @@
     {
       "bindings": [
         {
-          "anchorDigest": "523c7dafaa818cd67b14b11d82a244c530ac13f05cbfb54d47726ae410d15282",
-          "anchorEnd": 1263,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 965,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 1048,
+          "anchorStart": 900,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "502e6e619bb789d0f922219c1e8244d4097f05c081f0fbd1b2b47b97500135ff",
+          "anchorEnd": 3969,
+          "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+          "anchorStart": 3903,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "7527928970a5790d8524ff83ec97d40552755c28bf5fb2056dd27e957976fef3",
+          "anchorEnd": 5105,
+          "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+          "anchorStart": 4964,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "bc84519e43d1ba89b830fdd377b37af4d862c6e11a589fdf3e6d5a34366a2984",
+          "anchorEnd": 5784,
+          "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+          "anchorStart": 5622,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -5934,13 +7077,59 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d1a3d4a61b3e52a725f0668c540fc02bdeeee63a9666cee89fe1ec396b716037",
-          "anchorEnd": 2606,
+          "anchorDigest": "f57c190b751a91663e583a620613ebefd0557569b5df47d69bd55ed153824423",
+          "anchorEnd": 3750,
+          "anchorFile": "src/components/browser-operation-recovery.tsx",
+          "anchorStart": 3685,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/browser-operation-recovery.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/browser-operation-recovery.tsx",
+      "sidecarPath": "src/components/browser-operation-recovery.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 946,
           "anchorFile": "src/components/calendar-event-submission.tsx",
-          "anchorStart": 2571,
+          "anchorStart": 881,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 3385,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 3315,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d1a3d4a61b3e52a725f0668c540fc02bdeeee63a9666cee89fe1ec396b716037",
+          "anchorEnd": 6384,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 6349,
           "kind": "server_action",
           "symbol": "createCalendarEventAction[1]",
           "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
+        },
+        {
+          "anchorDigest": "b37c9a7b44c78ff42f15f83b1e7edaf44a6df84ecfe7aa27419b0218efa29ec7",
+          "anchorEnd": 5914,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 5880,
+          "kind": "server_action",
+          "symbol": "issueCalendarEventAction[1]",
+          "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
         }
       ],
       "disposition": "observed",
@@ -5953,12 +7142,39 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
-          "anchorEnd": 1749,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 1022,
           "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
-          "anchorStart": 1445,
+          "anchorStart": 957,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "440b1873192786cbeb3cfde4d110716ccc05ad8d98773f39f95b57247c85b385",
+          "anchorEnd": 2279,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 2046,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 3644,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 3574,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d3fc3a5e0cc96ade4ea4b6fd08637107a16fdb19faebd23addcd768d61816101",
+          "anchorEnd": 6481,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 6177,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -5973,20 +7189,47 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 3329,
+          "anchorEnd": 7530,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 3314,
+          "anchorStart": 7515,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorDigest": "64597b0cc1f0c71f336283b1baa13d98036a7ccc0ca90f5f6def62f88db5ec5a",
-          "anchorEnd": 2474,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 1582,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2253,
+          "anchorStart": 1517,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
+          "anchorEnd": 4497,
+          "anchorFile": "src/components/forms/activity-form.tsx",
+          "anchorStart": 4420,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
+          "anchorEnd": 5776,
+          "anchorFile": "src/components/forms/activity-form.tsx",
+          "anchorStart": 5604,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
+          "anchorEnd": 6529,
+          "anchorFile": "src/components/forms/activity-form.tsx",
+          "anchorStart": 6324,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6000,21 +7243,48 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 838,
+          "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
+          "anchorEnd": 4730,
           "anchorFile": "src/components/forms/baby-form.tsx",
-          "anchorStart": 823,
+          "anchorStart": 4713,
           "kind": "form_action",
-          "symbol": "submit",
-          "target": "src/components/forms/baby-form.tsx#submit"
+          "symbol": "onSubmit",
+          "target": "src/components/forms/baby-form.tsx#onSubmit"
         },
         {
-          "anchorDigest": "0240576f9feb3735778d1ae643427d76abfb8c3b1919bf4997b3d03e6ac8d9e2",
-          "anchorEnd": 557,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 849,
           "anchorFile": "src/components/forms/baby-form.tsx",
-          "anchorStart": 394,
+          "anchorStart": 784,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 2176,
+          "anchorFile": "src/components/forms/baby-form.tsx",
+          "anchorStart": 2106,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "623083c05e902701fcc2d9a898fe74e81262a58024645c95d450ab76b0454d3a",
+          "anchorEnd": 3164,
+          "anchorFile": "src/components/forms/baby-form.tsx",
+          "anchorStart": 3005,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "0cdcd1b9aba2c1f7294dee435c16c6d1dd2590e55c23cd68e0efb6400eef0484",
+          "anchorEnd": 3912,
+          "anchorFile": "src/components/forms/baby-form.tsx",
+          "anchorStart": 3721,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6029,20 +7299,47 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 927,
+          "anchorEnd": 5955,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 912,
+          "anchorStart": 5940,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/invite-form.tsx#submit"
         },
         {
-          "anchorDigest": "8aeab697f910583047fec05f233e41a2f9adfdc98a189d1eca897287ee7cf521",
-          "anchorEnd": 669,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 801,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 505,
+          "anchorStart": 736,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
+          "anchorEnd": 2517,
+          "anchorFile": "src/components/forms/invite-form.tsx",
+          "anchorStart": 2440,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "e84ac0b9d27e7351ee448775db45ab9e1dda386542e6da317f13ea79a205bc26",
+          "anchorEnd": 3975,
+          "anchorFile": "src/components/forms/invite-form.tsx",
+          "anchorStart": 3830,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "b928837e232b2bc92dadc06c13c466ccabde700b3d02cf8a56eee3a20d2f6b66",
+          "anchorEnd": 4572,
+          "anchorFile": "src/components/forms/invite-form.tsx",
+          "anchorStart": 4383,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6084,12 +7381,104 @@
     {
       "bindings": [
         {
-          "anchorDigest": "741e2c1af49bebc36e40b0b1fd9604359e8befb2d45696ddfea84270315d51c9",
-          "anchorEnd": 851,
-          "anchorFile": "src/components/settings/appearance-form.tsx",
-          "anchorStart": 677,
+          "anchorDigest": "38670c6b403554fa95aebd74054409899a865ad6633fc205dcc92d0496128247",
+          "anchorEnd": 1005,
+          "anchorFile": "src/components/household-selection-control.tsx",
+          "anchorStart": 920,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "8c160fa57e73ca5990932149bf8f9a2be47bb2c34437d02ed517954c43131ca9",
+          "anchorEnd": 1347,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 1274,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "214306fc794dd87b9487b5c3145c5bc87d3f5dd3f6d62f8d6e53f6457ac74f95",
+          "anchorEnd": 3774,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 3696,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "03605abe4df6885295142f4bfdc6938938d41ee00d58810e0ff80d8655a78346",
+          "anchorEnd": 4254,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 4065,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "14ea6c52e1f895b4217cf7cd7a0ceabbe0095864fe12229df6dfb43a3b3ebc75",
+          "anchorEnd": 5163,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 5000,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 974,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 909,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "5329d1c1818c5445a435c219486012197fdd77c785f7cd03d2d800afd7e31627",
+          "anchorEnd": 2146,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2085,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "8d491ddbe6088366a7f6c70e72da0d863d9d724cce634fa133c3b715263e09a2",
+          "anchorEnd": 2481,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2302,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "9a1d3665c3043ab8bcb7788cc18d57aae1313862b5dfe63b0f1f6d9ec7cc8e0e",
+          "anchorEnd": 4730,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 4582,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6233,48 +7622,39 @@
     {
       "bindings": [
         {
-          "anchorDigest": "abf207629969608221553acfa3badfd218f5bb359c237168db3edbbf8f4daf19",
-          "anchorEnd": 1334,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 1128,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 1155,
+          "anchorStart": 1063,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "fcbc7f1f18412a867a32d8c952400445e1a445c8c7863722c9c27d0774e78f1d",
-          "anchorEnd": 1876,
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 3602,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 1774,
+          "anchorStart": 3532,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "9494083d26e18eea9904577ea414479f7d3025aa994e23e6b6cd0eba2024f9f5",
-          "anchorEnd": 2301,
+          "anchorDigest": "08064cb09f1af36aaf1f4f246cc3d133d06aecf2a41005e26d8273ea6949a208",
+          "anchorEnd": 5037,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2245,
+          "anchorStart": 4893,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "28a831422bffaa9ffc8ded9a92eaeefe9f9f9f8e974bb1e7f3006913a48a6d73",
-          "anchorEnd": 2652,
+          "anchorDigest": "31f34aaeb1ccb26601bc9f406a0445bde7f924e214b3cadf80fd407bdc74202e",
+          "anchorEnd": 5778,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2591,
+          "anchorStart": 5621,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
-          "target": "globalThis.fetch"
-        },
-        {
-          "anchorDigest": "2a26015a5a1f2e28c3f553a2be83dd6dad69a52a6669599ff532818d9aede997",
-          "anchorEnd": 3148,
-          "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2949,
-          "kind": "global_fetch",
-          "symbol": "fetch[5]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6289,20 +7669,47 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 1184,
+          "anchorEnd": 6417,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 1169,
+          "anchorStart": 6402,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/settings/notification-preference-form.tsx#submit"
         },
         {
-          "anchorDigest": "8627d3eda1b65b71acff2b74686448b2aeac02c6019f56aafc69c01231534e26",
-          "anchorEnd": 997,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 896,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 461,
+          "anchorStart": 831,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "8e6589ca2d19fa4ad2ecfc5c1029f07ba02d490fe885c0dd77410f1ad8117af8",
+          "anchorEnd": 2967,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 2182,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+          "anchorEnd": 4289,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 4222,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "03a9a9415149cb9444ac32fac10560c6b7924e665ab8b0b8e769994640b7b56a",
+          "anchorEnd": 5519,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 5365,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6446,20 +7853,47 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 1861,
+          "anchorEnd": 5898,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 1846,
+          "anchorStart": 5883,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/settings/unit-preferences-form.tsx#submit"
         },
         {
-          "anchorDigest": "f3b24ea3361051639e6c7c143e07236f3c7aecb8fff122a617fef1648b9de558",
-          "anchorEnd": 1272,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 974,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 780,
+          "anchorStart": 909,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "a5628fe2b82bd1dbb44d2e45f74ec40c174cb893dceefc1655976eb2539e1dbe",
+          "anchorEnd": 2616,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 2189,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+          "anchorEnd": 3875,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 3808,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "30d7e562933de6152d6ccf6c46ab8131e661955bd01ca76d1437fff5f2ed6503",
+          "anchorEnd": 5020,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 4877,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -6492,13 +7926,22 @@
     {
       "bindings": [
         {
-          "anchorDigest": "7878f7e0a7a3c4c833182555317a8c2728fe2f7bda2236e588d939cc703bb428",
-          "anchorEnd": 1235,
+          "anchorDigest": "25f01de0157fd57b225d7eadb70c27a4d8d7d2a3fa06a9424b7e7ff7542561e3",
+          "anchorEnd": 1916,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 425,
+          "anchorStart": 869,
           "kind": "server_action",
           "symbol": "createCalendarEventAction",
           "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
+        },
+        {
+          "anchorDigest": "12a9ca9d25362f3a08587126289b11c750ef8e5690a806b06378bbf1bb714fa9",
+          "anchorEnd": 867,
+          "anchorFile": "src/app/app/calendar/actions.ts",
+          "anchorStart": 567,
+          "kind": "server_action",
+          "symbol": "issueCalendarEventAction",
+          "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
         }
       ],
       "disposition": "observed",
@@ -6512,54 +7955,72 @@
       "bindings": [
         {
           "anchorDigest": "f1c4d682bbc4d40fcbdeda2e11b76dc78b52ef556523385fc564eadc56fecf7e",
-          "anchorEnd": 124,
+          "anchorEnd": 131,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 95,
+          "anchorStart": 102,
           "kind": "worker_dynamic_import",
           "symbol": "startAutomatedBackupScheduler",
           "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
         },
         {
-          "anchorDigest": "1717bc9d903bf11d59fc23f79d07eac0ae893ae39fe128decd23ed185e24548e",
-          "anchorEnd": 153,
+          "anchorDigest": "939653699352c733103de51a00c789a20c350e97bd86313ce79aec0402f44914",
+          "anchorEnd": 264,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 130,
+          "anchorStart": 225,
+          "kind": "worker_dynamic_import",
+          "symbol": "startBrowserOperationRetentionScheduler",
+          "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+        },
+        {
+          "anchorDigest": "1717bc9d903bf11d59fc23f79d07eac0ae893ae39fe128decd23ed185e24548e",
+          "anchorEnd": 166,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 143,
           "kind": "worker_dynamic_import",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
           "anchorDigest": "bd7dfaa9223fc1679c9fac61f1adcda2fafb6ecd65f665a5b6f3bf4ffa4e117c",
-          "anchorEnd": 194,
+          "anchorEnd": 213,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 159,
+          "anchorStart": 178,
           "kind": "worker_dynamic_import",
           "symbol": "startSproutSourceRetentionScheduler",
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
         },
         {
           "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
-          "anchorEnd": 440,
+          "anchorEnd": 586,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 409,
+          "anchorStart": 555,
           "kind": "worker_start_call",
           "symbol": "startAutomatedBackupScheduler",
           "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
         },
         {
-          "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
-          "anchorEnd": 467,
+          "anchorDigest": "8a6c4bc59c0a9ace67575338516ce74f1ddefee1604c8358de407952b119157c",
+          "anchorEnd": 713,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 442,
+          "anchorStart": 672,
+          "kind": "worker_start_call",
+          "symbol": "startBrowserOperationRetentionScheduler",
+          "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+        },
+        {
+          "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
+          "anchorEnd": 619,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 594,
           "kind": "worker_start_call",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
           "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
-          "anchorEnd": 506,
+          "anchorEnd": 664,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 469,
+          "anchorStart": 627,
           "kind": "worker_start_call",
           "symbol": "startSproutSourceRetentionScheduler",
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
@@ -6608,6 +8069,43 @@
       "ownerKind": "worker",
       "ownerModule": "src/server/automated-backup-scheduler.ts",
       "sidecarPath": "src/server/automated-backup-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "ee263c2120094fed9d78fdab67b7429faa8bdd63f122f53ee7a53ed9041c48d3",
+          "anchorEnd": 1644,
+          "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+          "anchorStart": 1606,
+          "kind": "worker_schedule",
+          "symbol": "tick",
+          "target": "src/server/browser-operation-retention-scheduler.ts#tick"
+        },
+        {
+          "anchorDigest": "5d667b5b4a35e9d997dfe2ff961d427c6165097dd2d27475cd7071520d33444a",
+          "anchorEnd": 1688,
+          "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+          "anchorStart": 692,
+          "kind": "worker_start_call",
+          "symbol": "startBrowserOperationRetentionScheduler",
+          "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+        },
+        {
+          "anchorDigest": "ce98564dbc4fefd649eb704f0a82ffcf1a9bd30e078ef7bfe1ba46925742b21b",
+          "anchorEnd": 1023,
+          "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+          "anchorStart": 975,
+          "kind": "worker_tick",
+          "symbol": "tick",
+          "target": "src/server/services/browser-operation-retention.ts#runBrowserOperationRetention"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
     },
     {
       "bindings": [
@@ -7016,26 +8514,116 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 107,
-  "observationDigest": "9195611b29e14825dd5a62e63b0502549f16564f67a4f99b7e18ede6596959b7",
+  "observationCount": 125,
+  "observationDigest": "fb64a4e7f2a26cd13153d6d6a34f3cd20e3e90adf6898e1112adec0638bb076b",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
     {
       "bindings": [
         {
-          "anchorEnd": 1184,
+          "anchorEnd": 602,
+          "anchorFile": "src/app/api/account/appearance/issue/route.ts",
+          "anchorStart": 186,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/appearance/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 352,
+          "anchorFile": "src/app/api/account/appearance/route.ts",
+          "anchorStart": 213,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/appearance/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/account/appearance/route.ts#GET"
+        },
+        {
+          "anchorEnd": 765,
+          "anchorFile": "src/app/api/account/appearance/route.ts",
+          "anchorStart": 354,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/appearance/route.ts",
+          "symbol": "PATCH",
+          "target": "src/app/api/account/appearance/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 987,
+          "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+          "anchorStart": 701,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+          "symbol": "DELETE",
+          "target": "src/app/api/account/browser-operations/[operationId]/route.ts#DELETE"
+        },
+        {
+          "anchorEnd": 699,
+          "anchorFile": "src/app/api/account/browser-operations/[operationId]/route.ts",
+          "anchorStart": 291,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/account/browser-operations/[operationId]/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 346,
+          "anchorFile": "src/app/api/account/browser-operations/partition/route.ts",
+          "anchorStart": 192,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/account/browser-operations/partition/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/browser-operations/partition/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 3519,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 757,
+          "anchorStart": 2181,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/[id]/route.ts",
           "symbol": "DELETE",
           "target": "src/app/api/activities/[id]/route.ts#DELETE"
         },
         {
-          "anchorEnd": 755,
+          "anchorEnd": 2179,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
-          "anchorStart": 236,
+          "anchorStart": 749,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/[id]/route.ts",
           "symbol": "PATCH",
@@ -7051,18 +8639,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 556,
+          "anchorEnd": 725,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 170,
+          "anchorStart": 339,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/route.ts",
           "symbol": "GET",
           "target": "src/app/api/activities/route.ts#GET"
         },
         {
-          "anchorEnd": 745,
+          "anchorEnd": 1922,
           "anchorFile": "src/app/api/activities/route.ts",
-          "anchorStart": 558,
+          "anchorStart": 727,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/route.ts",
           "symbol": "POST",
@@ -7078,9 +8666,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 532,
+          "anchorEnd": 1726,
           "anchorFile": "src/app/api/activities/undo-last/route.ts",
-          "anchorStart": 156,
+          "anchorStart": 327,
           "kind": "route_method",
           "ownerModule": "src/app/api/activities/undo-last/route.ts",
           "symbol": "POST",
@@ -7123,7 +8711,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1047,
+          "anchorEnd": 1292,
           "anchorFile": "src/app/api/babies/[id]/deactivate/route.ts",
           "anchorStart": 303,
           "kind": "route_method",
@@ -7141,7 +8729,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1047,
+          "anchorEnd": 1292,
           "anchorFile": "src/app/api/babies/[id]/reactivate/route.ts",
           "anchorStart": 303,
           "kind": "route_method",
@@ -7159,18 +8747,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 313,
+          "anchorEnd": 585,
+          "anchorFile": "src/app/api/babies/issue/route.ts",
+          "anchorStart": 171,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/babies/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/babies/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/babies/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/issue/route.ts",
+      "sidecarPath": "src/app/api/babies/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 347,
           "anchorFile": "src/app/api/babies/route.ts",
-          "anchorStart": 159,
+          "anchorStart": 193,
           "kind": "route_method",
           "ownerModule": "src/app/api/babies/route.ts",
           "symbol": "GET",
           "target": "src/app/api/babies/route.ts#GET"
         },
         {
-          "anchorEnd": 478,
+          "anchorEnd": 831,
           "anchorFile": "src/app/api/babies/route.ts",
-          "anchorStart": 315,
+          "anchorStart": 349,
           "kind": "route_method",
           "ownerModule": "src/app/api/babies/route.ts",
           "symbol": "POST",
@@ -7321,9 +8927,72 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1078,
+          "anchorEnd": 909,
+          "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+          "anchorStart": 641,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+          "symbol": "DELETE",
+          "target": "src/app/api/browser-operations/[operationId]/route.ts#DELETE"
+        },
+        {
+          "anchorEnd": 639,
+          "anchorFile": "src/app/api/browser-operations/[operationId]/route.ts",
+          "anchorStart": 229,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/browser-operations/[operationId]/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 350,
+          "anchorFile": "src/app/api/browser-operations/partition/route.ts",
+          "anchorStart": 194,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/browser-operations/partition/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/browser-operations/partition/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/browser-operations/partition/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 822,
+          "anchorFile": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+          "anchorStart": 262,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/dashboard/warnings/dismiss/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "sidecarPath": "src/app/api/dashboard/warnings/dismiss/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1203,
           "anchorFile": "src/app/api/dashboard/warnings/dismiss/route.ts",
-          "anchorStart": 307,
+          "anchorStart": 334,
           "kind": "route_method",
           "ownerModule": "src/app/api/dashboard/warnings/dismiss/route.ts",
           "symbol": "POST",
@@ -7375,9 +9044,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 462,
+          "anchorEnd": 534,
           "anchorFile": "src/app/api/health/route.ts",
-          "anchorStart": 195,
+          "anchorStart": 255,
           "kind": "route_method",
           "ownerModule": "src/app/api/health/route.ts",
           "symbol": "GET",
@@ -7492,6 +9161,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1375,
+          "anchorFile": "src/app/api/household-selection/route.ts",
+          "anchorStart": 419,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/household-selection/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/household-selection/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 466,
           "anchorFile": "src/app/api/households/leave/route.ts",
           "anchorStart": 165,
@@ -7528,9 +9215,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 353,
+          "anchorEnd": 1779,
           "anchorFile": "src/app/api/invites/[token]/revoke/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 312,
           "kind": "route_method",
           "ownerModule": "src/app/api/invites/[token]/revoke/route.ts",
           "symbol": "POST",
@@ -7546,9 +9233,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 476,
+          "anchorEnd": 1603,
           "anchorFile": "src/app/api/invites/revoke-all/route.ts",
-          "anchorStart": 166,
+          "anchorStart": 335,
           "kind": "route_method",
           "ownerModule": "src/app/api/invites/revoke-all/route.ts",
           "symbol": "POST",
@@ -7564,9 +9251,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 471,
+          "anchorEnd": 1601,
           "anchorFile": "src/app/api/invites/route.ts",
-          "anchorStart": 155,
+          "anchorStart": 312,
           "kind": "route_method",
           "ownerModule": "src/app/api/invites/route.ts",
           "symbol": "POST",
@@ -7582,9 +9269,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 349,
+          "anchorEnd": 1490,
           "anchorFile": "src/app/api/members/[id]/restore/route.ts",
-          "anchorStart": 109,
+          "anchorStart": 260,
           "kind": "route_method",
           "ownerModule": "src/app/api/members/[id]/restore/route.ts",
           "symbol": "POST",
@@ -7600,18 +9287,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 593,
+          "anchorEnd": 2852,
           "anchorFile": "src/app/api/members/[id]/route.ts",
-          "anchorStart": 393,
+          "anchorStart": 1660,
           "kind": "route_method",
           "ownerModule": "src/app/api/members/[id]/route.ts",
           "symbol": "DELETE",
           "target": "src/app/api/members/[id]/route.ts#DELETE"
         },
         {
-          "anchorEnd": 391,
+          "anchorEnd": 1658,
           "anchorFile": "src/app/api/members/[id]/route.ts",
-          "anchorStart": 167,
+          "anchorStart": 460,
           "kind": "route_method",
           "ownerModule": "src/app/api/members/[id]/route.ts",
           "symbol": "PATCH",
@@ -7627,9 +9314,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 349,
+          "anchorEnd": 1490,
           "anchorFile": "src/app/api/members/[id]/suspend/route.ts",
-          "anchorStart": 109,
+          "anchorStart": 260,
           "kind": "route_method",
           "ownerModule": "src/app/api/members/[id]/suspend/route.ts",
           "symbol": "POST",
@@ -7645,18 +9332,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 343,
-          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorEnd": 541,
+          "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
           "anchorStart": 197,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 379,
+          "anchorFile": "src/app/api/notifications/preferences/route.ts",
+          "anchorStart": 232,
           "kind": "route_method",
           "ownerModule": "src/app/api/notifications/preferences/route.ts",
           "symbol": "GET",
           "target": "src/app/api/notifications/preferences/route.ts#GET"
         },
         {
-          "anchorEnd": 544,
+          "anchorEnd": 724,
           "anchorFile": "src/app/api/notifications/preferences/route.ts",
-          "anchorStart": 345,
+          "anchorStart": 381,
           "kind": "route_method",
           "ownerModule": "src/app/api/notifications/preferences/route.ts",
           "symbol": "POST",
@@ -7789,18 +9494,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 330,
+          "anchorEnd": 573,
+          "anchorFile": "src/app/api/settings/appearance/issue/route.ts",
+          "anchorStart": 180,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/settings/appearance/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 350,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 189,
+          "anchorStart": 209,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/appearance/route.ts",
           "symbol": "GET",
           "target": "src/app/api/settings/appearance/route.ts#GET"
         },
         {
-          "anchorEnd": 514,
+          "anchorEnd": 666,
           "anchorFile": "src/app/api/settings/appearance/route.ts",
-          "anchorStart": 332,
+          "anchorStart": 352,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/appearance/route.ts",
           "symbol": "PATCH",
@@ -7852,18 +9575,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 342,
+          "anchorEnd": 571,
+          "anchorFile": "src/app/api/settings/units/issue/route.ts",
+          "anchorStart": 182,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/settings/units/issue/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/settings/units/issue/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 358,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 198,
+          "anchorStart": 214,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/units/route.ts",
           "symbol": "GET",
           "target": "src/app/api/settings/units/route.ts#GET"
         },
         {
-          "anchorEnd": 522,
+          "anchorEnd": 716,
           "anchorFile": "src/app/api/settings/units/route.ts",
-          "anchorStart": 344,
+          "anchorStart": 360,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/units/route.ts",
           "symbol": "PATCH",
@@ -7924,9 +9665,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 735,
+          "anchorEnd": 2019,
           "anchorFile": "src/app/api/timers/[id]/pause/route.ts",
-          "anchorStart": 150,
+          "anchorStart": 309,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/[id]/pause/route.ts",
           "symbol": "POST",
@@ -7942,9 +9683,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 737,
+          "anchorEnd": 2024,
           "anchorFile": "src/app/api/timers/[id]/resume/route.ts",
-          "anchorStart": 151,
+          "anchorStart": 310,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/[id]/resume/route.ts",
           "symbol": "POST",
@@ -7960,9 +9701,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 733,
+          "anchorEnd": 2014,
           "anchorFile": "src/app/api/timers/[id]/stop/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 308,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
           "symbol": "POST",
@@ -7974,6 +9715,33 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 325,
+          "anchorFile": "src/app/account/appearance/page.tsx",
+          "anchorStart": 305,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/account/appearance/page.tsx",
+          "symbol": "getAccountAppearance",
+          "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+        },
+        {
+          "anchorEnd": 263,
+          "anchorFile": "src/app/account/appearance/page.tsx",
+          "anchorStart": 248,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/account/appearance/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
     },
     {
       "bindings": [
@@ -8086,13 +9854,22 @@
     {
       "bindings": [
         {
-          "anchorEnd": 175,
+          "anchorEnd": 198,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 146,
+          "anchorStart": 169,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "browserOperationFailureResult",
           "target": "src/server/services/browser-operations.ts#browserOperationFailureResult"
+        },
+        {
+          "anchorEnd": 45,
+          "anchorFile": "src/app/app/calendar/actions.ts",
+          "anchorStart": 26,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/calendar/page.tsx",
+          "symbol": "createCalendarEvent",
+          "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
           "anchorEnd": 1087,
@@ -8113,9 +9890,9 @@
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 60,
+          "anchorEnd": 83,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 26,
+          "anchorStart": 49,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "issueCalendarEventBrowserOperation",
@@ -8131,9 +9908,9 @@
           "target": "src/server/auth/session.ts#requireUserPage"
         },
         {
-          "anchorEnd": 99,
+          "anchorEnd": 122,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 64,
+          "anchorStart": 87,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "submitCalendarEventBrowserOperation",
@@ -8185,13 +9962,22 @@
     {
       "bindings": [
         {
-          "anchorEnd": 34,
+          "anchorEnd": 178,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 9,
+          "anchorStart": 152,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
-          "symbol": "getCurrentAppearanceTheme",
-          "target": "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+          "symbol": "getHouseholdSelectionState",
+          "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
+        },
+        {
+          "anchorEnd": 110,
+          "anchorFile": "src/app/app/layout.tsx",
+          "anchorStart": 95,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/layout.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -8338,18 +10124,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 264,
+          "anchorEnd": 413,
           "anchorFile": "src/app/app/settings/appearance/page.tsx",
-          "anchorStart": 242,
+          "anchorStart": 393,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/settings/appearance/page.tsx",
+          "symbol": "getAccountAppearance",
+          "target": "src/server/services/account-appearance.ts#getAccountAppearance"
+        },
+        {
+          "anchorEnd": 344,
+          "anchorFile": "src/app/app/settings/appearance/page.tsx",
+          "anchorStart": 322,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/appearance/page.tsx",
           "symbol": "getHouseholdAppearance",
           "target": "src/server/services/appearance.ts#getHouseholdAppearance"
         },
         {
-          "anchorEnd": 196,
+          "anchorEnd": 276,
           "anchorFile": "src/app/app/settings/appearance/page.tsx",
-          "anchorStart": 177,
+          "anchorStart": 257,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/appearance/page.tsx",
           "symbol": "requireSettingsPage",
@@ -8527,31 +10322,31 @@
     {
       "bindings": [
         {
-          "anchorEnd": 283,
+          "anchorEnd": 275,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 267,
+          "anchorStart": 259,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 359,
+          "anchorEnd": 352,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
-          "anchorStart": 332,
+          "anchorStart": 324,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
-          "symbol": "listNotificationPreferences",
-          "target": "src/server/services/integrations.ts#listNotificationPreferences"
+          "symbol": "getOwnNotificationPreference",
+          "target": "src/server/services/notification-preferences.ts#getOwnNotificationPreference"
         },
         {
-          "anchorEnd": 221,
+          "anchorEnd": 217,
           "anchorFile": "src/app/app/settings/notifications/page.tsx",
           "anchorStart": 202,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/notifications/page.tsx",
-          "symbol": "requireSettingsPage",
-          "target": "src/server/auth/page-access.ts#requireSettingsPage"
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -8563,27 +10358,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 351,
+          "anchorEnd": 360,
           "anchorFile": "src/app/app/settings/page.tsx",
           "anchorStart": 332,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
-          "symbol": "getHouseholdContext",
-          "target": "src/server/auth/context.ts#getHouseholdContext"
+          "symbol": "getEffectiveHouseholdContext",
+          "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
         },
         {
-          "anchorEnd": 465,
+          "anchorEnd": 474,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 450,
+          "anchorStart": 459,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
         },
         {
-          "anchorEnd": 408,
+          "anchorEnd": 417,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 393,
+          "anchorStart": 402,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "requireUserPage",
@@ -8671,6 +10466,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 473,
+          "anchorFile": "src/app/layout.tsx",
+          "anchorStart": 436,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/layout.tsx",
+          "symbol": "getCurrentAuthenticatedAppearanceMode",
+          "target": "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/layout.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/layout.tsx",
+      "sidecarPath": "src/app/layout.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 208,
           "anchorFile": "src/app/login/page.tsx",
           "anchorStart": 190,
@@ -8707,22 +10520,13 @@
     {
       "bindings": [
         {
-          "anchorEnd": 543,
+          "anchorEnd": 548,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 519,
+          "anchorStart": 524,
           "kind": "server_value_import",
           "ownerModule": "src/app/onboarding/page.tsx",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorEnd": 398,
-          "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 382,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/onboarding/page.tsx",
-          "symbol": "getHouseholdHome",
-          "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorEnd": 328,
@@ -8734,13 +10538,22 @@
           "target": "src/server/services/household-leave.ts#getHouseholdLeaveOptions"
         },
         {
-          "anchorEnd": 462,
+          "anchorEnd": 467,
           "anchorFile": "src/app/onboarding/page.tsx",
-          "anchorStart": 447,
+          "anchorStart": 452,
           "kind": "server_value_import",
           "ownerModule": "src/app/onboarding/page.tsx",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
+        },
+        {
+          "anchorEnd": 403,
+          "anchorFile": "src/app/onboarding/page.tsx",
+          "anchorStart": 382,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/onboarding/page.tsx",
+          "symbol": "listHouseholdsForUser",
+          "target": "src/server/services/households.ts#listHouseholdsForUser"
         },
         {
           "anchorEnd": 262,
@@ -8860,36 +10673,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 652,
+          "anchorEnd": 765,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 450,
+          "anchorStart": 700,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 1320,
+          "anchorEnd": 2991,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1117,
+          "anchorStart": 2921,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 1985,
+          "anchorEnd": 4251,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 1781,
+          "anchorStart": 4110,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2627,
+          "anchorEnd": 4958,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 2422,
+          "anchorStart": 4805,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[4]",
@@ -8905,12 +10718,39 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2583,
+          "anchorEnd": 805,
           "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
-          "anchorStart": 2387,
+          "anchorStart": 740,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3274,
+          "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+          "anchorStart": 3199,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4631,
+          "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+          "anchorStart": 4470,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5628,
+          "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
+          "anchorStart": 5427,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -8923,12 +10763,39 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1263,
+          "anchorEnd": 965,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 1048,
+          "anchorStart": 900,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3969,
+          "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+          "anchorStart": 3903,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5105,
+          "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+          "anchorStart": 4964,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5784,
+          "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
+          "anchorStart": 5622,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -8986,13 +10853,58 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2606,
+          "anchorEnd": 3750,
+          "anchorFile": "src/components/browser-operation-recovery.tsx",
+          "anchorStart": 3685,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/browser-operation-recovery.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/browser-operation-recovery.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/browser-operation-recovery.tsx",
+      "sidecarPath": "src/components/browser-operation-recovery.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 946,
           "anchorFile": "src/components/calendar-event-submission.tsx",
-          "anchorStart": 2571,
+          "anchorStart": 881,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/calendar-event-submission.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3385,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 3315,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/calendar-event-submission.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 6384,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 6349,
           "kind": "server_action",
           "ownerModule": "src/components/calendar-event-submission.tsx",
           "symbol": "createCalendarEventAction[1]",
           "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
+        },
+        {
+          "anchorEnd": 5914,
+          "anchorFile": "src/components/calendar-event-submission.tsx",
+          "anchorStart": 5880,
+          "kind": "server_action",
+          "ownerModule": "src/components/calendar-event-submission.tsx",
+          "symbol": "issueCalendarEventAction[1]",
+          "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
         }
       ],
       "disposition": "observed",
@@ -9004,12 +10916,39 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1749,
+          "anchorEnd": 1022,
           "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
-          "anchorStart": 1445,
+          "anchorStart": 957,
           "kind": "global_fetch",
           "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2279,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 2046,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3644,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 3574,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 6481,
+          "anchorFile": "src/components/dashboard/dashboard-warnings.tsx",
+          "anchorStart": 6177,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9022,21 +10961,48 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3329,
+          "anchorEnd": 7530,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 3314,
+          "anchorStart": 7515,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2474,
+          "anchorEnd": 1582,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2253,
+          "anchorStart": 1517,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4497,
+          "anchorFile": "src/components/forms/activity-form.tsx",
+          "anchorStart": 4420,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/activity-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5776,
+          "anchorFile": "src/components/forms/activity-form.tsx",
+          "anchorStart": 5604,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/activity-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 6529,
+          "anchorFile": "src/components/forms/activity-form.tsx",
+          "anchorStart": 6324,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/activity-form.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9049,21 +11015,48 @@
     {
       "bindings": [
         {
-          "anchorEnd": 838,
+          "anchorEnd": 4730,
           "anchorFile": "src/components/forms/baby-form.tsx",
-          "anchorStart": 823,
+          "anchorStart": 4713,
           "kind": "form_action",
           "ownerModule": "src/components/forms/baby-form.tsx",
-          "symbol": "submit",
-          "target": "src/components/forms/baby-form.tsx#submit"
+          "symbol": "onSubmit",
+          "target": "src/components/forms/baby-form.tsx#onSubmit"
         },
         {
-          "anchorEnd": 557,
+          "anchorEnd": 849,
           "anchorFile": "src/components/forms/baby-form.tsx",
-          "anchorStart": 394,
+          "anchorStart": 784,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/baby-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2176,
+          "anchorFile": "src/components/forms/baby-form.tsx",
+          "anchorStart": 2106,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/baby-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3164,
+          "anchorFile": "src/components/forms/baby-form.tsx",
+          "anchorStart": 3005,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/baby-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3912,
+          "anchorFile": "src/components/forms/baby-form.tsx",
+          "anchorStart": 3721,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/baby-form.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9076,21 +11069,48 @@
     {
       "bindings": [
         {
-          "anchorEnd": 927,
+          "anchorEnd": 5955,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 912,
+          "anchorStart": 5940,
           "kind": "form_action",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/invite-form.tsx#submit"
         },
         {
-          "anchorEnd": 669,
+          "anchorEnd": 801,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 505,
+          "anchorStart": 736,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2517,
+          "anchorFile": "src/components/forms/invite-form.tsx",
+          "anchorStart": 2440,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/invite-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3975,
+          "anchorFile": "src/components/forms/invite-form.tsx",
+          "anchorStart": 3830,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/invite-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4572,
+          "anchorFile": "src/components/forms/invite-form.tsx",
+          "anchorStart": 4383,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/invite-form.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9130,12 +11150,102 @@
     {
       "bindings": [
         {
-          "anchorEnd": 851,
+          "anchorEnd": 1005,
+          "anchorFile": "src/components/household-selection-control.tsx",
+          "anchorStart": 920,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/household-selection-control.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1347,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 1274,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/personal-appearance-form.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3774,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 3696,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/personal-appearance-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4254,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 4065,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/personal-appearance-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5163,
+          "anchorFile": "src/components/personal-appearance-form.tsx",
+          "anchorStart": 5000,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/personal-appearance-form.tsx",
+          "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 974,
           "anchorFile": "src/components/settings/appearance-form.tsx",
-          "anchorStart": 677,
+          "anchorStart": 909,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/appearance-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2146,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2085,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/appearance-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2481,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 2302,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/appearance-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4730,
+          "anchorFile": "src/components/settings/appearance-form.tsx",
+          "anchorStart": 4582,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/appearance-form.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9274,48 +11384,39 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1334,
+          "anchorEnd": 1128,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 1155,
+          "anchorStart": 1063,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 1876,
+          "anchorEnd": 3602,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 1774,
+          "anchorStart": 3532,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2301,
+          "anchorEnd": 5037,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2245,
+          "anchorStart": 4893,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2652,
+          "anchorEnd": 5778,
           "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2591,
+          "anchorStart": 5621,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/member-access-manager.tsx",
           "symbol": "fetch[4]",
-          "target": "globalThis.fetch"
-        },
-        {
-          "anchorEnd": 3148,
-          "anchorFile": "src/components/settings/member-access-manager.tsx",
-          "anchorStart": 2949,
-          "kind": "global_fetch",
-          "ownerModule": "src/components/settings/member-access-manager.tsx",
-          "symbol": "fetch[5]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9328,21 +11429,48 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1184,
+          "anchorEnd": 6417,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 1169,
+          "anchorStart": 6402,
           "kind": "form_action",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "submit",
           "target": "src/components/settings/notification-preference-form.tsx#submit"
         },
         {
-          "anchorEnd": 997,
+          "anchorEnd": 896,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 461,
+          "anchorStart": 831,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2967,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 2182,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/notification-preference-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4289,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 4222,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/notification-preference-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5519,
+          "anchorFile": "src/components/settings/notification-preference-form.tsx",
+          "anchorStart": 5365,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/notification-preference-form.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9481,21 +11609,48 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1861,
+          "anchorEnd": 5898,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 1846,
+          "anchorStart": 5883,
           "kind": "form_action",
           "ownerModule": "src/components/settings/unit-preferences-form.tsx",
           "symbol": "submit",
           "target": "src/components/settings/unit-preferences-form.tsx#submit"
         },
         {
-          "anchorEnd": 1272,
+          "anchorEnd": 974,
           "anchorFile": "src/components/settings/unit-preferences-form.tsx",
-          "anchorStart": 780,
+          "anchorStart": 909,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/unit-preferences-form.tsx",
           "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2616,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 2189,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3875,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 3808,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5020,
+          "anchorFile": "src/components/settings/unit-preferences-form.tsx",
+          "anchorStart": 4877,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/unit-preferences-form.tsx",
+          "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         }
       ],
@@ -9526,13 +11681,22 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1235,
+          "anchorEnd": 1916,
           "anchorFile": "src/app/app/calendar/actions.ts",
-          "anchorStart": 425,
+          "anchorStart": 869,
           "kind": "server_action",
           "ownerModule": "src/app/app/calendar/actions.ts",
           "symbol": "createCalendarEventAction",
           "target": "src/app/app/calendar/actions.ts#createCalendarEventAction"
+        },
+        {
+          "anchorEnd": 867,
+          "anchorFile": "src/app/app/calendar/actions.ts",
+          "anchorStart": 567,
+          "kind": "server_action",
+          "ownerModule": "src/app/app/calendar/actions.ts",
+          "symbol": "issueCalendarEventAction",
+          "target": "src/app/app/calendar/actions.ts#issueCalendarEventAction"
         }
       ],
       "disposition": "observed",
@@ -9544,54 +11708,72 @@
     {
       "bindings": [
         {
-          "anchorEnd": 124,
+          "anchorEnd": 131,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 95,
+          "anchorStart": 102,
           "kind": "worker_dynamic_import",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startAutomatedBackupScheduler",
           "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
         },
         {
-          "anchorEnd": 153,
+          "anchorEnd": 264,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 130,
+          "anchorStart": 225,
+          "kind": "worker_dynamic_import",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startBrowserOperationRetentionScheduler",
+          "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+        },
+        {
+          "anchorEnd": 166,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 143,
           "kind": "worker_dynamic_import",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
-          "anchorEnd": 194,
+          "anchorEnd": 213,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 159,
+          "anchorStart": 178,
           "kind": "worker_dynamic_import",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startSproutSourceRetentionScheduler",
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
         },
         {
-          "anchorEnd": 440,
+          "anchorEnd": 586,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 409,
+          "anchorStart": 555,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startAutomatedBackupScheduler",
           "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
         },
         {
-          "anchorEnd": 467,
+          "anchorEnd": 713,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 442,
+          "anchorStart": 672,
+          "kind": "worker_start_call",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startBrowserOperationRetentionScheduler",
+          "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+        },
+        {
+          "anchorEnd": 619,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 594,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
-          "anchorEnd": 506,
+          "anchorEnd": 664,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 469,
+          "anchorStart": 627,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startSproutSourceRetentionScheduler",
@@ -9639,6 +11821,42 @@
       "ownerKind": "worker",
       "ownerModule": "src/server/automated-backup-scheduler.ts",
       "sidecarPath": "src/server/automated-backup-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1644,
+          "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+          "anchorStart": 1606,
+          "kind": "worker_schedule",
+          "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/browser-operation-retention-scheduler.ts#tick"
+        },
+        {
+          "anchorEnd": 1688,
+          "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+          "anchorStart": 692,
+          "kind": "worker_start_call",
+          "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+          "symbol": "startBrowserOperationRetentionScheduler",
+          "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+        },
+        {
+          "anchorEnd": 1023,
+          "anchorFile": "src/server/browser-operation-retention-scheduler.ts",
+          "anchorStart": 975,
+          "kind": "worker_tick",
+          "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/services/browser-operation-retention.ts#runBrowserOperationRetention"
+        }
+      ],
+      "disposition": "observed",
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
     },
     {
       "bindings": [
@@ -10003,6 +12221,30 @@
   ],
   "ownerSetCanonical": [
     {
+      "id": "api_route:src/app/api/account/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/issue/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/appearance/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/appearance/route.ts",
+      "sidecarPath": "src/app/api/account/appearance/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/browser-operations/[operationId]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/browser-operations/partition/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/activities/[id]/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/activities/[id]/route.ts",
@@ -10037,6 +12279,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/babies/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/issue/route.ts",
+      "sidecarPath": "src/app/api/babies/issue/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/babies/route.ts",
@@ -10085,6 +12333,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/backups/sprout/preview/route.ts",
       "sidecarPath": "src/app/api/backups/sprout/preview/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/browser-operations/[operationId]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/browser-operations/[operationId]/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/[operationId]/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/browser-operations/partition/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/browser-operations/partition/route.ts",
+      "sidecarPath": "src/app/api/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/dashboard/warnings/dismiss/issue/route.ts",
+      "sidecarPath": "src/app/api/dashboard/warnings/dismiss/issue/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/dashboard/warnings/dismiss/route.ts",
@@ -10141,6 +12407,12 @@
       "sidecarPath": "src/app/api/hooks/v1/babies/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/household-selection/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/household-selection/route.ts",
+      "sidecarPath": "src/app/api/household-selection/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/households/leave/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/households/leave/route.ts",
@@ -10189,6 +12461,12 @@
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
+      "sidecarPath": "src/app/api/notifications/preferences/issue/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/notifications/preferences/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/notifications/preferences/route.ts",
@@ -10225,6 +12503,12 @@
       "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/settings/appearance/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/appearance/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/appearance/issue/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/settings/appearance/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/settings/appearance/route.ts",
@@ -10235,6 +12519,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/settings/registration/route.ts",
       "sidecarPath": "src/app/api/settings/registration/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/settings/units/issue/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/settings/units/issue/route.ts",
+      "sidecarPath": "src/app/api/settings/units/issue/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/settings/units/route.ts",
@@ -10271,6 +12561,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
+    },
+    {
+      "id": "server_loader:src/app/account/appearance/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/appearance/page.tsx",
+      "sidecarPath": "src/app/account/appearance/page.operation.ts"
     },
     {
       "id": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
@@ -10399,6 +12695,12 @@
       "sidecarPath": "src/app/invite/[token]/page.operation.ts"
     },
     {
+      "id": "server_loader:src/app/layout.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/layout.tsx",
+      "sidecarPath": "src/app/layout.operation.ts"
+    },
+    {
       "id": "server_loader:src/app/login/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/login/page.tsx",
@@ -10459,6 +12761,12 @@
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/browser-operation-recovery.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/browser-operation-recovery.tsx",
+      "sidecarPath": "src/components/browser-operation-recovery.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/calendar-event-submission.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/calendar-event-submission.tsx",
@@ -10493,6 +12801,18 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/onboarding-form.tsx",
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts"
+    },
+    {
+      "id": "client_binding:src/components/household-selection-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/household-selection-control.tsx",
+      "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
+      "id": "client_binding:src/components/personal-appearance-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/personal-appearance-form.tsx",
+      "sidecarPath": "src/components/personal-appearance-form.operation.ts"
     },
     {
       "id": "client_binding:src/components/settings/appearance-form.tsx",
@@ -10585,6 +12905,12 @@
       "sidecarPath": "src/server/automated-backup-scheduler.operation.ts"
     },
     {
+      "id": "worker:src/server/browser-operation-retention-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
+      "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
       "id": "worker:src/server/integrity-scheduler.ts",
       "ownerKind": "worker",
       "ownerModule": "src/server/integrity-scheduler.ts",
@@ -10645,9 +12971,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "98123d57e97cf6162b02f6f8bf33cc5b0ea517fc4d0a829d93b7e918573353c3",
+  "ownerSetDigest": "ea6ca9215eea1ac5d08c96ff5552a9b73d7b29a56273ce668a13f64224c2a38b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "ddfd27e456605c3ffdb9ccc5ba0c760d1ce11d4b094bde985fea262ff6655caf",
+  "registryDigest": "0c1d1272ac263125510aabf8ca27c25f76e8802cfa7106611555609ab485feb6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

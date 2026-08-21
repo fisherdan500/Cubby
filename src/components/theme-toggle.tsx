@@ -11,7 +11,7 @@ export function ThemeToggle() {
     <Button
       type="button"
       variant="ghost"
-      className="h-10 min-h-10 w-10 rounded-full p-0"
+      className="h-11 min-h-11 w-11 rounded-full p-0"
       onClick={() => setTheme(next)}
       aria-label="Toggle dark mode"
       title="Toggle dark mode"

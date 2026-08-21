@@ -8,8 +8,13 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
-      symbol: "getCurrentAppearanceTheme",
-      target: "src/server/services/appearance.ts#getCurrentAppearanceTheme"
+      symbol: "getHouseholdSelectionState",
+      target: "src/server/services/household-selection.ts#getHouseholdSelectionState"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "requireUserPage",
+      target: "src/server/auth/session.ts#requireUserPage"
     }
   ],
   disposition: "observed",

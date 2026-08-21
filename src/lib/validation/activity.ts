@@ -124,6 +124,12 @@ const activityInputSchema = z.discriminatedUnion("type", [
   ]);
 
 export const activityRestoreSchema = activityInputSchema;
+/** Browser-v2 operations own durability through the bmo_ ledger, never receipts. */
+export const activityBrowserCreateSchema = activityInputSchema;
+export const activityBrowserUpdateSchema = activityInputSchema.and(z.object({
+  id: z.string().min(1),
+  expectedUpdatedAt: z.string().datetime({ offset: true })
+}));
 export const activityCreateSchema = activityInputSchema.and(z.object({ clientMutationId: z.string().uuid() }));
 export const activityUpdateSchema = activityInputSchema.and(z.object({
   id: z.string().min(1),

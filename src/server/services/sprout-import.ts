@@ -14,7 +14,7 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { zonedDateStart } from "@/lib/timezone";
-import { getHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
+import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { durationSeconds } from "@/lib/dates";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import { SPROUT_SOURCE_SYSTEM } from "@/server/services/sprout-import-contract";
@@ -633,7 +633,7 @@ function sproutStagingConfig() {
 }
 
 export async function previewSproutBackup(formData: FormData) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const { parsed, bytes } = await parseUpload(formData);
   const duplicates = await countDuplicates(ctx, importKeys(parsed));
@@ -696,7 +696,7 @@ export async function previewSproutBackup(formData: FormData) {
 }
 
 export async function importSproutBackup(options: { previewId?: string } = {}) {
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const previewId = options.previewId?.trim();
   if (!previewId) throw new Error("sprout_preview_required");

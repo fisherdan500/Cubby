@@ -22,7 +22,7 @@ export default async function ActivityDetailPage({
   searchParams: { returnTo?: string | string[] };
 }) {
   const user = await requireUserPage();
-  const home = await getHouseholdHome(user.id, { includeInactive: true });
+  const home = await getHouseholdHome({ includeInactive: true });
   if (!home) redirect("/onboarding");
   const view = await getActivityView(params.id).catch(activityUnavailableOrThrow);
   if (!view) notFound();

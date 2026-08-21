@@ -129,7 +129,7 @@ export async function getHouseholdLeavePreview(householdId: string) {
         ]
       }
     }),
-    prisma.notificationPreference.count({ where: { householdId, userId: user.id } }),
+    prisma.notificationPreference.count({ where: { householdId, memberId: member.id } }),
     prisma.pushSubscription.count({ where: { householdId, userId: user.id, deletedAt: null } }),
     prisma.apiKey.count({
       where: {
@@ -180,6 +180,7 @@ export async function leaveHousehold(raw: unknown) {
 
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    await lockAndRevalidateFreshSession(tx, freshSession);
     await tx.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "HouseholdMember"
@@ -189,8 +190,6 @@ export async function leaveHousehold(raw: unknown) {
       ORDER BY "id"
       FOR UPDATE
     `;
-    await lockAndRevalidateFreshSession(tx, freshSession);
-
     const completedOperation = await tx.householdMember.findFirst({
       where: { leaveOperationId: input.operationId }
     });
@@ -271,7 +270,7 @@ export async function leaveHousehold(raw: unknown) {
       data: { status: InviteStatus.revoked, revokedAt: leftAt }
     });
     await tx.notificationPreference.deleteMany({
-      where: { householdId: input.householdId, userId: freshSession.user.id }
+      where: { householdId: input.householdId, memberId: member.id }
     });
     await tx.pushSubscription.updateMany({
       where: {

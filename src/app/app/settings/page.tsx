@@ -3,7 +3,7 @@ import { Baby, Bell, DatabaseBackup, Download, KeyRound, LogOut, Palette, Ruler,
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
-import { getHouseholdContext } from "@/server/auth/context";
+import { getEffectiveHouseholdContext } from "@/server/auth/context";
 import { requireUserPage } from "@/server/auth/session";
 import { isPlatformOwner } from "@/server/services/platform-authority";
 
@@ -22,7 +22,7 @@ const sections = [
 
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {
   const user = await requireUserPage();
-  const ctx = await getHouseholdContext();
+  const ctx = await getEffectiveHouseholdContext();
   const platformOwner = await isPlatformOwner(user.id);
   const visibleSections = sections.filter((section) => hasPermission(ctx.role, section.permission));
   return (

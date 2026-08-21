@@ -325,7 +325,7 @@ describe("self-service household leave", () => {
       data: { status: "revoked", revokedAt: now }
     });
     expect(mocks.notificationPreferenceDeleteMany).toHaveBeenCalledWith({
-      where: { householdId: "household-1", userId: "user-1" }
+      where: { householdId: "household-1", memberId: "member-current" }
     });
     expect(mocks.pushSubscriptionUpdateMany).toHaveBeenCalledWith({
       where: { householdId: "household-1", userId: "user-1", deletedAt: null },

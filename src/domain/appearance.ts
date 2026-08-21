@@ -5,6 +5,10 @@ export type AccentTheme = (typeof accentThemes)[number];
 
 export const accentThemeSchema = z.enum(accentThemes);
 
+export const appearanceModes = ["system", "light", "dark"] as const;
+export type AppearanceMode = (typeof appearanceModes)[number];
+export const appearanceModeSchema = z.enum(appearanceModes);
+
 export const accentThemeDetails: Record<AccentTheme, { label: string; description: string; swatch: string }> = {
   sage: { label: "Sage", description: "Calm botanical green", swatch: "#6f8978" },
   rose: { label: "Dusty rose", description: "Soft and warm", swatch: "#a86f75" },
@@ -15,4 +19,8 @@ export const accentThemeDetails: Record<AccentTheme, { label: string; descriptio
 
 export function parseAccentTheme(value: unknown): AccentTheme {
   return accentThemeSchema.catch("sage").parse(value);
+}
+
+export function parseAppearanceMode(value: unknown): AppearanceMode {
+  return appearanceModeSchema.catch("system").parse(value);
 }

@@ -28,8 +28,20 @@ describe("POST /api/babies/[id]/reactivate", () => {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operationId })
     }), { params: { id: "baby-1" } });
 
-    expect(await response.json()).toEqual({ ok: true, data: { status: "completed", operationId } });
+    expect(await response.json()).toEqual({ ok: true, data: { status: "completed", operationId, outcome: { kind: "baby_lifecycle", code: "ok", babyId: "baby-1", inactive: false } } });
     expect(mocks.issueReactivateBabyBrowserOperation).toHaveBeenCalledWith({ operationId, babyId: "baby-1" });
     expect(mocks.submitReactivateBabyBrowserOperation).toHaveBeenCalledWith({ operationId, babyId: "baby-1" });
+  });
+
+  it("returns 410 for a compacted operation", async () => {
+    mocks.issueReactivateBabyBrowserOperation.mockResolvedValue({ status: "expired", operationId, code: "operation_result_expired" });
+
+    const response = await POST(new Request("http://localhost/api/babies/baby-1/reactivate", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operationId })
+    }), { params: { id: "baby-1" } });
+
+    expect(response.status).toBe(410);
+    expect(await response.json()).toEqual({ ok: true, data: { status: "expired", operationId, code: "operation_result_expired" } });
+    expect(mocks.submitReactivateBabyBrowserOperation).not.toHaveBeenCalled();
   });
 });
