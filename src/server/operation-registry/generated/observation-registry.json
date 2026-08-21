@@ -7078,9 +7078,9 @@
       "bindings": [
         {
           "anchorDigest": "f57c190b751a91663e583a620613ebefd0557569b5df47d69bd55ed153824423",
-          "anchorEnd": 3750,
+          "anchorEnd": 4904,
           "anchorFile": "src/components/browser-operation-recovery.tsx",
-          "anchorStart": 3685,
+          "anchorStart": 4839,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -8515,7 +8515,7 @@
     }
   ],
   "observationCount": 125,
-  "observationDigest": "fb64a4e7f2a26cd13153d6d6a34f3cd20e3e90adf6898e1112adec0638bb076b",
+  "observationDigest": "6579d5c56ed51f4ec24a0a833f6f22bad75a633d4387b9de7c59815ab3ddbda1",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -10853,9 +10853,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3750,
+          "anchorEnd": 4904,
           "anchorFile": "src/components/browser-operation-recovery.tsx",
-          "anchorStart": 3685,
+          "anchorStart": 4839,
           "kind": "global_fetch",
           "ownerModule": "src/components/browser-operation-recovery.tsx",
           "symbol": "fetch[1]",
@@ -12973,7 +12973,7 @@
   ],
   "ownerSetDigest": "ea6ca9215eea1ac5d08c96ff5552a9b73d7b29a56273ce668a13f64224c2a38b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "0c1d1272ac263125510aabf8ca27c25f76e8802cfa7106611555609ab485feb6",
+  "registryDigest": "2087a3079ed282b0557043736cd9c079993d5e46d19f7e282ec92ead74c7ddb7",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

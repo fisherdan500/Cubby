@@ -187,6 +187,16 @@ async function setViewport(client: CdpClient, width: number, height: number) {
   await assert(client, `window.innerWidth === ${width} && window.innerHeight === ${height}`, "dec407_browser_effective_viewport_mismatch");
 }
 
+function unexpectedBrowserDiagnostics(entries: string[], allowExpectedPartitionFailure: boolean) {
+  return entries.filter((entry) =>
+    entry.startsWith("console_error:") ||
+    entry.startsWith("runtime_exception:") ||
+    (entry.startsWith("network_failure:") &&
+      !(allowExpectedPartitionFailure && entry.includes("/api/browser-operations/partition")) &&
+      !entry.endsWith(":net::ERR_ABORTED"))
+  );
+}
+
 async function assertInteractiveGeometry(client: CdpClient, route: string) {
   await assert(client, "document.documentElement.scrollWidth <= window.innerWidth && document.body.scrollWidth <= window.innerWidth", `dec407_browser_page_overflow_detected:${route}`);
   const offenders = await value(client, `(() => Array.from(document.querySelectorAll('[role=radio], [role=button], button, input, select, textarea')).map((node, index) => {
@@ -414,11 +424,34 @@ export async function runDecProd407BrowserAcceptance() {
     await copiedTabClient.call("Page.enable");
     await copiedTabClient.call("Runtime.enable");
     await copiedTabClient.call("Network.enable");
-    await assert(copiedTabClient, `sessionStorage.getItem(${JSON.stringify(parentScope.metadataKey)}) === ${JSON.stringify(parentScope.namespace)} && sessionStorage.getItem(${JSON.stringify(parentScope.pointerKey)}) === ${JSON.stringify(copiedPointer)}`, "dec407_browser_copied_tab_fixture_missing");
+    await copiedTabClient.call("Log.enable");
+    await assert(copiedTabClient, `sessionStorage.getItem(${JSON.stringify(parentScope.metadataKey)}) !== null && sessionStorage.getItem(${JSON.stringify(parentScope.pointerKey)}) === ${JSON.stringify(copiedPointer)}`, "dec407_browser_copied_tab_fixture_missing");
     await click(copiedTabClient, '[data-appearance-mode="dark"]');
     await clickText(copiedTabClient, "Save personal appearance");
     await waitFor(async () => await value(copiedTabClient!, `sessionStorage.getItem(${JSON.stringify(parentScope.metadataKey)}) !== ${JSON.stringify(parentScope.namespace)}`) === true, "dec407_browser_copied_tab_namespace_not_rotated");
     await assert(copiedTabClient, `!performance.getEntriesByType('resource').some((entry) => entry.name.includes(${JSON.stringify(copiedPointer)}))`, "dec407_browser_copied_tab_pointer_probed");
+
+    const crossPartitionA = "dec407-cross-partition-a";
+    const crossPartitionB = "dec407-cross-partition-b";
+    const crossNamespaceA = "dec407-cross-namespace-a";
+    const crossNamespaceB = "dec407-cross-namespace-b";
+    const crossPointerKey = `cubby:baby-create-operation:${crossPartitionA}:tab:${crossNamespaceB}`;
+    const crossControlOperation = "bmo_1123456789abcdefghjkmnpqrs";
+    const crossControlKey = `cubby:baby-create-operation:${crossPartitionA}:tab:${crossNamespaceA}`;
+    await value(copiedTabClient, `(() => {
+      sessionStorage.setItem('cubby:browser-operation-tab-namespace:' + ${JSON.stringify(crossPartitionA)}, ${JSON.stringify(crossNamespaceA)});
+      sessionStorage.setItem('cubby:browser-operation-tab-namespace:' + ${JSON.stringify(crossPartitionB)}, ${JSON.stringify(crossNamespaceB)});
+      sessionStorage.setItem(${JSON.stringify(crossPointerKey)}, ${JSON.stringify(copiedPointer)});
+      sessionStorage.setItem(${JSON.stringify(crossControlKey)}, ${JSON.stringify(crossControlOperation)});
+      window.dispatchEvent(new Event('focus'));
+      return true;
+    })()`);
+    await assert(copiedTabClient, `sessionStorage.getItem('cubby:browser-operation-tab-namespace:' + ${JSON.stringify(crossPartitionA)}) === ${JSON.stringify(crossNamespaceA)} && sessionStorage.getItem('cubby:browser-operation-tab-namespace:' + ${JSON.stringify(crossPartitionB)}) === ${JSON.stringify(crossNamespaceB)} && sessionStorage.getItem(${JSON.stringify(crossPointerKey)}) === ${JSON.stringify(copiedPointer)} && sessionStorage.getItem(${JSON.stringify(crossControlKey)}) === ${JSON.stringify(crossControlOperation)}`, "dec407_browser_cross_partition_fixture_missing");
+    await waitFor(async () => await value(copiedTabClient!, `Array.from(document.querySelectorAll('button')).some((node) => node.textContent === 'Discard 1 saved request')`) === true, "dec407_browser_cross_partition_recovery_refresh_missing");
+    const copiedUnexpectedDiagnostics = unexpectedBrowserDiagnostics(copiedTabClient.diagnostics, false);
+    if (copiedUnexpectedDiagnostics.length) fail(`dec407_browser_copied_tab_unexpected_diagnostics:${JSON.stringify(copiedUnexpectedDiagnostics)}`);
+    await value(copiedTabClient, `sessionStorage.removeItem(${JSON.stringify(crossPointerKey)}); sessionStorage.removeItem(${JSON.stringify(crossControlKey)}); sessionStorage.removeItem('cubby:browser-operation-tab-namespace:' + ${JSON.stringify(crossPartitionA)}); sessionStorage.removeItem('cubby:browser-operation-tab-namespace:' + ${JSON.stringify(crossPartitionB)})`);
+
     await value(copiedTabClient, `sessionStorage.removeItem(${JSON.stringify(parentScope.pointerKey)})`);
     await value(client, `sessionStorage.removeItem(${JSON.stringify(parentScope.pointerKey)})`);
     await copiedTabClient.call("Page.close");
@@ -434,11 +467,7 @@ export async function runDecProd407BrowserAcceptance() {
     await assert(client, "document.querySelector('[role=alert][aria-live=assertive]')", "dec407_browser_calendar_live_error_missing");
     await client.call("Network.setBlockedURLs", { urls: [] });
     await waitFor(async () => client!.diagnostics.some((entry) => entry.startsWith("network_failure:") && entry.includes("/api/browser-operations/partition")), "dec407_browser_expected_calendar_failure_missing");
-    const unexpectedDiagnostics = client.diagnostics.filter((entry) =>
-      entry.startsWith("console_error:") ||
-      entry.startsWith("runtime_exception:") ||
-      (entry.startsWith("network_failure:") && !entry.includes("/api/browser-operations/partition") && !entry.endsWith(":net::ERR_ABORTED"))
-    );
+    const unexpectedDiagnostics = unexpectedBrowserDiagnostics(client.diagnostics, true);
     if (unexpectedDiagnostics.length) fail(`dec407_browser_unexpected_diagnostics:${JSON.stringify(unexpectedDiagnostics)}`);
 
     console.log("DEC407_BROWSER_ACCEPTANCE_PASS");

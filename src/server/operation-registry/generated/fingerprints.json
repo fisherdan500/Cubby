@@ -1456,17 +1456,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "b4be5bac6207d2a57cff885571834ba9089d7f038f24dbef80f8219008a6b287",
+          "digest": "ad067e02def115eb3a62065c881829be1350f09927bc30ef7f624f64133ea91f",
           "file": "src/components/browser-operation-recovery.tsx"
         }
       ],
       "declarationDigest": "f7537ddb34370c9f1cdf0810002b136e763d02c26ce63bd0371565fbe61dd61c",
-      "fingerprint": "17e771bb32a499aaffe2a634e23e0d78072c75f871ee2b0ebc9ebb7251059cd7",
+      "fingerprint": "3f1ee05073ea17d2ec262badf12d2ad1c4bd50e396471026e6b1c7267c8b6751",
       "id": "fingerprint:client_binding:src/components/browser-operation-recovery.tsx",
       "ownerId": "client_binding:src/components/browser-operation-recovery.tsx",
       "ownerModule": "src/components/browser-operation-recovery.tsx",
       "sidecarPath": "src/components/browser-operation-recovery.operation.ts",
-      "sourceDigest": "3fabf8c7feb47da431a67974a9b09ee7bf0bfbc10fac4e803505c866624f754f",
+      "sourceDigest": "87563508f04f8ea856aacf60c3ae5177d910d6949cfedc9aef1ee13e64bba035",
       "status": "declared"
     },
     {
@@ -2072,11 +2072,11 @@
   ],
   "generatorDigest": "01cc58690c12886dbfcf218e3ccb7c29967ea4814fee9de6843edf6e7227b8d3",
   "generatorVersion": "r0.1",
-  "observationDigest": "fb64a4e7f2a26cd13153d6d6a34f3cd20e3e90adf6898e1112adec0638bb076b",
+  "observationDigest": "6579d5c56ed51f4ec24a0a833f6f22bad75a633d4387b9de7c59815ab3ddbda1",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "ea6ca9215eea1ac5d08c96ff5552a9b73d7b29a56273ce668a13f64224c2a38b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "0c1d1272ac263125510aabf8ca27c25f76e8802cfa7106611555609ab485feb6",
+  "registryDigest": "2087a3079ed282b0557043736cd9c079993d5e46d19f7e282ec92ead74c7ddb7",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
