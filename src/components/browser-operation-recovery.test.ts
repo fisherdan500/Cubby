@@ -36,6 +36,33 @@ describe("BrowserOperationRecovery", () => {
     expect(discoverSavedBrowserOperations(sessionStorage)).toEqual([{ operationId: householdId, scope: "household", keys: [current] }]);
   });
 
+  it("binds every pointer to its own partition namespace", () => {
+    sessionStorage.setItem("cubby:browser-operation-tab-namespace:household-a:member-a", "namespace-a");
+    sessionStorage.setItem("cubby:browser-operation-tab-namespace:household-b:member-b", "namespace-b");
+    const householdKey = "cubby:baby-create-operation:household-a:member-a:tab:namespace-a";
+    const accountKey = "cubby:account-appearance-operation:household-b:member-b:tab:namespace-b";
+    sessionStorage.setItem(householdKey, householdId);
+    sessionStorage.setItem(accountKey, accountId);
+    sessionStorage.setItem("cubby:baby-create-operation:household-a:member-a:tab:namespace-b", householdId);
+
+    expect(discoverSavedBrowserOperations(sessionStorage)).toEqual([
+      { operationId: accountId, scope: "account", keys: [accountKey] },
+      { operationId: householdId, scope: "household", keys: [householdKey] }
+    ]);
+  });
+
+  it("rejects a longer partition key carrying a shorter partition namespace", () => {
+    sessionStorage.setItem("cubby:browser-operation-tab-namespace:household-a", "namespace-household");
+    sessionStorage.setItem("cubby:browser-operation-tab-namespace:household-a:member-a", "namespace-member");
+    const validKey = "cubby:baby-create-operation:household-a:member-a:tab:namespace-member";
+    sessionStorage.setItem(validKey, accountId);
+    sessionStorage.setItem("cubby:baby-create-operation:household-a:member-a:tab:namespace-household", householdId);
+
+    expect(discoverSavedBrowserOperations(sessionStorage)).toEqual([
+      { operationId: accountId, scope: "household", keys: [validKey] }
+    ]);
+  });
+
   it("resolves a copied tab namespace before exposing recovery pointers", async () => {
     seed("household", householdId, "namespace-copied");
     mocks.resolveStorageKey.mockImplementation(async (partition: string, pointerKey: string) => {

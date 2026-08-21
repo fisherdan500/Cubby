@@ -7,6 +7,21 @@ import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab
 
 const operationIdPattern = /^bmo_[0-9abcdefghjkmnpqrstvwxyz]{26}$/;
 const namespacePrefix = "cubby:browser-operation-tab-namespace:";
+const operationPointerPrefixes = [
+  ["cubby:account-appearance-operation:", "account"],
+  ["cubby:activity-operation:", "household"],
+  ["cubby:baby-lifecycle-operation:", "household"],
+  ["cubby:activity-delete-operation:", "household"],
+  ["cubby:calendar-operation:", "household"],
+  ["cubby:dashboard-warning-operation:", "household"],
+  ["cubby:invite-create-operation:", "household"],
+  ["cubby:activity-form-operation:", "household"],
+  ["cubby:baby-create-operation:", "household"],
+  ["cubby:household-accent-operation:", "household"],
+  ["cubby:member-administration-operation:", "household"],
+  ["cubby:notification-preference-operation:", "household"],
+  ["cubby:unit-preferences-operation:", "household"]
+] as const;
 
 type SavedOperation = {
   operationId: string;
@@ -26,20 +41,28 @@ function storedOperationId(value: string | null) {
 }
 
 export function discoverSavedBrowserOperations(storage: Pick<Storage, "key" | "length" | "getItem">) {
-  const namespaces = new Set<string>();
+  const namespacesByPartition = new Map<string, string>();
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
     if (!key?.startsWith(namespacePrefix)) continue;
     const value = storage.getItem(key);
-    if (value) namespaces.add(value);
+    if (value) namespacesByPartition.set(key.slice(namespacePrefix.length), value);
   }
+  const partitions = [...namespacesByPartition.entries()].sort(([left], [right]) => right.length - left.length);
   const grouped = new Map<string, SavedOperation>();
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
-    if (!key || ![...namespaces].some((namespace) => key.endsWith(`:tab:${namespace}`))) continue;
+    if (!key) continue;
+    let scope: SavedOperation["scope"] | undefined;
+    for (const [prefix, candidateScope] of operationPointerPrefixes) {
+      if (!key.startsWith(prefix)) continue;
+      const currentPartition = partitions.find(([partition]) => key.startsWith(`${prefix}${partition}:`));
+      if (currentPartition && key.endsWith(`:tab:${currentPartition[1]}`)) scope = candidateScope;
+      break;
+    }
+    if (!scope) continue;
     const operationId = storedOperationId(storage.getItem(key));
     if (!operationId) continue;
-    const scope = key.startsWith("cubby:account-appearance-operation:") ? "account" : "household";
     const identity = `${scope}:${operationId}`;
     const saved = grouped.get(identity) ?? { operationId, scope, keys: [] };
     saved.keys.push(key);
