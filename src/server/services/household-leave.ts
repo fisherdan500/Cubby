@@ -3,6 +3,7 @@ import { z } from "zod";
 import { SESSION_FRESH_AGE_SECONDS } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
 import { requireFreshSession, requireUser } from "@/server/auth/session";
+import { writeAudit } from "@/server/services/audit";
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
 
 const leaveInputSchema = z.object({
@@ -320,11 +321,14 @@ export async function leaveHousehold(raw: unknown) {
         }))
       });
     }
-    await tx.auditEvent.create({
-      data: {
+    await writeAudit(
+      {
+        userId: freshSession.user.id,
         householdId: input.householdId,
-        actorUserId: freshSession.user.id,
-        actorMemberId: member.id,
+        memberId: member.id,
+        role: member.role
+      },
+      {
         action: "member.self_leave",
         entityType: "household_member",
         entityId: member.id,
@@ -334,8 +338,9 @@ export async function leaveHousehold(raw: unknown) {
           closureReason: "self_left",
           leaveOperationId: input.operationId
         }
-      }
-    });
+      },
+      tx
+    );
 
     return leaveReceipt(closed);
   });
