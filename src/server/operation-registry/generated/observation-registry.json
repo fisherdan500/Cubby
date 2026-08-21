@@ -1,7 +1,7 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 57,
+    "api_route": 58,
     "client_binding": 26,
     "instrumentation": 1,
     "package_command": 8,
@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "14837b9ddf0361b871f2af619b48c68fc1bdceb5f1b77abc81b8f463fb1ca4f6",
+  "declarationDigest": "b7a1bcae71a5af1e1737457d09c2ddb553478b4220dbdfa29fd5aa95b867b4d5",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -616,6 +616,36 @@
       },
       "id": "api_route:src/app/api/activities/undo-last/route.ts",
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/audit/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/audit/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/audit/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/audit/route.ts",
+      "sidecarPath": "src/app/api/audit/route.operation.ts"
     },
     {
       "declaration": {
@@ -4650,7 +4680,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "01cc58690c12886dbfcf218e3ccb7c29967ea4814fee9de6843edf6e7227b8d3",
+  "generatorDigest": "22fd8748c6abd594d814cebe4607554f33d1e20aad353784574166e322dfb249",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -4821,6 +4851,25 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/activities/undo-last/route.ts",
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "f4b4580aa0eb416df81d850730835ea67df835388136052abb85fc1622148a01",
+          "anchorEnd": 309,
+          "anchorFile": "src/app/api/audit/route.ts",
+          "anchorStart": 166,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/audit/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/audit/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/audit/route.ts",
+      "sidecarPath": "src/app/api/audit/route.operation.ts"
     },
     {
       "bindings": [
@@ -8514,8 +8563,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 125,
-  "observationDigest": "6579d5c56ed51f4ec24a0a833f6f22bad75a633d4387b9de7c59815ab3ddbda1",
+  "observationCount": 126,
+  "observationDigest": "856fe1eddffe0b9497775b9a8ffcf2986b0fdd519ecc2ebc033695436c3247d9",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -8680,6 +8729,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/activities/undo-last/route.ts",
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 309,
+          "anchorFile": "src/app/api/audit/route.ts",
+          "anchorStart": 166,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/audit/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/audit/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/audit/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/audit/route.ts",
+      "sidecarPath": "src/app/api/audit/route.operation.ts"
     },
     {
       "bindings": [
@@ -12263,6 +12330,12 @@
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/audit/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/audit/route.ts",
+      "sidecarPath": "src/app/api/audit/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/auth/[...all]/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/auth/[...all]/route.ts",
@@ -12971,9 +13044,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "ea6ca9215eea1ac5d08c96ff5552a9b73d7b29a56273ce668a13f64224c2a38b",
+  "ownerSetDigest": "c09a6dd3a8fc290d637cdafce63c350bf07760a11ea12ba1355321ef0cc410dd",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "2087a3079ed282b0557043736cd9c079993d5e46d19f7e282ec92ead74c7ddb7",
+  "registryDigest": "72aec8eeb9e65917a05cf0d3e3f831086909424008ceb0b2e70f0313825cec53",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
