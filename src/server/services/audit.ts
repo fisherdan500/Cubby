@@ -77,9 +77,12 @@ export async function writeAudit(
       householdId: ctx.householdId,
       actorUserId: ctx.userId,
       actorMemberId: ctx.memberId,
+      actorUserSnapshot: ctx.userId,
+      actorMemberSnapshot: ctx.memberId,
       action: action.data,
       entityType: input.entityType,
       entityId: input.entityId,
+      schemaVersion: 1,
       before,
       after
     }

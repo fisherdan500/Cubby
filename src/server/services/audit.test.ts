@@ -55,4 +55,20 @@ describe("household audit contract", () => {
       })
     });
   });
+
+  it("stores immutable actor identity snapshots with the event", async () => {
+    await writeAudit(context, {
+      action: "activity.create",
+      entityType: "activity",
+      entityId: "activity-1"
+    });
+
+    expect(mocks.auditEventCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        schemaVersion: 1,
+        actorUserSnapshot: "user-1",
+        actorMemberSnapshot: "member-1"
+      })
+    });
+  });
 });
