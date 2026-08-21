@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import type { AppearanceMode } from "@/domain/appearance";
+import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 
-const pendingKey = "cubby:account-appearance-operation";
 const modes = [
   { value: "system" as const, label: "System", description: "Follow this device's light or dark setting." },
   { value: "light" as const, label: "Light", description: "Use light appearance on your signed-in devices." },
@@ -14,22 +15,33 @@ const modes = [
 ];
 
 type OperationResult = {
-  status: "open" | "pending" | "completed" | "rejected" | "stale" | "expired";
+  status: "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
   operationId: string;
   outcome?: { appearanceMode?: AppearanceMode; appearanceRevision?: number };
   code?: string;
 };
 
-function newOperationId() {
-  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-  const bytes = crypto.getRandomValues(new Uint8Array(26));
-  return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+type Partition = { version: 1; scope: "account"; partition: string };
+
+function accountOperationStorageKey(partition: string) {
+  return `cubby:account-appearance-operation:${partition}`;
 }
 
-async function responseResult(response: Response): Promise<OperationResult> {
+async function accountPartition(): Promise<Partition> {
+  const response = await fetch("/api/account/browser-operations/partition", { cache: "no-store" });
+  const body = await response.json() as { ok?: boolean; data?: Partition; error?: { message?: string } };
+  if (!response.ok || !body.ok || !body.data || body.data.version !== 1 || body.data.scope !== "account") {
+    throw new Error(body.error?.message ?? "Could not establish the current account operation scope.");
+  }
+  return body.data;
+}
+
+type OperationResponse = { response: Response; result: OperationResult };
+
+async function responseResult(response: Response): Promise<OperationResponse> {
   const body = await response.json() as { ok: boolean; data?: OperationResult; error?: { message?: string } };
   if (!body.ok || !body.data) throw new Error(body.error?.message ?? "Appearance could not be updated.");
-  return body.data;
+  return { response, result: body.data };
 }
 
 export function PersonalAppearanceForm({
@@ -46,63 +58,70 @@ export function PersonalAppearanceForm({
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
-  function apply(result: OperationResult) {
+  function apply(result: OperationResult, storageKey: string, responseStatus: number, operationId: string) {
     if (result.status === "completed" && result.outcome?.appearanceMode) {
       setSelected(result.outcome.appearanceMode);
       setRevision((current) => result.outcome?.appearanceRevision ?? current);
       setTheme(result.outcome.appearanceMode);
-      sessionStorage.removeItem(pendingKey);
+      sessionStorage.removeItem(storageKey);
       setMessage("Personal appearance saved.");
       router.refresh();
       return true;
     }
+    if (isAuthorizedBrowserOperation410(responseStatus, result, operationId)) {
+      sessionStorage.removeItem(storageKey);
+      setMessage("This appearance request is no longer available. Refresh and choose again.");
+      return false;
+    }
     if (result.status === "rejected" || result.status === "stale" || result.status === "expired") {
-      sessionStorage.removeItem(pendingKey);
-      setMessage(result.code === "stale_revision" ? "Appearance changed in another tab. Refresh and choose again." : "This appearance request is no longer available.");
+      setMessage(result.code === "stale_revision" ? "Appearance changed in another tab. Refresh and choose again." : "Reconcile this appearance request before trying again.");
     }
     return false;
   }
 
-  async function reconcile(operationId: string) {
+  async function reconcile(operationId: string, storageKey: string) {
     const response = await fetch(`/api/account/browser-operations/${operationId}`, { cache: "no-store" });
-    const result = await responseResult(response);
-    apply(result);
+    const operation = await responseResult(response);
+    apply(operation.result, storageKey, operation.response.status, operationId);
+    return operation;
+  }
+
+  async function submitReservation(operationId: string, storageKey: string) {
+    const submitted = await responseResult(await fetch("/api/account/appearance", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ operationId, appearanceMode: selected })
+    }));
+    if (!apply(submitted.result, storageKey, submitted.response.status, operationId) && submitted.result.status === "pending") await reconcile(operationId, storageKey);
   }
 
   async function save() {
     setSaving(true);
     setMessage("");
-    const retained = sessionStorage.getItem(pendingKey);
-    if (retained) {
-      try {
-        await reconcile(retained);
-      } catch {
-        setMessage("Appearance outcome is still unknown. Retry reconciliation before starting another change.");
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    const operationId = newOperationId();
-    sessionStorage.setItem(pendingKey, operationId);
     try {
+      const { partition } = await accountPartition();
+      const storageKey = await tabScopedBrowserOperationStorageKey(partition, accountOperationStorageKey(partition));
+      const retained = sessionStorage.getItem(storageKey);
+      if (retained) {
+        const reconciled = await reconcile(retained, storageKey);
+        if (reconciled.result.status === "prepared") await submitReservation(retained, storageKey);
+        return;
+      }
+
       const issued = await responseResult(await fetch("/api/account/appearance/issue", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ operationId })
+        body: JSON.stringify({})
       }));
-      if (apply(issued)) return;
-      if (issued.status === "pending") {
-        await reconcile(operationId);
+      sessionStorage.setItem(storageKey, issued.result.operationId);
+      if (apply(issued.result, storageKey, issued.response.status, issued.result.operationId)) return;
+      if (issued.result.status === "pending") {
+        await reconcile(issued.result.operationId, storageKey);
         return;
       }
-      if (issued.status !== "open") return;
-      const submitted = await responseResult(await fetch("/api/account/appearance", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ operationId, appearanceMode: selected })
-      }));
-      if (!apply(submitted) && submitted.status === "pending") await reconcile(operationId);
+      if (issued.result.status === "open" || issued.result.status === "prepared") {
+        await submitReservation(issued.result.operationId, storageKey);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Appearance outcome is unknown. Reconcile this request before trying again.");
     } finally {
@@ -118,8 +137,23 @@ export function PersonalAppearanceForm({
             key={mode.value}
             type="button"
             role="radio"
+            data-appearance-mode={mode.value}
             aria-checked={selected === mode.value}
+            tabIndex={selected === mode.value ? 0 : -1}
             onClick={() => setSelected(mode.value)}
+            onKeyDown={(event) => {
+              const direction = event.key === "ArrowRight" || event.key === "ArrowDown"
+                ? 1
+                : event.key === "ArrowLeft" || event.key === "ArrowUp"
+                  ? -1
+                  : 0;
+              if (!direction) return;
+              event.preventDefault();
+              const currentIndex = modes.findIndex((candidate) => candidate.value === selected);
+              const nextMode = modes[(currentIndex + direction + modes.length) % modes.length]!.value;
+              setSelected(nextMode);
+              event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[role="radio"][data-appearance-mode="${nextMode}"]`)?.focus();
+            }}
             className="min-h-24 rounded-lg border border-border bg-card p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="block text-sm font-bold">{mode.label}</span>

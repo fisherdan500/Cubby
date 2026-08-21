@@ -18,9 +18,32 @@ import {
   resolveItemDoseUnit
 } from "@/lib/activity-form";
 import { displayLabel } from "@/lib/display-label";
+import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 import { dateTimeInputValue } from "@/lib/timezone";
 
 type BabyOption = { id: string; name: string };
+type ActivityOperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
+type Partition = { version: 1; scope: "household"; partition: string };
+
+function activityOperationStorageKey(partition: string, activityId: string | undefined, type: ActivityTypeName) {
+  return `cubby:activity-form-operation:${partition}:${activityId ?? `create:${type}`}`;
+}
+
+async function householdPartition(): Promise<Partition> {
+  const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
+  const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition } | null;
+  if (!response.ok || !body?.ok || !body.data || body.data.scope !== "household") throw new Error("operation_partition_unavailable");
+  return body.data;
+}
+
+async function activityOperationResponse(response: Response) {
+  const result = (await response.json().catch(() => null)) as
+    | { ok: true; data?: { status?: ActivityOperationStatus; operationId?: string } }
+    | { ok: false; error?: { message?: string } }
+    | null;
+  return { response, result, status: result?.ok ? result.data?.status : undefined };
+}
 
 export function ActivityForm({
   babies,
@@ -54,46 +77,95 @@ export function ActivityForm({
   const router = useRouter();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [operationId] = useState(() => {
-    const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-    const bytes = crypto.getRandomValues(new Uint8Array(26));
-    return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
-  });
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
   const cancelHref = activityFormCancelHref({ returnTo, babyId: defaultBaby, returnDate, allowActivityDestination });
 
+  function clearOperation(storageKey: string) {
+    try {
+      sessionStorage.removeItem(storageKey);
+    } catch {
+      // Storage failure must not affect the terminal server outcome.
+    }
+  }
+
+  function finish(storageKey: string, body: Record<string, FormDataEntryValue>) {
+    clearOperation(storageKey);
+    const destination = activityFormSuccessHref({
+      successTo,
+      babyId: String(body.babyId || defaultBaby),
+      returnDate,
+      allowActivityDestination
+    });
+    if (allowActivityDestination) router.replace(destination);
+    else router.push(destination);
+    router.refresh();
+  }
+
   async function submit(formData: FormData) {
     setError("");
     setSubmitting(true);
+    const body = Object.fromEntries(formData);
+    body.type = type;
     try {
-      const body = Object.fromEntries(formData);
-      body.type = type;
-      body.operationId = operationId;
-      const response = await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
-        method: activityId ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const result = (await response.json().catch(() => null)) as
-        | { ok: true }
-        | { ok: false; error?: { message?: string } }
-        | null;
-      if (!response.ok || !result?.ok) {
-        setError(result && !result.ok ? result.error?.message ?? "Could not save this activity." : "Could not save this activity.");
+      const { partition } = await householdPartition();
+      const storageKey = await tabScopedBrowserOperationStorageKey(partition, activityOperationStorageKey(partition, activityId, type));
+      let currentOperationId = sessionStorage.getItem(storageKey) ?? undefined;
+      if (currentOperationId) {
+        const reconciled = await activityOperationResponse(await fetch(`/api/browser-operations/${currentOperationId}`, { cache: "no-store" }));
+        if (isAuthorizedBrowserOperation410(reconciled.response.status, reconciled.result, currentOperationId)) {
+          clearOperation(storageKey);
+          currentOperationId = undefined;
+        } else if (reconciled.status === "completed") {
+          finish(storageKey, body);
+          return;
+        } else if (reconciled.status === "pending") {
+          setError("This activity request is still in progress. Reconcile it before changing it again.");
+          return;
+        } else if (reconciled.status === "stale" || reconciled.status === "rejected") {
+          setError("This activity request is no longer current. Refresh and review the form before trying again.");
+          return;
+        } else if (reconciled.status !== "open" && reconciled.status !== "prepared") {
+          setError("Reconcile this activity request before trying again.");
+          return;
+        }
+      }
+      if (!currentOperationId) {
+        const endpoint = activityId ? `/api/activities/${activityId}?issue=1` : "/api/activities?issue=1";
+        const issued = await activityOperationResponse(await fetch(endpoint, {
+          method: activityId ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ babyId: body.babyId })
+        }));
+        if (!issued.response.ok || !issued.result?.ok || !issued.status || (issued.status !== "open" && issued.status !== "prepared")) {
+          throw new Error("activity_operation_issue_unavailable");
+        }
+        currentOperationId = issued.result.data?.operationId;
+        if (!currentOperationId) throw new Error("activity_operation_issue_unavailable");
+        sessionStorage.setItem(storageKey, currentOperationId);
+      }
+      body.operationId = currentOperationId;
+      const submitted = await activityOperationResponse(await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
+        method: activityId ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+      }));
+      if (isAuthorizedBrowserOperation410(submitted.response.status, submitted.result, currentOperationId)) {
+        clearOperation(storageKey);
+        setError("This activity request expired. Submit again to open a new request.");
         return;
       }
-      const destination = activityFormSuccessHref({
-        successTo,
-        babyId: String(body.babyId || defaultBaby),
-        returnDate,
-        allowActivityDestination
-      });
-      if (allowActivityDestination) router.replace(destination);
-      else router.push(destination);
-      router.refresh();
+      if (submitted.status === "completed") {
+        finish(storageKey, body);
+        return;
+      }
+      if (submitted.status === "pending") {
+        setError("This activity request is still in progress. Reconcile it before changing it again.");
+        return;
+      }
+      if (submitted.status === "stale" || submitted.status === "rejected") {
+        setError("This activity request is no longer current. Refresh and review the form before trying again.");
+        return;
+      }
+      setError("Reconcile this activity request before trying again.");
     } catch {
-      setError("Could not reach Cubby. Check your connection and try again.");
+      setError("Reconcile this activity request before trying again.");
     } finally {
       setSubmitting(false);
     }

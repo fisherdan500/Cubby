@@ -321,7 +321,7 @@ function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft {
 
 async function queueActivitySideEffects(
   ctx: HouseholdContext,
-  activity: { id: string; type: ActivityType },
+  activity: { id: string; babyId: string; type: ActivityType },
   event: WebhookEvent,
   db: Pick<Prisma.TransactionClient, "$queryRaw" | "webhookEndpoint" | "webhookDelivery" | "notificationPreference" | "notificationLog"> = prisma
 ) {
@@ -383,8 +383,13 @@ async function queueActivitySideEffects(
       where: {
         householdId: ctx.householdId,
         status: "active",
+        externalDeliveryEnabled: true,
         categories: { has: "activity_created" },
         channels: { has: "browser_push" },
+        OR: [
+          { babyScope: "all" },
+          { babyScope: "selected", selectedBabies: { some: { babyId: activity.babyId } } }
+        ],
         member: { is: { householdId: ctx.householdId, disabledAt: null, deletedAt: null } }
       },
       select: { memberId: true }
@@ -1290,17 +1295,13 @@ async function lockActivityBrowserTargets(
   activityId: string,
   replacementBabyId?: string
 ) {
-  const locked = await tx.$queryRaw<Array<{ id: string }>>`
-    SELECT "id" FROM "ActivityLog" WHERE "id" = ${activityId} AND "householdId" = ${ctx.householdId} FOR UPDATE
-  `;
-  if (locked.length !== 1) throw new Error("not_found");
-  const activity = await tx.activityLog.findFirst({
+  const candidate = await tx.activityLog.findFirst({
     where: { id: activityId, householdId: ctx.householdId },
-    include: activityInclude
+    select: { babyId: true }
   });
-  if (!activity) throw new Error("not_found");
+  if (!candidate) throw new Error("not_found");
 
-  const babyIds = [...new Set([activity.babyId, replacementBabyId].filter((id): id is string => Boolean(id)))].sort();
+  const babyIds = [...new Set([candidate.babyId, replacementBabyId].filter((id): id is string => Boolean(id)))].sort();
   const babies = [] as Array<{ id: string; updatedAt: Date; inactiveAt: Date | null }>;
   for (const babyId of babyIds) {
     const babyLock = await tx.$queryRaw<Array<{ id: string }>>`
@@ -1314,6 +1315,15 @@ async function lockActivityBrowserTargets(
     if (!baby) throw new Error("not_found");
     babies.push(baby);
   }
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id" FROM "ActivityLog" WHERE "id" = ${activityId} AND "householdId" = ${ctx.householdId} FOR UPDATE
+  `;
+  if (locked.length !== 1) throw new Error("not_found");
+  const activity = await tx.activityLog.findFirst({
+    where: { id: activityId, householdId: ctx.householdId },
+    include: activityInclude
+  });
+  if (!activity || activity.babyId !== candidate.babyId) throw new Error("stale_revision");
   return { activity, babies };
 }
 

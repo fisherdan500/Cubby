@@ -26,6 +26,7 @@ const expectedDirectHouseholdModels = [
   "BrowserMutationOperation",
   "BrowserMutationOperationTombstone",
   "BrowserOperationBinding",
+  "BrowserOperationReservationTombstone",
   "CalendarEvent",
   "Contact",
   "DashboardWarningDismissal",

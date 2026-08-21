@@ -150,6 +150,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/account/appearance/issue/route.operation.ts",
   "src/app/api/account/appearance/route.operation.ts",
   "src/app/api/account/browser-operations/[operationId]/route.operation.ts",
+  "src/app/api/account/browser-operations/partition/route.operation.ts",
   "src/app/api/activities/[id]/route.operation.ts",
   "src/app/api/activities/route.operation.ts",
   "src/app/api/activities/undo-last/route.operation.ts",
@@ -166,7 +167,9 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/backups/sprout/import/route.operation.ts",
   "src/app/api/backups/sprout/preview/route.operation.ts",
   "src/app/api/dashboard/warnings/dismiss/route.operation.ts",
+  "src/app/api/dashboard/warnings/dismiss/issue/route.operation.ts",
   "src/app/api/browser-operations/[operationId]/route.operation.ts",
+  "src/app/api/browser-operations/partition/route.operation.ts",
   "src/app/api/export/activities.csv/route.operation.ts",
   "src/app/api/export/activities.tsv/route.operation.ts",
   "src/app/api/health/route.operation.ts",
@@ -234,6 +237,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/actions/baby-lifecycle-button.operation.ts",
   "src/components/actions/confirmed-activity-delete.operation.ts",
   "src/components/auth/auth-form.operation.ts",
+  "src/components/browser-operation-recovery.operation.ts",
   "src/components/calendar-event-submission.operation.ts",
   "src/components/dashboard/dashboard-warnings.operation.ts",
   "src/components/forms/activity-form.operation.ts",
@@ -6035,6 +6039,7 @@ export const SEMANTIC_SIDECAR_PATHS = [
   "src/app/api/babies/[id]/reactivate/route.semantic.ts",
   "src/app/api/babies/route.semantic.ts",
   "src/app/api/dashboard/warnings/dismiss/route.semantic.ts",
+  "src/app/api/invites/[token]/revoke/route.semantic.ts",
   "src/app/api/invites/revoke-all/route.semantic.ts",
   "src/app/api/invites/route.semantic.ts",
   "src/app/api/members/[id]/restore/route.semantic.ts",
@@ -6087,6 +6092,7 @@ const SEMANTIC_BROWSER_EXPOSURE_SERVICE_LINKS = [
   ["src/app/api/babies/[id]/reactivate/route.ts", "POST", "baby.reactivate"],
   ["src/app/api/babies/route.ts", "POST", "baby.create"],
   ["src/app/api/dashboard/warnings/dismiss/route.ts", "POST", "dashboard.warning.dismiss"],
+  ["src/app/api/invites/[token]/revoke/route.ts", "POST", "invite.revoke"],
   ["src/app/api/invites/revoke-all/route.ts", "POST", "invite.revoke_all"],
   ["src/app/api/invites/route.ts", "POST", "invite.create"],
   ["src/app/api/members/[id]/restore/route.ts", "POST", "member.restore"],
@@ -6115,6 +6121,7 @@ const SEMANTIC_BROWSER_SERVICE_OPERATIONS = [
   ["baby.reactivate", "src/server/services/households.ts", "submitReactivateBabyBrowserOperation"],
   ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarningBrowserOperation"],
   ["invite.create", "src/server/services/invites.ts", "createInvite"],
+  ["invite.revoke", "src/server/services/invites.ts", "submitInviteRevokeBrowserOperation"],
   ["invite.revoke_all", "src/server/services/invites.ts", "revokeAllPendingInvites"],
   ["member.restore", "src/server/services/invites.ts", "restoreMember"],
   ["member.remove", "src/server/services/invites.ts", "removeMember"],
@@ -6175,7 +6182,7 @@ export function buildSemanticRepositoryArtifacts(
   diagnostics.push(...parsed.diagnostics);
   const declarations = [...(parsed.declarations ?? [])].sort(compareSemanticDeclarations);
   diagnostics.push(...validateCombinedSemanticDeclarationFamily(declarations));
-  if (diagnostics.length > 0 || declarations.length !== 54) {
+  if (diagnostics.length > 0 || declarations.length !== 56) {
     if (diagnostics.length === 0) {
       diagnostics.push({
         code: "generated_artifact_mismatch",

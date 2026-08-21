@@ -22,6 +22,15 @@ describe("invite creation route", () => {
     mocks.createInvite.mockResolvedValue({ id: "invite-1" });
   });
 
+  it("returns a server-issued reservation from issue-only mode without submitting", async () => {
+    const body = { email: "invitee@example.test", role: "parent" };
+    mocks.issueInviteCreateBrowserOperation.mockResolvedValue({ status: "prepared", operationId: "bmo_0123456789abcdefghjkmnpqrs", code: "operation_prepared" });
+    const response = await POST(new Request("http://localhost/api/invites?issue=1", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+    expect(response.status).toBe(202);
+    expect(mocks.issueInviteCreateBrowserOperation).toHaveBeenCalledWith(body);
+    expect(mocks.submitInviteCreateBrowserOperation).not.toHaveBeenCalled();
+  });
+
   it("rejects malformed JSON as a client error", async () => {
     const request = new Request("http://localhost/api/invites", {
       method: "POST",

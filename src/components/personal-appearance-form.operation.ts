@@ -9,6 +9,7 @@ export const operation = {
     { kind: "global_fetch", symbol: "fetch[1]", target: "globalThis.fetch" },
     { kind: "global_fetch", symbol: "fetch[2]", target: "globalThis.fetch" },
     { kind: "global_fetch", symbol: "fetch[3]", target: "globalThis.fetch" },
+    { kind: "global_fetch", symbol: "fetch[4]", target: "globalThis.fetch" },
   ],
   disposition: "observed",
   deferredGateIds: [

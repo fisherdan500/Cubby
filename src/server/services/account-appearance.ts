@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { AccountOperationKey, BrowserOperationProtocolVersion, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { appearanceModeSchema, parseAppearanceMode, type AppearanceMode } from "@/domain/appearance";
 import { prisma } from "@/lib/db/prisma";
@@ -6,10 +6,11 @@ import { getSession } from "@/server/auth/session";
 import {
   assertBrowserOperationId,
   browserIntentFingerprint,
+  createServerBrowserOperationId,
   type BrowserOperationResult
 } from "@/server/services/browser-operations";
 
-const accountAppearanceOperationKey = "account.appearance.update" as const;
+const accountAppearanceOperationKey = AccountOperationKey.accountAppearanceUpdate;
 const accountOperationLeaseMs = 30 * 60 * 1000;
 const accountAppearanceSnapshotSchema = z.object({
   appearanceMode: appearanceModeSchema,
@@ -24,12 +25,13 @@ const accountAppearanceOutcomeSchema = z.object({
   appearanceRevision: z.number().int().positive()
 }).strict();
 
-type AccountTransaction = Pick<Prisma.TransactionClient, "$queryRaw"> & {
+type AccountTransaction = Pick<Prisma.TransactionClient, "$queryRaw" | "$executeRaw"> & {
   session: { findFirst: any };
   user: { findFirst: any; updateMany: any };
-  accountOperationBinding: { findFirst: any; create: any; update: any };
+  accountOperationBinding: { findFirst: any; create: any; update: any; delete: any };
   accountMutationOperation: { create: any; update: any };
   accountMutationOperationTombstone: { findUnique: any };
+  accountOperationReservationTombstone: { create: any; findUnique: any };
 };
 
 type AccountContext = { sessionId: string; userId: string };
@@ -120,18 +122,38 @@ function bindingMatches(binding: {
     binding.userId === ctx.userId &&
     binding.operationKey === accountAppearanceOperationKey &&
     binding.persistenceVersion === 2 &&
-    binding.protocolVersion === "browser_v2" &&
+    binding.protocolVersion === BrowserOperationProtocolVersion.browserV2 &&
     (!openingFingerprint || binding.openingFingerprint === openingFingerprint);
 }
 
+async function accountReservationTombstoneResult(
+  tx: AccountTransaction,
+  ctx: AccountContext,
+  operationId: string
+): Promise<Extract<BrowserOperationResult, { status: "expired" }> | null> {
+  const tombstone = await tx.accountOperationReservationTombstone.findUnique({
+    where: { userId_operationId: { userId: ctx.userId, operationId } }
+  });
+  if (!tombstone) return null;
+  if (tombstone.userId !== ctx.userId ||
+      tombstone.sessionId !== ctx.sessionId ||
+      tombstone.operationKey !== accountAppearanceOperationKey) {
+    throw new Error("not_found");
+  }
+  if (tombstone.terminalCode !== "operation_abandoned" && tombstone.terminalCode !== "operation_result_expired") {
+    throw new Error("operation_integrity_error");
+  }
+  return { status: "expired", operationId, code: tombstone.terminalCode };
+}
+
 export async function issueAccountAppearanceBrowserOperation(raw: { operationId?: unknown }): Promise<BrowserOperationResult> {
-  const operationId = assertBrowserOperationId(raw.operationId);
+  const operationId = raw.operationId === undefined ? createServerBrowserOperationId() : assertBrowserOperationId(raw.operationId);
   const ctx = accountContext(await requireAccountSession());
   const expiresAt = new Date(Date.now() + accountOperationLeaseMs);
 
   const issueOrReplay = async (transaction: Prisma.TransactionClient, recoverOnly = false): Promise<BrowserOperationResult> => {
     const tx = transaction as unknown as AccountTransaction;
-    await tx.$queryRaw`SELECT "lock_account_browser_operation_identity"(${ctx.userId}, ${operationId})`;
+    await tx.$executeRaw`SELECT "lock_account_browser_operation_identity"(${ctx.userId}, ${operationId})`;
     const user = await lockCurrentAccountActor(tx, ctx);
     const opening = {
       version: 2,
@@ -156,6 +178,8 @@ export async function issueAccountAppearanceBrowserOperation(raw: { operationId?
       where: { userId_operationId: { userId: ctx.userId, operationId } }
     });
     if (tombstone) return { status: "expired", operationId, code: "operation_result_expired" };
+    const reservationTombstone = await accountReservationTombstoneResult(tx, ctx, operationId);
+    if (reservationTombstone) return reservationTombstone;
     if (recoverOnly) throw new Error("idempotency_conflict");
     const binding = await tx.accountOperationBinding.create({
       data: {
@@ -170,7 +194,7 @@ export async function issueAccountAppearanceBrowserOperation(raw: { operationId?
           appearanceRevision: user.appearanceRevision,
           schemaVersion: 1
         },
-        protocolVersion: "browser_v2",
+        protocolVersion: BrowserOperationProtocolVersion.browserV2,
         expiresAt,
         state: "open"
       }
@@ -178,19 +202,84 @@ export async function issueAccountAppearanceBrowserOperation(raw: { operationId?
     return { status: "open", operationId, bindingId: binding.id };
   };
 
-  try {
-    return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
-  } catch (error) {
-    if (!isAccountBindingUniqueError(error)) throw error;
-    return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+  return runAccountSerializableWithRetry(async () => {
+    try {
+      return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (!isAccountBindingUniqueError(error)) throw error;
+      return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+    }
+  });
+}
+
+function isAccountSerializableWriteConflict(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; meta?: { code?: unknown; message?: unknown }; message?: unknown };
+  return candidate.code === "P2034" ||
+    (candidate.code === "P2010" && candidate.meta?.code === "40001") ||
+    (typeof candidate.message === "string" && candidate.message.includes("could not serialize access"));
+}
+
+async function runAccountSerializableWithRetry<T>(operation: () => Promise<T>) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isAccountSerializableWriteConflict(error) || attempt === 2) throw error;
+    }
   }
+  throw new Error("operation_serialization_retry_exhausted");
 }
 
 function isAccountBindingUniqueError(error: unknown) {
   if (!error || typeof error !== "object") return false;
-  const candidate = error as { code?: unknown; meta?: { target?: unknown } };
-  return candidate.code === "P2002" && Array.isArray(candidate.meta?.target) &&
-    candidate.meta.target[0] === "userId" && candidate.meta.target[1] === "operationId";
+  const candidate = error as { code?: unknown; meta?: { target?: unknown; database_error?: unknown }; message?: unknown };
+  const exactComposite = candidate.code === "P2002" && Array.isArray(candidate.meta?.target) &&
+    candidate.meta.target.length === 2 && candidate.meta.target[0] === "userId" && candidate.meta.target[1] === "operationId";
+  const reservationGuard = candidate.code === "P2004" && typeof candidate.meta?.database_error === "string" &&
+    candidate.meta.database_error.includes("account_operation_reservation_identity_already_owned");
+  const unknownRequestReservationGuard = typeof candidate.message === "string" &&
+    candidate.message.includes("account_operation_reservation_identity_already_owned");
+  return exactComposite || reservationGuard || unknownRequestReservationGuard;
+}
+
+export async function abandonAccountAppearanceBrowserOperation(raw: { operationId?: unknown }): Promise<Extract<BrowserOperationResult, { status: "expired" }>> {
+  const operationId = assertBrowserOperationId(raw.operationId);
+  const ctx = accountContext(await requireAccountSession());
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        const tx = transaction as unknown as AccountTransaction;
+        await tx.$executeRaw`SELECT "lock_account_browser_operation_identity"(${ctx.userId}, ${operationId})`;
+        await lockCurrentAccountActor(tx, ctx);
+        await tx.$queryRaw`SELECT "id" FROM "AccountOperationBinding" WHERE "userId" = ${ctx.userId} AND "operationId" = ${operationId} FOR UPDATE`;
+        const binding = await tx.accountOperationBinding.findFirst({
+          where: { userId: ctx.userId, operationId },
+          include: { operation: true }
+        });
+        if (!binding || binding.sessionId !== ctx.sessionId || binding.userId !== ctx.userId || binding.operation || binding.state !== "open") {
+          throw new Error("not_found");
+        }
+        await tx.accountOperationReservationTombstone.create({
+          data: {
+            userId: binding.userId,
+            operationId: binding.operationId,
+            operationKey: binding.operationKey,
+            sessionId: binding.sessionId,
+            openingFingerprint: binding.openingFingerprint,
+            terminalCode: "operation_abandoned",
+            createdAt: binding.issuedAt,
+            terminalAt: new Date()
+          }
+        });
+        await tx.accountOperationBinding.delete({ where: { id: binding.id } });
+        return { status: "expired", operationId, code: "operation_abandoned" };
+      }, { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (!isAccountSerializableWriteConflict(error) || attempt === 2) throw error;
+    }
+  }
+  throw new Error("operation_serialization_retry_exhausted");
 }
 
 async function persistAccountTerminal(
@@ -212,7 +301,7 @@ async function persistAccountTerminal(
         outcomeVersion: 2,
         outcomeKind: result.status,
         outcomeCode: result.code,
-        outcomeSnapshot: null,
+        outcomeSnapshot: Prisma.DbNull,
         terminalAt: new Date()
       };
   const operation = await tx.accountMutationOperation.update({
@@ -231,9 +320,9 @@ export async function submitAccountAppearanceBrowserOperation(raw: {
   const appearanceMode = appearanceModeSchema.parse(raw.appearanceMode);
   const ctx = accountContext(await requireAccountSession());
 
-  return prisma.$transaction(async (transaction) => {
+  return runAccountSerializableWithRetry(() => prisma.$transaction(async (transaction) => {
     const tx = transaction as unknown as AccountTransaction;
-    await tx.$queryRaw`SELECT "lock_account_browser_operation_identity"(${ctx.userId}, ${operationId})`;
+    await tx.$executeRaw`SELECT "lock_account_browser_operation_identity"(${ctx.userId}, ${operationId})`;
     await lockCurrentAccountActor(tx, ctx);
     const binding = await tx.accountOperationBinding.findFirst({
       where: { userId: ctx.userId, operationId },
@@ -244,6 +333,8 @@ export async function submitAccountAppearanceBrowserOperation(raw: {
         where: { userId_operationId: { userId: ctx.userId, operationId } }
       });
       if (tombstone) return { status: "expired", operationId, code: "operation_result_expired" } as const;
+      const reservationTombstone = await accountReservationTombstoneResult(tx, ctx, operationId);
+      if (reservationTombstone) return reservationTombstone;
       throw new Error("not_found");
     }
     if (!bindingMatches(binding, ctx)) throw new Error("stale_context");
@@ -292,7 +383,7 @@ export async function submitAccountAppearanceBrowserOperation(raw: {
         appearanceRevision: opening.appearanceRevision + 1
       }
     });
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export { accountOperationResultFromPersistence };

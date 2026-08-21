@@ -69,6 +69,23 @@ describe("activity browser-v2 opening bindings", () => {
     expect(mocks.issueHousehold.mock.calls[0]?.[0].targetSnapshot).toBeTypeOf("function");
   });
 
+  it("locks source and replacement babies in canonical order before the activity row", async () => {
+    await issueActivityUpdateBrowserOperation({ operationId, activityId: "activity-1", babyId: "baby-2" });
+    const targetSnapshot = mocks.issueHousehold.mock.calls[0]?.[0].targetSnapshot as (tx: unknown, ctx: unknown) => Promise<unknown>;
+    const lockOrder: string[] = [];
+    const activity = { id: "activity-1", babyId: "baby-1", updatedAt: new Date("2026-08-17T12:00:00Z"), deletedAt: null, timerState: "none", actorMemberId: "member-1" };
+    await targetSnapshot({
+      $queryRaw: (parts: TemplateStringsArray) => {
+        const query = String(parts);
+        lockOrder.push(query.includes('FROM "Baby"') ? "baby" : query.includes('FROM "ActivityLog"') ? "activity" : "other");
+        return Promise.resolve([{ id: "locked" }]);
+      },
+      activityLog: { findFirst: vi.fn().mockResolvedValue(activity) },
+      baby: { findFirst: vi.fn(({ where }) => Promise.resolve({ id: where.id, updatedAt: new Date("2026-08-17T12:00:00Z"), inactiveAt: null })) }
+    }, ctx);
+    expect(lockOrder).toEqual(["baby", "baby", "activity"]);
+  });
+
   it.each([
     ["delete", issueActivityDeleteBrowserOperation, BrowserOperationKey.activityDelete],
     ["undo", issueActivityUndoLastBrowserOperation, BrowserOperationKey.activityUndoLast],

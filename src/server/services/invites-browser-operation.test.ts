@@ -111,6 +111,7 @@ describe("invite browser-v2 operations", () => {
     await issueInviteRevokeBrowserOperation({ operationId, inviteId: "invite-1" });
     const revoke = mocks.issue.mock.calls[0][0];
     expect(revoke).toMatchObject({ operationKey: "inviteRevoke", targetKind: "invite", targetId: "invite-1", permission: "member.manage" });
+    expect(revoke.preActorLock).toBeTypeOf("function");
     const snapshot = await revoke.targetSnapshot({
       $queryRaw: vi.fn().mockImplementation((parts) => String(parts[0]).includes("Session") ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
       invite: { findUnique: vi.fn().mockResolvedValue({ id: "invite-1", householdId: "household-1", role: "parent", status: "pending", updatedAt: new Date("2026-08-17T12:00:00.000Z") }) }
@@ -142,7 +143,8 @@ describe("invite browser-v2 operations", () => {
 
     await expect(submitInviteRevokeBrowserOperation({ operationId, inviteId: "invite-1" })).resolves.toMatchObject({ status: "completed", operationId });
     expect(mocks.execute).toHaveBeenCalledWith(expect.objectContaining({
-      operationKey: "inviteRevoke", targetKind: "invite", targetId: "invite-1", permission: "member.manage", intent: {}
+      operationKey: "inviteRevoke", targetKind: "invite", targetId: "invite-1", permission: "member.manage", intent: {},
+      preActorLock: expect.any(Function)
     }));
     expect(mocks.requireFreshSession).toHaveBeenCalledOnce();
   });
@@ -179,7 +181,7 @@ describe("invite browser-v2 operations", () => {
     await expect(submitInviteRevokeAllBrowserOperation({ operationId, acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" })).resolves.toMatchObject({ status: "completed", operationId });
     expect(mocks.execute).toHaveBeenCalledWith(expect.objectContaining({
       operationKey: "inviteRevokeAll", targetKind: "invite", permission: "household.manage",
-      intent: { acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" }
+      intent: { acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" }, preActorLock: expect.any(Function)
     }));
   });
 });

@@ -1,8 +1,15 @@
 -- Forward-only household browser-v2 persistence foundation.
 -- Existing browser_v1 and persistenceVersion 1 rows are not rewritten or reinterpreted.
+-- The key-expansion migration has already committed the new enum values.
 BEGIN;
 
--- Deterministic read-only preflight against the currently deployed pilot shape.
+LOCK TABLE
+  "BrowserOperationBinding",
+  "BrowserMutationOperation"
+IN SHARE ROW EXCLUSIVE MODE;
+
+-- Deterministic preflight is serialized with v2 DDL so no legacy writer can
+-- commit a mismatched row after inspection and before the guards are live.
 DO $$
 BEGIN
   IF EXISTS (
@@ -20,48 +27,14 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'browser_operation_foundation_preflight_failed:operation_binding';
   END IF;
-
-  IF EXISTS (
-    SELECT 1 FROM "BrowserOperationBinding"
-    WHERE "operationId" !~ '^bmo_[0-9abcdefghjkmnpqrstvwxyz]{26}$'
-       OR "intentFingerprint" IS NULL
-  ) THEN
+  IF EXISTS (SELECT 1 FROM "BrowserOperationBinding" WHERE "operationId" !~ '^bmo_[0-9abcdefghjkmnpqrstvwxyz]{26}$' OR "intentFingerprint" IS NULL) THEN
     RAISE EXCEPTION 'browser_operation_foundation_preflight_failed:legacy_binding_shape';
   END IF;
-
-  IF EXISTS (
-    SELECT 1 FROM "BrowserMutationOperation"
-    WHERE "operationId" !~ '^bmo_[0-9abcdefghjkmnpqrstvwxyz]{26}$'
-       OR "intentFingerprint" IS NULL
-  ) THEN
+  IF EXISTS (SELECT 1 FROM "BrowserMutationOperation" WHERE "operationId" !~ '^bmo_[0-9abcdefghjkmnpqrstvwxyz]{26}$' OR "intentFingerprint" IS NULL) THEN
     RAISE EXCEPTION 'browser_operation_foundation_preflight_failed:legacy_operation_shape';
   END IF;
 END
 $$;
-
-COMMIT;
-
--- PostgreSQL enum additions are committed before later constraints refer to them.
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.create';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.update';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.delete';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.undo_last';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.timer.pause';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.timer.resume';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'activity.timer.stop';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'baby.create';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'invite.create';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'invite.revoke';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'invite.revoke_all';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'member.restore';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'member.remove';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'member.role.update';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'member.suspend';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'notification.preference.save';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'settings.units.update';
-ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS 'household.accent.update';
-
-BEGIN;
 
 CREATE TYPE "BrowserOperationTargetKind" AS ENUM (
   'household', 'activity', 'baby', 'warning', 'invite', 'member', 'preference', 'settings', 'calendar'

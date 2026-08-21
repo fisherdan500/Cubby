@@ -10,6 +10,11 @@ export const operation = {
       kind: "route_method",
       symbol: "GET",
       target: "src/app/api/browser-operations/[operationId]/route.ts#GET"
+    },
+    {
+      kind: "route_method",
+      symbol: "DELETE",
+      target: "src/app/api/browser-operations/[operationId]/route.ts#DELETE"
     }
   ],
   disposition: "observed",

@@ -15,10 +15,14 @@ export async function POST(
     const { id } = await params;
     const raw = await request.json().catch(() => ({})) as Record<string, unknown>;
     operationId = raw.operationId;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...raw, memberId: id };
+    const input = { ...raw, memberId: id };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueMemberBrowserOperation("suspend", input);
-      const result = issued.status === "open" ? await submitMemberBrowserOperation("suspend", input) : issued;
+      return ok(issued, { status: issued.status === "pending" || issued.status === "prepared" ? 202 : issued.status === "expired" ? 410 : 200 });
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueMemberBrowserOperation("suspend", input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitMemberBrowserOperation("suspend", input) : issued;
       return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
     }
     return ok(await suspendMember(id));

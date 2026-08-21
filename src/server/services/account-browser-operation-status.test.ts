@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   sessionFindFirst: vi.fn(),
   userFindFirst: vi.fn(),
   bindingFindFirst: vi.fn(),
-  tombstoneFindUnique: vi.fn()
+  tombstoneFindUnique: vi.fn(),
+  reservationTombstoneFindUnique: vi.fn()
 }));
 
 vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession }));
@@ -26,16 +27,40 @@ beforeEach(() => {
   mocks.userFindFirst.mockResolvedValue({ id: "user-1" });
   mocks.bindingFindFirst.mockResolvedValue(null);
   mocks.tombstoneFindUnique.mockResolvedValue(null);
+  mocks.reservationTombstoneFindUnique.mockResolvedValue(null);
   mocks.transaction.mockImplementation((callback) => callback({
     $queryRaw: mocks.queryRaw,
+    $executeRaw: mocks.queryRaw,
     session: { findFirst: mocks.sessionFindFirst },
     user: { findFirst: mocks.userFindFirst },
     accountOperationBinding: { findFirst: mocks.bindingFindFirst },
-    accountMutationOperationTombstone: { findUnique: mocks.tombstoneFindUnique }
+    accountMutationOperationTombstone: { findUnique: mocks.tombstoneFindUnique },
+    accountOperationReservationTombstone: { findUnique: mocks.reservationTombstoneFindUnique }
   }));
 });
 
 describe("account browser operation status", () => {
+  it("returns operation_prepared for the current session's reserved binding without a submitted operation", async () => {
+    mocks.bindingFindFirst.mockResolvedValue({
+      sessionId: "session-1",
+      userId: "user-1",
+      operation: null
+    });
+
+    await expect(getAccountBrowserOperationStatus(operationId)).resolves.toEqual({
+      status: "prepared",
+      operationId,
+      code: "operation_prepared"
+    });
+  });
+
+  it("returns operation_result_expired for the current user's expired unsubmitted reservation", async () => {
+    mocks.bindingFindFirst.mockResolvedValue({ sessionId: "session-1", userId: "user-1", state: "expired", operation: null });
+    await expect(getAccountBrowserOperationStatus(operationId)).resolves.toEqual({
+      status: "expired", operationId, code: "operation_result_expired"
+    });
+  });
+
   it("returns operation_unknown for pending and unknown account operations using only current Session/User authority", async () => {
     mocks.bindingFindFirst.mockResolvedValue({
       sessionId: "session-1",
@@ -78,6 +103,20 @@ describe("account browser operation status", () => {
     });
   });
 
+  it("returns operation_abandoned for the current user's reservation tombstone", async () => {
+    mocks.reservationTombstoneFindUnique.mockResolvedValue({ sessionId: "session-1", userId: "user-1", terminalCode: "operation_abandoned" });
+    await expect(getAccountBrowserOperationStatus(operationId)).resolves.toEqual({
+      status: "expired", operationId, code: "operation_abandoned"
+    });
+  });
+
+  it("returns operation_result_expired for the current user's expiry reservation tombstone", async () => {
+    mocks.reservationTombstoneFindUnique.mockResolvedValue({ sessionId: "session-1", userId: "user-1", terminalCode: "operation_result_expired" });
+    await expect(getAccountBrowserOperationStatus(operationId)).resolves.toEqual({
+      status: "expired", operationId, code: "operation_result_expired"
+    });
+  });
+
   it("returns an expired result for the current user's compacted identity", async () => {
     mocks.tombstoneFindUnique.mockResolvedValue({ userId: "user-1" });
     await expect(getAccountBrowserOperationStatus(operationId)).resolves.toEqual({
@@ -101,5 +140,15 @@ describe("account browser operation status", () => {
 
     mocks.sessionFindFirst.mockResolvedValue(null);
     await expect(getAccountBrowserOperationStatus(operationId)).rejects.toThrow("unauthenticated");
+  });
+
+  it("is existence-neutral for a reservation tombstone issued by another current session", async () => {
+    mocks.reservationTombstoneFindUnique.mockResolvedValue({
+      sessionId: "other-session",
+      userId: "user-1",
+      terminalCode: "operation_abandoned"
+    });
+
+    await expect(getAccountBrowserOperationStatus(operationId)).rejects.toThrow("not_found");
   });
 });

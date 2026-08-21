@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   BrowserMutationOperationStatus,
   BrowserOperationKey,
   BrowserOperationProtocolVersion,
   BrowserOperationTargetKind,
-  type Prisma
+  Prisma
 } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
@@ -101,20 +101,23 @@ function terminalOutcomeSchemaFor(operationKey: BrowserOperationKey) {
 
 export type BrowserOperationResult =
   | { status: "open"; operationId: string; bindingId: string }
+  | { status: "prepared"; operationId: string; code: "operation_prepared" }
   | { status: "pending"; operationId: string; code?: "operation_unknown" }
   | { status: "completed"; operationId: string; outcome: Record<string, unknown> }
   | { status: "rejected" | "stale"; operationId: string; code: string }
-  | { status: "expired"; operationId: string; code: "operation_result_expired" };
+  | { status: "expired"; operationId: string; code: "operation_result_expired" | "operation_abandoned" };
 
 export type BrowserOperationContext = HouseholdContext & { sessionId: string };
 
-type BrowserOperationTransaction = Pick<Prisma.TransactionClient, "$queryRaw"> & {
+type BrowserOperationTransaction = Pick<Prisma.TransactionClient, "$queryRaw" | "$executeRaw"> & {
   session: { findFirst: any };
   household: { findFirst: any };
   baby: { findFirst: any };
   householdMember: { findFirst: any };
-  browserOperationBinding: { create: any; findFirst: any; update: any };
+  browserOperationBinding: { create: any; findFirst: any; update: any; delete: any };
   browserMutationOperation: { create: any; findUnique: any; update: any };
+  browserMutationOperationTombstone: { findUnique: any };
+  browserOperationReservationTombstone: { create: any; findUnique: any };
 };
 
 function canonicalJson(value: unknown): string {
@@ -135,7 +138,12 @@ export function assertBrowserOperationId(value: unknown) {
   return operationIdSchema.parse(value);
 }
 
-export function browserOperationFailureResult(operationId: unknown, error: unknown): BrowserOperationResult | null {
+export function createServerBrowserOperationId() {
+  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+  return `bmo_${Array.from(randomBytes(26), (byte) => alphabet[byte & 31]).join("")}`;
+}
+
+export function browserOperationFailureResult(operationId: unknown, error: unknown): Exclude<BrowserOperationResult, { status: "prepared" }> | null {
   const parsedOperationId = operationIdSchema.safeParse(operationId);
   if (!parsedOperationId.success || !(error instanceof Error)) return null;
   if (error.message === "idempotency_conflict") {
@@ -158,26 +166,15 @@ export function browserOperationFailureResult(operationId: unknown, error: unkno
 
 async function getBrowserOperationContextForBabyScope(babyId: unknown, includeInactive: boolean): Promise<BrowserOperationContext> {
   const session = await requireFreshSession();
+  const ctx = await getEffectiveHouseholdContext();
+  if (session.user.id !== ctx.userId) throw new Error("forbidden");
   const parsedBabyId = z.string().min(1).parse(babyId);
   const baby = await prisma.baby.findFirst({
-    where: { id: parsedBabyId, deletedAt: null, ...(includeInactive ? {} : { inactiveAt: null }) },
-    select: { householdId: true }
+    where: { id: parsedBabyId, householdId: ctx.householdId, deletedAt: null, ...(includeInactive ? {} : { inactiveAt: null }) },
+    select: { id: true }
   });
   if (!baby) throw new Error("not_found");
-
-  const member = await prisma.householdMember.findFirst({
-    where: {
-      id: { not: "" },
-      userId: session.user.id,
-      householdId: baby.householdId,
-      disabledAt: null,
-      deletedAt: null,
-      household: { deletedAt: null }
-    },
-    select: { id: true, householdId: true, role: true }
-  });
-  if (!member) throw new Error("not_found");
-  return { userId: session.user.id, sessionId: session.session.id, householdId: member.householdId, memberId: member.id, role: member.role };
+  return { ...ctx, sessionId: session.session.id };
 }
 
 export function getBrowserOperationContextForBaby(babyId: unknown) {
@@ -305,6 +302,28 @@ function householdBindingMatches(
     binding.babyId === null;
 }
 
+async function householdReservationTombstoneResult(
+  db: BrowserOperationTransaction,
+  ctx: BrowserOperationContext,
+  operationId: string,
+  operationKey: BrowserOperationKey
+): Promise<Extract<BrowserOperationResult, { status: "expired" }> | null> {
+  const tombstone = await db.browserOperationReservationTombstone.findUnique({
+    where: { householdId_operationId: { householdId: ctx.householdId, operationId } }
+  });
+  if (!tombstone) return null;
+  if (tombstone.sessionId !== ctx.sessionId ||
+      tombstone.actorUserId !== ctx.userId ||
+      tombstone.actorMemberId !== ctx.memberId ||
+      tombstone.operationKey !== operationKey) {
+    throw new Error("not_found");
+  }
+  if (tombstone.terminalCode !== "operation_abandoned" && tombstone.terminalCode !== "operation_result_expired") {
+    throw new Error("operation_integrity_error");
+  }
+  return { status: "expired", operationId, code: tombstone.terminalCode };
+}
+
 export async function issueHouseholdBrowserOperation(input: {
   ctx: BrowserOperationContext;
   operationId: unknown;
@@ -312,9 +331,10 @@ export async function issueHouseholdBrowserOperation(input: {
   targetKind: BrowserOperationTargetKind;
   targetId?: string;
   permission: Parameters<typeof requirePermission>[1];
+  preActorLock?: (tx: Prisma.TransactionClient) => Promise<void>;
   targetSnapshot: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<Record<string, unknown>> | Record<string, unknown>;
 }): Promise<BrowserOperationResult> {
-  const operationId = assertBrowserOperationId(input.operationId);
+  const operationId = input.operationId === undefined ? createServerBrowserOperationId() : assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   terminalOutcomeSchemaFor(operationKey);
   const expiresAt = new Date(Date.now() + browserOperationLeaseMs);
@@ -322,7 +342,8 @@ export async function issueHouseholdBrowserOperation(input: {
 
   const issueOrReplay = async (transaction: Prisma.TransactionClient, recoverOnly = false): Promise<BrowserOperationResult> => {
     const db = transaction as unknown as BrowserOperationTransaction;
-    await db.$queryRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+    await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+    await input.preActorLock?.(transaction);
     const ctx = await lockCurrentActor(db, input.ctx);
     requirePermission(ctx, input.permission);
     const existing = await db.browserOperationBinding.findFirst({
@@ -333,6 +354,17 @@ export async function issueHouseholdBrowserOperation(input: {
       if (!householdBindingMatches(existing, ctx, input)) throw new Error("idempotency_conflict");
       return existing.operation ? browserOperationResultFromPersistence(existing.operation) : openResult(existing.id);
     }
+    const tombstone = await db.browserMutationOperationTombstone.findUnique({
+      where: { householdId_operationId: { householdId: ctx.householdId, operationId } }
+    });
+    if (tombstone) {
+      if (tombstone.actorUserId === ctx.userId && tombstone.actorMemberId === ctx.memberId) {
+        return { status: "expired", operationId, code: "operation_result_expired" };
+      }
+      throw new Error("not_found");
+    }
+    const reservationTombstone = await householdReservationTombstoneResult(db, ctx, operationId, operationKey);
+    if (reservationTombstone) return reservationTombstone;
     if (recoverOnly) throw new Error("idempotency_conflict");
 
     await lockHouseholdForOperation(db, ctx);
@@ -369,12 +401,58 @@ export async function issueHouseholdBrowserOperation(input: {
     return openResult(binding.id);
   };
 
-  try {
-    return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
-  } catch (error) {
-    if (!isBrowserOperationBindingUniqueError(error)) throw error;
-    return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+  return runSerializableWithRetry(async () => {
+    try {
+      return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (!isBrowserOperationBindingUniqueError(error)) throw error;
+      return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+    }
+  });
+}
+
+export async function abandonHouseholdBrowserOperation(input: {
+  ctx: BrowserOperationContext;
+  operationId: unknown;
+}): Promise<Extract<BrowserOperationResult, { status: "expired" }>> {
+  const operationId = assertBrowserOperationId(input.operationId);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        const db = transaction as unknown as BrowserOperationTransaction;
+        await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+        const lockedCtx = await lockCurrentActor(db, input.ctx);
+        await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${lockedCtx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
+        const binding = await db.browserOperationBinding.findFirst({
+          where: { householdId: lockedCtx.householdId, operationId },
+          include: { operation: true }
+        });
+        if (!binding || binding.actorUserId !== lockedCtx.userId || binding.actorMemberId !== lockedCtx.memberId || binding.sessionId !== lockedCtx.sessionId) {
+          throw new Error("not_found");
+        }
+        if (binding.operation || binding.state !== "open") throw new Error("not_found");
+        await db.browserOperationReservationTombstone.create({
+          data: {
+            householdId: binding.householdId,
+            operationId: binding.operationId,
+            operationKey: binding.operationKey,
+            sessionId: binding.sessionId,
+            actorUserId: binding.actorUserId,
+            actorMemberId: binding.actorMemberId,
+            openingFingerprint: binding.openingFingerprint,
+            terminalCode: "operation_abandoned",
+            createdAt: binding.issuedAt,
+            terminalAt: new Date()
+          }
+        });
+        await db.browserOperationBinding.delete({ where: { id: binding.id } });
+        return { status: "expired", operationId, code: "operation_abandoned" };
+      }, { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (!isSerializableWriteConflict(error) || attempt === 2) throw error;
+    }
   }
+  throw new Error("operation_serialization_retry_exhausted");
 }
 
 export async function issueBrowserOperation(input: {
@@ -390,7 +468,7 @@ export async function issueBrowserOperation(input: {
   targetSnapshot?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null; updatedAt: Date }) => Promise<Record<string, unknown>> | Record<string, unknown>;
   validate?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, baby: { id: string; inactiveAt: Date | null; updatedAt: Date }) => Promise<void>;
 }): Promise<BrowserOperationResult> {
-  const operationId = assertBrowserOperationId(input.operationId);
+  const operationId = input.operationId === undefined ? createServerBrowserOperationId() : assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   terminalOutcomeSchemaFor(operationKey);
   const openingFingerprint = browserIntentFingerprint({
@@ -408,6 +486,7 @@ export async function issueBrowserOperation(input: {
 
   const issueOrReplay = async (tx: Prisma.TransactionClient, recoverOnly = false): Promise<BrowserOperationResult> => {
     const db = tx as unknown as BrowserOperationTransaction;
+    await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     const ctx = await lockCurrentActor(db, input.ctx);
     requirePermission(ctx, input.permission);
 
@@ -430,6 +509,17 @@ export async function issueBrowserOperation(input: {
         ? browserOperationResultFromPersistence(existing.operation)
         : openResult(existing.id);
     }
+    const tombstone = await db.browserMutationOperationTombstone.findUnique({
+      where: { householdId_operationId: { householdId: ctx.householdId, operationId } }
+    });
+    if (tombstone) {
+      if (tombstone.actorUserId === ctx.userId && tombstone.actorMemberId === ctx.memberId) {
+        return { status: "expired", operationId, code: "operation_result_expired" };
+      }
+      throw new Error("not_found");
+    }
+    const reservationTombstone = await householdReservationTombstoneResult(db, ctx, operationId, operationKey);
+    if (reservationTombstone) return reservationTombstone;
     if (recoverOnly) throw new Error("idempotency_conflict");
 
     const baby = await lockBabyForOperation(db, ctx, input.babyId);
@@ -458,18 +548,42 @@ export async function issueBrowserOperation(input: {
     return openResult(binding.id);
   };
 
-  try {
-    return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
-  } catch (error) {
-    if (!isBrowserOperationBindingUniqueError(error)) throw error;
-    return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+  return runSerializableWithRetry(async () => {
+    try {
+      return await prisma.$transaction((tx) => issueOrReplay(tx), { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (!isBrowserOperationBindingUniqueError(error)) throw error;
+      return prisma.$transaction((tx) => issueOrReplay(tx, true), { isolationLevel: "Serializable" });
+    }
+  });
+}
+
+async function runSerializableWithRetry<T>(operation: () => Promise<T>) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (!isSerializableWriteConflict(error) || attempt === 2) throw error;
+    }
   }
+  throw new Error("operation_serialization_retry_exhausted");
+}
+
+function isSerializableWriteConflict(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; meta?: { code?: unknown; message?: unknown }; message?: unknown };
+  return candidate.code === "P2034" ||
+    (candidate.code === "P2010" && candidate.meta?.code === "40001") ||
+    (typeof candidate.message === "string" && candidate.message.includes("could not serialize access"));
 }
 
 function isBrowserOperationBindingUniqueError(error: unknown) {
   if (!error || typeof error !== "object") return false;
-  const candidate = error as { code?: unknown; meta?: { target?: unknown } };
-  return candidate.code === "P2002" && Array.isArray(candidate.meta?.target) && candidate.meta.target.length === 2 && candidate.meta.target[0] === "householdId" && candidate.meta.target[1] === "operationId";
+  const candidate = error as { code?: unknown; meta?: { target?: unknown; database_error?: unknown }; message?: unknown };
+  const exactComposite = candidate.code === "P2002" && Array.isArray(candidate.meta?.target) && candidate.meta.target.length === 2 && candidate.meta.target[0] === "householdId" && candidate.meta.target[1] === "operationId";
+  const reservationGuard = candidate.code === "P2004" && typeof candidate.meta?.database_error === "string" && candidate.meta.database_error.includes("browser_operation_reservation_identity_already_owned");
+  const unknownRequestReservationGuard = typeof candidate.message === "string" && candidate.message.includes("browser_operation_reservation_identity_already_owned");
+  return exactComposite || reservationGuard || unknownRequestReservationGuard;
 }
 
 export function browserOperationResultFromPersistence(operation: {
@@ -510,7 +624,7 @@ async function persistTerminalOperation(
         outcomeVersion: 1,
         outcomeKind: result.status,
         outcomeCode: result.code,
-        outcomeSnapshot: null,
+        outcomeSnapshot: Prisma.DbNull,
         terminalAt: new Date()
       };
   const operation = await db.browserMutationOperation.update({
@@ -539,6 +653,7 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
   targetKind: BrowserOperationTargetKind;
   targetId?: string;
   permission: Parameters<typeof requirePermission>[1];
+  preActorLock?: (tx: Prisma.TransactionClient) => Promise<void>;
   validate?: (
     tx: Prisma.TransactionClient,
     ctx: BrowserOperationContext,
@@ -554,15 +669,23 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   const outcomeSchema = terminalOutcomeSchemaFor(operationKey);
 
-  return prisma.$transaction(async (transaction) => {
+  return runSerializableWithRetry(() => prisma.$transaction(async (transaction) => {
     const db = transaction as unknown as BrowserOperationTransaction;
-    await db.$queryRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+    await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${input.ctx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
     const binding = await db.browserOperationBinding.findFirst({
       where: { householdId: input.ctx.householdId, operationId },
       include: { operation: true }
     });
-    if (!binding || !householdBindingMatches(binding, input.ctx, input)) throw new Error("not_found");
+    if (!binding) {
+      const lockedCtx = await lockCurrentActor(db, input.ctx);
+      requirePermission(lockedCtx, input.permission);
+      const reservationTombstone = await householdReservationTombstoneResult(db, lockedCtx, operationId, operationKey);
+      if (reservationTombstone) return reservationTombstone;
+      throw new Error("not_found");
+    }
+    if (!householdBindingMatches(binding, input.ctx, input)) throw new Error("not_found");
+    await input.preActorLock?.(transaction);
 
     const lockedCtx = await lockCurrentActor(db, input.ctx);
     requirePermission(lockedCtx, input.permission);
@@ -613,7 +736,7 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
       }
       return persistTerminalOperation(db, binding, stale);
     }
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function executeBrowserOperation<T extends Record<string, unknown>>(input: {
@@ -631,15 +754,22 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   const outcomeSchema = terminalOutcomeSchemaFor(operationKey);
 
-  return prisma.$transaction(async (tx) => {
+  return runSerializableWithRetry(() => prisma.$transaction(async (tx) => {
     const db = tx as unknown as BrowserOperationTransaction;
-    await db.$queryRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
+    await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${input.ctx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
     const binding = await db.browserOperationBinding.findFirst({
       where: { householdId: input.ctx.householdId, operationId },
       include: { operation: true }
     });
-    if (!binding || !submitBindingMatches(binding, input.ctx, { operationKey, babyId: input.babyId })) {
+    if (!binding) {
+      const lockedCtx = await lockCurrentActor(db, input.ctx);
+      requirePermission(lockedCtx, input.permission);
+      const reservationTombstone = await householdReservationTombstoneResult(db, lockedCtx, operationId, operationKey);
+      if (reservationTombstone) return reservationTombstone;
+      throw new Error("not_found");
+    }
+    if (!submitBindingMatches(binding, input.ctx, { operationKey, babyId: input.babyId })) {
       throw new Error("not_found");
     }
     const lockedCtx = await lockCurrentActor(db, input.ctx);
@@ -696,5 +826,5 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
       }
       return persistTerminalOperation(db, binding, stale);
     }
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }

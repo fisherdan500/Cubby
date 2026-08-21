@@ -12,6 +12,8 @@ import {
   householdRoleDetails,
   type HouseholdRoleName
 } from "@/domain/roles";
+import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 
 type MemberRow = {
   id: string;
@@ -28,6 +30,20 @@ type InviteRow = {
   expiresAt: string;
 };
 
+type Partition = { version: 1; scope: "household"; partition: string };
+type InMemoryOperation = { partition: string; operationId: string };
+
+async function householdPartition(): Promise<Partition> {
+  const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
+  const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition } | null;
+  if (!response.ok || !body?.ok || !body.data || body.data.scope !== "household") throw new Error("operation_partition_unavailable");
+  return body.data;
+}
+
+function memberAdministrationStorageKey(partition: string, key: string) {
+  return `cubby:member-administration-operation:${partition}:${key}`;
+}
+
 const BULK_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
 
 export function MemberAccessManager({
@@ -42,51 +58,134 @@ export function MemberAccessManager({
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [busyId, setBusyId] = useState("");
-  const memberOperationIds = useRef(new Map<string, string>());
-  const inviteOperationIds = useRef(new Map<string, string>());
+  const memberOperationIds = useRef(new Map<string, InMemoryOperation>());
+  const inviteOperationIds = useRef(new Map<string, InMemoryOperation>());
 
-  function memberOperationId(memberId: string, action: "role.update" | "suspend" | "restore" | "remove") {
-    const key = `${memberId}:${action}`;
-    let operationId = memberOperationIds.current.get(key);
+  function operationFor(storageKey: string, key: string, partition: string, memory: Map<string, InMemoryOperation>) {
+    const remembered = memory.get(key);
+    if (remembered && remembered.partition !== partition) memory.delete(key);
+    let operationId = remembered?.partition === partition ? remembered.operationId : undefined;
     if (!operationId) {
-      const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-      const bytes = crypto.getRandomValues(new Uint8Array(26));
-      operationId = `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
-      memberOperationIds.current.set(key, operationId);
+      try {
+        operationId = sessionStorage.getItem(storageKey) ?? undefined;
+      } catch {
+        // Storage failure falls back to this mounted component's memory.
+      }
     }
-    return operationId;
+    return { operationId, retained: Boolean(operationId) };
   }
 
-  function clearMemberOperationId(memberId: string, action: "role.update" | "suspend" | "restore" | "remove") {
-    memberOperationIds.current.delete(`${memberId}:${action}`);
+  function clearOperation(storageKey: string, key: string, memory: Map<string, InMemoryOperation>) {
+    memory.delete(key);
+    try {
+      sessionStorage.removeItem(storageKey);
+    } catch {
+      // Storage failure must not affect the terminal server outcome.
+    }
   }
 
-  function inviteOperationId(key: string) {
-    let operationId = inviteOperationIds.current.get(key);
-    if (!operationId) {
-      const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-      const bytes = crypto.getRandomValues(new Uint8Array(26));
-      operationId = `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
-      inviteOperationIds.current.set(key, operationId);
+  async function performOperation({
+    key,
+    memory,
+    endpoint,
+    method,
+    payload
+  }: {
+    key: string;
+    memory: Map<string, InMemoryOperation>;
+    endpoint: string;
+    method: "POST" | "PATCH" | "DELETE";
+    payload?: Record<string, unknown>;
+  }) {
+    try {
+      const { partition } = await householdPartition();
+      const storageKey = await tabScopedBrowserOperationStorageKey(partition, memberAdministrationStorageKey(partition, key));
+      let { operationId, retained } = operationFor(storageKey, key, partition, memory);
+      if (retained) {
+        const response = await fetch(`/api/browser-operations/${operationId}`, { cache: "no-store" });
+        const body = await response.json().catch(() => null) as { ok?: boolean; data?: { status?: string; outcome?: Record<string, unknown> } } | null;
+        const status = body?.ok ? body.data?.status : undefined;
+        if (isAuthorizedBrowserOperation410(response.status, body, operationId!)) {
+          clearOperation(storageKey, key, memory);
+          ({ operationId } = operationFor(storageKey, key, partition, memory));
+          retained = false;
+        } else if (status === "completed") {
+          clearOperation(storageKey, key, memory);
+          return body?.data;
+        } else if (status === "prepared") {
+          // The server-issued reservation is authorized for same-ID submission below.
+        } else if (status === "pending") {
+          setMessage("This administration request is still in progress. Reconcile it before trying again.");
+          return null;
+        } else if (status === "stale" || status === "rejected") {
+          setMessage("This administration request is no longer current. Refresh before trying again.");
+          return null;
+        } else {
+          setMessage("Reconcile this administration request before trying again.");
+          return null;
+        }
+      }
+
+      if (!operationId) {
+        const issueResponse = await fetch(`${endpoint}?issue=1`, {
+          method, headers: { "content-type": "application/json" }, body: JSON.stringify(payload ?? {})
+        });
+        const issueBody = await issueResponse.json().catch(() => null) as { ok?: boolean; data?: { operationId?: string; status?: string } } | null;
+        if (!issueResponse.ok || !issueBody?.ok || !issueBody.data?.operationId || (issueBody.data.status !== "open" && issueBody.data.status !== "prepared")) {
+          throw new Error("member_operation_issue_unavailable");
+        }
+        operationId = issueBody.data.operationId;
+        memory.set(key, { partition, operationId });
+        sessionStorage.setItem(storageKey, operationId);
+      }
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ operationId, ...payload })
+      });
+      const body = await response.json().catch(() => null) as {
+        ok?: boolean;
+        data?: { status?: string; outcome?: Record<string, unknown> };
+        error?: { message?: string };
+      } | null;
+      const status = body?.ok ? body.data?.status : undefined;
+      if (isAuthorizedBrowserOperation410(response.status, body, operationId!)) {
+        clearOperation(storageKey, key, memory);
+        setMessage("This administration request expired. Try again to open a new request.");
+        return null;
+      }
+      if (status === "completed") {
+        clearOperation(storageKey, key, memory);
+        return body?.data;
+      }
+      if (status === "pending") {
+        setMessage("This administration request is still in progress. Reconcile it before trying again.");
+        return null;
+      }
+      if (status === "stale" || status === "rejected") {
+        setMessage("This administration request is no longer current. Refresh before trying again.");
+        return null;
+      }
+      setMessage(body?.error?.message ?? "Reconcile this administration request before trying again.");
+      return null;
+    } catch {
+      setMessage("Reconcile this administration request before trying again.");
+      return null;
     }
-    return operationId;
   }
 
   async function updateRole(memberId: string, formData: FormData) {
     setMessage("");
     setBusyId(memberId);
-    const response = await fetch(`/api/members/${memberId}`, {
+    const result = await performOperation({
+      key: `${memberId}:role.update`,
+      memory: memberOperationIds.current,
+      endpoint: `/api/members/${memberId}`,
       method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ operationId: memberOperationId(memberId, "role.update"), role: formData.get("role") })
+      payload: { role: formData.get("role") }
     });
-    const result = await response.json();
     setBusyId("");
-    if (!result.ok) {
-      setMessage(result.error.message);
-      return;
-    }
-    clearMemberOperationId(memberId, "role.update");
+    if (!result) return;
     router.refresh();
   }
 
@@ -96,18 +195,14 @@ export function MemberAccessManager({
     if (suspending && !window.confirm(`Suspend ${member.name}'s access and sign them out?`)) return;
     setMessage("");
     setBusyId(member.id);
-    const response = await fetch(`/api/members/${member.id}/${action}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ operationId: memberOperationId(member.id, suspending ? "suspend" : "restore") })
+    const result = await performOperation({
+      key: `${member.id}:${action}`,
+      memory: memberOperationIds.current,
+      endpoint: `/api/members/${member.id}/${action}`,
+      method: "POST"
     });
-    const result = await response.json();
     setBusyId("");
-    if (!result.ok) {
-      setMessage(result.error.message);
-      return;
-    }
-    clearMemberOperationId(member.id, action);
+    if (!result) return;
     router.refresh();
   }
 
@@ -115,51 +210,45 @@ export function MemberAccessManager({
     if (!window.confirm(`Remove ${member.name} from this household?`)) return;
     setMessage("");
     setBusyId(member.id);
-    const response = await fetch(`/api/members/${member.id}`, {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ operationId: memberOperationId(member.id, "remove") })
+    const result = await performOperation({
+      key: `${member.id}:remove`,
+      memory: memberOperationIds.current,
+      endpoint: `/api/members/${member.id}`,
+      method: "DELETE"
     });
-    const result = await response.json();
     setBusyId("");
-    if (!result.ok) {
-      setMessage(result.error.message);
-      return;
-    }
-    clearMemberOperationId(member.id, "remove");
+    if (!result) return;
     router.refresh();
   }
 
   async function revoke(invite: InviteRow) {
     setMessage("");
     setBusyId(invite.id);
-    const response = await fetch(`/api/invites/${invite.id}/revoke`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operationId: inviteOperationId(`revoke:${invite.id}`) }) });
-    const result = await response.json();
+    const result = await performOperation({
+      key: `revoke:${invite.id}`,
+      memory: inviteOperationIds.current,
+      endpoint: `/api/invites/${invite.id}/revoke`,
+      method: "POST"
+    });
     setBusyId("");
-    if (!result.ok) {
-      setMessage(result.error.message);
-      return;
-    }
-    inviteOperationIds.current.delete(`revoke:${invite.id}`);
+    if (!result) return;
     router.refresh();
   }
 
   async function revokeAll(formData: FormData) {
     setMessage("");
     setBusyId("revoke-all");
-    const response = await fetch("/api/invites/revoke-all", {
+    const result = await performOperation({
+      key: "revoke-all",
+      memory: inviteOperationIds.current,
+      endpoint: "/api/invites/revoke-all",
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ operationId: inviteOperationId("revoke-all"), acknowledgement: formData.get("acknowledgement") })
+      payload: { acknowledgement: formData.get("acknowledgement") }
     });
-    const result = await response.json();
     setBusyId("");
-    if (!result.ok) {
-      setMessage(result.error.message);
-      return;
-    }
-    inviteOperationIds.current.delete("revoke-all");
-    setMessage(`Revoked ${result.data.revokedCount} pending invitation${result.data.revokedCount === 1 ? "" : "s"}.`);
+    if (!result) return;
+    const revokedCount = typeof result.outcome?.revokedCount === "number" ? result.outcome.revokedCount : 0;
+    setMessage(`Revoked ${revokedCount} pending invitation${revokedCount === 1 ? "" : "s"}.`);
     router.refresh();
   }
 

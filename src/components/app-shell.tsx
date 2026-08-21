@@ -6,6 +6,7 @@ import { HeaderBabySelector } from "@/components/header-baby-selector";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileHeaderMenu } from "@/components/mobile-header-menu";
 import { BrandLockup } from "@/components/brand";
+import { BrowserOperationRecovery } from "@/components/browser-operation-recovery";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
@@ -84,6 +85,7 @@ export function AppShell({
       </header>
 
       <main className="app-shell-content px-3 pb-24 pt-3 md:ml-64 md:px-6 md:pt-5">
+        <BrowserOperationRecovery />
         {children}
       </main>
 

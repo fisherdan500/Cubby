@@ -7,6 +7,7 @@ export const operation = {
   ownerKind: "api_route",
   bindings: [
     { kind: "route_method", symbol: "GET", target: "src/app/api/account/browser-operations/[operationId]/route.ts#GET" },
+    { kind: "route_method", symbol: "DELETE", target: "src/app/api/account/browser-operations/[operationId]/route.ts#DELETE" },
   ],
   disposition: "observed",
   deferredGateIds: [

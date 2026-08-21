@@ -5,14 +5,33 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { UnitPreferences } from "@/domain/unit-preferences";
+import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 
 type Props = { preferences: UnitPreferences; medicineNames: string[]; supplementNames: string[] };
-const pendingKey = "cubby:unit-preferences-operation";
+type UnitOperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
+type Partition = { version: 1; scope: "household"; partition: string };
 
-function operationId() {
-  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-  const bytes = crypto.getRandomValues(new Uint8Array(26));
-  return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+function unitOperationStorageKey(partition: string) {
+  return `cubby:unit-preferences-operation:${partition}`;
+}
+
+async function householdPartition(): Promise<Partition> {
+  const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
+  const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition; error?: { message?: string } } | null;
+  if (!response.ok || !body?.ok || !body.data || body.data.version !== 1 || body.data.scope !== "household") {
+    throw new Error(body?.error?.message ?? "Could not establish the current household operation scope.");
+  }
+  return body.data;
+}
+
+async function unitOperationResponse(response: Response) {
+  const body = await response.json().catch(() => null) as {
+    ok?: boolean;
+    data?: { status?: UnitOperationStatus; operationId?: string };
+    error?: { message?: string };
+  } | null;
+  return { response, body, status: body?.ok ? body.data?.status : undefined };
 }
 
 export function UnitPreferencesForm({ preferences, medicineNames, supplementNames }: Props) {
@@ -21,37 +40,65 @@ export function UnitPreferencesForm({ preferences, medicineNames, supplementName
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  function clearOperation(storageKey: string) {
+    sessionStorage.removeItem(storageKey);
+  }
+
+  async function submitReservation(id: string, storageKey: string, formData: FormData) {
+    const result = await unitOperationResponse(await fetch("/api/settings/units", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ operationId: id, volume: formData.get("volume"), weight: formData.get("weight"), length: formData.get("length"), temperature: formData.get("temperature"), medicineUnits: itemUnits(formData, "medicine", medicineNames), supplementUnits: itemUnits(formData, "supplement", supplementNames) })
+    }));
+    if (isAuthorizedBrowserOperation410(result.response.status, result.body, id)) {
+      clearOperation(storageKey); setError("This unit-default request expired. Save again to open a new request.");
+    } else if (result.status === "completed") {
+      clearOperation(storageKey); setSaved(true); router.refresh();
+    } else if (result.status === "pending") {
+      setError("Unit defaults outcome is still unknown. Retry reconciliation before changing it again.");
+    } else if (result.status === "stale" || result.status === "rejected") {
+      setError("This unit-default request is no longer current. Refresh and choose again.");
+    } else {
+      setError(result.body?.error?.message ?? "Could not save unit defaults. Reconcile before retrying.");
+    }
+  }
+
   async function submit(formData: FormData) {
     setError(""); setSaved(false); setSubmitting(true);
     try {
-      const retained = sessionStorage.getItem(pendingKey);
+      const { partition } = await householdPartition();
+      const storageKey = await tabScopedBrowserOperationStorageKey(partition, unitOperationStorageKey(partition));
+      const retained = sessionStorage.getItem(storageKey);
       if (retained) {
-        const response = await fetch(`/api/browser-operations/${retained}`, { cache: "no-store" });
-        const result = await response.json() as { ok?: boolean; data?: { status?: string } };
-        if (response.ok && result.data?.status === "completed") {
-          sessionStorage.removeItem(pendingKey); setSaved(true); router.refresh();
-        } else if (response.status === 202) {
+        const result = await unitOperationResponse(await fetch(`/api/browser-operations/${retained}`, { cache: "no-store" }));
+        if (isAuthorizedBrowserOperation410(result.response.status, result.body, retained)) {
+          clearOperation(storageKey); setError("This unit-default request expired. Save again to open a new request.");
+        } else if (result.status === "completed") {
+          clearOperation(storageKey); setSaved(true); router.refresh();
+        } else if (result.status === "prepared") {
+          await submitReservation(retained, storageKey, formData);
+        } else if (result.status === "pending") {
           setError("Unit defaults outcome is still unknown. Retry reconciliation before changing it again.");
-        } else { sessionStorage.removeItem(pendingKey); setError("This unit-default request is no longer available. Refresh and choose again."); }
+        } else if (result.status === "stale" || result.status === "rejected") {
+          setError("This unit-default request is no longer current. Refresh and choose again.");
+        } else {
+          setError("Could not reconcile this unit-default request. Try again before changing it.");
+        }
         return;
       }
-      const id = operationId();
-      sessionStorage.setItem(pendingKey, id);
-      const issue = await fetch("/api/settings/units/issue", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operationId: id }) });
-      const issued = await issue.json() as { ok?: boolean; data?: { status?: string }; error?: { message?: string } };
-      if (!issue.ok || issued.data?.status !== "open") {
-        if (issued.data?.status !== "pending") sessionStorage.removeItem(pendingKey);
-        setError(issued.error?.message ?? "Could not open a unit-default request."); return;
+      const issued = await unitOperationResponse(await fetch("/api/settings/units/issue", {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({})
+      }));
+      const id = issued.body?.data?.operationId;
+      if (!id) throw new Error(issued.body?.error?.message ?? "Could not open a unit-default request.");
+      sessionStorage.setItem(storageKey, id);
+      if (issued.status === "open" || issued.status === "prepared") {
+        await submitReservation(id, storageKey, formData);
+      } else if (issued.status === "pending") {
+        setError("Unit defaults outcome is still unknown. Retry reconciliation before changing it again.");
+      } else if (issued.status === "stale" || issued.status === "rejected" || issued.status === "expired") {
+        setError("This unit-default request is no longer current. Refresh and choose again.");
       }
-      const response = await fetch("/api/settings/units", {
-        method: "PATCH", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ operationId: id, volume: formData.get("volume"), weight: formData.get("weight"), length: formData.get("length"), temperature: formData.get("temperature"), medicineUnits: itemUnits(formData, "medicine", medicineNames), supplementUnits: itemUnits(formData, "supplement", supplementNames) })
-      });
-      const result = await response.json() as { ok?: boolean; data?: { status?: string }; error?: { message?: string } };
-      if (!response.ok || !result.ok) { setError(result.error?.message ?? "Could not save unit defaults."); return; }
-      if (result.data?.status === "completed") { sessionStorage.removeItem(pendingKey); setSaved(true); router.refresh(); }
-      else setError("Unit defaults outcome is still unknown. Retry reconciliation before changing it again.");
-    } catch { setError("Could not reach Cubby. Check your connection and try again."); }
+    } catch { setError("Could not reach Cubby. Check your connection and reconcile before retrying."); }
     finally { setSubmitting(false); }
   }
 

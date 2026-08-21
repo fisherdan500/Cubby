@@ -79,7 +79,7 @@ describe("activity page access", () => {
     mocks.activityFindFirst.mockImplementation(({ where }) =>
       Promise.resolve("clientMutationId" in where ? null : activity("member-author"))
     );
-    mocks.activityCreate.mockResolvedValue({ id: "activity-created", type: "feeding", timerState: "none" });
+    mocks.activityCreate.mockResolvedValue({ id: "activity-created", babyId: "baby-1", type: "feeding", timerState: "none" });
     mocks.activityUpdate.mockResolvedValue(activity("member-author"));
     mocks.activityUpdateMany.mockResolvedValue({ count: 1 });
     mocks.activityFindUniqueOrThrow.mockResolvedValue(activity("member-author"));
@@ -353,8 +353,13 @@ describe("activity page access", () => {
       where: {
         householdId: "household-1",
         status: "active",
+        externalDeliveryEnabled: true,
         categories: { has: "activity_created" },
         channels: { has: "browser_push" },
+        OR: [
+          { babyScope: "all" },
+          { babyScope: "selected", selectedBabies: { some: { babyId: "baby-1" } } }
+        ],
         member: { is: { householdId: "household-1", disabledAt: null, deletedAt: null } }
       },
       select: { memberId: true }

@@ -18,5 +18,6 @@ describe("browser operation pilot disposable PostgreSQL acceptance harness", () 
     expect(source).toContain("const project = `cubby-p1-2b-pr53-acceptance-${suffix}`");
     expect(source).toContain("'bind-terminal-check'");
     expect(source).toContain("'bmo_4123456789abcdefghjkmnpqrs'");
+    expect(source).toContain("browser-operation-pilot.acceptance.vitest.config.ts");
   });
 });

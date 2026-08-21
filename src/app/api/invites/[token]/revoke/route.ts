@@ -19,11 +19,15 @@ export async function POST(request: Request, { params }: { params: { token: stri
       body = parsed as Record<string, unknown>;
     }
     operationId = body?.operationId;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...body, operationId, inviteId: params.token };
+    const input = { ...body, operationId, inviteId: params.token };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueInviteRevokeBrowserOperation(input);
-      const result = issued.status === "open" ? await submitInviteRevokeBrowserOperation(input) : issued;
-      return ok(result);
+      return ok(issued, { status: issued.status === "pending" || issued.status === "prepared" ? 202 : issued.status === "expired" ? 410 : 200 });
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueInviteRevokeBrowserOperation(input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitInviteRevokeBrowserOperation(input) : issued;
+      return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
     }
     return ok(await revokeInvite(params.token));
   } catch (error) {

@@ -12,9 +12,9 @@ import { browserOperationFailureResult } from "@/server/services/browser-operati
 
 export const dynamic = "force-dynamic";
 
-function browserOperationResponse(result: { status: string; operationId: string }) {
+function browserOperationResponse(result: { status: string; operationId: string; code?: string; outcome?: Record<string, unknown> }) {
   const status = result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200;
-  return ok({ status: result.status, operationId: result.operationId }, { status });
+  return ok(result, { status });
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
@@ -30,10 +30,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
     const record = typeof body === "object" && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : null;
     operationId = record?.operationId;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...record, activityId: params.id };
+    const input = { ...record, activityId: params.id };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueActivityUpdateBrowserOperation(input);
-      const result = issued.status === "open" ? await submitActivityUpdateBrowserOperation(input) : issued;
+      return browserOperationResponse(issued);
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueActivityUpdateBrowserOperation(input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitActivityUpdateBrowserOperation(input) : issued;
       return browserOperationResponse(result);
     }
     activityUpdateSchema.parse({ ...(body as object), id: params.id });
@@ -59,10 +63,14 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
     const record = typeof body === "object" && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : null;
     operationId = record?.operationId;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...record, activityId: params.id };
+    const input = { ...record, activityId: params.id };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueActivityDeleteBrowserOperation(input);
-      const result = issued.status === "open" ? await submitActivityDeleteBrowserOperation(input) : issued;
+      return browserOperationResponse(issued);
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueActivityDeleteBrowserOperation(input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitActivityDeleteBrowserOperation(input) : issued;
       return browserOperationResponse(result);
     }
     return ok(await deleteActivity(params.id, body));

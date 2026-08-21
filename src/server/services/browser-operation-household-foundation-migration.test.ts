@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const migrationDirectory = "20260817180000_household_browser_operation_foundation";
 const migrationUrl = new URL(`../../../prisma/migrations/${migrationDirectory}/migration.sql`, import.meta.url);
+const enumMigrationUrl = new URL("../../../prisma/migrations/20260817170000_browser_operation_key_expansion/migration.sql", import.meta.url);
+const reservationMigrationUrl = new URL("../../../prisma/migrations/20260819170000_browser_operation_reservation_tombstones/migration.sql", import.meta.url);
 const schemaUrl = new URL("../../../prisma/schema.prisma", import.meta.url);
 const backupFormatUrl = new URL("./backup-format.ts", import.meta.url);
 
@@ -56,6 +58,8 @@ describe("generalized household browser-operation foundation migration", () => {
     const binding = block(schema, "model", "BrowserOperationBinding");
     const operation = block(schema, "model", "BrowserMutationOperation");
     const tombstone = block(schema, "model", "BrowserMutationOperationTombstone");
+    const reservationTombstone = block(schema, "model", "BrowserOperationReservationTombstone");
+    const accountReservationTombstone = block(schema, "model", "AccountOperationReservationTombstone");
 
     expect(binding).toMatch(/openingFingerprint\s+String\?/);
     expect(binding).toMatch(/legacyIntentFingerprint\s+String\?\s+@map\("intentFingerprint"\)/);
@@ -77,6 +81,61 @@ describe("generalized household browser-operation foundation migration", () => {
     ]) expect(tombstone).toMatch(new RegExp(`\\b${field}\\b`));
     expect(tombstone).toContain("@@id([householdId, operationId])");
     expect(tombstone).not.toMatch(/outcomeSnapshot|openingFingerprint|targetSnapshot|request|payload|error/);
+
+    for (const field of ["householdId", "operationId", "operationKey", "sessionId", "actorUserId", "actorMemberId", "openingFingerprint", "terminalCode", "createdAt", "terminalAt"]) {
+      expect(reservationTombstone).toMatch(new RegExp(`\\b${field}\\b`));
+    }
+    expect(reservationTombstone).toContain("@@id([householdId, operationId])");
+    expect(reservationTombstone).not.toMatch(/session\s+Session|@relation\([^\n]*sessionId/);
+    expect(reservationTombstone).not.toMatch(/intentFingerprint|outcomeSnapshot|targetSnapshot|request|payload|error/);
+
+    for (const field of ["userId", "operationId", "operationKey", "sessionId", "openingFingerprint", "terminalCode", "createdAt", "terminalAt"]) {
+      expect(accountReservationTombstone).toMatch(new RegExp(`\\b${field}\\b`));
+    }
+    expect(accountReservationTombstone).toContain("@@id([userId, operationId])");
+    expect(accountReservationTombstone).not.toMatch(/session\s+Session|@relation\([^\n]*sessionId/);
+  });
+
+  it("adds a forward-only reservation-tombstone migration that guards household and account identity reuse", () => {
+    expect(existsSync(reservationMigrationUrl)).toBe(true);
+    if (!existsSync(reservationMigrationUrl)) return;
+    const migration = readFileSync(reservationMigrationUrl, "utf8");
+    for (const table of ["BrowserOperationReservationTombstone", "AccountOperationReservationTombstone"]) {
+      expect(migration).toContain(`CREATE TABLE "${table}"`);
+    }
+    expect(migration).toContain("browser_operation_reservation_identity_already_owned");
+    expect(migration).toContain("account_operation_reservation_identity_already_owned");
+    expect(migration).toContain("browser_operation_reservation_tombstone_immutable");
+    expect(migration).toContain("account_operation_reservation_tombstone_immutable");
+    expect(migration).toContain('"sessionId" TEXT NOT NULL');
+    expect(migration).not.toMatch(/FOREIGN KEY \("sessionId"\)/);
+    expect(migration).toContain('guard_browser_operation_reservation_tombstone_insert');
+    expect(migration).toContain('guard_account_operation_reservation_tombstone_insert');
+    expect(migration).toContain('browser_operation_reservation_tombstone_binding_mismatch');
+    expect(migration).toContain('account_operation_reservation_tombstone_binding_mismatch');
+    for (const field of ["operationKey", "sessionId", "actorUserId", "actorMemberId", "openingFingerprint", "issuedAt"]) {
+      expect(migration).toContain(`binding."${field}" = NEW."${field === "issuedAt" ? "createdAt" : field}"`);
+      expect(migration).toContain(`tombstone."${field === "issuedAt" ? "createdAt" : field}" = OLD."${field}"`);
+    }
+    expect(migration).toContain('binding."userId" = NEW."userId"');
+    expect(migration).toContain('tombstone."userId" = OLD."userId"');
+    expect(migration).toContain('NOT EXISTS (SELECT 1 FROM "BrowserMutationOperation" operation WHERE operation."bindingId" = binding."id")');
+    expect(migration).toContain('NOT EXISTS (SELECT 1 FROM "AccountMutationOperation" operation WHERE operation."bindingId" = binding."id")');
+    expect(migration).toContain('CREATE OR REPLACE FUNCTION "enforce_browser_operation_binding_write_once"');
+    expect(migration).toContain('CREATE OR REPLACE FUNCTION "enforce_account_operation_binding_write_once"');
+    expect(migration).not.toContain('IF OLD."persistenceVersion" <> 2 THEN RETURN NEW; END IF;');
+    expect(migration).toContain('OLD."persistenceVersion"');
+    expect(migration).toContain('NEW."persistenceVersion"');
+    expect(migration).toContain('BrowserOperationReservationTombstone" tombstone');
+    expect(migration).toContain('tombstone."householdId" = OLD."householdId"');
+    expect(migration).toContain('AccountOperationReservationTombstone" tombstone');
+    expect(migration).toContain('tombstone."userId" = OLD."userId"');
+    expect(migration).toContain("browser_operation_binding_transition_invalid");
+    expect(migration).toContain("browser_operation_submitted_without_operation");
+    expect(migration).toContain("browser_operation_terminal_without_terminal_operation");
+    expect(migration).toContain("account_operation_binding_transition_invalid");
+    expect(migration).toContain("account_operation_submitted_without_operation");
+    expect(migration).toContain("account_operation_terminal_without_terminal_operation");
   });
 
   it("adds a deterministic fail-closed forward migration with database-enforced identity and state guards", () => {
@@ -84,8 +143,15 @@ describe("generalized household browser-operation foundation migration", () => {
     if (!existsSync(migrationUrl)) return;
     const migration = readFileSync(migrationUrl, "utf8");
 
+    expect(existsSync(enumMigrationUrl)).toBe(true);
+    const enumMigration = existsSync(enumMigrationUrl) ? readFileSync(enumMigrationUrl, "utf8") : "";
+    expect(enumMigration).toContain('ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS \'activity.create\';');
+    expect(enumMigration).toContain('ALTER TYPE "BrowserOperationKey" ADD VALUE IF NOT EXISTS \'household.accent.update\';');
+    expect(migration).not.toContain('ALTER TYPE "BrowserOperationKey" ADD VALUE');
     expect(migration).toContain("BEGIN;");
     expect(migration).toContain("COMMIT;");
+    expect(migration).toContain('LOCK TABLE\n  "BrowserOperationBinding",\n  "BrowserMutationOperation"\nIN SHARE ROW EXCLUSIVE MODE;');
+    expect(migration.indexOf('LOCK TABLE')).toBeLessThan(migration.indexOf("browser_operation_foundation_preflight_failed:"));
     expect(migration).toContain("browser_operation_foundation_preflight_failed:");
     expect(migration).toContain('CREATE TABLE "BrowserMutationOperationTombstone"');
     expect(migration).toContain('BrowserOperationBinding_target_shape_check');

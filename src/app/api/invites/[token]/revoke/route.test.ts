@@ -23,7 +23,7 @@ beforeEach(() => vi.resetAllMocks());
 
 describe("POST /api/invites/[token]/revoke browser-v2", () => {
   it("uses a one-shot invite-bound operation and returns only its nonsecret result", async () => {
-    mocks.issueInviteRevokeBrowserOperation.mockResolvedValue({ status: "open", operationId, bindingId: "binding-1" });
+    mocks.issueInviteRevokeBrowserOperation.mockResolvedValue({ status: "prepared", operationId, bindingId: "binding-1" });
     mocks.submitInviteRevokeBrowserOperation.mockResolvedValue({
       status: "completed", operationId, outcome: { kind: "invite", code: "revoked", inviteId: "invite-1" }
     });
@@ -38,6 +38,29 @@ describe("POST /api/invites/[token]/revoke browser-v2", () => {
     });
     expect(mocks.issueInviteRevokeBrowserOperation).toHaveBeenCalledWith({ operationId, inviteId: "invite-1" });
     expect(mocks.submitInviteRevokeBrowserOperation).toHaveBeenCalledWith({ operationId, inviteId: "invite-1" });
+  });
+
+  it("issues a prepared server reservation without submitting", async () => {
+    mocks.issueInviteRevokeBrowserOperation.mockResolvedValue({ status: "prepared", operationId, bindingId: "binding-1" });
+
+    const response = await POST(new Request("http://localhost/api/invites/invite-1/revoke?issue=1", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({})
+    }), { params: { token: "invite-1" } });
+
+    expect(response.status).toBe(202);
+    expect(mocks.issueInviteRevokeBrowserOperation).toHaveBeenCalledWith({ operationId: undefined, inviteId: "invite-1" });
+    expect(mocks.submitInviteRevokeBrowserOperation).not.toHaveBeenCalled();
+  });
+
+  it("returns 410 for a compacted browser operation", async () => {
+    mocks.issueInviteRevokeBrowserOperation.mockResolvedValue({ status: "expired", operationId, code: "operation_result_expired" });
+
+    const response = await POST(new Request("http://localhost/api/invites/invite-1/revoke", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operationId })
+    }), { params: { token: "invite-1" } });
+
+    expect(response.status).toBe(410);
+    expect(mocks.submitInviteRevokeBrowserOperation).not.toHaveBeenCalled();
   });
 
   it("keeps the legacy revoke path when no browser operation id is supplied", async () => {

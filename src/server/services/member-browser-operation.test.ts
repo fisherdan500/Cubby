@@ -94,6 +94,33 @@ describe("member browser-v2 operations", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it("locks target sessions before the target member during suspension", async () => {
+    const queryRaw = vi.fn().mockImplementation((parts) => {
+      const query = String(parts[0]);
+      if (query.includes('FROM "Session"')) return [{ id: "session-locked", userId: query.includes("user-target") ? "user-target" : "user-owner", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }];
+      return [{ id: target.id }];
+    });
+    mocks.execute.mockImplementation(async (input) => {
+      const tx = {
+        $queryRaw: queryRaw,
+        $executeRaw: vi.fn(),
+        householdMember: { findFirst: vi.fn().mockResolvedValue(target), findUnique: vi.fn().mockResolvedValue(target), update: vi.fn().mockResolvedValue({ ...target, disabledAt: new Date() }) },
+        session: { deleteMany: vi.fn() },
+        webhookEndpoint: { updateMany: vi.fn() }, webhookDelivery: { updateMany: vi.fn() }, apiKey: { updateMany: vi.fn() },
+        notificationPreference: { deleteMany: vi.fn() }, pushSubscription: { updateMany: vi.fn() }, notificationLog: { deleteMany: vi.fn() }
+      };
+      await input.preActorLock?.(tx);
+      return input.execute(tx, ctx, { targetSnapshot: { version: 1, memberId: target.id, role: target.role, disabledAt: null, deletedAt: null, updatedAt: target.updatedAt.toISOString() } });
+    });
+
+    await submitMemberBrowserOperation("suspend", { operationId, memberId: target.id });
+    const queries = queryRaw.mock.calls.map(([parts]) => String(parts[0]));
+    const sessionCalls = queries.map((query, index) => query.includes('FROM "Session"') ? index : -1).filter((index) => index >= 0);
+    const memberCall = queries.findIndex((query) => query.includes('FROM "HouseholdMember"'));
+    expect(sessionCalls).toHaveLength(2);
+    expect(sessionCalls[1]).toBeLessThan(memberCall);
+  });
+
   it("requires fresh reauthentication and retains a deterministic actor-target lock for every submit", async () => {
     mocks.execute.mockResolvedValue({ status: "completed", operationId, outcome: { kind: "member", code: "removed", memberId: target.id } });
     await submitMemberBrowserOperation("remove", { operationId, memberId: target.id });

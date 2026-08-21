@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrowserOperationRecovery } from "@/components/browser-operation-recovery";
 import { PersonalAppearanceForm } from "@/components/personal-appearance-form";
 import { Card } from "@/components/ui/card";
 import { requireUserPage } from "@/server/auth/session";
@@ -10,6 +11,7 @@ export default async function AccountAppearancePage() {
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-3 py-8 md:px-8">
       <Link href="/app/settings/appearance" className="text-sm font-bold text-primary">Back to Cubby</Link>
+      <BrowserOperationRecovery />
       <Card className="mt-4">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Personal account</p>
         <h1 className="font-editorial text-2xl font-semibold">Personal appearance</h1>

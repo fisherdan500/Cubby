@@ -107,6 +107,7 @@ describe("household member access management", () => {
         },
         $executeRaw: mocks.memberLock,
         householdMember: {
+          findFirst: mocks.memberFindUnique,
           findUnique: mocks.txMemberFindUnique,
           findUniqueOrThrow: mocks.memberFindUniqueOrThrow,
           update: mocks.memberUpdate,
@@ -154,6 +155,8 @@ describe("household member access management", () => {
       role: "admin",
       acceptUrl: expect.stringMatching(/^\/invite\//)
     });
+    const actorMemberLock = mocks.memberLock.mock.calls.findIndex(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'));
+    expect(mocks.sessionLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.memberLock.mock.invocationCallOrder[actorMemberLock]);
 
     mocks.getEffectiveHouseholdContext.mockResolvedValue(adminContext());
     await expect(createInvite({ email: "other@example.com", role: "admin" })).rejects.toThrow("forbidden");
@@ -207,7 +210,7 @@ describe("household member access management", () => {
     mocks.memberFindUniqueOrThrow.mockResolvedValue({ ...staleParent, disabledAt: new Date(), user: {} });
 
     await expect(suspendMember(staleParent.id)).rejects.toThrow("forbidden");
-    expect(mocks.memberLock).toHaveBeenCalledOnce();
+    expect(mocks.memberLock.mock.calls.filter(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'))).toHaveLength(1);
     expect(mocks.memberUpdateMany).not.toHaveBeenCalled();
   });
 
@@ -340,6 +343,13 @@ describe("household member access management", () => {
     await expect(suspendMember(member.id, disabledAt)).resolves.toMatchObject({ disabledAt });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
+    expect(mocks.memberFindUnique).toHaveBeenCalledWith({
+      where: { id: member.id, householdId: "household-1", disabledAt: null, deletedAt: null },
+      select: { userId: true }
+    });
+    const targetMemberLock = mocks.memberLock.mock.calls.findIndex(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'));
+    expect(targetMemberLock).toBeGreaterThanOrEqual(0);
+    expect(mocks.sessionLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.memberLock.mock.invocationCallOrder[targetMemberLock]);
     expect(mocks.memberUpdate).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: member.id },
       data: { disabledAt }

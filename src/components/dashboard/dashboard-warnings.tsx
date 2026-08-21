@@ -4,50 +4,70 @@ import { useRef, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
+import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 import type { DashboardWarningItem } from "@/server/services/dashboard";
 
 type WarningOperationStatus = {
-  status: "open" | "pending" | "completed" | "rejected" | "stale" | "expired";
+  status: "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
   operationId: string;
 };
+type Partition = { version: 1; scope: "household"; partition: string };
+type InMemoryWarningOperation = { partition: string; operationId: string };
 
-function operationStorageKey(key: string) {
-  return `cubby:dashboard-warning-operation:${key}`;
+function operationStorageKey(partition: string, key: string) {
+  return `cubby:dashboard-warning-operation:${partition}:${key}`;
 }
 
-function createBrowserOperationId() {
-  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
-  const bytes = crypto.getRandomValues(new Uint8Array(26));
-  return `bmo_${Array.from(bytes, (byte) => alphabet[byte & 31]).join("")}`;
+async function householdPartition(): Promise<Partition> {
+  const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
+  const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition; error?: { message?: string } } | null;
+  if (!response.ok || !body?.ok || !body.data || body.data.version !== 1 || body.data.scope !== "household") {
+    throw new Error(body?.error?.message ?? "Could not establish the current household operation scope.");
+  }
+  return body.data;
 }
 
-function readOperationId(key: string) {
+function readOperationId(storageKey: string) {
   try {
-    return sessionStorage.getItem(operationStorageKey(key)) ?? undefined;
+    return sessionStorage.getItem(storageKey) ?? undefined;
   } catch {
     return undefined;
   }
 }
 
-function retainOperationId(key: string, operationId: string) {
+function retainOperationId(storageKey: string, operationId: string) {
   try {
-    sessionStorage.setItem(operationStorageKey(key), operationId);
+    sessionStorage.setItem(storageKey, operationId);
   } catch {
     // Storage failure must not affect the request path.
   }
 }
 
-function clearOperationId(key: string) {
+function clearOperationId(storageKey: string) {
   try {
-    sessionStorage.removeItem(operationStorageKey(key));
+    sessionStorage.removeItem(storageKey);
   } catch {
     // Storage failure must not affect the terminal server outcome.
   }
 }
 
+async function issueWarningReservation(warning: DashboardWarningItem) {
+  const response = await fetch("/api/dashboard/warnings/dismiss/issue", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ babyId: warning.babyId, type: warning.type, fingerprint: warning.fingerprint })
+  });
+  const result = await response.json().catch(() => null) as { ok?: boolean; data?: WarningOperationStatus } | null;
+  if (!response.ok || !result?.ok || !result.data || (result.data.status !== "open" && result.data.status !== "prepared")) {
+    throw new Error("warning_issue_unavailable");
+  }
+  return result.data.operationId;
+}
+
 export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem[] }) {
   const router = useRouter();
-  const operationIds = useRef(new Map<string, string>());
+  const operationIds = useRef(new Map<string, InMemoryWarningOperation>());
   const [hidden, setHidden] = useState(() => new Set<string>());
   const [error, setError] = useState("");
   const visible = warnings.filter((warning) => !hidden.has(warning.fingerprint));
@@ -65,9 +85,9 @@ export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem
     });
   }
 
-  function clearOperation(key: string) {
+  function clearOperation(key: string, storageKey: string) {
     operationIds.current.delete(key);
-    clearOperationId(key);
+    clearOperationId(storageKey);
   }
 
   async function status(operationId: string) {
@@ -80,39 +100,47 @@ export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem
     setError("");
     hideWarning(warning);
     const key = `${warning.type}:${warning.fingerprint}`;
-    const retained = operationIds.current.get(key) ?? readOperationId(key);
-    const operationId = retained ?? createBrowserOperationId();
-    operationIds.current.set(key, operationId);
-    retainOperationId(key, operationId);
     try {
+      const { partition } = await householdPartition();
+      const storageKey = await tabScopedBrowserOperationStorageKey(partition, operationStorageKey(partition, key));
+      const remembered = operationIds.current.get(key);
+      if (remembered && remembered.partition !== partition) operationIds.current.delete(key);
+      const retained = remembered?.partition === partition ? remembered.operationId : readOperationId(storageKey);
+      const operationId = retained ?? await issueWarningReservation(warning);
+      operationIds.current.set(key, { partition, operationId });
+      retainOperationId(storageKey, operationId);
       if (retained) {
         const { response, result } = await status(operationId);
         if (response.status === 404) {
-          clearOperation(key);
           restoreWarning(warning);
-          setError("This warning request is no longer available. Refresh and try again.");
+          setError("This warning request could not be reconciled. Refresh before trying again.");
           return;
         }
-        if (response.status === 410) {
-          clearOperation(key);
+        if (isAuthorizedBrowserOperation410(response.status, result, operationId)) {
+          clearOperation(key, storageKey);
           restoreWarning(warning);
           setError("This warning request is no longer available. Refresh and try again.");
           return;
         }
         if (!response.ok || !result?.ok || !result.data) throw new Error("warning_operation_status_unavailable");
         if (result.data.status === "completed") {
-          clearOperation(key);
+          clearOperation(key, storageKey);
           router.refresh();
           return;
         }
         if (result.data.status === "pending") {
+          restoreWarning(warning);
           setError("Saving is still in progress. Keep this page open and try again.");
           return;
         }
         if (result.data.status === "stale" || result.data.status === "rejected" || result.data.status === "expired") {
-          clearOperation(key);
           restoreWarning(warning);
           setError("This warning could not be dismissed. Refresh and try again.");
+          return;
+        }
+        if (result.data.status !== "open" && result.data.status !== "prepared") {
+          restoreWarning(warning);
+          setError("This warning request could not be reconciled. Refresh before trying again.");
           return;
         }
       }
@@ -128,23 +156,28 @@ export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem
         })
       });
       const result = await response.json().catch(() => null) as { ok?: boolean; data?: WarningOperationStatus } | null;
-      if (response.status === 410 || response.status === 404) {
-        clearOperation(key);
+      if (isAuthorizedBrowserOperation410(response.status, result, operationId)) {
+        clearOperation(key, storageKey);
         restoreWarning(warning);
-        setError("This warning could not be dismissed. Refresh and try again.");
+        setError("This warning request expired. Try again to open a new request.");
+        return;
+      }
+      if (response.status === 404) {
+        restoreWarning(warning);
+        setError("This warning request could not be reconciled. Refresh before trying again.");
         return;
       }
       if (!response.ok || !result?.ok || !result.data) throw new Error("warning_dismissal_unavailable");
       if (result.data.status === "completed") {
-        clearOperation(key);
+        clearOperation(key, storageKey);
         router.refresh();
         return;
       }
       if (result.data.status === "pending") {
+        restoreWarning(warning);
         setError("Saving is still in progress. Keep this page open and try again.");
         return;
       }
-      clearOperation(key);
       restoreWarning(warning);
       setError("This warning could not be dismissed. Refresh and try again.");
     } catch {
@@ -163,7 +196,7 @@ export function DashboardWarnings({ warnings }: { warnings: DashboardWarningItem
         </div>
         <button
           type="button"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
           aria-label="Dismiss warning"
           onClick={() => void Promise.all(visible.map(dismiss))}
         >

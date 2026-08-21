@@ -9,12 +9,16 @@ vi.mock("@/server/services/household-selection", () => ({
   authorizeHouseholdSelection: mocks.authorizeHouseholdSelection,
   clearHouseholdSelection: mocks.clearHouseholdSelection
 }));
+vi.mock("@/lib/env", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/env")>()),
+  trustedOrigins: () => ["https://cubby.example"]
+}));
 
 import { POST } from "@/app/api/household-selection/route";
 import { SELECTED_HOUSEHOLD_MEMBER_COOKIE } from "@/server/auth/context";
 
-function formRequest(body: Record<string, string>, origin = "http://localhost") {
-  return new Request("http://localhost/api/household-selection", {
+function formRequest(body: Record<string, string>, origin = "http://localhost", requestUrl = "http://localhost/api/household-selection") {
+  return new Request(requestUrl, {
     method: "POST",
     headers: {
       origin,
@@ -53,6 +57,19 @@ describe("POST /api/household-selection", () => {
     expect(response.status).toBe(404);
     expect(response.headers.get("set-cookie")).toBeNull();
     await expect(response.json()).resolves.toMatchObject({ error: { code: "not_found" } });
+  });
+
+  it("accepts a configured public Origin when the standalone request URL uses the container listener", async () => {
+    const response = await POST(formRequest(
+      { memberId: "member-2", returnTo: "/app/reports" },
+      "https://cubby.example",
+      "http://0.0.0.0:3000/api/household-selection"
+    ));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://cubby.example/app/reports");
+    expect(response.headers.get("set-cookie")).toContain("Secure");
+    expect(mocks.authorizeHouseholdSelection).toHaveBeenCalledWith("member-2");
   });
 
   it("rejects cross-origin selection submissions before authorization", async () => {

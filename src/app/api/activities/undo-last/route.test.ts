@@ -1,12 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ undoLastActivity: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  undoLastActivity: vi.fn(),
+  issueActivityUndoLastBrowserOperation: vi.fn(),
+  submitActivityUndoLastBrowserOperation: vi.fn()
+}));
 vi.mock("@/server/services/activities", () => mocks);
 
 import { POST } from "@/app/api/activities/undo-last/route";
 
 describe("POST /api/activities/undo-last", () => {
   beforeEach(() => vi.resetAllMocks());
+
+  it("issues a prepared reservation without executing legacy undo", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    mocks.issueActivityUndoLastBrowserOperation.mockResolvedValue({ status: "prepared", operationId, code: "operation_prepared" });
+    const response = await POST(new Request("http://localhost/api/activities/undo-last?issue=1", { method: "POST", body: "{}" }));
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({ ok: true, data: { status: "prepared", operationId } });
+    expect(mocks.submitActivityUndoLastBrowserOperation).not.toHaveBeenCalled();
+    expect(mocks.undoLastActivity).not.toHaveBeenCalled();
+  });
+
+  it("submits the same retained ID when re-issue returns prepared", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    const body = { operationId };
+    mocks.issueActivityUndoLastBrowserOperation.mockResolvedValue({ status: "prepared", operationId, code: "operation_prepared" });
+    mocks.submitActivityUndoLastBrowserOperation.mockResolvedValue({ status: "completed", operationId, outcome: { kind: "activity", code: "ok", activityId: "activity-1", action: "undo" } });
+    const response = await POST(new Request("http://localhost/api/activities/undo-last", { method: "POST", body: JSON.stringify(body) }));
+    expect(response.status).toBe(200);
+    expect(mocks.submitActivityUndoLastBrowserOperation).toHaveBeenCalledWith(body);
+    expect(mocks.undoLastActivity).not.toHaveBeenCalled();
+  });
 
   it("forwards a supplied mutation ID", async () => {
     mocks.undoLastActivity.mockResolvedValue({ id: "activity-1" });

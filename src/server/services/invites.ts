@@ -67,6 +67,10 @@ export function resolveInviteExpiry(role: HouseholdRole, requestedHours?: number
   return new Date(now.getTime() + hours * 60 * 60 * 1000);
 }
 
+async function lockInvitePlatform(tx: Prisma.TransactionClient) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+}
+
 export async function issueInviteCreateBrowserOperation(raw: unknown) {
   const input = inviteSchema.parse(raw);
   const expiresInHours = input.expiresInHours ?? (input.role === "admin" ? 24 : 24 * 7);
@@ -99,6 +103,7 @@ export async function submitInviteCreateBrowserOperation(raw: unknown) {
     operationKey: BrowserOperationKey.inviteCreate,
     targetKind: BrowserOperationTargetKind.invite,
     permission: "invite.create",
+    preActorLock: lockInvitePlatform,
     intent: { email: input.email.toLowerCase(), role: input.role, expiresInHours },
     execute: async (tx, lockedCtx, binding) => {
       const opening = binding.targetSnapshot as {
@@ -197,6 +202,7 @@ export async function issueInviteRevokeBrowserOperation(raw: unknown) {
     targetKind: BrowserOperationTargetKind.invite,
     targetId: input.inviteId,
     permission: "member.manage",
+    preActorLock: lockInvitePlatform,
     targetSnapshot: async (tx, lockedCtx) => {
       const invite = await lockInviteById(tx, input.inviteId);
       if (!invite || invite.householdId !== lockedCtx.householdId || invite.status !== InviteStatus.pending) {
@@ -220,6 +226,7 @@ export async function submitInviteRevokeBrowserOperation(raw: unknown) {
     targetKind: BrowserOperationTargetKind.invite,
     targetId: input.inviteId,
     permission: "member.manage",
+    preActorLock: lockInvitePlatform,
     intent: {},
     execute: async (tx, lockedCtx, binding) => {
       const opening = binding.targetSnapshot as { version?: unknown; status?: unknown; updatedAt?: unknown };
@@ -281,6 +288,7 @@ export async function submitInviteRevokeAllBrowserOperation(raw: unknown) {
     operationKey: BrowserOperationKey.inviteRevokeAll,
     targetKind: BrowserOperationTargetKind.invite,
     permission: "household.manage",
+    preActorLock: lockInvitePlatform,
     intent: { acknowledgement: input.acknowledgement },
     execute: async (tx, lockedCtx, binding) => {
       const opening = binding.targetSnapshot as { version?: unknown; policy?: unknown };
@@ -365,10 +373,10 @@ export async function createInvite(raw: unknown) {
 
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    if (freshSession) await lockAndRevalidateFreshSession(tx, freshSession);
     const { ctx } = await lockMemberMutation(tx, requestContext, requestContext.memberId);
     requirePermission(ctx, "invite.create");
     if (freshSession) {
-      await lockAndRevalidateFreshSession(tx, freshSession);
       if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
     }
     if (!canAssignHouseholdRole(ctx.role, input.role)) throw new Error("forbidden");
@@ -471,10 +479,12 @@ export async function acceptInvite(token: string) {
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
-    const invite = await lockInviteByToken(tx, token);
-    if (!invite || invite.status !== InviteStatus.pending) {
+    const tokenHash = hashInviteToken(token);
+    const candidate = await tx.invite.findUnique({ where: { tokenHash } });
+    if (!candidate) {
       throw new Error("not_found");
     }
+    let invite = candidate;
     const expireInvite = async () => {
       const expiredAt = new Date();
       await tx.invite.update({
@@ -494,7 +504,7 @@ export async function acceptInvite(token: string) {
       });
       return { expired: true } as const;
     };
-    if (invite.expiresAt <= new Date()) return expireInvite();
+
 
     await tx.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
@@ -503,6 +513,10 @@ export async function acceptInvite(token: string) {
       ORDER BY "id"
       FOR UPDATE
     `;
+    const lockedInvite = await lockInviteById(tx, candidate.id);
+    if (!lockedInvite || lockedInvite.tokenHash !== tokenHash || lockedInvite.status !== InviteStatus.pending) throw new Error("not_found");
+    invite = lockedInvite;
+    if (invite.expiresAt <= new Date()) return expireInvite();
     const existing = await tx.householdMember.findFirst({
       where: {
         householdId: invite.householdId,
@@ -639,11 +653,23 @@ function assertMemberSnapshot(snapshot: unknown, member: { id: string; role: Hou
   if (JSON.stringify(expected) !== JSON.stringify(memberSnapshot(member))) throw new Error("stale_revision");
 }
 
-async function lockBrowserMemberTarget(tx: Prisma.TransactionClient, ctx: { householdId: string; memberId: string }, memberId: string) {
+async function lockTargetMemberSessions(tx: Prisma.TransactionClient, householdId: string, memberId: string) {
+  const target = await tx.householdMember.findFirst({
+    where: { id: memberId, householdId, disabledAt: null, deletedAt: null },
+    select: { userId: true }
+  });
+  if (!target) throw new Error("not_found");
+  await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT "id" FROM "Session" WHERE "userId" = ${target.userId} ORDER BY "id" FOR UPDATE
+  `;
+  return target.userId;
+}
+
+async function lockBrowserMemberTarget(tx: Prisma.TransactionClient, ctx: { householdId: string; memberId: string }, memberId: string, expectedUserId?: string) {
   const memberIds = [...new Set([ctx.memberId, memberId])].sort();
   await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "HouseholdMember" WHERE "id" IN (${Prisma.join(memberIds)}) ORDER BY "id" FOR UPDATE`;
   const member = await tx.householdMember.findUnique({ where: { id: memberId } });
-  if (!member || member.householdId !== ctx.householdId || member.deletedAt) throw new Error("not_found");
+  if (!member || member.householdId !== ctx.householdId || member.deletedAt || (expectedUserId && member.userId !== expectedUserId)) throw new Error("not_found");
   return member;
 }
 
@@ -674,13 +700,18 @@ export async function submitMemberBrowserOperation(action: MemberBrowserAction, 
   const freshSession = await requireFreshSession();
   const ctx = await getBrowserOperationContextForHousehold();
   if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
+  let suspendedTargetUserId: string | undefined;
   return executeHouseholdBrowserOperation({
     ctx, operationId: input.operationId, operationKey: memberBrowserOperationKey(action), targetKind: BrowserOperationTargetKind.member,
     targetId: input.memberId, permission: "member.manage", intent: action === "role.update" ? { role: input.role } : {},
+    preActorLock: action === "suspend" ? async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+      suspendedTargetUserId = await lockTargetMemberSessions(tx, ctx.householdId, input.memberId);
+    } : undefined,
     execute: async (tx, lockedCtx, binding) => {
       await lockAndRevalidateFreshSession(tx, freshSession);
       if (freshSession.user.id !== lockedCtx.userId) throw new Error("forbidden");
-      const member = await lockBrowserMemberTarget(tx, lockedCtx, input.memberId);
+      const member = await lockBrowserMemberTarget(tx, lockedCtx, input.memberId, suspendedTargetUserId);
       assertMemberSnapshot(binding.targetSnapshot, member);
       assertMemberBrowserPolicy(action, lockedCtx, member, input.role as HouseholdRole | undefined);
       if (action === "restore" && member.disabledAt) {
@@ -837,7 +868,9 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
   requirePermission(requestContext, "member.manage");
 
   return prisma.$transaction(async (tx) => {
-    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId);
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    const targetUserId = await lockTargetMemberSessions(tx, requestContext.householdId, memberId);
+    const { ctx, member } = await lockMemberMutation(tx, requestContext, memberId, targetUserId);
     requirePermission(ctx, "member.manage");
     if (member.id === ctx.memberId || !canManageHouseholdRole(ctx.role, member.role)) {
       throw new Error("forbidden");
@@ -939,9 +972,9 @@ export async function revokeAllPendingInvites(raw: unknown) {
 
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
+    await lockAndRevalidateFreshSession(tx, freshSession);
     const { ctx } = await lockMemberMutation(tx, requestContext, requestContext.memberId);
     if (ctx.role !== HouseholdRole.owner) throw new Error("forbidden");
-    await lockAndRevalidateFreshSession(tx, freshSession);
     if (freshSession.user.id !== ctx.userId) throw new Error("forbidden");
 
     const lockedIds = await tx.$queryRaw<Array<{ id: string }>>`
@@ -985,7 +1018,8 @@ export async function revokeAllPendingInvites(raw: unknown) {
 async function lockMemberMutation(
   tx: Prisma.TransactionClient,
   requestContext: Awaited<ReturnType<typeof getEffectiveHouseholdContext>>,
-  memberId: string
+  memberId: string,
+  expectedUserId?: string
 ) {
   const memberIds = [...new Set([requestContext.memberId, memberId])].sort();
   await tx.$queryRaw<Array<{ id: string }>>`
@@ -1010,7 +1044,7 @@ async function lockMemberMutation(
     where: { id: memberId },
     include: { user: true }
   });
-  if (!member || member.deletedAt) throw new Error("not_found");
+  if (!member || member.deletedAt || (expectedUserId && member.userId !== expectedUserId)) throw new Error("not_found");
   if (member.householdId !== actor.householdId) throw new Error("forbidden");
 
   return {

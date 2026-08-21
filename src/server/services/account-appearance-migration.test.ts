@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const migrationDirectory = "20260817213000_account_appearance_browser_operations";
 const migrationUrl = new URL(`../../../prisma/migrations/${migrationDirectory}/migration.sql`, import.meta.url);
+const terminalOutcomeMigrationUrl = new URL("../../../prisma/migrations/20260819180000_account_terminal_outcome_shape/migration.sql", import.meta.url);
+const accountAppearanceServiceUrl = new URL("./account-appearance.ts", import.meta.url);
 const schemaUrl = new URL("../../../prisma/schema.prisma", import.meta.url);
 
 function block(source: string, kind: "model" | "enum", name: string) {
@@ -51,7 +53,11 @@ describe("account appearance browser-operation persistence", () => {
 
     expect(migration).toContain('CREATE TABLE "AccountOperationBinding"');
     expect(migration).toContain('CREATE TABLE "AccountMutationOperation"');
-    expect(migration).toContain('CREATE TABLE "AccountMutationOperationTombstone"');
+    expect(migration).toContain('CONSTRAINT "AccountMutationOperation_state_check" CHECK');
+    expect(existsSync(terminalOutcomeMigrationUrl)).toBe(true);
+    if (existsSync(terminalOutcomeMigrationUrl)) {
+      expect(readFileSync(terminalOutcomeMigrationUrl, "utf8")).toContain('CONSTRAINT "AccountMutationOperation_terminal_outcome_check" CHECK');
+    }
     expect(migration).toContain('lock_account_browser_operation_identity');
     expect(migration).toContain('guard_account_operation_binding_insert');
     expect(migration).toContain('guard_account_mutation_operation_insert');
@@ -65,5 +71,39 @@ describe("account appearance browser-operation persistence", () => {
     expect(migration).toContain("Appearance mode defaults to system; no value is derived from HouseholdSettings.accentTheme");
     expect(migration).not.toMatch(/UPDATE\s+"User"[\s\S]*accentTheme/i);
     expect(migration).not.toMatch(/\bTRUNCATE\b/i);
+  });
+
+  it("keeps completed, rejected, and stale terminal outcome shapes aligned with the account service version", () => {
+    const migration = readFileSync(terminalOutcomeMigrationUrl, "utf8").replace(/\s+/g, " ");
+    const service = readFileSync(accountAppearanceServiceUrl, "utf8");
+    const serviceVersions = [...service.matchAll(/outcomeVersion:\s*(\d+)/g)].map((match) => Number(match[1]));
+
+    expect(serviceVersions).toHaveLength(2);
+    expect(new Set(serviceVersions).size).toBe(1);
+    const outcomeVersion = serviceVersions[0];
+    const branches = migration
+      .slice(migration.indexOf("CHECK (") + "CHECK (".length, migration.lastIndexOf(");"))
+      .split(" OR ");
+    const branchFor = (status: "completed" | "rejected" | "stale") => branches.find((branch) => {
+      if (branch.includes(`\"status\" = '${status}'`)) return true;
+      const statusList = branch.match(/\"status\" IN \(([^)]*)\)/)?.[1] ?? "";
+      return statusList.split(",").map((value) => value.trim().replaceAll("'", "")).includes(status);
+    });
+
+    const completed = branchFor("completed");
+    expect(completed).toContain(`\"outcomeVersion\" = ${outcomeVersion}`);
+    expect(completed).toContain('\"outcomeKind\" IS NOT NULL');
+    expect(completed).toContain('\"outcomeCode\" IS NOT NULL');
+    expect(completed).toContain('\"outcomeSnapshot\" IS NOT NULL');
+    expect(completed).toContain('\"terminalAt\" IS NOT NULL');
+
+    for (const status of ["rejected", "stale"] as const) {
+      const branch = branchFor(status);
+      expect(branch).toContain(`\"outcomeVersion\" = ${outcomeVersion}`);
+      expect(branch).toContain('\"outcomeKind\" IS NOT NULL');
+      expect(branch).toContain('\"outcomeCode\" IS NOT NULL');
+      expect(branch).toContain('\"outcomeSnapshot\" IS NULL');
+      expect(branch).toContain('\"terminalAt\" IS NOT NULL');
+    }
   });
 });

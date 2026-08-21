@@ -107,6 +107,7 @@ beforeEach(() => {
   });
   mocks.memberUpdate.mockResolvedValue({ id: "member-1" });
   mocks.txInviteUpdate.mockResolvedValue({ id: "invite-1", status: "accepted" });
+  mocks.txInviteFindUnique.mockResolvedValue(pendingInvite());
   mocks.txInviteFindMany.mockResolvedValue([]);
   mocks.inviteCreate.mockResolvedValue({ ...pendingInvite(), household: { id: "household-1" } });
   mocks.txInviteCreate.mockResolvedValue({ ...pendingInvite(), household: { id: "household-1" } });
@@ -285,9 +286,9 @@ describe("invite consumption serialization", () => {
 
     await expect(acceptInvite("invite-token")).rejects.toThrow("not_found");
 
-    expect(mocks.inviteLock).toHaveBeenCalledTimes(2);
-    expect(mocks.inviteLock.mock.invocationCallOrder[1]).toBeLessThan(
-      mocks.txInviteFindUnique.mock.invocationCallOrder[0]
+    expect(mocks.inviteLock).toHaveBeenCalledTimes(3);
+    expect(mocks.inviteLock.mock.invocationCallOrder[2]).toBeLessThan(
+      mocks.txInviteFindUnique.mock.invocationCallOrder[1]
     );
     expect(mocks.memberCreate).not.toHaveBeenCalled();
     expect(mocks.memberUpdate).not.toHaveBeenCalled();
@@ -429,7 +430,7 @@ describe("invite consumption serialization", () => {
 
     await expect(acceptInvite("invite-token")).rejects.toThrow("not_found");
 
-    expect(mocks.inviteLock).toHaveBeenCalledTimes(2);
+    expect(mocks.inviteLock).toHaveBeenCalledTimes(3);
     expect(mocks.memberCreate).not.toHaveBeenCalled();
     expect(mocks.memberUpdate).not.toHaveBeenCalled();
     expect(mocks.txInviteUpdate).toHaveBeenCalledWith(expect.objectContaining({
@@ -547,6 +548,9 @@ describe("owner emergency invitation revocation", () => {
       acknowledgement: BULK_INVITE_REVOKE_ACKNOWLEDGEMENT
     })).resolves.toEqual({ revokedCount: 2 });
 
+    const actorMemberLock = mocks.inviteLock.mock.calls.findIndex(([parts]) => String(parts[0]).includes('FROM "HouseholdMember"'));
+    expect(mocks.sessionLock.mock.invocationCallOrder[0]).toBeLessThan(mocks.inviteLock.mock.invocationCallOrder[actorMemberLock]);
+
     expect(mocks.txInviteUpdate).toHaveBeenCalledTimes(2);
     expect(mocks.writeAudit).toHaveBeenCalledWith(
       expect.anything(),
@@ -570,6 +574,7 @@ describe("owner emergency invitation revocation", () => {
 function pendingInvite() {
   return {
     id: "invite-1",
+    tokenHash: hashInviteToken("invite-token"),
     householdId: "household-1",
     email: "invitee@example.test",
     role: "parent",

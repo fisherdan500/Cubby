@@ -802,6 +802,25 @@ model BrowserMutationOperationTombstone {
   @@index([compactedAt])
 }
 
+model BrowserOperationReservationTombstone {
+  householdId       String
+  operationId       String
+  operationKey      BrowserOperationKey
+  sessionId         String
+  actorUserId       String
+  actorMemberId     String
+  openingFingerprint String
+  terminalCode      String
+  createdAt         DateTime
+  terminalAt        DateTime
+  compactedAt       DateTime @default(now())
+
+  @@id([householdId, operationId])
+  @@index([sessionId])
+  @@index([householdId, actorMemberId])
+  @@index([compactedAt])
+}
+
 model AccountOperationBinding {
   id                 String                       @id @default(cuid())
   sessionId          String
@@ -864,6 +883,22 @@ model AccountMutationOperationTombstone {
   user              User                             @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@id([userId, operationId])
+  @@index([compactedAt])
+}
+
+model AccountOperationReservationTombstone {
+  userId            String
+  operationId       String
+  operationKey      AccountOperationKey
+  sessionId         String
+  openingFingerprint String
+  terminalCode      String
+  createdAt         DateTime
+  terminalAt        DateTime
+  compactedAt       DateTime @default(now())
+
+  @@id([userId, operationId])
+  @@index([sessionId])
   @@index([compactedAt])
 }
 

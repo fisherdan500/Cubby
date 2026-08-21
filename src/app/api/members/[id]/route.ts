@@ -12,10 +12,14 @@ export async function PATCH(request: Request, { params }: Params) {
     const id = await memberId(params);
     const body = await request.json() as Record<string, unknown>;
     operationId = body.operationId;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...body, memberId: id };
+    const input = { ...body, memberId: id };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueMemberBrowserOperation("role.update", input);
-      const result = issued.status === "open" ? await submitMemberBrowserOperation("role.update", input) : issued;
+      return ok(issued, { status: issued.status === "pending" || issued.status === "prepared" ? 202 : issued.status === "expired" ? 410 : 200 });
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueMemberBrowserOperation("role.update", input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitMemberBrowserOperation("role.update", input) : issued;
       return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
     }
     return ok(await updateMemberRole(id, body));
@@ -28,10 +32,14 @@ export async function DELETE(request: Request, { params }: Params) {
     const id = await memberId(params);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     operationId = body.operationId;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...body, memberId: id };
+    const input = { ...body, memberId: id };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueMemberBrowserOperation("remove", input);
-      const result = issued.status === "open" ? await submitMemberBrowserOperation("remove", input) : issued;
+      return ok(issued, { status: issued.status === "pending" || issued.status === "prepared" ? 202 : issued.status === "expired" ? 410 : 200 });
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueMemberBrowserOperation("remove", input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitMemberBrowserOperation("remove", input) : issued;
       return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
     }
     return ok(await removeMember(id));

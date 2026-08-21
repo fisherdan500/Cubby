@@ -1,6 +1,6 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
-  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "CalendarEvent",
+  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "FeedingLog",
   "Household", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog",
@@ -28,6 +28,7 @@ export const tenantIsolationInventory = [
   { model: "AccountMutationOperation", ownership: "global", operationClasses: ["account_browser_operation"], disposition: "excluded" },
   { model: "AccountMutationOperationTombstone", ownership: "global", operationClasses: ["account_browser_operation_tombstone"], disposition: "excluded" },
   { model: "AccountOperationBinding", ownership: "global", operationClasses: ["account_browser_operation_binding"], disposition: "excluded" },
+  { model: "AccountOperationReservationTombstone", ownership: "global", operationClasses: ["account_browser_operation_reservation_tombstone"], disposition: "excluded" },
   { model: "ActivityLog", ownership: "direct", operationClasses: ["activity_write", "import", "restore"], disposition: "constraint_slice" },
   { model: "ApiKey", ownership: "direct", operationClasses: ["integration_write", "api_auth"], disposition: "deferred_constraint" },
   { model: "AuditEvent", ownership: "direct", operationClasses: ["audit_write"], disposition: "deferred_constraint" },
@@ -36,6 +37,7 @@ export const tenantIsolationInventory = [
   { model: "BrowserMutationOperation", ownership: "direct", operationClasses: ["browser_mutation_operation"], disposition: "constraint_slice" },
   { model: "BrowserMutationOperationTombstone", ownership: "direct", operationClasses: ["browser_mutation_tombstone"], disposition: "constraint_slice" },
   { model: "BrowserOperationBinding", ownership: "direct", operationClasses: ["browser_mutation_binding"], disposition: "constraint_slice" },
+  { model: "BrowserOperationReservationTombstone", ownership: "direct", operationClasses: ["browser_mutation_reservation_tombstone"], disposition: "constraint_slice" },
   { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "deferred_constraint" },
   { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "deferred_constraint" },
   { model: "DashboardWarningDismissal", ownership: "direct", operationClasses: ["dashboard_write"], disposition: "constraint_slice" },

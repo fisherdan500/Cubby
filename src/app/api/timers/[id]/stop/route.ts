@@ -14,10 +14,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("validation_error");
     }
     operationId = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).operationId : undefined;
-    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
-      const input = { ...(body as Record<string, unknown>), activityId: params.id };
+    const input = { ...(body as Record<string, unknown>), activityId: params.id };
+    if (new URL(request.url).searchParams.get("issue") === "1") {
       const issued = await issueActivityTimerBrowserOperation("stop", input);
-      const result = issued.status === "open" ? await submitActivityTimerBrowserOperation("stop", input) : issued;
+      return ok(issued, { status: issued.status === "pending" || issued.status === "prepared" ? 202 : issued.status === "expired" ? 410 : 200 });
+    }
+    if (typeof operationId === "string" && operationId.startsWith("bmo_")) {
+      const issued = await issueActivityTimerBrowserOperation("stop", input);
+      const result = issued.status === "open" || issued.status === "prepared" ? await submitActivityTimerBrowserOperation("stop", input) : issued;
       return ok(result, { status: result.status === "pending" ? 202 : result.status === "expired" ? 410 : 200 });
     }
     if (body !== undefined && !("clientMutationId" in (body as Record<string, unknown>))) throw new Error("validation_error");

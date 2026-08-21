@@ -37,10 +37,23 @@ describe("bulk invitation revocation route", () => {
     });
   });
 
+  it("issues a prepared bulk reservation without reading submit-only acknowledgement", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    mocks.issueInviteRevokeAllBrowserOperation.mockResolvedValue({ status: "prepared", operationId, bindingId: "binding-1" });
+
+    const response = await POST(new Request("http://localhost/api/invites/revoke-all?issue=1", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" })
+    }));
+
+    expect(response.status).toBe(202);
+    expect(mocks.issueInviteRevokeAllBrowserOperation).toHaveBeenCalledWith({});
+    expect(mocks.submitInviteRevokeAllBrowserOperation).not.toHaveBeenCalled();
+  });
+
   it("uses the browser-v2 bulk operation when supplied", async () => {
     const operationId = "bmo_0123456789abcdefghjkmnpqrs";
     const body = { operationId, acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" };
-    mocks.issueInviteRevokeAllBrowserOperation.mockResolvedValue({ status: "open", operationId, bindingId: "binding-1" });
+    mocks.issueInviteRevokeAllBrowserOperation.mockResolvedValue({ status: "prepared", operationId, bindingId: "binding-1" });
     mocks.submitInviteRevokeAllBrowserOperation.mockResolvedValue({
       status: "completed", operationId, outcome: { kind: "invite_bulk", code: "revoked", revokedCount: 2 }
     });
@@ -53,9 +66,22 @@ describe("bulk invitation revocation route", () => {
       ok: true,
       data: { status: "completed", operationId, outcome: { kind: "invite_bulk", code: "revoked", revokedCount: 2 } }
     });
-    expect(mocks.issueInviteRevokeAllBrowserOperation).toHaveBeenCalledWith(body);
+    expect(mocks.issueInviteRevokeAllBrowserOperation).toHaveBeenCalledWith({ operationId });
     expect(mocks.submitInviteRevokeAllBrowserOperation).toHaveBeenCalledWith(body);
     expect(mocks.revokeAllPendingInvites).not.toHaveBeenCalled();
+  });
+
+  it("returns 410 without submitting a compacted bulk operation", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    const body = { operationId, acknowledgement: "I_REVOKE_ALL_PENDING_INVITATIONS" };
+    mocks.issueInviteRevokeAllBrowserOperation.mockResolvedValue({ status: "expired", operationId, code: "operation_result_expired" });
+
+    const response = await POST(new Request("http://localhost/api/invites/revoke-all", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+    }));
+
+    expect(response.status).toBe(410);
+    expect(mocks.submitInviteRevokeAllBrowserOperation).not.toHaveBeenCalled();
   });
 
   it("rejects malformed JSON as a client error", async () => {

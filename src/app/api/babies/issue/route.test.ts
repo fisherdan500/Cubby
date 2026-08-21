@@ -21,4 +21,11 @@ describe("POST /api/babies/issue", () => {
     expect(await response.json()).toEqual({ ok: true, data: { status: "open", operationId, bindingId: "binding-1" } });
     expect(mocks.issueCreateBabyBrowserOperation).toHaveBeenCalledWith({ operationId });
   });
+
+  it("returns a server-generated prepared reservation when the browser omits an ID", async () => {
+    mocks.issueCreateBabyBrowserOperation.mockResolvedValue({ status: "prepared", operationId, code: "operation_prepared" });
+    const response = await POST(new Request("http://localhost/api/babies/issue", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) }));
+    expect(response.status).toBe(202);
+    expect(mocks.issueCreateBabyBrowserOperation).toHaveBeenCalledWith({});
+  });
 });
