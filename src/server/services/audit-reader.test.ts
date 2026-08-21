@@ -64,4 +64,12 @@ describe("household audit reader", () => {
       data: expect.objectContaining({ action: "audit.view", entityType: "audit" })
     }));
   });
+
+  it("rejects a non-owner, non-admin reader before querying audit history", async () => {
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({ ...ownerContext, role: "parent" });
+
+    await expect(listHouseholdAuditEvents()).rejects.toThrow("forbidden");
+    expect(mocks.auditFindMany).not.toHaveBeenCalled();
+    expect(mocks.auditCreate).not.toHaveBeenCalled();
+  });
 });
