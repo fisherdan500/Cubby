@@ -11,6 +11,7 @@ const auditActionSchema = z.enum([
   "activity.timer.stop",
   "activity.undo",
   "activity.update",
+  "audit.view",
   "api_key.create",
   "api_key.revoke",
   "baby.create",
