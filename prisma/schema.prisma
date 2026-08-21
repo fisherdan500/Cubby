@@ -269,10 +269,13 @@ model PlatformRegistrationOperation {
 model PlatformAuditEvent {
   id                    String                         @id @default(cuid())
   actorUserId           String?
+  actorUserSnapshot     String?
   action                String
   entityType            String
   entityId              String
   source                String
+  schemaVersion         Int                            @default(1)
+  correlationId         String?
   before                Json?
   after                 Json?
   createdAt             DateTime                       @default(now())
@@ -1269,9 +1272,13 @@ model AuditEvent {
   householdId   String
   actorUserId   String?
   actorMemberId String?
+  actorUserSnapshot String?
+  actorMemberSnapshot String?
   action        String
   entityType    String
   entityId      String
+  schemaVersion Int              @default(1)
+  correlationId String?
   before        Json?
   after         Json?
   createdAt     DateTime         @default(now())
