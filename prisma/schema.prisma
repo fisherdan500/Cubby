@@ -442,6 +442,7 @@ model Baby {
   notificationPreferenceSelections NotificationPreferenceBaby[]
   calendarLinks CalendarEventBaby[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  auditEvents               AuditEvent[]
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
 
@@ -1270,6 +1271,7 @@ model Reminder {
 model AuditEvent {
   id            String           @id @default(cuid())
   householdId   String
+  babyId        String?
   actorUserId   String?
   actorMemberId String?
   actorUserSnapshot String?
@@ -1283,11 +1285,13 @@ model AuditEvent {
   after         Json?
   createdAt     DateTime         @default(now())
   household     Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby          Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
   actorUser     User?            @relation(fields: [actorUserId], references: [id])
   actorMember   HouseholdMember? @relation(fields: [actorMemberId], references: [id])
 
   @@index([householdId])
   @@index([actorUserId])
   @@index([entityType, entityId])
+  @@index([householdId, babyId, createdAt])
   @@index([createdAt])
 }

@@ -539,7 +539,7 @@ async function createActivityInTransaction(
   });
 
   if (writeActivityAudit) {
-    await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity }, tx);
+    await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, babyId: activity.babyId, after: activity }, tx);
   }
   if (queueSideEffects) {
     await queueActivitySideEffects(

@@ -82,6 +82,7 @@ export async function writeAudit(
     action: string;
     entityType: string;
     entityId: string;
+    babyId?: string;
     before?: Prisma.InputJsonValue;
     after?: Prisma.InputJsonValue;
   },
@@ -94,6 +95,7 @@ export async function writeAudit(
   await db.auditEvent.create({
     data: {
       householdId: ctx.householdId,
+      babyId: input.babyId,
       actorUserId: ctx.userId,
       actorMemberId: ctx.memberId,
       actorUserSnapshot: ctx.userId,

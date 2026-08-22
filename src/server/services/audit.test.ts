@@ -92,4 +92,17 @@ describe("household audit contract", () => {
       })
     });
   });
+
+  it("binds an activity audit event to its authorized baby scope", async () => {
+    await writeAudit(context, {
+      action: "activity.create",
+      entityType: "activity",
+      entityId: "activity-1",
+      babyId: "baby-1"
+    });
+
+    expect(mocks.auditEventCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ babyId: "baby-1" })
+    });
+  });
 });
