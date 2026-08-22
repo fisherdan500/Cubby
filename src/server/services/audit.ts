@@ -49,10 +49,29 @@ const activityAuditPayloadSchema = z.object({
   deletedAt: z.string().datetime().nullable().optional()
 }).strip();
 
-function minimizeAuditPayload(action: z.infer<typeof auditActionSchema>, payload: Prisma.InputJsonValue | undefined) {
+const memberSelfLeaveBeforeSchema = z.object({
+  role: z.string().min(1).max(80)
+}).strip();
+
+const auditTimestampSchema = z.union([z.string().datetime(), z.date()]).transform((value) => value instanceof Date ? value.toISOString() : value);
+
+const memberSelfLeaveAfterSchema = z.object({
+  closureReason: z.literal("self_left"),
+  deletedAt: auditTimestampSchema,
+  leaveOperationId: z.string().min(1).max(200)
+}).strip();
+
+function minimizeAuditPayload(
+  action: z.infer<typeof auditActionSchema>,
+  payload: Prisma.InputJsonValue | undefined,
+  phase: "before" | "after"
+) {
   if (payload === undefined) return undefined;
   if (action.startsWith("activity.")) {
     return activityAuditPayloadSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "member.self_leave") {
+    return (phase === "before" ? memberSelfLeaveBeforeSchema : memberSelfLeaveAfterSchema).parse(payload) as Prisma.InputJsonValue;
   }
   return payload;
 }
@@ -70,8 +89,8 @@ export async function writeAudit(
 ) {
   const action = auditActionSchema.safeParse(input.action);
   if (!action.success) throw new Error("audit_action_unclassified");
-  const before = minimizeAuditPayload(action.data, input.before);
-  const after = minimizeAuditPayload(action.data, input.after);
+  const before = minimizeAuditPayload(action.data, input.before, "before");
+  const after = minimizeAuditPayload(action.data, input.after, "after");
   await db.auditEvent.create({
     data: {
       householdId: ctx.householdId,

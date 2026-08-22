@@ -71,4 +71,25 @@ describe("household audit contract", () => {
       })
     });
   });
+
+  it("redacts undeclared member self-leave payload fields", async () => {
+    await writeAudit(context, {
+      action: "member.self_leave",
+      entityType: "household_member",
+      entityId: "member-1",
+      before: { role: "parent", email: "private@example.test" },
+      after: { closureReason: "self_left", deletedAt: "2026-08-21T00:00:00.000Z", leaveOperationId: "operation-1", secret: "no" }
+    });
+
+    expect(mocks.auditEventCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        before: { role: "parent" },
+        after: {
+          closureReason: "self_left",
+          deletedAt: "2026-08-21T00:00:00.000Z",
+          leaveOperationId: "operation-1"
+        }
+      })
+    });
+  });
 });
