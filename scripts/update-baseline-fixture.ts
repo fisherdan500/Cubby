@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
+import { hashLegacyAuditEvent } from "@/server/services/audit-integrity";
 
 const handoffFile = process.env.REHEARSAL_HANDOFF_FILE;
 const password = process.env.REHEARSAL_APP_PASSWORD;
@@ -25,6 +26,7 @@ const marker = {
   runningPlayId: "upd_ply_run_6ac918",
   stoppedTimerId: "upd_tmr_stop_f012a7",
   stoppedPlayId: "upd_ply_stop_b5d023",
+  auditId: "upd_aud_num_8c31e2",
   email: "baseline-owner@rehearsal.invalid",
   householdName: "Baseline Migration Nursery",
   startedAt: "2026-07-14T18:00:00.000Z",
@@ -60,6 +62,10 @@ it("seeds or verifies the fixed-baseline update fixture", async () => {
       unitPreferences: { volume: "mL", weight: "kg" }, dateFormat: "yyyy-MM-dd",
       timeFormat: "HH:mm", nurseryModeEnabled: true, accentTheme: "sage"
     } });
+    await prisma.$executeRaw`
+      INSERT INTO "AuditEvent" ("id", "householdId", "actorUserId", "actorMemberId", "action", "entityType", "entityId", "before", "after", "createdAt")
+      VALUES (${marker.auditId}, ${marker.householdId}, ${marker.userId}, ${marker.memberId}, 'activity.create', 'activity', ${marker.timerId}, ${JSON.stringify({ count: 7 })}::jsonb, ${'{"durationSeconds":480,"nested":[1,1000000000000000,1.0,1e0]}'}::jsonb, CURRENT_TIMESTAMP)
+    `;
     await prisma.baby.create({ data: {
       id: marker.babyId, householdId: marker.householdId, name: "Baseline Baby",
       birthDate: new Date("2026-01-10T00:00:00.000Z"), timezone: "America/New_York",
@@ -106,6 +112,18 @@ it("seeds or verifies the fixed-baseline update fixture", async () => {
   expect(await prisma.session.count({ where: { id: expected.sessionId, userId: expected.userId } })).toBe(1);
   expect(await prisma.household.findUniqueOrThrow({ where: { id: expected.householdId }, select: { name: true } })).toEqual({ name: expected.householdName });
   expect(await prisma.householdMember.count({ where: { id: expected.memberId, householdId: expected.householdId } })).toBe(1);
+  const numericAudit = await prisma.auditEvent.findUniqueOrThrow({
+    where: { id: expected.auditId },
+    select: { householdId: true, action: true, entityType: true, entityId: true, schemaVersion: true, createdAt: true, chainOrder: true, previousHash: true, eventHash: true, before: true, after: true }
+  });
+  expect(numericAudit).toMatchObject({ chainOrder: 1, previousHash: null, before: { count: 7 }, after: { durationSeconds: 480, nested: [1, 1000000000000000, 1, 1] } });
+  expect(numericAudit.eventHash).toBe(hashLegacyAuditEvent(null, {
+    id: expected.auditId, householdId: numericAudit.householdId, action: numericAudit.action,
+    entityType: numericAudit.entityType, entityId: numericAudit.entityId, schemaVersion: numericAudit.schemaVersion,
+    createdAt: numericAudit.createdAt.toISOString(), before: numericAudit.before, after: numericAudit.after
+  }));
+  const numericCheckpoint = await prisma.auditIntegrityCheckpoint.findUniqueOrThrow({ where: { scope: `household:${expected.householdId}` } });
+  expect(numericCheckpoint).toMatchObject({ eventCount: 1, headHash: numericAudit.eventHash });
   expect(await prisma.baby.count({ where: { id: expected.babyId, householdId: expected.householdId } })).toBe(1);
   expect(await prisma.activityLog.findUniqueOrThrow({
     where: { id: expected.timerId },
