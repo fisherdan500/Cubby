@@ -55,8 +55,7 @@ API keys, sessions, push subscriptions, email config, or runtime credentials.
 
 ## Implementation Guidance
 
-- Use `rg` or `rg --files` first when searching.
-- Use `apply_patch` for manual file edits.
+- Prefer the agent's native targeted search and patch tools. Shell-only agents may use `rg`/`rg --files` and `apply_patch`.
 - Keep comments sparse and only where they clarify non-obvious logic.
 - Add or update tests near the owning service for behavior changes.
 - Avoid broad refactors while adding a feature or fixing a bug.
@@ -74,7 +73,7 @@ Choose the smallest verification set that covers the risk:
 - Auth, registration, permissions, import, backup, or integration changes: include permission/cross-household tests.
 - Docker-sensitive changes, especially Sprout SQLite import or startup behavior: run `docker compose up --build -d` and inspect app logs.
 
-Full verification set:
+Full acceptance set (run only for a milestone/release gate, a broad shared change, or when the active goal explicitly requires it):
 
 ```bash
 npm run lint
@@ -83,6 +82,8 @@ npm run test
 npm run build
 docker compose up --build -d
 ```
+
+Do not start or rebuild Docker for routine docs, UI-only, or narrowly targeted service changes unless the risk matrix or active goal requires runtime acceptance.
 
 If you cannot run a relevant verification command, say so in the final response
 and explain why.
