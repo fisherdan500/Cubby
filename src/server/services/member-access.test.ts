@@ -361,7 +361,7 @@ describe("household member access management", () => {
         action: "member.suspend",
         entityId: member.id,
         before: { disabledAt: null, role: "admin" },
-        after: { disabledAt, role: "admin" }
+        after: { disabledAt, role: "admin", revokedApiKeyCount: 0 }
       }),
       expect.objectContaining({ auditEvent: expect.anything() })
     );

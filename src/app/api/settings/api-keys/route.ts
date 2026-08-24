@@ -1,5 +1,5 @@
-import { ok, handleError } from "@/server/http";
-import { createApiKey, listApiKeys } from "@/server/services/integrations";
+import { fail, ok, handleError } from "@/server/http";
+import { listApiKeys } from "@/server/services/integrations";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +11,6 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
-  try {
-    return ok(await createApiKey(await request.json()), { status: 201 });
-  } catch (error) {
-    return handleError(error);
-  }
+export async function POST(_request: Request) {
+  return fail("api_key_issuance_unavailable", "New API-key issuance is unavailable until credential rotation is ready.", 409);
 }

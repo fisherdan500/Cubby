@@ -1006,11 +1006,11 @@
       "sidecarPath": "src/app/api/platform/registration/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    return ok(await revokeApiKey(params.id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "115823a38265da470fa5bcde961213fee5fb22d0f251e7de45d072c1708f5ee7",
-      "anchorEnd": 352,
+      "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    if (!text) throw new Error(\"validation_error\");\n    const parsed = JSON.parse(text) as unknown;\n    if (!parsed || typeof parsed !== \"object\" || Array.isArray(parsed)) throw new Error(\"validation_error\");\n    operationId = (parsed as Record<string, unknown>).operationId;\n    const input = { operationId, apiKeyId: params.id };\n    const issued = await issueApiKeyRevokeBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") return operationResponse(issued);\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitApiKeyRevokeBrowserOperation(input) : issued;\n    return operationResponse(result);\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return operationResponse(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "d811f628f6f0bafd532ee4835acbad0b29f13072ecc218983b50044f1f459a2d",
+      "anchorEnd": 1582,
       "anchorFile": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
-      "anchorStart": 154,
+      "anchorStart": 570,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1025,9 +1025,9 @@
     {
       "anchorBytes": "export async function GET() {\n  try {\n    return ok(await listApiKeys());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "57961e398f4a14c978c86477656ce3a5d3fe498bd9131392e291f909f3c4fef6",
-      "anchorEnd": 297,
+      "anchorEnd": 289,
       "anchorFile": "src/app/api/settings/api-keys/route.ts",
-      "anchorStart": 167,
+      "anchorStart": 159,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -1040,11 +1040,11 @@
       "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    return ok(await createApiKey(await request.json()), { status: 201 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a437eafc6d12a0109fd8af323ccf6ff7e78c181ab37fdc77718a84da3a27ad90",
-      "anchorEnd": 484,
+      "anchorBytes": "export async function POST(_request: Request) {\n  return fail(\"api_key_issuance_unavailable\", \"New API-key issuance is unavailable until credential rotation is ready.\", 409);\n}",
+      "anchorDigest": "30ed49dd7eed4e3b3dbba557e1a054d6e2cc7c3235a63b2c295f28cb1d392362",
+      "anchorEnd": 467,
       "anchorFile": "src/app/api/settings/api-keys/route.ts",
-      "anchorStart": 299,
+      "anchorStart": 291,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1603,9 +1603,9 @@
     {
       "anchorBytes": "fetch(`${prefix}/${operation.operationId}`, { method: \"DELETE\" })",
       "anchorDigest": "f57c190b751a91663e583a620613ebefd0557569b5df47d69bd55ed153824423",
-      "anchorEnd": 4904,
+      "anchorEnd": 4956,
       "anchorFile": "src/components/browser-operation-recovery.tsx",
-      "anchorStart": 4839,
+      "anchorStart": 4891,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2249,9 +2249,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 1127,
+      "anchorEnd": 3158,
       "anchorFile": "src/components/settings/integration-forms.tsx",
-      "anchorStart": 1112,
+      "anchorStart": 3143,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -2264,28 +2264,11 @@
       "sidecarPath": "src/components/settings/integration-forms.operation.ts"
     },
     {
-      "anchorBytes": "action={submit}",
-      "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 2881,
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 574,
       "anchorFile": "src/components/settings/integration-forms.tsx",
-      "anchorStart": 2866,
-      "binding": {
-        "kind": "form_action",
-        "symbol": "submit",
-        "target": "src/components/settings/integration-forms.tsx#submit"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/integration-forms.tsx:form_action:submit:src/components/settings/integration-forms.tsx#submit",
-      "ownerId": "client_binding:src/components/settings/integration-forms.tsx",
-      "ownerModule": "src/components/settings/integration-forms.tsx",
-      "sidecarPath": "src/components/settings/integration-forms.operation.ts"
-    },
-    {
-      "anchorBytes": "fetch(\"/api/settings/api-keys\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({\n        name: formData.get(\"name\"),\n        scopes,\n        babyId: formData.get(\"babyId\") || undefined,\n        expiresAt: formData.get(\"expiresAt\") || undefined\n      })\n    })",
-      "anchorDigest": "c0ca6d34bd0bac63b450899bd184061c07f529bf04e04f749d17f3ae3ed201aa",
-      "anchorEnd": 905,
-      "anchorFile": "src/components/settings/integration-forms.tsx",
-      "anchorStart": 587,
+      "anchorStart": 509,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2298,11 +2281,11 @@
       "sidecarPath": "src/components/settings/integration-forms.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/settings/api-keys/${id}/revoke`, { method: \"POST\" })",
-      "anchorDigest": "3b9e382c9fc77ecc4327906f524b2e0880b3927b3fc2b02d5dc96459aeab0ed8",
-      "anchorEnd": 2030,
+      "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
+      "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+      "anchorEnd": 1110,
       "anchorFile": "src/components/settings/integration-forms.tsx",
-      "anchorStart": 1966,
+      "anchorStart": 1040,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2315,11 +2298,11 @@
       "sidecarPath": "src/components/settings/integration-forms.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/settings/webhooks\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({\n        name: formData.get(\"name\"),\n        url: formData.get(\"url\"),\n        events\n      })\n    })",
-      "anchorDigest": "0cb5d835cbe174809bff383b59558e2e5a6e80a217a6dc6b66abbc97906b94a0",
-      "anchorEnd": 2694,
+      "anchorBytes": "fetch(`/api/settings/api-keys/${id}/revoke?issue=1`, {\n            method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n          })",
+      "anchorDigest": "a264b7d2b120bdbabc4660bd4e2b4f9eabea8a4a7d6510b4769f64c4abad6a5f",
+      "anchorEnd": 1704,
       "anchorFile": "src/components/settings/integration-forms.tsx",
-      "anchorStart": 2454,
+      "anchorStart": 1535,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2332,11 +2315,11 @@
       "sidecarPath": "src/components/settings/integration-forms.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/settings/webhooks/${id}`, { method: \"DELETE\" })",
-      "anchorDigest": "ac2e66165003cf16573ea913a681bdedba637adb4cb6a6bb7721e1dfb3c85bac",
-      "anchorEnd": 3600,
+      "anchorBytes": "fetch(`/api/settings/api-keys/${id}/revoke`, {\n          method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ operationId })\n        })",
+      "anchorDigest": "6ecb36d27e7ab57ed38cc4058fbdb45fc90d8f3e32796a2b3c7c25456b9e8929",
+      "anchorEnd": 2137,
       "anchorFile": "src/components/settings/integration-forms.tsx",
-      "anchorStart": 3541,
+      "anchorStart": 1967,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -2344,6 +2327,40 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/integration-forms.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/integration-forms.tsx",
+      "ownerModule": "src/components/settings/integration-forms.tsx",
+      "sidecarPath": "src/components/settings/integration-forms.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/settings/webhooks\", {\n      method: \"POST\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({\n        name: formData.get(\"name\"),\n        url: formData.get(\"url\"),\n        events\n      })\n    })",
+      "anchorDigest": "0cb5d835cbe174809bff383b59558e2e5a6e80a217a6dc6b66abbc97906b94a0",
+      "anchorEnd": 2971,
+      "anchorFile": "src/components/settings/integration-forms.tsx",
+      "anchorStart": 2731,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[5]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/integration-forms.tsx:global_fetch:fetch[5]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/integration-forms.tsx",
+      "ownerModule": "src/components/settings/integration-forms.tsx",
+      "sidecarPath": "src/components/settings/integration-forms.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/settings/webhooks/${id}`, { method: \"DELETE\" })",
+      "anchorDigest": "ac2e66165003cf16573ea913a681bdedba637adb4cb6a6bb7721e1dfb3c85bac",
+      "anchorEnd": 3877,
+      "anchorFile": "src/components/settings/integration-forms.tsx",
+      "anchorStart": 3818,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[6]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/integration-forms.tsx:global_fetch:fetch[6]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/integration-forms.tsx",
       "ownerModule": "src/components/settings/integration-forms.tsx",
       "sidecarPath": "src/components/settings/integration-forms.operation.ts"
@@ -4102,9 +4119,9 @@
     {
       "anchorBytes": "listApiKeys",
       "anchorDigest": "c0e0a6283fcbed1b35236532e3b9130bb523bb6133c5098afe1b900fe243496c",
-      "anchorEnd": 305,
+      "anchorEnd": 293,
       "anchorFile": "src/app/app/settings/integrations/page.tsx",
-      "anchorStart": 294,
+      "anchorStart": 282,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listApiKeys",
@@ -4119,9 +4136,9 @@
     {
       "anchorBytes": "listWebhooks",
       "anchorDigest": "3dadc3e81a1918b0f9b02aee56b78a1ec29f249d20abf3af4a35f01a1996c8ab",
-      "anchorEnd": 319,
+      "anchorEnd": 307,
       "anchorFile": "src/app/app/settings/integrations/page.tsx",
-      "anchorStart": 307,
+      "anchorStart": 295,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listWebhooks",
@@ -4136,9 +4153,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 248,
+      "anchorEnd": 236,
       "anchorFile": "src/app/app/settings/integrations/page.tsx",
-      "anchorStart": 229,
+      "anchorStart": 217,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -4888,10 +4905,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "6bf5ba50c031ff3b52d7bf2a217de3c85d8357d947f675d7010c8f510bb54782",
+  "semanticArtifactDigest": "756aa186e484da831062ffd9a0d4019fe6f3439fcef74cd9b7ae5974bb74faa2",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "e90a436ae46db4e8c0e7e630deb01505b9d6814036c48a8e17145ad9397b8fb8",
+  "semanticCoverageDigest": "1485c4c4632b58f4537beaeb08f889d71802190bfade1d1f8f5475ffe2e3318c",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "6aaa11416387323d913ea124ad19d05a088466a3130a8646478bda425db2151a"
+  "semanticFingerprint": "312a8c807bc5615a25ac199d0d475eeba90c30f293a9e1207f70e33039b49161"
 }

@@ -155,6 +155,7 @@ enum BrowserOperationKey {
   settingsUnitsUpdate        @map("settings.units.update")
   calendarEventCreate        @map("calendar_event.create")
   householdAccentUpdate      @map("household.accent.update")
+  apiKeyRevoke               @map("api_key.revoke")
 }
 
 enum BrowserOperationTargetKind {
@@ -167,6 +168,7 @@ enum BrowserOperationTargetKind {
   preference
   settings
   calendar
+  apiKey @map("api_key")
 }
 
 enum BrowserOperationProtocolVersion {

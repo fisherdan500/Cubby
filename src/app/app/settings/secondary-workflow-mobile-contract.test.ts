@@ -36,7 +36,7 @@ describe("secondary workflow mobile contracts", () => {
     expect(integrationsSource).toContain('className="min-w-0 flex-1"');
     expect(integrationsSource).toContain('className="break-all text-sm text-muted-foreground"');
     expect(integrationsSource).toContain('className="break-words text-xs text-muted-foreground"');
-    expect(integrationFormsSource).toContain('<span className="break-all font-mono font-bold">');
+    expect(integrationsSource).toContain("New API-key issuance is unavailable until the versioned credential rotation workflow is ready.");
   });
 
   it("keeps member grids, controls, and actions within their available width", () => {

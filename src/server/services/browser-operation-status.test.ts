@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BrowserOperationKey } from "@prisma/client";
 
 const mocks = vi.hoisted(() => ({
   getContext: vi.fn(),
   getSession: vi.fn(),
+  assertFreshSession: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn(),
   sessionFindFirst: vi.fn(),
@@ -15,7 +17,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/server/auth/context", () => ({
   getEffectiveHouseholdContext: mocks.getContext
 }));
-vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession }));
+vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession, assertFreshSession: mocks.assertFreshSession }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: { $transaction: mocks.transaction }
 }));
@@ -29,6 +31,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.getContext.mockResolvedValue(ctx);
   mocks.getSession.mockResolvedValue({ user: { id: "user-1" }, session: { id: "session-1" } });
+  mocks.assertFreshSession.mockImplementation((session) => session);
   mocks.queryRaw.mockResolvedValue([]);
   mocks.sessionFindFirst.mockResolvedValue({ id: "session-1" });
   mocks.memberFindFirst.mockResolvedValue({ id: "member-1" });
@@ -64,6 +67,25 @@ describe("household browser operation status", () => {
     expect(locks.findIndex((query) => query.includes('FROM "Session"'))).toBeLessThan(
       locks.findIndex((query) => query.includes('FROM "HouseholdMember"'))
     );
+  });
+
+  it("requires fresh current-owner authority for API-key revoke status", async () => {
+    mocks.memberFindFirst.mockResolvedValue({ id: "member-1", role: "owner" });
+    mocks.bindingFindFirst.mockResolvedValue({
+      sessionId: "session-1", actorUserId: "user-1", actorMemberId: "member-1",
+      operationKey: BrowserOperationKey.apiKeyRevoke, operation: null
+    });
+    mocks.assertFreshSession.mockImplementation(() => { throw new Error("fresh_authentication_required"); });
+    await expect(getHouseholdBrowserOperationStatus(operationId)).rejects.toThrow("fresh_authentication_required");
+  });
+
+  it("is existence-neutral for a non-owner asking about an API-key revoke operation", async () => {
+    mocks.memberFindFirst.mockResolvedValue({ id: "member-1", role: "admin" });
+    mocks.bindingFindFirst.mockResolvedValue({
+      sessionId: "session-1", actorUserId: "user-1", actorMemberId: "member-1",
+      operationKey: BrowserOperationKey.apiKeyRevoke, operation: null
+    });
+    await expect(getHouseholdBrowserOperationStatus(operationId)).rejects.toThrow("not_found");
   });
 
   it("returns operation_result_expired for a currently authorized expired unsubmitted reservation", async () => {

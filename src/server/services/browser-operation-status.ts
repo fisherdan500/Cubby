@@ -1,7 +1,7 @@
-import type { Prisma } from "@prisma/client";
+import { BrowserOperationKey, HouseholdRole, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveHouseholdContext } from "@/server/auth/context";
-import { getSession } from "@/server/auth/session";
+import { assertFreshSession, getSession } from "@/server/auth/session";
 import {
   abandonHouseholdBrowserOperation,
   assertBrowserOperationId,
@@ -38,14 +38,20 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
     const currentSession = await tx.session.findFirst({ where: { id: authSession.session.id, userId: ctx.userId, expiresAt: { gt: new Date() } }, select: { id: true } });
     if (!currentSession) throw new Error("unauthenticated");
     await tx.$queryRaw`SELECT "id" FROM "HouseholdMember" WHERE "id" = ${ctx.memberId} AND "householdId" = ${ctx.householdId} FOR UPDATE`;
-    const currentMember = await tx.householdMember.findFirst({ where: { id: ctx.memberId, householdId: ctx.householdId, userId: ctx.userId, disabledAt: null, deletedAt: null }, select: { id: true } });
+    const currentMember = await tx.householdMember.findFirst({ where: { id: ctx.memberId, householdId: ctx.householdId, userId: ctx.userId, disabledAt: null, deletedAt: null }, select: { id: true, role: true } });
     if (!currentMember) throw new Error("not_found");
+    const requireApiKeyStatusAuthority = (operationKey: unknown) => {
+      if (operationKey !== BrowserOperationKey.apiKeyRevoke) return;
+      assertFreshSession(authSession);
+      if (currentMember.role !== HouseholdRole.owner) throw new Error("not_found");
+    };
 
     const binding = await tx.browserOperationBinding.findFirst({
       where: { householdId: ctx.householdId, operationId },
       include: { operation: true }
     });
     if (binding) {
+      requireApiKeyStatusAuthority(binding.operationKey);
       if (binding.actorUserId !== ctx.userId || binding.actorMemberId !== ctx.memberId || binding.sessionId !== authSession.session.id) {
         throw new Error("not_found");
       }
@@ -65,6 +71,7 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
       where: { householdId_operationId: { householdId: ctx.householdId, operationId } }
     });
     if (tombstone && tombstone.actorUserId === ctx.userId && tombstone.actorMemberId === ctx.memberId) {
+      requireApiKeyStatusAuthority(tombstone.operationKey);
       return { status: "expired", operationId, code: "operation_result_expired" };
     }
     const reservationTombstone = await tx.browserOperationReservationTombstone.findUnique({
@@ -73,6 +80,7 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
     if (!reservationTombstone || reservationTombstone.sessionId !== authSession.session.id || reservationTombstone.actorUserId !== ctx.userId || reservationTombstone.actorMemberId !== ctx.memberId) {
       throw new Error("not_found");
     }
+    requireApiKeyStatusAuthority(reservationTombstone.operationKey);
     return {
       status: "expired",
       operationId,

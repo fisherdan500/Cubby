@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 4
   },
-  "declarationDigest": "9c2e661637aca7c97bd7c3f75cc34f23fdcc389d97f95709d519a0278881030d",
+  "declarationDigest": "9cde2ab81309452fe99783e105213a9f6946878f37e3a72404fa129d35048977",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4011,11 +4011,6 @@
             "target": "src/components/settings/integration-forms.tsx#submit"
           },
           {
-            "kind": "form_action",
-            "symbol": "submit",
-            "target": "src/components/settings/integration-forms.tsx#submit"
-          },
-          {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
@@ -4033,6 +4028,16 @@
           {
             "kind": "global_fetch",
             "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[5]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[6]",
             "target": "globalThis.fetch"
           }
         ],
@@ -5677,10 +5682,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "115823a38265da470fa5bcde961213fee5fb22d0f251e7de45d072c1708f5ee7",
-          "anchorEnd": 352,
+          "anchorDigest": "d811f628f6f0bafd532ee4835acbad0b29f13072ecc218983b50044f1f459a2d",
+          "anchorEnd": 1582,
           "anchorFile": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
-          "anchorStart": 154,
+          "anchorStart": 570,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/settings/api-keys/[id]/revoke/route.ts#POST"
@@ -5697,18 +5702,18 @@
       "bindings": [
         {
           "anchorDigest": "57961e398f4a14c978c86477656ce3a5d3fe498bd9131392e291f909f3c4fef6",
-          "anchorEnd": 297,
+          "anchorEnd": 289,
           "anchorFile": "src/app/api/settings/api-keys/route.ts",
-          "anchorStart": 167,
+          "anchorStart": 159,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/settings/api-keys/route.ts#GET"
         },
         {
-          "anchorDigest": "a437eafc6d12a0109fd8af323ccf6ff7e78c181ab37fdc77718a84da3a27ad90",
-          "anchorEnd": 484,
+          "anchorDigest": "30ed49dd7eed4e3b3dbba557e1a054d6e2cc7c3235a63b2c295f28cb1d392362",
+          "anchorEnd": 467,
           "anchorFile": "src/app/api/settings/api-keys/route.ts",
-          "anchorStart": 299,
+          "anchorStart": 291,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/settings/api-keys/route.ts#POST"
@@ -6478,27 +6483,27 @@
       "bindings": [
         {
           "anchorDigest": "c0e0a6283fcbed1b35236532e3b9130bb523bb6133c5098afe1b900fe243496c",
-          "anchorEnd": 305,
+          "anchorEnd": 293,
           "anchorFile": "src/app/app/settings/integrations/page.tsx",
-          "anchorStart": 294,
+          "anchorStart": 282,
           "kind": "server_value_import",
           "symbol": "listApiKeys",
           "target": "src/server/services/integrations.ts#listApiKeys"
         },
         {
           "anchorDigest": "3dadc3e81a1918b0f9b02aee56b78a1ec29f249d20abf3af4a35f01a1996c8ab",
-          "anchorEnd": 319,
+          "anchorEnd": 307,
           "anchorFile": "src/app/app/settings/integrations/page.tsx",
-          "anchorStart": 307,
+          "anchorStart": 295,
           "kind": "server_value_import",
           "symbol": "listWebhooks",
           "target": "src/server/services/integrations.ts#listWebhooks"
         },
         {
           "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 248,
+          "anchorEnd": 236,
           "anchorFile": "src/app/app/settings/integrations/page.tsx",
-          "anchorStart": 229,
+          "anchorStart": 217,
           "kind": "server_value_import",
           "symbol": "requireSettingsPage",
           "target": "src/server/auth/page-access.ts#requireSettingsPage"
@@ -7127,9 +7132,9 @@
       "bindings": [
         {
           "anchorDigest": "f57c190b751a91663e583a620613ebefd0557569b5df47d69bd55ed153824423",
-          "anchorEnd": 4904,
+          "anchorEnd": 4956,
           "anchorFile": "src/components/browser-operation-recovery.tsx",
-          "anchorStart": 4839,
+          "anchorStart": 4891,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -7589,56 +7594,65 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 1127,
+          "anchorEnd": 3158,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 1112,
+          "anchorStart": 3143,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/settings/integration-forms.tsx#submit"
         },
         {
-          "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 2881,
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 574,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 2866,
-          "kind": "form_action",
-          "symbol": "submit",
-          "target": "src/components/settings/integration-forms.tsx#submit"
-        },
-        {
-          "anchorDigest": "c0ca6d34bd0bac63b450899bd184061c07f529bf04e04f749d17f3ae3ed201aa",
-          "anchorEnd": 905,
-          "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 587,
+          "anchorStart": 509,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "3b9e382c9fc77ecc4327906f524b2e0880b3927b3fc2b02d5dc96459aeab0ed8",
-          "anchorEnd": 2030,
+          "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
+          "anchorEnd": 1110,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 1966,
+          "anchorStart": 1040,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "0cb5d835cbe174809bff383b59558e2e5a6e80a217a6dc6b66abbc97906b94a0",
-          "anchorEnd": 2694,
+          "anchorDigest": "a264b7d2b120bdbabc4660bd4e2b4f9eabea8a4a7d6510b4769f64c4abad6a5f",
+          "anchorEnd": 1704,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 2454,
+          "anchorStart": 1535,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "ac2e66165003cf16573ea913a681bdedba637adb4cb6a6bb7721e1dfb3c85bac",
-          "anchorEnd": 3600,
+          "anchorDigest": "6ecb36d27e7ab57ed38cc4058fbdb45fc90d8f3e32796a2b3c7c25456b9e8929",
+          "anchorEnd": 2137,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 3541,
+          "anchorStart": 1967,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "0cb5d835cbe174809bff383b59558e2e5a6e80a217a6dc6b66abbc97906b94a0",
+          "anchorEnd": 2971,
+          "anchorFile": "src/components/settings/integration-forms.tsx",
+          "anchorStart": 2731,
+          "kind": "global_fetch",
+          "symbol": "fetch[5]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "ac2e66165003cf16573ea913a681bdedba637adb4cb6a6bb7721e1dfb3c85bac",
+          "anchorEnd": 3877,
+          "anchorFile": "src/components/settings/integration-forms.tsx",
+          "anchorStart": 3818,
+          "kind": "global_fetch",
+          "symbol": "fetch[6]",
           "target": "globalThis.fetch"
         }
       ],
@@ -8564,7 +8578,7 @@
     }
   ],
   "observationCount": 126,
-  "observationDigest": "a8a67b5387345f908c4ddd25873ed92e295c79fa51ba1f40fca7a080389d29da",
+  "observationDigest": "abd06582bce8fd666c6f68acf137ce8c92c8c21e0e7bc534d7f70851329a8574",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -9516,9 +9530,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 352,
+          "anchorEnd": 1582,
           "anchorFile": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
-          "anchorStart": 154,
+          "anchorStart": 570,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
           "symbol": "POST",
@@ -9534,18 +9548,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 297,
+          "anchorEnd": 289,
           "anchorFile": "src/app/api/settings/api-keys/route.ts",
-          "anchorStart": 167,
+          "anchorStart": 159,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/api-keys/route.ts",
           "symbol": "GET",
           "target": "src/app/api/settings/api-keys/route.ts#GET"
         },
         {
-          "anchorEnd": 484,
+          "anchorEnd": 467,
           "anchorFile": "src/app/api/settings/api-keys/route.ts",
-          "anchorStart": 299,
+          "anchorStart": 291,
           "kind": "route_method",
           "ownerModule": "src/app/api/settings/api-keys/route.ts",
           "symbol": "POST",
@@ -10290,27 +10304,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 305,
+          "anchorEnd": 293,
           "anchorFile": "src/app/app/settings/integrations/page.tsx",
-          "anchorStart": 294,
+          "anchorStart": 282,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/integrations/page.tsx",
           "symbol": "listApiKeys",
           "target": "src/server/services/integrations.ts#listApiKeys"
         },
         {
-          "anchorEnd": 319,
+          "anchorEnd": 307,
           "anchorFile": "src/app/app/settings/integrations/page.tsx",
-          "anchorStart": 307,
+          "anchorStart": 295,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/integrations/page.tsx",
           "symbol": "listWebhooks",
           "target": "src/server/services/integrations.ts#listWebhooks"
         },
         {
-          "anchorEnd": 248,
+          "anchorEnd": 236,
           "anchorFile": "src/app/app/settings/integrations/page.tsx",
-          "anchorStart": 229,
+          "anchorStart": 217,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/integrations/page.tsx",
           "symbol": "requireSettingsPage",
@@ -10920,9 +10934,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4904,
+          "anchorEnd": 4956,
           "anchorFile": "src/components/browser-operation-recovery.tsx",
-          "anchorStart": 4839,
+          "anchorStart": 4891,
           "kind": "global_fetch",
           "ownerModule": "src/components/browser-operation-recovery.tsx",
           "symbol": "fetch[1]",
@@ -11370,57 +11384,66 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1127,
+          "anchorEnd": 3158,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 1112,
+          "anchorStart": 3143,
           "kind": "form_action",
           "ownerModule": "src/components/settings/integration-forms.tsx",
           "symbol": "submit",
           "target": "src/components/settings/integration-forms.tsx#submit"
         },
         {
-          "anchorEnd": 2881,
+          "anchorEnd": 574,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 2866,
-          "kind": "form_action",
-          "ownerModule": "src/components/settings/integration-forms.tsx",
-          "symbol": "submit",
-          "target": "src/components/settings/integration-forms.tsx#submit"
-        },
-        {
-          "anchorEnd": 905,
-          "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 587,
+          "anchorStart": 509,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/integration-forms.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2030,
+          "anchorEnd": 1110,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 1966,
+          "anchorStart": 1040,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/integration-forms.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2694,
+          "anchorEnd": 1704,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 2454,
+          "anchorStart": 1535,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/integration-forms.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3600,
+          "anchorEnd": 2137,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 3541,
+          "anchorStart": 1967,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/integration-forms.tsx",
           "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2971,
+          "anchorFile": "src/components/settings/integration-forms.tsx",
+          "anchorStart": 2731,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/integration-forms.tsx",
+          "symbol": "fetch[5]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3877,
+          "anchorFile": "src/components/settings/integration-forms.tsx",
+          "anchorStart": 3818,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/integration-forms.tsx",
+          "symbol": "fetch[6]",
           "target": "globalThis.fetch"
         }
       ],
@@ -13046,7 +13069,7 @@
   ],
   "ownerSetDigest": "c09a6dd3a8fc290d637cdafce63c350bf07760a11ea12ba1355321ef0cc410dd",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a509ad2a0a4d6cf11cbc3cdc40a973af0af85b6f49d21cfb4429fa6de9e7badb",
+  "registryDigest": "5326849d4c099bf6cb83ffec1fcf645b02ab5fdca815aad195cb11568d96d465",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

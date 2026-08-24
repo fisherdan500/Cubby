@@ -8,9 +8,11 @@ const mocks = vi.hoisted(() => ({
   memberLock: vi.fn(),
   txMemberFindUnique: vi.fn(),
   apiKeyCreate: vi.fn(),
+  apiKeyFindMany: vi.fn(),
   apiKeyFindFirst: vi.fn(),
   apiKeyUpdate: vi.fn(),
   txApiKeyCreate: vi.fn(),
+  txApiKeyFindMany: vi.fn(),
   txApiKeyFindFirst: vi.fn(),
   txApiKeyUpdate: vi.fn(),
   txBabyFindFirst: vi.fn(),
@@ -25,7 +27,8 @@ const mocks = vi.hoisted(() => ({
   txPushSubscriptionUpsert: vi.fn(),
   notificationPreferenceCreate: vi.fn(),
   txNotificationPreferenceCreate: vi.fn(),
-  requireUser: vi.fn()
+  requireUser: vi.fn(),
+  requireFreshSession: vi.fn()
 }));
 
 vi.mock("@/server/auth/context", () => ({
@@ -33,10 +36,10 @@ vi.mock("@/server/auth/context", () => ({
   requirePermission: mocks.requirePermission
 }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
-vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
+vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser, requireFreshSession: mocks.requireFreshSession }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
-    apiKey: { create: mocks.apiKeyCreate, findFirst: mocks.apiKeyFindFirst, update: mocks.apiKeyUpdate },
+    apiKey: { create: mocks.apiKeyCreate, findMany: mocks.apiKeyFindMany, findFirst: mocks.apiKeyFindFirst, update: mocks.apiKeyUpdate },
     webhookEndpoint: { create: mocks.webhookCreate, findFirst: mocks.webhookFindFirst, update: mocks.webhookUpdate },
     pushSubscription: { upsert: mocks.pushSubscriptionUpsert },
     notificationPreference: { create: mocks.notificationPreferenceCreate },
@@ -44,7 +47,7 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-import { createApiKey, createWebhook, deleteWebhook, revokeApiKey, savePushSubscription } from "@/server/services/integrations";
+import { createApiKey, createWebhook, deleteWebhook, listApiKeys, savePushSubscription } from "@/server/services/integrations";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -55,12 +58,14 @@ beforeEach(() => {
   const endpoint = { id: "webhook-1", name: "Rehearsal", url: "https://example.test/hook", events: ["activity_created"] };
   const preference = { id: "preference-1", householdId: "household-1", userId: "owner-user", babyId: "baby-1" };
   mocks.apiKeyCreate.mockResolvedValue(key); mocks.txApiKeyCreate.mockResolvedValue(key);
+  mocks.apiKeyFindMany.mockResolvedValue([key]); mocks.txApiKeyFindMany.mockResolvedValue([key]);
   mocks.apiKeyFindFirst.mockResolvedValue(key); mocks.txApiKeyFindFirst.mockResolvedValue(key);
   mocks.apiKeyUpdate.mockResolvedValue(key); mocks.txApiKeyUpdate.mockResolvedValue(key);
   mocks.webhookCreate.mockResolvedValue(endpoint); mocks.txWebhookCreate.mockResolvedValue(endpoint);
   mocks.webhookFindFirst.mockResolvedValue(endpoint); mocks.txWebhookFindFirst.mockResolvedValue(endpoint);
   mocks.webhookUpdate.mockResolvedValue(endpoint); mocks.txWebhookUpdate.mockResolvedValue(endpoint);
   mocks.requireUser.mockResolvedValue({ id: "owner-user" });
+  mocks.requireFreshSession.mockResolvedValue({ user: { id: "owner-user" }, session: { id: "session-1" } });
   mocks.pushSubscriptionUpsert.mockResolvedValue({ id: "subscription-1" });
   mocks.txPushSubscriptionUpsert.mockResolvedValue({ id: "subscription-1" });
   mocks.notificationPreferenceCreate.mockResolvedValue(preference);
@@ -68,7 +73,7 @@ beforeEach(() => {
   mocks.transaction.mockImplementation(async (callback) => callback({
     $queryRaw: mocks.memberLock,
     householdMember: { findUnique: mocks.txMemberFindUnique },
-    apiKey: { create: mocks.txApiKeyCreate, findFirst: mocks.txApiKeyFindFirst, update: mocks.txApiKeyUpdate },
+    apiKey: { create: mocks.txApiKeyCreate, findMany: mocks.txApiKeyFindMany, findFirst: mocks.txApiKeyFindFirst, update: mocks.txApiKeyUpdate },
     baby: { findFirst: mocks.txBabyFindFirst },
     webhookEndpoint: { create: mocks.txWebhookCreate, findFirst: mocks.txWebhookFindFirst, update: mocks.txWebhookUpdate },
     webhookDelivery: { updateMany: mocks.txWebhookDeliveryUpdateMany },
@@ -79,20 +84,17 @@ beforeEach(() => {
 });
 
 describe("capability mutation serialization", () => {
-  it("binds each newly issued API key to the current membership episode", async () => {
-    mocks.txMemberFindUnique.mockResolvedValue({
-      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null
-    });
+  it("fails closed instead of issuing a one-time API-key secret under the partial credential contract", async () => {
+    await expect(createApiKey({ name: "Episode-bound key" })).rejects.toThrow("api_key_issuance_unavailable");
+    expect(mocks.txApiKeyCreate).not.toHaveBeenCalled();
+  });
 
-    await createApiKey({ name: "Episode-bound key" });
-
-    expect(mocks.txApiKeyCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        householdId: "household-1",
-        delegatedByMemberId: "owner-member",
-        legacyUnattributed: false
-      })
-    });
+  it("reads API-key inventory only after fresh-owner reauthorization under locks", async () => {
+    mocks.memberLock.mockResolvedValue([{ userId: "owner-user", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }]);
+    await expect(listApiKeys()).resolves.toHaveLength(1);
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+    expect(mocks.txApiKeyFindMany).toHaveBeenCalledOnce();
+    expect(mocks.apiKeyFindMany).not.toHaveBeenCalled();
   });
 
   it("binds each newly created webhook to the current membership episode", async () => {
@@ -124,12 +126,12 @@ describe("capability mutation serialization", () => {
     );
   });
 
-  it("rejects API-key issuance for a baby outside the locked household", async () => {
+  it("rejects API-key issuance before inspecting a requested baby scope", async () => {
     mocks.txMemberFindUnique.mockResolvedValue({
       id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null
     });
     mocks.txBabyFindFirst.mockResolvedValue(null);
-    await expect(createApiKey({ name: "Foreign scope", babyId: "baby-foreign" })).rejects.toThrow("not_found");
+    await expect(createApiKey({ name: "Foreign scope", babyId: "baby-foreign" })).rejects.toThrow("api_key_issuance_unavailable");
     expect(mocks.txApiKeyCreate).not.toHaveBeenCalled();
   });
 
@@ -146,18 +148,7 @@ describe("capability mutation serialization", () => {
     expect(mocks.txWebhookUpdate).toHaveBeenCalledOnce();
   });
 
-  it("locks the API-key target before revocation", async () => {
-    mocks.txMemberFindUnique.mockResolvedValue({
-      id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null
-    });
-    await revokeApiKey("key-1");
-    expect(mocks.memberLock).toHaveBeenCalledTimes(2);
-    expect(mocks.txApiKeyUpdate).toHaveBeenCalledOnce();
-  });
-
   it.each([
-    ["API-key issuance", () => createApiKey({ name: "Rehearsal" })],
-    ["API-key revocation", () => revokeApiKey("key-1")],
     ["webhook creation", () => createWebhook({ name: "Rehearsal", url: "https://example.test/hook", events: ["activity_created"] })],
     ["webhook deletion", () => deleteWebhook("webhook-1")]
   ])("rejects %s when the actor was suspended after request-context capture", async (_name, mutate) => {

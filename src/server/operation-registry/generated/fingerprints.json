@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "9c2e661637aca7c97bd7c3f75cc34f23fdcc389d97f95709d519a0278881030d",
+  "declarationDigest": "9cde2ab81309452fe99783e105213a9f6946878f37e3a72404fa129d35048977",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -744,33 +744,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "38c746e4b977c392ba1fd9e98a72227e3d5fa3ad50ddde729f6a7cb1bec05f80",
+          "digest": "d8c8d27360f3d838975b2957111b8d058435daa66babd8e82f6de0b5971bcd8e",
           "file": "src/app/api/settings/api-keys/[id]/revoke/route.ts"
         }
       ],
       "declarationDigest": "801e996e9117f9af29c9f15e4f6a8d13ccebc473693f029996c8d3c4bd74ed21",
-      "fingerprint": "85587792914fd2f4fd1365f1233a533607b67424dce18c33f32be88311650660",
+      "fingerprint": "db8346d4f4b6a7d587d0f5eabdea70f98db38edd2534ba8247ceaf36b9391661",
       "id": "fingerprint:api_route:src/app/api/settings/api-keys/[id]/revoke/route.ts",
       "ownerId": "api_route:src/app/api/settings/api-keys/[id]/revoke/route.ts",
       "ownerModule": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
       "sidecarPath": "src/app/api/settings/api-keys/[id]/revoke/route.operation.ts",
-      "sourceDigest": "288a277883d198f339dc8fc545e8d56566cfbd2ec6d824d39e0f947e2f3f5498",
+      "sourceDigest": "c9118a9df2b421514d32bfb95d02c85efdaa9ebcbb38381fad8f1947906f4b3b",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "d699e94f1dcbd5b23b373a948287ce160bec43323ec7fa04a8c052a274bbd4e4",
+          "digest": "5529f42537b928ced0abdeb4281f3f1aae4f6432b96feeb456be2690ab6f363d",
           "file": "src/app/api/settings/api-keys/route.ts"
         }
       ],
       "declarationDigest": "b7ef7fb3131798ce834c7b1ad6c60616c833f9023f8f778df41285d967331fd5",
-      "fingerprint": "c0fa4f046f318063872b1b37ff68c1f99c9d1bccff4a6389fffd7f746cfa73de",
+      "fingerprint": "7031a4265c1df11869aa0b7a162ac94276ffa866ded3fafba17f5bcd89881189",
       "id": "fingerprint:api_route:src/app/api/settings/api-keys/route.ts",
       "ownerId": "api_route:src/app/api/settings/api-keys/route.ts",
       "ownerModule": "src/app/api/settings/api-keys/route.ts",
       "sidecarPath": "src/app/api/settings/api-keys/route.operation.ts",
-      "sourceDigest": "b37717514d193445d2458a0d4d46383a26284f86869213933e7d88ad591eefa2",
+      "sourceDigest": "46c0694032265a6a36da4edbf947c3f28c8036197b184970d71b8ffae6d5dfb5",
       "status": "declared"
     },
     {
@@ -1168,17 +1168,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8894f5855822d48c8580c3f0c50134c03eda32950b0165b3aaa7a43aa137be1f",
+          "digest": "69ec86f2018f92f016e45214102825a0ba4e6c0710c799386d8d08d5ef8c8f08",
           "file": "src/app/app/settings/integrations/page.tsx"
         }
       ],
       "declarationDigest": "ea927c4d22143f1aa3a1119ee0b559ff88f9d56354f5371180b3532e8970440e",
-      "fingerprint": "5de41df6282d77c56dc026d6fa3267dac4d8a65ae50fde6d42bc5777db9bc36e",
+      "fingerprint": "2f7ccf0bd8777496b4e41d3834c0b1f820d112733f916e00c4f387b986f595e1",
       "id": "fingerprint:server_loader:src/app/app/settings/integrations/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/integrations/page.tsx",
       "ownerModule": "src/app/app/settings/integrations/page.tsx",
       "sidecarPath": "src/app/app/settings/integrations/page.operation.ts",
-      "sourceDigest": "7841606708fada2da75222bce64cbe24ef290a7b27a237a73ef997f57212a095",
+      "sourceDigest": "319ba90e5df50c1d05d0538bece1c8836344a640af26b6e0ff1f7ffbe7a1e20b",
       "status": "declared"
     },
     {
@@ -1472,17 +1472,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "ad067e02def115eb3a62065c881829be1350f09927bc30ef7f624f64133ea91f",
+          "digest": "d230ec61a22fc7f72a2a33aa89f142ae73b48c0e45c48d303ab3f12964cd6544",
           "file": "src/components/browser-operation-recovery.tsx"
         }
       ],
       "declarationDigest": "f7537ddb34370c9f1cdf0810002b136e763d02c26ce63bd0371565fbe61dd61c",
-      "fingerprint": "37f753e67274f98dc94a6ca196803c0b9753b6b5cf203e3ef7381967f4032f45",
+      "fingerprint": "caa03851f405a16d199a2428e823bca8ef7d9c6f1492a17e14159b8a3ce9a008",
       "id": "fingerprint:client_binding:src/components/browser-operation-recovery.tsx",
       "ownerId": "client_binding:src/components/browser-operation-recovery.tsx",
       "ownerModule": "src/components/browser-operation-recovery.tsx",
       "sidecarPath": "src/components/browser-operation-recovery.operation.ts",
-      "sourceDigest": "4a06c2f3c571a4ef608a078d6429619e0adf177c0fb4e5c7792b69ab7a5f4ab5",
+      "sourceDigest": "d799b7812b885d63559c88ea2b4de195375e1506d929a94e6991c3d605e533ab",
       "status": "declared"
     },
     {
@@ -1664,17 +1664,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "3780f848a1e23c52bb2c2405bfdb84423e1aaf679f4fb7221abd00a6c55fa4c1",
+          "digest": "f94222dbd77e2d2f3e6ec9ece4d8f25e22d5c64d548c0db2bd664cb3924c6fb2",
           "file": "src/components/settings/integration-forms.tsx"
         }
       ],
-      "declarationDigest": "73bf88c4e17bc6d04674f6bcda1ed0cd63abc7d4bdff7ef9ef7709bf6ffb1f90",
-      "fingerprint": "8d391ee2d56efdb4a43b339a15fea8f9738d830c1a870421d638ffa526ac6c45",
+      "declarationDigest": "f811dd63c28e0abfe9d33ae47b84d2d6da625d782ac18492f4730a5612255ce1",
+      "fingerprint": "c8c81f489847090b554fd2dbe949df9c3bdcb4c6996a72cb7cf253df88451f0b",
       "id": "fingerprint:client_binding:src/components/settings/integration-forms.tsx",
       "ownerId": "client_binding:src/components/settings/integration-forms.tsx",
       "ownerModule": "src/components/settings/integration-forms.tsx",
       "sidecarPath": "src/components/settings/integration-forms.operation.ts",
-      "sourceDigest": "edaf27e0ab18bfd71ea4d906a290b27f0e92a45641131be07aa5d0f736f1b9cb",
+      "sourceDigest": "e554acaa9bcc96f569106aa1ede7a325af5152b561427d8cf4b62a82390a575e",
       "status": "declared"
     },
     {
@@ -2088,11 +2088,11 @@
   ],
   "generatorDigest": "22fd8748c6abd594d814cebe4607554f33d1e20aad353784574166e322dfb249",
   "generatorVersion": "r0.1",
-  "observationDigest": "a8a67b5387345f908c4ddd25873ed92e295c79fa51ba1f40fca7a080389d29da",
+  "observationDigest": "abd06582bce8fd666c6f68acf137ce8c92c8c21e0e7bc534d7f70851329a8574",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "c09a6dd3a8fc290d637cdafce63c350bf07760a11ea12ba1355321ef0cc410dd",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a509ad2a0a4d6cf11cbc3cdc40a973af0af85b6f49d21cfb4429fa6de9e7badb",
+  "registryDigest": "5326849d4c099bf6cb83ffec1fcf645b02ab5fdca815aad195cb11568d96d465",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
