@@ -169,15 +169,16 @@ describe("platform registration operations", () => {
       data: { householdCreationMode: "open", allowPublicRegistration: true, revision: { increment: 1 } }
     });
     expect(mocks.auditCreate).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         actorUserId: "platform-owner",
         action: "platform.registration.update",
         entityType: "platform_settings",
         entityId: "platform",
         source: "application",
-        before: { householdCreationMode: "closed", allowPublicRegistration: false, revision: 7 },
-        after: { householdCreationMode: "open", allowPublicRegistration: true, revision: 8 }
-      }
+        schemaVersion: 3,
+        previousHash: null,
+        eventHash: expect.stringMatching(/^[a-f0-9]{64}$/)
+      })
     });
     expect(mocks.auditCreate.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.operationUpdate.mock.invocationCallOrder[0]

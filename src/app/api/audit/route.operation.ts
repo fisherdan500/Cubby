@@ -2,24 +2,14 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "worker:src/server/integrity-scheduler.ts",
-  ownerModule: "src/server/integrity-scheduler.ts",
-  ownerKind: "worker",
+  id: "api_route:src/app/api/audit/route.ts",
+  ownerModule: "src/app/api/audit/route.ts",
+  ownerKind: "api_route",
   bindings: [
     {
-      kind: "worker_schedule",
-      symbol: "tick",
-      target: "src/server/integrity-scheduler.ts#tick"
-    },
-    {
-      kind: "worker_start_call",
-      symbol: "startIntegrityScheduler",
-      target: "src/server/integrity-scheduler.ts#startIntegrityScheduler"
-    },
-    {
-      kind: "worker_tick",
-      symbol: "tick",
-      target: "src/server/services/integrity.ts#runScheduledIntegrityCheckpointSuite"
+      kind: "route_method",
+      symbol: "GET",
+      target: "src/app/api/audit/route.ts#GET"
     }
   ],
   disposition: "observed",

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/env", () => ({ integrityConfig: mocks.config }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
-vi.mock("@/server/services/integrity", () => ({ runScheduledIntegritySuite: mocks.run }));
+vi.mock("@/server/services/integrity", () => ({ runScheduledIntegrityCheckpointSuite: mocks.run }));
 
 import { startIntegrityScheduler } from "@/server/integrity-scheduler";
 
@@ -32,7 +32,8 @@ describe("integrity scheduler", () => {
     mocks.config.intervalHours = 24;
     mocks.run.mockResolvedValue({
       executed: true,
-      report: { status: "clean", version: 1, findings: [], evidenceFingerprint: "a".repeat(64) }
+      report: { status: "clean", version: 1, findings: [], evidenceFingerprint: "a".repeat(64) },
+      checkpoints: { household: { refreshed: 1, rejected: 0 }, platform: { eventCount: 2 } }
     });
 
     const first = await startIntegrityScheduler();
@@ -41,6 +42,7 @@ describe("integrity scheduler", () => {
     expect(first).toBe(second);
     expect(first.started).toBe(true);
     expect(mocks.run).toHaveBeenCalledOnce();
+
     expect(first.timer).not.toBeNull();
   });
 });

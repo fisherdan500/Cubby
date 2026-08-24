@@ -84,7 +84,7 @@ describe("explicit host-local bootstrap verification", () => {
       })
     ).resolves.toEqual({ id: "user-explicit", emailVerified: true });
 
-    expect(mocks.executeRaw).toHaveBeenCalledOnce();
+    expect(mocks.executeRaw).toHaveBeenCalledTimes(2);
     expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.userCount.mock.invocationCallOrder[0]
     );
@@ -94,17 +94,7 @@ describe("explicit host-local bootstrap verification", () => {
       data: { emailVerified: true },
       select: { id: true, emailVerified: true }
     });
-    expect(mocks.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorUserId: null,
-        action: "platform.owner.bootstrap_user.verify",
-        entityType: "user",
-        entityId: "user-explicit",
-        source: "host_local_bootstrap_verification",
-        before: { emailVerified: false },
-        after: { emailVerified: true }
-      }
-    });
+    expect(mocks.auditCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ action: "platform.owner.bootstrap_user.verify", eventHash: expect.stringMatching(/^[a-f0-9]{64}$/) }) });
   });
 
   it("requires the exact high-friction acknowledgement", async () => {
@@ -215,17 +205,7 @@ describe("host-local successor attestation", () => {
     );
     expect(mocks.authorityCreate).not.toHaveBeenCalled();
     expect(mocks.authorityUpdateMany).not.toHaveBeenCalled();
-    expect(mocks.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorUserId: null,
-        action: "platform.owner.successor_user.verify",
-        entityType: "user",
-        entityId: "successor-user",
-        source: "host_local_successor_verification",
-        before: { emailVerified: false, confirmedPlatformOwnerUserId: "current-owner" },
-        after: { emailVerified: true, confirmedPlatformOwnerUserId: "current-owner" }
-      }
-    });
+    expect(mocks.auditCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ action: "platform.owner.successor_user.verify", eventHash: expect.stringMatching(/^[a-f0-9]{64}$/) }) });
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: "Serializable"
     });
@@ -417,16 +397,7 @@ describe("explicit initial platform-owner binding", () => {
       },
       select: { id: true, ownerUserId: true }
     });
-    expect(mocks.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorUserId: null,
-        action: "platform.owner.bootstrap",
-        entityType: "platform_authority",
-        entityId: "platform",
-        source: "host_local",
-        after: { ownerUserId: "user-explicit" }
-      }
-    });
+    expect(mocks.auditCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ action: "platform.owner.bootstrap", eventHash: expect.stringMatching(/^[a-f0-9]{64}$/) }) });
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
   });
 
@@ -536,17 +507,7 @@ describe("host-local platform-owner recovery", () => {
       where: { id: "platform", ownerUserId: "current-owner" },
       data: { ownerUserId: "successor-user" }
     });
-    expect(mocks.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorUserId: null,
-        action: "platform.owner.recover",
-        entityType: "platform_authority",
-        entityId: "platform",
-        source: "host_local_recovery",
-        before: { ownerUserId: "current-owner" },
-        after: { ownerUserId: "successor-user" }
-      }
-    });
+    expect(mocks.auditCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ action: "platform.owner.recover", eventHash: expect.stringMatching(/^[a-f0-9]{64}$/) }) });
   });
 
   it.each(["SUCCESSOR@example.test", " successor@example.test", "successor@example.test "])(

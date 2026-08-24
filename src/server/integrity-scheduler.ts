@@ -1,6 +1,6 @@
 import { integrityConfig } from "@/lib/env";
 import { prisma } from "@/lib/db/prisma";
-import { runScheduledIntegritySuite } from "@/server/services/integrity";
+import { runScheduledIntegrityCheckpointSuite } from "@/server/services/integrity";
 
 type SchedulerState = {
   started: boolean;
@@ -28,10 +28,10 @@ export async function startIntegrityScheduler() {
     if (state.running) return;
     state.running = true;
     try {
-      const result = await runScheduledIntegritySuite(prisma);
+      const result = await runScheduledIntegrityCheckpointSuite(prisma);
       if (!result.executed) return;
       const { report } = result;
-      console.info("integrity_scheduler_result", report.status, report.version, report.findings.length, report.evidenceFingerprint);
+      console.info("integrity_scheduler_result", report.status, report.version, report.findings.length, report.evidenceFingerprint, result.checkpoints?.household.refreshed ?? 0, result.checkpoints?.household.rejected ?? 0, result.checkpoints?.platform.eventCount ?? 0);
     } catch {
       console.error("integrity_scheduler_result", "incomplete");
     } finally {

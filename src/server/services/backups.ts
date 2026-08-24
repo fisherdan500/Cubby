@@ -9,6 +9,7 @@ import { activityRestoreSchema } from "@/lib/validation/activity";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { activityInclude, restoreHistoricalActivityForContext } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
+import { readHouseholdAuditIntegrity } from "@/server/services/audit-checkpoints";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import { backupSummary, createV2Backup, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
 import {
@@ -151,21 +152,28 @@ export async function exportBackupJson() {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const snapshot = await prisma.$transaction(
-    (tx: Prisma.TransactionClient) => buildHouseholdV2Snapshot(tx, ctx.householdId),
+    async (tx: Prisma.TransactionClient) => {
+      const snapshot = await buildHouseholdV2Snapshot(tx, ctx.householdId);
+      await tx.backupRecord.create({
+        data: {
+          householdId: ctx.householdId,
+          actorUserId: ctx.userId,
+          kind: "export",
+          status: "complete",
+          itemCount: summarizeBackupItemCount(snapshot),
+          checksum: snapshot.checksum
+        }
+      });
+      await writeAudit(ctx, {
+        action: "backup.export",
+        entityType: "backup",
+        entityId: snapshot.checksum
+      }, tx);
+      return snapshot;
+    },
     { isolationLevel: "RepeatableRead" }
   );
-  const json = JSON.stringify(snapshot, null, 2);
-  await prisma.backupRecord.create({
-    data: {
-      householdId: ctx.householdId,
-      actorUserId: ctx.userId,
-      kind: "export",
-      status: "complete",
-      itemCount: summarizeBackupItemCount(snapshot),
-      checksum: snapshot.checksum
-    }
-  });
-  return json;
+  return JSON.stringify(snapshot, null, 2);
 }
 
 export async function exportHouseholdBackupJson(householdId: string, exportedAt = new Date().toISOString()) {
@@ -345,6 +353,8 @@ export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfi
         if (confirmation.confirmation !== undefined && confirmation.confirmation !== targetHousehold.name) {
           throw new Error("backup_confirmation_mismatch");
         }
+        const auditIntegrity = await readHouseholdAuditIntegrity(lockedCtx.householdId, tx);
+        if (auditIntegrity.status !== "valid") throw new Error("backup_audit_integrity_unavailable");
         await assertFreshTarget(tx, lockedCtx);
         return parsed.version === 2
           ? restoreV2InTransaction(parsed, lockedCtx, tx)
@@ -599,7 +609,7 @@ async function writeRestoreCompletion(
   checksum: string | undefined,
   counts: Record<string, number>
 ) {
-  await writeAudit(ctx, { action: "backup.restore", entityType: "backup", entityId: checksum ?? "legacy-v1", after: counts }, tx);
+  await writeAudit(ctx, { action: "backup.restore", entityType: "backup", entityId: checksum ?? "legacy-v1" }, tx);
   await tx.backupRecord.create({ data: { householdId: ctx.householdId, actorUserId: ctx.userId, kind: "restore", status: "complete", itemCount, checksum } });
 }
 

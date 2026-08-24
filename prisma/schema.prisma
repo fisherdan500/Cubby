@@ -269,16 +269,24 @@ model PlatformRegistrationOperation {
 model PlatformAuditEvent {
   id                    String                         @id @default(cuid())
   actorUserId           String?
+  actorUserSnapshot     String?
   action                String
   entityType            String
   entityId              String
   source                String
+  schemaVersion         Int                            @default(1)
+  correlationId         String?
+  chainOrder            Int
+  previousHash          String?
+  eventHash             String?
   before                Json?
   after                 Json?
   createdAt             DateTime                       @default(now())
   registrationOperation PlatformRegistrationOperation?
 
   @@index([actorUserId])
+  @@index([eventHash])
+  @@unique([chainOrder])
   @@index([createdAt])
 }
 
@@ -439,6 +447,7 @@ model Baby {
   notificationPreferenceSelections NotificationPreferenceBaby[]
   calendarLinks CalendarEventBaby[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  auditEvents               AuditEvent[]
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
 
@@ -1267,20 +1276,50 @@ model Reminder {
 model AuditEvent {
   id            String           @id @default(cuid())
   householdId   String
+  babyId        String?
   actorUserId   String?
   actorMemberId String?
+  actorUserSnapshot String?
+  actorMemberSnapshot String?
   action        String
   entityType    String
   entityId      String
+  schemaVersion Int              @default(1)
+  correlationId String?
+  chainOrder    Int
+  previousHash  String?
+  eventHash     String?
   before        Json?
   after         Json?
   createdAt     DateTime         @default(now())
   household     Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby          Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Restrict)
   actorUser     User?            @relation(fields: [actorUserId], references: [id])
   actorMember   HouseholdMember? @relation(fields: [actorMemberId], references: [id])
 
   @@index([householdId])
   @@index([actorUserId])
+  @@index([eventHash])
+  @@unique([householdId, chainOrder])
   @@index([entityType, entityId])
+  @@index([householdId, babyId, createdAt])
   @@index([createdAt])
+}
+
+model AuditIntegrityCheckpoint {
+  scope      String   @id
+  headHash   String
+  eventCount Int
+  verifiedAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([verifiedAt])
+}
+
+model HouseholdDeletionRegistry {
+  householdReferenceDigest String   @id
+  auditEventCount          Int
+  purgedAt                 DateTime @default(now())
+
+  @@index([purgedAt])
 }

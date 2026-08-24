@@ -7,6 +7,7 @@ export const BACKUP_EXCLUSIONS = [
   "Invitations and registration policy",
   "API keys, webhooks, and push/notification state",
   "Audit, import, backup history, warning dismissals, and vaccine attachments",
+  "Audit integrity checkpoints and household deletion registry receipts",
   "Browser operation bindings, receipts, tombstones, and integrity state"
 ] as const;
 

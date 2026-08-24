@@ -140,7 +140,7 @@ describe("backup recovery rehearsal safety", () => {
     expect(integration).toContain("wait_event_type = 'Lock'");
     expect(integration).toContain('waitForLockWaiters("pg_advisory_xact_lock", 2)');
     expect(integration).toContain("oldOwnerPolicyAttempt");
-    expect(integration).toContain('waitForLockWaiters("PlatformAuthority", 1)');
+    expect(integration).toContain('waitForLockWaiters("pg_advisory_xact_lock", 1)');
     expect(integration).not.toContain("setTimeout(resolve, 100)");
     expect(integration).not.toContain('createOwnerHousehold("target", "Fresh Target")');
     expect(integration).not.toContain("const discoveredStatus = await getAutomatedBackupStatus()");

@@ -121,6 +121,20 @@ type HistoricalActivityFields = {
   timezone: string;
 };
 
+function auditActivityPayload(activity: {
+  type: string;
+  timerState: string;
+  source?: string | null;
+  deletedAt?: Date | null;
+}) {
+  return {
+    type: activity.type,
+    timerState: activity.timerState,
+    ...(activity.source ? { source: activity.source } : {}),
+    deletedAt: activity.deletedAt?.toISOString() ?? null
+  };
+}
+
 function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft {
   const occurredAt = toDate(input.occurredAt) ?? new Date();
   const startedAt = toDate(input.startedAt, occurredAt);
@@ -539,7 +553,7 @@ async function createActivityInTransaction(
   });
 
   if (writeActivityAudit) {
-    await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, after: activity }, tx);
+    await writeAudit(ctx, { action: "activity.create", entityType: "activity", entityId: activity.id, babyId: activity.babyId, after: auditActivityPayload(activity) }, tx);
   }
   if (queueSideEffects) {
     await queueActivitySideEffects(
@@ -582,8 +596,21 @@ export async function listActivities(params?: {
   page?: ActivityListPage;
 }) {
   const ctx = await getEffectiveHouseholdContext();
+  return listActivitiesForContext(ctx, prisma, params);
+}
+
+export async function listActivitiesForContext(
+  ctx: HouseholdContext,
+  database: Pick<Prisma.TransactionClient, "activityLog">,
+  params?: {
+    babyId?: string;
+    type?: string;
+    search?: string;
+    page?: ActivityListPage;
+  }
+) {
   requirePermission(ctx, "activity.read");
-  return prisma.activityLog.findMany({
+  return database.activityLog.findMany({
     where: {
       householdId: ctx.householdId,
       deletedAt: null,
@@ -820,7 +847,7 @@ export async function updateActivity(id: string, raw: unknown) {
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await tx.mutationReceipt.create({ data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "activity.update", targetActivityId: id, clientMutationId: input.clientMutationId, intentFingerprint: activityUpdateFingerprint(id, input), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) } });
-      await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: updated.id, before, after: updated }, tx);
+      await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: updated.id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);
       await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.activity_updated, tx);
       return updated;
     });
@@ -937,7 +964,7 @@ export async function deleteActivity(id: string, raw?: unknown) {
       });
       await writeAudit(
         lockedCtx,
-        { action: "activity.delete", entityType: "activity", entityId: id, before, after: deleted },
+        { action: "activity.delete", entityType: "activity", entityId: id, babyId: deleted.babyId, before: auditActivityPayload(before), after: auditActivityPayload(deleted) },
         tx
       );
       await queueActivitySideEffects(lockedCtx, deleted, WebhookEvent.activity_deleted, tx);
@@ -1021,7 +1048,7 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
         outcomeSnapshot: outcomeSnapshot(updated)
       }
     });
-    await writeAudit(lockedCtx, { action: "activity.timer.stop", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
+    await writeAudit(lockedCtx, { action: "activity.timer.stop", entityType: "activity", entityId: activity.id, babyId: activity.babyId, before: auditActivityPayload(activity), after: auditActivityPayload(updated) }, tx);
     await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.timer_stopped, tx);
     return updated;
     });
@@ -1065,7 +1092,7 @@ export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRac
           outcomeSnapshot: outcomeSnapshot(updated)
         }
       });
-      await writeAudit(lockedCtx, { action: "activity.timer.pause", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
+      await writeAudit(lockedCtx, { action: "activity.timer.pause", entityType: "activity", entityId: activity.id, babyId: activity.babyId, before: auditActivityPayload(activity), after: auditActivityPayload(updated) }, tx);
       return updated;
     });
   } catch (error) {
@@ -1099,7 +1126,7 @@ export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRa
       await tx.mutationReceipt.create({
         data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "timer.resume", targetActivityId: activity.id, clientMutationId: mutation.clientMutationId, intentFingerprint: timerMutationFingerprint("timer.resume", activity.id), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) }
       });
-      await writeAudit(lockedCtx, { action: "activity.timer.resume", entityType: "activity", entityId: activity.id, before: activity, after: updated }, tx);
+      await writeAudit(lockedCtx, { action: "activity.timer.resume", entityType: "activity", entityId: activity.id, babyId: activity.babyId, before: auditActivityPayload(activity), after: auditActivityPayload(updated) }, tx);
       return updated;
     });
   } catch (error) {
@@ -1264,7 +1291,7 @@ export async function undoLastActivity(raw?: unknown) {
       });
       await writeAudit(
         lockedCtx,
-        { action: "activity.undo", entityType: "activity", entityId: before.id, before, after },
+        { action: "activity.undo", entityType: "activity", entityId: before.id, babyId: before.babyId, before: auditActivityPayload(before), after: auditActivityPayload(after) },
         tx
       );
       return { id: before.id };
@@ -1476,7 +1503,7 @@ export async function submitActivityUpdateBrowserOperation(raw: unknown): Promis
       if (claimed.count !== 1) throw new Error("stale_revision");
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
-      await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: id, before, after: updated }, tx);
+      await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);
       await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.activity_updated, tx);
       return { kind: "activity", code: "ok", activityId: id, action: "update" as const };
     }
@@ -1496,7 +1523,7 @@ export async function submitActivityDeleteBrowserOperation(raw: unknown): Promis
       const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId } });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const deleted = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
-      await writeAudit(lockedCtx, { action: "activity.delete", entityType: "activity", entityId: id, before, after: deleted }, tx);
+      await writeAudit(lockedCtx, { action: "activity.delete", entityType: "activity", entityId: id, babyId: deleted.babyId, before: auditActivityPayload(before), after: auditActivityPayload(deleted) }, tx);
       await queueActivitySideEffects(lockedCtx, deleted, WebhookEvent.activity_deleted, tx);
       return { kind: "activity", code: "ok", activityId: id, action: "delete" as const };
     }
@@ -1524,7 +1551,7 @@ export async function submitActivityTimerBrowserOperation(operation: "pause" | "
       const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt, ...(operation === "pause" ? { timerState: TimerState.running } : operation === "resume" ? { timerState: TimerState.paused } : { timerState: { in: [TimerState.running, TimerState.paused] } }) }, data });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
-      await writeAudit(lockedCtx, { action: `activity.timer.${operation}`, entityType: "activity", entityId: id, before, after: updated }, tx);
+      await writeAudit(lockedCtx, { action: `activity.timer.${operation}`, entityType: "activity", entityId: id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);
       if (operation === "stop") await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.timer_stopped, tx);
       return { kind: "activity", code: "ok", activityId: id, action: `timer.${operation}` as "timer.pause" | "timer.resume" | "timer.stop" };
     }
@@ -1557,7 +1584,7 @@ export async function submitActivityUndoLastBrowserOperation(raw: unknown): Prom
       const claimed = await tx.activityLog.updateMany({ where: { id: before.id, householdId: lockedCtx.householdId, deletedAt: before.deletedAt, updatedAt: before.updatedAt }, data: undoCreate ? { deletedAt: new Date(), deletedByMemberId: lockedCtx.memberId } : { deletedAt: null, deletedByMemberId: null } });
       if (claimed.count !== 1) throw new Error("stale_revision");
       const after = await tx.activityLog.findUniqueOrThrow({ where: { id: before.id }, include: activityInclude });
-      await writeAudit(lockedCtx, { action: "activity.undo", entityType: "activity", entityId: before.id, before, after }, tx);
+      await writeAudit(lockedCtx, { action: "activity.undo", entityType: "activity", entityId: before.id, babyId: before.babyId, before: auditActivityPayload(before), after: auditActivityPayload(after) }, tx);
       return { kind: "activity", code: "ok", activityId: before.id, action: "undo" as const };
     }
   });

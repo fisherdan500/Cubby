@@ -1,6 +1,7 @@
 import { HouseholdRole, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { writeAudit, writePlatformAudit } from "@/server/services/audit";
 import { automatedBackupConfig } from "@/lib/env";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 import { isLocalBackupFilename, readLocalBackup } from "@/server/services/local-backup-storage";
@@ -238,27 +239,17 @@ export async function provisionBackupRecoveryTarget(raw: unknown) {
           targetHouseholdId: target.id,
           targetOwnerUserId: targetOwner.id
         };
-        await tx.platformAuditEvent.create({
-          data: {
-            actorUserId: null,
-            action: "platform.backup_recovery.target.provision",
-            entityType: "household",
-            entityId: target.id,
-            source: "host_local_backup_recovery",
-            after: auditAfter
-          }
-        });
-        await tx.auditEvent.create({
-          data: {
-            householdId: target.id,
-            actorUserId: null,
-            actorMemberId: null,
-            action: "backup.recovery.target.provision",
-            entityType: "household",
-            entityId: target.id,
-            after: auditAfter
-          }
-        });
+        await writePlatformAudit({
+          action: "platform.backup_recovery.target.provision",
+          entityType: "household",
+          entityId: target.id,
+          source: "host_local_backup_recovery"
+        }, tx);
+        await writeAudit(
+          { householdId: target.id, userId: null, memberId: null },
+          { action: "backup.recovery.target.provision", entityType: "household", entityId: target.id },
+          tx
+        );
         return {
           targetHouseholdId: target.id,
           targetOwnerUserId: targetOwner.id
@@ -346,27 +337,17 @@ export async function authorizeBackupRecovery(raw: unknown) {
           checksum: candidate.checksum,
           sourceHouseholdName: candidate.householdName
         };
-        await tx.platformAuditEvent.create({
-          data: {
-            actorUserId: null,
-            action: "platform.backup_recovery.authorize",
-            entityType: "backup_record",
-            entityId: record.id,
-            source: "host_local_backup_recovery",
-            after: auditAfter
-          }
-        });
-        await tx.auditEvent.create({
-          data: {
-            householdId: input.targetHouseholdId,
-            actorUserId: null,
-            actorMemberId: null,
-            action: "backup.recovery.authorize",
-            entityType: "backup_record",
-            entityId: record.id,
-            after: auditAfter
-          }
-        });
+        await writePlatformAudit({
+          action: "platform.backup_recovery.authorize",
+          entityType: "backup_record",
+          entityId: record.id,
+          source: "host_local_backup_recovery"
+        }, tx);
+        await writeAudit(
+          { householdId: input.targetHouseholdId, userId: null, memberId: null },
+          { action: "backup.recovery.authorize", entityType: "backup_record", entityId: record.id },
+          tx
+        );
 
         return {
           backupRecordId: record.id,

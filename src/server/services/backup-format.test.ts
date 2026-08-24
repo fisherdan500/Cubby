@@ -74,6 +74,9 @@ describe("backup v2 format", () => {
       household: { name: "Home", password: "secret" }
     } as unknown as V2BackupPayload;
     expect(() => createV2Backup(withUnknownSecurityField, exportedAt)).toThrow();
+    expect(() => createV2Backup({ ...payload, auditEvents: [] } as unknown as V2BackupPayload, exportedAt)).toThrow();
+    expect(() => createV2Backup({ ...payload, householdDeletionRegistry: [] } as unknown as V2BackupPayload, exportedAt)).toThrow();
+    expect(() => createV2Backup({ ...payload, auditIntegrityCheckpoints: [] } as unknown as V2BackupPayload, exportedAt)).toThrow();
   });
 
   it("parses legacy v1 as an explicitly partial backup without a checksum claim", () => {

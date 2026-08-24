@@ -360,8 +360,8 @@ describe("household member access management", () => {
       expect.objectContaining({
         action: "member.suspend",
         entityId: member.id,
-        before: expect.objectContaining({ disabledAt: null, role: "admin", userId: member.userId }),
-        after: expect.objectContaining({ disabledAt })
+        before: { disabledAt: null, role: "admin" },
+        after: { disabledAt, role: "admin" }
       }),
       expect.objectContaining({ auditEvent: expect.anything() })
     );

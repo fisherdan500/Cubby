@@ -190,6 +190,23 @@
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const search = new URL(request.url).searchParams;\n    const babyId = search.get(\"babyId\");\n    if (babyId) return ok(await listBabySafetyHistory(babyId));\n    if (search.get(\"format\") === \"csv\") {\n      return new Response(await exportHouseholdAuditCsv(), {\n        headers: {\n          \"content-type\": \"text/csv; charset=utf-8\",\n          \"content-disposition\": 'attachment; filename=\"cubby-audit.csv\"'\n        }\n      });\n    }\n    const rawLimit = search.get(\"limit\");\n    const limit = rawLimit === null ? undefined : Number(rawLimit);\n    return ok(await listHouseholdAuditEvents({ limit, cursor: search.get(\"cursor\") ?? undefined }));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "6a19a6713c90c0c1092316d186321e75871d859fe1f5adea8046aa47340c8ab2",
+      "anchorEnd": 969,
+      "anchorFile": "src/app/api/audit/route.ts",
+      "anchorStart": 214,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/audit/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/audit/route.ts:route_method:GET:src/app/api/audit/route.ts#GET",
+      "ownerId": "api_route:src/app/api/audit/route.ts",
+      "ownerModule": "src/app/api/audit/route.ts",
+      "sidecarPath": "src/app/api/audit/route.operation.ts"
+    },
+    {
       "anchorBytes": "GET = handlers.GET",
       "anchorDigest": "5217e468736d72a32ef369e3602f205c1e4f99099baf50e779e01385ac8d2fcd",
       "anchorEnd": 455,
@@ -4765,9 +4782,9 @@
     {
       "anchorBytes": "setInterval(() => {\n    void tick();\n  }, integrityConfig.intervalHours * 60 * 60 * 1000)",
       "anchorDigest": "2257db7e57fb2cab48745afdc801353e9319dd051a3d54685ee007baeb35a63e",
-      "anchorEnd": 1366,
+      "anchorEnd": 1523,
       "anchorFile": "src/server/integrity-scheduler.ts",
-      "anchorStart": 1277,
+      "anchorStart": 1434,
       "binding": {
         "kind": "worker_schedule",
         "symbol": "tick",
@@ -4780,11 +4797,11 @@
       "sidecarPath": "src/server/integrity-scheduler.operation.ts"
     },
     {
-      "anchorBytes": "export async function startIntegrityScheduler() {\n  const state = getState();\n  if (state.started || !integrityConfig.enabled) return state;\n  state.started = true;\n\n  const tick = async () => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runScheduledIntegritySuite(prisma);\n      if (!result.executed) return;\n      const { report } = result;\n      console.info(\"integrity_scheduler_result\", report.status, report.version, report.findings.length, report.evidenceFingerprint);\n    } catch {\n      console.error(\"integrity_scheduler_result\", \"incomplete\");\n    } finally {\n      state.running = false;\n    }\n  };\n\n  await tick();\n  state.timer = setInterval(() => {\n    void tick();\n  }, integrityConfig.intervalHours * 60 * 60 * 1000);\n  state.timer.unref?.();\n  return state;\n}",
-      "anchorDigest": "804a7f99000c65e4d40e31701c574a2b675e8b7afdd7ef94755753b0fdea6af5",
-      "anchorEnd": 1410,
+      "anchorBytes": "export async function startIntegrityScheduler() {\n  const state = getState();\n  if (state.started || !integrityConfig.enabled) return state;\n  state.started = true;\n\n  const tick = async () => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runScheduledIntegrityCheckpointSuite(prisma);\n      if (!result.executed) return;\n      const { report } = result;\n      console.info(\"integrity_scheduler_result\", report.status, report.version, report.findings.length, report.evidenceFingerprint, result.checkpoints?.household.refreshed ?? 0, result.checkpoints?.household.rejected ?? 0, result.checkpoints?.platform.eventCount ?? 0);\n    } catch {\n      console.error(\"integrity_scheduler_result\", \"incomplete\");\n    } finally {\n      state.running = false;\n    }\n  };\n\n  await tick();\n  state.timer = setInterval(() => {\n    void tick();\n  }, integrityConfig.intervalHours * 60 * 60 * 1000);\n  state.timer.unref?.();\n  return state;\n}",
+      "anchorDigest": "8e4ec895a778402a6561779c49e0b51dcc91edc8b9686a9b05a455c9ae07e76e",
+      "anchorEnd": 1567,
       "anchorFile": "src/server/integrity-scheduler.ts",
-      "anchorStart": 582,
+      "anchorStart": 592,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startIntegrityScheduler",
@@ -4797,18 +4814,18 @@
       "sidecarPath": "src/server/integrity-scheduler.operation.ts"
     },
     {
-      "anchorBytes": "runScheduledIntegritySuite(prisma)",
-      "anchorDigest": "a4f0dcbac9673e918d513f09fdc0abb6679107703b59c127e823cbdd4d1fff56",
-      "anchorEnd": 905,
+      "anchorBytes": "runScheduledIntegrityCheckpointSuite(prisma)",
+      "anchorDigest": "39ce468f3290bb6cac438ae8a2331b5b17d748bd81e6a301f0d2d684cb9488ec",
+      "anchorEnd": 925,
       "anchorFile": "src/server/integrity-scheduler.ts",
-      "anchorStart": 871,
+      "anchorStart": 881,
       "binding": {
         "kind": "worker_tick",
         "symbol": "tick",
-        "target": "src/server/services/integrity.ts#runScheduledIntegritySuite"
+        "target": "src/server/services/integrity.ts#runScheduledIntegrityCheckpointSuite"
       },
       "coverage": "structural_only",
-      "id": "worker:src/server/integrity-scheduler.ts:worker_tick:tick:src/server/services/integrity.ts#runScheduledIntegritySuite",
+      "id": "worker:src/server/integrity-scheduler.ts:worker_tick:tick:src/server/services/integrity.ts#runScheduledIntegrityCheckpointSuite",
       "ownerId": "worker:src/server/integrity-scheduler.ts",
       "ownerModule": "src/server/integrity-scheduler.ts",
       "sidecarPath": "src/server/integrity-scheduler.operation.ts"
@@ -4871,10 +4888,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "76ac72b27bc236604c3abf4c3ce20ce4f6c437a1a364eb0aab0095b5b55a1908",
+  "semanticArtifactDigest": "6bf5ba50c031ff3b52d7bf2a217de3c85d8357d947f675d7010c8f510bb54782",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "aa45122b6945a6f414a422925b5757ed4afa36d9f7c21f0276c0db81aa5d6a3d",
+  "semanticCoverageDigest": "e90a436ae46db4e8c0e7e630deb01505b9d6814036c48a8e17145ad9397b8fb8",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "8be805ac227d49fd5b87bf3c46bb5ecd23647aa3116967b8b31e5025147ece84"
+  "semanticFingerprint": "6aaa11416387323d913ea124ad19d05a088466a3130a8646478bda425db2151a"
 }

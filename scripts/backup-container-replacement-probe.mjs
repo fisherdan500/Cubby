@@ -11,6 +11,7 @@ const handoff = JSON.parse(await readFile(handoffFile, "utf8"));
 if (
   typeof handoff.email !== "string" ||
   typeof handoff.householdName !== "string" ||
+  typeof handoff.memberId !== "string" ||
   typeof handoff.babyId !== "string" ||
   typeof handoff.startedAt !== "string" ||
   typeof handoff.filename !== "string" ||
@@ -38,32 +39,39 @@ if (!signIn.ok) {
 const setCookie = signIn.headers.get("set-cookie") ?? "";
 const sessionCookie = setCookie.match(/(?:^|,\s*)((?:__Secure-)?better-auth\.session_token=[^;,]+)/)?.[1];
 if (!sessionCookie) throw new Error("rehearsal_app_session_cookie_missing");
+const authenticatedCookie = `${sessionCookie}; cubby_household_member=${encodeURIComponent(handoff.memberId)}`;
 
 const authenticatedPage = await fetch(`${baseUrl}/app?babyId=${encodeURIComponent(handoff.babyId)}`, {
-  headers: { cookie: sessionCookie }
+  headers: { cookie: authenticatedCookie }
 });
 const authenticatedHtml = await authenticatedPage.text();
 const expectedStarted = new Intl.DateTimeFormat("en", {
   month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Etc/UTC"
 }).format(new Date(handoff.startedAt));
-if (!authenticatedPage.ok || !authenticatedHtml.includes("Active timers") ||
-  !authenticatedHtml.includes("Paused") || !authenticatedHtml.includes(expectedStarted)) {
-  throw new Error("rehearsal_app_timer_incoherent");
+const timerProbe = {
+  pageOk: authenticatedPage.ok,
+  activeTimers: authenticatedHtml.includes("Active timers"),
+  paused: authenticatedHtml.includes("Paused"),
+  expectedStarted: authenticatedHtml.includes(expectedStarted),
+  databaseTimerStates: Array.isArray(handoff.timerProbeState) ? handoff.timerProbeState : null
+};
+if (!timerProbe.pageOk || !timerProbe.activeTimers || !timerProbe.paused || !timerProbe.expectedStarted) {
+  throw new Error(`rehearsal_app_timer_incoherent:${JSON.stringify(timerProbe)}`);
 }
 
-const householdPage = await fetch(`${baseUrl}/app/settings/members`, { headers: { cookie: sessionCookie } });
+const householdPage = await fetch(`${baseUrl}/app/settings/members`, { headers: { cookie: authenticatedCookie } });
 if (!householdPage.ok || !(await householdPage.text()).includes(handoff.householdName)) {
   throw new Error("rehearsal_app_household_marker_missing");
 }
 
-const backupsPage = await fetch(`${baseUrl}/app/settings/backups`, { headers: { cookie: sessionCookie } });
+const backupsPage = await fetch(`${baseUrl}/app/settings/backups`, { headers: { cookie: authenticatedCookie } });
 const backupsHtml = await backupsPage.text();
 if (!backupsPage.ok || !backupsHtml.includes("Healthy local versions:") || !backupsHtml.includes(handoff.checksum.slice(0, 12))) {
   throw new Error("rehearsal_app_backup_discovery_failed");
 }
 
 const download = await fetch(`${baseUrl}/api/backups/local/${encodeURIComponent(handoff.filename)}`, {
-  headers: { cookie: sessionCookie }
+  headers: { cookie: authenticatedCookie }
 });
 if (!download.ok) {
   throw new Error(`rehearsal_app_backup_download_failed:${download.status}`);
