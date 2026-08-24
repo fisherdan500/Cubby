@@ -20,6 +20,14 @@ export async function lockApiKeyForWrite(tx: Prisma.TransactionClient, ctx: Hous
   return key;
 }
 
+export async function lockApiKeyForContainment(tx: Prisma.TransactionClient, ctx: HouseholdContext, apiKeyId: string) {
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "ApiKey" WHERE "id" = ${apiKeyId} AND "householdId" = ${ctx.householdId} FOR UPDATE`;
+  if (locked.length !== 1) throw new Error("not_found");
+  const key = await tx.apiKey.findFirst({ where: { id: apiKeyId, householdId: ctx.householdId } });
+  if (!key) throw new Error("not_found");
+  return key;
+}
+
 export async function lockWebhookForWrite(tx: Prisma.TransactionClient, ctx: HouseholdContext, webhookId: string) {
   const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "WebhookEndpoint" WHERE "id" = ${webhookId} AND "householdId" = ${ctx.householdId} AND "deletedAt" IS NULL FOR UPDATE`;
   if (locked.length !== 1) throw new Error("not_found");

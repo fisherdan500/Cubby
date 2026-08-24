@@ -20,7 +20,8 @@ const operationPointerPrefixes = [
   ["cubby:household-accent-operation:", "household"],
   ["cubby:member-administration-operation:", "household"],
   ["cubby:notification-preference-operation:", "household"],
-  ["cubby:unit-preferences-operation:", "household"]
+  ["cubby:unit-preferences-operation:", "household"],
+  ["cubby:api-key-revoke-operation:", "household"]
 ] as const;
 
 type SavedOperation = {

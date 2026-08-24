@@ -76,7 +76,8 @@ const auditTimestampSchema = z.union([z.string().datetime(), z.date()]).transfor
 const memberSelfLeaveAfterSchema = z.object({
   closureReason: z.literal("self_left"),
   deletedAt: auditTimestampSchema,
-  leaveOperationId: z.string().min(1).max(200)
+  leaveOperationId: z.string().min(1).max(200),
+  revokedApiKeyCount: z.number().int().nonnegative()
 }).strict();
 
 const emptyAuditPayloadSchema = z.object({}).strict();
@@ -100,7 +101,8 @@ const memberBeforeSchema = z.object({
 const memberAfterSchema = z.object({
   role: roleSchema.optional(),
   disabledAt: auditTimestampSchema.nullable().optional(),
-  deletedAt: auditTimestampSchema.nullable().optional()
+  deletedAt: auditTimestampSchema.nullable().optional(),
+  revokedApiKeyCount: z.number().int().nonnegative().optional()
 }).strict();
 const babyLifecycleSchema = z.object({ inactiveAt: auditTimestampSchema.nullable().optional() }).strict();
 const appearanceSchema = z.object({ accentTheme: z.string().min(1).max(80).nullable().optional() }).strict();

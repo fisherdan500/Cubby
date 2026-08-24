@@ -225,7 +225,7 @@ export async function leaveHousehold(raw: unknown) {
         leaveOperationId: input.operationId
       }
     });
-    await tx.apiKey.updateMany({
+    const revokedApiKeys = await tx.apiKey.updateMany({
       where: {
         householdId: input.householdId,
         revokedAt: null,
@@ -336,7 +336,8 @@ export async function leaveHousehold(raw: unknown) {
         after: {
           deletedAt: leftAt,
           closureReason: "self_left",
-          leaveOperationId: input.operationId
+          leaveOperationId: input.operationId,
+          revokedApiKeyCount: revokedApiKeys?.count ?? 0
         }
       },
       tx

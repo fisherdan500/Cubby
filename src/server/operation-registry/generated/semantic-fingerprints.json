@@ -183,23 +183,23 @@
       "id": "semantic-service:invite.revoke"
     },
     {
-      "digest": "4aaeb3cf04e98f927d9cd89aeb79ccd6bd86e20b3f0a5a5105e19fba44779f87",
+      "digest": "49d7586f9ef73572970e5dc23655cfdb5dba6aa4ad77851f2d22782ebe415790",
       "id": "semantic-service:invite.revoke_all"
     },
     {
-      "digest": "4be12896bc1b651a42e39d1d62d52fb4c0d7e8e47972196c0fb0fbfedb619804",
+      "digest": "c5b5966c6be8d031ab3c09dd004f6601c7174aff38f06b9b33b9e28d9ed621e1",
       "id": "semantic-service:member.remove"
     },
     {
-      "digest": "f2879d176fdde13a8ffa370170b95ab296b286e3a58843adc50c3e69d164444b",
+      "digest": "17fea4025e2514bfe98def37ba80f1418632817490e2cc9c53e523dcbd517036",
       "id": "semantic-service:member.restore"
     },
     {
-      "digest": "c7fd0d7bc2964b29b99e8d6dfb6dfa150bd090ddea00865bfa18c7ad78ad7007",
+      "digest": "e2e0fcd33dd7919dd63739de799975d2049a4ae2866084d9ab360513949258ac",
       "id": "semantic-service:member.role.update"
     },
     {
-      "digest": "05046bd4fbb36b3d467d1038139c72819c7f418b5ec78dfebc317cc87fa4c472",
+      "digest": "213bddf5f8d10349b38bb7dfd5dedd39cd3209082ed08eb5387a93bfda6c038e",
       "id": "semantic-service:member.suspend"
     },
     {
@@ -227,7 +227,7 @@
       "id": "semantic-service:settings.units.update"
     },
     {
-      "digest": "23b74805e7f029765fe133097d2e43d11410a6986b02453b8960de787542ee57",
+      "digest": "b1fdb40b0b3f6d11d4ae572b271d09b5391e4983fb0c0dbcbb9d94b01404ad2f",
       "id": "semantic:browser_household_mutations"
     },
     {
@@ -241,10 +241,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "6bf5ba50c031ff3b52d7bf2a217de3c85d8357d947f675d7010c8f510bb54782",
+  "semanticArtifactDigest": "756aa186e484da831062ffd9a0d4019fe6f3439fcef74cd9b7ae5974bb74faa2",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "e90a436ae46db4e8c0e7e630deb01505b9d6814036c48a8e17145ad9397b8fb8",
+  "semanticCoverageDigest": "1485c4c4632b58f4537beaeb08f889d71802190bfade1d1f8f5475ffe2e3318c",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "6aaa11416387323d913ea124ad19d05a088466a3130a8646478bda425db2151a"
+  "semanticFingerprint": "312a8c807bc5615a25ac199d0d475eeba90c30f293a9e1207f70e33039b49161"
 }

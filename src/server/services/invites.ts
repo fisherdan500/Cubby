@@ -712,15 +712,15 @@ export async function submitMemberBrowserOperation(action: MemberBrowserAction, 
         const removedAt = new Date();
         await tx.householdMember.update({ where: { id: member.id }, data: { deletedAt: removedAt } });
         await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, removedAt, "endpoint_owner_removed");
-        await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, removedAt);
-        await writeAudit(lockedCtx, { action: "member.remove", entityType: "household_member", entityId: member.id, before: { role: member.role }, after: { deletedAt: removedAt } }, tx);
+        const revokedApiKeyCount = await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, removedAt);
+        await writeAudit(lockedCtx, { action: "member.remove", entityType: "household_member", entityId: member.id, before: { role: member.role }, after: { deletedAt: removedAt, revokedApiKeyCount } }, tx);
       } else if (action === "suspend" && !member.disabledAt) {
         const disabledAt = new Date();
         await tx.householdMember.update({ where: { id: member.id }, data: { disabledAt } });
         await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
-        await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, disabledAt);
+        const revokedApiKeyCount = await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, disabledAt);
         await tx.session.deleteMany({ where: { userId: member.userId } });
-        await writeAudit(lockedCtx, { action: "member.suspend", entityType: "household_member", entityId: member.id, before: { role: member.role, disabledAt: null }, after: { role: member.role, disabledAt } }, tx);
+        await writeAudit(lockedCtx, { action: "member.suspend", entityType: "household_member", entityId: member.id, before: { role: member.role, disabledAt: null }, after: { role: member.role, disabledAt, revokedApiKeyCount } }, tx);
       }
       return action === "role.update" ? { kind: "member", code: memberBrowserCode(action), memberId: member.id, role: input.role as string } : { kind: "member", code: memberBrowserCode(action), memberId: member.id };
     }
@@ -777,7 +777,7 @@ export async function removeMember(memberId: string) {
       include: { user: true }
     });
     await retireDelegatedWebhooks(tx, ctx.householdId, member.id, removedAt, "endpoint_owner_removed");
-    await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, removedAt);
+    const revokedApiKeyCount = await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, removedAt);
     await writeAudit(
       ctx,
       {
@@ -785,7 +785,7 @@ export async function removeMember(memberId: string) {
         entityType: "household_member",
         entityId: member.id,
         before: { role: member.role },
-        after: { deletedAt: removed.deletedAt }
+        after: { deletedAt: removed.deletedAt, revokedApiKeyCount }
       },
       tx
     );
@@ -834,7 +834,7 @@ async function containClosedMemberAuthority(
   userId: string,
   closedAt: Date
 ) {
-  await tx.apiKey.updateMany({
+  const revokedApiKeys = await tx.apiKey.updateMany({
     where: {
       householdId,
       delegatedByMemberId: memberId,
@@ -849,6 +849,7 @@ async function containClosedMemberAuthority(
     data: { deletedAt: closedAt }
   });
   await tx.notificationLog.deleteMany({ where: { householdId, userId } });
+  return revokedApiKeys?.count ?? 0;
 }
 
 export async function suspendMember(memberId: string, disabledAt = new Date()) {
@@ -871,7 +872,7 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
       include: { user: true }
     });
     await retireDelegatedWebhooks(tx, ctx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
-    await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, disabledAt);
+    const revokedApiKeyCount = await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, disabledAt);
     await tx.session.deleteMany({ where: { userId: member.userId } });
     await writeAudit(
       ctx,
@@ -880,7 +881,7 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
         entityType: "household_member",
         entityId: member.id,
         before: { role: member.role, disabledAt: null },
-        after: { role: member.role, disabledAt }
+        after: { role: member.role, disabledAt, revokedApiKeyCount }
       },
       tx
     );

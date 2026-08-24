@@ -325,6 +325,26 @@ describe("browser operation bindings", () => {
     expect(mocks.babyFindFirst).not.toHaveBeenCalled();
   });
 
+  it("reauthorizes a replayed household reservation under the identity lock", async () => {
+    const opening = { settingsState: "absent", updatedAt: null, schemaVersion: 1 };
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "binding-1", householdId: ctx.householdId, operationId, sessionId: ctx.sessionId,
+      actorUserId: ctx.userId, actorMemberId: ctx.memberId, operationKey: BrowserOperationKey.settingsUnitsUpdate,
+      openingFingerprint: browserIntentFingerprint({ version: 2, operationKey: BrowserOperationKey.settingsUnitsUpdate, householdId: ctx.householdId, memberId: ctx.memberId, babyId: null, targetKind: BrowserOperationTargetKind.settings, targetId: null, opening }),
+      persistenceVersion: 2, targetKind: BrowserOperationTargetKind.settings, targetId: null, babyId: null,
+      protocolVersion: BrowserOperationProtocolVersion.browserV2, state: "open", expiresAt: new Date(Date.now() + 60_000), operation: null
+    });
+    const reauthorize = vi.fn().mockRejectedValue(new Error("fresh_authentication_required"));
+
+    await expect(issueHouseholdBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.settingsUnitsUpdate,
+      targetKind: BrowserOperationTargetKind.settings, permission: "household.manage",
+      targetSnapshot: () => opening,
+      reauthorize
+    } as never)).rejects.toThrow("fresh_authentication_required");
+    expect(reauthorize).toHaveBeenCalledOnce();
+  });
+
   it("replays an authorized household reservation tombstone during submit", async () => {
     mocks.reservationTombstoneFindUnique.mockResolvedValue({
       householdId: ctx.householdId,
@@ -454,7 +474,7 @@ describe("browser operation bindings", () => {
 
   it.each(Object.values(BrowserOperationKey).map((operationKey, index) => ({
     operationKey,
-    operationId: `bmo_${"0".repeat(25)}${"abcdefghjkmnpqrstvwxyz"[index]}`
+    operationId: `bmo_${"0".repeat(25)}${"abcdefghjkmnpqrstvwxyz"[index % "abcdefghjkmnpqrstvwxyz".length]}`
   })))("opens every registered ordinary adapter key", async ({ operationKey, operationId: adapterOperationId }) => {
 
     await expect(issueHouseholdBrowserOperation({

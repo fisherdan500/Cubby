@@ -90,6 +90,10 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     revision: z.number().int().positive(),
     status: z.literal("active"),
     externalDeliveryEnabled: z.boolean()
+  }).strict(),
+  [BrowserOperationKey.apiKeyRevoke]: z.object({
+    kind: z.literal("api_key"),
+    code: z.enum(["revoked", "already_revoked"])
   }).strict()
 };
 
@@ -332,6 +336,7 @@ export async function issueHouseholdBrowserOperation(input: {
   targetId?: string;
   permission: Parameters<typeof requirePermission>[1];
   preActorLock?: (tx: Prisma.TransactionClient) => Promise<void>;
+  reauthorize?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<void>;
   targetSnapshot: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<Record<string, unknown>> | Record<string, unknown>;
 }): Promise<BrowserOperationResult> {
   const operationId = input.operationId === undefined ? createServerBrowserOperationId() : assertBrowserOperationId(input.operationId);
@@ -346,6 +351,7 @@ export async function issueHouseholdBrowserOperation(input: {
     await input.preActorLock?.(transaction);
     const ctx = await lockCurrentActor(db, input.ctx);
     requirePermission(ctx, input.permission);
+    await input.reauthorize?.(transaction, ctx);
     const existing = await db.browserOperationBinding.findFirst({
       where: { householdId: ctx.householdId, operationId },
       include: { operation: true }
@@ -654,6 +660,7 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
   targetId?: string;
   permission: Parameters<typeof requirePermission>[1];
   preActorLock?: (tx: Prisma.TransactionClient) => Promise<void>;
+  reauthorize?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<void>;
   validate?: (
     tx: Prisma.TransactionClient,
     ctx: BrowserOperationContext,
@@ -689,6 +696,7 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
 
     const lockedCtx = await lockCurrentActor(db, input.ctx);
     requirePermission(lockedCtx, input.permission);
+    await input.reauthorize?.(transaction, lockedCtx);
     if (!householdBindingMatches(binding, lockedCtx, input)) throw new Error("forbidden");
     await lockHouseholdForOperation(db, lockedCtx);
 

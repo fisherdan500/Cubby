@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { ApiKeyForm, DeleteWebhookButton, RevokeApiKeyButton, WebhookForm } from "@/components/settings/integration-forms";
+import { DeleteWebhookButton, RevokeApiKeyButton, WebhookForm } from "@/components/settings/integration-forms";
 import { Card } from "@/components/ui/card";
 import { requireSettingsPage } from "@/server/auth/page-access";
 import { listApiKeys, listWebhooks } from "@/server/services/integrations";
@@ -14,7 +14,7 @@ export default async function IntegrationsSettingsPage() {
         <section className="min-w-0 space-y-4">
           <Card>
             <h2 className="mb-3 text-lg font-black">API keys</h2>
-            <ApiKeyForm />
+            <p className="text-sm text-muted-foreground">New API-key issuance is unavailable until the versioned credential rotation workflow is ready.</p>
           </Card>
           <Card className="space-y-3">
             {apiKeys.length ? null : <p className="text-sm text-muted-foreground">No API keys yet.</p>}

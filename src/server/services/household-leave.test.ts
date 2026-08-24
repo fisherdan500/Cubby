@@ -353,6 +353,14 @@ describe("self-service household leave", () => {
     });
   });
 
+  it("records only the aggregate count of lifecycle-contained API keys", async () => {
+    mocks.apiKeyUpdateMany.mockResolvedValue({ count: 2 });
+    await leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId });
+    expect(mocks.auditCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ after: expect.objectContaining({ revokedApiKeyCount: 2 }) })
+    });
+  });
+
   it("locks and retires leaving-episode and legacy webhooks before failing their queued deliveries", async () => {
     mocks.endpointLock.mockResolvedValue([{ id: "endpoint-owned" }, { id: "endpoint-legacy" }]);
 

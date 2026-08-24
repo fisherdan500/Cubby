@@ -1,11 +1,13 @@
 import { createHash, randomBytes } from "crypto";
-import { WebhookEvent } from "@prisma/client";
+import { BrowserOperationKey, BrowserOperationTargetKind, WebhookEvent } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
-import { requireUser } from "@/server/auth/session";
+import { requireFreshSession, requireUser } from "@/server/auth/session";
+import { SESSION_FRESH_AGE_SECONDS } from "@/lib/auth/auth";
 import { writeAudit } from "@/server/services/audit";
-import { lockActorForWrite, lockApiKeyForWrite, lockBabyForWrite, lockWebhookForWrite } from "@/server/services/mutation-locks";
+import { executeHouseholdBrowserOperation, getBrowserOperationContextForHousehold, issueHouseholdBrowserOperation } from "@/server/services/browser-operations";
+import { lockActorForWrite, lockApiKeyForContainment, lockApiKeyForWrite, lockBabyForWrite, lockWebhookForWrite } from "@/server/services/mutation-locks";
 
 const apiKeySchema = z.object({
   name: z.string().trim().min(1),
@@ -35,70 +37,81 @@ export function hashSecret(value: string) {
 }
 
 export async function listApiKeys() {
-  const ctx = await getEffectiveHouseholdContext();
-  requirePermission(ctx, "integration.manage");
-  return prisma.apiKey.findMany({
-    where: { householdId: ctx.householdId },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      prefix: true,
-      scopes: true,
-      babyId: true,
-      expiresAt: true,
-      revokedAt: true,
-      lastUsedAt: true,
-      createdAt: true
-    }
+  const freshSession = await requireFreshSession();
+  const requestContext = await getEffectiveHouseholdContext();
+  return prisma.$transaction(async (tx) => {
+    const ctx = await lockActorForWrite(tx, requestContext);
+    await reauthorizeApiKeyOwner(tx, ctx, freshSession);
+    return tx.apiKey.findMany({
+      where: { householdId: ctx.householdId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        prefix: true,
+        scopes: true,
+        babyId: true,
+        expiresAt: true,
+        revokedAt: true,
+        lastUsedAt: true,
+        createdAt: true
+      }
+    });
   });
 }
 
 export async function createApiKey(raw: unknown) {
-  const requestContext = await getEffectiveHouseholdContext();
-  requirePermission(requestContext, "integration.manage");
-  const input = apiKeySchema.parse(raw);
-  const secret = `cubby_${randomBytes(24).toString("base64url")}`;
+  void raw;
+  throw new Error("api_key_issuance_unavailable");
+}
 
-  return prisma.$transaction(async (tx) => {
-    const ctx = await lockActorForWrite(tx, requestContext);
-    requirePermission(ctx, "integration.manage");
-    if (input.babyId) {
-      const baby = await lockBabyForWrite(tx, ctx, input.babyId);
-      if (baby.inactiveAt) throw new Error("baby_inactive");
+const apiKeyRevokeBrowserSchema = z.object({ operationId: z.unknown(), apiKeyId: z.string().min(1) }).strict();
+
+async function reauthorizeApiKeyOwner(tx: { $queryRaw: typeof prisma.$queryRaw }, ctx: { userId: string; role: string }, freshSession: Awaited<ReturnType<typeof requireFreshSession>>) {
+  if (ctx.role !== "owner" || freshSession.user.id !== ctx.userId) throw new Error("not_found");
+  const sessions = await tx.$queryRaw<Array<{ userId: string; createdAt: Date; expiresAt: Date }>>`
+    SELECT "userId", "createdAt", "expiresAt" FROM "Session" WHERE "id" = ${freshSession.session.id} FOR UPDATE
+  `;
+  const session = sessions[0];
+  if (!session || session.userId !== freshSession.user.id || session.expiresAt <= new Date()) throw new Error("unauthenticated");
+  if (Date.now() - session.createdAt.getTime() >= SESSION_FRESH_AGE_SECONDS * 1000) throw new Error("fresh_authentication_required");
+}
+
+export async function issueApiKeyRevokeBrowserOperation(raw: unknown) {
+  const input = apiKeyRevokeBrowserSchema.parse(raw);
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (ctx.role !== "owner") throw new Error("forbidden");
+  return issueHouseholdBrowserOperation({
+    ctx, operationId: input.operationId, operationKey: BrowserOperationKey.apiKeyRevoke,
+    targetKind: BrowserOperationTargetKind.apiKey, targetId: input.apiKeyId, permission: "integration.manage",
+    reauthorize: (tx, lockedCtx) => reauthorizeApiKeyOwner(tx, lockedCtx, freshSession),
+    targetSnapshot: async (tx, lockedCtx) => {
+      if (lockedCtx.role !== "owner") throw new Error("forbidden");
+      const key = await lockApiKeyForContainment(tx, lockedCtx, input.apiKeyId);
+      return { version: 1, revokedAt: key.revokedAt?.toISOString() ?? null };
     }
-    const key = await tx.apiKey.create({
-      data: {
-        householdId: ctx.householdId,
-        delegatedByMemberId: ctx.memberId,
-        legacyUnattributed: false,
-        name: input.name,
-        keyHash: hashSecret(secret),
-        prefix: secret.slice(0, 12),
-        scopes: input.scopes,
-        babyId: input.babyId,
-        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined
-      }
-    });
-    await writeAudit(ctx, {
-      action: "api_key.create",
-      entityType: "api_key",
-      entityId: key.id
-    }, tx);
-    return { ...key, secret };
   });
 }
 
-export async function revokeApiKey(id: string) {
-  const requestContext = await getEffectiveHouseholdContext();
-  requirePermission(requestContext, "integration.manage");
-  return prisma.$transaction(async (tx) => {
-    const ctx = await lockActorForWrite(tx, requestContext);
-    requirePermission(ctx, "integration.manage");
-    const key = await lockApiKeyForWrite(tx, ctx, id);
-    const revoked = await tx.apiKey.update({ where: { id }, data: { revokedAt: new Date() } });
-    await writeAudit(ctx, { action: "api_key.revoke", entityType: "api_key", entityId: id }, tx);
-    return revoked;
+export async function submitApiKeyRevokeBrowserOperation(raw: unknown) {
+  const input = apiKeyRevokeBrowserSchema.parse(raw);
+  const freshSession = await requireFreshSession();
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (freshSession.user.id !== ctx.userId || ctx.role !== "owner") throw new Error("forbidden");
+  return executeHouseholdBrowserOperation({
+    ctx, operationId: input.operationId, operationKey: BrowserOperationKey.apiKeyRevoke,
+    targetKind: BrowserOperationTargetKind.apiKey, targetId: input.apiKeyId, permission: "integration.manage", intent: {},
+    reauthorize: (tx, lockedCtx) => reauthorizeApiKeyOwner(tx, lockedCtx, freshSession),
+    execute: async (tx, lockedCtx, binding) => {
+      const opening = binding.targetSnapshot as { version?: unknown };
+      if (opening.version !== 1) throw new Error("stale_revision");
+      const key = await lockApiKeyForContainment(tx, lockedCtx, input.apiKeyId);
+      if (key.revokedAt) return { kind: "api_key", code: "already_revoked" } as const;
+      await tx.apiKey.update({ where: { id: key.id }, data: { revokedAt: new Date() } });
+      await writeAudit(lockedCtx, { action: "api_key.revoke", entityType: "api_key", entityId: key.id, correlationId: String(input.operationId) }, tx);
+      return { kind: "api_key", code: "revoked" } as const;
+    }
   });
 }
 

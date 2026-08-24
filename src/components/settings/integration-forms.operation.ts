@@ -12,11 +12,6 @@ export const operation = {
       target: "src/components/settings/integration-forms.tsx#submit"
     },
     {
-      kind: "form_action",
-      symbol: "submit",
-      target: "src/components/settings/integration-forms.tsx#submit"
-    },
-    {
       kind: "global_fetch",
       symbol: "fetch[1]",
       target: "globalThis.fetch"
@@ -34,6 +29,16 @@ export const operation = {
     {
       kind: "global_fetch",
       symbol: "fetch[4]",
+      target: "globalThis.fetch"
+    },
+    {
+      kind: "global_fetch",
+      symbol: "fetch[5]",
+      target: "globalThis.fetch"
+    },
+    {
+      kind: "global_fetch",
+      symbol: "fetch[6]",
       target: "globalThis.fetch"
     }
   ],
