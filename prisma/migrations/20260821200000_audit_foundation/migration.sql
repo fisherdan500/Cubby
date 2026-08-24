@@ -33,7 +33,7 @@ AS $$
       SELECT string_agg("canonical_audit_json"(child), ',' ORDER BY ordinality)
       FROM jsonb_array_elements(value) WITH ORDINALITY AS entry(child, ordinality)
     ), '') || ']'
-    WHEN 'number' THEN to_json((value #>> '{}')::DOUBLE PRECISION)::TEXT
+    WHEN 'number' THEN trim_scale((value #>> '{}')::NUMERIC)::TEXT
     ELSE value::TEXT
   END;
 $$;
@@ -45,16 +45,23 @@ IMMUTABLE
 AS $$
 DECLARE
   child JSONB;
+  numeric_value NUMERIC;
 BEGIN
   IF jsonb_typeof(value) = 'number' THEN
-    RETURN false;
+    BEGIN
+      numeric_value := (value #>> '{}')::NUMERIC;
+      RETURN numeric_value = trunc(numeric_value)
+        AND abs(numeric_value) <= 9007199254740991;
+    EXCEPTION WHEN numeric_value_out_of_range OR invalid_text_representation THEN
+      RETURN false;
+    END;
   END IF;
   IF jsonb_typeof(value) = 'array' THEN
-    FOR child IN SELECT value FROM jsonb_array_elements(value) LOOP
+    FOR child IN SELECT entry.child FROM jsonb_array_elements(value) AS entry(child) LOOP
       IF NOT "audit_json_numbers_are_float8"(child) THEN RETURN false; END IF;
     END LOOP;
   ELSIF jsonb_typeof(value) = 'object' THEN
-    FOR child IN SELECT value FROM jsonb_each(value) LOOP
+    FOR child IN SELECT entry.child FROM jsonb_each(value) AS entry(key, child) LOOP
       IF NOT "audit_json_numbers_are_float8"(child) THEN RETURN false; END IF;
     END LOOP;
   END IF;
@@ -93,14 +100,14 @@ BEGIN
       chain_order := 0;
     END IF;
     chain_order := chain_order + 1;
-    envelope := '{"event":{"action":' || to_json(audit_row.action)::TEXT
+    envelope := '{"event":{"id":' || to_json(audit_row.id)::TEXT
       || ',"after":' || COALESCE("canonical_audit_json"(audit_row.after), 'null')
+      || ',"action":' || to_json(audit_row.action)::TEXT
       || ',"before":' || COALESCE("canonical_audit_json"(audit_row.before), 'null')
-      || ',"createdAt":' || to_json(to_char(audit_row."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))::TEXT
       || ',"entityId":' || to_json(audit_row."entityId")::TEXT
+      || ',"createdAt":' || to_json(to_char(audit_row."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))::TEXT
       || ',"entityType":' || to_json(audit_row."entityType")::TEXT
       || ',"householdId":' || to_json(audit_row."householdId")::TEXT
-      || ',"id":' || to_json(audit_row.id)::TEXT
       || ',"schemaVersion":1},"previousHash":' || COALESCE(to_json(previous_hash)::TEXT, 'null') || '}';
     next_hash := encode(digest(envelope, 'sha256'), 'hex');
     UPDATE "AuditEvent"
@@ -117,14 +124,14 @@ BEGIN
     ORDER BY "createdAt", id
   LOOP
     chain_order := chain_order + 1;
-    envelope := '{"event":{"action":' || to_json(audit_row.action)::TEXT
+    envelope := '{"event":{"id":' || to_json(audit_row.id)::TEXT
       || ',"after":' || COALESCE("canonical_audit_json"(audit_row.after), 'null')
+      || ',"action":' || to_json(audit_row.action)::TEXT
       || ',"before":' || COALESCE("canonical_audit_json"(audit_row.before), 'null')
-      || ',"createdAt":' || to_json(to_char(audit_row."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))::TEXT
       || ',"entityId":' || to_json(audit_row."entityId")::TEXT
+      || ',"createdAt":' || to_json(to_char(audit_row."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))::TEXT
       || ',"entityType":' || to_json(audit_row."entityType")::TEXT
       || ',"householdId":"platform"'
-      || ',"id":' || to_json(audit_row.id)::TEXT
       || ',"schemaVersion":1},"previousHash":' || COALESCE(to_json(previous_hash)::TEXT, 'null') || '}';
     next_hash := encode(digest(envelope, 'sha256'), 'hex');
     UPDATE "PlatformAuditEvent"

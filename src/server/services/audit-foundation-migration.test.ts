@@ -47,6 +47,18 @@ describe("audit foundation migration", () => {
     expect(migration.indexOf('UPDATE "AuditEvent"')).toBeLessThan(migration.indexOf('CREATE TRIGGER "AuditEvent_append_only"'));
   });
 
+  it("accepts exactly representable legacy integers while rejecting unsafe numeric payloads", () => {
+    const migration = readFileSync(migrationUrl, "utf8");
+
+    expect(migration).toContain("abs(numeric_value) <= 9007199254740991");
+    expect(migration).toContain("numeric_value = trunc(numeric_value)");
+    expect(migration).toContain("WHEN 'number' THEN trim_scale((value #>> '{}')::NUMERIC)::TEXT");
+    expect(migration).not.toContain("WHEN 'number' THEN to_json((value #>> '{}')::DOUBLE PRECISION)::TEXT");
+    expect(migration).not.toContain("IF jsonb_typeof(value) = 'number' THEN\n    RETURN false;");
+    expect(migration).toContain("envelope := '{\"event\":{\"id\":'");
+    expect(migration).not.toContain("envelope := '{\"event\":{\"action\":'");
+  });
+
   it("retains only a content-free receipt when permanent household deletion purges its audit trail", () => {
     const migration = readFileSync(migrationUrl, "utf8");
     const schema = readFileSync(schemaUrl, "utf8");
