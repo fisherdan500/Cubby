@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import type { HouseholdContext } from "@/server/auth/context";
+import { hashAuditEvent } from "@/server/services/audit-integrity";
 
 const auditActionSchema = z.enum([
   "activity.create",
@@ -11,6 +13,7 @@ const auditActionSchema = z.enum([
   "activity.timer.stop",
   "activity.undo",
   "activity.update",
+  "audit.export",
   "audit.view",
   "api_key.create",
   "api_key.revoke",
@@ -19,7 +22,9 @@ const auditActionSchema = z.enum([
   "baby.reactivate",
   "backup.recovery.authorize",
   "backup.recovery.target.provision",
+  "backup.export",
   "backup.restore",
+  "household.create",
   "calendar_event.create",
   "export.csv",
   "invite.accept",
@@ -31,15 +36,28 @@ const auditActionSchema = z.enum([
   "invite.revoke",
   "invite.rotate",
   "member.admin.grant",
+  "member.admin.revoke",
   "member.remove",
+  "member.role.update",
   "member.restore",
   "member.self_leave",
   "member.suspend",
   "notification.preference.save",
+  "push_subscription.save",
   "settings.appearance.update",
   "settings.units.update",
   "webhook.create",
   "webhook.delete"
+]);
+
+const platformAuditActionSchema = z.enum([
+  "platform.backup_recovery.authorize",
+  "platform.backup_recovery.target.provision",
+  "platform.owner.bootstrap",
+  "platform.owner.bootstrap_user.verify",
+  "platform.owner.recover",
+  "platform.owner.successor_user.verify",
+  "platform.registration.update"
 ]);
 
 const activityAuditPayloadSchema = z.object({
@@ -47,11 +65,11 @@ const activityAuditPayloadSchema = z.object({
   timerState: z.string().min(1).max(80).optional(),
   source: z.string().min(1).max(80).optional(),
   deletedAt: z.string().datetime().nullable().optional()
-}).strip();
+}).strict();
 
 const memberSelfLeaveBeforeSchema = z.object({
   role: z.string().min(1).max(80)
-}).strip();
+}).strict();
 
 const auditTimestampSchema = z.union([z.string().datetime(), z.date()]).transform((value) => value instanceof Date ? value.toISOString() : value);
 
@@ -59,7 +77,50 @@ const memberSelfLeaveAfterSchema = z.object({
   closureReason: z.literal("self_left"),
   deletedAt: auditTimestampSchema,
   leaveOperationId: z.string().min(1).max(200)
-}).strip();
+}).strict();
+
+const emptyAuditPayloadSchema = z.object({}).strict();
+const roleSchema = z.string().min(1).max(80);
+const statusSchema = z.string().min(1).max(80);
+const correlationIdSchema = z.string().min(1).max(200);
+const inviteBeforeSchema = z.object({ role: roleSchema, status: statusSchema }).strict();
+const inviteAfterSchema = z.object({
+  role: roleSchema.optional(),
+  status: statusSchema.optional(),
+  expiresAt: auditTimestampSchema.optional(),
+  expiredAt: auditTimestampSchema.optional(),
+  revokedAt: auditTimestampSchema.optional(),
+  revokedCount: z.number().int().nonnegative().optional(),
+  reason: statusSchema.optional()
+}).strict();
+const memberBeforeSchema = z.object({
+  role: roleSchema,
+  disabledAt: auditTimestampSchema.nullable().optional()
+}).strict();
+const memberAfterSchema = z.object({
+  role: roleSchema.optional(),
+  disabledAt: auditTimestampSchema.nullable().optional(),
+  deletedAt: auditTimestampSchema.nullable().optional()
+}).strict();
+const babyLifecycleSchema = z.object({ inactiveAt: auditTimestampSchema.nullable().optional() }).strict();
+const appearanceSchema = z.object({ accentTheme: z.string().min(1).max(80).nullable().optional() }).strict();
+const calendarCreateSchema = z.object({
+  babyId: z.string().min(1).max(200),
+  startTime: auditTimestampSchema,
+  endTime: auditTimestampSchema.nullable()
+}).strict();
+const webhookCreateSchema = z.object({ events: z.array(z.string().min(1).max(80)).max(20) }).strict();
+const notificationPreferenceSchema = z.object({
+  revision: z.number().int().nonnegative(),
+  status: statusSchema,
+  externalDeliveryEnabled: z.boolean(),
+  babyScope: z.enum(["all", "selected"])
+}).strict();
+
+type AuditWriteDb = Pick<Prisma.TransactionClient, "auditEvent"> & {
+  auditIntegrityCheckpoint?: Pick<Prisma.TransactionClient["auditIntegrityCheckpoint"], "upsert">;
+  $executeRaw?: Prisma.TransactionClient["$executeRaw"];
+};
 
 function minimizeAuditPayload(
   action: z.infer<typeof auditActionSchema>,
@@ -73,39 +134,210 @@ function minimizeAuditPayload(
   if (action === "member.self_leave") {
     return (phase === "before" ? memberSelfLeaveBeforeSchema : memberSelfLeaveAfterSchema).parse(payload) as Prisma.InputJsonValue;
   }
+  if (action === "api_key.create" || action === "api_key.revoke") {
+    return emptyAuditPayloadSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action.startsWith("invite.")) {
+    return (phase === "before" ? inviteBeforeSchema : inviteAfterSchema).parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action.startsWith("member.")) {
+    return (phase === "before" ? memberBeforeSchema : memberAfterSchema).parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "baby.create" || action === "baby.deactivate" || action === "baby.reactivate") {
+    return babyLifecycleSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "settings.appearance.update") {
+    return appearanceSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "calendar_event.create") {
+    return calendarCreateSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "webhook.create") {
+    return webhookCreateSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (
+    action === "webhook.delete"
+    || action === "settings.units.update"
+    || action === "backup.export"
+    || action === "backup.restore"
+    || action === "backup.recovery.authorize"
+    || action === "backup.recovery.target.provision"
+    || action === "household.create"
+    || action === "export.csv"
+    || action === "audit.export"
+    || action === "audit.view"
+    || action === "push_subscription.save"
+  ) {
+    return emptyAuditPayloadSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "notification.preference.save") {
+    return notificationPreferenceSchema.parse(payload) as Prisma.InputJsonValue;
+  }
   return payload;
 }
 
 export async function writeAudit(
-  ctx: HouseholdContext,
+  ctx: { householdId: string; userId: string | null; memberId?: string | null; role?: HouseholdContext["role"] },
   input: {
     action: string;
     entityType: string;
     entityId: string;
     babyId?: string;
+    correlationId?: string;
     before?: Prisma.InputJsonValue;
     after?: Prisma.InputJsonValue;
   },
-  db: Pick<Prisma.TransactionClient, "auditEvent"> = prisma
+  db: AuditWriteDb = prisma
 ) {
   const action = auditActionSchema.safeParse(input.action);
   if (!action.success) throw new Error("audit_action_unclassified");
   const before = minimizeAuditPayload(action.data, input.before, "before");
   const after = minimizeAuditPayload(action.data, input.after, "after");
+  const correlationId = input.correlationId === undefined ? null : correlationIdSchema.parse(input.correlationId);
+  const id = randomUUID();
+  if (typeof db.$executeRaw === "function") {
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`audit-chain:${ctx.householdId}`}))`;
+  }
+  const createdAt = new Date();
+  const chainOrder = (typeof db.auditEvent.count === "function"
+    ? await db.auditEvent.count({ where: { householdId: ctx.householdId } })
+    : 0) + 1;
+  const findLatest = db.auditEvent.findFirst;
+  const previous = typeof findLatest === "function"
+    ? await findLatest.call(db.auditEvent, {
+        where: { householdId: ctx.householdId, eventHash: { not: null } },
+        select: { eventHash: true },
+        orderBy: { chainOrder: "desc" }
+      })
+    : null;
+  const previousHash = previous?.eventHash ?? null;
+  const eventHash = hashAuditEvent(previousHash, {
+    id,
+    householdId: ctx.householdId,
+    babyId: input.babyId ?? null,
+    actorUserId: ctx.userId,
+    actorMemberId: ctx.memberId ?? null,
+    actorUserSnapshot: ctx.userId,
+    actorMemberSnapshot: ctx.memberId ?? null,
+    correlationId,
+    chainOrder,
+    action: action.data,
+    entityType: input.entityType,
+    entityId: input.entityId,
+    schemaVersion: 3,
+    createdAt: createdAt.toISOString(),
+    before: before ?? null,
+    after: after ?? null
+  });
   await db.auditEvent.create({
     data: {
+      id,
       householdId: ctx.householdId,
       babyId: input.babyId,
       actorUserId: ctx.userId,
       actorMemberId: ctx.memberId,
       actorUserSnapshot: ctx.userId,
       actorMemberSnapshot: ctx.memberId,
+      correlationId,
+      chainOrder,
       action: action.data,
       entityType: input.entityType,
       entityId: input.entityId,
-      schemaVersion: 1,
+      schemaVersion: 3,
+      previousHash,
+      eventHash,
       before,
-      after
+      after,
+      createdAt
     }
   });
+  if (db.auditIntegrityCheckpoint) {
+    const eventCount = await db.auditEvent.count({ where: { householdId: ctx.householdId } });
+    await db.auditIntegrityCheckpoint.upsert({
+      where: { scope: `household:${ctx.householdId}` },
+      create: { scope: `household:${ctx.householdId}`, headHash: eventHash, eventCount, verifiedAt: createdAt },
+      update: { headHash: eventHash, eventCount, verifiedAt: createdAt }
+    });
+  }
+}
+
+export async function writePlatformAudit(
+  input: {
+    action: string;
+    entityType: string;
+    entityId: string;
+    actorUserId?: string | null;
+    source?: string;
+    correlationId?: string;
+  },
+  db: {
+    platformAuditEvent: {
+      create: (args: { data: Prisma.PlatformAuditEventCreateInput }) => Promise<{ id: string }>;
+      count?: (args: { where?: object }) => Promise<number>;
+      findFirst?: (args: { where: { eventHash: { not: null } }; select: { eventHash: true }; orderBy: { chainOrder: "desc" } }) => Promise<{ eventHash: string | null } | null>;
+    };
+    auditIntegrityCheckpoint?: Pick<Prisma.TransactionClient["auditIntegrityCheckpoint"], "upsert">;
+    $executeRaw?: Prisma.TransactionClient["$executeRaw"];
+  } = prisma
+) {
+  const action = platformAuditActionSchema.safeParse(input.action);
+  if (!action.success) throw new Error("platform_audit_action_unclassified");
+  const correlationId = input.correlationId === undefined ? null : correlationIdSchema.parse(input.correlationId);
+  const id = randomUUID();
+  const source = input.source ?? "application";
+  if (typeof db.$executeRaw === "function") {
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('platform-audit-chain'))`;
+  }
+  const createdAt = new Date();
+  const chainOrder = (await db.platformAuditEvent.count?.({}) ?? 0) + 1;
+  const previous = typeof db.platformAuditEvent.findFirst === "function"
+    ? await db.platformAuditEvent.findFirst({
+        where: { eventHash: { not: null } },
+        select: { eventHash: true },
+        orderBy: { chainOrder: "desc" }
+      })
+    : null;
+  const previousHash = previous?.eventHash ?? null;
+  const eventHash = hashAuditEvent(previousHash, {
+    id,
+    householdId: "platform",
+    actorUserId: input.actorUserId ?? null,
+    actorUserSnapshot: input.actorUserId ?? null,
+    correlationId,
+    source,
+    chainOrder,
+    action: action.data,
+    entityType: input.entityType,
+    entityId: input.entityId,
+    schemaVersion: 3,
+    createdAt: createdAt.toISOString(),
+    before: null,
+    after: null
+  });
+  const event = await db.platformAuditEvent.create({
+    data: {
+      id,
+      actorUserId: input.actorUserId ?? null,
+      actorUserSnapshot: input.actorUserId ?? null,
+      action: action.data,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      source,
+      chainOrder,
+      schemaVersion: 3,
+      correlationId,
+      previousHash,
+      eventHash,
+      createdAt
+    }
+  });
+  if (db.auditIntegrityCheckpoint && typeof db.platformAuditEvent.count === "function") {
+    const eventCount = await db.platformAuditEvent.count({});
+    await db.auditIntegrityCheckpoint.upsert({
+      where: { scope: "platform" },
+      create: { scope: "platform", headHash: eventHash, eventCount, verifiedAt: createdAt },
+      update: { headHash: eventHash, eventCount, verifiedAt: createdAt }
+    });
+  }
+  return event;
 }

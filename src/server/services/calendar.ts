@@ -103,8 +103,6 @@ async function createCalendarEventInTransaction(
     entityType: "calendar_event",
     entityId: event.id,
     after: {
-      id: event.id,
-      title: event.title,
       babyId: input.babyId,
       startTime: event.startTime.toISOString(),
       endTime: event.endTime?.toISOString() ?? null
@@ -359,8 +357,6 @@ export async function createCalendarEvent(raw: unknown): Promise<CalendarEventCr
       entityType: "calendar_event",
       entityId: event.id,
       after: {
-        id: event.id,
-        title: event.title,
         babyId: input.babyId,
         startTime: event.startTime.toISOString(),
         endTime: event.endTime?.toISOString() ?? null

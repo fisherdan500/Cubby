@@ -4,6 +4,7 @@ import { hasPermission } from "@/domain/roles";
 const mocks = vi.hoisted(() => ({
   getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
+  babyCreate: vi.fn(),
   babyFindFirst: vi.fn(),
   babyFindMany: vi.fn(),
   babyUpdate: vi.fn(),
@@ -17,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     baby: {
+      create: mocks.babyCreate,
       findFirst: mocks.babyFindFirst,
       findMany: mocks.babyFindMany,
       update: mocks.babyUpdate
@@ -35,7 +37,7 @@ vi.mock("@/server/auth/context", () => ({
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
-import { deactivateBaby, reactivateBaby } from "@/server/services/households";
+import { addBaby, deactivateBaby, reactivateBaby } from "@/server/services/households";
 
 describe("reversible baby inactivity", () => {
   beforeEach(() => {
@@ -63,6 +65,7 @@ describe("reversible baby inactivity", () => {
       operation({
         $queryRaw: mocks.memberLock,
         baby: {
+          create: mocks.babyCreate,
           findFirst: mocks.babyFindFirst,
           update: mocks.babyUpdate
         },
@@ -89,6 +92,38 @@ describe("reversible baby inactivity", () => {
     await expect(deactivateBaby("baby-1")).rejects.toThrow("baby_has_active_timer");
 
     expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("creates baby evidence in the same transaction as the consequential baby row", async () => {
+    mocks.babyCreate.mockResolvedValue({ id: "baby-1" });
+
+    await expect(addBaby({ name: "Baby" })).resolves.toEqual({ id: "baby-1" });
+
+    expect(mocks.transaction).toHaveBeenCalled();
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: "baby.create", entityId: "baby-1", babyId: "baby-1" }),
+      expect.anything()
+    );
+    expect(mocks.babyCreate.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.writeAudit.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("rechecks the add-baby actor inside the audit transaction before creating the baby", async () => {
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "owner",
+      disabledAt: new Date(),
+      deletedAt: null
+    });
+    mocks.babyCreate.mockResolvedValue({ id: "baby-1" });
+
+    await expect(addBaby({ name: "Baby" })).rejects.toThrow("forbidden");
+
+    expect(mocks.babyCreate).not.toHaveBeenCalled();
     expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 

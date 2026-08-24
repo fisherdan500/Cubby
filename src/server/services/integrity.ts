@@ -4,6 +4,11 @@ import {
   type IntegrityBackupReader,
   type IntegrityBackupRecord
 } from "@/server/services/integrity-backup-evidence";
+import {
+  refreshActiveHouseholdAuditCheckpoints,
+  refreshPlatformAuditCheckpoint,
+  type AuditCheckpointSchedulerDatabase
+} from "@/server/services/audit-checkpoints";
 
 export const INTEGRITY_REPORT_VERSION = 1;
 
@@ -505,4 +510,14 @@ export async function runScheduledIntegritySuite(database: IntegrityDatabase) {
       ], { startedAt })
     };
   });
+}
+
+export async function runScheduledIntegrityCheckpointSuite(
+  database: IntegrityDatabase & AuditCheckpointSchedulerDatabase
+) {
+  const result = await runScheduledIntegritySuite(database);
+  if (!result.executed) return { ...result, checkpoints: null };
+  const household = await refreshActiveHouseholdAuditCheckpoints(database);
+  const platform = await database.$transaction((tx) => refreshPlatformAuditCheckpoint(tx as never));
+  return { ...result, checkpoints: { household, platform } };
 }

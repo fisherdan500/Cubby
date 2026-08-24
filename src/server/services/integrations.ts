@@ -83,8 +83,7 @@ export async function createApiKey(raw: unknown) {
     await writeAudit(ctx, {
       action: "api_key.create",
       entityType: "api_key",
-      entityId: key.id,
-      after: { name: key.name, prefix: key.prefix, scopes: key.scopes }
+      entityId: key.id
     }, tx);
     return { ...key, secret };
   });
@@ -98,7 +97,7 @@ export async function revokeApiKey(id: string) {
     requirePermission(ctx, "integration.manage");
     const key = await lockApiKeyForWrite(tx, ctx, id);
     const revoked = await tx.apiKey.update({ where: { id }, data: { revokedAt: new Date() } });
-    await writeAudit(ctx, { action: "api_key.revoke", entityType: "api_key", entityId: id, after: { prefix: key.prefix } }, tx);
+    await writeAudit(ctx, { action: "api_key.revoke", entityType: "api_key", entityId: id }, tx);
     return revoked;
   });
 }
@@ -136,7 +135,7 @@ export async function createWebhook(raw: unknown) {
         events: input.events
       }
     });
-    await writeAudit(ctx, { action: "webhook.create", entityType: "webhook", entityId: endpoint.id, after: { name: endpoint.name, url: endpoint.url, events: endpoint.events } }, tx);
+    await writeAudit(ctx, { action: "webhook.create", entityType: "webhook", entityId: endpoint.id, after: { events: endpoint.events } }, tx);
     return endpoint;
   });
 }
@@ -153,7 +152,7 @@ export async function deleteWebhook(id: string) {
       data: { status: "failed", lastError: "endpoint_deleted", nextAttemptAt: null }
     });
     const deleted = await tx.webhookEndpoint.update({ where: { id }, data: { deletedAt: new Date(), enabled: false } });
-    await writeAudit(ctx, { action: "webhook.delete", entityType: "webhook", entityId: id, after: { name: endpoint.name, url: endpoint.url } }, tx);
+    await writeAudit(ctx, { action: "webhook.delete", entityType: "webhook", entityId: id }, tx);
     return deleted;
   });
 }
@@ -166,7 +165,7 @@ export async function savePushSubscription(raw: unknown) {
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     requirePermission(lockedCtx, "notification.manage");
-    return tx.pushSubscription.upsert({
+    const subscription = await tx.pushSubscription.upsert({
       where: { endpoint: input.endpoint },
       update: {
         householdId: lockedCtx.householdId,
@@ -185,5 +184,11 @@ export async function savePushSubscription(raw: unknown) {
         userAgent: input.userAgent
       }
     });
+    await writeAudit(lockedCtx, {
+      action: "push_subscription.save",
+      entityType: "push_subscription",
+      entityId: subscription.id
+    }, tx);
+    return subscription;
   });
 }

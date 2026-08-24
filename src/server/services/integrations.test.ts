@@ -111,6 +111,19 @@ describe("capability mutation serialization", () => {
     });
   });
 
+  it("records a content-free audit event in the subscription write transaction", async () => {
+    await expect(savePushSubscription({
+      endpoint: "https://push.example.test/subscription",
+      keys: { p256dh: "public-key", auth: "auth-key" }
+    })).resolves.toEqual({ id: "subscription-1" });
+
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ householdId: "household-1", memberId: "owner-member" }),
+      expect.objectContaining({ action: "push_subscription.save", entityType: "push_subscription", entityId: "subscription-1" }),
+      expect.anything()
+    );
+  });
+
   it("rejects API-key issuance for a baby outside the locked household", async () => {
     mocks.txMemberFindUnique.mockResolvedValue({
       id: "owner-member", userId: "owner-user", householdId: "household-1", role: "owner", disabledAt: null, deletedAt: null

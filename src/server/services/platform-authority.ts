@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireUser } from "@/server/auth/session";
+import { writePlatformAudit } from "@/server/services/audit";
 import {
   PLATFORM_SIGNUP_POLICY_LOCK_ID,
   PLATFORM_SINGLETON_ID
@@ -234,23 +235,19 @@ export async function completePlatformRegistrationOperation(raw: unknown) {
       revision: nextRevision
     };
     const result = { operationId: operation.id, status: "completed" as const, settings: after };
-    const audit = await db.platformAuditEvent.create({
-      data: {
-        actorUserId: user.id,
-        action: "platform.registration.update",
-        entityType: "platform_settings",
-        entityId: PLATFORM_SINGLETON_ID,
-        source: "application",
-        before,
-        after
-      }
-    });
+    const audit = await writePlatformAudit({
+      actorUserId: user.id,
+      action: "platform.registration.update",
+      entityType: "platform_settings",
+      entityId: PLATFORM_SINGLETON_ID,
+      source: "application"
+    }, db);
     const completed = await db.platformRegistrationOperation.update({
       where: { id: operation.id },
       data: { status: "completed", result, auditEventId: audit.id }
     });
     return operationResult(completed as RegistrationOperation);
-  }, { isolationLevel: "Serializable" }));
+  }, { isolationLevel: "Serializable", maxWait: 10_000, timeout: 20_000 }));
 }
 
 export async function getPlatformRegistrationOperationStatus(raw: unknown) {

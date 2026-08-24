@@ -40,7 +40,8 @@ const mocks = vi.hoisted(() => ({
   isLocalBackupFilename: vi.fn(),
   scanLocalBackups: vi.fn(),
   readLocalBackup: vi.fn(),
-  readLocalBackupDocument: vi.fn()
+  readLocalBackupDocument: vi.fn(),
+  readHouseholdAuditIntegrity: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -96,6 +97,7 @@ vi.mock("@/server/services/mutation-locks", () => ({
 }));
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/audit-checkpoints", () => ({ readHouseholdAuditIntegrity: mocks.readHouseholdAuditIntegrity }));
 vi.mock("@/server/services/local-backup-storage", () => ({
   isLocalBackupFilename: mocks.isLocalBackupFilename,
   scanLocalBackups: mocks.scanLocalBackups,
@@ -168,6 +170,7 @@ beforeEach(() => {
     file: { filename: "backup.json", checksum: "a".repeat(64) },
     body: Buffer.from("{}")
   });
+  mocks.readHouseholdAuditIntegrity.mockResolvedValue({ status: "valid" });
 });
 
 describe("backup unit preferences", () => {
@@ -206,6 +209,16 @@ describe("backup unit preferences", () => {
     await expect(previewBackupJson(malformedLegacy)).rejects.toThrow("backup_invalid");
     await expect(restoreBackupJson(malformedLegacy)).rejects.toThrow("backup_invalid");
     expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it.each(["missing", "stale", "invalid"])("rejects %s audit checkpoint evidence before restore writes", async (status) => {
+    mocks.readHouseholdAuditIntegrity.mockResolvedValue({ status });
+
+    await expect(restoreBackupJson({ version: 1, babies: [], activities: [] })).rejects.toThrow("backup_audit_integrity_unavailable");
+
+    expect(mocks.settingsUpsert).not.toHaveBeenCalled();
+    expect(mocks.babyCreate).not.toHaveBeenCalled();
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
   });
 
   it("rechecks target emptiness inside the serializable restore transaction", async () => {
@@ -295,6 +308,11 @@ describe("backup unit preferences", () => {
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ isolationLevel: "RepeatableRead" }));
     expect(mocks.householdFind).toHaveBeenCalledOnce();
     expect(mocks.backupCreate.mock.invocationCallOrder[0]).toBeGreaterThan(mocks.transaction.mock.invocationCallOrder[0]);
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({ action: "backup.export", entityType: "backup" }),
+      expect.anything()
+    );
   });
 
   it("builds the same canonical v2 payload for internal and manual export paths", async () => {

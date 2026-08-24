@@ -312,7 +312,7 @@ describe("self-service household leave", () => {
   it("revokes only modeled household-scoped authority and preserves global sessions", async () => {
     await leaveHousehold({ householdId: "household-1", confirmation: "River House", operationId });
 
-    expect(mocks.policyLock).toHaveBeenCalledOnce();
+    expect(mocks.policyLock).toHaveBeenCalledTimes(2);
     expect(mocks.inviteUpdateMany).toHaveBeenCalledWith({
       where: {
         householdId: "household-1",

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { writePlatformAudit } from "@/server/services/audit";
 import {
   PLATFORM_SIGNUP_POLICY_LOCK_ID,
   PLATFORM_SINGLETON_ID
@@ -103,17 +104,12 @@ export async function verifyBootstrapPlatformOwnerCandidate(raw: unknown) {
           data: { emailVerified: true },
           select: { id: true, emailVerified: true }
         });
-        await tx.platformAuditEvent.create({
-          data: {
-            actorUserId: null,
-            action: "platform.owner.bootstrap_user.verify",
-            entityType: "user",
-            entityId: user.id,
-            source: "host_local_bootstrap_verification",
-            before: { emailVerified: false },
-            after: { emailVerified: true }
-          }
-        });
+        await writePlatformAudit({
+          action: "platform.owner.bootstrap_user.verify",
+          entityType: "user",
+          entityId: user.id,
+          source: "host_local_bootstrap_verification"
+        }, tx);
         return verified;
       },
       { isolationLevel: "Serializable" }
@@ -164,23 +160,12 @@ export async function attestPlatformOwnerSuccessor(raw: unknown) {
           data: { emailVerified: true },
           select: { id: true, emailVerified: true }
         });
-        await tx.platformAuditEvent.create({
-          data: {
-            actorUserId: null,
-            action: "platform.owner.successor_user.verify",
-            entityType: "user",
-            entityId: successor.id,
-            source: "host_local_successor_verification",
-            before: {
-              emailVerified: false,
-              confirmedPlatformOwnerUserId: authority.ownerUserId
-            },
-            after: {
-              emailVerified: true,
-              confirmedPlatformOwnerUserId: authority.ownerUserId
-            }
-          }
-        });
+        await writePlatformAudit({
+          action: "platform.owner.successor_user.verify",
+          entityType: "user",
+          entityId: successor.id,
+          source: "host_local_successor_verification"
+        }, tx);
         return verified;
       },
       { isolationLevel: "Serializable" }
@@ -215,16 +200,12 @@ export async function bindInitialPlatformOwner(raw: unknown) {
           },
           select: { id: true, ownerUserId: true }
         });
-        await tx.platformAuditEvent.create({
-          data: {
-            actorUserId: null,
-            action: "platform.owner.bootstrap",
-            entityType: "platform_authority",
-            entityId: PLATFORM_SINGLETON_ID,
-            source: "host_local",
-            after: { ownerUserId: user.id }
-          }
-        });
+        await writePlatformAudit({
+          action: "platform.owner.bootstrap",
+          entityType: "platform_authority",
+          entityId: PLATFORM_SINGLETON_ID,
+          source: "host_local"
+        }, tx);
         return authority;
       },
       { isolationLevel: "Serializable" }
@@ -243,9 +224,11 @@ export async function recoverPlatformOwner(raw: unknown) {
     throw new Error("platform_owner_successor_must_differ");
   }
 
-  try {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
     return await prisma.$transaction(
       async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
         const authority = await tx.platformAuthority.findUnique({
           where: { id: PLATFORM_SINGLETON_ID },
           select: { id: true, ownerUserId: true }
@@ -269,22 +252,20 @@ export async function recoverPlatformOwner(raw: unknown) {
         });
         if (changed.count !== 1) throw new Error("platform_owner_changed");
 
-        await tx.platformAuditEvent.create({
-          data: {
-            actorUserId: null,
-            action: "platform.owner.recover",
-            entityType: "platform_authority",
-            entityId: PLATFORM_SINGLETON_ID,
-            source: "host_local_recovery",
-            before: { ownerUserId: input.currentOwnerUserId },
-            after: { ownerUserId: successor.id }
-          }
-        });
+        await writePlatformAudit({
+          action: "platform.owner.recover",
+          entityType: "platform_authority",
+          entityId: PLATFORM_SINGLETON_ID,
+          source: "host_local_recovery"
+        }, tx);
         return { id: PLATFORM_SINGLETON_ID, ownerUserId: successor.id };
       },
-      { isolationLevel: "Serializable" }
-    );
-  } catch (error) {
-    throw translateTransactionError(error);
+      { isolationLevel: "Serializable", maxWait: 10_000, timeout: 20_000 }
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034" && attempt === 0) continue;
+      throw translateTransactionError(error);
+    }
   }
+  throw new Error("platform_owner_operation_retry");
 }

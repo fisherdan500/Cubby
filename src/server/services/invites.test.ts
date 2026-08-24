@@ -333,9 +333,11 @@ describe("invite consumption serialization", () => {
     expect(mocks.txInviteUpdate).toHaveBeenCalledWith(expect.objectContaining({
       data: { status: "conflicted" }
     }));
-    expect(mocks.txAuditCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ after: { reason: "suspended" } })
-    }));
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ householdId: "household-1", userId: "invited-user", memberId: "existing-member" }),
+      expect.objectContaining({ after: { reason: "suspended" } }),
+      expect.anything()
+    );
   });
 
   it("creates a distinct membership episode for a removed member without changing the historical row", async () => {
@@ -383,9 +385,11 @@ describe("invite consumption serialization", () => {
       closureReason: "self_left",
       leaveOperationId: "leave-operation-1"
     });
-    expect(mocks.txAuditCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ actorMemberId: "new-member-episode" })
-    }));
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ memberId: "new-member-episode" }),
+      expect.objectContaining({ action: "invite.accept" }),
+      expect.anything()
+    );
   });
 
   it("uses the same not-found result for a mismatched recipient", async () => {
@@ -437,9 +441,11 @@ describe("invite consumption serialization", () => {
       where: { id: "invite-1" },
       data: expect.objectContaining({ status: "expired" })
     }));
-    expect(mocks.txAuditCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ action: "invite.expire", entityId: "invite-1" })
-    }));
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ householdId: "household-1", userId: "invited-user" }),
+      expect.objectContaining({ action: "invite.expire", entityId: "invite-1" }),
+      expect.anything()
+    );
     expect(mocks.inviteFindUnique).not.toHaveBeenCalled();
   });
 
@@ -449,15 +455,13 @@ describe("invite consumption serialization", () => {
     await expect(acceptInvite("invite-token")).resolves.toMatchObject({ id: "member-1" });
 
     expect(mocks.txInviteUpdate).toHaveBeenCalledOnce();
-    expect(mocks.txAuditCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        action: "invite.accept",
-        entityId: "invite-1",
-        actorMemberId: "member-1"
-      })
-    }));
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ memberId: "member-1" }),
+      expect.objectContaining({ action: "invite.accept", entityId: "invite-1" }),
+      expect.anything()
+    );
     expect(mocks.txInviteUpdate.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.txAuditCreate.mock.invocationCallOrder[0]
+      mocks.writeAudit.mock.invocationCallOrder[0]
     );
     expect(mocks.globalAuditCreate).not.toHaveBeenCalled();
   });

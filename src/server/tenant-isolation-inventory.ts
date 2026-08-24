@@ -1,8 +1,8 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
-  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "ActivityLog", "ApiKey", "AuditEvent", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
+  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "ActivityLog", "ApiKey", "AuditEvent", "AuditIntegrityCheckpoint", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "FeedingLog",
-  "Household", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
+  "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog",
   "NotificationPreference", "NotificationPreferenceBaby", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlayLog", "PumpingLog",
   "PushSubscription", "Reminder", "Session", "SleepLog", "SupplementLog", "User", "VaccineDocument", "VaccineLog",
@@ -32,6 +32,7 @@ export const tenantIsolationInventory = [
   { model: "ActivityLog", ownership: "direct", operationClasses: ["activity_write", "import", "restore"], disposition: "constraint_slice" },
   { model: "ApiKey", ownership: "direct", operationClasses: ["integration_write", "api_auth"], disposition: "deferred_constraint" },
   { model: "AuditEvent", ownership: "direct", operationClasses: ["audit_write"], disposition: "deferred_constraint" },
+  { model: "AuditIntegrityCheckpoint", ownership: "global", operationClasses: ["audit_integrity_checkpoint"], disposition: "excluded" },
   { model: "Baby", ownership: "direct", operationClasses: ["baby_lifecycle", "activity_parent"], disposition: "constraint_slice" },
   { model: "BackupRecord", ownership: "direct", operationClasses: ["backup", "restore", "import"], disposition: "deferred_constraint" },
   { model: "BrowserMutationOperation", ownership: "direct", operationClasses: ["browser_mutation_operation"], disposition: "constraint_slice" },
@@ -63,6 +64,7 @@ export const tenantIsolationInventory = [
 
   { model: "FeedingLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "Household", ownership: "global", operationClasses: ["household_root"], disposition: "excluded" },
+  { model: "HouseholdDeletionRegistry", ownership: "global", operationClasses: ["household_deletion_registry"], disposition: "excluded" },
   { model: "DiaperLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "SleepLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "PumpingLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },

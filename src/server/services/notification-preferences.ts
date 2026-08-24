@@ -176,7 +176,7 @@ export async function submitNotificationPreferenceBrowserOperation(raw: { operat
         action: "notification.preference.save",
         entityType: "notification_preference",
         entityId: preferenceId,
-        after: { memberId: lockedCtx.memberId, revision, status: "active", externalDeliveryEnabled: document.externalDeliveryEnabled, babyScope: document.babyScope.mode }
+        after: { revision, status: "active", externalDeliveryEnabled: document.externalDeliveryEnabled, babyScope: document.babyScope.mode }
       }, tx);
       return { kind: "notification_preference", code: "ok", revision, status: "active", externalDeliveryEnabled: document.externalDeliveryEnabled } as const;
     }

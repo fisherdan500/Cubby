@@ -276,12 +276,17 @@ model PlatformAuditEvent {
   source                String
   schemaVersion         Int                            @default(1)
   correlationId         String?
+  chainOrder            Int
+  previousHash          String?
+  eventHash             String?
   before                Json?
   after                 Json?
   createdAt             DateTime                       @default(now())
   registrationOperation PlatformRegistrationOperation?
 
   @@index([actorUserId])
+  @@index([eventHash])
+  @@unique([chainOrder])
   @@index([createdAt])
 }
 
@@ -1281,6 +1286,9 @@ model AuditEvent {
   entityId      String
   schemaVersion Int              @default(1)
   correlationId String?
+  chainOrder    Int
+  previousHash  String?
+  eventHash     String?
   before        Json?
   after         Json?
   createdAt     DateTime         @default(now())
@@ -1291,7 +1299,27 @@ model AuditEvent {
 
   @@index([householdId])
   @@index([actorUserId])
+  @@index([eventHash])
+  @@unique([householdId, chainOrder])
   @@index([entityType, entityId])
   @@index([householdId, babyId, createdAt])
   @@index([createdAt])
+}
+
+model AuditIntegrityCheckpoint {
+  scope      String   @id
+  headHash   String
+  eventCount Int
+  verifiedAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([verifiedAt])
+}
+
+model HouseholdDeletionRegistry {
+  householdReferenceDigest String   @id
+  auditEventCount          Int
+  purgedAt                 DateTime @default(now())
+
+  @@index([purgedAt])
 }

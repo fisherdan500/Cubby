@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "b7a1bcae71a5af1e1737457d09c2ddb553478b4220dbdfa29fd5aa95b867b4d5",
+  "declarationDigest": "9c2e661637aca7c97bd7c3f75cc34f23fdcc389d97f95709d519a0278881030d",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -120,17 +120,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "c26b2e161a20e517feb372284afe2deb4950d623666b74cf63633b4e0b201c27",
+          "digest": "363a66bb8c92a584956b8753bab2fdc3965cdad174f6b761b16c998f507ea471",
           "file": "src/app/api/audit/route.ts"
         }
       ],
       "declarationDigest": "5c1c9a1ddc3b598835def3c0284727006a39a0d471726fa01a5aae5f6eb2de09",
-      "fingerprint": "8a2ad46679c241d02d185801148c3371dfa00dee5909c5c3b81b252962edd94c",
+      "fingerprint": "0dd64eb4f837a630875c7515e5088f8cc8d4e3f974ca70090d59dff017a400cf",
       "id": "fingerprint:api_route:src/app/api/audit/route.ts",
       "ownerId": "api_route:src/app/api/audit/route.ts",
       "ownerModule": "src/app/api/audit/route.ts",
       "sidecarPath": "src/app/api/audit/route.operation.ts",
-      "sourceDigest": "88dd920807fbde5fae023c08838ffa816b1a684648eae95350c79312a9f18d82",
+      "sourceDigest": "df0ebef791a1fadf50812b8fb91f1a1856e35bb091be875922c87c58258ea584",
       "status": "declared"
     },
     {
@@ -1872,17 +1872,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "d5d89984668fadc17553e03c2d163e9c033ed5e114ced925d6ad503bfd161a66",
+          "digest": "3e3eb7bf69d9b2b4169910f008d7ec174efe3e0841fbc42c640437bf8cecc5f3",
           "file": "src/server/integrity-scheduler.ts"
         }
       ],
-      "declarationDigest": "a1914ceb3a14d9f1799e984794147829b0c619df31865ba4e482763a8c08160a",
-      "fingerprint": "3160c1a1d8ed38df0e75d2925c7f141dacf01d09d5b7869a86f32e9234d32c5d",
+      "declarationDigest": "c6ee81214fc9505410d65394f76df7b691b79118e0916d0dc728afb1d86768fc",
+      "fingerprint": "c565dc6c7a405110155273c9894dd011137205fe470274ec5d1447d147dbb7a7",
       "id": "fingerprint:worker:src/server/integrity-scheduler.ts",
       "ownerId": "worker:src/server/integrity-scheduler.ts",
       "ownerModule": "src/server/integrity-scheduler.ts",
       "sidecarPath": "src/server/integrity-scheduler.operation.ts",
-      "sourceDigest": "36abcb30e50d3fe934a39f9e3cacb3763171418a325d57425e525166d9e94ef9",
+      "sourceDigest": "436b20e43717df95828828f55dc8acf9829a533238f381252fb8ddff1a19e3c0",
       "status": "declared"
     },
     {
@@ -2088,11 +2088,11 @@
   ],
   "generatorDigest": "22fd8748c6abd594d814cebe4607554f33d1e20aad353784574166e322dfb249",
   "generatorVersion": "r0.1",
-  "observationDigest": "856fe1eddffe0b9497775b9a8ffcf2986b0fdd519ecc2ebc033695436c3247d9",
+  "observationDigest": "a8a67b5387345f908c4ddd25873ed92e295c79fa51ba1f40fca7a080389d29da",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "c09a6dd3a8fc290d637cdafce63c350bf07760a11ea12ba1355321ef0cc410dd",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "72aec8eeb9e65917a05cf0d3e3f831086909424008ceb0b2e70f0313825cec53",
+  "registryDigest": "a509ad2a0a4d6cf11cbc3cdc40a973af0af85b6f49d21cfb4429fa6de9e7badb",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

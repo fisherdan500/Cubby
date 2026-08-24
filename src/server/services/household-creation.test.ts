@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   executeRaw: vi.fn(),
   queryRaw: vi.fn(),
-  lockHouseholdCreation: vi.fn()
+  lockHouseholdCreation: vi.fn(),
+  writeAudit: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -21,7 +22,7 @@ vi.mock("@/lib/db/prisma", () => ({
 vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "America/New_York" } }));
 vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
-vi.mock("@/server/services/audit", () => ({ writeAudit: vi.fn() }));
+vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 vi.mock("@/server/services/mutation-locks", () => ({
   lockActorAndBabyForWrite: vi.fn(),
   lockHouseholdCreation: mocks.lockHouseholdCreation
@@ -58,7 +59,12 @@ beforeEach(() => {
     householdCreationMode: "open",
     newHouseholdCreationAllowed: true
   });
-  mocks.householdCreate.mockResolvedValue({ id: "household-new", name: "River Home" });
+  mocks.householdCreate.mockResolvedValue({
+    id: "household-new",
+    name: "River Home",
+    members: [{ id: "member-new" }],
+    babies: [{ id: "baby-new" }]
+  });
 });
 
 describe("platform-governed household creation", () => {
@@ -86,7 +92,7 @@ describe("platform-governed household creation", () => {
     expect(mocks.householdCreate).not.toHaveBeenCalled();
   });
 
-  it("creates a first household only when the platform policy is open", async () => {
+  it("creates a first household and its initial baby only with atomic classified audit evidence", async () => {
     await expect(createOnboardingHousehold(input)).resolves.toMatchObject({ id: "household-new" });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
@@ -114,8 +120,20 @@ describe("platform-governed household creation", () => {
           }
         }
       }),
-      include: { settings: true }
+      include: expect.objectContaining({ settings: true })
     });
+    expect(mocks.writeAudit).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ householdId: "household-new", userId: "user-without-household" }),
+      expect.objectContaining({ action: "household.create", entityType: "household", entityId: "household-new" }),
+      expect.anything()
+    );
+    expect(mocks.writeAudit).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ householdId: "household-new", userId: "user-without-household" }),
+      expect.objectContaining({ action: "baby.create", entityType: "baby", entityId: "baby-new", babyId: "baby-new" }),
+      expect.anything()
+    );
   });
 
   it("never uses open platform policy to create a second household for an existing member", async () => {

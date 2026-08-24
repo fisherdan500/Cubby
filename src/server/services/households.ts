@@ -6,7 +6,7 @@ import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
-import { lockActorAndBabyForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
+import { lockActorAndBabyForWrite, lockActorForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 import {
@@ -54,7 +54,7 @@ export async function createOnboardingHousehold(raw: unknown) {
     const policy = await getAppRegistrationPolicy(tx);
     if (!policy.newHouseholdCreationAllowed) throw new Error("forbidden");
 
-    return tx.household.create({
+    const created = await tx.household.create({
       data: {
         name: input.householdName,
         createdByUserId: user.id,
@@ -79,8 +79,34 @@ export async function createOnboardingHousehold(raw: unknown) {
           }
         }
       },
-      include: { settings: true }
+      include: {
+        settings: true,
+        members: { select: { id: true } },
+        babies: { select: { id: true } }
+      }
     });
+    const actorContext = {
+      userId: user.id,
+      householdId: created.id,
+      memberId: created.members[0]?.id
+    };
+    await writeAudit(actorContext, {
+      action: "household.create",
+      entityType: "household",
+      entityId: created.id,
+      after: {}
+    }, tx);
+    const initialBaby = created.babies[0];
+    if (!initialBaby) throw new Error("household_initial_baby_missing");
+    await writeAudit(actorContext, {
+      action: "baby.create",
+      entityType: "baby",
+      entityId: initialBaby.id,
+      babyId: initialBaby.id,
+      after: {}
+    }, tx);
+    const { members: _members, babies: _babies, ...household } = created;
+    return household;
   });
 }
 
@@ -88,25 +114,30 @@ export async function addBaby(raw: unknown) {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "baby.manage");
   const input = babySchema.parse(raw);
-  const baby = await prisma.baby.create({
-    data: {
-      householdId: ctx.householdId,
-      name: input.name,
-      birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
-      timezone: env.APP_TIMEZONE,
-      notes: input.notes || undefined,
-      feedingWarningMinutes: input.feedingWarningMinutes,
-      diaperWarningMinutes: input.diaperWarningMinutes,
-      sleepWarningMinutes: input.sleepWarningMinutes
-    }
+  return prisma.$transaction(async (tx) => {
+    const lockedCtx = await lockActorForWrite(tx, ctx);
+    requirePermission(lockedCtx, "baby.manage");
+    const baby = await tx.baby.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        name: input.name,
+        birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+        timezone: env.APP_TIMEZONE,
+        notes: input.notes || undefined,
+        feedingWarningMinutes: input.feedingWarningMinutes,
+        diaperWarningMinutes: input.diaperWarningMinutes,
+        sleepWarningMinutes: input.sleepWarningMinutes
+      }
+    });
+    await writeAudit(lockedCtx, {
+      action: "baby.create",
+      entityType: "baby",
+      entityId: baby.id,
+      babyId: baby.id,
+      after: {}
+    }, tx);
+    return baby;
   });
-  await writeAudit(ctx, {
-    action: "baby.create",
-    entityType: "baby",
-    entityId: baby.id,
-    after: baby
-  });
-  return baby;
 }
 
 const babyCreateSnapshot = { kind: "baby-create", schemaVersion: 1 } as const;
@@ -157,7 +188,8 @@ export async function submitCreateBabyBrowserOperation(raw: Record<string, unkno
         action: "baby.create",
         entityType: "baby",
         entityId: baby.id,
-        after: baby
+        babyId: baby.id,
+        after: {}
       }, tx);
       return { kind: "baby_create", code: "ok", babyId: baby.id } as const;
     }
@@ -243,6 +275,7 @@ export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
         action: "baby.deactivate",
         entityType: "baby",
         entityId: baby.id,
+        babyId: baby.id,
         before: { inactiveAt: baby.inactiveAt },
         after: { inactiveAt }
       },
@@ -271,6 +304,7 @@ export async function reactivateBaby(babyId: string) {
         action: "baby.reactivate",
         entityType: "baby",
         entityId: baby.id,
+        babyId: baby.id,
         before: { inactiveAt: baby.inactiveAt },
         after: { inactiveAt: null }
       },
@@ -329,6 +363,7 @@ async function runBrowserLifecycleTransition(
     action: `baby.${action}`,
     entityType: "baby",
     entityId: baby.id,
+    babyId: baby.id,
     before: { inactiveAt: baby.inactiveAt },
     after: { inactiveAt }
   }, tx);

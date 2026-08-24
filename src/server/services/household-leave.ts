@@ -332,7 +332,7 @@ export async function leaveHousehold(raw: unknown) {
         action: "member.self_leave",
         entityType: "household_member",
         entityId: member.id,
-        before: { role: member.role, disabledAt: member.disabledAt },
+        before: { role: member.role },
         after: {
           deletedAt: leftAt,
           closureReason: "self_left",

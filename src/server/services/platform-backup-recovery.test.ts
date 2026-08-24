@@ -173,11 +173,7 @@ describe("platform backup recovery authority", () => {
         entityType: "household",
         entityId: "target-household-1",
         source: "host_local_backup_recovery",
-        after: {
-          confirmedPlatformOwnerUserId: "platform-owner-1",
-          targetHouseholdId: "target-household-1",
-          targetOwnerUserId: "target-owner-1"
-        }
+        schemaVersion: 3
       })
     });
     expect(mocks.auditEventCreate).toHaveBeenCalledWith({
@@ -372,13 +368,7 @@ describe("platform backup recovery authority", () => {
         entityType: "backup_record",
         entityId: "recovery-record-1",
         source: "host_local_backup_recovery",
-        after: expect.objectContaining({
-          confirmedPlatformOwnerUserId: "platform-owner-1",
-          targetHouseholdId: "target-household-1",
-          targetOwnerUserId: "target-owner-1",
-          storageFilename: filename,
-          checksum
-        })
+        schemaVersion: 3
       })
     });
     expect(mocks.auditEventCreate).toHaveBeenCalledWith({

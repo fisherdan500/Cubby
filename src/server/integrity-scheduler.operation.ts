@@ -19,7 +19,7 @@ export const operation = {
     {
       kind: "worker_tick",
       symbol: "tick",
-      target: "src/server/services/integrity.ts#runScheduledIntegritySuite"
+      target: "src/server/services/integrity.ts#runScheduledIntegrityCheckpointSuite"
     }
   ],
   disposition: "observed",

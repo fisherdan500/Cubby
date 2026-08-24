@@ -154,7 +154,7 @@ export async function submitInviteCreateBrowserOperation(raw: unknown) {
           action: "invite.rotate",
           entityType: "invite",
           entityId: rotated.id,
-          before: { email: rotated.email, role: rotated.role, status: rotated.status },
+          before: { role: rotated.role, status: rotated.status },
           after: { status: InviteStatus.revoked, revokedAt: rotatedAt }
         }, tx);
       }
@@ -173,7 +173,7 @@ export async function submitInviteCreateBrowserOperation(raw: unknown) {
         action: "invite.create",
         entityType: "invite",
         entityId: invite.id,
-        after: { email: invite.email, role: invite.role, expiresAt: invite.expiresAt }
+        after: { role: invite.role, expiresAt: invite.expiresAt }
       }, tx);
       acceptUrl = `/invite/${token}`;
       return {
@@ -250,7 +250,7 @@ export async function submitInviteRevokeBrowserOperation(raw: unknown) {
         action: "invite.revoke",
         entityType: "invite",
         entityId: invite.id,
-        before: { email: invite.email, role: invite.role, status: invite.status },
+        before: { role: invite.role, status: invite.status },
         after: { status: InviteStatus.revoked, revokedAt }
       }, tx);
       return { kind: "invite", code: "revoked", inviteId: invite.id } as const;
@@ -322,7 +322,7 @@ export async function submitInviteRevokeAllBrowserOperation(raw: unknown) {
           action: "invite.emergency_revoke",
           entityType: "invite",
           entityId: invite.id,
-          before: { email: invite.email, role: invite.role, status: invite.status },
+          before: { role: invite.role, status: invite.status },
           after: { status: InviteStatus.revoked, revokedAt }
         }, tx);
       }
@@ -408,7 +408,7 @@ export async function createInvite(raw: unknown) {
         action: "invite.rotate",
         entityType: "invite",
         entityId: rotated.id,
-        before: { email: rotated.email, role: rotated.role, status: rotated.status },
+        before: { role: rotated.role, status: rotated.status },
         after: { status: InviteStatus.revoked, revokedAt: rotatedAt }
       }, tx);
     }
@@ -428,7 +428,7 @@ export async function createInvite(raw: unknown) {
       action: "invite.create",
       entityType: "invite",
       entityId: invite.id,
-      after: { email: invite.email, role: invite.role, expiresAt: invite.expiresAt }
+      after: { role: invite.role, expiresAt: invite.expiresAt }
     }, tx);
     return {
       id: invite.id,
@@ -491,17 +491,17 @@ export async function acceptInvite(token: string) {
         where: { id: invite.id },
         data: { status: InviteStatus.expired }
       });
-      await tx.auditEvent.create({
-        data: {
-          householdId: invite.householdId,
-          actorUserId: user.id,
+      await writeAudit(
+        { householdId: invite.householdId, userId: user.id },
+        {
           action: "invite.expire",
           entityType: "invite",
           entityId: invite.id,
-          before: { email: invite.email, role: invite.role, status: invite.status },
+          before: { role: invite.role, status: invite.status },
           after: { status: InviteStatus.expired, expiredAt }
-        }
-      });
+        },
+        tx
+      );
       return { expired: true } as const;
     };
 
@@ -563,17 +563,11 @@ export async function acceptInvite(token: string) {
         where: { id: invite.id },
         data: { status: InviteStatus.conflicted }
       });
-      await tx.auditEvent.create({
-        data: {
-          householdId: invite.householdId,
-          actorUserId: user.id,
-          actorMemberId: existing?.id,
-          action: "invite.conflict",
-          entityType: "invite",
-          entityId: invite.id,
-          after: { reason: membershipState }
-        }
-      });
+      await writeAudit(
+        { householdId: invite.householdId, userId: user.id, memberId: existing?.id },
+        { action: "invite.conflict", entityType: "invite", entityId: invite.id, after: { reason: membershipState } },
+        tx
+      );
       return { conflict: true } as const;
     }
 
@@ -585,17 +579,11 @@ export async function acceptInvite(token: string) {
         acceptedAt: new Date()
       }
     });
-    await tx.auditEvent.create({
-      data: {
-        householdId: invite.householdId,
-        actorUserId: user.id,
-        actorMemberId: member.id,
-        action: "invite.accept",
-        entityType: "invite",
-        entityId: invite.id,
-        after: { userId: user.id, role: member.role }
-      }
-    });
+    await writeAudit(
+      { householdId: invite.householdId, userId: user.id, memberId: member.id },
+      { action: "invite.accept", entityType: "invite", entityId: invite.id, after: { role: member.role } },
+      tx
+    );
     return { member } as const;
   });
 
@@ -716,7 +704,7 @@ export async function submitMemberBrowserOperation(action: MemberBrowserAction, 
       assertMemberBrowserPolicy(action, lockedCtx, member, input.role as HouseholdRole | undefined);
       if (action === "restore" && member.disabledAt) {
         await tx.householdMember.update({ where: { id: member.id }, data: { disabledAt: null } });
-        await writeAudit(lockedCtx, { action: "member.restore", entityType: "household_member", entityId: member.id, before: { userId: member.userId, role: member.role, disabledAt: member.disabledAt }, after: { userId: member.userId, role: member.role, disabledAt: null } }, tx);
+        await writeAudit(lockedCtx, { action: "member.restore", entityType: "household_member", entityId: member.id, before: { role: member.role, disabledAt: member.disabledAt }, after: { role: member.role, disabledAt: null } }, tx);
       } else if (action === "role.update" && member.role !== input.role) {
         const updated = await tx.householdMember.update({ where: { id: member.id }, data: { role: input.role as HouseholdRole } });
         await writeAudit(lockedCtx, { action: input.role === "admin" ? "member.admin.grant" : member.role === HouseholdRole.admin ? "member.admin.revoke" : "member.role.update", entityType: "household_member", entityId: member.id, before: { role: member.role }, after: { role: updated.role } }, tx);
@@ -725,14 +713,14 @@ export async function submitMemberBrowserOperation(action: MemberBrowserAction, 
         await tx.householdMember.update({ where: { id: member.id }, data: { deletedAt: removedAt } });
         await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, removedAt, "endpoint_owner_removed");
         await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, removedAt);
-        await writeAudit(lockedCtx, { action: "member.remove", entityType: "household_member", entityId: member.id, before: { role: member.role, userId: member.userId }, after: { deletedAt: removedAt } }, tx);
+        await writeAudit(lockedCtx, { action: "member.remove", entityType: "household_member", entityId: member.id, before: { role: member.role }, after: { deletedAt: removedAt } }, tx);
       } else if (action === "suspend" && !member.disabledAt) {
         const disabledAt = new Date();
         await tx.householdMember.update({ where: { id: member.id }, data: { disabledAt } });
         await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
         await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, disabledAt);
         await tx.session.deleteMany({ where: { userId: member.userId } });
-        await writeAudit(lockedCtx, { action: "member.suspend", entityType: "household_member", entityId: member.id, before: { userId: member.userId, role: member.role, disabledAt: null }, after: { userId: member.userId, role: member.role, disabledAt } }, tx);
+        await writeAudit(lockedCtx, { action: "member.suspend", entityType: "household_member", entityId: member.id, before: { role: member.role, disabledAt: null }, after: { role: member.role, disabledAt } }, tx);
       }
       return action === "role.update" ? { kind: "member", code: memberBrowserCode(action), memberId: member.id, role: input.role as string } : { kind: "member", code: memberBrowserCode(action), memberId: member.id };
     }
@@ -796,7 +784,7 @@ export async function removeMember(memberId: string) {
         action: "member.remove",
         entityType: "household_member",
         entityId: member.id,
-        before: { role: member.role, userId: member.userId },
+        before: { role: member.role },
         after: { deletedAt: removed.deletedAt }
       },
       tx
@@ -891,8 +879,8 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
         action: "member.suspend",
         entityType: "household_member",
         entityId: member.id,
-        before: { userId: member.userId, role: member.role, disabledAt: null },
-        after: { userId: member.userId, role: member.role, disabledAt }
+        before: { role: member.role, disabledAt: null },
+        after: { role: member.role, disabledAt }
       },
       tx
     );
@@ -923,8 +911,8 @@ export async function restoreMember(memberId: string) {
         action: "member.restore",
         entityType: "household_member",
         entityId: member.id,
-        before: { userId: member.userId, role: member.role, disabledAt: member.disabledAt },
-        after: { userId: member.userId, role: member.role, disabledAt: null }
+        before: { role: member.role, disabledAt: member.disabledAt },
+        after: { role: member.role, disabledAt: null }
       },
       tx
     );
@@ -953,7 +941,7 @@ export async function revokeInvite(inviteId: string) {
       action: "invite.revoke",
       entityType: "invite",
       entityId: invite.id,
-      before: { email: invite.email, role: invite.role, status: invite.status },
+      before: { role: invite.role, status: invite.status },
       after: { status: revoked.status, revokedAt: revoked.revokedAt }
     }, tx);
     return revoked;
@@ -1001,7 +989,7 @@ export async function revokeAllPendingInvites(raw: unknown) {
         action: "invite.emergency_revoke",
         entityType: "invite",
         entityId: invite.id,
-        before: { email: invite.email, role: invite.role, status: invite.status },
+        before: { role: invite.role, status: invite.status },
         after: { status: InviteStatus.revoked, revokedAt }
       }, tx);
     }

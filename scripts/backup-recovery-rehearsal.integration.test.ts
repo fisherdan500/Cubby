@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +11,10 @@ const auth = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: vi.fn(async () => {
+    if (!auth.context) throw new Error("rehearsal_context_not_set");
+    return auth.context;
+  }),
   getHouseholdContext: vi.fn(async () => {
     if (!auth.context) throw new Error("rehearsal_context_not_set");
     return auth.context;
@@ -45,6 +50,7 @@ import {
   completePlatformRegistrationOperation
 } from "@/server/services/platform-authority";
 import { recoverPlatformOwner } from "@/server/services/platform-owner-binding";
+import { readHouseholdAuditIntegrity, refreshActiveHouseholdAuditCheckpoints, refreshHouseholdAuditCheckpoint, refreshPlatformAuditCheckpoint } from "@/server/services/audit-checkpoints";
 
 type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
   format: "cubby-household-backup";
@@ -335,7 +341,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
         FOR UPDATE`;
       signalSettingsLockHeld();
       await settingsLockRelease;
-    });
+    }, { maxWait: 10_000, timeout: 20_000 });
     await settingsLockHeld;
 
     const oldOwnerPolicyAttempt = completePlatformRegistrationOperation({ operationId: policyOperation.operationId });
@@ -347,7 +353,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
         successorUserId: targetUser.id,
         confirmSuccessorEmail: targetUser.email
       });
-      await waitForLockWaiters("PlatformAuthority", 1);
+      await waitForLockWaiters("pg_advisory_xact_lock", 1);
       expect(await prisma.platformAuthority.findUniqueOrThrow({
         where: { id: "platform" },
         select: { ownerUserId: true }
@@ -375,6 +381,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       where: { id: "platform" },
       data: { householdCreationMode: "closed", allowPublicRegistration: false }
     });
+    expect((await refreshPlatformAuditCheckpoint(prisma)).eventCount).toBeGreaterThan(0);
     auth.user = null;
 
     await prisma.invite.create({
@@ -433,7 +440,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       data: { householdId: source.household.id, babyId: activeBaby.id, type: "feeding", fingerprint: "source-only", dismissedByMemberId: source.member.id }
     });
     await prisma.auditEvent.create({
-      data: { householdId: source.household.id, actorUserId: source.user.id, actorMemberId: source.member.id, action: "source.setup", entityType: "household", entityId: source.household.id }
+      data: { householdId: source.household.id, actorUserId: source.user.id, actorMemberId: source.member.id, chainOrder: 1, action: "source.setup", entityType: "household", entityId: source.household.id }
     });
     await prisma.importBatch.create({
       data: { householdId: source.household.id, actorUserId: source.user.id, sourceSystem: "sprout", sourceFormat: "json", status: "complete" }
@@ -501,7 +508,23 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect(() => parseBackup(dangling)).toThrow(/backup_dangling_reference/);
 
     auth.context = staleTarget.ctx;
+    await refreshActiveHouseholdAuditCheckpoints(prisma);
     await expect(previewBackupJson(sourceBackup)).resolves.toMatchObject({ checksumVerified: true });
+    await prisma.auditIntegrityCheckpoint.delete({ where: { scope: `household:${staleTarget.household.id}` } });
+    await expect(
+      restoreBackupJson(sourceBackup, { confirmation: "Stale Target", previewChecksum: sourceBackup.checksum })
+    ).rejects.toThrow("backup_audit_integrity_unavailable");
+    expect(await prisma.baby.count({ where: { householdId: staleTarget.household.id } })).toBe(0);
+    await refreshHouseholdAuditCheckpoint(staleTarget.household.id, prisma);
+    await prisma.auditIntegrityCheckpoint.update({
+      where: { scope: `household:${staleTarget.household.id}` },
+      data: { headHash: "f".repeat(64) }
+    });
+    await expect(
+      restoreBackupJson(sourceBackup, { confirmation: "Stale Target", previewChecksum: sourceBackup.checksum })
+    ).rejects.toThrow("backup_audit_integrity_unavailable");
+    expect(await prisma.baby.count({ where: { householdId: staleTarget.household.id } })).toBe(0);
+    await refreshHouseholdAuditCheckpoint(staleTarget.household.id, prisma);
     await prisma.contact.create({ data: { householdId: staleTarget.household.id, name: "Concurrent fixture write" } });
     await expect(
       restoreBackupJson(sourceBackup, { confirmation: "Stale Target", previewChecksum: sourceBackup.checksum })
@@ -548,7 +571,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       await lockHouseholdCreation(tx);
       signalHouseholdCreationLockHeld();
       await householdCreationLockRelease;
-    });
+    }, { maxWait: 10_000, timeout: 20_000 });
     await householdCreationLockHeld;
 
     const provisioningAttempt = provisionBackupRecoveryTarget({
@@ -717,6 +740,9 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     });
     const targetOwnerBefore = await prisma.user.findUniqueOrThrow({ where: { id: target.user.id } });
     const targetMemberBefore = await prisma.householdMember.findUniqueOrThrow({ where: { id: target.member.id } });
+    await refreshActiveHouseholdAuditCheckpoints(prisma);
+    await expect(refreshHouseholdAuditCheckpoint(target.household.id, prisma)).resolves.toMatchObject({ eventCount: 2 });
+    await expect(readHouseholdAuditIntegrity(target.household.id, prisma)).resolves.toEqual({ status: "valid" });
     await expect(previewBackupJson(sourceBackup)).resolves.toMatchObject({
       householdName: "Source Nursery",
       counts: { babies: 2, contacts: 1, catalogs: 2, activities: 3, calendarEvents: 1, reminders: 1 }
@@ -724,6 +750,16 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     await expect(
       restoreBackupJson(recoveryBackup, { confirmation: "Fresh Target", previewChecksum: recoveryBackup.checksum })
     ).resolves.toMatchObject({ restored: 10, legacyPartial: false });
+
+    const immutableTargetAudit = await prisma.auditEvent.findFirstOrThrow({
+      where: { householdId: target.household.id },
+      select: { id: true }
+    });
+    await expect(prisma.$executeRaw`
+      UPDATE "AuditEvent"
+      SET "eventHash" = ${"f".repeat(64)}
+      WHERE "id" = ${immutableTargetAudit.id}
+    `).rejects.toThrow("audit_event_append_only");
 
     expect(await prisma.user.findUniqueOrThrow({ where: { id: target.user.id } })).toEqual(targetOwnerBefore);
     expect(await prisma.householdMember.findUniqueOrThrow({ where: { id: target.member.id } })).toEqual(targetMemberBefore);
@@ -763,6 +799,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
 
     const targetBackup = JSON.parse(await exportBackupJson()) as V2Envelope;
     expect(normalizedPayload(targetBackup)).toEqual(normalizedPayload(sourceBackup));
+    await expect(refreshHouseholdAuditCheckpoint(target.household.id, prisma)).resolves.toMatchObject({ eventCount: 4 });
     await expect(
       restoreBackupJson(sourceBackup, { confirmation: "Source Nursery", previewChecksum: sourceBackup.checksum })
     ).rejects.toThrow("backup_target_not_empty");
@@ -886,7 +923,36 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect((await readdir(backupDirectory)).filter((filename) => filename.endsWith(".tmp"))).toEqual([]);
     await Promise.all(finalFilenames.map((filename) => readLocalBackup(backupDirectory, filename)));
 
+    const purged = await createOwnerHousehold("purged", "Purged Household");
+    await prisma.auditEvent.create({
+      data: {
+        householdId: purged.household.id,
+        actorUserId: purged.user.id,
+        actorMemberId: purged.member.id,
+        chainOrder: 1,
+        action: "fixture.purge",
+        entityType: "household",
+        entityId: purged.household.id
+      }
+    });
+    await prisma.household.delete({ where: { id: purged.household.id } });
+    const householdReferenceDigest = createHash("md5").update(purged.household.id).digest("hex");
+    await expect(prisma.householdDeletionRegistry.findUnique({
+      where: { householdReferenceDigest },
+      select: { householdReferenceDigest: true, auditEventCount: true }
+    })).resolves.toEqual({ householdReferenceDigest, auditEventCount: 1 });
+    expect(await prisma.auditEvent.count({ where: { householdId: purged.household.id } })).toBe(0);
+
     const baselineHandoff = JSON.parse(await readFile(rehearsalHandoffFile, "utf8"));
+    const baselineTimers = await prisma.activityLog.findMany({
+      where: {
+        householdId: baselineHandoff.householdId,
+        babyId: baselineHandoff.babyId,
+        deletedAt: null,
+        timerState: { in: [TimerState.running, TimerState.paused] }
+      },
+      select: { timerState: true }
+    });
     await prisma.backupRecord.update({
       where: { id: fourthAutomatedRecord.id },
       data: { householdId: baselineHandoff.householdId, actorUserId: baselineHandoff.userId }
@@ -894,7 +960,8 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     await writeFile(rehearsalHandoffFile, JSON.stringify({
       ...baselineHandoff,
       filename: fourthAutomatedRecord.storageFilename,
-      checksum: fourthAutomatedRecord.checksum
+      checksum: fourthAutomatedRecord.checksum,
+      timerProbeState: baselineTimers.map((timer) => timer.timerState).sort()
     }), { mode: 0o600 });
   });
 });
