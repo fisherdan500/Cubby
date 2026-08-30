@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "phase": "phase8_private_history_throttling",
+  "activationState": "active_local_candidate",
+  "authority": "phase8_source_readiness",
+  "completeProgramReleaseState": "unreleased_until_phase9",
+  "surfaces": [
+    "src/app/api/account/security-history/export/route.ts",
+    "src/app/api/account/security-history/route.ts",
+    "src/app/api/auth/[...all]/route.ts",
+    "src/app/app/settings/security-history/page.tsx",
+    "src/components/settings/security-history.tsx",
+    "src/server/services/global-security-history.ts",
+    "src/server/services/global-security-throttling.ts",
+    "scripts/security-operator.ts"
+  ],
+  "gates": [
+    { "id": "phase8.protocol", "state": "source_verified", "evidence": "src/server/services/global-security-phase8-design.test.ts" },
+    { "id": "phase8.persistence", "state": "source_verified", "evidence": "src/server/services/global-security-persistence-migration.test.ts" },
+    { "id": "phase8.throttling_and_carriers", "state": "source_verified", "evidence": "src/server/services/sign-in-email-throttle.test.ts" },
+    { "id": "phase8.history_routes_export", "state": "source_verified", "evidence": "src/server/services/global-security-history.test.ts" },
+    { "id": "phase8.ui", "state": "source_verified", "evidence": "src/components/settings/security-history.test.ts" },
+    { "id": "phase8.operator", "state": "source_verified", "evidence": "src/server/services/security-operator-packaged-cli.test.ts" },
+    { "id": "phase8.postgresql_acceptance", "state": "source_verified", "evidence": "scripts/p1-3-global-security-phase1.acceptance-rehearsal.ts" },
+    { "id": "phase8.browser_acceptance", "state": "source_verified", "evidence": "scripts/p1-3-email-change-browser.acceptance-rehearsal.ts" },
+    { "id": "phase8.deployment_roles", "state": "source_verified", "evidence": "src/server/services/container-entrypoint-contract.test.ts" },
+    { "id": "phase8.operation_registry", "state": "source_verified", "evidence": "src/server/operation-registry/checker.ts" },
+    { "id": "phase8.documentation", "state": "source_verified", "evidence": "docs/ARCHITECTURE.md" }
+  ],
+  "forbiddenActions": [
+    "partial_p1_3_user_release",
+    "commit",
+    "push",
+    "pull_request",
+    "merge",
+    "publish",
+    "deploy",
+    "normal_runtime_database",
+    "live_security_flow"
+  ]
+}

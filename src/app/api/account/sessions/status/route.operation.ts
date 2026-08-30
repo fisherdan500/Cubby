@@ -2,15 +2,11 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "client_binding:src/components/sign-out-button.tsx",
-  ownerModule: "src/components/sign-out-button.tsx",
-  ownerKind: "client_binding",
+  id: "api_route:src/app/api/account/sessions/status/route.ts",
+  ownerModule: "src/app/api/account/sessions/status/route.ts",
+  ownerKind: "api_route",
   bindings: [
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.signOut[1]",
-      target: "better-auth/react#createAuthClient.signOut"
-    }
+    { kind: "route_method", symbol: "POST", target: "src/app/api/account/sessions/status/route.ts#POST" }
   ],
   disposition: "observed",
   deferredGateIds: [

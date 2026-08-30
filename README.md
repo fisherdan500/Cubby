@@ -55,14 +55,16 @@ docker compose up --build
 
 ### Bind the platform owner
 
-After the migration is deployed and the intended owner account exists, bind that
+Runtime password signup is currently fail-closed pending Cubby's complete
+initial-credential protocol. After the migration is deployed and an intended owner
+account already exists through retained state or an approved future protocol, bind that
 exact account by stable user ID and confirming email. Cubby never guesses or
 selects an owner automatically, and binding requires a verified email/password
 account.
 
-Fresh password-signup deployments do not have outbound email verification yet.
-Only while there is exactly one account and no platform owner, a host operator may
-explicitly attest that bootstrap account first. This is a separate, audited
+Cubby does not have outbound email verification yet. Only while there is exactly
+one retained credential-backed account and no platform owner, a host operator may
+explicitly attest that account first. This is a separate, audited
 operation with a high-friction acknowledgement; it never runs as a side effect of
 binding.
 
@@ -155,12 +157,21 @@ for setup and troubleshooting details.
 
 ## Key Environment Variables
 
-- `DATABASE_URL`: PostgreSQL connection string used by Prisma.
+- `DATABASE_URL`: non-owner `cubby_runtime` PostgreSQL connection used by the running server.
+- `AUTH_DATABASE_URL`: isolated `cubby_auth` connection used only by Better Auth for identity/session reads and Session persistence. Ordinary application SQL cannot directly create, update, or delete sessions.
+- `EMAIL_DELIVERY_DATABASE_URL`: isolated `cubby_email_delivery` connection retained only by the encrypted SMTP worker; it can claim and finalize delivery receipts but cannot read delivery tables directly.
+- `MIGRATION_DATABASE_URL`: separate `cubby_migrator` owner connection used only while applying migrations; startup removes it before the server begins.
+- `CUBBY_RUNTIME_DB_PASSWORD`, `CUBBY_AUTH_DB_PASSWORD`, `CUBBY_EMAIL_DELIVERY_DB_PASSWORD`, `CUBBY_MIGRATOR_DB_PASSWORD`, and `CUBBY_SECURITY_OPERATOR_DB_PASSWORD`: distinct generated database-role passwords for Compose; the operator password is used only to provision or rotate the isolated login role and is removed before Next.js starts. Never commit real values.
+- `CUBBY_THROTTLE_KEY`: stable 32-byte base64url deployment secret for private throttle identities, history handles, and cursors. Startup verifies its digest; the key is excluded from logs and backups and has no ordinary rotation path.
+- `CUBBY_TRUSTED_PROXY_HOPS`: closed `0`/`1` trusted-proxy policy used to derive privacy-preserving client throttle identity.
+- `SECURITY_OPERATOR_DATABASE_URL`: host-local input only for the packaged security aggregate command. It is never a Compose app variable or server/worker runtime setting. The database has no host port; invoke the packaged child in the running app container: `docker compose exec -T -e SECURITY_OPERATOR_DATABASE_URL=... app node /app/security-operator.mjs aggregate --from YYYY-MM-DD --to YYYY-MM-DD`. The range is UTC, inclusive/exclusive, and at most 31 days.
+- `CUBBY_FRESH_AUTH_ATTESTATION_KEYRING` and `CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION`: one active versioned 32-byte base64url key and, during rotation, at most one prior key. The prior key verifies only during its database-enforced ten-minute overlap. Reusing a version with different bytes fails startup. These keys are deployment secrets and are excluded from household backups.
+- `CUBBY_EMAIL_DELIVERY_KEYRING` and `CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION`: separate versioned 32-byte base64url AES-256-GCM delivery keys. Every nonterminal ciphertext key must remain configured and digest-matched; keys and encrypted outbox rows are excluded from household backups.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `EMAIL_FROM`: authenticated security-email transport. `SMTP_SECURE=true` selects implicit TLS; otherwise STARTTLS is mandatory. `SMTP_CA_CERT` optionally supplies a private CA while certificate verification remains enabled.
 - `BETTER_AUTH_SECRET`: long secret for Better Auth. Change this before deployment.
 - `BETTER_AUTH_URL`: one canonical app origin, including scheme and external port when applicable.
 - `TRUSTED_ORIGINS`: comma-separated exact browser origins allowed by Better Auth.
-- `ENABLE_REGISTRATION`: permits only the first account while no users, households,
-  platform audit history, or platform owner exist.
+- `ENABLE_REGISTRATION`: retained configuration only; runtime sign-up is fail-closed until the complete Cubby-owned initial-credential registration protocol is available.
 - `APP_TIMEZONE`: app-level display/grouping timezone, for example `America/New_York`.
 - `APP_PORT`: host port mapped to container port 3000 by Docker Compose.
 - `AUTOMATED_BACKUPS_ENABLED`: opt-in local-only automated JSON backups, disabled by default.
@@ -172,6 +183,19 @@ for setup and troubleshooting details.
 - `CUBBY_BACKUP_HOST_DIR`: host path bind-mounted into `/var/lib/cubby/backups` for automated local versions.
 
 ## Documentation
+
+## Global Security Phase 8 Candidate
+
+Phase 8 adds database-clock layered sign-in throttling and account-private,
+cursor-paginated security history. Credential success evidence is created only by
+the canonical Better Auth session insert; failure evidence shares the incident
+transaction. History/export snapshots serialize with event allocation, so later
+events cannot enter an established snapshot. The aggregate operator remains a
+host-initiated, child-only command and never receives a Compose runtime URL.
+Throttle keys are versionless 32-byte deployment secrets: provision/verify the
+digest during startup, do not log or back up the key, and do not rotate it until
+a separately approved maintenance gate exists. This complete security program is
+unreleased until Phase 9.
 
 - [Architecture](docs/ARCHITECTURE.md): system shape, data model, services, permissions, imports, integrations, and time handling.
 - [Development](docs/DEVELOPMENT.md): setup, workflows, verification commands, and troubleshooting.

@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
   operationUpdate: vi.fn(),
   tombstoneFindUnique: vi.fn(),
   transaction: vi.fn(),
-  queryRaw: vi.fn()
+  queryRaw: vi.fn(),
+  recordQualifyingUse: vi.fn()
 }));
 
 vi.mock("@/server/auth/session", () => ({ requireFreshSession: mocks.requireFreshSession }));
@@ -34,6 +35,7 @@ vi.mock("@/lib/db/prisma", () => ({
     $transaction: mocks.transaction
   }
 }));
+vi.mock("@/server/services/global-session-security", () => ({ recordQualifyingGlobalSessionUseAfterSuccess: mocks.recordQualifyingUse }));
 
 import { BrowserOperationKey, BrowserOperationProtocolVersion, BrowserOperationTargetKind } from "@prisma/client";
 import {
@@ -465,11 +467,33 @@ describe("browser operation bindings", () => {
       execute
     })).resolves.toMatchObject({ status: "completed", outcome: { kind: "units_updated" } });
 
+    expect(mocks.recordQualifyingUse).toHaveBeenCalledWith(expect.anything(), ctx, "cubby_owned_non_get_mutation");
     expect(execute).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(ctx), expect.objectContaining({ targetSnapshot: opening }));
     expect(mocks.operationCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({ targetKind: BrowserOperationTargetKind.settings, targetId: null, babyId: null })
     });
     expect(mocks.babyFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("does not qualify an already-terminal household mutation replay", async () => {
+    const opening = { settingsState: "absent", updatedAt: null, schemaVersion: 1 };
+    const openingFingerprint = browserIntentFingerprint({ version: 2, operationKey: BrowserOperationKey.settingsUnitsUpdate, householdId: ctx.householdId, memberId: ctx.memberId, babyId: null, targetKind: BrowserOperationTargetKind.settings, targetId: null, opening });
+    const intent = { volume: "mL" };
+    const intentFingerprint = browserIntentFingerprint({ openingFingerprint, payload: intent });
+    mocks.bindingFindFirst.mockResolvedValue({
+      id: "binding-1", householdId: ctx.householdId, operationId, sessionId: ctx.sessionId,
+      actorUserId: ctx.userId, actorMemberId: ctx.memberId, operationKey: BrowserOperationKey.settingsUnitsUpdate,
+      openingFingerprint, persistenceVersion: 2, targetKind: BrowserOperationTargetKind.settings, targetId: null, babyId: null,
+      targetSnapshot: opening, protocolVersion: BrowserOperationProtocolVersion.browserV2, state: "terminal",
+      expiresAt: new Date(Date.now() - 60_000),
+      operation: { operationId, intentFingerprint, status: "completed", outcomeCode: "ok", outcomeSnapshot: { operationId, kind: "units_updated", code: "ok", settingsScope: "household" } }
+    });
+    const execute = vi.fn();
+
+    await expect(executeHouseholdBrowserOperation({ ctx, operationId, operationKey: BrowserOperationKey.settingsUnitsUpdate, intent, targetKind: BrowserOperationTargetKind.settings, permission: "household.manage", execute })).resolves.toMatchObject({ status: "completed" });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(mocks.recordQualifyingUse).not.toHaveBeenCalled();
   });
 
   it.each(Object.values(BrowserOperationKey).map((operationKey, index) => ({
@@ -829,6 +853,7 @@ describe("browser operation bindings", () => {
     })).resolves.toEqual({ status: "completed", operationId, outcome: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" } });
 
     expect(execute).not.toHaveBeenCalled();
+    expect(mocks.recordQualifyingUse).not.toHaveBeenCalled();
     expect(mocks.operationUpdate).not.toHaveBeenCalled();
   });
 

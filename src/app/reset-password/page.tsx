@@ -6,9 +6,9 @@ export default function ResetPasswordPage() {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md space-y-3">
         <BrandLockup orientation="vertical" size="lg" className="mx-auto mb-3" priority />
-        <h1 className="text-center font-editorial text-3xl font-bold">Password reset ready</h1>
+        <h1 className="text-center font-editorial text-3xl font-bold">Password reset unavailable</h1>
         <p className="text-sm text-muted-foreground">
-          Cubby is wired for Better Auth password reset callbacks. SMTP delivery is intentionally stubbed in v1 until mail settings are configured.
+          Password reset is unavailable while Cubby completes its recovery-security protocol. Generic Better Auth reset callbacks are not accepted.
         </p>
       </Card>
     </main>

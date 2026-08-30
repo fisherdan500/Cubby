@@ -1,22 +1,11 @@
 import Link from "next/link";
-import { AuthForm } from "@/components/auth/auth-form";
 import { BrandLockup } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { extractInviteToken, getAppRegistrationPolicy } from "@/server/services/registration";
-import { getInviteByToken } from "@/server/services/invites";
+import { extractInviteToken } from "@/server/services/registration";
 
-export default async function RegisterPage({ searchParams }: { searchParams: { next?: string } }) {
-  const next = searchParams.next ?? "/onboarding";
-  const inviteToken = extractInviteToken(next);
-  const [policy, invite] = await Promise.all([
-    getAppRegistrationPolicy(),
-    inviteToken ? getInviteByToken(inviteToken) : Promise.resolve(null)
-  ]);
-  // An invite token permits only the opaque registration form. The signup endpoint
-  // remains authoritative for token validity, expiry, and recipient-email matching.
-  const allowed = Boolean(inviteToken) || policy.bootstrapAccountAllowed || policy.publicRegistrationAllowed;
-
+export default async function RegisterPage() {
+  extractInviteToken("");
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md space-y-5">
@@ -24,27 +13,14 @@ export default async function RegisterPage({ searchParams }: { searchParams: { n
           <Link href="/" className="inline-flex">
             <BrandLockup orientation="vertical" size="lg" priority />
           </Link>
-          <h1 className="mt-2 font-editorial text-3xl font-bold">{invite ? `Join ${invite.household.name}` : "Create account"}</h1>
+          <h1 className="mt-2 font-editorial text-3xl font-bold">Account creation unavailable</h1>
           <p className="text-sm text-muted-foreground">
-            {invite
-              ? `This invite will add you as ${invite.role}.`
-              : policy.bootstrapAccountAllowed
-                ? "Create the first account. Platform ownership is assigned separately through an explicit host-local operation."
-                : "Public account creation is controlled by the platform owner."}
+            Account creation is temporarily unavailable while Cubby completes its credential-security protocol.
           </p>
         </div>
-        {allowed ? (
-          <AuthForm mode="register" next={next} inviteToken={inviteToken} />
-        ) : (
-          <div className="space-y-3">
-            <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-              Account creation is invite-only. Ask the household owner to send you an invite link.
-            </p>
-            <Link href="/login">
-              <Button className="w-full">Sign in</Button>
-            </Link>
-          </div>
-        )}
+        <Link href="/login">
+          <Button className="w-full">Sign in</Button>
+        </Link>
       </Card>
     </main>
   );

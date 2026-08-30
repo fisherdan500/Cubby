@@ -6,7 +6,9 @@ const mocks = vi.hoisted(() => ({
   startBackup: vi.fn(),
   startIntegrity: vi.fn(),
   startSproutRetention: vi.fn(),
-  startBrowserOperationRetention: vi.fn()
+  startBrowserOperationRetention: vi.fn(),
+  startEmailDelivery: vi.fn(),
+  startEmailChangeLifecycle: vi.fn()
 }));
 
 vi.mock("@/server/automated-backup-scheduler", () => ({
@@ -20,6 +22,12 @@ vi.mock("@/server/sprout-source-retention-scheduler", () => ({
 }));
 vi.mock("@/server/browser-operation-retention-scheduler", () => ({
   startBrowserOperationRetentionScheduler: mocks.startBrowserOperationRetention
+}));
+vi.mock("@/server/email-delivery-scheduler", () => ({
+  startEmailDeliveryScheduler: mocks.startEmailDelivery
+}));
+vi.mock("@/server/email-change-lifecycle-scheduler", () => ({
+  startEmailChangeLifecycleScheduler: mocks.startEmailChangeLifecycle
 }));
 
 describe("instrumentation", () => {
@@ -36,5 +44,7 @@ describe("instrumentation", () => {
     expect(mocks.startIntegrity).toHaveBeenCalledOnce();
     expect(mocks.startSproutRetention).toHaveBeenCalledOnce();
     expect(mocks.startBrowserOperationRetention).toHaveBeenCalledOnce();
+    expect(mocks.startEmailDelivery).toHaveBeenCalledOnce();
+    expect(mocks.startEmailChangeLifecycle).toHaveBeenCalledOnce();
   });
 });

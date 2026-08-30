@@ -3,11 +3,14 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: cubby
-      POSTGRES_USER: cubby
-      POSTGRES_PASSWORD: cubby_password
+      POSTGRES_USER: cubby_migrator
+      POSTGRES_PASSWORD: ${CUBBY_MIGRATOR_DB_PASSWORD:?Set CUBBY_MIGRATOR_DB_PASSWORD}
+      CUBBY_RUNTIME_DB_PASSWORD: ${CUBBY_RUNTIME_DB_PASSWORD:?Set CUBBY_RUNTIME_DB_PASSWORD}
+      CUBBY_AUTH_DB_PASSWORD: ${CUBBY_AUTH_DB_PASSWORD:?Set CUBBY_AUTH_DB_PASSWORD}
+      CUBBY_EMAIL_DELIVERY_DB_PASSWORD: ${CUBBY_EMAIL_DELIVERY_DB_PASSWORD:?Set CUBBY_EMAIL_DELIVERY_DB_PASSWORD}
       TZ: ${APP_TIMEZONE:-America/New_York}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cubby -d cubby"]
+      test: ["CMD-SHELL", "pg_isready -U cubby_migrator -d cubby"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -22,6 +25,13 @@ services:
     environment:
       TZ: ${APP_TIMEZONE:-America/New_York}
       APP_TIMEZONE: ${APP_TIMEZONE:-America/New_York}
+      DATABASE_URL: postgresql://cubby_runtime:${CUBBY_RUNTIME_DB_PASSWORD:?Set CUBBY_RUNTIME_DB_PASSWORD}@postgres:5432/cubby?schema=public
+      MIGRATION_DATABASE_URL: postgresql://cubby_migrator:${CUBBY_MIGRATOR_DB_PASSWORD:?Set CUBBY_MIGRATOR_DB_PASSWORD}@postgres:5432/cubby?schema=public
+      AUTH_DATABASE_URL: postgresql://cubby_auth:${CUBBY_AUTH_DB_PASSWORD:?Set CUBBY_AUTH_DB_PASSWORD}@postgres:5432/cubby?schema=public
+      EMAIL_DELIVERY_DATABASE_URL: postgresql://cubby_email_delivery:${CUBBY_EMAIL_DELIVERY_DB_PASSWORD:?Set CUBBY_EMAIL_DELIVERY_DB_PASSWORD}@postgres:5432/cubby?schema=public
+      CUBBY_SECURITY_OPERATOR_DB_PASSWORD: ${CUBBY_SECURITY_OPERATOR_DB_PASSWORD:?Set CUBBY_SECURITY_OPERATOR_DB_PASSWORD}
+      CUBBY_THROTTLE_KEY: ${CUBBY_THROTTLE_KEY:?Set CUBBY_THROTTLE_KEY}
+      CUBBY_TRUSTED_PROXY_HOPS: ${CUBBY_TRUSTED_PROXY_HOPS:-0}
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:

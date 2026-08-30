@@ -20,18 +20,45 @@ cp .env.example .env
 
 Important variables:
 
-- `DATABASE_URL`: Prisma PostgreSQL connection string.
+- `DATABASE_URL`: non-owner runtime PostgreSQL connection string. The web server must use `cubby_runtime`, never the migration owner.
+- `AUTH_DATABASE_URL`: restricted `cubby_auth` connection used only by Better Auth. It can read the minimum identity/session tables and write Session rows; it cannot mutate credentials, security evidence, household data, or business data.
+- `EMAIL_DELIVERY_DATABASE_URL`: separate `cubby_email_delivery` connection used only by the encrypted email worker. It has procedure execution but no direct outbox-table read access.
+- `MIGRATION_DATABASE_URL`: separate `cubby_migrator` owner connection used only by the startup migration step; it is removed before Next.js starts.
+- `CUBBY_RUNTIME_DB_PASSWORD`, `CUBBY_AUTH_DB_PASSWORD`, `CUBBY_EMAIL_DELIVERY_DB_PASSWORD`, `CUBBY_MIGRATOR_DB_PASSWORD`, and `CUBBY_SECURITY_OPERATOR_DB_PASSWORD`: distinct generated database-role passwords used by Compose. The operator password exists only for startup provisioning/rotation and is removed before Next.js starts. Do not reuse them or commit real values.
+- `CUBBY_THROTTLE_KEY`: one stable 32-byte base64url deployment secret used only for private throttle identities, history handles, and cursors. Startup verifies its owner-table digest; it is never logged or backed up and has no ordinary rotation path.
+- `CUBBY_TRUSTED_PROXY_HOPS`: exactly `0` or `1`; it controls the closed trusted-client address grammar used by layered throttling.
+- `SECURITY_OPERATOR_DATABASE_URL`: a host-supplied input only for the packaged child command inside the app image, never a Compose app/server/worker variable. It must identify `cubby_security_operator` and include a password.
+- `CUBBY_FRESH_AUTH_ATTESTATION_KEYRING` and `CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION`: required versioned password-transition attestation keys. Configure one active 32-byte base64url key and at most one prior key during the ten-minute rotation overlap; never reuse a version with different bytes or include these keys in household backups.
+- `CUBBY_EMAIL_DELIVERY_KEYRING` and `CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION`: independent versioned AES-256-GCM outbox keys. Keep every version referenced by nonterminal ciphertext configured until its reference count is zero.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `EMAIL_FROM`: required authenticated email transport. Use `SMTP_SECURE=true` for implicit TLS or the default mandatory STARTTLS path; `SMTP_CA_CERT` may provide a private CA without disabling certificate verification.
 - `BETTER_AUTH_SECRET`: long random secret. Do not use the example value in production.
 - `BETTER_AUTH_URL`: canonical browser URL, including host port.
 - `TRUSTED_ORIGINS`: comma-separated origins accepted by Better Auth.
-- `ENABLE_REGISTRATION`: permits only the first account while no users, households,
-  platform audit history, or platform owner exist. Later account and household
-  policy comes only from platform settings.
+- `ENABLE_REGISTRATION`: retained configuration only. Runtime sign-up is fail-closed until the complete Cubby-owned initial-credential registration protocol is implemented; it does not re-enable Better Auth direct password insertion.
 - `APP_TIMEZONE`: app-level timezone for display, grouping, reports, imports, and redirects.
 - `APP_PORT`: host port mapped by Docker Compose.
 
 Optional variables can be added to `.env` even when they are not listed in
 `.env.example`.
+
+### Global Security Phase 8 (unreleased until Phase 9)
+
+Layered sign-in throttling is database-clock based and records private evidence
+atomically with its incident transition. A successful credential sign-in records
+its event in the same database transaction as Better Auth's canonical Session
+insert. Private history and export snapshots use the global transition lock with
+event sequence allocation. Do not treat this candidate as a partial release.
+
+The operator URL is supplied only for a one-off child process started by the
+host; Compose does not publish PostgreSQL or provide that URL to `app`:
+
+```bash
+docker compose exec -T -e SECURITY_OPERATOR_DATABASE_URL=... app node /app/security-operator.mjs aggregate --from YYYY-MM-DD --to YYYY-MM-DD
+```
+
+The throttle key is a 32-byte deployment secret whose digest is verified at
+startup. It is excluded from backups and logs; rotation is deferred to an
+approved maintenance gate.
 
 For local Docker on a non-default port, keep these aligned:
 
@@ -128,7 +155,17 @@ Logs:
 docker compose logs --tail 300 app
 ```
 
-The app container runs `prisma migrate deploy` before starting the Next server.
+The app container provisions or rotates the non-owner `cubby_runtime`, `cubby_auth`, `cubby_email_delivery`, and `cubby_security_operator` roles through the migration-owner connection, runs `prisma migrate deploy` with `MIGRATION_DATABASE_URL`, reconciles the fresh-auth and email-delivery keyrings into runtime-inaccessible owner tables, then removes migration-role and component-password variables before starting the Next server. Ordinary services use `DATABASE_URL`, Better Auth alone uses `AUTH_DATABASE_URL`, and only the encrypted SMTP worker uses `EMAIL_DELIVERY_DATABASE_URL`. The security operator role is not an app runtime role: it has no memberships, object ownership, or table privileges and can execute only its aggregate function. This applies on fresh and existing volumes and fails closed for absent, malformed, version-mismatched, or referenced-but-missing key material. Do not manually grant `cubby_runtime` direct Session DML, delivery receipt authority, or credential/key-table privileges.
+
+### Host-local security aggregate
+
+The primary Compose package does not publish PostgreSQL. A host operator queries the content-free global incident aggregate by starting a one-off child in the running app image. Do not put the operator URL in Compose, an app environment file, or a worker configuration.
+
+```bash
+docker compose exec -T -e SECURITY_OPERATOR_DATABASE_URL=... app node /app/security-operator.mjs aggregate --from 2026-08-01 --to 2026-08-08
+```
+
+Set `SECURITY_OPERATOR_DATABASE_URL` only on this `docker compose exec` child. The URL must use `cubby_security_operator` with a nonempty password and the container-reachable PostgreSQL service address. Dates are exact UTC calendar dates; `from` is inclusive, `to` is exclusive, and the command and database both reject ranges over 31 days. Successful stdout is schema-versioned JSON containing only `layer`, `state`, `coarseTimeBucket`, and `incidentCount`; failures use a fixed sanitized stderr message.
 `docker/entrypoint.sh` emits sanitized migration/server phase markers and exits
 without starting Next.js when migration deployment fails. PostgreSQL data
 persists in the `cubby_postgres_data` named volume. The app is healthy only when
@@ -187,11 +224,13 @@ All operations below are host-local, require exact stable user IDs and email
 confirmation, and write platform audit events without pretending that the target
 user was the operator.
 
-Better Auth password signup currently creates an unverified first account and
-Cubby has no outbound verification-email transport. Before initial binding only,
-an operator can explicitly attest the sole account. This requires no existing
-platform owner, exactly one user, a usable password credential, and the exact
-acknowledgement token:
+Runtime password signup is currently fail-closed pending Cubby's complete
+initial-credential protocol. The commands below apply only to an already existing
+credential-backed account created through an approved future protocol or retained
+deployment state. Cubby has no outbound verification-email transport; before
+initial binding only, an operator can explicitly attest the sole account. This
+requires no existing platform owner, exactly one user, a usable password credential,
+and the exact acknowledgement token:
 
 ```bash
 npm run platform:owner -- verify-bootstrap --user-id <stable-user-id> --confirm-email <exact-email> --acknowledgement I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION
@@ -392,15 +431,18 @@ permission model as their services and APIs.
 
 ### Sessions And Sign-In Throttling
 
-Active Sessions uses Better Auth's own session-listing and revocation endpoints.
-These sensitive endpoints require a session less than 10 minutes old. Keep the
-reauthentication state explicit instead of treating a `403 SESSION_NOT_FRESH`
-response as an empty list.
+Active Sessions is a global-user, household-independent Cubby surface. It lists
+only opaque handles, current-device status, coarse device labels, and lifetime
+timestamps through the guarded Cubby API; raw Better Auth list/revoke/sign-out
+endpoints remain denied. Revocation requires explicit confirmation and a current
+password proof, and current/all lost responses reconcile through authoritative
+status after normal sign-in rather than Better Auth `freshAge`.
 
-In production, Better Auth allows three sign-in requests per client IP and
-route in a 10-second window. This counts requests, not only incorrect passwords,
-and is not an account lockout. The limiter currently uses Better Auth's in-memory
-storage and resets when the window elapses or the app process restarts.
+Better Auth's independent in-memory limiter is disabled. Cubby's database-clock
+account/client/deployment throttle records failed credential evidence durably,
+enters a fixed 15-minute quiet period on the fifth failure in one 15-minute
+window, never extends that quiet deadline, and does not clear evidence on success.
+Existing and nonexistent accounts retain neutral public behavior.
 
 Member suspension is household-scoped. Resolve household access only through
 membership queries that require both `deletedAt: null` and `disabledAt: null`.
@@ -544,8 +586,9 @@ Confirm `APP_TIMEZONE` in `.env` and Docker Compose. Sprout offset-less datetime
 strings are interpreted as UTC instants, then grouped for display by
 `APP_TIMEZONE`.
 
-### Registration Link Is Hidden
+### Registration Is Unavailable
 
-After the first owner exists, public account creation is controlled by owner
-settings. New members should normally be added through `/app/settings/members`
-invite links.
+Runtime account creation is intentionally fail-closed until Cubby's complete
+initial-credential protocol is implemented. Platform registration settings and
+household invite links are retained future policy inputs; they do not currently
+enable a signup form or password writer.

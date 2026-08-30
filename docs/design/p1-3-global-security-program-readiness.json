@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "program": "p1_3_global_credential_session_security",
+  "state": "local_review_ready_unreleased",
+  "authority": "complete_program_source_readiness",
+  "baseHead": "01c8ad81c8cbc75fb89469b1daaae018e0021031",
+  "phases": [
+    { "id": "phase1_persistence", "state": "accepted_local_source" },
+    { "id": "phase2_session_authorization", "state": "accepted_local_source" },
+    { "id": "phase3_fresh_auth", "state": "accepted_local_source" },
+    { "id": "phase4_password_transition", "state": "accepted_local_source" },
+    { "id": "phase5_offline_recovery", "state": "accepted_local_source" },
+    { "id": "phase6_verified_email_change", "state": "accepted_local_source" },
+    { "id": "phase7_private_session_security", "state": "accepted_local_source" },
+    { "id": "phase8_private_history_throttling", "state": "accepted_local_source" },
+    { "id": "phase9_integrated_acceptance", "state": "accepted_local_source" }
+  ],
+  "integratedGates": [
+    { "id": "protocol_and_persistence", "state": "verified", "evidence": "src/server/services/global-security-design.test.ts" },
+    { "id": "framework_route_cutover", "state": "verified", "evidence": "src/app/api/auth/[...all]/route.test.ts" },
+    { "id": "credential_recovery_email_session_transitions", "state": "verified", "evidence": "scripts/p1-3-global-security-phase1.acceptance-rehearsal.ts" },
+    { "id": "private_history_throttling_retention", "state": "verified", "evidence": "src/server/services/global-security-phase8-acceptance-contract.test.ts" },
+    { "id": "disposable_postgresql", "state": "verified", "evidence": "scripts/p1-3-global-security-phase1.acceptance-rehearsal.ts" },
+    { "id": "real_chrome", "state": "verified", "evidence": "scripts/p1-3-email-change-browser.acceptance-rehearsal.ts" },
+    { "id": "typecheck_lint_build_registry_diff", "state": "verified", "evidence": "package.json" },
+    { "id": "serial_full_suite", "state": "verified_with_protected_exception", "evidence": "src/server/services/browser-operation-household-foundation-migration.test.ts" },
+    { "id": "independent_phase_reviews", "state": "verified", "evidence": "docs/design/p1-3-phase8-readiness.json" }
+  ],
+  "protectedException": {
+    "path": "src/server/services/browser-operation-household-foundation-migration.test.ts",
+    "reason": "unrelated_crlf_sensitive_literal_assertion",
+    "disposition": "untouched_and_reported_separately"
+  },
+  "forbiddenActions": [
+    "commit",
+    "push",
+    "pull_request",
+    "merge",
+    "publish",
+    "deploy",
+    "normal_runtime_database",
+    "live_credential_or_recovery_flow",
+    "secret_access",
+    "branch_or_worktree_cleanup"
+  ]
+}

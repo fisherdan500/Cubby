@@ -16,6 +16,36 @@ hard startup boundary: the container exits and never reaches the server phase.
 Sanitized `cubby_startup` phase markers provide operator-visible migration and
 server progress without printing connection strings or credentials.
 
+Startup provisions five isolated PostgreSQL principals: migration owner
+`cubby_migrator`, ordinary application role `cubby_runtime`, restricted
+`cubby_auth` identity/session persistence, and the narrow `cubby_email_delivery`
+worker role, plus host-local `cubby_security_operator`. The operator can execute
+only a fixed-search-path aggregate over incidents and has no table privileges,
+role memberships, or app runtime connection. Better Auth can read the minimum identity records and persist Session
+rows, while `cubby_runtime` can revoke or authorize sessions only through guarded
+fixed-search-path procedures. Security-email recipients and message bodies
+remain AES-256-GCM ciphertext until the dedicated worker claims them. That role
+can execute claim/receipt procedures but cannot directly read or mutate the
+outbox, key metadata, credential receipts, or account identity. Authenticated
+TLS SMTP, exact-recipient 250 receipts, bounded database-clock retries, and
+terminal ciphertext clearing are required; household backups exclude both the
+delivery keyring and outbox rows.
+
+### Global Security Phase 8 Candidate
+
+Global sign-in throttling uses fixed database-clock windows for account,
+client, and deployment identities. Incidents and failure evidence are one
+serializable transaction. Successful credential evidence is a fixed-search-path
+definer trigger on the Better Auth `cubby_auth` Session insert, so a session and
+its evidence commit or roll back together. All `GlobalSecurityEvent` inserts
+acquire the deployment transition advisory lock before identity allocation; the
+private-history reader takes the same lock before its first-page maximum
+sequence snapshot. Exports use a repeatable database snapshot. The
+`cubby_security_operator` role can only call a content-free aggregate, launched
+as a host-initiated child inside the app image, and has no Compose URL or table
+access. The throttle key is startup-verified, never backed up/logged, and has no
+rotation path until a maintenance gate. Phase 8 remains unreleased until Phase 9.
+
 Docker Compose is the primary deployment path and has two distinct health
 contracts. PostgreSQL liveness uses `pg_isready`; application readiness uses
 `GET /api/health` inside the app container. That route performs a minimal Prisma
@@ -80,10 +110,12 @@ Deployment-wide authority is separate from household membership:
 - `PlatformSettings` owns public-account registration and the `closed`,
   `invitation_only`, or `open` direct-household-creation policy. Missing or
   incomplete singleton rows fail closed.
-- Membership invite tokens remain household-scoped. Signup requires the submitted
-  email to match the active invite case-insensitively, and invite acceptance routes
-  into the inviting household rather than authorizing another household.
-- The first-account signup check is serialized with a PostgreSQL advisory lock.
+- Membership invite tokens remain household-scoped. The retained future registration
+  policy requires a submitted email to match an active invite case-insensitively and
+  routes acceptance into the inviting household, but runtime signup is currently
+  fail-closed until Cubby's complete initial-credential protocol is implemented.
+- The retained first-account policy uses a PostgreSQL advisory lock; no current route
+  exposes the password-signup writer.
   Direct household creation is serialized per user, rechecks membership inside the
   transaction, and holds a shared platform-settings lock while evaluating policy.
 - Only the platform owner can change platform settings. Household owners and admins
@@ -97,9 +129,10 @@ loaded. Direct API and service calls remain authoritative; UI visibility is not
 treated as an authorization boundary.
 
 Better Auth sessions are personal to the signed-in user rather than household
-resources. Every household role can review and revoke only its own sessions.
-Session management requires a session created within the configured 10-minute
-`freshAge`; stale sessions are directed through a fresh email/password sign-in.
+resources. Any authenticated global user, including a user with no household,
+can review only the privacy-minimized projection of their own sessions. Session
+revocation requires explicit confirmation and a fresh current-password proof;
+it does not derive authority from a household role or Better Auth `freshAge`.
 
 Household member suspension is reversible and stored in
 `HouseholdMember.disabledAt`; it does not delete the user, membership, role, or

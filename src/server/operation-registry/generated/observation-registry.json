@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 58,
-    "client_binding": 26,
+    "api_route": 64,
+    "client_binding": 27,
     "instrumentation": 1,
-    "package_command": 8,
+    "package_command": 13,
     "server_action": 1,
-    "server_loader": 28,
-    "worker": 4
+    "server_loader": 29,
+    "worker": 6
   },
-  "declarationDigest": "9cde2ab81309452fe99783e105213a9f6946878f37e3a72404fa129d35048977",
+  "declarationDigest": "678db9b264eca1b537fc5346ecf15949a7fa79b0c29612bdaf31d43832d4c77e",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -292,6 +292,241 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "container_copy",
+            "symbol": "provision-email-delivery-keys.mjs",
+            "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
+          },
+          {
+            "kind": "container_invocation",
+            "symbol": "provision-email-delivery-keys.mjs",
+            "target": "docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs"
+          },
+          {
+            "kind": "package_build_entrypoint",
+            "symbol": "scripts/provision-email-delivery-keys.mjs",
+            "target": "scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs"
+          },
+          {
+            "kind": "package_build_invocation",
+            "symbol": "build",
+            "target": "package.json#scripts.build:build:email-delivery-keys"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "package_command:scripts/provision-email-delivery-keys.mjs",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "container_copy",
+            "symbol": "provision-fresh-auth-attestation-keys.mjs",
+            "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
+          },
+          {
+            "kind": "container_invocation",
+            "symbol": "provision-fresh-auth-attestation-keys.mjs",
+            "target": "docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs"
+          },
+          {
+            "kind": "package_build_entrypoint",
+            "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
+            "target": "scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs"
+          },
+          {
+            "kind": "package_build_invocation",
+            "symbol": "build",
+            "target": "package.json#scripts.build:build:fresh-auth-attestation-keys"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "container_copy",
+            "symbol": "provision-global-security-throttle-key.mjs",
+            "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
+          },
+          {
+            "kind": "container_invocation",
+            "symbol": "provision-global-security-throttle-key.mjs",
+            "target": "docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs"
+          },
+          {
+            "kind": "package_build_entrypoint",
+            "symbol": "scripts/provision-global-security-throttle-key.mjs",
+            "target": "scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs"
+          },
+          {
+            "kind": "package_build_invocation",
+            "symbol": "build",
+            "target": "package.json#scripts.build:build:global-security-throttle-key"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "package_command:scripts/provision-global-security-throttle-key.mjs",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "container_copy",
+            "symbol": "provision-security-runtime-role.mjs",
+            "target": "Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs"
+          },
+          {
+            "kind": "container_invocation",
+            "symbol": "provision-security-runtime-role.mjs",
+            "target": "docker/entrypoint.sh#/app/provision-security-runtime-role.mjs"
+          },
+          {
+            "kind": "package_build_entrypoint",
+            "symbol": "scripts/provision-security-runtime-role.mjs",
+            "target": "scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs"
+          },
+          {
+            "kind": "package_build_invocation",
+            "symbol": "build",
+            "target": "package.json#scripts.build:build:security-runtime-role"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "package_command:scripts/provision-security-runtime-role.mjs",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/provision-security-runtime-role.mjs",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "command_variant",
+            "symbol": "aggregate",
+            "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
+          },
+          {
+            "kind": "container_copy",
+            "symbol": "security-operator.mjs",
+            "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
+          },
+          {
+            "kind": "package_build_entrypoint",
+            "symbol": "scripts/security-operator.ts",
+            "target": "scripts/security-operator.ts=>dist/security-operator.mjs"
+          },
+          {
+            "kind": "package_build_invocation",
+            "symbol": "build",
+            "target": "package.json#scripts.build:build:security-operator"
+          },
+          {
+            "kind": "package_script",
+            "symbol": "build:security-operator",
+            "target": "package.json#scripts.build:security-operator"
+          },
+          {
+            "kind": "package_script",
+            "symbol": "security:operator",
+            "target": "package.json#scripts.security:operator"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "package_command:scripts/security-operator.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/security-operator.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "package_script",
             "symbol": "verify:sprout-preview-commit",
             "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -522,6 +757,186 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/security-history/export/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security-history/export/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security-history/export/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security-history/export/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/export/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/account/security-history/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security-history/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security-history/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security-history/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/session-activity/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/session-activity/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/session-activity/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/session-activity/route.ts",
+      "sidecarPath": "src/app/api/account/session-activity/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/sessions/revoke/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/sessions/revoke/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/sessions/revoke/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/sessions/revoke/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/revoke/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/account/sessions/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/sessions/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/sessions/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/sessions/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/sessions/status/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/sessions/status/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/sessions/status/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/sessions/status/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/status/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "DELETE",
             "target": "src/app/api/activities/[id]/route.ts#DELETE"
           },
@@ -653,7 +1068,7 @@
           {
             "kind": "route_method",
             "symbol": "GET",
-            "target": "better-auth/next-js#toNextJsHandler.GET"
+            "target": "src/app/api/auth/[...all]/route.ts#GET"
           },
           {
             "kind": "route_method",
@@ -2982,8 +3397,38 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "requireSettingsPage",
-            "target": "src/server/auth/page-access.ts#requireSettingsPage"
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/app/settings/security-history/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/app/settings/security-history/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/app/settings/security-history/page.tsx",
+      "sidecarPath": "src/app/app/settings/security-history/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
           }
         ],
         "deferredGateIds": [
@@ -3114,16 +3559,6 @@
             "kind": "server_value_import",
             "symbol": "extractInviteToken",
             "target": "src/server/services/registration.ts#extractInviteToken"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getAppRegistrationPolicy",
-            "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getInviteByToken",
-            "target": "src/server/services/invites.ts#getInviteByToken"
           }
         ],
         "deferredGateIds": [
@@ -3269,16 +3704,6 @@
             "kind": "server_value_import",
             "symbol": "extractInviteToken",
             "target": "src/server/services/registration.ts#extractInviteToken"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getAppRegistrationPolicy",
-            "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getInviteByToken",
-            "target": "src/server/services/invites.ts#getInviteByToken"
           }
         ],
         "deferredGateIds": [
@@ -3476,19 +3901,9 @@
             "target": "better-auth/react#createAuthClient.signIn.email"
           },
           {
-            "kind": "auth_client_call",
-            "symbol": "authClient.signUp.email[1]",
-            "target": "better-auth/react#createAuthClient.signUp.email"
-          },
-          {
             "kind": "form_action",
             "symbol": "onSubmit",
             "target": "src/components/auth/auth-form.tsx#onSubmit"
-          },
-          {
-            "kind": "global_fetch",
-            "symbol": "fetch[1]",
-            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -3899,6 +4314,36 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/session-activity-reporter.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/session-activity-reporter.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/session-activity-reporter.tsx",
+      "sidecarPath": "src/components/session-activity-reporter.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
             "kind": "global_fetch",
@@ -4236,34 +4681,54 @@
       "declaration": {
         "bindings": [
           {
-            "kind": "auth_client_call",
-            "symbol": "authClient.getSession[1]",
-            "target": "better-auth/react#createAuthClient.getSession"
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
-            "kind": "auth_client_call",
-            "symbol": "authClient.listSessions[1]",
-            "target": "better-auth/react#createAuthClient.listSessions"
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/settings/security-history.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/settings/security-history.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/settings/security-history.tsx",
+      "sidecarPath": "src/components/settings/security-history.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
-            "kind": "auth_client_call",
-            "symbol": "authClient.revokeOtherSessions[1]",
-            "target": "better-auth/react#createAuthClient.revokeOtherSessions"
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
           },
           {
-            "kind": "auth_client_call",
-            "symbol": "authClient.revokeSession[1]",
-            "target": "better-auth/react#createAuthClient.revokeSession"
-          },
-          {
-            "kind": "auth_client_call",
-            "symbol": "authClient.signOut[1]",
-            "target": "better-auth/react#createAuthClient.signOut"
-          },
-          {
-            "kind": "auth_client_call",
-            "symbol": "authClient.signOut[2]",
-            "target": "better-auth/react#createAuthClient.signOut"
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -4371,36 +4836,6 @@
       "declaration": {
         "bindings": [
           {
-            "kind": "auth_client_call",
-            "symbol": "authClient.signOut[1]",
-            "target": "better-auth/react#createAuthClient.signOut"
-          }
-        ],
-        "deferredGateIds": [
-          "gate.carrier_authority_guard",
-          "gate.caller_controlled_scope",
-          "gate.service_operation_linkage",
-          "gate.permission_commit_reauthorization",
-          "gate.tenant_relationship_invariants",
-          "gate.model_and_effects",
-          "gate.variant_outcomes",
-          "gate.worker_containment",
-          "gate.browser_binding_staleness",
-          "gate.executable_evidence"
-        ],
-        "disposition": "observed",
-        "id": "client_binding:src/components/sign-out-button.tsx",
-        "ownerKind": "client_binding",
-        "ownerModule": "src/components/sign-out-button.tsx",
-        "schemaVersion": 1
-      },
-      "id": "client_binding:src/components/sign-out-button.tsx",
-      "sidecarPath": "src/components/sign-out-button.operation.ts"
-    },
-    {
-      "declaration": {
-        "bindings": [
-          {
             "kind": "worker_dynamic_import",
             "symbol": "startAutomatedBackupScheduler",
             "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -4421,6 +4856,16 @@
             "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
           },
           {
+            "kind": "worker_dynamic_import",
+            "symbol": "startEmailDeliveryScheduler",
+            "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+          },
+          {
+            "kind": "worker_dynamic_import",
+            "symbol": "startEmailChangeLifecycleScheduler",
+            "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+          },
+          {
             "kind": "worker_start_call",
             "symbol": "startAutomatedBackupScheduler",
             "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -4439,6 +4884,16 @@
             "kind": "worker_start_call",
             "symbol": "startBrowserOperationRetentionScheduler",
             "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startEmailDeliveryScheduler",
+            "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startEmailChangeLifecycleScheduler",
+            "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
           }
         ],
         "deferredGateIds": [
@@ -4541,6 +4996,86 @@
       },
       "id": "worker:src/server/browser-operation-retention-scheduler.ts",
       "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "worker_schedule",
+            "symbol": "tick",
+            "target": "src/server/email-change-lifecycle-scheduler.ts#tick"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startEmailChangeLifecycleScheduler",
+            "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+          },
+          {
+            "kind": "worker_tick",
+            "symbol": "tick",
+            "target": "src/server/services/email-change-lifecycle-worker.ts#runEmailChangeLifecycleWorkerTick"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "worker:src/server/email-change-lifecycle-scheduler.ts",
+        "ownerKind": "worker",
+        "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+        "schemaVersion": 1
+      },
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "worker_schedule",
+            "symbol": "tick",
+            "target": "src/server/email-delivery-scheduler.ts#tick"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startEmailDeliveryScheduler",
+            "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+          },
+          {
+            "kind": "worker_tick",
+            "symbol": "tick",
+            "target": "src/server/services/email-delivery-worker.ts#runEmailDeliveryWorkerTick"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "worker:src/server/email-delivery-scheduler.ts",
+        "ownerKind": "worker",
+        "ownerModule": "src/server/email-delivery-scheduler.ts",
+        "schemaVersion": 1
+      },
+      "id": "worker:src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
     },
     {
       "declaration": {
@@ -4685,7 +5220,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "22fd8748c6abd594d814cebe4607554f33d1e20aad353784574166e322dfb249",
+  "generatorDigest": "f20080b9c136c44571ac06eacc90295f6a9f7f20c1942da4faa3b06c3104e60e",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -4785,6 +5320,120 @@
     {
       "bindings": [
         {
+          "anchorDigest": "a1996d21cf5090f45c01b34ed943a7a6f918b2d6fb78860613de00879715740c",
+          "anchorEnd": 1994,
+          "anchorFile": "src/app/api/account/security-history/export/route.ts",
+          "anchorStart": 1113,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/security-history/export/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security-history/export/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security-history/export/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/export/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "43b63425f5dca7de42f3822002da94d4b5b51f57a1845c9d7d77be519cdfaa16",
+          "anchorEnd": 1533,
+          "anchorFile": "src/app/api/account/security-history/route.ts",
+          "anchorStart": 1253,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/account/security-history/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security-history/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security-history/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "543112329258dfdb983c6e9b89a39242464fb0d8f87dfd21f1e863e999091b6a",
+          "anchorEnd": 1265,
+          "anchorFile": "src/app/api/account/session-activity/route.ts",
+          "anchorStart": 315,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/session-activity/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/session-activity/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/session-activity/route.ts",
+      "sidecarPath": "src/app/api/account/session-activity/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "04bd84b5f4cf7e3565222c69ecb8b689eaac36f90d7c899ea62e1391e8f878a8",
+          "anchorEnd": 5049,
+          "anchorFile": "src/app/api/account/sessions/revoke/route.ts",
+          "anchorStart": 3518,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/sessions/revoke/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/sessions/revoke/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/revoke/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/revoke/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "547b546136217fc5ff4dc02830d4cca3f2d05c7f3ef0bbd6de7b0ea021b2e668",
+          "anchorEnd": 542,
+          "anchorFile": "src/app/api/account/sessions/route.ts",
+          "anchorStart": 290,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/account/sessions/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/sessions/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "7e00fc99f28e73ddfe0d9945a072d3486ef9506c9be0ba1ecd14e57b36907bad",
+          "anchorEnd": 2168,
+          "anchorFile": "src/app/api/account/sessions/status/route.ts",
+          "anchorStart": 1289,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/sessions/status/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/sessions/status/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/status/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/status/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "a7f652b14e07aa14f7a5e723e4cce851e6510386551e87c76b272a5caa0f8f4f",
           "anchorEnd": 3519,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
@@ -4879,19 +5528,19 @@
     {
       "bindings": [
         {
-          "anchorDigest": "5217e468736d72a32ef369e3602f205c1e4f99099baf50e779e01385ac8d2fcd",
-          "anchorEnd": 455,
+          "anchorDigest": "1611d1871a87b1a622c1866f0bea19b8ab8910f838d71038ebf273ec3828a8b2",
+          "anchorEnd": 720,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 437,
+          "anchorStart": 603,
           "kind": "route_method",
           "symbol": "GET",
-          "target": "better-auth/next-js#toNextJsHandler.GET"
+          "target": "src/app/api/auth/[...all]/route.ts#GET"
         },
         {
-          "anchorDigest": "825489298fa4463901661e6ab3f9750b7c9c9444d598215b46ce181fb6ea0aa5",
-          "anchorEnd": 1131,
+          "anchorDigest": "731c8bb27461e6c9aad40639453e43eca27be05921a3db221a4a9f84f962bedc",
+          "anchorEnd": 1838,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 458,
+          "anchorStart": 722,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/auth/[...all]/route.ts#POST"
@@ -6214,18 +6863,18 @@
       "bindings": [
         {
           "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
-          "anchorEnd": 178,
+          "anchorEnd": 260,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 152,
+          "anchorStart": 234,
           "kind": "server_value_import",
           "symbol": "getHouseholdSelectionState",
           "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 110,
+          "anchorEnd": 192,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 95,
+          "anchorStart": 177,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -6658,13 +7307,32 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 196,
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 149,
+          "anchorFile": "src/app/app/settings/security-history/page.tsx",
+          "anchorStart": 134,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/app/settings/security-history/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/settings/security-history/page.tsx",
+      "sidecarPath": "src/app/app/settings/security-history/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 192,
           "anchorFile": "src/app/app/settings/sessions/page.tsx",
           "anchorStart": 177,
           "kind": "server_value_import",
-          "symbol": "requireSettingsPage",
-          "target": "src/server/auth/page-access.ts#requireSettingsPage"
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -6759,24 +7427,6 @@
           "kind": "server_value_import",
           "symbol": "extractInviteToken",
           "target": "src/server/services/registration.ts#extractInviteToken"
-        },
-        {
-          "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-          "anchorEnd": 234,
-          "anchorFile": "src/app/login/page.tsx",
-          "anchorStart": 210,
-          "kind": "server_value_import",
-          "symbol": "getAppRegistrationPolicy",
-          "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorDigest": "3173c472374cfc43bf357fd95d2c25f0e3e7abb54c38170a9b4ca099d110632d",
-          "anchorEnd": 301,
-          "anchorFile": "src/app/login/page.tsx",
-          "anchorStart": 285,
-          "kind": "server_value_import",
-          "symbol": "getInviteByToken",
-          "target": "src/server/services/invites.ts#getInviteByToken"
         }
       ],
       "disposition": "observed",
@@ -6892,30 +7542,12 @@
       "bindings": [
         {
           "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
-          "anchorEnd": 257,
+          "anchorEnd": 201,
           "anchorFile": "src/app/register/page.tsx",
-          "anchorStart": 239,
+          "anchorStart": 183,
           "kind": "server_value_import",
           "symbol": "extractInviteToken",
           "target": "src/server/services/registration.ts#extractInviteToken"
-        },
-        {
-          "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-          "anchorEnd": 283,
-          "anchorFile": "src/app/register/page.tsx",
-          "anchorStart": 259,
-          "kind": "server_value_import",
-          "symbol": "getAppRegistrationPolicy",
-          "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorDigest": "3173c472374cfc43bf357fd95d2c25f0e3e7abb54c38170a9b4ca099d110632d",
-          "anchorEnd": 350,
-          "anchorFile": "src/app/register/page.tsx",
-          "anchorStart": 334,
-          "kind": "server_value_import",
-          "symbol": "getInviteByToken",
-          "target": "src/server/services/invites.ts#getInviteByToken"
         }
       ],
       "disposition": "observed",
@@ -7086,39 +7718,21 @@
       "bindings": [
         {
           "anchorDigest": "8c338518855b08f4e19bee92b7313625a92d75a84733d21c05c52ea5d6c2345f",
-          "anchorEnd": 1188,
+          "anchorEnd": 792,
           "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1107,
+          "anchorStart": 711,
           "kind": "auth_client_call",
           "symbol": "authClient.signIn.email[1]",
           "target": "better-auth/react#createAuthClient.signIn.email"
         },
         {
-          "anchorDigest": "8779e727f12b73f3577fe182a7e25b88b63b0bc34fc0aa0595de99ab00835021",
-          "anchorEnd": 1090,
-          "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1021,
-          "kind": "auth_client_call",
-          "symbol": "authClient.signUp.email[1]",
-          "target": "better-auth/react#createAuthClient.signUp.email"
-        },
-        {
           "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
-          "anchorEnd": 1774,
+          "anchorEnd": 1008,
           "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1757,
+          "anchorStart": 991,
           "kind": "form_action",
           "symbol": "onSubmit",
           "target": "src/components/auth/auth-form.tsx#onSubmit"
-        },
-        {
-          "anchorDigest": "b86ccb800666dea46bda7c6d91a56db461fafc912c8191e6ffa0d516dfe0efd3",
-          "anchorEnd": 1449,
-          "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1386,
-          "kind": "global_fetch",
-          "symbol": "fetch[1]",
-          "target": "globalThis.fetch"
         }
       ],
       "disposition": "observed",
@@ -7500,6 +8114,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "4b59847f7c77d8513bbbfbb5d78bf9928871ff6598e1ee9dc923755f70e85e33",
+          "anchorEnd": 373,
+          "anchorFile": "src/components/session-activity-reporter.tsx",
+          "anchorStart": 157,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/session-activity-reporter.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/session-activity-reporter.tsx",
+      "sidecarPath": "src/components/session-activity-reporter.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
           "anchorEnd": 974,
           "anchorFile": "src/components/settings/appearance-form.tsx",
@@ -7832,58 +8465,59 @@
     {
       "bindings": [
         {
-          "anchorDigest": "7affdca9b533360e2cc08e304fb94a624144e1c2647e0c003124d5250d13f31f",
-          "anchorEnd": 1323,
-          "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 1300,
-          "kind": "auth_client_call",
-          "symbol": "authClient.getSession[1]",
-          "target": "better-auth/react#createAuthClient.getSession"
+          "anchorDigest": "0a49ba8a97f3d2b0385e1a361b4589ac6f857c56e8d7afb5b9a4092841aaf009",
+          "anchorEnd": 2021,
+          "anchorFile": "src/components/settings/security-history.tsx",
+          "anchorStart": 1904,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "77c1f126190005f6208e5d2bb8fdaf9fc4364e0a659bcd93fe8c715125918ff8",
-          "anchorEnd": 1290,
+          "anchorDigest": "b577cf3fed80ff6dea0bb62d3e33be7e3905c48b4ff551b193ff6e431a5fea4e",
+          "anchorEnd": 3949,
+          "anchorFile": "src/components/settings/security-history.tsx",
+          "anchorStart": 3762,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/settings/security-history.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/security-history.tsx",
+      "sidecarPath": "src/components/settings/security-history.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "3fdd9ef04e687048103932208e9c43c46279b7c311fae0e21f39161b74672d69",
+          "anchorEnd": 3941,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 1265,
-          "kind": "auth_client_call",
-          "symbol": "authClient.listSessions[1]",
-          "target": "better-auth/react#createAuthClient.listSessions"
+          "anchorStart": 3888,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "46b7f6ef58485fc4693d47bcdf5a8058f2cc869ec204d08ee1270ae58fb39603",
-          "anchorEnd": 3711,
+          "anchorDigest": "c3aa9033aa151f1859dce63c2839299be9e512b544bd15e768c7f3fb6ffd3e4e",
+          "anchorEnd": 5044,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 3679,
-          "kind": "auth_client_call",
-          "symbol": "authClient.revokeOtherSessions[1]",
-          "target": "better-auth/react#createAuthClient.revokeOtherSessions"
+          "anchorStart": 4876,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "d26a3cbfdf6de2d40e8fa4b4aabf8d116c54f30a07006b464fd54c794df94704",
-          "anchorEnd": 3174,
+          "anchorDigest": "41a82fc0c0e87ed1b9e165b72da4b38f2f9942186a660ea020b3f2f3261c50ad",
+          "anchorEnd": 7689,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 3124,
-          "kind": "auth_client_call",
-          "symbol": "authClient.revokeSession[1]",
-          "target": "better-auth/react#createAuthClient.revokeSession"
-        },
-        {
-          "anchorDigest": "a6fa67c9715f9d8a371e87b2d0135857efbf4ea949769b02f30fd3ddc3453dcb",
-          "anchorEnd": 2514,
-          "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 2494,
-          "kind": "auth_client_call",
-          "symbol": "authClient.signOut[1]",
-          "target": "better-auth/react#createAuthClient.signOut"
-        },
-        {
-          "anchorDigest": "a6fa67c9715f9d8a371e87b2d0135857efbf4ea949769b02f30fd3ddc3453dcb",
-          "anchorEnd": 2857,
-          "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 2837,
-          "kind": "auth_client_call",
-          "symbol": "authClient.signOut[2]",
-          "target": "better-auth/react#createAuthClient.signOut"
+          "anchorStart": 7316,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
         }
       ],
       "disposition": "observed",
@@ -7970,25 +8604,6 @@
     {
       "bindings": [
         {
-          "anchorDigest": "a6fa67c9715f9d8a371e87b2d0135857efbf4ea949769b02f30fd3ddc3453dcb",
-          "anchorEnd": 509,
-          "anchorFile": "src/components/sign-out-button.tsx",
-          "anchorStart": 489,
-          "kind": "auth_client_call",
-          "symbol": "authClient.signOut[1]",
-          "target": "better-auth/react#createAuthClient.signOut"
-        }
-      ],
-      "disposition": "observed",
-      "exclusion": null,
-      "id": "client_binding:src/components/sign-out-button.tsx",
-      "ownerKind": "client_binding",
-      "ownerModule": "src/components/sign-out-button.tsx",
-      "sidecarPath": "src/components/sign-out-button.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorDigest": "25f01de0157fd57b225d7eadb70c27a4d8d7d2a3fa06a9424b7e7ff7542561e3",
           "anchorEnd": 1916,
           "anchorFile": "src/app/app/calendar/actions.ts",
@@ -8035,6 +8650,24 @@
           "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
         },
         {
+          "anchorDigest": "0ebc04136eb326e054d6d707234f2fd2c60a8d10ea81189e3fba29bd73cf6d9a",
+          "anchorEnd": 349,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 315,
+          "kind": "worker_dynamic_import",
+          "symbol": "startEmailChangeLifecycleScheduler",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+        },
+        {
+          "anchorDigest": "3b4438b9d55de05d54cf3b073f6e58992bde32e634f076001d7106b468cd7899",
+          "anchorEnd": 303,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 276,
+          "kind": "worker_dynamic_import",
+          "symbol": "startEmailDeliveryScheduler",
+          "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+        },
+        {
           "anchorDigest": "1717bc9d903bf11d59fc23f79d07eac0ae893ae39fe128decd23ed185e24548e",
           "anchorEnd": 166,
           "anchorFile": "src/instrumentation.ts",
@@ -8054,36 +8687,54 @@
         },
         {
           "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
-          "anchorEnd": 586,
+          "anchorEnd": 781,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 555,
+          "anchorStart": 750,
           "kind": "worker_start_call",
           "symbol": "startAutomatedBackupScheduler",
           "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
         },
         {
           "anchorDigest": "8a6c4bc59c0a9ace67575338516ce74f1ddefee1604c8358de407952b119157c",
-          "anchorEnd": 713,
+          "anchorEnd": 908,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 672,
+          "anchorStart": 867,
           "kind": "worker_start_call",
           "symbol": "startBrowserOperationRetentionScheduler",
           "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
         },
         {
-          "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
-          "anchorEnd": 619,
+          "anchorDigest": "a084f4c40f162b71a4a78f20c962c200ad913c8502aac74d09072593a4f4731f",
+          "anchorEnd": 989,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 594,
+          "anchorStart": 953,
+          "kind": "worker_start_call",
+          "symbol": "startEmailChangeLifecycleScheduler",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+        },
+        {
+          "anchorDigest": "01ca7435448a5b7e591ccf8e802e240806435cd5b1d9709ac0510be2e81d379d",
+          "anchorEnd": 945,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 916,
+          "kind": "worker_start_call",
+          "symbol": "startEmailDeliveryScheduler",
+          "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+        },
+        {
+          "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
+          "anchorEnd": 814,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 789,
           "kind": "worker_start_call",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
           "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
-          "anchorEnd": 664,
+          "anchorEnd": 859,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 627,
+          "anchorStart": 822,
           "kind": "worker_start_call",
           "symbol": "startSproutSourceRetentionScheduler",
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
@@ -8173,6 +8824,80 @@
     {
       "bindings": [
         {
+          "anchorDigest": "4b0ff1f518cdbe90cd45f67fa2416e8a1f615fd461a36d53b00bbff4852bf7f8",
+          "anchorEnd": 1327,
+          "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+          "anchorStart": 1289,
+          "kind": "worker_schedule",
+          "symbol": "tick",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#tick"
+        },
+        {
+          "anchorDigest": "36d8768401863d49beffc822effb6854bf340af137e99cfdbf5554545b91a72c",
+          "anchorEnd": 1371,
+          "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+          "anchorStart": 578,
+          "kind": "worker_start_call",
+          "symbol": "startEmailChangeLifecycleScheduler",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+        },
+        {
+          "anchorDigest": "226cbd07eba35e0775a934fd8da67620cd67a6d35e5061dedb35f91a8d2a78b1",
+          "anchorEnd": 911,
+          "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+          "anchorStart": 870,
+          "kind": "worker_tick",
+          "symbol": "tick",
+          "target": "src/server/services/email-change-lifecycle-worker.ts#runEmailChangeLifecycleWorkerTick"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "4b0ff1f518cdbe90cd45f67fa2416e8a1f615fd461a36d53b00bbff4852bf7f8",
+          "anchorEnd": 1187,
+          "anchorFile": "src/server/email-delivery-scheduler.ts",
+          "anchorStart": 1149,
+          "kind": "worker_schedule",
+          "symbol": "tick",
+          "target": "src/server/email-delivery-scheduler.ts#tick"
+        },
+        {
+          "anchorDigest": "23b28428e2397bc4c23b0c7f988d7d64aab3cb274eca895bd4b03f96ea84fd17",
+          "anchorEnd": 1231,
+          "anchorFile": "src/server/email-delivery-scheduler.ts",
+          "anchorStart": 493,
+          "kind": "worker_start_call",
+          "symbol": "startEmailDeliveryScheduler",
+          "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+        },
+        {
+          "anchorDigest": "be6f20830b7580e9e049041d3277bbe0013215980086bceba570965592d7075f",
+          "anchorEnd": 806,
+          "anchorFile": "src/server/email-delivery-scheduler.ts",
+          "anchorStart": 778,
+          "kind": "worker_tick",
+          "symbol": "tick",
+          "target": "src/server/services/email-delivery-worker.ts#runEmailDeliveryWorkerTick"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "worker:src/server/email-delivery-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "2257db7e57fb2cab48745afdc801353e9319dd051a3d54685ee007baeb35a63e",
           "anchorEnd": 1523,
           "anchorFile": "src/server/integrity-scheduler.ts",
@@ -8248,9 +8973,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 1717,
+          "anchorEnd": 3055,
           "anchorFile": "package.json",
-          "anchorStart": 1708,
+          "anchorStart": 3046,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -8274,9 +8999,9 @@
       "bindings": [
         {
           "anchorDigest": "ab81dd8446575d3e8db6556bc8428d6aca7040a50fcbea81f6bd73b9466a2034",
-          "anchorEnd": 1207,
+          "anchorEnd": 2545,
           "anchorFile": "package.json",
-          "anchorStart": 1176,
+          "anchorStart": 2514,
           "kind": "package_script",
           "symbol": "verify:activity-update-safety",
           "target": "package.json#scripts.verify:activity-update-safety"
@@ -8300,18 +9025,18 @@
       "bindings": [
         {
           "anchorDigest": "356ff55c9bda28971f0b30a6141af2b700cbf4c69d2f566517d2c35be28ce45e",
-          "anchorEnd": 1051,
+          "anchorEnd": 2389,
           "anchorFile": "package.json",
-          "anchorStart": 1027,
+          "anchorStart": 2365,
           "kind": "package_script",
           "symbol": "verify:backup-recovery",
           "target": "package.json#scripts.verify:backup-recovery"
         },
         {
           "anchorDigest": "ad6ab6ca444dd0e736b38b2fb30832927d0bf9030c330047be097a31d88de645",
-          "anchorEnd": 1126,
+          "anchorEnd": 2464,
           "anchorFile": "package.json",
-          "anchorStart": 1101,
+          "anchorStart": 2439,
           "kind": "package_script",
           "symbol": "verify:update-rehearsal",
           "target": "package.json#scripts.verify:update-rehearsal"
@@ -8336,9 +9061,9 @@
       "bindings": [
         {
           "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-          "anchorEnd": 1296,
+          "anchorEnd": 2634,
           "anchorFile": "package.json",
-          "anchorStart": 1264,
+          "anchorStart": 2602,
           "kind": "package_script",
           "symbol": "verify:browser-operation-pilot",
           "target": "package.json#scripts.verify:browser-operation-pilot"
@@ -8362,25 +9087,25 @@
       "bindings": [
         {
           "anchorDigest": "96373fee9d77f24a267f340fda64e84453f13b5f3f1f38e8bdb468b1494285c1",
-          "anchorEnd": 1255,
+          "anchorEnd": 1322,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1184,
+          "anchorStart": 1251,
           "kind": "container_copy",
           "symbol": "integrity-check.mjs",
           "target": "Dockerfile#/app/dist/integrity-check.mjs=>/app/integrity-check.mjs"
         },
         {
           "anchorDigest": "97c14ba7b6bd29cec210f4b27c372840462a9e3236edb92a1ce73ddd54b523e8",
-          "anchorEnd": 629,
+          "anchorEnd": 831,
           "anchorFile": "package.json",
-          "anchorStart": 484,
+          "anchorStart": 686,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/integrity-check.ts",
           "target": "scripts/integrity-check.ts=>dist/integrity-check.mjs"
         },
         {
-          "anchorDigest": "48f83f870e56a20fbf21de9def8b454b694204038ec1769cc4fa8a268221ad9e",
-          "anchorEnd": 286,
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -8389,18 +9114,18 @@
         },
         {
           "anchorDigest": "0bc4e1884466133d9c6a0672c4ad0e7ea55e2181e4d2eff74c1d410f060728ee",
-          "anchorEnd": 482,
+          "anchorEnd": 684,
           "anchorFile": "package.json",
-          "anchorStart": 465,
+          "anchorStart": 667,
           "kind": "package_script",
           "symbol": "build:integrity",
           "target": "package.json#scripts.build:integrity"
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 1818,
+          "anchorEnd": 3156,
           "anchorFile": "package.json",
-          "anchorStart": 1800,
+          "anchorStart": 3138,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -8480,25 +9205,25 @@
         },
         {
           "anchorDigest": "bec935558d7c7706b278e6e19cde6b358c5d36e772e8290f5e10cfefc79484ed",
-          "anchorEnd": 1183,
+          "anchorEnd": 1250,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1114,
+          "anchorStart": 1181,
           "kind": "container_copy",
           "symbol": "platform-owner.mjs",
           "target": "Dockerfile#/app/dist/platform-owner.mjs=>/app/platform-owner.mjs"
         },
         {
           "anchorDigest": "34b772e44b77afedfaf6840b1a18c5960dc89b1a081b95f1af2a8d9e76dc3555",
-          "anchorEnd": 459,
+          "anchorEnd": 661,
           "anchorFile": "package.json",
-          "anchorStart": 316,
+          "anchorStart": 518,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/platform-owner.ts",
           "target": "scripts/platform-owner.ts=>dist/platform-owner.mjs"
         },
         {
-          "anchorDigest": "48f83f870e56a20fbf21de9def8b454b694204038ec1769cc4fa8a268221ad9e",
-          "anchorEnd": 286,
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -8507,18 +9232,18 @@
         },
         {
           "anchorDigest": "aef089f4250d574a5150392ba7e9c365c8a7337873033a55a6fe39d262f51929",
-          "anchorEnd": 314,
+          "anchorEnd": 516,
           "anchorFile": "package.json",
-          "anchorStart": 292,
+          "anchorStart": 494,
           "kind": "package_script",
           "symbol": "build:platform-owner",
           "target": "package.json#scripts.build:platform-owner"
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 1761,
+          "anchorEnd": 3099,
           "anchorFile": "package.json",
-          "anchorStart": 1745,
+          "anchorStart": 3083,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -8534,10 +9259,258 @@
     {
       "bindings": [
         {
-          "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 1395,
+          "anchorDigest": "4ea88baa140ca9ff1bd7b1de27b4f5ce20682f13bf8b01e4ea2fd0618f0f8b11",
+          "anchorEnd": 1785,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1686,
+          "kind": "container_copy",
+          "symbol": "provision-email-delivery-keys.mjs",
+          "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
+        },
+        {
+          "anchorDigest": "1476c5acb9b73b2d526f9de0dfffe64f27561c90694a0546b9e71ba03d5efaf6",
+          "anchorEnd": 1559,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 1461,
+          "kind": "container_invocation",
+          "symbol": "provision-email-delivery-keys.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs"
+        },
+        {
+          "anchorDigest": "205df456bca593073465bbbee38ad9ddf3a1ad9a37415a3052f823caff0a7f7c",
+          "anchorEnd": 1488,
           "anchorFile": "package.json",
-          "anchorStart": 1365,
+          "anchorStart": 1314,
+          "kind": "package_build_entrypoint",
+          "symbol": "scripts/provision-email-delivery-keys.mjs",
+          "target": "scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs"
+        },
+        {
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:email-delivery-keys"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "80aee959215a20f62145c7ca0638216541a95523e0f0675bccbb963bb2d0ab04",
+          "anchorEnd": 1685,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1570,
+          "kind": "container_copy",
+          "symbol": "provision-fresh-auth-attestation-keys.mjs",
+          "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
+        },
+        {
+          "anchorDigest": "cf988d60b11ab36c6e537d5ecac1d15d47268778e913262d3f428e9203b2f121",
+          "anchorEnd": 1367,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 1261,
+          "kind": "container_invocation",
+          "symbol": "provision-fresh-auth-attestation-keys.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs"
+        },
+        {
+          "anchorDigest": "e88e8a3998b89168bdceb86457dede535d548cf55330ff7bff584b88b0c0c73c",
+          "anchorEnd": 1279,
+          "anchorFile": "package.json",
+          "anchorStart": 1089,
+          "kind": "package_build_entrypoint",
+          "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
+          "target": "scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs"
+        },
+        {
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:fresh-auth-attestation-keys"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "8dd17cd88a049d158141f6fbabf0d6409a6e5b743623ad6c1e978e125ab8d19f",
+          "anchorEnd": 1903,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1786,
+          "kind": "container_copy",
+          "symbol": "provision-global-security-throttle-key.mjs",
+          "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
+        },
+        {
+          "anchorDigest": "ec34c2e543335fe9616b6d6904fb6d09b80256b3952ddf6807b338edc5102632",
+          "anchorEnd": 1793,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 1645,
+          "kind": "container_invocation",
+          "symbol": "provision-global-security-throttle-key.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs"
+        },
+        {
+          "anchorDigest": "04faa6246b4961b4ca13a7b21c086cf236f7abd5de9021ed0979e3d778124bd0",
+          "anchorEnd": 1724,
+          "anchorFile": "package.json",
+          "anchorStart": 1532,
+          "kind": "package_build_entrypoint",
+          "symbol": "scripts/provision-global-security-throttle-key.mjs",
+          "target": "scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs"
+        },
+        {
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:global-security-throttle-key"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "706e5ea8c0391acc55b975531e5aa1e6432850bf83110f1c2e4d8c62e6ddd1d1",
+          "anchorEnd": 1569,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1466,
+          "kind": "container_copy",
+          "symbol": "provision-security-runtime-role.mjs",
+          "target": "Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs"
+        },
+        {
+          "anchorDigest": "ed691e4c4a1d748049dfd847ce0631642fcf97254f20864733518f002cbd6711",
+          "anchorEnd": 950,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 697,
+          "kind": "container_invocation",
+          "symbol": "provision-security-runtime-role.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-security-runtime-role.mjs"
+        },
+        {
+          "anchorDigest": "ed6b85d3dcb91b70a9eabfba9cab9cdb488792ca971460b8e0c6283cc2226cf6",
+          "anchorEnd": 1046,
+          "anchorFile": "package.json",
+          "anchorStart": 868,
+          "kind": "package_build_entrypoint",
+          "symbol": "scripts/provision-security-runtime-role.mjs",
+          "target": "scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs"
+        },
+        {
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:security-runtime-role"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "67380627fc2272dc3ccef373ab277a1c9bc8cba8f0dfa18056f252a30af65cb9",
+          "anchorEnd": 800,
+          "anchorFile": "scripts/security-operator.ts",
+          "anchorStart": 775,
+          "kind": "command_variant",
+          "symbol": "aggregate",
+          "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
+        },
+        {
+          "anchorDigest": "5243e985e2c98b3038b155bcf1ff0d8370ae51f74bd5fc5f7985b0d57c6ef9cf",
+          "anchorEnd": 1979,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1904,
+          "kind": "container_copy",
+          "symbol": "security-operator.mjs",
+          "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
+        },
+        {
+          "anchorDigest": "7294f4b1ac1e5f3fc751cc4ec19a5537c4f92b0d3005618c0e5f0b9ed422c1ca",
+          "anchorEnd": 1906,
+          "anchorFile": "package.json",
+          "anchorStart": 1757,
+          "kind": "package_build_entrypoint",
+          "symbol": "scripts/security-operator.ts",
+          "target": "scripts/security-operator.ts=>dist/security-operator.mjs"
+        },
+        {
+          "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:security-operator"
+        },
+        {
+          "anchorDigest": "a1750a76b982486d3994ada05cf17b378819261008b874324dd2a8e7a73bf652",
+          "anchorEnd": 1755,
+          "anchorFile": "package.json",
+          "anchorStart": 1730,
+          "kind": "package_script",
+          "symbol": "build:security-operator",
+          "target": "package.json#scripts.build:security-operator"
+        },
+        {
+          "anchorDigest": "e1989d4a74966750816e4a60c9b003dc206fff378b1af3698c48681a4f7281cd",
+          "anchorEnd": 1931,
+          "anchorFile": "package.json",
+          "anchorStart": 1912,
+          "kind": "package_script",
+          "symbol": "security:operator",
+          "target": "package.json#scripts.security:operator"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "package_command:scripts/security-operator.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
+          "anchorEnd": 2733,
+          "anchorFile": "package.json",
+          "anchorStart": 2703,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -8561,9 +9534,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 1487,
+          "anchorEnd": 2825,
           "anchorFile": "package.json",
-          "anchorStart": 1462,
+          "anchorStart": 2800,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -8577,8 +9550,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 126,
-  "observationDigest": "abd06582bce8fd666c6f68acf137ce8c92c8c21e0e7bc534d7f70851329a8574",
+  "observationCount": 141,
+  "observationDigest": "18d30a5bc0f8b6ddde3729c9bfd8ea496a837555b6133230c339b894242b49c9",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -8675,6 +9648,114 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1994,
+          "anchorFile": "src/app/api/account/security-history/export/route.ts",
+          "anchorStart": 1113,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security-history/export/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/security-history/export/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security-history/export/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security-history/export/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/export/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1533,
+          "anchorFile": "src/app/api/account/security-history/route.ts",
+          "anchorStart": 1253,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security-history/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/account/security-history/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security-history/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security-history/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1265,
+          "anchorFile": "src/app/api/account/session-activity/route.ts",
+          "anchorStart": 315,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/session-activity/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/session-activity/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/session-activity/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/session-activity/route.ts",
+      "sidecarPath": "src/app/api/account/session-activity/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 5049,
+          "anchorFile": "src/app/api/account/sessions/revoke/route.ts",
+          "anchorStart": 3518,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/sessions/revoke/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/sessions/revoke/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/sessions/revoke/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/revoke/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/revoke/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 542,
+          "anchorFile": "src/app/api/account/sessions/route.ts",
+          "anchorStart": 290,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/sessions/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/account/sessions/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/sessions/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 2168,
+          "anchorFile": "src/app/api/account/sessions/status/route.ts",
+          "anchorStart": 1289,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/sessions/status/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/sessions/status/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/sessions/status/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/status/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/status/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 3519,
           "anchorFile": "src/app/api/activities/[id]/route.ts",
           "anchorStart": 2181,
@@ -8765,18 +9846,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 455,
+          "anchorEnd": 720,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 437,
+          "anchorStart": 603,
           "kind": "route_method",
           "ownerModule": "src/app/api/auth/[...all]/route.ts",
           "symbol": "GET",
-          "target": "better-auth/next-js#toNextJsHandler.GET"
+          "target": "src/app/api/auth/[...all]/route.ts#GET"
         },
         {
-          "anchorEnd": 1131,
+          "anchorEnd": 1838,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 458,
+          "anchorStart": 722,
           "kind": "route_method",
           "ownerModule": "src/app/api/auth/[...all]/route.ts",
           "symbol": "POST",
@@ -10043,18 +11124,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 178,
+          "anchorEnd": 260,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 152,
+          "anchorStart": 234,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
           "symbol": "getHouseholdSelectionState",
           "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
         },
         {
-          "anchorEnd": 110,
+          "anchorEnd": 192,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 95,
+          "anchorStart": 177,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
           "symbol": "requireUserPage",
@@ -10475,13 +11556,31 @@
     {
       "bindings": [
         {
-          "anchorEnd": 196,
+          "anchorEnd": 149,
+          "anchorFile": "src/app/app/settings/security-history/page.tsx",
+          "anchorStart": 134,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/settings/security-history/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/app/settings/security-history/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/settings/security-history/page.tsx",
+      "sidecarPath": "src/app/app/settings/security-history/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 192,
           "anchorFile": "src/app/app/settings/sessions/page.tsx",
           "anchorStart": 177,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/sessions/page.tsx",
-          "symbol": "requireSettingsPage",
-          "target": "src/server/auth/page-access.ts#requireSettingsPage"
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -10572,24 +11671,6 @@
           "ownerModule": "src/app/login/page.tsx",
           "symbol": "extractInviteToken",
           "target": "src/server/services/registration.ts#extractInviteToken"
-        },
-        {
-          "anchorEnd": 234,
-          "anchorFile": "src/app/login/page.tsx",
-          "anchorStart": 210,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/login/page.tsx",
-          "symbol": "getAppRegistrationPolicy",
-          "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorEnd": 301,
-          "anchorFile": "src/app/login/page.tsx",
-          "anchorStart": 285,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/login/page.tsx",
-          "symbol": "getInviteByToken",
-          "target": "src/server/services/invites.ts#getInviteByToken"
         }
       ],
       "disposition": "observed",
@@ -10700,31 +11781,13 @@
     {
       "bindings": [
         {
-          "anchorEnd": 257,
+          "anchorEnd": 201,
           "anchorFile": "src/app/register/page.tsx",
-          "anchorStart": 239,
+          "anchorStart": 183,
           "kind": "server_value_import",
           "ownerModule": "src/app/register/page.tsx",
           "symbol": "extractInviteToken",
           "target": "src/server/services/registration.ts#extractInviteToken"
-        },
-        {
-          "anchorEnd": 283,
-          "anchorFile": "src/app/register/page.tsx",
-          "anchorStart": 259,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/register/page.tsx",
-          "symbol": "getAppRegistrationPolicy",
-          "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-        },
-        {
-          "anchorEnd": 350,
-          "anchorFile": "src/app/register/page.tsx",
-          "anchorStart": 334,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/register/page.tsx",
-          "symbol": "getInviteByToken",
-          "target": "src/server/services/invites.ts#getInviteByToken"
         }
       ],
       "disposition": "observed",
@@ -10889,40 +11952,22 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1188,
+          "anchorEnd": 792,
           "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1107,
+          "anchorStart": 711,
           "kind": "auth_client_call",
           "ownerModule": "src/components/auth/auth-form.tsx",
           "symbol": "authClient.signIn.email[1]",
           "target": "better-auth/react#createAuthClient.signIn.email"
         },
         {
-          "anchorEnd": 1090,
+          "anchorEnd": 1008,
           "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1021,
-          "kind": "auth_client_call",
-          "ownerModule": "src/components/auth/auth-form.tsx",
-          "symbol": "authClient.signUp.email[1]",
-          "target": "better-auth/react#createAuthClient.signUp.email"
-        },
-        {
-          "anchorEnd": 1774,
-          "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1757,
+          "anchorStart": 991,
           "kind": "form_action",
           "ownerModule": "src/components/auth/auth-form.tsx",
           "symbol": "onSubmit",
           "target": "src/components/auth/auth-form.tsx#onSubmit"
-        },
-        {
-          "anchorEnd": 1449,
-          "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 1386,
-          "kind": "global_fetch",
-          "ownerModule": "src/components/auth/auth-form.tsx",
-          "symbol": "fetch[1]",
-          "target": "globalThis.fetch"
         }
       ],
       "disposition": "observed",
@@ -11294,6 +12339,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 373,
+          "anchorFile": "src/components/session-activity-reporter.tsx",
+          "anchorStart": 157,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/session-activity-reporter.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/session-activity-reporter.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/session-activity-reporter.tsx",
+      "sidecarPath": "src/components/session-activity-reporter.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 974,
           "anchorFile": "src/components/settings/appearance-form.tsx",
           "anchorStart": 909,
@@ -11618,58 +12681,58 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1323,
-          "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 1300,
-          "kind": "auth_client_call",
-          "ownerModule": "src/components/settings/session-manager.tsx",
-          "symbol": "authClient.getSession[1]",
-          "target": "better-auth/react#createAuthClient.getSession"
+          "anchorEnd": 2021,
+          "anchorFile": "src/components/settings/security-history.tsx",
+          "anchorStart": 1904,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/security-history.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 1290,
+          "anchorEnd": 3949,
+          "anchorFile": "src/components/settings/security-history.tsx",
+          "anchorStart": 3762,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/security-history.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/settings/security-history.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/security-history.tsx",
+      "sidecarPath": "src/components/settings/security-history.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 3941,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 1265,
-          "kind": "auth_client_call",
+          "anchorStart": 3888,
+          "kind": "global_fetch",
           "ownerModule": "src/components/settings/session-manager.tsx",
-          "symbol": "authClient.listSessions[1]",
-          "target": "better-auth/react#createAuthClient.listSessions"
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3711,
+          "anchorEnd": 5044,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 3679,
-          "kind": "auth_client_call",
+          "anchorStart": 4876,
+          "kind": "global_fetch",
           "ownerModule": "src/components/settings/session-manager.tsx",
-          "symbol": "authClient.revokeOtherSessions[1]",
-          "target": "better-auth/react#createAuthClient.revokeOtherSessions"
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3174,
+          "anchorEnd": 7689,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 3124,
-          "kind": "auth_client_call",
+          "anchorStart": 7316,
+          "kind": "global_fetch",
           "ownerModule": "src/components/settings/session-manager.tsx",
-          "symbol": "authClient.revokeSession[1]",
-          "target": "better-auth/react#createAuthClient.revokeSession"
-        },
-        {
-          "anchorEnd": 2514,
-          "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 2494,
-          "kind": "auth_client_call",
-          "ownerModule": "src/components/settings/session-manager.tsx",
-          "symbol": "authClient.signOut[1]",
-          "target": "better-auth/react#createAuthClient.signOut"
-        },
-        {
-          "anchorEnd": 2857,
-          "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 2837,
-          "kind": "auth_client_call",
-          "ownerModule": "src/components/settings/session-manager.tsx",
-          "symbol": "authClient.signOut[2]",
-          "target": "better-auth/react#createAuthClient.signOut"
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
         }
       ],
       "disposition": "observed",
@@ -11753,24 +12816,6 @@
     {
       "bindings": [
         {
-          "anchorEnd": 509,
-          "anchorFile": "src/components/sign-out-button.tsx",
-          "anchorStart": 489,
-          "kind": "auth_client_call",
-          "ownerModule": "src/components/sign-out-button.tsx",
-          "symbol": "authClient.signOut[1]",
-          "target": "better-auth/react#createAuthClient.signOut"
-        }
-      ],
-      "disposition": "observed",
-      "id": "client_binding:src/components/sign-out-button.tsx",
-      "ownerKind": "client_binding",
-      "ownerModule": "src/components/sign-out-button.tsx",
-      "sidecarPath": "src/components/sign-out-button.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorEnd": 1916,
           "anchorFile": "src/app/app/calendar/actions.ts",
           "anchorStart": 869,
@@ -11816,6 +12861,24 @@
           "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
         },
         {
+          "anchorEnd": 349,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 315,
+          "kind": "worker_dynamic_import",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startEmailChangeLifecycleScheduler",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+        },
+        {
+          "anchorEnd": 303,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 276,
+          "kind": "worker_dynamic_import",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startEmailDeliveryScheduler",
+          "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+        },
+        {
           "anchorEnd": 166,
           "anchorFile": "src/instrumentation.ts",
           "anchorStart": 143,
@@ -11834,36 +12897,54 @@
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
         },
         {
-          "anchorEnd": 586,
+          "anchorEnd": 781,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 555,
+          "anchorStart": 750,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startAutomatedBackupScheduler",
           "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
         },
         {
-          "anchorEnd": 713,
+          "anchorEnd": 908,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 672,
+          "anchorStart": 867,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startBrowserOperationRetentionScheduler",
           "target": "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
         },
         {
-          "anchorEnd": 619,
+          "anchorEnd": 989,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 594,
+          "anchorStart": 953,
+          "kind": "worker_start_call",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startEmailChangeLifecycleScheduler",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+        },
+        {
+          "anchorEnd": 945,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 916,
+          "kind": "worker_start_call",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startEmailDeliveryScheduler",
+          "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+        },
+        {
+          "anchorEnd": 814,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 789,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
-          "anchorEnd": 664,
+          "anchorEnd": 859,
           "anchorFile": "src/instrumentation.ts",
-          "anchorStart": 627,
+          "anchorStart": 822,
           "kind": "worker_start_call",
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startSproutSourceRetentionScheduler",
@@ -11951,6 +13032,78 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1327,
+          "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+          "anchorStart": 1289,
+          "kind": "worker_schedule",
+          "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#tick"
+        },
+        {
+          "anchorEnd": 1371,
+          "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+          "anchorStart": 578,
+          "kind": "worker_start_call",
+          "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+          "symbol": "startEmailChangeLifecycleScheduler",
+          "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+        },
+        {
+          "anchorEnd": 911,
+          "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+          "anchorStart": 870,
+          "kind": "worker_tick",
+          "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/services/email-change-lifecycle-worker.ts#runEmailChangeLifecycleWorkerTick"
+        }
+      ],
+      "disposition": "observed",
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1187,
+          "anchorFile": "src/server/email-delivery-scheduler.ts",
+          "anchorStart": 1149,
+          "kind": "worker_schedule",
+          "ownerModule": "src/server/email-delivery-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/email-delivery-scheduler.ts#tick"
+        },
+        {
+          "anchorEnd": 1231,
+          "anchorFile": "src/server/email-delivery-scheduler.ts",
+          "anchorStart": 493,
+          "kind": "worker_start_call",
+          "ownerModule": "src/server/email-delivery-scheduler.ts",
+          "symbol": "startEmailDeliveryScheduler",
+          "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+        },
+        {
+          "anchorEnd": 806,
+          "anchorFile": "src/server/email-delivery-scheduler.ts",
+          "anchorStart": 778,
+          "kind": "worker_tick",
+          "ownerModule": "src/server/email-delivery-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/services/email-delivery-worker.ts#runEmailDeliveryWorkerTick"
+        }
+      ],
+      "disposition": "observed",
+      "id": "worker:src/server/email-delivery-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1523,
           "anchorFile": "src/server/integrity-scheduler.ts",
           "anchorStart": 1434,
@@ -12023,9 +13176,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1717,
+          "anchorEnd": 3055,
           "anchorFile": "package.json",
-          "anchorStart": 1708,
+          "anchorStart": 3046,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -12041,9 +13194,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1207,
+          "anchorEnd": 2545,
           "anchorFile": "package.json",
-          "anchorStart": 1176,
+          "anchorStart": 2514,
           "kind": "package_script",
           "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
           "symbol": "verify:activity-update-safety",
@@ -12059,18 +13212,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1051,
+          "anchorEnd": 2389,
           "anchorFile": "package.json",
-          "anchorStart": 1027,
+          "anchorStart": 2365,
           "kind": "package_script",
           "ownerModule": "scripts/backup-recovery-rehearsal.ts",
           "symbol": "verify:backup-recovery",
           "target": "package.json#scripts.verify:backup-recovery"
         },
         {
-          "anchorEnd": 1126,
+          "anchorEnd": 2464,
           "anchorFile": "package.json",
-          "anchorStart": 1101,
+          "anchorStart": 2439,
           "kind": "package_script",
           "ownerModule": "scripts/backup-recovery-rehearsal.ts",
           "symbol": "verify:update-rehearsal",
@@ -12086,9 +13239,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1296,
+          "anchorEnd": 2634,
           "anchorFile": "package.json",
-          "anchorStart": 1264,
+          "anchorStart": 2602,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-pilot",
@@ -12104,25 +13257,25 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1255,
+          "anchorEnd": 1322,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1184,
+          "anchorStart": 1251,
           "kind": "container_copy",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "integrity-check.mjs",
           "target": "Dockerfile#/app/dist/integrity-check.mjs=>/app/integrity-check.mjs"
         },
         {
-          "anchorEnd": 629,
+          "anchorEnd": 831,
           "anchorFile": "package.json",
-          "anchorStart": 484,
+          "anchorStart": 686,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "scripts/integrity-check.ts",
           "target": "scripts/integrity-check.ts=>dist/integrity-check.mjs"
         },
         {
-          "anchorEnd": 286,
+          "anchorEnd": 488,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -12131,18 +13284,18 @@
           "target": "package.json#scripts.build:build:integrity"
         },
         {
-          "anchorEnd": 482,
+          "anchorEnd": 684,
           "anchorFile": "package.json",
-          "anchorStart": 465,
+          "anchorStart": 667,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "build:integrity",
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 1818,
+          "anchorEnd": 3156,
           "anchorFile": "package.json",
-          "anchorStart": 1800,
+          "anchorStart": 3138,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -12221,25 +13374,25 @@
           "target": "scripts/platform-owner.ts#parsePlatformOwnerCommand:verify-bootstrap"
         },
         {
-          "anchorEnd": 1183,
+          "anchorEnd": 1250,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1114,
+          "anchorStart": 1181,
           "kind": "container_copy",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform-owner.mjs",
           "target": "Dockerfile#/app/dist/platform-owner.mjs=>/app/platform-owner.mjs"
         },
         {
-          "anchorEnd": 459,
+          "anchorEnd": 661,
           "anchorFile": "package.json",
-          "anchorStart": 316,
+          "anchorStart": 518,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "scripts/platform-owner.ts",
           "target": "scripts/platform-owner.ts=>dist/platform-owner.mjs"
         },
         {
-          "anchorEnd": 286,
+          "anchorEnd": 488,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -12248,18 +13401,18 @@
           "target": "package.json#scripts.build:build:platform-owner"
         },
         {
-          "anchorEnd": 314,
+          "anchorEnd": 516,
           "anchorFile": "package.json",
-          "anchorStart": 292,
+          "anchorStart": 494,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "build:platform-owner",
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 1761,
+          "anchorEnd": 3099,
           "anchorFile": "package.json",
-          "anchorStart": 1745,
+          "anchorStart": 3083,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -12275,9 +13428,252 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1395,
+          "anchorEnd": 1785,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1686,
+          "kind": "container_copy",
+          "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+          "symbol": "provision-email-delivery-keys.mjs",
+          "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
+        },
+        {
+          "anchorEnd": 1559,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 1461,
+          "kind": "container_invocation",
+          "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+          "symbol": "provision-email-delivery-keys.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs"
+        },
+        {
+          "anchorEnd": 1488,
           "anchorFile": "package.json",
-          "anchorStart": 1365,
+          "anchorStart": 1314,
+          "kind": "package_build_entrypoint",
+          "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+          "symbol": "scripts/provision-email-delivery-keys.mjs",
+          "target": "scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs"
+        },
+        {
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:email-delivery-keys"
+        }
+      ],
+      "disposition": "observed",
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1685,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1570,
+          "kind": "container_copy",
+          "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+          "symbol": "provision-fresh-auth-attestation-keys.mjs",
+          "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
+        },
+        {
+          "anchorEnd": 1367,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 1261,
+          "kind": "container_invocation",
+          "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+          "symbol": "provision-fresh-auth-attestation-keys.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs"
+        },
+        {
+          "anchorEnd": 1279,
+          "anchorFile": "package.json",
+          "anchorStart": 1089,
+          "kind": "package_build_entrypoint",
+          "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+          "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
+          "target": "scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs"
+        },
+        {
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:fresh-auth-attestation-keys"
+        }
+      ],
+      "disposition": "observed",
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1903,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1786,
+          "kind": "container_copy",
+          "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+          "symbol": "provision-global-security-throttle-key.mjs",
+          "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
+        },
+        {
+          "anchorEnd": 1793,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 1645,
+          "kind": "container_invocation",
+          "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+          "symbol": "provision-global-security-throttle-key.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs"
+        },
+        {
+          "anchorEnd": 1724,
+          "anchorFile": "package.json",
+          "anchorStart": 1532,
+          "kind": "package_build_entrypoint",
+          "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+          "symbol": "scripts/provision-global-security-throttle-key.mjs",
+          "target": "scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs"
+        },
+        {
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:global-security-throttle-key"
+        }
+      ],
+      "disposition": "observed",
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1569,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1466,
+          "kind": "container_copy",
+          "ownerModule": "scripts/provision-security-runtime-role.mjs",
+          "symbol": "provision-security-runtime-role.mjs",
+          "target": "Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs"
+        },
+        {
+          "anchorEnd": 950,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 697,
+          "kind": "container_invocation",
+          "ownerModule": "scripts/provision-security-runtime-role.mjs",
+          "symbol": "provision-security-runtime-role.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-security-runtime-role.mjs"
+        },
+        {
+          "anchorEnd": 1046,
+          "anchorFile": "package.json",
+          "anchorStart": 868,
+          "kind": "package_build_entrypoint",
+          "ownerModule": "scripts/provision-security-runtime-role.mjs",
+          "symbol": "scripts/provision-security-runtime-role.mjs",
+          "target": "scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs"
+        },
+        {
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "ownerModule": "scripts/provision-security-runtime-role.mjs",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:security-runtime-role"
+        }
+      ],
+      "disposition": "observed",
+      "id": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 800,
+          "anchorFile": "scripts/security-operator.ts",
+          "anchorStart": 775,
+          "kind": "command_variant",
+          "ownerModule": "scripts/security-operator.ts",
+          "symbol": "aggregate",
+          "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
+        },
+        {
+          "anchorEnd": 1979,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 1904,
+          "kind": "container_copy",
+          "ownerModule": "scripts/security-operator.ts",
+          "symbol": "security-operator.mjs",
+          "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
+        },
+        {
+          "anchorEnd": 1906,
+          "anchorFile": "package.json",
+          "anchorStart": 1757,
+          "kind": "package_build_entrypoint",
+          "ownerModule": "scripts/security-operator.ts",
+          "symbol": "scripts/security-operator.ts",
+          "target": "scripts/security-operator.ts=>dist/security-operator.mjs"
+        },
+        {
+          "anchorEnd": 488,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "ownerModule": "scripts/security-operator.ts",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:security-operator"
+        },
+        {
+          "anchorEnd": 1755,
+          "anchorFile": "package.json",
+          "anchorStart": 1730,
+          "kind": "package_script",
+          "ownerModule": "scripts/security-operator.ts",
+          "symbol": "build:security-operator",
+          "target": "package.json#scripts.build:security-operator"
+        },
+        {
+          "anchorEnd": 1931,
+          "anchorFile": "package.json",
+          "anchorStart": 1912,
+          "kind": "package_script",
+          "ownerModule": "scripts/security-operator.ts",
+          "symbol": "security:operator",
+          "target": "package.json#scripts.security:operator"
+        }
+      ],
+      "disposition": "observed",
+      "id": "package_command:scripts/security-operator.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 2733,
+          "anchorFile": "package.json",
+          "anchorStart": 2703,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -12293,9 +13689,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1487,
+          "anchorEnd": 2825,
           "anchorFile": "package.json",
-          "anchorStart": 1462,
+          "anchorStart": 2800,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -12333,6 +13729,42 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/account/browser-operations/partition/route.ts",
       "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security-history/export/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security-history/export/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/export/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security-history/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security-history/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/session-activity/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/session-activity/route.ts",
+      "sidecarPath": "src/app/api/account/session-activity/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/sessions/revoke/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/revoke/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/revoke/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/sessions/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/sessions/status/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/sessions/status/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/status/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/activities/[id]/route.ts",
@@ -12773,6 +14205,12 @@
       "sidecarPath": "src/app/app/settings/page.operation.ts"
     },
     {
+      "id": "server_loader:src/app/app/settings/security-history/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/settings/security-history/page.tsx",
+      "sidecarPath": "src/app/app/settings/security-history/page.operation.ts"
+    },
+    {
       "id": "server_loader:src/app/app/settings/sessions/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/settings/sessions/page.tsx",
@@ -12911,6 +14349,12 @@
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/session-activity-reporter.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/session-activity-reporter.tsx",
+      "sidecarPath": "src/components/session-activity-reporter.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/settings/appearance-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/appearance-form.tsx",
@@ -12959,6 +14403,12 @@
       "sidecarPath": "src/components/settings/registration-settings-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/settings/security-history.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/security-history.tsx",
+      "sidecarPath": "src/components/settings/security-history.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/settings/session-manager.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/session-manager.tsx",
@@ -12975,12 +14425,6 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/unit-preferences-form.tsx",
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
-    },
-    {
-      "id": "client_binding:src/components/sign-out-button.tsx",
-      "ownerKind": "client_binding",
-      "ownerModule": "src/components/sign-out-button.tsx",
-      "sidecarPath": "src/components/sign-out-button.operation.ts"
     },
     {
       "id": "server_action:src/app/app/calendar/actions.ts",
@@ -13005,6 +14449,18 @@
       "ownerKind": "worker",
       "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
       "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "id": "worker:src/server/email-delivery-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
     },
     {
       "id": "worker:src/server/integrity-scheduler.ts",
@@ -13055,6 +14511,36 @@
       "sidecarPath": "scripts/platform-owner.operation.ts"
     },
     {
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "id": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "id": "package_command:scripts/security-operator.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
       "id": "package_command:scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
@@ -13067,58 +14553,114 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "c09a6dd3a8fc290d637cdafce63c350bf07760a11ea12ba1355321ef0cc410dd",
+  "ownerSetDigest": "d0f80bffcf13e4f361c3dc0d3e49c0c3265dce40c504d8808c30ebb439f351c4",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5326849d4c099bf6cb83ffec1fcf645b02ab5fdca815aad195cb11568d96d465",
+  "registryDigest": "e672b696b1225ada7192ee2207cb68dc9f5de4ce4013c71fce0ffa35528770bf",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
-      "anchorBytes": "if ! node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1",
-      "anchorEnd": 147,
+      "anchorBytes": "if ! CUBBY_RUNTIME_DATABASE_URL=\"$DATABASE_URL\" CUBBY_AUTH_DATABASE_URL=\"$AUTH_DATABASE_URL\" CUBBY_EMAIL_DELIVERY_DATABASE_URL=\"$EMAIL_DELIVERY_DATABASE_URL\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-security-runtime-role.mjs >/dev/null 2>&1",
+      "anchorEnd": 950,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 72,
+      "anchorStart": 697,
+      "codeOption": null,
+      "disposition": "container_invocation",
+      "exclusion": null,
+      "fingerprint": "664db0ff078cb2da5714282136e803ff9e5ceaf11115fd87cf1abc5efe2fb467",
+      "id": "runtime:docker/entrypoint.sh:697:main:/app/provision-security-runtime-role.mjs",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "path": "/app/provision-security-runtime-role.mjs",
+      "role": "main"
+    },
+    {
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1",
+      "anchorEnd": 1185,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1071,
       "codeOption": null,
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "third_party_migration_cli",
         "rationale": "third-party migration CLI runtime; observation-only structural exclusion"
       },
-      "fingerprint": "3e3960ca2f6257da54a33d6a58b2ca3fabd3c4097c7a6892432a6d7b0e1a5c17",
-      "id": "runtime:docker/entrypoint.sh:72:main:/app/node_modules/prisma/build/index.js",
+      "fingerprint": "a61f3015dec919d843bc9609452ac1afed7f886a82824a94f4088e103be553f2",
+      "id": "runtime:docker/entrypoint.sh:1071:main:/app/node_modules/prisma/build/index.js",
       "ownerModule": null,
       "path": "/app/node_modules/prisma/build/index.js",
       "role": "main"
     },
     {
-      "anchorBytes": "exec node server.js",
-      "anchorEnd": 355,
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-fresh-auth-attestation-keys.mjs >/dev/null 2>&1",
+      "anchorEnd": 1367,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 336,
+      "anchorStart": 1261,
+      "codeOption": null,
+      "disposition": "container_invocation",
+      "exclusion": null,
+      "fingerprint": "1412aa0d2593f95403b759e8071011ba37d9029b50b5d18a4a66a76980ba736c",
+      "id": "runtime:docker/entrypoint.sh:1261:main:/app/provision-fresh-auth-attestation-keys.mjs",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "path": "/app/provision-fresh-auth-attestation-keys.mjs",
+      "role": "main"
+    },
+    {
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-email-delivery-keys.mjs >/dev/null 2>&1",
+      "anchorEnd": 1559,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1461,
+      "codeOption": null,
+      "disposition": "container_invocation",
+      "exclusion": null,
+      "fingerprint": "346e22278f375db5e4a4f6317beac14e7a4ee6f6db15ef95194206d60d628b0d",
+      "id": "runtime:docker/entrypoint.sh:1461:main:/app/provision-email-delivery-keys.mjs",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "path": "/app/provision-email-delivery-keys.mjs",
+      "role": "main"
+    },
+    {
+      "anchorBytes": "if ! CUBBY_THROTTLE_KEY=\"$cubby_throttle_key\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-global-security-throttle-key.mjs >/dev/null 2>&1",
+      "anchorEnd": 1793,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1645,
+      "codeOption": null,
+      "disposition": "container_invocation",
+      "exclusion": null,
+      "fingerprint": "d3ac9f34e6351623bd6815f6477bca9f85b40799a60b580873d2fe27b87db30c",
+      "id": "runtime:docker/entrypoint.sh:1645:main:/app/provision-global-security-throttle-key.mjs",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "path": "/app/provision-global-security-throttle-key.mjs",
+      "role": "main"
+    },
+    {
+      "anchorBytes": "exec node server.js",
+      "anchorEnd": 2097,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 2078,
       "codeOption": null,
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "application_server_runtime",
         "rationale": "copied application server runtime; observation-only structural exclusion"
       },
-      "fingerprint": "8306d531b9c300795d3f456c98517a8536d6ccdbaa237e7c8d56202ccdb7805f",
-      "id": "runtime:docker/entrypoint.sh:336:main:/app/server.js",
+      "fingerprint": "8b5c7f04a57fb27d8607310089f130b8a86912baddc6404a34276e9caba5e2a9",
+      "id": "runtime:docker/entrypoint.sh:2078:main:/app/server.js",
       "ownerModule": null,
       "path": "/app/server.js",
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 862,
+      "anchorEnd": 2085,
       "anchorFile": "docker-compose.yml",
-      "anchorStart": 732,
+      "anchorStart": 1955,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "0774ff31c82bfc032920c7969aa3c562073b78d125faee9b9bfd2c52362e33a6",
-      "id": "runtime:docker-compose.yml:732:main:eval",
+      "fingerprint": "eeb6771d469ffce8135f710a71fcc32d79b97748d34b1affa591d5a7bf68b2ae",
+      "id": "runtime:docker-compose.yml:1955:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
@@ -13141,17 +14683,17 @@
       "role": "main"
     }
   ],
-  "runtimeInvocationLedgerDigest": "491db24ab322cbef5887ce048e29a0e721b139f93ffe93bcb6bacf1f709cfbbe",
+  "runtimeInvocationLedgerDigest": "7457ac6f0c943c9a2e999f8ca7d4f412a0a26b87878d1111bb6fca37fa415925",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1,
   "structuralIdentityAnchors": [
     {
       "anchorDigest": "b955511c0cd0a0eb6752e0983a50d13b5b5897c376a8e504423326af522affac",
-      "end": 450,
+      "end": 806,
       "file": "docker-compose.yml",
       "kind": "container_build_selector",
-      "start": 438,
+      "start": 794,
       "targetFile": "Dockerfile"
     },
     {
@@ -13163,8 +14705,8 @@
       "targetFile": "Dockerfile"
     },
     {
-      "anchorDigest": "bce3e4a604031684182836b57a978e5dacbc78f5e349287c2b1261960757253d",
-      "end": 1618,
+      "anchorDigest": "16b5e322ddbb9e7d717bed5cb98ad1a3c5348a41be2a8f7143935939a9a8f327",
+      "end": 2294,
       "file": "Dockerfile",
       "kind": "container_dockerfile",
       "start": 0,

@@ -6,7 +6,7 @@ export const operation = {
   ownerModule: "src/app/api/auth/[...all]/route.ts",
   ownerKind: "api_route",
   bindings: [
-    { kind: "route_method", symbol: "GET", target: "better-auth/next-js#toNextJsHandler.GET" },
+    { kind: "route_method", symbol: "GET", target: "src/app/api/auth/[...all]/route.ts#GET" },
     { kind: "route_method", symbol: "POST", target: "src/app/api/auth/[...all]/route.ts#POST" }
   ],
   disposition: "observed",

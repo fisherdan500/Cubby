@@ -354,7 +354,8 @@ describe("household member access management", () => {
       where: { id: member.id },
       data: { disabledAt }
     }));
-    expect(mocks.sessionDeleteMany).toHaveBeenCalledWith({ where: { userId: member.userId } });
+    expect(mocks.memberLock.mock.calls.some(([query]) => String(query).includes('revoke_sessions_for_suspended_member'))).toBe(true);
+    expect(mocks.sessionDeleteMany).not.toHaveBeenCalled();
     expect(mocks.writeAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -476,7 +477,8 @@ describe("household member access management", () => {
       suspended
     ]);
 
-    expect(mocks.sessionDeleteMany).toHaveBeenCalledOnce();
+    expect(mocks.memberLock.mock.calls.filter(([query]) => String(query).includes('revoke_sessions_for_suspended_member'))).toHaveLength(1);
+    expect(mocks.sessionDeleteMany).not.toHaveBeenCalled();
     expect(mocks.writeAudit).toHaveBeenCalledOnce();
   });
 });

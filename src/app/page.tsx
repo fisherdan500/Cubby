@@ -57,11 +57,8 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/register">
-              <Button>Create owner account</Button>
-            </Link>
             <Link href="/login">
-              <Button variant="secondary">Sign in</Button>
+              <Button>Sign in</Button>
             </Link>
           </div>
         </div>

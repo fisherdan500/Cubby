@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "phase": "phase7_global_session_security",
+  "activationState": "active_local_candidate",
+  "authority": "phase7_source_readiness",
+  "completeProgramReleaseState": "unreleased_until_phase9",
+  "surfaces": [
+    "src/app/api/account/session-activity/route.ts",
+    "src/app/api/account/sessions/route.ts",
+    "src/app/api/account/sessions/revoke/route.ts",
+    "src/app/api/account/sessions/status/route.ts",
+    "src/app/app/settings/sessions/page.tsx",
+    "src/components/session-activity-reporter.tsx",
+    "src/components/settings/session-manager.tsx"
+  ],
+  "gates": [
+    { "id": "phase7.protocol", "state": "source_verified", "evidence": "src/server/services/global-security-design.test.ts" },
+    { "id": "phase7.persistence", "state": "source_verified", "evidence": "src/server/services/global-security-persistence-migration.test.ts" },
+    { "id": "phase7.service", "state": "source_verified", "evidence": "src/server/services/global-session-security.test.ts" },
+    { "id": "phase7.routes", "state": "source_verified", "evidence": "src/app/api/account/sessions/revoke/route.test.ts" },
+    { "id": "phase7.qualifying_carriers", "state": "source_verified", "evidence": "src/components/session-activity-reporter.test.ts" },
+    { "id": "phase7.ui", "state": "source_verified", "evidence": "src/components/settings/session-manager.test.ts" },
+    { "id": "phase7.postgresql_acceptance", "state": "source_verified", "evidence": "scripts/p1-3-global-security-phase1.acceptance-rehearsal.ts" },
+    { "id": "phase7.browser_acceptance", "state": "source_verified", "evidence": "scripts/p1-3-email-change-browser.acceptance-rehearsal.ts" },
+    { "id": "phase7.deployment_roles", "state": "source_verified", "evidence": "src/server/services/container-entrypoint-contract.test.ts" },
+    { "id": "phase7.operation_registry", "state": "source_verified", "evidence": "src/server/operation-registry/checker.ts" },
+    { "id": "phase7.documentation", "state": "source_verified", "evidence": "docs/ARCHITECTURE.md" }
+  ],
+  "forbiddenActions": [
+    "partial_p1_3_user_release",
+    "commit",
+    "push",
+    "pull_request",
+    "merge",
+    "publish",
+    "deploy",
+    "normal_runtime_database",
+    "live_security_flow"
+  ]
+}

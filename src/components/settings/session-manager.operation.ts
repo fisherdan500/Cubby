@@ -6,36 +6,9 @@ export const operation = {
   ownerModule: "src/components/settings/session-manager.tsx",
   ownerKind: "client_binding",
   bindings: [
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.getSession[1]",
-      target: "better-auth/react#createAuthClient.getSession"
-    },
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.listSessions[1]",
-      target: "better-auth/react#createAuthClient.listSessions"
-    },
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.revokeOtherSessions[1]",
-      target: "better-auth/react#createAuthClient.revokeOtherSessions"
-    },
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.revokeSession[1]",
-      target: "better-auth/react#createAuthClient.revokeSession"
-    },
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.signOut[1]",
-      target: "better-auth/react#createAuthClient.signOut"
-    },
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.signOut[2]",
-      target: "better-auth/react#createAuthClient.signOut"
-    }
+    { kind: "global_fetch", symbol: "fetch[1]", target: "globalThis.fetch" },
+    { kind: "global_fetch", symbol: "fetch[2]", target: "globalThis.fetch" },
+    { kind: "global_fetch", symbol: "fetch[3]", target: "globalThis.fetch" }
   ],
   disposition: "observed",
   deferredGateIds: [
