@@ -8,8 +8,8 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
-      symbol: "requireSettingsPage",
-      target: "src/server/auth/page-access.ts#requireSettingsPage"
+      symbol: "requireUserPage",
+      target: "src/server/auth/session.ts#requireUserPage"
     }
   ],
   disposition: "observed",

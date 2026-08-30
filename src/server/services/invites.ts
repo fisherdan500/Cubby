@@ -23,7 +23,12 @@ import {
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
 
 export function hashInviteToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
+  return `sha256:${createHash("sha256").update(token).digest("hex")}`;
+}
+
+export function inviteTokenHashCandidates(token: string) {
+  const current = hashInviteToken(token);
+  return [current, current.slice("sha256:".length)] as const;
 }
 
 export const BULK_INVITE_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
@@ -442,10 +447,11 @@ export async function createInvite(raw: unknown) {
 
 export async function getInviteByToken(token: string, recipientEmail?: string) {
   if (!recipientEmail) return null;
-  const invite = await prisma.invite.findUnique({
-    where: { tokenHash: hashInviteToken(token) },
-    include: { household: true }
-  });
+  let invite = null;
+  for (const tokenHash of inviteTokenHashCandidates(token)) {
+    invite = await prisma.invite.findUnique({ where: { tokenHash }, include: { household: true } });
+    if (invite) break;
+  }
   if (!invite) return null;
   if (invite.status !== InviteStatus.pending || invite.expiresAt <= new Date()) return null;
   if (invite.email.toLowerCase() !== recipientEmail.toLowerCase()) return null;
@@ -453,10 +459,11 @@ export async function getInviteByToken(token: string, recipientEmail?: string) {
 }
 
 async function lockInviteByToken(tx: Prisma.TransactionClient, token: string) {
+  const [currentHash, legacyHash] = inviteTokenHashCandidates(token);
   const locked = await tx.$queryRaw<Array<{ id: string }>>`
     SELECT "id"
     FROM "Invite"
-    WHERE "tokenHash" = ${hashInviteToken(token)}
+    WHERE "tokenHash" IN (${currentHash}, ${legacyHash})
     FOR UPDATE
   `;
   if (locked.length !== 1) return null;
@@ -479,11 +486,15 @@ export async function acceptInvite(token: string) {
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
-    const tokenHash = hashInviteToken(token);
-    const candidate = await tx.invite.findUnique({ where: { tokenHash } });
+    let candidate = null;
+    for (const tokenHash of inviteTokenHashCandidates(token)) {
+      candidate = await tx.invite.findUnique({ where: { tokenHash } });
+      if (candidate) break;
+    }
     if (!candidate) {
       throw new Error("not_found");
     }
+    const tokenHash = candidate.tokenHash;
     let invite = candidate;
     const expireInvite = async () => {
       const expiredAt = new Date();
@@ -719,7 +730,7 @@ export async function submitMemberBrowserOperation(action: MemberBrowserAction, 
         await tx.householdMember.update({ where: { id: member.id }, data: { disabledAt } });
         await retireDelegatedWebhooks(tx, lockedCtx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
         const revokedApiKeyCount = await containClosedMemberAuthority(tx, lockedCtx.householdId, member.id, member.userId, disabledAt);
-        await tx.session.deleteMany({ where: { userId: member.userId } });
+        await tx.$executeRaw`SELECT "revoke_sessions_for_suspended_member"(${lockedCtx.householdId},${member.id},${member.userId})`;
         await writeAudit(lockedCtx, { action: "member.suspend", entityType: "household_member", entityId: member.id, before: { role: member.role, disabledAt: null }, after: { role: member.role, disabledAt, revokedApiKeyCount } }, tx);
       }
       return action === "role.update" ? { kind: "member", code: memberBrowserCode(action), memberId: member.id, role: input.role as string } : { kind: "member", code: memberBrowserCode(action), memberId: member.id };
@@ -873,7 +884,7 @@ export async function suspendMember(memberId: string, disabledAt = new Date()) {
     });
     await retireDelegatedWebhooks(tx, ctx.householdId, member.id, disabledAt, "endpoint_owner_suspended");
     const revokedApiKeyCount = await containClosedMemberAuthority(tx, ctx.householdId, member.id, member.userId, disabledAt);
-    await tx.session.deleteMany({ where: { userId: member.userId } });
+    await tx.$executeRaw`SELECT "revoke_sessions_for_suspended_member"(${ctx.householdId},${member.id},${member.userId})`;
     await writeAudit(
       ctx,
       {

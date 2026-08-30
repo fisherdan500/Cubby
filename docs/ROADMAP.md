@@ -182,7 +182,7 @@ not contain or authorize roadmap work.
 - Priority: high
 - Goal: Remove the unused trusted-device PIN and make personal session management accurate.
 - Acceptance: The dead PIN model/API/UI are removed; Active Sessions has loading, stale-login, error, current-session, and revocation behavior; sign-in throttling is explained accurately.
-- Notes: Cubby retains Better Auth's 10-minute freshness check and three-requests-per-10-seconds production throttle.
+- Notes: Historical cleanup originally retained Better Auth freshness/rate-limit defaults. The active P1-3 candidate now denies framework freshness shortcuts and disables Better Auth's in-memory limiter in favor of Cubby's database-clock account/client/deployment throttle; the complete security program remains unreleased until Phase 9.
 
 ### Soft Editorial Visual System
 

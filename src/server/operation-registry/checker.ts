@@ -151,6 +151,12 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/account/appearance/route.operation.ts",
   "src/app/api/account/browser-operations/[operationId]/route.operation.ts",
   "src/app/api/account/browser-operations/partition/route.operation.ts",
+  "src/app/api/account/session-activity/route.operation.ts",
+  "src/app/api/account/security-history/export/route.operation.ts",
+  "src/app/api/account/security-history/route.operation.ts",
+  "src/app/api/account/sessions/revoke/route.operation.ts",
+  "src/app/api/account/sessions/route.operation.ts",
+  "src/app/api/account/sessions/status/route.operation.ts",
   "src/app/api/activities/[id]/route.operation.ts",
   "src/app/api/activities/route.operation.ts",
   "src/app/api/activities/undo-last/route.operation.ts",
@@ -256,13 +262,17 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/settings/notification-preference-form.operation.ts",
   "src/components/settings/registration-settings-form.operation.ts",
   "src/components/settings/session-manager.operation.ts",
+  "src/components/settings/security-history.operation.ts",
   "src/components/settings/sprout-restore-form.operation.ts",
   "src/components/settings/unit-preferences-form.operation.ts",
-  "src/components/sign-out-button.operation.ts",
+  "src/components/session-activity-reporter.operation.ts",
   "src/app/app/calendar/actions.operation.ts",
+  "src/app/app/settings/security-history/page.operation.ts",
   "src/instrumentation.operation.ts",
   "src/server/automated-backup-scheduler.operation.ts",
   "src/server/browser-operation-retention-scheduler.operation.ts",
+  "src/server/email-change-lifecycle-scheduler.operation.ts",
+  "src/server/email-delivery-scheduler.operation.ts",
   "src/server/integrity-scheduler.operation.ts",
   "src/server/sprout-source-retention-scheduler.operation.ts",
   "scripts/activity-update-safety-rehearsal.operation.ts",
@@ -270,6 +280,11 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
   "scripts/integrity-check.operation.ts",
   "scripts/platform-owner.operation.ts",
+  "scripts/provision-email-delivery-keys.operation.ts",
+  "scripts/provision-global-security-throttle-key.operation.ts",
+  "scripts/provision-fresh-auth-attestation-keys.operation.ts",
+  "scripts/provision-security-runtime-role.operation.ts",
+  "scripts/security-operator.operation.ts",
   "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
   "scripts/update-preflight.operation.ts",
   "prisma/seed.operation.ts"
@@ -2372,6 +2387,8 @@ export function discoverPackageCommands(
   const unsupportedOwners = new Set<string>();
   const reportUnsupportedOwner = (ownerModule: string) => {
     if (ownerModule === "scripts/generate-brand-icons.mjs") return;
+    const normalizedOwner = ownerModule.replace(/^\.\//, "");
+    if (normalizedOwner.endsWith(".mjs") && existsSync(resolve(repositoryRoot, sidecarPathForOwner(normalizedOwner)))) return;
     const extension = executableExtension(ownerModule);
     if (!extension || !["js", "jsx", "mjs", "cjs"].includes(extension)) return;
     if (unsupportedOwners.has(ownerModule)) return;
@@ -3104,7 +3121,7 @@ export function discoverContainerCommandBindings(
     readonly anchorStart: number;
     readonly anchorEnd: number;
   }> = [];
-  const esbuildPattern = /\besbuild\s+(?:"([^"]+\.[cm]?tsx?)"|'([^']+\.[cm]?tsx?)'|([^\s"';&|]+\.[cm]?tsx?))(?:(?!&&|\|\|).)*?--outfile(?:=|\s+)(?:"([^"]+\.[cm]?js)"|'([^']+\.[cm]?js)'|([^\s"';&|]+\.[cm]?js))/;
+  const esbuildPattern = /\besbuild\s+(?:"([^"]+\.(?:[cm]?tsx?|[cm]?js))"|'([^']+\.(?:[cm]?tsx?|[cm]?js))'|([^\s"';&|]+\.(?:[cm]?tsx?|[cm]?js)))(?:(?!&&|\|\|).)*?--outfile(?:=|\s+)(?:"([^"]+\.[cm]?js)"|'([^']+\.[cm]?js)'|([^\s"';&|]+\.[cm]?js))/;
   for (const [scriptName, command] of Object.entries(parsed.scripts)) {
     if (typeof command !== "string" || !command.includes("esbuild")) continue;
     const match = command.match(esbuildPattern);
@@ -3513,8 +3530,7 @@ function selectedShellRuntimeExclusion(
   if (
     anchorFile === "docker/entrypoint.sh" &&
     path === "/app/node_modules/prisma/build/index.js" &&
-    anchorBytes ===
-      "if ! node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1"
+    anchorBytes.includes("node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1")
   ) {
     return {
       category: "third_party_migration_cli",
@@ -5983,7 +5999,7 @@ export function buildRepositoryRegistry(
 }
 
 function sidecarPathForOwner(ownerModule: string): string {
-  return ownerModule.replace(/\.(?:tsx|ts|mts|cts)$/, ".operation.ts");
+  return ownerModule.replace(/\.(?:tsx|ts|mts|cts|mjs|cjs|js|jsx)$/, ".operation.ts");
 }
 
 function compareBindings(left: StructuralObservation, right: StructuralObservation): number {

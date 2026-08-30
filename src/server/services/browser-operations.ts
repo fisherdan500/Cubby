@@ -10,6 +10,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireFreshSession } from "@/server/auth/session";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
+import { recordQualifyingGlobalSessionUseAfterSuccess } from "@/server/services/global-session-security";
 
 export const browserOperationLeaseMs = 30 * 60 * 1000;
 
@@ -675,8 +676,10 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
   const operationId = assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   const outcomeSchema = terminalOutcomeSchemaFor(operationKey);
+  let committedThisInvocation = false;
 
-  return runSerializableWithRetry(() => prisma.$transaction(async (transaction) => {
+  const result: BrowserOperationResult = await runSerializableWithRetry(() => prisma.$transaction(async (transaction) => {
+    committedThisInvocation = false;
     const db = transaction as unknown as BrowserOperationTransaction;
     await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${input.ctx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
@@ -734,6 +737,7 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
       operation = await db.browserMutationOperation.create({ data: operationData });
       await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
       const outcome = outcomeSchema.parse(await input.execute(transaction, lockedCtx, binding));
+      committedThisInvocation = true;
       return persistTerminalOperation(db, binding, { status: "completed", operationId, outcome });
     } catch (error) {
       const stale = staleResult(operationId, error);
@@ -745,6 +749,8 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
       return persistTerminalOperation(db, binding, stale);
     }
   }, { isolationLevel: "Serializable" }));
+  if (result.status === "completed" && committedThisInvocation) await recordQualifyingGlobalSessionUseAfterSuccess(prisma, input.ctx, "cubby_owned_non_get_mutation");
+  return result;
 }
 
 export async function executeBrowserOperation<T extends Record<string, unknown>>(input: {
@@ -761,8 +767,10 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
   const operationId = assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   const outcomeSchema = terminalOutcomeSchemaFor(operationKey);
+  let committedThisInvocation = false;
 
-  return runSerializableWithRetry(() => prisma.$transaction(async (tx) => {
+  const result: BrowserOperationResult = await runSerializableWithRetry(() => prisma.$transaction(async (tx) => {
+    committedThisInvocation = false;
     const db = tx as unknown as BrowserOperationTransaction;
     await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${input.ctx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
@@ -824,6 +832,7 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
         await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
       }
       const outcome = outcomeSchema.parse(await input.execute(tx, lockedCtx, baby));
+      committedThisInvocation = true;
       return persistTerminalOperation(db, binding, { status: "completed", operationId, outcome });
     } catch (error) {
       const stale = staleResult(operationId, error);
@@ -835,4 +844,6 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
       return persistTerminalOperation(db, binding, stale);
     }
   }, { isolationLevel: "Serializable" }));
+  if (result.status === "completed" && committedThisInvocation) await recordQualifyingGlobalSessionUseAfterSuccess(prisma, input.ctx, "cubby_owned_non_get_mutation");
+  return result;
 }

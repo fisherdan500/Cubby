@@ -4,18 +4,24 @@ export async function register() {
       { startAutomatedBackupScheduler },
       { startIntegrityScheduler },
       { startSproutSourceRetentionScheduler },
-      { startBrowserOperationRetentionScheduler }
+      { startBrowserOperationRetentionScheduler },
+      { startEmailDeliveryScheduler },
+      { startEmailChangeLifecycleScheduler }
     ] = await Promise.all([
       import("@/server/automated-backup-scheduler"),
       import("@/server/integrity-scheduler"),
       import("@/server/sprout-source-retention-scheduler"),
-      import("@/server/browser-operation-retention-scheduler")
+      import("@/server/browser-operation-retention-scheduler"),
+      import("@/server/email-delivery-scheduler"),
+      import("@/server/email-change-lifecycle-scheduler")
     ]);
     await Promise.all([
       startAutomatedBackupScheduler(),
       startIntegrityScheduler(),
       startSproutSourceRetentionScheduler(),
-      startBrowserOperationRetentionScheduler()
+      startBrowserOperationRetentionScheduler(),
+      startEmailDeliveryScheduler(),
+      startEmailChangeLifecycleScheduler()
     ]);
   }
 }

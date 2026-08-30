@@ -1,4 +1,5 @@
 import { HouseholdSelectionControl } from "@/components/household-selection-control";
+import { SessionActivityReporter } from "@/components/session-activity-reporter";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdSelectionState } from "@/server/services/household-selection";
 
@@ -8,6 +9,7 @@ export default async function AuthenticatedAppLayout({ children }: { children: R
   const accentTheme = selection.selected?.accentTheme ?? "sage";
   return (
     <div data-accent={accentTheme}>
+      <SessionActivityReporter />
       <HouseholdSelectionControl state={selection} />
       {selection.status === "selected" ? children : (
         <main className="mx-auto max-w-2xl px-3 py-8 md:px-8">

@@ -60,6 +60,7 @@ import {
   BULK_INVITE_REVOKE_ACKNOWLEDGEMENT,
   createInvite,
   hashInviteToken,
+  inviteTokenHashCandidates,
   resolveInviteMembershipState,
   resolveInviteExpiry,
   revokeAllPendingInvites,
@@ -156,10 +157,15 @@ afterEach(() => {
 });
 
 describe("invite token hashing", () => {
-  it("is deterministic and does not preserve the raw token", () => {
+  it("writes the approved prefixed digest while retaining a legacy read candidate", () => {
     const token = "invite-token";
     expect(hashInviteToken(token)).toBe(hashInviteToken(token));
     expect(hashInviteToken(token)).not.toBe(token);
+    expect(hashInviteToken(token)).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(inviteTokenHashCandidates(token)).toEqual([
+      hashInviteToken(token),
+      hashInviteToken(token).slice("sha256:".length)
+    ]);
   });
 });
 

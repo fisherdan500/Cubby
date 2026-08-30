@@ -2,76 +2,97 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   authHandler: vi.fn(),
-  signupPolicyForRequest: vi.fn(),
-  transaction: vi.fn(),
-  executeRaw: vi.fn()
+  runCarrier: vi.fn(),
+  configuredKey: vi.fn(),
+  precheck: vi.fn(),
+  recordFailure: vi.fn(),
+  writeEvent: vi.fn(),
+  queryRaw: vi.fn(),
+  transaction: vi.fn()
 }));
 
 vi.mock("@/lib/auth/auth", () => ({
   auth: { handler: mocks.authHandler }
 }));
 vi.mock("@/lib/db/prisma", () => ({
-  prisma: { $transaction: mocks.transaction }
+  prisma: { $queryRaw: mocks.queryRaw, $transaction: mocks.transaction }
 }));
-vi.mock("@/server/services/registration", () => ({
-  signupPolicyForRequest: mocks.signupPolicyForRequest
+vi.mock("@/lib/env", () => ({
+  env: { CUBBY_TRUSTED_PROXY_HOPS: 0 }
 }));
-
-import { POST } from "@/app/api/auth/[...all]/route";
+vi.mock("@/server/services/global-security-throttling", () => ({
+  configuredGlobalSecurityThrottleKey: mocks.configuredKey,
+  precheckGlobalSecurityThrottle: mocks.precheck,
+  recordGlobalSecurityThrottleFailureInTransaction: mocks.recordFailure,
+  writeGlobalSecurityEvent: mocks.writeEvent
+}));
+vi.mock("@/server/services/sign-in-email-throttle", () => ({
+  runEmailSignInThrottleCarrier: mocks.runCarrier
+}));
+import { GET, POST } from "@/app/api/auth/[...all]/route";
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.transaction.mockImplementation(async (operation: (tx: { $executeRaw: typeof mocks.executeRaw }) => unknown) =>
-    operation({ $executeRaw: mocks.executeRaw })
-  );
-  mocks.executeRaw.mockResolvedValue(1);
-  mocks.signupPolicyForRequest.mockResolvedValue({ allowed: true, reason: "bootstrap" });
   mocks.authHandler.mockResolvedValue(new Response(null, { status: 200 }));
+  mocks.configuredKey.mockReturnValue(Buffer.alloc(32, 1).toString("base64url"));
+  mocks.runCarrier.mockResolvedValue(new Response(null, { status: 200 }));
 });
 
-describe("signup serialization", () => {
-  it("acquires a transaction-scoped database lock before checking signup policy and creating an account", async () => {
+describe("global auth route boundary", () => {
+  it("does not forward generic signup before a Cubby-owned initial-credential protocol exists", async () => {
     const request = new Request("http://localhost/api/auth/sign-up/email", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "owner@example.test", password: "example-password" })
     });
 
-    await expect(POST(request)).resolves.toMatchObject({ status: 200 });
-
-    expect(mocks.transaction).toHaveBeenCalledOnce();
-    expect(mocks.executeRaw).toHaveBeenCalledOnce();
-    expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.signupPolicyForRequest.mock.invocationCallOrder[0]
-    );
-    expect(mocks.signupPolicyForRequest).toHaveBeenCalledWith(
-      request,
-      expect.objectContaining({ $executeRaw: mocks.executeRaw })
-    );
-    expect(mocks.signupPolicyForRequest.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.authHandler.mock.invocationCallOrder[0]
-    );
-  });
-
-  it("rejects a signup denied by the policy rechecked under the lock", async () => {
-    mocks.signupPolicyForRequest.mockResolvedValue({ allowed: false, reason: "closed" });
-    const request = new Request("http://localhost/api/auth/sign-up/email", {
-      method: "POST",
-      body: JSON.stringify({ email: "blocked@example.test" })
-    });
-
-    const response = await POST(request);
-
-    expect(response.status).toBe(403);
+    await expect(POST(request)).resolves.toMatchObject({ status: 404 });
     expect(mocks.authHandler).not.toHaveBeenCalled();
   });
 
-  it("does not take the signup lock for unrelated auth operations", async () => {
+  it("wraps only canonical email sign-in with the Cubby throttle carrier", async () => {
     const request = new Request("http://localhost/api/auth/sign-in/email", { method: "POST" });
 
     await POST(request);
 
-    expect(mocks.transaction).not.toHaveBeenCalled();
-    expect(mocks.authHandler).toHaveBeenCalledWith(request);
+    expect(mocks.runCarrier).toHaveBeenCalledWith(request, expect.objectContaining({
+      throttleKey: Buffer.alloc(32, 1).toString("base64url"),
+      trustedProxyHops: 0,
+      invoke: expect.any(Function)
+    }));
+    expect(mocks.authHandler).not.toHaveBeenCalled();
+  });
+
+  it("keeps resolved invalid-sign-in evidence in the same serializable failure transaction", async () => {
+    const tx = {};
+    mocks.transaction.mockImplementation(async (action: (transaction: typeof tx) => unknown) => action(tx));
+    mocks.recordFailure.mockResolvedValue({ quiet: true, deadline: new Date() });
+    mocks.writeEvent.mockResolvedValue(undefined);
+    const request = new Request("http://localhost/api/auth/sign-in/email", { method: "POST" });
+
+    await POST(request);
+    const dependencies = mocks.runCarrier.mock.calls[0]?.[1] as {
+      recordFailure: (input: { key: string; client: string }, userId: string) => Promise<unknown>;
+    };
+    const input = { key: Buffer.alloc(32, 1).toString("base64url"), client: "unknown_client" };
+    await dependencies.recordFailure(input, "user-existing");
+
+    expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
+    expect(mocks.recordFailure).toHaveBeenCalledWith(tx, input);
+    expect(mocks.writeEvent).toHaveBeenCalledWith(tx, "user-existing", "credential", "sign_in_failed");
+  });
+
+  it("does not forward generic credential mutation endpoints before their Cubby lifecycle wrapper exists", async () => {
+    const request = new Request("http://localhost/api/auth/change-password", { method: "POST" });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(404);
+    expect(mocks.authHandler).not.toHaveBeenCalled();
+  });
+
+  it("does not forward generic auth GET endpoints before their Cubby lifecycle wrapper exists", async () => {
+    await expect(GET()).resolves.toMatchObject({ status: 404 });
+    expect(mocks.authHandler).not.toHaveBeenCalled();
   });
 });

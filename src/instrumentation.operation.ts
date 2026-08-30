@@ -27,6 +27,16 @@ export const operation = {
       target: "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
     },
     {
+      kind: "worker_dynamic_import",
+      symbol: "startEmailDeliveryScheduler",
+      target: "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+    },
+    {
+      kind: "worker_dynamic_import",
+      symbol: "startEmailChangeLifecycleScheduler",
+      target: "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+    },
+    {
       kind: "worker_start_call",
       symbol: "startAutomatedBackupScheduler",
       target: "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -45,6 +55,16 @@ export const operation = {
       kind: "worker_start_call",
       symbol: "startBrowserOperationRetentionScheduler",
       target: "src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler"
+    },
+    {
+      kind: "worker_start_call",
+      symbol: "startEmailDeliveryScheduler",
+      target: "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+    },
+    {
+      kind: "worker_start_call",
+      symbol: "startEmailChangeLifecycleScheduler",
+      target: "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
     }
   ],
   disposition: "observed",

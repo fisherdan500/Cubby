@@ -105,6 +105,108 @@
       "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"security_history_export_confirmation_required\");\n    let body: unknown;\n    try {\n      body = await request.json();\n    } catch {\n      throw new Error(\"security_history_export_confirmation_required\");\n    }\n    parseConfirmation(body);\n    const context = await requireGlobalSecurityContext();\n    const payload = await exportGlobalSecurityHistory(prisma, context);\n    return new Response(JSON.stringify(payload), {\n      headers: {\n        \"content-type\": \"application/json; charset=utf-8\",\n        \"content-disposition\": `attachment; filename=\\\"${globalSecurityHistoryExportFilename}\\\"`,\n        \"cache-control\": \"no-store\"\n      }\n    });\n  } catch (error) {\n    return exportError(error);\n  }\n}",
+      "anchorDigest": "a1996d21cf5090f45c01b34ed943a7a6f918b2d6fb78860613de00879715740c",
+      "anchorEnd": 1994,
+      "anchorFile": "src/app/api/account/security-history/export/route.ts",
+      "anchorStart": 1113,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/security-history/export/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/security-history/export/route.ts:route_method:POST:src/app/api/account/security-history/export/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/security-history/export/route.ts",
+      "ownerModule": "src/app/api/account/security-history/export/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/export/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const input = parseQuery(request);\n    const context = await requireGlobalSecurityContext();\n    return ok(await listGlobalSecurityHistory(prisma, context, input));\n  } catch (error) {\n    return historyError(error);\n  }\n}",
+      "anchorDigest": "43b63425f5dca7de42f3822002da94d4b5b51f57a1845c9d7d77be519cdfaa16",
+      "anchorEnd": 1533,
+      "anchorFile": "src/app/api/account/security-history/route.ts",
+      "anchorStart": 1253,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/security-history/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/security-history/route.ts:route_method:GET:src/app/api/account/security-history/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/security-history/route.ts",
+      "ownerModule": "src/app/api/account/security-history/route.ts",
+      "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") return fail(\"session_activity_request_invalid\", \"The activity request is invalid.\", 422);\n    let body: unknown;\n    try { body = await request.json(); } catch { return fail(\"session_activity_request_invalid\", \"The activity request is invalid.\", 422); }\n    if (!body || typeof body !== \"object\" || Array.isArray(body) || Object.keys(body).length !== 1 || (body as Record<string, unknown>).requestClass !== \"foreground_document_navigation\") return fail(\"session_activity_request_invalid\", \"The activity request is invalid.\", 422);\n    const context = await requireGlobalSecurityContext();\n    await recordQualifyingGlobalSessionUseAfterSuccess(prisma, context, \"foreground_document_navigation\");\n    return ok({ recorded: true });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "543112329258dfdb983c6e9b89a39242464fb0d8f87dfd21f1e863e999091b6a",
+      "anchorEnd": 1265,
+      "anchorFile": "src/app/api/account/session-activity/route.ts",
+      "anchorStart": 315,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/session-activity/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/session-activity/route.ts:route_method:POST:src/app/api/account/session-activity/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/session-activity/route.ts",
+      "ownerModule": "src/app/api/account/session-activity/route.ts",
+      "sidecarPath": "src/app/api/account/session-activity/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"session_revoke_request_invalid\");\n    let value: unknown;\n    try {\n      value = await request.json();\n    } catch {\n      throw new Error(\"session_revoke_request_invalid\");\n    }\n    const input = parseRevokeRequest(value);\n    const context = await requireGlobalSecurityContext();\n    const authContext = await auth.$context;\n    const result = await revokeGlobalSessionSecurityWithCurrentPassword(\n      prisma,\n      context,\n      {\n        operationId: input.operationId,\n        openingFingerprint: input.openingFingerprint,\n        intentFingerprint: input.intentFingerprint,\n        scope: input.scope,\n        ...(input.targetHandle === undefined ? {} : { targetHandle: input.targetHandle }),\n        confirmed: input.confirmed\n      },\n      input.currentPassword,\n      { verify: authContext.password.verify },\n      undefined,\n      { key: configuredGlobalSecurityThrottleKey(), client: canonicalizeTrustedClient(env.CUBBY_TRUSTED_PROXY_HOPS, request.headers.get(\"x-forwarded-for\")) }\n    );\n    const signedOut = input.scope === \"current\" || input.scope === \"all\";\n    if (!signedOut) await recordQualifyingGlobalSessionUseAfterSuccess(prisma, context, \"private_security_action\");\n    if (signedOut) await clearBetterAuthSessionCookies();\n    return ok({ ...result, signedOut });\n  } catch (error) {\n    return revokeError(error);\n  }\n}",
+      "anchorDigest": "04bd84b5f4cf7e3565222c69ecb8b689eaac36f90d7c899ea62e1391e8f878a8",
+      "anchorEnd": 5049,
+      "anchorFile": "src/app/api/account/sessions/revoke/route.ts",
+      "anchorStart": 3518,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/sessions/revoke/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/sessions/revoke/route.ts:route_method:POST:src/app/api/account/sessions/revoke/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/sessions/revoke/route.ts",
+      "ownerModule": "src/app/api/account/sessions/revoke/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/revoke/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET() {\n  try {\n    const context = await requireGlobalSecurityContext();\n    const sessions = await listGlobalSessionSecurity(prisma, context);\n    return ok({ sessions });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "547b546136217fc5ff4dc02830d4cca3f2d05c7f3ef0bbd6de7b0ea021b2e668",
+      "anchorEnd": 542,
+      "anchorFile": "src/app/api/account/sessions/route.ts",
+      "anchorStart": 290,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/account/sessions/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/sessions/route.ts:route_method:GET:src/app/api/account/sessions/route.ts#GET",
+      "ownerId": "api_route:src/app/api/account/sessions/route.ts",
+      "ownerModule": "src/app/api/account/sessions/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"session_revoke_status_request_invalid\");\n    let raw: unknown;\n    try { raw = await request.json(); } catch { throw new Error(\"session_revoke_status_request_invalid\"); }\n    const input = parseStatusRequest(raw);\n    const context = await requireGlobalSecurityContext();\n    const result = await getGlobalSessionRevokeStatus(prisma, context, input);\n    await recordQualifyingGlobalSessionUseAfterSuccess(prisma, context, \"private_security_action\");\n    return ok(result);\n  } catch (error) {\n    if (error instanceof Error && error.message === \"session_revoke_status_request_invalid\") return fail(error.message, \"Check the status request and try again.\", 422);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "7e00fc99f28e73ddfe0d9945a072d3486ef9506c9be0ba1ecd14e57b36907bad",
+      "anchorEnd": 2168,
+      "anchorFile": "src/app/api/account/sessions/status/route.ts",
+      "anchorStart": 1289,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/sessions/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/sessions/status/route.ts:route_method:POST:src/app/api/account/sessions/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/sessions/status/route.ts",
+      "ownerModule": "src/app/api/account/sessions/status/route.ts",
+      "sidecarPath": "src/app/api/account/sessions/status/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: unknown;\n    if (text.length > 0) {\n      try {\n        body = JSON.parse(text) as unknown;\n      } catch {\n        throw new Error(\"validation_error\");\n      }\n    }\n    const record = typeof body === \"object\" && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : null;\n    operationId = record?.operationId;\n    const input = { ...record, activityId: params.id };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueActivityDeleteBrowserOperation(input);\n      return browserOperationResponse(issued);\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueActivityDeleteBrowserOperation(input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitActivityDeleteBrowserOperation(input) : issued;\n      return browserOperationResponse(result);\n    }\n    return ok(await deleteActivity(params.id, body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return browserOperationResponse(failure);\n    return handleError(error);\n  }\n}",
       "anchorDigest": "a7f652b14e07aa14f7a5e723e4cce851e6510386551e87c76b272a5caa0f8f4f",
       "anchorEnd": 3519,
@@ -207,28 +309,28 @@
       "sidecarPath": "src/app/api/audit/route.operation.ts"
     },
     {
-      "anchorBytes": "GET = handlers.GET",
-      "anchorDigest": "5217e468736d72a32ef369e3602f205c1e4f99099baf50e779e01385ac8d2fcd",
-      "anchorEnd": 455,
+      "anchorBytes": "export async function GET() {\n  return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n}",
+      "anchorDigest": "1611d1871a87b1a622c1866f0bea19b8ab8910f838d71038ebf273ec3828a8b2",
+      "anchorEnd": 720,
       "anchorFile": "src/app/api/auth/[...all]/route.ts",
-      "anchorStart": 437,
+      "anchorStart": 603,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
-        "target": "better-auth/next-js#toNextJsHandler.GET"
+        "target": "src/app/api/auth/[...all]/route.ts#GET"
       },
       "coverage": "structural_only",
-      "id": "api_route:src/app/api/auth/[...all]/route.ts:route_method:GET:better-auth/next-js#toNextJsHandler.GET",
+      "id": "api_route:src/app/api/auth/[...all]/route.ts:route_method:GET:src/app/api/auth/[...all]/route.ts#GET",
       "ownerId": "api_route:src/app/api/auth/[...all]/route.ts",
       "ownerModule": "src/app/api/auth/[...all]/route.ts",
       "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  const url = new URL(request.url);\n  if (url.pathname.endsWith(\"/sign-up/email\")) {\n    return prisma.$transaction(async (tx) => {\n      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;\n      const policy = await signupPolicyForRequest(request, tx);\n      if (!policy.allowed) {\n        return NextResponse.json(\n          {\n            code: \"REGISTRATION_CLOSED\",\n            message: \"Account creation is invite-only for this Cubby instance.\"\n          },\n          { status: 403 }\n        );\n      }\n      return handlers.POST(request);\n    });\n  }\n  return handlers.POST(request);\n}",
-      "anchorDigest": "825489298fa4463901661e6ab3f9750b7c9c9444d598215b46ce181fb6ea0aa5",
-      "anchorEnd": 1131,
+      "anchorBytes": "export async function POST(request: Request) {\n  const url = new URL(request.url);\n  if (url.pathname !== \"/api/auth/sign-in/email\") {\n    return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n  }\n  return runEmailSignInThrottleCarrier(request, {\n    throttleKey: configuredGlobalSecurityThrottleKey(),\n    trustedProxyHops: env.CUBBY_TRUSTED_PROXY_HOPS,\n    findUserIdByNormalizedEmail: async (normalizedEmail) => {\n      const rows = await prisma.$queryRaw<Array<{ id: string }>>`\n        SELECT \"id\" FROM \"User\"\n        WHERE \"normalize_security_email_v1\"(\"email\")=${normalizedEmail}\n        LIMIT 1\n      `;\n      return rows[0]?.id;\n    },\n    precheck: (input) => precheckGlobalSecurityThrottle(prisma, input),\n    recordFailure: (input, eventUserId) => prisma.$transaction(async (tx) => {\n      const result = await recordGlobalSecurityThrottleFailureInTransaction(tx, input);\n      if (eventUserId) await writeGlobalSecurityEvent(tx, eventUserId, \"credential\", \"sign_in_failed\");\n      return result;\n    }, { isolationLevel: \"Serializable\" }),\n    invoke: handlers.POST\n  });\n}",
+      "anchorDigest": "731c8bb27461e6c9aad40639453e43eca27be05921a3db221a4a9f84f962bedc",
+      "anchorEnd": 1838,
       "anchorFile": "src/app/api/auth/[...all]/route.ts",
-      "anchorStart": 458,
+      "anchorStart": 722,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1535,9 +1637,9 @@
     {
       "anchorBytes": "authClient.signIn.email({ email, password, rememberMe: true, callbackURL: next })",
       "anchorDigest": "8c338518855b08f4e19bee92b7313625a92d75a84733d21c05c52ea5d6c2345f",
-      "anchorEnd": 1188,
+      "anchorEnd": 792,
       "anchorFile": "src/components/auth/auth-form.tsx",
-      "anchorStart": 1107,
+      "anchorStart": 711,
       "binding": {
         "kind": "auth_client_call",
         "symbol": "authClient.signIn.email[1]",
@@ -1550,28 +1652,11 @@
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
     },
     {
-      "anchorBytes": "authClient.signUp.email({ email, password, name, callbackURL: next })",
-      "anchorDigest": "8779e727f12b73f3577fe182a7e25b88b63b0bc34fc0aa0595de99ab00835021",
-      "anchorEnd": 1090,
-      "anchorFile": "src/components/auth/auth-form.tsx",
-      "anchorStart": 1021,
-      "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.signUp.email[1]",
-        "target": "better-auth/react#createAuthClient.signUp.email"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/auth/auth-form.tsx:auth_client_call:authClient.signUp.email[1]:better-auth/react#createAuthClient.signUp.email",
-      "ownerId": "client_binding:src/components/auth/auth-form.tsx",
-      "ownerModule": "src/components/auth/auth-form.tsx",
-      "sidecarPath": "src/components/auth/auth-form.operation.ts"
-    },
-    {
       "anchorBytes": "action={onSubmit}",
       "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
-      "anchorEnd": 1774,
+      "anchorEnd": 1008,
       "anchorFile": "src/components/auth/auth-form.tsx",
-      "anchorStart": 1757,
+      "anchorStart": 991,
       "binding": {
         "kind": "form_action",
         "symbol": "onSubmit",
@@ -1579,23 +1664,6 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/auth/auth-form.tsx:form_action:onSubmit:src/components/auth/auth-form.tsx#onSubmit",
-      "ownerId": "client_binding:src/components/auth/auth-form.tsx",
-      "ownerModule": "src/components/auth/auth-form.tsx",
-      "sidecarPath": "src/components/auth/auth-form.operation.ts"
-    },
-    {
-      "anchorBytes": "fetch(`/api/invites/${inviteToken}/accept`, { method: \"POST\" })",
-      "anchorDigest": "b86ccb800666dea46bda7c6d91a56db461fafc912c8191e6ffa0d516dfe0efd3",
-      "anchorEnd": 1449,
-      "anchorFile": "src/components/auth/auth-form.tsx",
-      "anchorStart": 1386,
-      "binding": {
-        "kind": "global_fetch",
-        "symbol": "fetch[1]",
-        "target": "globalThis.fetch"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/auth/auth-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
       "ownerId": "client_binding:src/components/auth/auth-form.tsx",
       "ownerModule": "src/components/auth/auth-form.tsx",
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
@@ -2128,6 +2196,23 @@
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
     },
     {
+      "anchorBytes": "fetch(\"/api/account/session-activity\", {\n    method: \"POST\",\n    headers: { \"content-type\": \"application/json\" },\n    body: JSON.stringify({ requestClass: \"foreground_document_navigation\" }),\n    keepalive: true\n  })",
+      "anchorDigest": "4b59847f7c77d8513bbbfbb5d78bf9928871ff6598e1ee9dc923755f70e85e33",
+      "anchorEnd": 373,
+      "anchorFile": "src/components/session-activity-reporter.tsx",
+      "anchorStart": 157,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/session-activity-reporter.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/session-activity-reporter.tsx",
+      "ownerModule": "src/components/session-activity-reporter.tsx",
+      "sidecarPath": "src/components/session-activity-reporter.operation.ts"
+    },
+    {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
       "anchorEnd": 974,
@@ -2604,103 +2689,86 @@
       "sidecarPath": "src/components/settings/registration-settings-form.operation.ts"
     },
     {
-      "anchorBytes": "authClient.getSession()",
-      "anchorDigest": "7affdca9b533360e2cc08e304fb94a624144e1c2647e0c003124d5250d13f31f",
-      "anchorEnd": 1323,
-      "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 1300,
+      "anchorBytes": "fetch(`/api/account/security-history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : \"\"}`, { cache: \"no-store\" })",
+      "anchorDigest": "0a49ba8a97f3d2b0385e1a361b4589ac6f857c56e8d7afb5b9a4092841aaf009",
+      "anchorEnd": 2021,
+      "anchorFile": "src/components/settings/security-history.tsx",
+      "anchorStart": 1904,
       "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.getSession[1]",
-        "target": "better-auth/react#createAuthClient.getSession"
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
       },
       "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/session-manager.tsx:auth_client_call:authClient.getSession[1]:better-auth/react#createAuthClient.getSession",
+      "id": "client_binding:src/components/settings/security-history.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/security-history.tsx",
+      "ownerModule": "src/components/settings/security-history.tsx",
+      "sidecarPath": "src/components/settings/security-history.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/security-history/export\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ confirmed: true })\n      })",
+      "anchorDigest": "b577cf3fed80ff6dea0bb62d3e33be7e3905c48b4ff551b193ff6e431a5fea4e",
+      "anchorEnd": 3949,
+      "anchorFile": "src/components/settings/security-history.tsx",
+      "anchorStart": 3762,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/security-history.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/security-history.tsx",
+      "ownerModule": "src/components/settings/security-history.tsx",
+      "sidecarPath": "src/components/settings/security-history.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/sessions\", { cache: \"no-store\" })",
+      "anchorDigest": "3fdd9ef04e687048103932208e9c43c46279b7c311fae0e21f39161b74672d69",
+      "anchorEnd": 3941,
+      "anchorFile": "src/components/settings/session-manager.tsx",
+      "anchorStart": 3888,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/session-manager.tsx:global_fetch:fetch[1]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/session-manager.tsx",
       "ownerModule": "src/components/settings/session-manager.tsx",
       "sidecarPath": "src/components/settings/session-manager.operation.ts"
     },
     {
-      "anchorBytes": "authClient.listSessions()",
-      "anchorDigest": "77c1f126190005f6208e5d2bb8fdaf9fc4364e0a659bcd93fe8c715125918ff8",
-      "anchorEnd": 1290,
+      "anchorBytes": "fetch(\"/api/account/sessions/status\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify(metadata)\n      })",
+      "anchorDigest": "c3aa9033aa151f1859dce63c2839299be9e512b544bd15e768c7f3fb6ffd3e4e",
+      "anchorEnd": 5044,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 1265,
+      "anchorStart": 4876,
       "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.listSessions[1]",
-        "target": "better-auth/react#createAuthClient.listSessions"
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
       },
       "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/session-manager.tsx:auth_client_call:authClient.listSessions[1]:better-auth/react#createAuthClient.listSessions",
+      "id": "client_binding:src/components/settings/session-manager.tsx:global_fetch:fetch[2]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/session-manager.tsx",
       "ownerModule": "src/components/settings/session-manager.tsx",
       "sidecarPath": "src/components/settings/session-manager.operation.ts"
     },
     {
-      "anchorBytes": "authClient.revokeOtherSessions()",
-      "anchorDigest": "46b7f6ef58485fc4693d47bcdf5a8058f2cc869ec204d08ee1270ae58fb39603",
-      "anchorEnd": 3711,
+      "anchorBytes": "fetch(\"/api/account/sessions/revoke\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          ...metadata,\n          scope: action.scope,\n          ...(action.targetHandle === undefined ? {} : { targetHandle: action.targetHandle }),\n          confirmed: true,\n          currentPassword\n        })\n      })",
+      "anchorDigest": "41a82fc0c0e87ed1b9e165b72da4b38f2f9942186a660ea020b3f2f3261c50ad",
+      "anchorEnd": 7689,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 3679,
+      "anchorStart": 7316,
       "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.revokeOtherSessions[1]",
-        "target": "better-auth/react#createAuthClient.revokeOtherSessions"
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
       },
       "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/session-manager.tsx:auth_client_call:authClient.revokeOtherSessions[1]:better-auth/react#createAuthClient.revokeOtherSessions",
-      "ownerId": "client_binding:src/components/settings/session-manager.tsx",
-      "ownerModule": "src/components/settings/session-manager.tsx",
-      "sidecarPath": "src/components/settings/session-manager.operation.ts"
-    },
-    {
-      "anchorBytes": "authClient.revokeSession({ token: session.token })",
-      "anchorDigest": "d26a3cbfdf6de2d40e8fa4b4aabf8d116c54f30a07006b464fd54c794df94704",
-      "anchorEnd": 3174,
-      "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 3124,
-      "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.revokeSession[1]",
-        "target": "better-auth/react#createAuthClient.revokeSession"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/session-manager.tsx:auth_client_call:authClient.revokeSession[1]:better-auth/react#createAuthClient.revokeSession",
-      "ownerId": "client_binding:src/components/settings/session-manager.tsx",
-      "ownerModule": "src/components/settings/session-manager.tsx",
-      "sidecarPath": "src/components/settings/session-manager.operation.ts"
-    },
-    {
-      "anchorBytes": "authClient.signOut()",
-      "anchorDigest": "a6fa67c9715f9d8a371e87b2d0135857efbf4ea949769b02f30fd3ddc3453dcb",
-      "anchorEnd": 2514,
-      "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 2494,
-      "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.signOut[1]",
-        "target": "better-auth/react#createAuthClient.signOut"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/session-manager.tsx:auth_client_call:authClient.signOut[1]:better-auth/react#createAuthClient.signOut",
-      "ownerId": "client_binding:src/components/settings/session-manager.tsx",
-      "ownerModule": "src/components/settings/session-manager.tsx",
-      "sidecarPath": "src/components/settings/session-manager.operation.ts"
-    },
-    {
-      "anchorBytes": "authClient.signOut()",
-      "anchorDigest": "a6fa67c9715f9d8a371e87b2d0135857efbf4ea949769b02f30fd3ddc3453dcb",
-      "anchorEnd": 2857,
-      "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 2837,
-      "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.signOut[2]",
-        "target": "better-auth/react#createAuthClient.signOut"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/settings/session-manager.tsx:auth_client_call:authClient.signOut[2]:better-auth/react#createAuthClient.signOut",
+      "id": "client_binding:src/components/settings/session-manager.tsx:global_fetch:fetch[3]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/session-manager.tsx",
       "ownerModule": "src/components/settings/session-manager.tsx",
       "sidecarPath": "src/components/settings/session-manager.operation.ts"
@@ -2808,23 +2876,6 @@
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
     },
     {
-      "anchorBytes": "authClient.signOut()",
-      "anchorDigest": "a6fa67c9715f9d8a371e87b2d0135857efbf4ea949769b02f30fd3ddc3453dcb",
-      "anchorEnd": 509,
-      "anchorFile": "src/components/sign-out-button.tsx",
-      "anchorStart": 489,
-      "binding": {
-        "kind": "auth_client_call",
-        "symbol": "authClient.signOut[1]",
-        "target": "better-auth/react#createAuthClient.signOut"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/sign-out-button.tsx:auth_client_call:authClient.signOut[1]:better-auth/react#createAuthClient.signOut",
-      "ownerId": "client_binding:src/components/sign-out-button.tsx",
-      "ownerModule": "src/components/sign-out-button.tsx",
-      "sidecarPath": "src/components/sign-out-button.operation.ts"
-    },
-    {
       "anchorBytes": "startAutomatedBackupScheduler",
       "anchorDigest": "f1c4d682bbc4d40fcbdeda2e11b76dc78b52ef556523385fc564eadc56fecf7e",
       "anchorEnd": 131,
@@ -2854,6 +2905,40 @@
       },
       "coverage": "structural_only",
       "id": "instrumentation:src/instrumentation.ts:worker_dynamic_import:startBrowserOperationRetentionScheduler:src/server/browser-operation-retention-scheduler.ts#startBrowserOperationRetentionScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
+      "anchorBytes": "startEmailChangeLifecycleScheduler",
+      "anchorDigest": "0ebc04136eb326e054d6d707234f2fd2c60a8d10ea81189e3fba29bd73cf6d9a",
+      "anchorEnd": 349,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 315,
+      "binding": {
+        "kind": "worker_dynamic_import",
+        "symbol": "startEmailChangeLifecycleScheduler",
+        "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_dynamic_import:startEmailChangeLifecycleScheduler:src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
+      "anchorBytes": "startEmailDeliveryScheduler",
+      "anchorDigest": "3b4438b9d55de05d54cf3b073f6e58992bde32e634f076001d7106b468cd7899",
+      "anchorEnd": 303,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 276,
+      "binding": {
+        "kind": "worker_dynamic_import",
+        "symbol": "startEmailDeliveryScheduler",
+        "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_dynamic_import:startEmailDeliveryScheduler:src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler",
       "ownerId": "instrumentation:src/instrumentation.ts",
       "ownerModule": "src/instrumentation.ts",
       "sidecarPath": "src/instrumentation.operation.ts"
@@ -2895,9 +2980,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler()",
       "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
-      "anchorEnd": 586,
+      "anchorEnd": 781,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 555,
+      "anchorStart": 750,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startAutomatedBackupScheduler",
@@ -2912,9 +2997,9 @@
     {
       "anchorBytes": "startBrowserOperationRetentionScheduler()",
       "anchorDigest": "8a6c4bc59c0a9ace67575338516ce74f1ddefee1604c8358de407952b119157c",
-      "anchorEnd": 713,
+      "anchorEnd": 908,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 672,
+      "anchorStart": 867,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startBrowserOperationRetentionScheduler",
@@ -2927,11 +3012,45 @@
       "sidecarPath": "src/instrumentation.operation.ts"
     },
     {
+      "anchorBytes": "startEmailChangeLifecycleScheduler()",
+      "anchorDigest": "a084f4c40f162b71a4a78f20c962c200ad913c8502aac74d09072593a4f4731f",
+      "anchorEnd": 989,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 953,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startEmailChangeLifecycleScheduler",
+        "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_start_call:startEmailChangeLifecycleScheduler:src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
+      "anchorBytes": "startEmailDeliveryScheduler()",
+      "anchorDigest": "01ca7435448a5b7e591ccf8e802e240806435cd5b1d9709ac0510be2e81d379d",
+      "anchorEnd": 945,
+      "anchorFile": "src/instrumentation.ts",
+      "anchorStart": 916,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startEmailDeliveryScheduler",
+        "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "instrumentation:src/instrumentation.ts:worker_start_call:startEmailDeliveryScheduler:src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler",
+      "ownerId": "instrumentation:src/instrumentation.ts",
+      "ownerModule": "src/instrumentation.ts",
+      "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
       "anchorBytes": "startIntegrityScheduler()",
       "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
-      "anchorEnd": 619,
+      "anchorEnd": 814,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 594,
+      "anchorStart": 789,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startIntegrityScheduler",
@@ -2946,9 +3065,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler()",
       "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
-      "anchorEnd": 664,
+      "anchorEnd": 859,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 627,
+      "anchorStart": 822,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -2963,9 +3082,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 1717,
+      "anchorEnd": 3055,
       "anchorFile": "package.json",
-      "anchorStart": 1708,
+      "anchorStart": 3046,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -2980,9 +3099,9 @@
     {
       "anchorBytes": "\"verify:activity-update-safety\"",
       "anchorDigest": "ab81dd8446575d3e8db6556bc8428d6aca7040a50fcbea81f6bd73b9466a2034",
-      "anchorEnd": 1207,
+      "anchorEnd": 2545,
       "anchorFile": "package.json",
-      "anchorStart": 1176,
+      "anchorStart": 2514,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:activity-update-safety",
@@ -2997,9 +3116,9 @@
     {
       "anchorBytes": "\"verify:backup-recovery\"",
       "anchorDigest": "356ff55c9bda28971f0b30a6141af2b700cbf4c69d2f566517d2c35be28ce45e",
-      "anchorEnd": 1051,
+      "anchorEnd": 2389,
       "anchorFile": "package.json",
-      "anchorStart": 1027,
+      "anchorStart": 2365,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:backup-recovery",
@@ -3014,9 +3133,9 @@
     {
       "anchorBytes": "\"verify:update-rehearsal\"",
       "anchorDigest": "ad6ab6ca444dd0e736b38b2fb30832927d0bf9030c330047be097a31d88de645",
-      "anchorEnd": 1126,
+      "anchorEnd": 2464,
       "anchorFile": "package.json",
-      "anchorStart": 1101,
+      "anchorStart": 2439,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-rehearsal",
@@ -3031,9 +3150,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-pilot\"",
       "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-      "anchorEnd": 1296,
+      "anchorEnd": 2634,
       "anchorFile": "package.json",
-      "anchorStart": 1264,
+      "anchorStart": 2602,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-pilot",
@@ -3048,9 +3167,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs",
       "anchorDigest": "96373fee9d77f24a267f340fda64e84453f13b5f3f1f38e8bdb468b1494285c1",
-      "anchorEnd": 1255,
+      "anchorEnd": 1322,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1184,
+      "anchorStart": 1251,
       "binding": {
         "kind": "container_copy",
         "symbol": "integrity-check.mjs",
@@ -3065,9 +3184,9 @@
     {
       "anchorBytes": "\"esbuild scripts/integrity-check.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/integrity-check.mjs\"",
       "anchorDigest": "97c14ba7b6bd29cec210f4b27c372840462a9e3236edb92a1ce73ddd54b523e8",
-      "anchorEnd": 629,
+      "anchorEnd": 831,
       "anchorFile": "package.json",
-      "anchorStart": 484,
+      "anchorStart": 686,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/integrity-check.ts",
@@ -3080,9 +3199,9 @@
       "sidecarPath": "scripts/integrity-check.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && next build\"",
-      "anchorDigest": "48f83f870e56a20fbf21de9def8b454b694204038ec1769cc4fa8a268221ad9e",
-      "anchorEnd": 286,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3099,9 +3218,9 @@
     {
       "anchorBytes": "\"build:integrity\"",
       "anchorDigest": "0bc4e1884466133d9c6a0672c4ad0e7ea55e2181e4d2eff74c1d410f060728ee",
-      "anchorEnd": 482,
+      "anchorEnd": 684,
       "anchorFile": "package.json",
-      "anchorStart": 465,
+      "anchorStart": 667,
       "binding": {
         "kind": "package_script",
         "symbol": "build:integrity",
@@ -3116,9 +3235,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 1818,
+      "anchorEnd": 3156,
       "anchorFile": "package.json",
-      "anchorStart": 1800,
+      "anchorStart": 3138,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -3252,9 +3371,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/platform-owner.mjs ./platform-owner.mjs",
       "anchorDigest": "bec935558d7c7706b278e6e19cde6b358c5d36e772e8290f5e10cfefc79484ed",
-      "anchorEnd": 1183,
+      "anchorEnd": 1250,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1114,
+      "anchorStart": 1181,
       "binding": {
         "kind": "container_copy",
         "symbol": "platform-owner.mjs",
@@ -3269,9 +3388,9 @@
     {
       "anchorBytes": "\"esbuild scripts/platform-owner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/platform-owner.mjs\"",
       "anchorDigest": "34b772e44b77afedfaf6840b1a18c5960dc89b1a081b95f1af2a8d9e76dc3555",
-      "anchorEnd": 459,
+      "anchorEnd": 661,
       "anchorFile": "package.json",
-      "anchorStart": 316,
+      "anchorStart": 518,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/platform-owner.ts",
@@ -3284,9 +3403,9 @@
       "sidecarPath": "scripts/platform-owner.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && next build\"",
-      "anchorDigest": "48f83f870e56a20fbf21de9def8b454b694204038ec1769cc4fa8a268221ad9e",
-      "anchorEnd": 286,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3303,9 +3422,9 @@
     {
       "anchorBytes": "\"build:platform-owner\"",
       "anchorDigest": "aef089f4250d574a5150392ba7e9c365c8a7337873033a55a6fe39d262f51929",
-      "anchorEnd": 314,
+      "anchorEnd": 516,
       "anchorFile": "package.json",
-      "anchorStart": 292,
+      "anchorStart": 494,
       "binding": {
         "kind": "package_script",
         "symbol": "build:platform-owner",
@@ -3320,9 +3439,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 1761,
+      "anchorEnd": 3099,
       "anchorFile": "package.json",
-      "anchorStart": 1745,
+      "anchorStart": 3083,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -3335,11 +3454,385 @@
       "sidecarPath": "scripts/platform-owner.operation.ts"
     },
     {
+      "anchorBytes": "COPY --from=builder /app/dist/provision-email-delivery-keys.mjs ./provision-email-delivery-keys.mjs",
+      "anchorDigest": "4ea88baa140ca9ff1bd7b1de27b4f5ce20682f13bf8b01e4ea2fd0618f0f8b11",
+      "anchorEnd": 1785,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 1686,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "provision-email-delivery-keys.mjs",
+        "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs:container_copy:provision-email-delivery-keys.mjs:Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs",
+      "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-email-delivery-keys.mjs >/dev/null 2>&1",
+      "anchorDigest": "1476c5acb9b73b2d526f9de0dfffe64f27561c90694a0546b9e71ba03d5efaf6",
+      "anchorEnd": 1559,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1461,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "provision-email-delivery-keys.mjs",
+        "target": "docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs:container_invocation:provision-email-delivery-keys.mjs:docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs",
+      "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/provision-email-delivery-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-email-delivery-keys.mjs\"",
+      "anchorDigest": "205df456bca593073465bbbee38ad9ddf3a1ad9a37415a3052f823caff0a7f7c",
+      "anchorEnd": 1488,
+      "anchorFile": "package.json",
+      "anchorStart": 1314,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/provision-email-delivery-keys.mjs",
+        "target": "scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs:package_build_entrypoint:scripts/provision-email-delivery-keys.mjs:scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs",
+      "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:email-delivery-keys"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-email-delivery-keys.mjs:package_build_invocation:build:package.json#scripts.build:build:email-delivery-keys",
+      "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
+      "ownerModule": "scripts/provision-email-delivery-keys.mjs",
+      "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "COPY --from=builder /app/dist/provision-fresh-auth-attestation-keys.mjs ./provision-fresh-auth-attestation-keys.mjs",
+      "anchorDigest": "80aee959215a20f62145c7ca0638216541a95523e0f0675bccbb963bb2d0ab04",
+      "anchorEnd": 1685,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 1570,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "provision-fresh-auth-attestation-keys.mjs",
+        "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs:container_copy:provision-fresh-auth-attestation-keys.mjs:Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs",
+      "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-fresh-auth-attestation-keys.mjs >/dev/null 2>&1",
+      "anchorDigest": "cf988d60b11ab36c6e537d5ecac1d15d47268778e913262d3f428e9203b2f121",
+      "anchorEnd": 1367,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1261,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "provision-fresh-auth-attestation-keys.mjs",
+        "target": "docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs:container_invocation:provision-fresh-auth-attestation-keys.mjs:docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs",
+      "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/provision-fresh-auth-attestation-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-fresh-auth-attestation-keys.mjs\"",
+      "anchorDigest": "e88e8a3998b89168bdceb86457dede535d548cf55330ff7bff584b88b0c0c73c",
+      "anchorEnd": 1279,
+      "anchorFile": "package.json",
+      "anchorStart": 1089,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
+        "target": "scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs:package_build_entrypoint:scripts/provision-fresh-auth-attestation-keys.mjs:scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs",
+      "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:fresh-auth-attestation-keys"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs:package_build_invocation:build:package.json#scripts.build:build:fresh-auth-attestation-keys",
+      "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
+      "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
+      "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
+    },
+    {
+      "anchorBytes": "COPY --from=builder /app/dist/provision-global-security-throttle-key.mjs ./provision-global-security-throttle-key.mjs",
+      "anchorDigest": "8dd17cd88a049d158141f6fbabf0d6409a6e5b743623ad6c1e978e125ab8d19f",
+      "anchorEnd": 1903,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 1786,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "provision-global-security-throttle-key.mjs",
+        "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs:container_copy:provision-global-security-throttle-key.mjs:Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs",
+      "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! CUBBY_THROTTLE_KEY=\"$cubby_throttle_key\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-global-security-throttle-key.mjs >/dev/null 2>&1",
+      "anchorDigest": "ec34c2e543335fe9616b6d6904fb6d09b80256b3952ddf6807b338edc5102632",
+      "anchorEnd": 1793,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1645,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "provision-global-security-throttle-key.mjs",
+        "target": "docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs:container_invocation:provision-global-security-throttle-key.mjs:docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs",
+      "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/provision-global-security-throttle-key.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-global-security-throttle-key.mjs\"",
+      "anchorDigest": "04faa6246b4961b4ca13a7b21c086cf236f7abd5de9021ed0979e3d778124bd0",
+      "anchorEnd": 1724,
+      "anchorFile": "package.json",
+      "anchorStart": 1532,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/provision-global-security-throttle-key.mjs",
+        "target": "scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs:package_build_entrypoint:scripts/provision-global-security-throttle-key.mjs:scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs",
+      "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:global-security-throttle-key"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-global-security-throttle-key.mjs:package_build_invocation:build:package.json#scripts.build:build:global-security-throttle-key",
+      "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
+      "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
+      "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
+    },
+    {
+      "anchorBytes": "COPY --from=builder /app/dist/provision-security-runtime-role.mjs ./provision-security-runtime-role.mjs",
+      "anchorDigest": "706e5ea8c0391acc55b975531e5aa1e6432850bf83110f1c2e4d8c62e6ddd1d1",
+      "anchorEnd": 1569,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 1466,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "provision-security-runtime-role.mjs",
+        "target": "Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-security-runtime-role.mjs:container_copy:provision-security-runtime-role.mjs:Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs",
+      "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! CUBBY_RUNTIME_DATABASE_URL=\"$DATABASE_URL\" CUBBY_AUTH_DATABASE_URL=\"$AUTH_DATABASE_URL\" CUBBY_EMAIL_DELIVERY_DATABASE_URL=\"$EMAIL_DELIVERY_DATABASE_URL\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-security-runtime-role.mjs >/dev/null 2>&1",
+      "anchorDigest": "ed691e4c4a1d748049dfd847ce0631642fcf97254f20864733518f002cbd6711",
+      "anchorEnd": 950,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 697,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "provision-security-runtime-role.mjs",
+        "target": "docker/entrypoint.sh#/app/provision-security-runtime-role.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-security-runtime-role.mjs:container_invocation:provision-security-runtime-role.mjs:docker/entrypoint.sh#/app/provision-security-runtime-role.mjs",
+      "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/provision-security-runtime-role.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-security-runtime-role.mjs\"",
+      "anchorDigest": "ed6b85d3dcb91b70a9eabfba9cab9cdb488792ca971460b8e0c6283cc2226cf6",
+      "anchorEnd": 1046,
+      "anchorFile": "package.json",
+      "anchorStart": 868,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/provision-security-runtime-role.mjs",
+        "target": "scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-security-runtime-role.mjs:package_build_entrypoint:scripts/provision-security-runtime-role.mjs:scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs",
+      "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:security-runtime-role"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-security-runtime-role.mjs:package_build_invocation:build:package.json#scripts.build:build:security-runtime-role",
+      "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
+      "ownerModule": "scripts/provision-security-runtime-role.mjs",
+      "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
+    },
+    {
+      "anchorBytes": "operation === \"aggregate\"",
+      "anchorDigest": "67380627fc2272dc3ccef373ab277a1c9bc8cba8f0dfa18056f252a30af65cb9",
+      "anchorEnd": 800,
+      "anchorFile": "scripts/security-operator.ts",
+      "anchorStart": 775,
+      "binding": {
+        "kind": "command_variant",
+        "symbol": "aggregate",
+        "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/security-operator.ts:command_variant:aggregate:scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate",
+      "ownerId": "package_command:scripts/security-operator.ts",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "anchorBytes": "COPY --from=builder /app/dist/security-operator.mjs ./security-operator.mjs",
+      "anchorDigest": "5243e985e2c98b3038b155bcf1ff0d8370ae51f74bd5fc5f7985b0d57c6ef9cf",
+      "anchorEnd": 1979,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 1904,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "security-operator.mjs",
+        "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/security-operator.ts:container_copy:security-operator.mjs:Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs",
+      "ownerId": "package_command:scripts/security-operator.ts",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/security-operator.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/security-operator.mjs\"",
+      "anchorDigest": "7294f4b1ac1e5f3fc751cc4ec19a5537c4f92b0d3005618c0e5f0b9ed422c1ca",
+      "anchorEnd": 1906,
+      "anchorFile": "package.json",
+      "anchorStart": 1757,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/security-operator.ts",
+        "target": "scripts/security-operator.ts=>dist/security-operator.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/security-operator.ts:package_build_entrypoint:scripts/security-operator.ts:scripts/security-operator.ts=>dist/security-operator.mjs",
+      "ownerId": "package_command:scripts/security-operator.ts",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
+      "anchorEnd": 488,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:security-operator"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/security-operator.ts:package_build_invocation:build:package.json#scripts.build:build:security-operator",
+      "ownerId": "package_command:scripts/security-operator.ts",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "anchorBytes": "\"build:security-operator\"",
+      "anchorDigest": "a1750a76b982486d3994ada05cf17b378819261008b874324dd2a8e7a73bf652",
+      "anchorEnd": 1755,
+      "anchorFile": "package.json",
+      "anchorStart": 1730,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "build:security-operator",
+        "target": "package.json#scripts.build:security-operator"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/security-operator.ts:package_script:build:security-operator:package.json#scripts.build:security-operator",
+      "ownerId": "package_command:scripts/security-operator.ts",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
+      "anchorBytes": "\"security:operator\"",
+      "anchorDigest": "e1989d4a74966750816e4a60c9b003dc206fff378b1af3698c48681a4f7281cd",
+      "anchorEnd": 1931,
+      "anchorFile": "package.json",
+      "anchorStart": 1912,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "security:operator",
+        "target": "package.json#scripts.security:operator"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/security-operator.ts:package_script:security:operator:package.json#scripts.security:operator",
+      "ownerId": "package_command:scripts/security-operator.ts",
+      "ownerModule": "scripts/security-operator.ts",
+      "sidecarPath": "scripts/security-operator.operation.ts"
+    },
+    {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 1395,
+      "anchorEnd": 2733,
       "anchorFile": "package.json",
-      "anchorStart": 1365,
+      "anchorStart": 2703,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -3354,9 +3847,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 1487,
+      "anchorEnd": 2825,
       "anchorFile": "package.json",
-      "anchorStart": 1462,
+      "anchorStart": 2800,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -3762,9 +4255,9 @@
     {
       "anchorBytes": "getHouseholdSelectionState",
       "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
-      "anchorEnd": 178,
+      "anchorEnd": 260,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 152,
+      "anchorStart": 234,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdSelectionState",
@@ -3779,9 +4272,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 110,
+      "anchorEnd": 192,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 95,
+      "anchorStart": 177,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -4355,18 +4848,35 @@
       "sidecarPath": "src/app/app/settings/page.operation.ts"
     },
     {
-      "anchorBytes": "requireSettingsPage",
-      "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 196,
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 149,
+      "anchorFile": "src/app/app/settings/security-history/page.tsx",
+      "anchorStart": 134,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/security-history/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/app/settings/security-history/page.tsx",
+      "ownerModule": "src/app/app/settings/security-history/page.tsx",
+      "sidecarPath": "src/app/app/settings/security-history/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 192,
       "anchorFile": "src/app/app/settings/sessions/page.tsx",
       "anchorStart": 177,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "requireSettingsPage",
-        "target": "src/server/auth/page-access.ts#requireSettingsPage"
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/app/settings/sessions/page.tsx:server_value_import:requireSettingsPage:src/server/auth/page-access.ts#requireSettingsPage",
+      "id": "server_loader:src/app/app/settings/sessions/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
       "ownerId": "server_loader:src/app/app/settings/sessions/page.tsx",
       "ownerModule": "src/app/app/settings/sessions/page.tsx",
       "sidecarPath": "src/app/app/settings/sessions/page.operation.ts"
@@ -4469,40 +4979,6 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/login/page.tsx:server_value_import:extractInviteToken:src/server/services/registration.ts#extractInviteToken",
-      "ownerId": "server_loader:src/app/login/page.tsx",
-      "ownerModule": "src/app/login/page.tsx",
-      "sidecarPath": "src/app/login/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getAppRegistrationPolicy",
-      "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 234,
-      "anchorFile": "src/app/login/page.tsx",
-      "anchorStart": 210,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getAppRegistrationPolicy",
-        "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/login/page.tsx:server_value_import:getAppRegistrationPolicy:src/server/services/registration.ts#getAppRegistrationPolicy",
-      "ownerId": "server_loader:src/app/login/page.tsx",
-      "ownerModule": "src/app/login/page.tsx",
-      "sidecarPath": "src/app/login/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getInviteByToken",
-      "anchorDigest": "3173c472374cfc43bf357fd95d2c25f0e3e7abb54c38170a9b4ca099d110632d",
-      "anchorEnd": 301,
-      "anchorFile": "src/app/login/page.tsx",
-      "anchorStart": 285,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getInviteByToken",
-        "target": "src/server/services/invites.ts#getInviteByToken"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/login/page.tsx:server_value_import:getInviteByToken:src/server/services/invites.ts#getInviteByToken",
       "ownerId": "server_loader:src/app/login/page.tsx",
       "ownerModule": "src/app/login/page.tsx",
       "sidecarPath": "src/app/login/page.operation.ts"
@@ -4646,9 +5122,9 @@
     {
       "anchorBytes": "extractInviteToken",
       "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
-      "anchorEnd": 257,
+      "anchorEnd": 201,
       "anchorFile": "src/app/register/page.tsx",
-      "anchorStart": 239,
+      "anchorStart": 183,
       "binding": {
         "kind": "server_value_import",
         "symbol": "extractInviteToken",
@@ -4656,40 +5132,6 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/register/page.tsx:server_value_import:extractInviteToken:src/server/services/registration.ts#extractInviteToken",
-      "ownerId": "server_loader:src/app/register/page.tsx",
-      "ownerModule": "src/app/register/page.tsx",
-      "sidecarPath": "src/app/register/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getAppRegistrationPolicy",
-      "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 283,
-      "anchorFile": "src/app/register/page.tsx",
-      "anchorStart": 259,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getAppRegistrationPolicy",
-        "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/register/page.tsx:server_value_import:getAppRegistrationPolicy:src/server/services/registration.ts#getAppRegistrationPolicy",
-      "ownerId": "server_loader:src/app/register/page.tsx",
-      "ownerModule": "src/app/register/page.tsx",
-      "sidecarPath": "src/app/register/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getInviteByToken",
-      "anchorDigest": "3173c472374cfc43bf357fd95d2c25f0e3e7abb54c38170a9b4ca099d110632d",
-      "anchorEnd": 350,
-      "anchorFile": "src/app/register/page.tsx",
-      "anchorStart": 334,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getInviteByToken",
-        "target": "src/server/services/invites.ts#getInviteByToken"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/register/page.tsx:server_value_import:getInviteByToken:src/server/services/invites.ts#getInviteByToken",
       "ownerId": "server_loader:src/app/register/page.tsx",
       "ownerModule": "src/app/register/page.tsx",
       "sidecarPath": "src/app/register/page.operation.ts"
@@ -4795,6 +5237,108 @@
       "ownerId": "worker:src/server/browser-operation-retention-scheduler.ts",
       "ownerModule": "src/server/browser-operation-retention-scheduler.ts",
       "sidecarPath": "src/server/browser-operation-retention-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "setInterval(() => void tick(), 30_000)",
+      "anchorDigest": "4b0ff1f518cdbe90cd45f67fa2416e8a1f615fd461a36d53b00bbff4852bf7f8",
+      "anchorEnd": 1327,
+      "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+      "anchorStart": 1289,
+      "binding": {
+        "kind": "worker_schedule",
+        "symbol": "tick",
+        "target": "src/server/email-change-lifecycle-scheduler.ts#tick"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts:worker_schedule:tick:src/server/email-change-lifecycle-scheduler.ts#tick",
+      "ownerId": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function startEmailChangeLifecycleScheduler() {\n  const state = schedulerState();\n  if (state.started) return state;\n  state.started = true;\n  const tick = async (startup = false) => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runEmailChangeLifecycleWorkerTick(prisma);\n      console.info(\"email_change_lifecycle_result\", result.expiredChanges, result.expiredRotations);\n    } catch {\n      console.error(\"email_change_lifecycle_tick_failed\", \"email_change_lifecycle_failed\");\n      if (startup) throw new Error(\"email_change_lifecycle_startup_failed\");\n    } finally {\n      state.running = false;\n    }\n  };\n  await tick(true);\n  state.timer = setInterval(() => void tick(), 30_000);\n  state.timer.unref?.();\n  return state;\n}",
+      "anchorDigest": "36d8768401863d49beffc822effb6854bf340af137e99cfdbf5554545b91a72c",
+      "anchorEnd": 1371,
+      "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+      "anchorStart": 578,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startEmailChangeLifecycleScheduler",
+        "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts:worker_start_call:startEmailChangeLifecycleScheduler:src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler",
+      "ownerId": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "runEmailChangeLifecycleWorkerTick(prisma)",
+      "anchorDigest": "226cbd07eba35e0775a934fd8da67620cd67a6d35e5061dedb35f91a8d2a78b1",
+      "anchorEnd": 911,
+      "anchorFile": "src/server/email-change-lifecycle-scheduler.ts",
+      "anchorStart": 870,
+      "binding": {
+        "kind": "worker_tick",
+        "symbol": "tick",
+        "target": "src/server/services/email-change-lifecycle-worker.ts#runEmailChangeLifecycleWorkerTick"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/email-change-lifecycle-scheduler.ts:worker_tick:tick:src/server/services/email-change-lifecycle-worker.ts#runEmailChangeLifecycleWorkerTick",
+      "ownerId": "worker:src/server/email-change-lifecycle-scheduler.ts",
+      "ownerModule": "src/server/email-change-lifecycle-scheduler.ts",
+      "sidecarPath": "src/server/email-change-lifecycle-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "setInterval(() => void tick(), 30_000)",
+      "anchorDigest": "4b0ff1f518cdbe90cd45f67fa2416e8a1f615fd461a36d53b00bbff4852bf7f8",
+      "anchorEnd": 1187,
+      "anchorFile": "src/server/email-delivery-scheduler.ts",
+      "anchorStart": 1149,
+      "binding": {
+        "kind": "worker_schedule",
+        "symbol": "tick",
+        "target": "src/server/email-delivery-scheduler.ts#tick"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/email-delivery-scheduler.ts:worker_schedule:tick:src/server/email-delivery-scheduler.ts#tick",
+      "ownerId": "worker:src/server/email-delivery-scheduler.ts",
+      "ownerModule": "src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function startEmailDeliveryScheduler() {\n  const state = schedulerState();\n  if (state.started) return state;\n  state.started = true;\n  const tick = async (startup = false) => {\n    if (state.running) return;\n    state.running = true;\n    try {\n      const result = await runEmailDeliveryWorkerTick();\n      console.info(\"email_delivery_result\", result.accepted, result.failed, result.idle);\n    } catch {\n      console.error(\"email_delivery_tick_failed\", \"email_delivery_failed\");\n      if (startup) throw new Error(\"email_delivery_startup_failed\");\n    } finally {\n      state.running = false;\n    }\n  };\n  await tick(true);\n  state.timer = setInterval(() => void tick(), 30_000);\n  state.timer.unref?.();\n  return state;\n}",
+      "anchorDigest": "23b28428e2397bc4c23b0c7f988d7d64aab3cb274eca895bd4b03f96ea84fd17",
+      "anchorEnd": 1231,
+      "anchorFile": "src/server/email-delivery-scheduler.ts",
+      "anchorStart": 493,
+      "binding": {
+        "kind": "worker_start_call",
+        "symbol": "startEmailDeliveryScheduler",
+        "target": "src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/email-delivery-scheduler.ts:worker_start_call:startEmailDeliveryScheduler:src/server/email-delivery-scheduler.ts#startEmailDeliveryScheduler",
+      "ownerId": "worker:src/server/email-delivery-scheduler.ts",
+      "ownerModule": "src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
+    },
+    {
+      "anchorBytes": "runEmailDeliveryWorkerTick()",
+      "anchorDigest": "be6f20830b7580e9e049041d3277bbe0013215980086bceba570965592d7075f",
+      "anchorEnd": 806,
+      "anchorFile": "src/server/email-delivery-scheduler.ts",
+      "anchorStart": 778,
+      "binding": {
+        "kind": "worker_tick",
+        "symbol": "tick",
+        "target": "src/server/services/email-delivery-worker.ts#runEmailDeliveryWorkerTick"
+      },
+      "coverage": "structural_only",
+      "id": "worker:src/server/email-delivery-scheduler.ts:worker_tick:tick:src/server/services/email-delivery-worker.ts#runEmailDeliveryWorkerTick",
+      "ownerId": "worker:src/server/email-delivery-scheduler.ts",
+      "ownerModule": "src/server/email-delivery-scheduler.ts",
+      "sidecarPath": "src/server/email-delivery-scheduler.operation.ts"
     },
     {
       "anchorBytes": "setInterval(() => {\n    void tick();\n  }, integrityConfig.intervalHours * 60 * 60 * 1000)",
@@ -4905,10 +5449,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "756aa186e484da831062ffd9a0d4019fe6f3439fcef74cd9b7ae5974bb74faa2",
+  "semanticArtifactDigest": "eb75c263afdefe6f244aeac34fa1aade8aae746e352bc79fc5c3a9e09dd7bc99",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "1485c4c4632b58f4537beaeb08f889d71802190bfade1d1f8f5475ffe2e3318c",
+  "semanticCoverageDigest": "35386b89b0d2b68b8e2a742c5b7466a9715defe1a7e86e40e41bb1154ccb3848",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "312a8c807bc5615a25ac199d0d475eeba90c30f293a9e1207f70e33039b49161"
+  "semanticFingerprint": "ef1ebefd85e66705abbfadb0ab127ae9653db820ef4fbdcc280ed9886a37bf35"
 }

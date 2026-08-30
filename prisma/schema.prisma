@@ -220,6 +220,22 @@ model User {
   accountOperationBindings AccountOperationBinding[]
   accountMutationOperations AccountMutationOperation[]
   accountMutationOperationTombstones AccountMutationOperationTombstone[]
+  securityState AccountSecurityState?
+  freshAuthGrants FreshAuthGrant[]
+  recoveryCodeSets RecoveryCodeSet[]
+  recoveryCodes RecoveryCode[]
+  recoverySessions RecoverySession[]
+  globalSecurityOperationBindings GlobalSecurityOperationBinding[]
+  globalSecurityOperations GlobalSecurityOperation[]
+  globalSecurityOperationTombstones GlobalSecurityOperationTombstone[]
+  globalSecurityOperationReservationTombstones GlobalSecurityOperationReservationTombstone[]
+  passwordChangeCredentialMutations PasswordChangeCredentialMutation[]
+  recoveryResetCredentialMutations RecoveryResetCredentialMutation[]
+
+  globalSecurityEvents GlobalSecurityEvent[]
+  globalSecurityIncidents GlobalSecurityIncident[]
+  emailChanges EmailChange[]
+  sessionSecurityActivities SessionSecurityActivity[]
 }
 
 model PlatformAuthority {
@@ -305,6 +321,7 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+  @@unique([userId, id])
 }
 
 model Account {
@@ -322,8 +339,34 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  passwordChangeCredentialMutations PasswordChangeCredentialMutation[]
+  recoveryResetCredentialMutations RecoveryResetCredentialMutation[]
 
   @@index([userId])
+}
+
+model PasswordChangeCredentialMutation {
+  userId String
+  operationId String
+  accountId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  operation GlobalSecurityOperation @relation(fields: [userId, operationId], references: [userId, operationId], onDelete: Cascade)
+  @@id([userId, operationId])
+  @@index([accountId])
+}
+
+model RecoveryResetCredentialMutation {
+  userId String
+  operationId String
+  accountId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  operation GlobalSecurityOperation @relation(fields: [userId, operationId], references: [userId, operationId], onDelete: Cascade)
+  @@id([userId, operationId])
+  @@index([accountId])
 }
 
 model Verification {
@@ -911,6 +954,419 @@ model AccountOperationReservationTombstone {
   @@id([userId, operationId])
   @@index([sessionId])
   @@index([compactedAt])
+}
+
+enum GlobalSecurityOperationKey {
+  passwordChange @map("password_change")
+  recoveryEnrollment @map("recovery_enrollment")
+  recoveryReset @map("recovery_reset")
+  emailChange @map("email_change")
+  sessionRevoke @map("session_revoke")
+}
+
+enum GlobalSecurityOperationStatus {
+  pending
+  unknown
+  completed
+  rejected
+  stale
+}
+
+enum FreshAuthGrantState {
+  issued
+  consumed
+  revoked
+  expired
+}
+
+enum RecoveryCodeState {
+  active
+  consumed
+  invalidated
+}
+
+enum RecoveryCodeSetState {
+  generated
+  saveAcknowledged @map("save_acknowledged")
+  rehearsalRequired @map("rehearsal_required")
+  rehearsed
+  invalidated
+}
+
+enum RecoveryCodeConsumptionPurpose {
+  enrollmentRehearsal @map("enrollment_rehearsal")
+  recoveryReset @map("recovery_reset")
+}
+
+enum RecoverySessionState {
+  restricted
+  consumed
+  closed
+  expired
+}
+
+enum EmailChangeState {
+  pending
+  verified
+  cancelled
+  expired
+  abandoned
+  failed
+  completed
+}
+
+enum EmailChangeDeliveryKind {
+  newVerification @map("new_verification")
+  newCutover @map("new_cutover")
+  oldRequest @map("old_request")
+  oldCutover @map("old_cutover")
+  inviterNotice @map("inviter_notice")
+  invitationReissue @map("invitation_reissue")
+}
+
+enum EmailChangeDeliveryState {
+  queued
+  dispatching
+  accepted
+  retryableFailed @map("retryable_failed")
+  permanentFailed @map("permanent_failed")
+}
+
+enum EmailChangeCookieState {
+  issued
+  confirmed
+  failed
+}
+
+enum GlobalSecurityIncidentState {
+  active
+  quiet
+  closed
+}
+
+enum SessionSecurityActivityState {
+  active
+  expired
+  revoked
+}
+
+model AccountSecurityState {
+  userId String @id
+  credentialVersion Int @default(1)
+  sessionSecurityVersion Int @default(1)
+  lastCredentialOperationId String?
+  lastSessionSecurityOperationId String?
+  securityUpdatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FreshAuthGrant {
+  id String @id @default(cuid())
+  userId String
+  sessionId String
+  operationId String
+  purpose String
+  credentialVersion Int
+  attestationNonce String? @unique
+  attestationMac Bytes?
+  attestationKeyVersion Int?
+  replacementPasswordHashDigest Bytes?
+  state FreshAuthGrantState @default(issued)
+  expiresAt DateTime
+  consumedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailChanges EmailChange[]
+  issuedRecoveryCodeSet RecoveryCodeSet? @relation("RecoveryCodeSetFreshAuthGrant")
+  @@unique([userId, operationId])
+  @@index([userId, purpose, state])
+  @@index([sessionId])
+}
+
+model FreshAuthAttestationKey {
+  keyVersion Int @id
+  verificationKey Bytes
+  active Boolean
+  createdAt DateTime @default(now())
+  rotatedAt DateTime?
+}
+
+model RecoveryCode {
+  id String @id @default(cuid())
+  userId String
+  setVersion Int
+  ordinal Int
+  salt Bytes
+  derivedKey Bytes
+  kdfVersion Int @default(1)
+  state RecoveryCodeState @default(active)
+  consumedPurpose RecoveryCodeConsumptionPurpose?
+  consumedOperationId String?
+  consumedAt DateTime?
+  invalidatedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  set RecoveryCodeSet @relation(fields: [userId, setVersion], references: [userId, setVersion], onDelete: Cascade)
+  @@unique([userId, setVersion, ordinal])
+  @@unique([userId, consumedOperationId])
+  @@unique([userId, id])
+  @@index([userId, state])
+}
+
+model RecoveryCodeSet {
+  userId String
+  setVersion Int
+  issuanceOperationId String
+  freshAuthGrantId String @unique
+  issuanceSecurityVersion Int
+  issuanceSessionSecurityVersion Int
+  expectedCodeCount Int @default(10)
+  state RecoveryCodeSetState @default(generated)
+  saveAcknowledgedAt DateTime?
+  rehearsedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuanceOperation GlobalSecurityOperation @relation("RecoveryCodeSetIssuanceOperation", fields: [userId, issuanceOperationId], references: [userId, operationId], onDelete: Cascade)
+  freshAuthGrant FreshAuthGrant @relation("RecoveryCodeSetFreshAuthGrant", fields: [freshAuthGrantId], references: [id], onDelete: Cascade)
+  codes RecoveryCode[]
+  @@id([userId, setVersion])
+  @@unique([userId, issuanceOperationId])
+  @@index([userId, state])
+}
+
+model RecoverySession {
+  id String @id @default(cuid())
+  userId String
+  recoveryCodeId String
+  operationId String
+  purpose String @default("recovery_reset")
+  attestationNonce String? @unique
+  attestationMac Bytes?
+  attestationKeyVersion Int?
+  replacementPasswordHashDigest Bytes?
+  attestedOpeningFingerprint String?
+  attestedIntentFingerprint String?
+  state RecoverySessionState @default(restricted)
+  expiresAt DateTime
+  consumedAt DateTime?
+  closedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, operationId])
+  @@unique([userId, recoveryCodeId])
+  @@index([recoveryCodeId])
+}
+
+model GlobalSecurityOperationBinding {
+  id String @id @default(cuid())
+  userId String
+  sessionId String?
+  recoverySessionId String?
+  operationId String
+  operationKey GlobalSecurityOperationKey
+  securityVersion Int
+  sessionSecurityVersion Int @default(1)
+  openingFingerprint String
+  targetSnapshot Json
+  state BrowserOperationBindingState @default(open)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operation GlobalSecurityOperation?
+  @@unique([userId, operationId])
+  @@index([sessionId])
+  @@index([recoverySessionId])
+  @@index([state, expiresAt])
+}
+
+model GlobalSecurityOperation {
+  bindingId String @unique
+  userId String
+  operationId String
+  operationKey GlobalSecurityOperationKey
+  intentFingerprint String
+  status GlobalSecurityOperationStatus @default(pending)
+  outcomeVersion Int?
+  outcomeCode String?
+  outcomeSnapshot Json?
+  terminalAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  binding GlobalSecurityOperationBinding @relation(fields: [bindingId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuedRecoveryCodeSet RecoveryCodeSet? @relation("RecoveryCodeSetIssuanceOperation")
+  passwordChangeCredentialMutation PasswordChangeCredentialMutation?
+  recoveryResetCredentialMutation RecoveryResetCredentialMutation?
+  @@id([userId, operationId])
+  @@index([status, createdAt])
+}
+
+model GlobalSecurityOperationTombstone {
+  userId String
+  operationId String
+  operationKey GlobalSecurityOperationKey
+  intentFingerprint String
+  terminalStatus GlobalSecurityOperationStatus
+  terminalCode String
+  terminalAt DateTime
+  compactedAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, operationId])
+}
+
+model GlobalSecurityOperationReservationTombstone {
+  userId String
+  operationId String
+  operationKey GlobalSecurityOperationKey
+  sessionId String?
+  recoverySessionId String?
+  openingFingerprint String
+  terminalCode String
+  terminalAt DateTime
+  compactedAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, operationId])
+}
+
+
+model GlobalSecurityEvent {
+  id String @id @default(cuid())
+  sequence BigInt @default(autoincrement()) @unique
+  userId String
+  eventType String
+  outcome String
+  operationId String?
+  incidentId String? @unique
+  safeProjection Json
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incident GlobalSecurityIncident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  @@unique([userId, operationId, eventType, outcome])
+  @@index([userId, sequence])
+}
+
+model GlobalSecurityIncident {
+  id String @id @default(cuid())
+  userId String?
+  layer String
+  normalizedKey String
+  windowStartedAt DateTime
+  failureCount Int @default(0)
+  quietUntil DateTime?
+  state GlobalSecurityIncidentState @default(active)
+  lastOutcomeAt DateTime
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events GlobalSecurityEvent[]
+  @@unique([layer, normalizedKey, windowStartedAt])
+  @@index([userId, createdAt])
+}
+
+model GlobalSecurityThrottleKey {
+  singletonId Int @id
+  keyDigest Bytes
+  createdAt DateTime @default(now())
+  verifiedAt DateTime @default(now())
+}
+
+model EmailChange {
+  id String @id @default(cuid())
+  userId String
+  operationId String
+  freshAuthGrantId String
+  securityVersion Int
+  sessionSecurityVersion Int @default(1)
+  normalizedNewEmail String
+  verificationDigest String
+  state EmailChangeState @default(pending)
+  expiresAt DateTime
+  cancelledAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  freshAuthGrant FreshAuthGrant @relation(fields: [freshAuthGrantId], references: [id], onDelete: Cascade)
+  @@unique([userId, operationId])
+  @@unique([userId, id])
+  @@unique([userId, id, operationId])
+  @@index([normalizedNewEmail, state])
+}
+
+model EmailDeliveryEncryptionKey {
+  keyVersion Int @id
+  keyDigest Bytes
+  activeWrite Boolean @default(false)
+  createdAt DateTime @default(now())
+  retiredAt DateTime?
+}
+
+model EmailChangeDelivery {
+  id String @id @default(cuid())
+  userId String
+  emailChangeId String
+  operationId String
+  kind EmailChangeDeliveryKind
+  recipientDigest Bytes
+  state EmailChangeDeliveryState @default(queued)
+  ciphertext Bytes?
+  iv Bytes?
+  authTag Bytes?
+  aadDigest Bytes?
+  keyVersion Int?
+  attemptCount Int @default(0)
+  leaseOwner String?
+  leaseExpiresAt DateTime?
+  nextAttemptAt DateTime?
+  smtpResponseCode Int?
+  messageIdDigest Bytes?
+  acceptedAt DateTime?
+  lastFailureCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([emailChangeId, kind, recipientDigest])
+  @@index([state, nextAttemptAt])
+  @@index([userId, operationId])
+  @@index([keyVersion])
+}
+
+model EmailChangeIdentityMutation {
+  userId String
+  operationId String
+  oldEmailDigest Bytes
+  newEmailDigest Bytes
+  createdAt DateTime @default(now())
+  @@id([userId, operationId])
+}
+
+model EmailChangeSessionRotation {
+  userId String
+  operationId String
+  oldSessionId String
+  successorSessionId String @unique
+  successorTokenDigest Bytes
+  activityOriginalCreatedAt DateTime
+  cookieState EmailChangeCookieState @default(issued)
+  issuedAt DateTime @default(now())
+  confirmedAt DateTime?
+  failedAt DateTime?
+  @@id([userId, operationId])
+  @@index([cookieState, issuedAt])
+}
+
+model SessionSecurityActivity {
+  sessionId String @id
+  userId String
+  issuanceSessionSecurityVersion Int
+  originalCreatedAt DateTime
+  lastQualifyingAt DateTime
+  warningAt DateTime?
+  state SessionSecurityActivityState @default(active)
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, sessionId])
+  @@index([userId, state])
 }
 
 model ApiKey {

@@ -1,0 +1,3074 @@
+{
+  "version": 1,
+  "programBoundary": "complete_non_releasable_global_security_protocol",
+  "models": [
+    "AccountSecurityState",
+    "FreshAuthAttestationKey",
+    "FreshAuthGrant",
+    "RecoveryCodeSet",
+    "RecoveryCode",
+    "RecoverySession",
+    "GlobalSecurityOperationBinding",
+    "GlobalSecurityOperation",
+    "GlobalSecurityOperationTombstone",
+    "GlobalSecurityOperationReservationTombstone",
+    "GlobalSecurityEvent",
+    "GlobalSecurityIncident",
+    "EmailChange",
+    "PasswordChangeCredentialMutation",
+    "RecoveryResetCredentialMutation",
+    "SessionSecurityActivity",
+    "EmailChangeDelivery",
+    "EmailChangeIdentityMutation",
+    "EmailChangeSessionRotation",
+    "EmailDeliveryEncryptionKey"
+  ],
+  "operationNamespace": "global_security",
+  "databaseInvariants": {
+    "userOwnedForeignKeys": [
+      "user_owned_rows_reference_user_id",
+      "session_bound_rows_validate_current_session_at_insert_without_session_delete_cascade"
+    ],
+    "accountNeutralRows": [
+      "GlobalSecurityIncident_user_id_nullable_for_client_and_deployment_layers"
+    ],
+    "operationIdentity": [
+      "user_id_operation_id_unique",
+      "binding_claim_one_to_one",
+      "cross_table_identity_serialization_v1"
+    ],
+    "securityState": [
+      "one_account_security_state_per_user",
+      "credential_and_session_versions_monotonic"
+    ],
+    "grant": [
+      "purpose_session_operation_version_bound",
+      "single_consume_or_revoke",
+      "expiry_enforced"
+    ],
+    "recovery": [
+      "code_hash_only",
+      "one_time_consume",
+      "restricted_session_only",
+      "old_set_invalidated_on_regeneration"
+    ],
+    "immutability": [
+      "private_event_append_only",
+      "terminal_and_tombstone_write_once",
+      "direct_write_rejection",
+      "compaction_no_gap"
+    ],
+    "checks": [
+      "operation_state_outcome_version_checked",
+      "email_change_state_checked",
+      "incident_state_checked"
+    ]
+  },
+  "migrationOrdering": [
+    "security_state_before_operations",
+    "operations_before_routes",
+    "cutover_before_user_facing_release"
+  ],
+  "persistenceContract": {
+    "AccountSecurityState": {
+      "key": "user_id_primary",
+      "fields": [
+        "credential_version",
+        "session_security_version",
+        "security_updated_at"
+      ],
+      "checks": [
+        "versions_positive_and_monotonic"
+      ]
+    },
+    "FreshAuthGrant": {
+      "key": "user_id_operation_id_unique",
+      "fields": [
+        "session_id",
+        "purpose",
+        "credential_version",
+        "expires_at",
+        "consumed_at",
+        "revoked_at"
+      ],
+      "checks": [
+        "one_live_grant_per_user_purpose",
+        "consume_or_revoke_once"
+      ]
+    },
+    "RecoveryCodeSet": {
+      "key": "user_id_set_version_primary",
+      "fields": [
+        "issuance_operation_id",
+        "fresh_auth_grant_id",
+        "issuance_security_version",
+        "issuance_session_security_version",
+        "set_version",
+        "state",
+        "created_at",
+        "updated_at"
+      ],
+      "checks": [
+        "fresh_auth_recovery_enrollment_issuance",
+        "exact_ten_retained_set_aggregate"
+      ]
+    },
+    "RecoveryCode": {
+      "key": "user_id_set_version_ordinal_unique",
+      "fields": [
+        "set_version",
+        "ordinal",
+        "salt",
+        "derived_key",
+        "kdf_version",
+        "consumed_purpose",
+        "consumed_operation_id",
+        "consumed_at",
+        "invalidated_at"
+      ],
+      "checks": [
+        "no_age_expiry",
+        "one_time_purpose_bound_consume",
+        "fixed_scrypt_v1_representation"
+      ]
+    },
+    "RecoverySession": {
+      "key": "user_id_recovery_operation_unique",
+      "fields": [
+        "recovery_code_id",
+        "restricted_purpose",
+        "consumed_at",
+        "closed_at"
+      ],
+      "checks": [
+        "restricted_reset_only",
+        "consumed_code_required",
+        "one_session_per_recovery_code",
+        "close_on_success"
+      ]
+    },
+    "GlobalSecurityOperationBinding": {
+      "key": "user_id_operation_id_unique",
+      "fields": [
+        "session_id",
+        "recovery_session_id",
+        "operation_key",
+        "security_version",
+        "opening_fingerprint",
+        "state",
+        "expires_at"
+      ],
+      "checks": [
+        "exactly_one_operation_appropriate_authorization_carrier",
+        "binding_claim_one_to_one",
+        "lifetime_reservation"
+      ]
+    },
+    "GlobalSecurityOperation": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "binding_id",
+        "intent_fingerprint",
+        "status",
+        "outcome_version",
+        "outcome_code",
+        "outcome_snapshot",
+        "terminal_at"
+      ],
+      "checks": [
+        "terminal_outcome_checked",
+        "binding_matches_operation"
+      ]
+    },
+    "GlobalSecurityOperationTombstone": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "operation_key",
+        "intent_fingerprint",
+        "terminal_status",
+        "terminal_code",
+        "terminal_at"
+      ],
+      "checks": [
+        "identity_preserving_compaction",
+        "no_gap_after_compaction"
+      ]
+    },
+    "GlobalSecurityOperationReservationTombstone": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "operation_key",
+        "session_id",
+        "recovery_session_id",
+        "opening_fingerprint",
+        "terminal_code",
+        "terminal_at"
+      ],
+      "checks": [
+        "operation_appropriate_carrier_identity",
+        "expired_only",
+        "identity_preserving_compaction"
+      ]
+    },
+    "GlobalSecurityEvent": {
+      "key": "user_id_event_id_primary",
+      "fields": [
+        "event_type",
+        "outcome",
+        "operation_id",
+        "safe_projection",
+        "created_at"
+      ],
+      "checks": [
+        "append_only",
+        "user_only_reader",
+        "no_secret_fields"
+      ]
+    },
+    "GlobalSecurityIncident": {
+      "key": "normalized_layer_key_window_unique",
+      "fields": [
+        "layer",
+        "window_started_at",
+        "failure_count",
+        "quiet_until",
+        "last_outcome_at"
+      ],
+      "checks": [
+        "atomic_increment",
+        "non_clearing_evidence",
+        "bounded_grouped_updates"
+      ]
+    },
+    "EmailChange": {
+      "key": "user_id_live_change_unique",
+      "fields": [
+        "normalized_new_email",
+        "operation_id",
+        "verification_digest",
+        "state",
+        "expires_at",
+        "cancelled_at"
+      ],
+      "checks": [
+        "old_identity_authoritative_until_verified",
+        "single_use_verification",
+        "non_enumerating_collision"
+      ]
+    },
+    "SessionSecurityActivity": {
+      "key": "session_id_primary",
+      "fields": [
+        "issuance_session_security_version",
+        "original_created_at",
+        "last_qualifying_at",
+        "warning_at",
+        "state"
+      ],
+      "checks": [
+        "qualifying_activity_only",
+        "absolute_anchor_preserved",
+        "issuance_version_current_or_exact_email_change_successor",
+        "issuance_version_immutable"
+      ]
+    },
+    "PasswordChangeCredentialMutation": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "user_id",
+        "operation_id",
+        "account_id",
+        "created_at"
+      ],
+      "checks": [
+        "security_definer_password_transition_procedure",
+        "exact_operation_account_foreign_keys",
+        "runtime_direct_write_denial",
+        "immutable",
+        "retained_until_account_deletion"
+      ]
+    },
+    "RecoveryResetCredentialMutation": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "user_id",
+        "operation_id",
+        "account_id",
+        "created_at"
+      ],
+      "checks": [
+        "security_definer_recovery_reset_procedure",
+        "exact_operation_account_foreign_keys",
+        "runtime_direct_write_denial",
+        "immutable",
+        "retained_until_account_deletion"
+      ]
+    },
+    "FreshAuthAttestationKey": {
+      "key": "key_version_primary",
+      "fields": [
+        "verification_key",
+        "active",
+        "created_at",
+        "rotated_at"
+      ],
+      "checks": [
+        "exact_32_byte_key",
+        "runtime_role_no_access",
+        "at_most_two_accepted_versions"
+      ]
+    },
+    "EmailChangeDelivery": {
+      "key": "id_primary",
+      "fields": [
+        "user_id",
+        "email_change_id",
+        "operation_id",
+        "kind",
+        "recipient_digest",
+        "state",
+        "ciphertext",
+        "iv",
+        "auth_tag",
+        "aad_digest",
+        "key_version",
+        "attempt_count",
+        "lease_owner",
+        "lease_expires_at",
+        "next_attempt_at",
+        "smtp_response_code",
+        "message_id_digest",
+        "accepted_at",
+        "last_failure_code",
+        "created_at",
+        "updated_at"
+      ],
+      "checks": [
+        "encrypted_shape_nonterminal",
+        "terminal_ciphertext_cleared",
+        "attempt_count_0_to_8",
+        "lease_shape_dispatching_only",
+        "accepted_receipt_complete",
+        "failure_code_closed"
+      ]
+    },
+    "EmailChangeIdentityMutation": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "old_email_digest",
+        "new_email_digest",
+        "created_at"
+      ],
+      "checks": [
+        "digests_32_bytes",
+        "immutable",
+        "runtime_no_dml"
+      ]
+    },
+    "EmailChangeSessionRotation": {
+      "key": "user_id_operation_id_primary",
+      "fields": [
+        "old_session_id",
+        "successor_session_id",
+        "successor_token_digest",
+        "activity_original_created_at",
+        "cookie_state",
+        "issued_at",
+        "confirmed_at",
+        "failed_at"
+      ],
+      "checks": [
+        "token_digest_32_bytes",
+        "cookie_state_timestamp_shape",
+        "successor_identity_immutable"
+      ]
+    },
+    "EmailDeliveryEncryptionKey": {
+      "key": "key_version_primary",
+      "fields": [
+        "key_digest",
+        "active_write",
+        "created_at",
+        "retired_at"
+      ],
+      "checks": [
+        "sha256_digest_32_bytes",
+        "exactly_one_active_write_key",
+        "runtime_no_read_or_dml",
+        "delete_rejected_while_ciphertext_references_version"
+      ]
+    }
+  },
+  "retention": {
+    "privateSecurityEvent": "retain_until_global_account_deletion_and_global_export_only",
+    "operationTombstone": "retain_until_global_account_deletion_no_automatic_compaction",
+    "recoveryCode": "hash_only_no_age_expiry_until_consumed_invalidated_or_account_deletion",
+    "incident": "user_bound_until_account_deletion_account_neutral_until_future_maintenance_gate"
+  },
+  "releaseGate": {
+    "forbidsPartialRelease": true,
+    "requiredCapabilities": [
+      "fresh_grant",
+      "password_transition",
+      "offline_recovery",
+      "email_change",
+      "private_sessions",
+      "private_history",
+      "layered_throttling"
+    ],
+    "forbiddenBeforeComplete": [
+      "password_change_ui",
+      "recovery_code_ui",
+      "foundation_only_release",
+      "generic_better_auth_security_endpoints"
+    ]
+  },
+  "routeInventory": [
+    {
+      "method": "POST",
+      "path": "/sign-in/social",
+      "owner": "better_auth_sign_in_social",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/callback/:id",
+      "owner": "better_auth_callback_oauth",
+      "disposition": "deny"
+    },
+    {
+      "method": "POST",
+      "path": "/callback/:id",
+      "owner": "better_auth_callback_oauth",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/get-session",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/sign-out",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/sign-up/email",
+      "owner": "better_auth_sign_up_email",
+      "disposition": "deny_until_cubby_initial_credential_protocol"
+    },
+    {
+      "method": "POST",
+      "path": "/sign-in/email",
+      "owner": "better_auth_sign_in_email",
+      "disposition": "allow"
+    },
+    {
+      "method": "POST",
+      "path": "/reset-password",
+      "owner": "better_auth_password",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/verify-password",
+      "owner": "better_auth_update_user",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "GET",
+      "path": "/verify-email",
+      "owner": "better_auth_password",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/send-verification-email",
+      "owner": "better_auth_password",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/change-email",
+      "owner": "better_auth_update_user",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/change-password",
+      "owner": "better_auth_change_password",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/set-password",
+      "owner": "better_auth_update_user",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/update-session",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/update-user",
+      "owner": "better_auth_update_user",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/delete-user",
+      "owner": "better_auth_update_user",
+      "disposition": "deny"
+    },
+    {
+      "method": "POST",
+      "path": "/request-password-reset",
+      "owner": "better_auth_password",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "GET",
+      "path": "/reset-password/:token",
+      "owner": "better_auth_password_callback",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/list-sessions",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/revoke-session",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/revoke-sessions",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/revoke-other-sessions",
+      "owner": "better_auth_session",
+      "disposition": "deny_or_wrap"
+    },
+    {
+      "method": "POST",
+      "path": "/link-social",
+      "owner": "better_auth_account",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/list-user-accounts",
+      "owner": "better_auth_account",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/delete-user/:token",
+      "owner": "better_auth_delete_user_callback",
+      "disposition": "deny"
+    },
+    {
+      "method": "POST",
+      "path": "/unlink-account",
+      "owner": "better_auth_account",
+      "disposition": "deny"
+    },
+    {
+      "method": "POST",
+      "path": "/refresh-token",
+      "owner": "better_auth_token",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/get-access-token",
+      "owner": "better_auth_token",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/account-info",
+      "owner": "better_auth_account",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/ok",
+      "owner": "better_auth_ok",
+      "disposition": "deny"
+    },
+    {
+      "method": "GET",
+      "path": "/error",
+      "owner": "better_auth_error",
+      "disposition": "deny"
+    }
+  ],
+  "transitionTable": {
+    "password_change": {
+      "states": [
+        "grant_pending",
+        "grant_issued",
+        "submitted",
+        "completed",
+        "rejected",
+        "stale",
+        "unknown"
+      ],
+      "terminalCodes": [
+        "changed",
+        "stale_security_version",
+        "grant_expired",
+        "current_password_invalid",
+        "operation_conflict"
+      ]
+    },
+    "recovery_enrollment": {
+      "states": [
+        "generated",
+        "save_acknowledged",
+        "rehearsal_required",
+        "rehearsed",
+        "invalidated"
+      ],
+      "terminalCodes": [
+        "rehearsal_completed",
+        "rehearsal_failed"
+      ]
+    },
+    "recovery_reset": {
+      "states": [
+        "restricted",
+        "submitted",
+        "consumed",
+        "closed",
+        "expired",
+        "rejected",
+        "unknown"
+      ],
+      "terminalCodes": [
+        "reset_completed",
+        "recovery_session_expired",
+        "recovery_set_regenerated",
+        "stale_security_version"
+      ]
+    },
+    "email_change": {
+      "states": [
+        "pending",
+        "verified",
+        "cancelled",
+        "expired",
+        "abandoned",
+        "failed",
+        "completed"
+      ],
+      "terminalCodes": [
+        "cutover_completed",
+        "verification_expired",
+        "collision_rejected",
+        "cancelled",
+        "delivery_failed",
+        "abandoned"
+      ]
+    },
+    "session_revoke": {
+      "states": [
+        "submitted",
+        "completed",
+        "stale",
+        "unknown"
+      ],
+      "terminalCodes": [
+        "revoked",
+        "already_revoked",
+        "stale_security_version"
+      ]
+    }
+  },
+  "recoveryExpiryFinalization": {
+    "function": "expire_recovery_session_finalization",
+    "outcome": "rejected|recovery_session_expired",
+    "requires": [
+      "restricted_matching_submitted_recovery_session",
+      "wall_clock_expiry",
+      "no_protected_mutation"
+    ],
+    "writes": [
+      "operation_terminal",
+      "binding_terminal",
+      "recovery_session_expired"
+    ]
+  },
+  "operationReplaySemantics": {
+    "binding": [
+      "user",
+      "operation_appropriate_authorization_carrier",
+      "security_version",
+      "purpose",
+      "normalized_intent"
+    ],
+    "unknownOutcome": "authoritative_status_required",
+    "tombstone": "identity_preserving_compaction",
+    "unknownFields": "reject",
+    "resultVersion": 1
+  },
+  "authorizationCarriers": {
+    "ordinary": {
+      "operationKeys": [
+        "password_change",
+        "recovery_enrollment",
+        "email_change",
+        "session_revoke"
+      ],
+      "requires": [
+        "same_user_active_ordinary_session",
+        "current_account_security_version"
+      ],
+      "forbids": [
+        "recovery_session"
+      ]
+    },
+    "recoveryReset": {
+      "operationKeys": [
+        "recovery_reset"
+      ],
+      "requires": [
+        "same_user_recovery_session",
+        "matching_operation_id",
+        "recovery_reset_purpose",
+        "restricted_state",
+        "unexpired",
+        "current_account_security_version"
+      ],
+      "forbids": [
+        "ordinary_session",
+        "ordinary_session_issuance",
+        "household_access",
+        "non_recovery_operation_authority"
+      ],
+      "successfulResetClosure": [
+        "terminal_reset_completed",
+        "binding_terminal",
+        "recovery_session_consumed_or_closed",
+        "ordinary_sign_in_required"
+      ]
+    }
+  },
+  "staleFinalization": {
+    "operationKeys": [
+      "password_change",
+      "recovery_reset",
+      "session_revoke"
+    ],
+    "exactOutcome": "stale|stale_security_version",
+    "requires": [
+      "account_security_version_differs_from_bound_version",
+      "locked_matching_binding_operation_identity",
+      "submitted_binding",
+      "operation_appropriate_carrier_identity"
+    ],
+    "forbids": [
+      "protected_mutation",
+      "alternate_terminal_status",
+      "alternate_outcome_code",
+      "current_version_false_stale"
+    ]
+  },
+  "phase2AuthorizationBoundary": {
+    "capture": "server_session_user_and_session_id_only",
+    "transaction": "serializable",
+    "reauthorization": "both_version_components_equal_or_stale_security_version",
+    "mutation": "callback_only_after_in_transaction_reauthorization",
+    "routeExposure": "none"
+  },
+  "phase3FreshAuthBoundary": {
+    "operationIdentity": "gso_crockford_26_database_enforced",
+    "issueOrder": [
+      "reauthorize",
+      "current_password_verify",
+      "binding_open",
+      "operation_pending",
+      "grant_issued",
+      "binding_submitted"
+    ],
+    "replay": "matching_submitted_unexpired_grant_only_without_password_reverify",
+    "status": "matching_binding_and_grant_only_with_expired_state_durably_terminalized",
+    "routeExposure": "none",
+    "consumption": "matching_submitted_pending_operation_and_current_two_component_vector_only",
+    "passwordAttestation": {
+      "algorithm": "hmac_sha256",
+      "payloadVersion": "fresh-auth-attestation-v1",
+      "keyLifecycle": "active_plus_one_prior_for_ten_minute_overlap",
+      "nonce": "32_random_bytes_base64url_unique_write_once",
+      "replacementHashBinding": "sha256_of_exact_better_auth_password_hash",
+      "runtimeDatabaseThreat": "direct_cubby_runtime_sql_cannot_issue_password_change_grant_without_valid_attestation",
+      "protectedPurposes": [
+        "password_change",
+        "recovery_enrollment"
+      ]
+    }
+  },
+  "phase4PasswordTransitionBoundary": {
+    "hash": "before_serializable_transaction_with_better_auth_compatible_hasher",
+    "transactionWrites": [
+      "grant_consumed",
+      "credential_hash_replaced",
+      "both_versions_advanced_attributed",
+      "all_sessions_and_activity_revoked",
+      "operation_completed_changed",
+      "binding_terminal",
+      "content_free_completed_event"
+    ],
+    "terminalOutcome": "completed|changed",
+    "postCommit": "normal_new_password_sign_in_required",
+    "routeExposure": "none",
+    "credentialMutationReceipt": "security_definer_password_transition_procedure_with_attested_exact_replacement_hash_and_runtime_direct_write_denial",
+    "privilegeBoundary": "direct_cubby_runtime_sql_requires_owner_key_verified_one_time_password_attestation_and_cannot_substitute_replacement_hash",
+    "deploymentRoleLifecycle": "startup_provisions_runtime_role_then_migrates_then_owner_reconciles_versioned_attestation_keyring_before_unsetting_migration_secrets_and_starting_server"
+  },
+  "phase1Terminalization": {
+    "enabled": [
+      "rejected",
+      "stale_security_version"
+    ],
+    "reserved": [
+      "completed_until_operation_specific_effect_gate"
+    ],
+    "versionAttribution": [
+      "credential_version_change_requires_operation_id",
+      "session_security_version_change_requires_operation_id",
+      "stale_rejects_same_operation_attribution"
+    ]
+  },
+  "freshAuthPurposeMatrix": {
+    "password_change": "password_change",
+    "recovery_enrollment": "recovery_enrollment",
+    "email_change": "email_change",
+    "session_revoke": "session_revoke",
+    "recovery_reset": "restricted_recovery_session_only"
+  },
+  "versionVector": {
+    "fields": [
+      "credential_version",
+      "session_security_version"
+    ],
+    "operationKeys": [
+      "password_change",
+      "recovery_enrollment",
+      "recovery_reset",
+      "email_change",
+      "session_revoke"
+    ],
+    "currentRule": "both_equal_bound_vector",
+    "staleRule": "either_component_differs"
+  },
+  "tombstoneAuthority": {
+    "phase1": "inactive_reserved_schema",
+    "insertion": "rejected",
+    "statusReader": "live_binding_and_operation_only",
+    "futureGate": "atomic_single_authority_compaction_protocol"
+  },
+  "modelLifecycleMatrix": {
+    "AccountSecurityState": {
+      "states": [
+        "active",
+        "deleted"
+      ],
+      "lock": "user_security_state_row",
+      "write": "version_monotonic_only",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "FreshAuthGrant": {
+      "states": [
+        "issued",
+        "consumed",
+        "revoked",
+        "expired"
+      ],
+      "lock": "user_security_state_then_session_then_grant",
+      "write": "issued_to_terminal_once",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "RecoveryCodeSet": {
+      "states": [
+        "generated",
+        "save_acknowledged",
+        "rehearsal_required",
+        "rehearsed",
+        "invalidated"
+      ],
+      "lock": "transition_lock_then_user_security_state_then_recovery_set",
+      "write": "exact_ten_readiness_state_machine",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "RecoveryCode": {
+      "states": [
+        "active",
+        "consumed",
+        "invalidated"
+      ],
+      "lock": "user_security_state_then_recovery_code",
+      "write": "active_to_terminal_once",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "RecoverySession": {
+      "states": [
+        "restricted",
+        "consumed",
+        "closed",
+        "expired"
+      ],
+      "lock": "user_security_state_then_recovery_session_then_matching_operation",
+      "write": "restricted_to_success_bound_consumed_or_closed_or_deadline_expired_once",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "GlobalSecurityOperationBinding": {
+      "states": [
+        "open",
+        "submitted",
+        "terminal",
+        "expired",
+        "revoked"
+      ],
+      "lock": "global_security_operation_identity_v1",
+      "write": "state_machine_only",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "GlobalSecurityOperation": {
+      "states": [
+        "pending",
+        "unknown",
+        "completed",
+        "rejected",
+        "stale"
+      ],
+      "lock": "global_security_operation_identity_v1",
+      "write": "terminal_write_once",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "GlobalSecurityOperationTombstone": {
+      "states": [
+        "terminal"
+      ],
+      "lock": "global_security_operation_identity_v1",
+      "write": "insert_once",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "GlobalSecurityOperationReservationTombstone": {
+      "states": [
+        "expired"
+      ],
+      "lock": "global_security_operation_identity_v1",
+      "write": "insert_once",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "GlobalSecurityEvent": {
+      "states": [
+        "recorded"
+      ],
+      "lock": "transaction_owner",
+      "write": "append_only",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "GlobalSecurityIncident": {
+      "states": [
+        "active",
+        "quiet",
+        "closed"
+      ],
+      "lock": "normalized_incident_identity_v1",
+      "write": "atomic_increment_or_quiet_transition",
+      "retention": "user_bound_until_account_deletion_account_neutral_until_future_maintenance_gate",
+      "compaction": "none"
+    },
+    "EmailChange": {
+      "states": [
+        "pending",
+        "verified",
+        "cancelled",
+        "expired",
+        "abandoned",
+        "failed",
+        "completed"
+      ],
+      "lock": "user_security_state_then_email_change",
+      "write": "state_machine_only",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "SessionSecurityActivity": {
+      "states": [
+        "active",
+        "expired",
+        "revoked"
+      ],
+      "lock": "user_security_state_then_session",
+      "write": "bounded_qualifying_activity_only_current_issuance_version",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "PasswordChangeCredentialMutation": {
+      "states": [
+        "recorded"
+      ],
+      "lock": "global_security_transition_then_account_security_state_then_operation_binding_then_grant_then_credential_account",
+      "write": "security_definer_password_transition_procedure_only",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "RecoveryResetCredentialMutation": {
+      "states": [
+        "recorded"
+      ],
+      "lock": "global_security_transition_then_account_security_state_then_recovery_session_then_operation_binding_then_credential_account",
+      "write": "security_definer_recovery_reset_procedure_only",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "FreshAuthAttestationKey": {
+      "states": [
+        "accepted",
+        "retired"
+      ],
+      "lock": "migration_owner_key_provision_transaction",
+      "write": "owner_only_exact_configured_keyring_reconciliation",
+      "retention": "deployment_secret_lifecycle_excluded_from_household_backups",
+      "compaction": "rotation_after_ten_minute_overlap"
+    },
+    "EmailChangeDelivery": {
+      "states": [
+        "queued",
+        "dispatching",
+        "accepted",
+        "retryable_failed",
+        "permanent_failed"
+      ],
+      "lock": "global_transition_then_user_operation_then_model",
+      "write": "transition_guard_and_runtime_dispatch_procedures_only",
+      "retention": "receipt_metadata_until_account_deletion_ciphertext_until_terminal",
+      "compaction": "none"
+    },
+    "EmailChangeIdentityMutation": {
+      "states": [
+        "retained"
+      ],
+      "lock": "global_transition_then_user_operation_then_model",
+      "write": "owner_or_guarded_transition",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "EmailChangeSessionRotation": {
+      "states": [
+        "issued",
+        "confirmed",
+        "failed"
+      ],
+      "lock": "global_transition_then_user_operation_then_model",
+      "write": "owner_or_guarded_transition",
+      "retention": "until_account_deletion",
+      "compaction": "none"
+    },
+    "EmailDeliveryEncryptionKey": {
+      "states": [
+        "active_write",
+        "decrypt_only",
+        "retired"
+      ],
+      "lock": "global_transition_then_user_operation_then_model",
+      "write": "owner_or_guarded_transition",
+      "retention": "deployment_key_config_excluded_from_household_backup",
+      "compaction": "none"
+    }
+  },
+  "sqlProtocol": {
+    "advisoryLock": {
+      "function": "lock_global_security_operation_identity_v1(user_id, operation_id)",
+      "sql": "pg_advisory_xact_lock(two_md5_64_bit_halves('global-security-operation:v1:' || user_id || ':' || operation_id))",
+      "writers": [
+        "issue",
+        "submit",
+        "status",
+        "reservation_expiry",
+        "compaction",
+        "direct_sql_trigger"
+      ]
+    },
+    "transitionSerialization": {
+      "function": "lock_global_security_transition_v1",
+      "triggerNamePrefix": "00_",
+      "scope": "deployment_global_before_statement_row_locks",
+      "tables": [
+        "GlobalSecurityOperation",
+        "GlobalSecurityOperationBinding",
+        "FreshAuthGrant",
+        "RecoveryCodeSet",
+        "RecoveryCode",
+        "RecoverySession",
+        "EmailChange"
+      ],
+      "proof": "pg_blocking_pids_observed"
+    },
+    "liveIdentityTables": [
+      "GlobalSecurityOperationBinding",
+      "GlobalSecurityOperation",
+      "GlobalSecurityOperationTombstone",
+      "GlobalSecurityOperationReservationTombstone"
+    ],
+    "uniqueIndexes": [
+      "binding_user_id_operation_id",
+      "operation_user_id_operation_id",
+      "terminal_tombstone_user_id_operation_id",
+      "reservation_tombstone_user_id_operation_id"
+    ],
+    "insertGuards": [
+      {
+        "trigger": "GlobalSecurityBinding_identity_insert_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "identity_lock",
+          "no_live_operation",
+          "no_full_tombstone",
+          "no_reservation_tombstone"
+        ]
+      },
+      {
+        "trigger": "GlobalSecurityOperation_binding_claim_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "identity_lock",
+          "locked_matching_open_binding",
+          "matching_user_operation_appropriate_carrier_version_fingerprints"
+        ]
+      },
+      {
+        "trigger": "GlobalSecurityReservationTombstone_insert_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "identity_lock",
+          "matching_expired_binding_and_operation_appropriate_carrier",
+          "no_live_operation"
+        ]
+      },
+      {
+        "trigger": "GlobalSecurityTombstone_insert_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "identity_lock",
+          "matching_terminal_operation_binding",
+          "matching_terminal_status_code_intent_and_times"
+        ]
+      },
+      {
+        "trigger": "AccountSecurityState_version_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "initial_versions_equal_one"
+        ]
+      },
+      {
+        "trigger": "FreshAuthGrant_initial_state_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "current_security_version",
+          "active_matching_session",
+          "issued_unexpired_shape"
+        ]
+      },
+      {
+        "trigger": "RecoveryCode_initial_state_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "account_security_state_lock",
+          "one_active_set",
+          "active_hash_only_shape"
+        ]
+      },
+      {
+        "trigger": "RecoverySession_initial_state_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "same_user_consumed_code",
+          "recovery_reset_purpose",
+          "restricted_unexpired_shape"
+        ]
+      },
+      {
+        "trigger": "EmailChange_initial_state_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "active_session",
+          "current_version",
+          "issued_unexpired_grant",
+          "submitted_email_operation_binding"
+        ]
+      },
+      {
+        "trigger": "GlobalSecurityIncident_initial_state_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "declared_layer",
+          "monotonic_initial_evidence",
+          "user_state_when_user_bound"
+        ]
+      },
+      {
+        "trigger": "SessionSecurityActivity_initial_state_guard",
+        "event": "BEFORE INSERT",
+        "requires": [
+          "active_matching_session",
+          "original_session_anchor",
+          "bounded_initial_activity"
+        ]
+      }
+    ],
+    "transitionGuards": [
+      {
+        "trigger": "GlobalSecurityBinding_write_once",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "open_to_submitted_or_expired_or_terminal_only"
+      },
+      {
+        "trigger": "GlobalSecurityOperation_terminal_write_once",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "pending_or_unknown_to_completed_rejected_or_stale_only"
+      },
+      {
+        "trigger": "GlobalSecurityOperationTombstone_write_once",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "reject_update_and_direct_delete"
+      },
+      {
+        "trigger": "GlobalSecurityReservationTombstone_write_once",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "reject_update_and_direct_delete"
+      },
+      {
+        "trigger": "GlobalSecurityEvent_append_only",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "reject_update_and_direct_delete_while_user_exists_allow_delete_only_after_user_fk_cascade"
+      },
+      {
+        "trigger": "AccountSecurityState_version_guard",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "versions_monotonic_and_delete_only_by_user_cascade"
+      },
+      {
+        "trigger": "FreshAuthGrant_state_guard",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "issued_to_consumed_revoked_or_deadline_expired_once"
+      },
+      {
+        "trigger": "RecoveryCode_single_consume",
+        "event": "BEFORE UPDATE",
+        "states": "active_to_consumed_or_invalidated_only"
+      },
+      {
+        "trigger": "RecoverySession_state_guard",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "restricted_to_matching_success_bound_consumed_or_closed_or_deadline_expired_with_immutable_purpose"
+      },
+      {
+        "trigger": "EmailChange_state_guard",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "current_authorized_transitions_or_deadline_bound_passive_expiry"
+      },
+      {
+        "trigger": "GlobalSecurityIncident_state_guard",
+        "event": "BEFORE UPDATE",
+        "states": "immutable_identity_monotonic_counter_and_active_quiet_closed_only"
+      },
+      {
+        "trigger": "SessionSecurityActivity_write_once",
+        "event": "BEFORE UPDATE OR DELETE",
+        "states": "monotonic_activity_write_once_warning_and_active_to_terminal_only"
+      }
+    ],
+    "directSqlRejection": [
+      "reject_update_delete_global_security_event",
+      "reject_binding_or_operation_identity_reuse",
+      "reject_terminal_or_tombstone_mutation"
+    ],
+    "retentionProtection": {
+      "directDelete": "reject_while_user_exists",
+      "truncate": "reject_all_retained_tables",
+      "accountDeletion": "user_fk_cascade_only"
+    },
+    "compaction": {
+      "policy": "no_automatic_compaction",
+      "bindingLeaseMinutes": 10,
+      "deleteAuthorization": "all_live_operation_binding_and_tombstone_deletes_rejected_until_global_account_deletion",
+      "futureGate": "separate_retention_and_maintenance_role_decision_required"
+    }
+  },
+  "lockOrder": [
+    "AccountSecurityState",
+    "Session",
+    "FreshAuthGrant_or_GlobalSecurityOperation",
+    "RecoveryCode_or_EmailChange_or_GlobalSecurityIncident",
+    "GlobalSecurityEvent"
+  ],
+  "routeCutover": {
+    "phase": "phase4_signin_only_fail_closed",
+    "phase1Boundary": "route_enforcement_active_without_user_facing_security_flow",
+    "denyOrWrap": [
+      "change-password",
+      "request-password-reset",
+      "reset-password",
+      "verify-password",
+      "get-session",
+      "list-sessions",
+      "revoke-session",
+      "revoke-other-sessions",
+      "revoke-sessions",
+      "sign-out"
+    ],
+    "callbackAndGetRoutes": "deny_or_wrap_before_framework_handler",
+    "catchAllPolicy": "deny_by_default_for_security_routes_except_explicit_cubby_owned_allowlist",
+    "directAllowlist": [
+      "POST /sign-in/email"
+    ],
+    "wrappedAllowlist": [],
+    "callbackAllowlist": [],
+    "fallback": "deny_before_toNextJsHandler",
+    "frameworkRole": "persistence_adapter_only"
+  },
+  "grant": {
+    "purpose": "password_change",
+    "expiresMinutes": 10,
+    "binds": [
+      "user",
+      "session",
+      "operation",
+      "credential_security_version"
+    ],
+    "invalidatedBy": [
+      "sign_out",
+      "session_expiry",
+      "session_revocation",
+      "credential_change",
+      "recovery_mutation",
+      "security_version_change"
+    ],
+    "consumedOnSuccess": true
+  },
+  "sessionPolicy": {
+    "idleDays": 30,
+    "absoluteDays": 90,
+    "rotationPreservesOriginalAnchor": true,
+    "qualifyingUse": [
+      "successful_explicitly_allowlisted_foreground_document_navigation",
+      "successful_cubby_owned_non_GET_mutation_commit",
+      "successful_private_security_action"
+    ],
+    "excludedUse": [
+      "all_other_requests",
+      "failed",
+      "public_static",
+      "health",
+      "telemetry",
+      "worker",
+      "maintenance",
+      "background",
+      "prefetch"
+    ],
+    "clock": "postgresql_clock_timestamp",
+    "cacheCannotOutliveAuthorization": true,
+    "lifetime": {
+      "effectiveExpiry": "min(Session.expiresAt,original_created_at_plus_90_days,last_qualifying_at_plus_30_days)",
+      "clockComparison": "postgresql_clock_timestamp_greater_than_or_equal_to_effective_expiry",
+      "lockAndRecheck": "immediately_before_protected_response_or_write_commit_lock_session_and_activity_recheck_expire_activity_delete_session_and_deny_if_crossed"
+    }
+  },
+  "recovery": {
+    "displayOnce": true,
+    "codeCount": 10,
+    "entropyBits": 120,
+    "format": {
+      "alphabet": "crockford_base32",
+      "groups": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "normalization": "uppercase_strip_separators"
+    },
+    "kdf": {
+      "algorithm": "scrypt",
+      "N": 32768,
+      "r": 8,
+      "p": 1,
+      "saltBytes": 16,
+      "derivedKeyBytes": 32,
+      "parameterVersion": 1
+    },
+    "persistedForm": "salted_computationally_hardened_hash_only",
+    "externalSaveAcknowledgement": true,
+    "enrollmentState": [
+      "generated",
+      "save_acknowledged",
+      "rehearsal_required",
+      "rehearsed",
+      "invalidated"
+    ],
+    "rehearsal": {
+      "consumesCode": true,
+      "verifiesRemainingSet": true,
+      "unknownOutcome": "authoritative_status_required"
+    },
+    "regeneration": "fresh_auth_invalidates_old_set_and_terminalizes_all_restricted_carriers_from_superseded_sets",
+    "tokenPersistence": "forbidden",
+    "logging": "forbidden",
+    "restrictedSession": true,
+    "restrictedSessionMinutes": 10,
+    "normalSignInRequired": true,
+    "everyUserRehearsalRequired": true,
+    "setIssuanceSerialization": "account_security_state_row",
+    "successfulReset": [
+      "consume_recovery_code",
+      "close_recovery_session",
+      "advance_security_version",
+      "revoke_all_interactive_sessions",
+      "invalidate_protected_cached_identity",
+      "invalidate_session_derived_credentials"
+    ],
+    "householdOrPlatformBypass": false,
+    "regenerationClosure": [
+      "old_active_codes_invalidated",
+      "old_live_set_invalidated",
+      "restricted_sessions_from_superseded_sets_closed",
+      "matching_operations_rejected_recovery_set_regenerated",
+      "bindings_terminal",
+      "content_free_events"
+    ],
+    "leaseClock": "postgresql_clock_timestamp",
+    "leaseMinting": "database_overrides_created_at_and_exact_ten_minute_deadline_for_grant_binding_and_recovery_session",
+    "resetAttestation": {
+      "algorithm": "hmac_sha256",
+      "payloadVersion": "recovery-reset-attestation-v1",
+      "binds": [
+        "user",
+        "recovery_code",
+        "set_version",
+        "operation",
+        "both_security_versions",
+        "opening_fingerprint",
+        "intent_fingerprint",
+        "exact_replacement_hash_digest",
+        "nonce",
+        "key_version"
+      ],
+      "runtimeDatabaseThreat": "direct_cubby_runtime_sql_cannot_construct_recovery_carrier_or_substitute_password_hash"
+    }
+  },
+  "recoveryPersistence": {
+    "setStates": [
+      "generated",
+      "save_acknowledged",
+      "rehearsal_required",
+      "rehearsed",
+      "invalidated"
+    ],
+    "codeOrdinalRange": [
+      1,
+      10
+    ],
+    "codeConsumptionPurposes": [
+      "enrollment_rehearsal",
+      "recovery_reset"
+    ],
+    "readiness": "exactly_one_enrollment_rehearsal_consumption_and_nine_active_codes",
+    "sessionCarrier": "recovery_reset_consumption_matching_rehearsed_set_and_operation",
+    "kdfStorage": {
+      "saltBytes": 16,
+      "derivedKeyBytes": 32,
+      "plaintext": "forbidden"
+    }
+  },
+  "emailChange": {
+    "featureGated": true,
+    "requiresTrustworthyVerificationDelivery": true,
+    "globalUserOnly": true,
+    "oldIdentityAuthoritativeUntilVerified": true,
+    "states": [
+      "pending",
+      "verified",
+      "cancelled",
+      "expired",
+      "abandoned",
+      "failed",
+      "completed"
+    ],
+    "operationBinding": [
+      "user",
+      "fresh_auth_grant",
+      "security_version",
+      "normalized_new_identity",
+      "idempotency_key"
+    ],
+    "verificationToken": {
+      "singleUse": true,
+      "expiresMinutes": 60,
+      "cancelInvalidates": true,
+      "persistence": "protected_hash_or_verified_provider_reference_only"
+    },
+    "deliveryCapability": "durable_verified_delivery_adapter_with_accepted_delivery_receipt_required_before_feature_enablement",
+    "collision": "non_enumerating_reject",
+    "oldAddressInvitations": "revoke_reissue_and_invalidate_stale_links",
+    "oldInviterNoticeWithoutNewAddress": true,
+    "newAddressInvitationsRequireExplicitAcceptance": true,
+    "dualAddressNotices": [
+      "new_verification",
+      "new_cutover",
+      "old_request",
+      "old_cutover"
+    ],
+    "oldAddressDeliveryFailure": "record_and_surface_without_trapping_user",
+    "currentAuthorization": {
+      "activeSessionRequired": true,
+      "currentCredentialVersionRequired": true,
+      "issuedUnexpiredGrantRequiredAtInitiation": true,
+      "nonRevokedGrantEvidenceRequiredAfterInitiation": true,
+      "submittedOperationBindingRequired": true,
+      "passiveExpiryRequiresDeadline": true,
+      "verifiedCanExpirePassively": true
+    },
+    "revokeEveryOtherSession": true,
+    "rotateInitiatingSession": [
+      "session_id",
+      "csrf_state",
+      "cached_identity_claims"
+    ],
+    "rotationFailure": "revoke_all_and_require_new_email_sign_in"
+  },
+  "throttling": {
+    "layers": [
+      "account_identifier",
+      "client",
+      "deployment"
+    ],
+    "layerOwnerMatrix": {
+      "account_identifier": "user_id_required",
+      "client": "user_id_forbidden_account_neutral",
+      "deployment": "user_id_forbidden_account_neutral"
+    },
+    "accountExistenceNeutral": true,
+    "failures": 5,
+    "windowMinutes": 15,
+    "quietPeriodMinutes": 15,
+    "counterIdentity": [
+      "normalized_account_identifier",
+      "normalized_client_bucket",
+      "deployment_bucket"
+    ],
+    "counterUpdate": "serializable_atomic_increment_with_window_ttl",
+    "decay": "window_expiry_only",
+    "groupedIncident": true,
+    "quietPeriodRequired": true,
+    "recoveryAtLeastAsStrong": true,
+    "successDoesNotClearEvidenceOrAbuseState": true,
+    "noPermanentAccidentalLockout": true,
+    "privateProjectionExcludes": [
+      "attempted_credentials",
+      "exact_ip",
+      "location",
+      "full_user_agent",
+      "raw_identifier",
+      "household_context",
+      "maliciousness_claim"
+    ],
+    "operatorProjection": "content_free_aggregate_only"
+  },
+  "privateHistory": {
+    "scope": "global_user_only",
+    "householdAuditCarrier": false,
+    "platformAuditCarrier": false,
+    "eventClasses": [
+      "credential",
+      "grant",
+      "recovery",
+      "email_change",
+      "session",
+      "throttle",
+      "operation_outcome"
+    ],
+    "phase1InsertMatrix": [
+      "operation_outcome|rejected",
+      "operation_outcome|stale_security_version"
+    ],
+    "phase1Projection": "empty_object_only",
+    "reservedEventClasses": [
+      "credential",
+      "grant",
+      "recovery",
+      "email_change",
+      "session",
+      "throttle"
+    ],
+    "appendOnly": true,
+    "export": "separate_global_account_export"
+  },
+  "terminalOutcomes": {
+    "unknown": "authoritative_status_required",
+    "replay": "identical_user_session_version_bound_intent_only",
+    "secretsInOutcome": false,
+    "triples": [
+      "password_change|completed|changed",
+      "password_change|stale|stale_security_version",
+      "password_change|rejected|grant_expired",
+      "password_change|rejected|current_password_invalid",
+      "password_change|rejected|operation_conflict",
+      "recovery_enrollment|completed|rehearsal_completed",
+      "recovery_enrollment|rejected|rehearsal_failed",
+      "recovery_reset|completed|reset_completed",
+      "recovery_reset|stale|stale_security_version",
+      "recovery_reset|rejected|recovery_set_regenerated",
+      "recovery_reset|rejected|recovery_session_expired",
+      "email_change|completed|cutover_completed",
+      "email_change|stale|stale_security_version",
+      "email_change|rejected|verification_expired",
+      "email_change|rejected|collision_rejected",
+      "email_change|rejected|cancelled",
+      "session_revoke|completed|revoked",
+      "session_revoke|completed|already_revoked",
+      "session_revoke|stale|stale_security_version",
+      "email_change|rejected|delivery_failed",
+      "email_change|rejected|abandoned"
+    ],
+    "reservationTriples": [
+      "expired|reservation_expired"
+    ]
+  },
+  "persistenceParity": {
+    "AccountSecurityState": {
+      "prismaModel": "model AccountSecurityState { userId String @id credentialVersion Int @default(1) sessionSecurityVersion Int @default(1) lastCredentialOperationId String? lastSessionSecurityOperationId String? securityUpdatedAt DateTime @updatedAt user User @relation(fields: [userId], references: [id], onDelete: Cascade) }",
+      "migrationTable": "CREATE TABLE \"AccountSecurityState\" ( \"userId\" TEXT NOT NULL, \"credentialVersion\" INTEGER NOT NULL DEFAULT 1, \"sessionSecurityVersion\" INTEGER NOT NULL DEFAULT 1, \"lastCredentialOperationId\" TEXT, \"lastSessionSecurityOperationId\" TEXT, \"securityUpdatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"AccountSecurityState_pkey\" PRIMARY KEY (\"userId\") );",
+      "indexes": [],
+      "constraints": [
+        "ALTER TABLE \"AccountSecurityState\" ADD CONSTRAINT \"AccountSecurityState_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"AccountSecurityState\" ADD CONSTRAINT \"AccountSecurityState_versions_check\" CHECK (\"credentialVersion\" > 0 AND \"sessionSecurityVersion\" > 0);"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"AccountSecurityState_retention_truncate_guard\" BEFORE TRUNCATE ON \"AccountSecurityState\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"AccountSecurityState_version_guard\" BEFORE INSERT OR UPDATE OR DELETE ON \"AccountSecurityState\" FOR EACH ROW EXECUTE FUNCTION \"enforce_account_security_version_transition\"();"
+      ]
+    },
+    "FreshAuthGrant": {
+      "prismaModel": "model FreshAuthGrant { id String @id @default(cuid()) userId String sessionId String operationId String purpose String credentialVersion Int attestationNonce String? @unique attestationMac Bytes? attestationKeyVersion Int? replacementPasswordHashDigest Bytes? state FreshAuthGrantState @default(issued) expiresAt DateTime consumedAt DateTime? revokedAt DateTime? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) emailChanges EmailChange[] issuedRecoveryCodeSet RecoveryCodeSet? @relation(\"RecoveryCodeSetFreshAuthGrant\") @@unique([userId, operationId]) @@index([userId, purpose, state]) @@index([sessionId]) }",
+      "migrationTable": "CREATE TABLE \"FreshAuthGrant\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"sessionId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"purpose\" TEXT NOT NULL, \"credentialVersion\" INTEGER NOT NULL, \"attestationNonce\" TEXT, \"attestationMac\" BYTEA, \"attestationKeyVersion\" INTEGER, \"replacementPasswordHashDigest\" BYTEA, \"state\" \"FreshAuthGrantState\" NOT NULL DEFAULT 'issued', \"expiresAt\" TIMESTAMP(3) NOT NULL, \"consumedAt\" TIMESTAMP(3), \"revokedAt\" TIMESTAMP(3), \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"FreshAuthGrant_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"FreshAuthGrant_sessionId_idx\" ON \"FreshAuthGrant\"(\"sessionId\");",
+        "CREATE INDEX \"FreshAuthGrant_userId_purpose_state_idx\" ON \"FreshAuthGrant\"(\"userId\", \"purpose\", \"state\");",
+        "CREATE UNIQUE INDEX \"FreshAuthGrant_attestationNonce_key\" ON \"FreshAuthGrant\"(\"attestationNonce\");",
+        "CREATE UNIQUE INDEX \"FreshAuthGrant_one_live_purpose\" ON \"FreshAuthGrant\"(\"userId\", \"purpose\") WHERE \"state\" = 'issued';",
+        "CREATE UNIQUE INDEX \"FreshAuthGrant_userId_operationId_key\" ON \"FreshAuthGrant\"(\"userId\", \"operationId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"FreshAuthGrant\" ADD CONSTRAINT \"FreshAuthGrant_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"FreshAuthGrant\" ADD CONSTRAINT \"FreshAuthGrant_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE CONSTRAINT TRIGGER \"FreshAuthGrant_issuance_guard\" AFTER INSERT ON \"FreshAuthGrant\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_fresh_auth_grant_issuance_finalization\"();",
+        "CREATE TRIGGER \"00_FreshAuthGrant_transition_lock\" BEFORE INSERT OR UPDATE ON \"FreshAuthGrant\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"FreshAuthGrant_initial_state_guard\" BEFORE INSERT ON \"FreshAuthGrant\" FOR EACH ROW EXECUTE FUNCTION \"enforce_fresh_auth_grant_initial_state\"();",
+        "CREATE TRIGGER \"FreshAuthGrant_retention_truncate_guard\" BEFORE TRUNCATE ON \"FreshAuthGrant\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"FreshAuthGrant_state_guard\" BEFORE UPDATE OR DELETE ON \"FreshAuthGrant\" FOR EACH ROW EXECUTE FUNCTION \"enforce_fresh_auth_grant_transition\"();"
+      ]
+    },
+    "RecoveryCodeSet": {
+      "prismaModel": "model RecoveryCodeSet { userId String setVersion Int issuanceOperationId String freshAuthGrantId String @unique issuanceSecurityVersion Int issuanceSessionSecurityVersion Int expectedCodeCount Int @default(10) state RecoveryCodeSetState @default(generated) saveAcknowledgedAt DateTime? rehearsedAt DateTime? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt user User @relation(fields: [userId], references: [id], onDelete: Cascade) issuanceOperation GlobalSecurityOperation @relation(\"RecoveryCodeSetIssuanceOperation\", fields: [userId, issuanceOperationId], references: [userId, operationId], onDelete: Cascade) freshAuthGrant FreshAuthGrant @relation(\"RecoveryCodeSetFreshAuthGrant\", fields: [freshAuthGrantId], references: [id], onDelete: Cascade) codes RecoveryCode[] @@id([userId, setVersion]) @@unique([userId, issuanceOperationId]) @@index([userId, state]) }",
+      "migrationTable": "CREATE TABLE \"RecoveryCodeSet\" ( \"userId\" TEXT NOT NULL, \"setVersion\" INTEGER NOT NULL, \"issuanceOperationId\" TEXT NOT NULL, \"freshAuthGrantId\" TEXT NOT NULL, \"issuanceSecurityVersion\" INTEGER NOT NULL, \"issuanceSessionSecurityVersion\" INTEGER NOT NULL, \"expectedCodeCount\" INTEGER NOT NULL DEFAULT 10, \"state\" \"RecoveryCodeSetState\" NOT NULL DEFAULT 'generated', \"saveAcknowledgedAt\" TIMESTAMP(3), \"rehearsedAt\" TIMESTAMP(3), \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"updatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"RecoveryCodeSet_pkey\" PRIMARY KEY (\"userId\",\"setVersion\") );",
+      "indexes": [
+        "CREATE INDEX \"RecoveryCodeSet_userId_state_idx\" ON \"RecoveryCodeSet\"(\"userId\", \"state\");",
+        "CREATE UNIQUE INDEX \"RecoveryCodeSet_freshAuthGrantId_key\" ON \"RecoveryCodeSet\"(\"freshAuthGrantId\");",
+        "CREATE UNIQUE INDEX \"RecoveryCodeSet_userId_issuanceOperationId_key\" ON \"RecoveryCodeSet\"(\"userId\", \"issuanceOperationId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"RecoveryCodeSet\" ADD CONSTRAINT \"RecoveryCodeSet_freshAuthGrantId_fkey\" FOREIGN KEY (\"freshAuthGrantId\") REFERENCES \"FreshAuthGrant\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"RecoveryCodeSet\" ADD CONSTRAINT \"RecoveryCodeSet_issuance_operation_id_canonical\" CHECK (\"issuanceOperationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"RecoveryCodeSet\" ADD CONSTRAINT \"RecoveryCodeSet_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"RecoveryCodeSet\" ADD CONSTRAINT \"RecoveryCodeSet_userId_issuanceOperationId_fkey\" FOREIGN KEY (\"userId\",\"issuanceOperationId\") REFERENCES \"GlobalSecurityOperation\"(\"userId\",\"operationId\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE CONSTRAINT TRIGGER \"RecoveryCodeSet_exact_ten_guard\" AFTER INSERT OR UPDATE OR DELETE ON \"RecoveryCodeSet\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_set_exact_ten\"();",
+        "CREATE CONSTRAINT TRIGGER \"RecoveryCodeSet_issuance_guard\" AFTER INSERT ON \"RecoveryCodeSet\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_set_issuance_finalization\"();",
+        "CREATE TRIGGER \"00_RecoveryCodeSet_transition_lock\" BEFORE INSERT OR UPDATE ON \"RecoveryCodeSet\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"RecoveryCodeSet_initial_state_guard\" BEFORE INSERT ON \"RecoveryCodeSet\" FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_set_initial_state\"();",
+        "CREATE TRIGGER \"RecoveryCodeSet_retention_guard\" BEFORE DELETE ON \"RecoveryCodeSet\" FOR EACH ROW EXECUTE FUNCTION \"prevent_global_security_retention_delete\"();",
+        "CREATE TRIGGER \"RecoveryCodeSet_retention_truncate_guard\" BEFORE TRUNCATE ON \"RecoveryCodeSet\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"RecoveryCodeSet_state_guard\" BEFORE UPDATE OR DELETE ON \"RecoveryCodeSet\" FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_set_transition\"();"
+      ]
+    },
+    "RecoveryCode": {
+      "prismaModel": "model RecoveryCode { id String @id @default(cuid()) userId String setVersion Int ordinal Int salt Bytes derivedKey Bytes kdfVersion Int @default(1) state RecoveryCodeState @default(active) consumedPurpose RecoveryCodeConsumptionPurpose? consumedOperationId String? consumedAt DateTime? invalidatedAt DateTime? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) set RecoveryCodeSet @relation(fields: [userId, setVersion], references: [userId, setVersion], onDelete: Cascade) @@unique([userId, setVersion, ordinal]) @@unique([userId, consumedOperationId]) @@unique([userId, id]) @@index([userId, state]) }",
+      "migrationTable": "CREATE TABLE \"RecoveryCode\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"setVersion\" INTEGER NOT NULL, \"ordinal\" INTEGER NOT NULL, \"salt\" BYTEA NOT NULL, \"derivedKey\" BYTEA NOT NULL, \"kdfVersion\" INTEGER NOT NULL DEFAULT 1, \"state\" \"RecoveryCodeState\" NOT NULL DEFAULT 'active', \"consumedPurpose\" \"RecoveryCodeConsumptionPurpose\", \"consumedOperationId\" TEXT, \"consumedAt\" TIMESTAMP(3), \"invalidatedAt\" TIMESTAMP(3), \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"RecoveryCode_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"RecoveryCode_userId_state_idx\" ON \"RecoveryCode\"(\"userId\", \"state\");",
+        "CREATE UNIQUE INDEX \"RecoveryCode_userId_consumedOperationId_key\" ON \"RecoveryCode\"(\"userId\", \"consumedOperationId\");",
+        "CREATE UNIQUE INDEX \"RecoveryCode_userId_id_key\" ON \"RecoveryCode\"(\"userId\", \"id\");",
+        "CREATE UNIQUE INDEX \"RecoveryCode_userId_setVersion_ordinal_key\" ON \"RecoveryCode\"(\"userId\", \"setVersion\", \"ordinal\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_consumed_operation_id_canonical\" CHECK (\"consumedOperationId\" IS NULL OR \"consumedOperationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_derived_key_length_check\" CHECK (octet_length(\"derivedKey\") = 32);",
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_kdf_version_check\" CHECK (\"kdfVersion\" = 1);",
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_ordinal_check\" CHECK (\"ordinal\" BETWEEN 1 AND 10);",
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_salt_length_check\" CHECK (octet_length(\"salt\") = 16);",
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"RecoveryCode\" ADD CONSTRAINT \"RecoveryCode_userId_setVersion_fkey\" FOREIGN KEY (\"userId\",\"setVersion\") REFERENCES \"RecoveryCodeSet\"(\"userId\",\"setVersion\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE CONSTRAINT TRIGGER \"RecoveryCode_consumption_guard\" AFTER UPDATE ON \"RecoveryCode\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_consumption_binding\"();",
+        "CREATE CONSTRAINT TRIGGER \"RecoveryCode_exact_ten_guard\" AFTER INSERT OR UPDATE OR DELETE ON \"RecoveryCode\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_set_exact_ten\"();",
+        "CREATE TRIGGER \"00_RecoveryCode_transition_lock\" BEFORE INSERT OR UPDATE ON \"RecoveryCode\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"RecoveryCode_initial_state_guard\" BEFORE INSERT ON \"RecoveryCode\" FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_initial_state\"();",
+        "CREATE TRIGGER \"RecoveryCode_retention_truncate_guard\" BEFORE TRUNCATE ON \"RecoveryCode\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"RecoveryCode_single_consume\" BEFORE UPDATE OR DELETE ON \"RecoveryCode\" FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_code_transition\"();"
+      ]
+    },
+    "RecoverySession": {
+      "prismaModel": "model RecoverySession { id String @id @default(cuid()) userId String recoveryCodeId String operationId String purpose String @default(\"recovery_reset\") attestationNonce String? @unique attestationMac Bytes? attestationKeyVersion Int? replacementPasswordHashDigest Bytes? attestedOpeningFingerprint String? attestedIntentFingerprint String? state RecoverySessionState @default(restricted) expiresAt DateTime consumedAt DateTime? closedAt DateTime? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) @@unique([userId, operationId]) @@unique([userId, recoveryCodeId]) @@index([recoveryCodeId]) }",
+      "migrationTable": "CREATE TABLE \"RecoverySession\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"recoveryCodeId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"purpose\" TEXT NOT NULL DEFAULT 'recovery_reset', \"attestationNonce\" TEXT, \"attestationMac\" BYTEA, \"attestationKeyVersion\" INTEGER, \"replacementPasswordHashDigest\" BYTEA, \"attestedOpeningFingerprint\" TEXT, \"attestedIntentFingerprint\" TEXT, \"state\" \"RecoverySessionState\" NOT NULL DEFAULT 'restricted', \"expiresAt\" TIMESTAMP(3) NOT NULL, \"consumedAt\" TIMESTAMP(3), \"closedAt\" TIMESTAMP(3), \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"RecoverySession_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"RecoverySession_recoveryCodeId_idx\" ON \"RecoverySession\"(\"recoveryCodeId\");",
+        "CREATE UNIQUE INDEX \"RecoverySession_attestationNonce_key\" ON \"RecoverySession\"(\"attestationNonce\");",
+        "CREATE UNIQUE INDEX \"RecoverySession_userId_operationId_key\" ON \"RecoverySession\"(\"userId\", \"operationId\");",
+        "CREATE UNIQUE INDEX \"RecoverySession_userId_recoveryCodeId_key\" ON \"RecoverySession\"(\"userId\", \"recoveryCodeId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"RecoverySession\" ADD CONSTRAINT \"RecoverySession_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"RecoverySession\" ADD CONSTRAINT \"RecoverySession_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE CONSTRAINT TRIGGER \"RecoverySession_consumption_binding_guard\" AFTER INSERT ON \"RecoverySession\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_session_consumption_binding\"();",
+        "CREATE TRIGGER \"00_RecoverySession_transition_lock\" BEFORE INSERT OR UPDATE ON \"RecoverySession\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"RecoverySession_initial_state_guard\" BEFORE INSERT ON \"RecoverySession\" FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_session_initial_state\"();",
+        "CREATE TRIGGER \"RecoverySession_retention_truncate_guard\" BEFORE TRUNCATE ON \"RecoverySession\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"RecoverySession_state_guard\" BEFORE UPDATE OR DELETE ON \"RecoverySession\" FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_session_transition\"();"
+      ]
+    },
+    "GlobalSecurityOperationBinding": {
+      "prismaModel": "model GlobalSecurityOperationBinding { id String @id @default(cuid()) userId String sessionId String? recoverySessionId String? operationId String operationKey GlobalSecurityOperationKey securityVersion Int sessionSecurityVersion Int @default(1) openingFingerprint String targetSnapshot Json state BrowserOperationBindingState @default(open) expiresAt DateTime createdAt DateTime @default(now()) updatedAt DateTime @updatedAt user User @relation(fields: [userId], references: [id], onDelete: Cascade) operation GlobalSecurityOperation? @@unique([userId, operationId]) @@index([sessionId]) @@index([recoverySessionId]) @@index([state, expiresAt]) }",
+      "migrationTable": "CREATE TABLE \"GlobalSecurityOperationBinding\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"sessionId\" TEXT, \"recoverySessionId\" TEXT, \"operationId\" TEXT NOT NULL, \"operationKey\" \"GlobalSecurityOperationKey\" NOT NULL, \"securityVersion\" INTEGER NOT NULL, \"sessionSecurityVersion\" INTEGER NOT NULL DEFAULT 1, \"openingFingerprint\" TEXT NOT NULL, \"targetSnapshot\" JSONB NOT NULL, \"state\" \"BrowserOperationBindingState\" NOT NULL DEFAULT 'open', \"expiresAt\" TIMESTAMP(3) NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"updatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"GlobalSecurityOperationBinding_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"GlobalSecurityOperationBinding_recoverySessionId_idx\" ON \"GlobalSecurityOperationBinding\"(\"recoverySessionId\");",
+        "CREATE INDEX \"GlobalSecurityOperationBinding_sessionId_idx\" ON \"GlobalSecurityOperationBinding\"(\"sessionId\");",
+        "CREATE INDEX \"GlobalSecurityOperationBinding_state_expiresAt_idx\" ON \"GlobalSecurityOperationBinding\"(\"state\", \"expiresAt\");",
+        "CREATE UNIQUE INDEX \"GlobalSecurityOperationBinding_userId_operationId_key\" ON \"GlobalSecurityOperationBinding\"(\"userId\", \"operationId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"GlobalSecurityOperationBinding\" ADD CONSTRAINT \"GlobalSecurityOperationBinding_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"GlobalSecurityOperationBinding\" ADD CONSTRAINT \"GlobalSecurityOperationBinding_recovery_session_shape\" CHECK ((\"operationKey\" = 'recovery_reset' AND \"sessionId\" IS NULL AND \"recoverySessionId\" IS NOT NULL) OR (\"operationKey\" <> 'recovery_reset' AND \"sessionId\" IS NOT NULL AND \"recoverySessionId\" IS NULL));",
+        "ALTER TABLE \"GlobalSecurityOperationBinding\" ADD CONSTRAINT \"GlobalSecurityOperationBinding_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"00_GlobalSecurityOperationBinding_transition_lock\" BEFORE INSERT OR UPDATE ON \"GlobalSecurityOperationBinding\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"GlobalSecurityBinding_identity_insert_guard\" BEFORE INSERT ON \"GlobalSecurityOperationBinding\" FOR EACH ROW EXECUTE FUNCTION \"guard_global_security_binding_insert\"();",
+        "CREATE TRIGGER \"GlobalSecurityBinding_write_once\" BEFORE UPDATE OR DELETE ON \"GlobalSecurityOperationBinding\" FOR EACH ROW EXECUTE FUNCTION \"enforce_global_security_binding_write_once\"();",
+        "CREATE TRIGGER \"GlobalSecurityOperationBinding_retention_truncate_guard\" BEFORE TRUNCATE ON \"GlobalSecurityOperationBinding\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();"
+      ]
+    },
+    "GlobalSecurityOperation": {
+      "prismaModel": "model GlobalSecurityOperation { bindingId String @unique userId String operationId String operationKey GlobalSecurityOperationKey intentFingerprint String status GlobalSecurityOperationStatus @default(pending) outcomeVersion Int? outcomeCode String? outcomeSnapshot Json? terminalAt DateTime? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt binding GlobalSecurityOperationBinding @relation(fields: [bindingId], references: [id], onDelete: Cascade) user User @relation(fields: [userId], references: [id], onDelete: Cascade) issuedRecoveryCodeSet RecoveryCodeSet? @relation(\"RecoveryCodeSetIssuanceOperation\") passwordChangeCredentialMutation PasswordChangeCredentialMutation? recoveryResetCredentialMutation RecoveryResetCredentialMutation? @@id([userId, operationId]) @@index([status, createdAt]) }",
+      "migrationTable": "CREATE TABLE \"GlobalSecurityOperation\" ( \"bindingId\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"operationKey\" \"GlobalSecurityOperationKey\" NOT NULL, \"intentFingerprint\" TEXT NOT NULL, \"status\" \"GlobalSecurityOperationStatus\" NOT NULL DEFAULT 'pending', \"outcomeVersion\" INTEGER, \"outcomeCode\" TEXT, \"outcomeSnapshot\" JSONB, \"terminalAt\" TIMESTAMP(3), \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"updatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"GlobalSecurityOperation_pkey\" PRIMARY KEY (\"userId\",\"operationId\") );",
+      "indexes": [
+        "CREATE INDEX \"GlobalSecurityOperation_status_createdAt_idx\" ON \"GlobalSecurityOperation\"(\"status\", \"createdAt\");",
+        "CREATE UNIQUE INDEX \"GlobalSecurityOperation_bindingId_key\" ON \"GlobalSecurityOperation\"(\"bindingId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"GlobalSecurityOperation\" ADD CONSTRAINT \"GlobalSecurityOperation_bindingId_fkey\" FOREIGN KEY (\"bindingId\") REFERENCES \"GlobalSecurityOperationBinding\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"GlobalSecurityOperation\" ADD CONSTRAINT \"GlobalSecurityOperation_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"GlobalSecurityOperation\" ADD CONSTRAINT \"GlobalSecurityOperation_state_outcome_check\" CHECK ((\"status\" IN ('pending', 'unknown') AND \"terminalAt\" IS NULL AND \"outcomeVersion\" IS NULL AND \"outcomeCode\" IS NULL AND \"outcomeSnapshot\" IS NULL) OR (\"status\" IN ('completed', 'rejected', 'stale') AND \"terminalAt\" IS NOT NULL AND \"outcomeVersion\" = 1 AND \"outcomeCode\" IS NOT NULL AND \"outcomeSnapshot\" IS NOT NULL));",
+        "ALTER TABLE \"GlobalSecurityOperation\" ADD CONSTRAINT \"GlobalSecurityOperation_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_email_change_cutover_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_email_change_cutover_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_email_change_stale_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_email_change_stale_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_password_change_stale_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_password_change_stale_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_password_change_success_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_password_change_success_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_recovery_enrollment_failure_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_enrollment_failure_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_recovery_enrollment_success_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_enrollment_success_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_recovery_expiry_finalization_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_session_expiry_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_recovery_reset_success_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_reset_success_finalization\"();",
+        "CREATE CONSTRAINT TRIGGER \"GlobalSecurityOperation_recovery_reset_terminal_guard\" AFTER UPDATE ON \"GlobalSecurityOperation\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_recovery_reset_terminal_closure\"();",
+        "CREATE TRIGGER \"00_GlobalSecurityOperation_transition_lock\" BEFORE INSERT OR UPDATE ON \"GlobalSecurityOperation\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"GlobalSecurityOperation_binding_claim_guard\" BEFORE INSERT ON \"GlobalSecurityOperation\" FOR EACH ROW EXECUTE FUNCTION \"guard_global_security_operation_insert\"();",
+        "CREATE TRIGGER \"GlobalSecurityOperation_retention_truncate_guard\" BEFORE TRUNCATE ON \"GlobalSecurityOperation\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"GlobalSecurityOperation_terminal_write_once\" BEFORE UPDATE OR DELETE ON \"GlobalSecurityOperation\" FOR EACH ROW EXECUTE FUNCTION \"enforce_global_security_operation_write_once\"();"
+      ]
+    },
+    "GlobalSecurityOperationTombstone": {
+      "prismaModel": "model GlobalSecurityOperationTombstone { userId String operationId String operationKey GlobalSecurityOperationKey intentFingerprint String terminalStatus GlobalSecurityOperationStatus terminalCode String terminalAt DateTime compactedAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) @@id([userId, operationId]) }",
+      "migrationTable": "CREATE TABLE \"GlobalSecurityOperationTombstone\" ( \"userId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"operationKey\" \"GlobalSecurityOperationKey\" NOT NULL, \"intentFingerprint\" TEXT NOT NULL, \"terminalStatus\" \"GlobalSecurityOperationStatus\" NOT NULL, \"terminalCode\" TEXT NOT NULL, \"terminalAt\" TIMESTAMP(3) NOT NULL, \"compactedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"GlobalSecurityOperationTombstone_pkey\" PRIMARY KEY (\"userId\",\"operationId\") );",
+      "indexes": [],
+      "constraints": [
+        "ALTER TABLE \"GlobalSecurityOperationTombstone\" ADD CONSTRAINT \"GlobalSecurityOperationTombstone_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"GlobalSecurityOperationTombstone\" ADD CONSTRAINT \"GlobalSecurityOperationTombstone_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"GlobalSecurityOperationTombstone_retention_truncate_guard\" BEFORE TRUNCATE ON \"GlobalSecurityOperationTombstone\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"GlobalSecurityOperationTombstone_write_once\" BEFORE UPDATE OR DELETE ON \"GlobalSecurityOperationTombstone\" FOR EACH ROW EXECUTE FUNCTION \"prevent_global_security_tombstone_mutation\"();",
+        "CREATE TRIGGER \"GlobalSecurityTombstone_insert_guard\" BEFORE INSERT ON \"GlobalSecurityOperationTombstone\" FOR EACH ROW EXECUTE FUNCTION \"guard_global_security_tombstone_insert\"();"
+      ]
+    },
+    "GlobalSecurityOperationReservationTombstone": {
+      "prismaModel": "model GlobalSecurityOperationReservationTombstone { userId String operationId String operationKey GlobalSecurityOperationKey sessionId String? recoverySessionId String? openingFingerprint String terminalCode String terminalAt DateTime compactedAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) @@id([userId, operationId]) }",
+      "migrationTable": "CREATE TABLE \"GlobalSecurityOperationReservationTombstone\" ( \"userId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"operationKey\" \"GlobalSecurityOperationKey\" NOT NULL, \"sessionId\" TEXT, \"recoverySessionId\" TEXT, \"openingFingerprint\" TEXT NOT NULL, \"terminalCode\" TEXT NOT NULL, \"terminalAt\" TIMESTAMP(3) NOT NULL, \"compactedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"GlobalSecurityOperationReservationTombstone_pkey\" PRIMARY KEY (\"userId\",\"operationId\") );",
+      "indexes": [],
+      "constraints": [
+        "ALTER TABLE \"GlobalSecurityOperationReservationTombstone\" ADD CONSTRAINT \"GlobalSecurityOperationReservationTombstone_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"GlobalSecurityOperationReservationTombstone\" ADD CONSTRAINT \"GlobalSecurityOperationReservationTombstone_recovery_session_shape\" CHECK ((\"operationKey\" = 'recovery_reset' AND \"sessionId\" IS NULL AND \"recoverySessionId\" IS NOT NULL) OR (\"operationKey\" <> 'recovery_reset' AND \"sessionId\" IS NOT NULL AND \"recoverySessionId\" IS NULL));",
+        "ALTER TABLE \"GlobalSecurityOperationReservationTombstone\" ADD CONSTRAINT \"GlobalSecurityOperationReservationTombstone_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"GlobalSecurityOperationReservationTombstone_retention_truncate_guard\" BEFORE TRUNCATE ON \"GlobalSecurityOperationReservationTombstone\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"GlobalSecurityReservationTombstone_insert_guard\" BEFORE INSERT ON \"GlobalSecurityOperationReservationTombstone\" FOR EACH ROW EXECUTE FUNCTION \"guard_global_security_reservation_tombstone_insert\"();",
+        "CREATE TRIGGER \"GlobalSecurityReservationTombstone_write_once\" BEFORE UPDATE OR DELETE ON \"GlobalSecurityOperationReservationTombstone\" FOR EACH ROW EXECUTE FUNCTION \"prevent_global_security_tombstone_mutation\"();"
+      ]
+    },
+    "GlobalSecurityEvent": {
+      "prismaModel": "model GlobalSecurityEvent { id String @id @default(cuid()) sequence BigInt @default(autoincrement()) @unique userId String eventType String outcome String operationId String? incidentId String? @unique safeProjection Json createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) incident GlobalSecurityIncident? @relation(fields: [incidentId], references: [id], onDelete: Cascade) @@unique([userId, operationId, eventType, outcome]) @@index([userId, sequence]) }",
+      "migrationTable": "CREATE TABLE \"GlobalSecurityEvent\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"eventType\" TEXT NOT NULL, \"outcome\" TEXT NOT NULL, \"operationId\" TEXT, \"safeProjection\" JSONB NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"GlobalSecurityEvent_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"GlobalSecurityEvent_userId_createdAt_idx\" ON \"GlobalSecurityEvent\"(\"userId\", \"createdAt\");",
+        "CREATE INDEX \"GlobalSecurityEvent_userId_sequence_idx\" ON \"GlobalSecurityEvent\"(\"userId\",\"sequence\");",
+        "CREATE UNIQUE INDEX \"GlobalSecurityEvent_incidentId_key\" ON \"GlobalSecurityEvent\"(\"incidentId\");",
+        "CREATE UNIQUE INDEX \"GlobalSecurityEvent_sequence_key\" ON \"GlobalSecurityEvent\"(\"sequence\");",
+        "CREATE UNIQUE INDEX \"GlobalSecurityEvent_userId_operationId_eventType_outcome_key\" ON \"GlobalSecurityEvent\"(\"userId\",\"operationId\",\"eventType\",\"outcome\") WHERE \"operationId\" IS NOT NULL;"
+      ],
+      "constraints": [
+        "ALTER TABLE \"GlobalSecurityEvent\" ADD CONSTRAINT \"GlobalSecurityEvent_incidentId_fkey\" FOREIGN KEY (\"incidentId\") REFERENCES \"GlobalSecurityIncident\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"GlobalSecurityEvent\" ADD CONSTRAINT \"GlobalSecurityEvent_operation_id_canonical\" CHECK (\"operationId\" IS NULL OR \"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"GlobalSecurityEvent\" ADD CONSTRAINT \"GlobalSecurityEvent_operation_incident_shape\" CHECK ((\"eventType\"='operation_outcome' AND \"operationId\" IS NOT NULL AND \"incidentId\" IS NULL) OR (\"eventType\"='throttle' AND \"outcome\"='quiet_started' AND \"operationId\" IS NULL AND \"incidentId\" IS NOT NULL) OR (\"eventType\" NOT IN ('operation_outcome','throttle') AND \"incidentId\" IS NULL));",
+        "ALTER TABLE \"GlobalSecurityEvent\" ADD CONSTRAINT \"GlobalSecurityEvent_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"GlobalSecurityEvent_append_only\" BEFORE UPDATE OR DELETE ON \"GlobalSecurityEvent\" FOR EACH ROW EXECUTE FUNCTION \"prevent_global_security_event_mutation\"();",
+        "CREATE TRIGGER \"GlobalSecurityEvent_insert_guard\" BEFORE INSERT ON \"GlobalSecurityEvent\" FOR EACH ROW EXECUTE FUNCTION \"guard_global_security_event_insert\"();",
+        "CREATE TRIGGER \"GlobalSecurityEvent_retention_truncate_guard\" BEFORE TRUNCATE ON \"GlobalSecurityEvent\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();"
+      ]
+    },
+    "GlobalSecurityIncident": {
+      "prismaModel": "model GlobalSecurityIncident { id String @id @default(cuid()) userId String? layer String normalizedKey String windowStartedAt DateTime failureCount Int @default(0) quietUntil DateTime? state GlobalSecurityIncidentState @default(active) lastOutcomeAt DateTime createdAt DateTime @default(now()) user User? @relation(fields: [userId], references: [id], onDelete: Cascade) events GlobalSecurityEvent[] @@unique([layer, normalizedKey, windowStartedAt]) @@index([userId, createdAt]) }",
+      "migrationTable": "CREATE TABLE \"GlobalSecurityIncident\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT, \"layer\" TEXT NOT NULL, \"normalizedKey\" TEXT NOT NULL, \"windowStartedAt\" TIMESTAMP(3) NOT NULL, \"failureCount\" INTEGER NOT NULL DEFAULT 0, \"quietUntil\" TIMESTAMP(3), \"state\" \"GlobalSecurityIncidentState\" NOT NULL DEFAULT 'active', \"lastOutcomeAt\" TIMESTAMP(3) NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"GlobalSecurityIncident_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"GlobalSecurityIncident_userId_createdAt_idx\" ON \"GlobalSecurityIncident\"(\"userId\", \"createdAt\");",
+        "CREATE UNIQUE INDEX \"GlobalSecurityIncident_layer_normalizedKey_windowStartedAt_key\" ON \"GlobalSecurityIncident\"(\"layer\", \"normalizedKey\", \"windowStartedAt\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"GlobalSecurityIncident\" ADD CONSTRAINT \"GlobalSecurityIncident_failure_count_check\" CHECK (\"failureCount\" BETWEEN 1 AND 255);",
+        "ALTER TABLE \"GlobalSecurityIncident\" ADD CONSTRAINT \"GlobalSecurityIncident_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"GlobalSecurityIncident_initial_state_guard\" BEFORE INSERT ON \"GlobalSecurityIncident\" FOR EACH ROW EXECUTE FUNCTION \"enforce_global_security_incident_initial_state\"();",
+        "CREATE TRIGGER \"GlobalSecurityIncident_retention_guard\" BEFORE DELETE ON \"GlobalSecurityIncident\" FOR EACH ROW EXECUTE FUNCTION \"prevent_global_security_retention_delete\"();",
+        "CREATE TRIGGER \"GlobalSecurityIncident_retention_truncate_guard\" BEFORE TRUNCATE ON \"GlobalSecurityIncident\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"GlobalSecurityIncident_state_guard\" BEFORE UPDATE ON \"GlobalSecurityIncident\" FOR EACH ROW EXECUTE FUNCTION \"enforce_global_security_incident_transition\"();"
+      ]
+    },
+
+    "EmailChange": {
+      "prismaModel": "model EmailChange { id String @id @default(cuid()) userId String operationId String freshAuthGrantId String securityVersion Int sessionSecurityVersion Int @default(1) normalizedNewEmail String verificationDigest String state EmailChangeState @default(pending) expiresAt DateTime cancelledAt DateTime? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt user User @relation(fields: [userId], references: [id], onDelete: Cascade) freshAuthGrant FreshAuthGrant @relation(fields: [freshAuthGrantId], references: [id], onDelete: Cascade) @@unique([userId, operationId]) @@unique([userId, id]) @@unique([userId, id, operationId]) @@index([normalizedNewEmail, state]) }",
+      "migrationTable": "CREATE TABLE \"EmailChange\" ( \"id\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"freshAuthGrantId\" TEXT NOT NULL, \"securityVersion\" INTEGER NOT NULL, \"sessionSecurityVersion\" INTEGER NOT NULL DEFAULT 1, \"normalizedNewEmail\" TEXT NOT NULL, \"verificationDigest\" TEXT NOT NULL, \"state\" \"EmailChangeState\" NOT NULL DEFAULT 'pending', \"expiresAt\" TIMESTAMP(3) NOT NULL, \"cancelledAt\" TIMESTAMP(3), \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"updatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"EmailChange_pkey\" PRIMARY KEY (\"id\") );",
+      "indexes": [
+        "CREATE INDEX \"EmailChange_normalizedNewEmail_state_idx\" ON \"EmailChange\"(\"normalizedNewEmail\", \"state\");",
+        "CREATE UNIQUE INDEX \"EmailChange_one_live_change\" ON \"EmailChange\"(\"userId\") WHERE \"state\" IN ('pending', 'verified');",
+        "CREATE UNIQUE INDEX \"EmailChange_userId_id_key\" ON \"EmailChange\"(\"userId\",\"id\");",
+        "CREATE UNIQUE INDEX \"EmailChange_userId_id_operationId_key\" ON \"EmailChange\"(\"userId\",\"id\",\"operationId\");",
+        "CREATE UNIQUE INDEX \"EmailChange_userId_operationId_key\" ON \"EmailChange\"(\"userId\", \"operationId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"EmailChange\" ADD CONSTRAINT \"EmailChange_freshAuthGrantId_fkey\" FOREIGN KEY (\"freshAuthGrantId\") REFERENCES \"FreshAuthGrant\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"EmailChange\" ADD CONSTRAINT \"EmailChange_operation_id_canonical\" CHECK (\"operationId\" ~ '^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$');",
+        "ALTER TABLE \"EmailChange\" ADD CONSTRAINT \"EmailChange_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"00_EmailChange_runtime_transition_guard\" BEFORE UPDATE ON \"EmailChange\" FOR EACH ROW EXECUTE FUNCTION \"guard_email_change_runtime_transition\"();",
+        "CREATE TRIGGER \"00_EmailChange_transition_lock\" BEFORE INSERT OR UPDATE ON \"EmailChange\" FOR EACH STATEMENT EXECUTE FUNCTION \"lock_global_security_transition_v1\"();",
+        "CREATE TRIGGER \"EmailChange_initial_state_guard\" BEFORE INSERT ON \"EmailChange\" FOR EACH ROW EXECUTE FUNCTION \"guard_email_change_initial_state\"();",
+        "CREATE TRIGGER \"EmailChange_retention_truncate_guard\" BEFORE TRUNCATE ON \"EmailChange\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"EmailChange_state_guard\" BEFORE UPDATE OR DELETE ON \"EmailChange\" FOR EACH ROW EXECUTE FUNCTION \"enforce_email_change_transition\"();"
+      ]
+    },
+    "SessionSecurityActivity": {
+      "prismaModel": "model SessionSecurityActivity { sessionId String @id userId String issuanceSessionSecurityVersion Int originalCreatedAt DateTime lastQualifyingAt DateTime warningAt DateTime? state SessionSecurityActivityState @default(active) updatedAt DateTime @updatedAt user User @relation(fields: [userId], references: [id], onDelete: Cascade) @@unique([userId, sessionId]) @@index([userId, state]) }",
+      "migrationTable": "CREATE TABLE \"SessionSecurityActivity\" ( \"sessionId\" TEXT NOT NULL, \"userId\" TEXT NOT NULL, \"issuanceSessionSecurityVersion\" INTEGER NOT NULL, \"originalCreatedAt\" TIMESTAMP(3) NOT NULL, \"lastQualifyingAt\" TIMESTAMP(3) NOT NULL, \"warningAt\" TIMESTAMP(3), \"state\" \"SessionSecurityActivityState\" NOT NULL DEFAULT 'active', \"updatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"SessionSecurityActivity_pkey\" PRIMARY KEY (\"sessionId\") );",
+      "indexes": [
+        "CREATE INDEX \"SessionSecurityActivity_userId_state_idx\" ON \"SessionSecurityActivity\"(\"userId\", \"state\");",
+        "CREATE UNIQUE INDEX \"SessionSecurityActivity_userId_sessionId_key\" ON \"SessionSecurityActivity\"(\"userId\", \"sessionId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"SessionSecurityActivity\" ADD CONSTRAINT \"SessionSecurityActivity_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"SessionSecurityActivity_initial_state_guard\" BEFORE INSERT ON \"SessionSecurityActivity\" FOR EACH ROW EXECUTE FUNCTION \"enforce_session_security_activity_initial_state\"();",
+        "CREATE TRIGGER \"SessionSecurityActivity_retention_truncate_guard\" BEFORE TRUNCATE ON \"SessionSecurityActivity\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();",
+        "CREATE TRIGGER \"SessionSecurityActivity_write_once\" BEFORE UPDATE OR DELETE ON \"SessionSecurityActivity\" FOR EACH ROW EXECUTE FUNCTION \"enforce_session_security_activity_write_once\"();"
+      ]
+    },
+    "PasswordChangeCredentialMutation": {
+      "prismaModel": "model PasswordChangeCredentialMutation { userId String operationId String accountId String createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) account Account @relation(fields: [accountId], references: [id], onDelete: Restrict) operation GlobalSecurityOperation @relation(fields: [userId, operationId], references: [userId, operationId], onDelete: Cascade) @@id([userId, operationId]) @@index([accountId]) }",
+      "migrationTable": "CREATE TABLE \"PasswordChangeCredentialMutation\" ( \"userId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"accountId\" TEXT NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"PasswordChangeCredentialMutation_pkey\" PRIMARY KEY (\"userId\", \"operationId\") );",
+      "indexes": [
+        "CREATE INDEX \"PasswordChangeCredentialMutation_accountId_idx\" ON \"PasswordChangeCredentialMutation\"(\"accountId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"PasswordChangeCredentialMutation\" ADD CONSTRAINT \"PasswordChangeCredentialMutation_accountId_fkey\" FOREIGN KEY (\"accountId\") REFERENCES \"Account\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE;",
+        "ALTER TABLE \"PasswordChangeCredentialMutation\" ADD CONSTRAINT \"PasswordChangeCredentialMutation_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"PasswordChangeCredentialMutation\" ADD CONSTRAINT \"PasswordChangeCredentialMutation_userId_operationId_fkey\" FOREIGN KEY (\"userId\", \"operationId\") REFERENCES \"GlobalSecurityOperation\"(\"userId\", \"operationId\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"PasswordChangeCredentialMutation_immutable\" BEFORE UPDATE OR DELETE ON \"PasswordChangeCredentialMutation\" FOR EACH ROW EXECUTE FUNCTION \"prevent_password_change_credential_mutation_change\"();",
+        "CREATE TRIGGER \"PasswordChangeCredentialMutation_retention_truncate_guard\" BEFORE TRUNCATE ON \"PasswordChangeCredentialMutation\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();"
+      ]
+    },
+    "RecoveryResetCredentialMutation": {
+      "prismaModel": "model RecoveryResetCredentialMutation { userId String operationId String accountId String createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) account Account @relation(fields: [accountId], references: [id], onDelete: Restrict) operation GlobalSecurityOperation @relation(fields: [userId, operationId], references: [userId, operationId], onDelete: Cascade) @@id([userId, operationId]) @@index([accountId]) }",
+      "migrationTable": "CREATE TABLE \"RecoveryResetCredentialMutation\" ( \"userId\" TEXT NOT NULL, \"operationId\" TEXT NOT NULL, \"accountId\" TEXT NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"RecoveryResetCredentialMutation_pkey\" PRIMARY KEY (\"userId\", \"operationId\") );",
+      "indexes": [
+        "CREATE INDEX \"RecoveryResetCredentialMutation_accountId_idx\" ON \"RecoveryResetCredentialMutation\"(\"accountId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"RecoveryResetCredentialMutation\" ADD CONSTRAINT \"RecoveryResetCredentialMutation_accountId_fkey\" FOREIGN KEY (\"accountId\") REFERENCES \"Account\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE;",
+        "ALTER TABLE \"RecoveryResetCredentialMutation\" ADD CONSTRAINT \"RecoveryResetCredentialMutation_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE ON UPDATE CASCADE;",
+        "ALTER TABLE \"RecoveryResetCredentialMutation\" ADD CONSTRAINT \"RecoveryResetCredentialMutation_userId_operationId_fkey\" FOREIGN KEY (\"userId\", \"operationId\") REFERENCES \"GlobalSecurityOperation\"(\"userId\", \"operationId\") ON DELETE CASCADE ON UPDATE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"RecoveryResetCredentialMutation_immutable\" BEFORE UPDATE OR DELETE ON \"RecoveryResetCredentialMutation\" FOR EACH ROW EXECUTE FUNCTION \"prevent_recovery_reset_credential_mutation_change\"();",
+        "CREATE TRIGGER \"RecoveryResetCredentialMutation_retention_truncate_guard\" BEFORE TRUNCATE ON \"RecoveryResetCredentialMutation\" FOR EACH STATEMENT EXECUTE FUNCTION \"prevent_global_security_retention_truncate\"();"
+      ]
+    },
+    "FreshAuthAttestationKey": {
+      "prismaModel": "model FreshAuthAttestationKey { keyVersion Int @id verificationKey Bytes active Boolean createdAt DateTime @default(now()) rotatedAt DateTime? }",
+      "migrationTable": "CREATE TABLE \"FreshAuthAttestationKey\" ( \"keyVersion\" INTEGER NOT NULL, \"verificationKey\" BYTEA NOT NULL, \"active\" BOOLEAN NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"rotatedAt\" TIMESTAMP(3), CONSTRAINT \"FreshAuthAttestationKey_pkey\" PRIMARY KEY (\"keyVersion\"), CONSTRAINT \"FreshAuthAttestationKey_key_length_check\" CHECK (octet_length(\"verificationKey\") = 32) );",
+      "indexes": [],
+      "constraints": [],
+      "triggers": []
+    },
+    "EmailChangeDelivery": {
+      "prismaModel": "model EmailChangeDelivery { id String @id @default(cuid()) userId String emailChangeId String operationId String kind EmailChangeDeliveryKind recipientDigest Bytes state EmailChangeDeliveryState @default(queued) ciphertext Bytes? iv Bytes? authTag Bytes? aadDigest Bytes? keyVersion Int? attemptCount Int @default(0) leaseOwner String? leaseExpiresAt DateTime? nextAttemptAt DateTime? smtpResponseCode Int? messageIdDigest Bytes? acceptedAt DateTime? lastFailureCode String? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt @@unique([emailChangeId, kind, recipientDigest]) @@index([state, nextAttemptAt]) @@index([userId, operationId]) @@index([keyVersion]) }",
+      "migrationTable": "CREATE TABLE \"EmailChangeDelivery\" (\"id\" TEXT NOT NULL,\"userId\" TEXT NOT NULL,\"emailChangeId\" TEXT NOT NULL,\"operationId\" TEXT NOT NULL,\"kind\" \"EmailChangeDeliveryKind\" NOT NULL,\"recipientDigest\" BYTEA NOT NULL,\"state\" \"EmailChangeDeliveryState\" NOT NULL DEFAULT 'queued',\"ciphertext\" BYTEA,\"iv\" BYTEA,\"authTag\" BYTEA,\"aadDigest\" BYTEA,\"keyVersion\" INTEGER,\"attemptCount\" INTEGER NOT NULL DEFAULT 0,\"leaseOwner\" TEXT,\"leaseExpiresAt\" TIMESTAMP(3),\"nextAttemptAt\" TIMESTAMP(3),\"smtpResponseCode\" INTEGER,\"messageIdDigest\" BYTEA,\"acceptedAt\" TIMESTAMP(3),\"lastFailureCode\" TEXT,\"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\"updatedAt\" TIMESTAMP(3) NOT NULL,CONSTRAINT \"EmailChangeDelivery_pkey\" PRIMARY KEY (\"id\"));",
+      "indexes": [
+        "CREATE INDEX \"EmailChangeDelivery_keyVersion_idx\" ON \"EmailChangeDelivery\"(\"keyVersion\");",
+        "CREATE INDEX \"EmailChangeDelivery_state_nextAttemptAt_idx\" ON \"EmailChangeDelivery\"(\"state\",\"nextAttemptAt\");",
+        "CREATE INDEX \"EmailChangeDelivery_userId_operationId_idx\" ON \"EmailChangeDelivery\"(\"userId\",\"operationId\");",
+        "CREATE UNIQUE INDEX \"EmailChangeDelivery_identity_key\" ON \"EmailChangeDelivery\"(\"emailChangeId\",\"kind\",\"recipientDigest\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_keyVersion_fkey\" FOREIGN KEY (\"keyVersion\") REFERENCES \"EmailDeliveryEncryptionKey\"(\"keyVersion\") ON DELETE RESTRICT;",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_lease_receipt_check\" CHECK ( ((\"state\"='dispatching' AND \"leaseOwner\" IS NOT NULL AND \"leaseExpiresAt\" IS NOT NULL) OR (\"state\"<>'dispatching' AND \"leaseOwner\" IS NULL AND \"leaseExpiresAt\" IS NULL)) AND ((\"state\"='accepted' AND \"smtpResponseCode\"=250 AND \"messageIdDigest\" IS NOT NULL AND octet_length(\"messageIdDigest\")=32 AND \"acceptedAt\" IS NOT NULL AND \"lastFailureCode\" IS NULL) OR (\"state\"<>'accepted' AND \"smtpResponseCode\" IS NULL AND \"messageIdDigest\" IS NULL AND \"acceptedAt\" IS NULL)) );",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_lease_receipt_check\" CHECK ((\"state\"='dispatching')=(\"leaseOwner\" IS NOT NULL AND \"leaseExpiresAt\" IS NOT NULL) AND ((\"state\"='accepted' AND \"smtpResponseCode\"=250 AND octet_length(\"messageIdDigest\")=32 AND \"acceptedAt\" IS NOT NULL AND \"lastFailureCode\" IS NULL) OR (\"state\"<>'accepted' AND \"smtpResponseCode\" IS NULL AND \"messageIdDigest\" IS NULL AND \"acceptedAt\" IS NULL)));",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_shape_check\" CHECK ( \"recipientDigest\" IS NOT NULL AND octet_length(\"recipientDigest\")=32 AND \"attemptCount\" BETWEEN 0 AND 8 AND ((\"state\" IN ('queued','dispatching','retryable_failed') AND \"ciphertext\" IS NOT NULL AND \"iv\" IS NOT NULL AND octet_length(\"iv\")=12 AND \"authTag\" IS NOT NULL AND octet_length(\"authTag\")=16 AND \"aadDigest\" IS NOT NULL AND octet_length(\"aadDigest\")=32 AND \"keyVersion\" IS NOT NULL) OR (\"state\" IN ('accepted','permanent_failed') AND \"ciphertext\" IS NULL AND \"iv\" IS NULL AND \"authTag\" IS NULL AND \"aadDigest\" IS NULL AND \"keyVersion\" IS NULL)) );",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_shape_check\" CHECK (octet_length(\"recipientDigest\")=32 AND \"attemptCount\" BETWEEN 0 AND 8 AND ((\"state\" IN ('queued','dispatching','retryable_failed') AND \"ciphertext\" IS NOT NULL AND \"iv\" IS NOT NULL AND octet_length(\"iv\")=12 AND \"authTag\" IS NOT NULL AND octet_length(\"authTag\")=16 AND \"aadDigest\" IS NOT NULL AND octet_length(\"aadDigest\")=32 AND \"keyVersion\" IS NOT NULL) OR (\"state\" IN ('accepted','permanent_failed') AND \"ciphertext\" IS NULL AND \"iv\" IS NULL AND \"authTag\" IS NULL AND \"aadDigest\" IS NULL AND \"keyVersion\" IS NULL)));",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_userId_emailChangeId_operationId_fkey\" FOREIGN KEY (\"userId\",\"emailChangeId\",\"operationId\") REFERENCES \"EmailChange\"(\"userId\",\"id\",\"operationId\") ON DELETE CASCADE;",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\"(\"id\") ON DELETE CASCADE;",
+        "ALTER TABLE \"EmailChangeDelivery\" ADD CONSTRAINT \"EmailChangeDelivery_userId_operationId_fkey\" FOREIGN KEY (\"userId\",\"operationId\") REFERENCES \"GlobalSecurityOperation\"(\"userId\",\"operationId\") ON DELETE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"EmailChangeDelivery_insert_guard\" BEFORE INSERT ON \"EmailChangeDelivery\" FOR EACH ROW EXECUTE FUNCTION \"enforce_email_change_delivery_insert\"();",
+        "CREATE TRIGGER \"EmailChangeDelivery_transition_guard\" BEFORE UPDATE OR DELETE ON \"EmailChangeDelivery\" FOR EACH ROW EXECUTE FUNCTION \"enforce_email_change_delivery_transition\"();"
+      ]
+    },
+    "EmailChangeIdentityMutation": {
+      "prismaModel": "model EmailChangeIdentityMutation { userId String operationId String oldEmailDigest Bytes newEmailDigest Bytes createdAt DateTime @default(now()) @@id([userId, operationId]) }",
+      "migrationTable": "CREATE TABLE \"EmailChangeIdentityMutation\" (\"userId\" TEXT NOT NULL,\"operationId\" TEXT NOT NULL,\"oldEmailDigest\" BYTEA NOT NULL,\"newEmailDigest\" BYTEA NOT NULL,\"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT \"EmailChangeIdentityMutation_pkey\" PRIMARY KEY (\"userId\",\"operationId\"));",
+      "indexes": [],
+      "constraints": [
+        "ALTER TABLE \"EmailChangeIdentityMutation\" ADD CONSTRAINT \"EmailChangeIdentityMutation_digest_check\" CHECK (octet_length(\"oldEmailDigest\")=32 AND octet_length(\"newEmailDigest\")=32);",
+        "ALTER TABLE \"EmailChangeIdentityMutation\" ADD CONSTRAINT \"EmailChangeIdentityMutation_userId_operationId_fkey\" FOREIGN KEY (\"userId\",\"operationId\") REFERENCES \"GlobalSecurityOperation\"(\"userId\",\"operationId\") ON DELETE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"EmailChangeIdentityMutation_immutable\" BEFORE UPDATE OR DELETE ON \"EmailChangeIdentityMutation\" FOR EACH ROW EXECUTE FUNCTION \"prevent_email_change_identity_mutation_change\"();",
+        "CREATE TRIGGER \"EmailChangeIdentityMutation_insert_guard\" BEFORE INSERT ON \"EmailChangeIdentityMutation\" FOR EACH ROW EXECUTE FUNCTION \"guard_email_change_identity_mutation_insert\"();"
+      ]
+    },
+    "EmailChangeSessionRotation": {
+      "prismaModel": "model EmailChangeSessionRotation { userId String operationId String oldSessionId String successorSessionId String @unique successorTokenDigest Bytes activityOriginalCreatedAt DateTime cookieState EmailChangeCookieState @default(issued) issuedAt DateTime @default(now()) confirmedAt DateTime? failedAt DateTime? @@id([userId, operationId]) @@index([cookieState, issuedAt]) }",
+      "migrationTable": "CREATE TABLE \"EmailChangeSessionRotation\" (\"userId\" TEXT NOT NULL,\"operationId\" TEXT NOT NULL,\"oldSessionId\" TEXT NOT NULL,\"successorSessionId\" TEXT NOT NULL,\"successorTokenDigest\" BYTEA NOT NULL,\"activityOriginalCreatedAt\" TIMESTAMP(3) NOT NULL,\"cookieState\" \"EmailChangeCookieState\" NOT NULL DEFAULT 'issued',\"issuedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\"confirmedAt\" TIMESTAMP(3),\"failedAt\" TIMESTAMP(3),CONSTRAINT \"EmailChangeSessionRotation_pkey\" PRIMARY KEY (\"userId\",\"operationId\"));",
+      "indexes": [
+        "CREATE INDEX \"EmailChangeSessionRotation_cookieState_issuedAt_idx\" ON \"EmailChangeSessionRotation\"(\"cookieState\",\"issuedAt\");",
+        "CREATE UNIQUE INDEX \"EmailChangeSessionRotation_successorSessionId_key\" ON \"EmailChangeSessionRotation\"(\"successorSessionId\");"
+      ],
+      "constraints": [
+        "ALTER TABLE \"EmailChangeSessionRotation\" ADD CONSTRAINT \"EmailChangeSessionRotation_shape_check\" CHECK (octet_length(\"successorTokenDigest\")=32 AND ((\"cookieState\"='issued' AND \"confirmedAt\" IS NULL AND \"failedAt\" IS NULL) OR (\"cookieState\"='confirmed' AND \"confirmedAt\" IS NOT NULL AND \"failedAt\" IS NULL) OR (\"cookieState\"='failed' AND \"confirmedAt\" IS NULL AND \"failedAt\" IS NOT NULL)));",
+
+        "ALTER TABLE \"EmailChangeSessionRotation\" ADD CONSTRAINT \"EmailChangeSessionRotation_userId_operationId_fkey\" FOREIGN KEY (\"userId\",\"operationId\") REFERENCES \"GlobalSecurityOperation\"(\"userId\",\"operationId\") ON DELETE CASCADE;"
+      ],
+      "triggers": [
+        "CREATE TRIGGER \"00_EmailChangeSessionRotation_runtime_transition_guard\" BEFORE UPDATE ON \"EmailChangeSessionRotation\" FOR EACH ROW EXECUTE FUNCTION \"guard_email_change_runtime_transition\"();",
+        "CREATE TRIGGER \"EmailChangeSessionRotation_insert_guard\" BEFORE INSERT ON \"EmailChangeSessionRotation\" FOR EACH ROW EXECUTE FUNCTION \"guard_email_change_session_rotation_insert\"();",
+        "CREATE TRIGGER \"EmailChangeSessionRotation_state_guard\" BEFORE UPDATE OR DELETE ON \"EmailChangeSessionRotation\" FOR EACH ROW EXECUTE FUNCTION \"enforce_email_change_session_rotation\"();"
+      ]
+    },
+    "EmailDeliveryEncryptionKey": {
+      "prismaModel": "model EmailDeliveryEncryptionKey { keyVersion Int @id keyDigest Bytes activeWrite Boolean @default(false) createdAt DateTime @default(now()) retiredAt DateTime? }",
+      "migrationTable": "CREATE TABLE \"EmailDeliveryEncryptionKey\" (\"keyVersion\" INTEGER NOT NULL,\"keyDigest\" BYTEA NOT NULL,\"activeWrite\" BOOLEAN NOT NULL DEFAULT false,\"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\"retiredAt\" TIMESTAMP(3),CONSTRAINT \"EmailDeliveryEncryptionKey_pkey\" PRIMARY KEY (\"keyVersion\"));",
+      "indexes": [
+        "CREATE UNIQUE INDEX \"EmailDeliveryEncryptionKey_one_active_write\" ON \"EmailDeliveryEncryptionKey\"((\"activeWrite\")) WHERE \"activeWrite\"=true;"
+      ],
+      "constraints": [
+        "ALTER TABLE \"EmailDeliveryEncryptionKey\" ADD CONSTRAINT \"EmailDeliveryEncryptionKey_digest_check\" CHECK (octet_length(\"keyDigest\")=32);"
+      ],
+      "triggers": [
+        "CREATE CONSTRAINT TRIGGER \"EmailDeliveryEncryptionKey_exactly_one_active_guard\" AFTER INSERT OR UPDATE OR DELETE ON \"EmailDeliveryEncryptionKey\" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"enforce_email_delivery_exactly_one_active_key\"();",
+        "CREATE TRIGGER \"EmailDeliveryEncryptionKey_ciphertext_reference_guard\" BEFORE DELETE ON \"EmailDeliveryEncryptionKey\" FOR EACH ROW EXECUTE FUNCTION \"enforce_email_delivery_key_reference\"();"
+      ]
+    }
+  },
+  "persistenceParityEnums": {
+    "GlobalSecurityOperationKey": "enum GlobalSecurityOperationKey { passwordChange @map(\"password_change\") recoveryEnrollment @map(\"recovery_enrollment\") recoveryReset @map(\"recovery_reset\") emailChange @map(\"email_change\") sessionRevoke @map(\"session_revoke\") }",
+    "GlobalSecurityOperationStatus": "enum GlobalSecurityOperationStatus { pending unknown completed rejected stale }",
+    "FreshAuthGrantState": "enum FreshAuthGrantState { issued consumed revoked expired }",
+    "RecoveryCodeState": "enum RecoveryCodeState { active consumed invalidated }",
+    "RecoveryCodeSetState": "enum RecoveryCodeSetState { generated saveAcknowledged @map(\"save_acknowledged\") rehearsalRequired @map(\"rehearsal_required\") rehearsed invalidated }",
+    "RecoveryCodeConsumptionPurpose": "enum RecoveryCodeConsumptionPurpose { enrollmentRehearsal @map(\"enrollment_rehearsal\") recoveryReset @map(\"recovery_reset\") }",
+    "RecoverySessionState": "enum RecoverySessionState { restricted consumed closed expired }",
+    "EmailChangeState": "enum EmailChangeState { pending verified cancelled expired abandoned failed completed }",
+    "GlobalSecurityIncidentState": "enum GlobalSecurityIncidentState { active quiet closed }",
+    "SessionSecurityActivityState": "enum SessionSecurityActivityState { active expired revoked }",
+    "BrowserOperationBindingState": "enum BrowserOperationBindingState { open submitted revoked expired terminal }",
+    "EmailChangeDeliveryKind": "enum EmailChangeDeliveryKind { newVerification @map(\"new_verification\") newCutover @map(\"new_cutover\") oldRequest @map(\"old_request\") oldCutover @map(\"old_cutover\") inviterNotice @map(\"inviter_notice\") invitationReissue @map(\"invitation_reissue\") }",
+    "EmailChangeDeliveryState": "enum EmailChangeDeliveryState { queued dispatching accepted retryableFailed @map(\"retryable_failed\") permanentFailed @map(\"permanent_failed\") }",
+    "EmailChangeCookieState": "enum EmailChangeCookieState { issued confirmed failed }"
+  },
+  "phase6EmailChangeAddendum": {
+    "models": [
+      "EmailChangeDelivery",
+      "EmailChangeIdentityMutation",
+      "EmailChangeSessionRotation",
+      "EmailDeliveryEncryptionKey"
+    ],
+    "delivery": {
+      "adapter": "smtp",
+      "readiness": "synthetic_accepted_receipt_required",
+      "payload": "aes_256_gcm_encrypted_database_outbox",
+      "keyring": "separate_versioned_keys_retained_while_referenced_by_nonterminal_delivery",
+      "states": [
+        "queued",
+        "dispatching",
+        "accepted",
+        "retryable_failed",
+        "permanent_failed"
+      ],
+      "receipt": "sha256_message_id_plus_accepted_at",
+      "terminalPayload": "ciphertext_cleared",
+      "backup": "keys_excluded"
+    },
+    "session": {
+      "success": "new_session_id_token_and_activity_all_old_sessions_revoked",
+      "statusCarrier": "successor_session_bound_by_rotation_receipt",
+      "cookieFailure": "revoke_all_sessions_require_new_email_sign_in"
+    },
+    "closures": {
+      "failed": "rejected|delivery_failed_before_verification",
+      "abandoned": "rejected|abandoned_when_superseded",
+      "oldAddressNoticeFailure": "record_and_surface_without_rollback"
+    },
+    "normalizedEmailUniqueness": "lower_btrim_database_unique",
+    "invitationReplacementSecrets": "encrypted_outbox_only_fresh_token_explicit_acceptance",
+    "persistence": {
+      "EmailChangeDelivery": {
+        "key": "id_primary",
+        "candidateKeys": [
+          "email_change_id_kind_recipient_digest_unique"
+        ],
+        "fields": [
+          "user_id",
+          "email_change_id",
+          "operation_id",
+          "kind",
+          "recipient_digest",
+          "state",
+          "ciphertext",
+          "iv",
+          "auth_tag",
+          "aad_digest",
+          "key_version",
+          "attempt_count",
+          "lease_owner",
+          "lease_expires_at",
+          "next_attempt_at",
+          "smtp_response_code",
+          "message_id_digest",
+          "accepted_at",
+          "last_failure_code",
+          "created_at",
+          "updated_at"
+        ],
+        "foreignKeys": [
+          "user_id_to_user",
+          "email_change_id_to_email_change",
+          "user_id_operation_id_to_global_security_operation",
+          "key_version_to_email_delivery_encryption_key_while_ciphertext_present"
+        ],
+        "checks": [
+          "encrypted_shape_nonterminal",
+          "terminal_ciphertext_cleared",
+          "attempt_count_0_to_8",
+          "lease_shape_dispatching_only",
+          "accepted_receipt_complete",
+          "failure_code_closed"
+        ],
+        "directSql": "transition_guard_and_runtime_dispatch_procedures_only",
+        "retention": "receipt_metadata_until_account_deletion_ciphertext_until_terminal"
+      },
+      "EmailDeliveryEncryptionKey": {
+        "key": "key_version_primary",
+        "fields": [
+          "key_digest",
+          "active_write",
+          "created_at",
+          "retired_at"
+        ],
+        "checks": [
+          "sha256_digest_32_bytes",
+          "exactly_one_active_write_key",
+          "runtime_no_read_or_dml",
+          "delete_rejected_while_ciphertext_references_version"
+        ],
+        "retention": "deployment_key_config_excluded_from_household_backup"
+      },
+      "EmailChangeIdentityMutation": {
+        "key": "user_id_operation_id_primary",
+        "fields": [
+          "old_email_digest",
+          "new_email_digest",
+          "created_at"
+        ],
+        "foreignKeys": [
+          "user_id_operation_to_completed_email_change"
+        ],
+        "checks": [
+          "digests_32_bytes",
+          "immutable",
+          "runtime_no_dml"
+        ],
+        "retention": "until_account_deletion"
+      },
+      "EmailChangeSessionRotation": {
+        "key": "user_id_operation_id_primary",
+        "candidateKeys": [
+          "successor_session_id_unique"
+        ],
+        "fields": [
+          "old_session_id",
+          "successor_session_id",
+          "successor_token_digest",
+          "activity_original_created_at",
+          "cookie_state",
+          "issued_at",
+          "confirmed_at",
+          "failed_at"
+        ],
+        "foreignKeys": [
+          "user_id_operation_to_completed_email_change"
+        ],
+        "checks": [
+          "token_digest_32_bytes",
+          "cookie_state_timestamp_shape",
+          "successor_identity_immutable",
+          "successor_session_and_activity_required_at_insert_then_deletable_after_failed_cookie"
+        ],
+        "retention": "until_account_deletion"
+      }
+    },
+    "outbox": {
+      "nonterminal": [
+        "queued",
+        "dispatching",
+        "retryable_failed"
+      ],
+      "terminal": [
+        "accepted",
+        "permanent_failed"
+      ],
+      "transitions": [
+        "queued->dispatching",
+        "dispatching->accepted",
+        "dispatching->retryable_failed",
+        "dispatching->permanent_failed",
+        "retryable_failed->dispatching",
+        "retryable_failed->permanent_failed"
+      ],
+      "lease": {
+        "minutes": 5,
+        "owner": "random_worker_128_bit",
+        "acquire": "database_clock_skip_locked",
+        "expired": "dispatching_to_retryable_failed",
+        "maxAttempts": 8,
+        "retryMinutes": [
+          1,
+          5,
+          15,
+          60,
+          240,
+          720,
+          1440
+        ]
+      },
+      "duplicateSend": "smtp_at_least_once_stable_deterministic_message_id_per_delivery",
+      "encryption": {
+        "algorithm": "aes_256_gcm",
+        "ivBytes": 12,
+        "tagBytes": 16,
+        "aad": "version_byte_uint32_be_framed_utf8_fields_raw_recipient_digest_uint32_be_key_version",
+        "nonterminal": "ciphertext_iv_tag_aad_digest_key_version_required",
+        "terminal": "ciphertext_iv_tag_aad_digest_key_version_cleared_atomically"
+      },
+      "acceptedReceipt": {
+        "smtpResponseCode": 250,
+        "acceptedRecipient": "exact_target_only",
+        "messageId": "ecv1_lowercase_base32_sha256_delivery_id_first26_at_mail_cubby_local",
+        "messageIdDigest": "sha256_utf8_length_framed_message_id",
+        "acceptedAt": "database_clock",
+        "consistency": "accepted_state_requires_all_receipt_fields"
+      },
+      "permanentFailure": "closed_failure_code_and_database_clock_ciphertext_clear",
+      "failureRegistry": {
+        "retryable": [
+          "smtp_connection",
+          "smtp_rate_limited",
+          "smtp_temporary",
+          "smtp_timeout"
+        ],
+        "permanent": [
+          "attempts_exhausted",
+          "payload_decrypt",
+          "receipt_invalid",
+          "recipient_rejected",
+          "smtp_auth",
+          "smtp_rejected"
+        ],
+        "transition": "retryable_code_and_attempt_count_less_than_8_to_retryable_failed_else_permanent_failed_with_attempts_exhausted_on_retry_exhaustion"
+      },
+      "wireEncoding": {
+        "aadVersion": 1,
+        "aadFields": [
+          "delivery_id",
+          "user_id",
+          "operation_id",
+          "kind",
+          "recipient_digest"
+        ],
+        "fieldEncoding": "uint32_big_endian_byte_length_then_utf8_bytes_recipient_digest_raw_32_bytes",
+        "keyVersion": "uint32_big_endian_suffix",
+        "concatenation": "version_byte_then_framed_fields_then_key_version",
+        "messageId": "less_than_ecv1_dot_lowercase_base32_sha256_delivery_id_first_26_at_mail_dot_cubby_dot_local_greater_than"
+      }
+    },
+    "keyLifecycle": {
+      "config": "CUBBY_EMAIL_DELIVERY_KEYRING_plus_active_version",
+      "keyBytes": 32,
+      "storedDatabase": "sha256_digest_only_owner_managed",
+      "writeKey": "exactly_one_active",
+      "decryptKeys": "configured_versions_referenced_by_nonterminal_rows",
+      "rotation": "new_version_for_writes_old_versions_retained_until_zero_nonterminal_references",
+      "mismatch": "startup_fail_closed",
+      "householdBackup": [
+        "key_config_excluded",
+        "email_change_delivery_rows_excluded"
+      ],
+      "databaseRestore": "startup_requires_every_nonterminal_key_version_and_matching_digest"
+    },
+    "sessionRotation": {
+      "receiptBinding": [
+        "user",
+        "operation",
+        "old_session",
+        "successor_session",
+        "successor_token_digest",
+        "activity_original_created_at",
+        "issued_at"
+      ],
+      "transactionOrder": [
+        "identity_mutation_receipt",
+        "successor_session_create",
+        "successor_activity_create",
+        "old_sessions_delete",
+        "old_activity_revoke",
+        "both_versions_advance",
+        "operation_complete",
+        "binding_terminal",
+        "rotation_receipt_issued",
+        "content_free_events"
+      ],
+      "statusAuthorization": "current_successor_session_matching_rotation_receipt_or_preterminal_original_session",
+      "oldSessionRule": "all_old_session_ids_rejected_after_commit",
+      "cookieProtocol": {
+        "issued": "postcommit_signed_better_auth_cookie_attempt",
+        "confirmed": "successor_cookie_authenticated_confirm_within_5_minutes",
+        "authenticatedTokenSource": "server_side_better_auth_http_only_session",
+        "unconfirmed": "database_clock_expiry_revokes_successor",
+        "emissionFailure": "mark_failed_revoke_successor_require_new_email_sign_in"
+      }
+    },
+    "lifecycleWorker": {
+      "scheduleSeconds": 30,
+      "batchLimit": 100,
+      "clock": "postgresql_clock_timestamp",
+      "claim": "for_update_skip_locked_under_global_transition_lock",
+      "closures": [
+        "pending_or_verified_email_change_expiry",
+        "issued_unconfirmed_rotation_five_minute_expiry"
+      ]
+    },
+    "closureMatrix": {
+      "stale": {
+        "from": [
+          "pending",
+          "verified"
+        ],
+        "cause": [
+          "either_security_version_component_changed"
+        ],
+        "writes": [
+          "email_change_failed",
+          "grant_revoked_or_expired",
+          "deliveries_terminalized_and_cleared",
+          "operation_stale_security_version",
+          "binding_terminal",
+          "content_free_event"
+        ],
+        "forbids": [
+          "user_email_update",
+          "identity_mutation_receipt",
+          "successor_session",
+          "rotation_receipt"
+        ]
+      },
+      "failed": {
+        "from": [
+          "pending"
+        ],
+        "cause": [
+          "verification_delivery_permanent_failure"
+        ],
+        "writes": [
+          "email_change_failed",
+          "grant_revoked",
+          "deliveries_terminalized_and_cleared",
+          "operation_rejected_delivery_failed",
+          "binding_terminal",
+          "content_free_event"
+        ],
+        "forbids": [
+          "user_email_update",
+          "identity_mutation_receipt",
+          "successor_session",
+          "rotation_receipt"
+        ]
+      },
+      "abandoned": {
+        "from": [
+          "pending",
+          "verified"
+        ],
+        "cause": [
+          "same_user_new_email_change_supersedes"
+        ],
+        "writes": [
+          "email_change_abandoned",
+          "grant_revoked",
+          "verification_authority_invalidated_by_terminal_state",
+          "deliveries_terminalized_and_cleared",
+          "operation_rejected_abandoned",
+          "binding_terminal",
+          "content_free_event"
+        ],
+        "forbids": [
+          "user_email_update",
+          "identity_mutation_receipt",
+          "successor_session",
+          "rotation_receipt"
+        ]
+      },
+      "oldAddressNoticeFailure": {
+        "operationRemains": "completed_cutover_completed",
+        "delivery": "permanent_failed_ciphertext_cleared",
+        "surface": "private_status_delivery_warning_without_address"
+      }
+    },
+    "normalizedEmailReservation": {
+      "function": "normalize_security_email_v1_lower_btrim_collate_C",
+      "userIndex": "unique_expression_on_normalize_security_email_v1_email",
+      "liveEmailChangeStates": [
+        "pending",
+        "verified"
+      ],
+      "serialization": "advisory_xact_lock_sha256_normalized_email_before_user_or_email_change_write",
+      "crossTableRule": "normalized_target_absent_from_users_and_other_live_email_changes",
+      "collision": "rejected_collision_rejected_non_enumerating"
+    },
+    "invitationRotation": {
+      "scope": "all_pending_invites_recipient_old_normalized_email_across_households",
+      "lockOrder": "normalized_email_lock_then_invite_id_ascending",
+      "oldRows": "revoked_before_identity_cutover",
+      "replacement": [
+        "same_household_role_inviter_remaining_expiry",
+        "fresh_random_token",
+        "stored_as_sha256_prefixed_digest_not_plaintext",
+        "explicit_acceptance_required"
+      ],
+      "delivery": "raw_token_only_in_process_memory_then_encrypted_outbox",
+      "staleLink": "invalid_immediately_on_old_row_revoke",
+      "deliveryFailure": "replacement_invite_remains_pending_and_delivery_retries_then_private_warning",
+      "inviterNotice": "current_inviter_email_without_new_address_token_or_household_metadata"
+    },
+    "readiness": {
+      "requires": [
+        "smtp_synthetic_exact_recipient_250_receipt",
+        "encrypted_outbox_acceptance_and_retry",
+        "delivery_keyring_mismatch_and_restore_proof",
+        "normalized_email_cross_table_race_proof",
+        "identity_mutation_procedure_and_receipt",
+        "invitation_reissue_stale_link_proof",
+        "successor_session_cookie_confirm_and_failure_proof",
+        "failed_abandoned_closure_proof",
+        "private_projection_plaintext_exclusion",
+        "all_phase6_exact_tree_reviews"
+      ],
+      "forbiddenUntilReady": [
+        "email_change_api_routes",
+        "email_change_server_actions",
+        "email_change_settings_ui",
+        "better_auth_change_email",
+        "better_auth_verify_email",
+        "better_auth_update_user"
+      ]
+    }
+  },
+  "phase7SessionSecurityAddendum": {
+    "authorization": {
+      "scope": "global_user_only_independent_of_household",
+      "carrier": "same_user_active_ordinary_session_current_two_component_vector",
+      "household": "forbidden",
+      "operationKey": "session_revoke",
+      "replay": {
+        "oneAndOthers": "original_current_session_matching_submitted_binding_only",
+        "pendingRetryTarget": "database_locked_persisted_target_snapshot_not_mutable_live_session_enumeration",
+        "currentLostResponse": {
+          "statusOnly": true,
+          "requires": [
+            "same_user_active_ordinary_session_after_normal_sign_in",
+            "unchanged_two_component_vector",
+            "matching_terminal_operation_receipt"
+          ],
+          "permits": [
+            "terminal_receipt",
+            "authoritative_status"
+          ],
+          "forbids": [
+            "reexecution",
+            "one_or_others_replay",
+            "recovery_session"
+          ],
+          "normalSignInRequiredAfterLostResponse": true
+        },
+        "allLostResponse": {
+          "statusOnly": true,
+          "requires": [
+            "same_user_active_ordinary_session_after_normal_sign_in",
+            "current_two_component_vector_advanced_by_operation",
+            "last_session_security_operation_id_matches_operation"
+          ],
+          "permits": [
+            "terminal_receipt",
+            "authoritative_status"
+          ],
+          "forbids": [
+            "reexecution",
+            "one_or_others_replay",
+            "recovery_session"
+          ],
+          "normalSignInRequiredAfterLostResponse": true
+        }
+      }
+    },
+    "projection": {
+      "fields": [
+        "handle",
+        "is_current",
+        "device_label",
+        "created_at",
+        "last_qualifying_at",
+        "idle_warning_at",
+        "expires_at"
+      ],
+      "forbidden": [
+        "ip_address",
+        "full_user_agent",
+        "raw_token",
+        "household",
+        "baby",
+        "internal_id"
+      ],
+      "handle": {
+        "algorithm": "hmac_sha256",
+        "payload": "length_prefixed_utf8_user_id_and_session_id",
+        "encoding": "base64url_first_22_bytes",
+        "key": "server_only_session_handle_key",
+        "serverOnly": true
+      }
+    },
+    "revocation": {
+      "scopes": [
+        "current",
+        "one",
+        "others",
+        "all"
+      ],
+      "confirmation": "required_for_every_scope_before_submit",
+      "targetHandle": {
+        "requiredFor": [
+          "current",
+          "one"
+        ],
+        "forbiddenFor": [
+          "others",
+          "all"
+        ]
+      },
+      "scopeMapping": {
+        "current": "only_current_session_requires_its_current_handle",
+        "one": "exactly_one_non_current_session_requires_target_handle",
+        "others": "all_non_current_sessions_requires_canonical_absent_target_sentinel",
+        "all": "all_sessions_including_current_requires_canonical_absent_target_sentinel"
+      },
+      "intentFingerprint": {
+        "algorithm": "sha256",
+        "payload": "length_prefixed_utf8_scope_and_canonical_target_handle_or_absent_target_sentinel",
+        "canonicalAbsentTargetSentinel": "absent_target_handle",
+        "binds": [
+          "scope",
+          "canonical_target_handle_or_absent_target_sentinel"
+        ]
+      },
+      "currentSession": "revoke_current_session_clear_cookie_redirect_login",
+      "outcomes": [
+        "revoked",
+        "already_revoked",
+        "stale_security_version"
+      ],
+      "replayStates": [
+        "submitted",
+        "completed",
+        "stale",
+        "unknown"
+      ],
+      "unknown": "authoritative_status_reconciliation_without_reexecution"
+    },
+    "freshAuth": {
+      "purpose": "session_revoke",
+      "authentication": "current_password_required",
+      "binding": [
+        "user",
+        "current_session",
+        "credential_version",
+        "session_security_version",
+        "scope",
+        "canonical_target_handle_or_absent_target_sentinel",
+        "resolved_target_session_id_or_absent_target_sentinel",
+        "opening_fingerprint",
+        "intent_fingerprint"
+      ],
+      "attestation": {
+        "algorithm": "hmac_sha256",
+        "payloadVersion": "session-revoke-attestation-v1",
+        "keyLifecycle": "existing_fresh_auth_attestation_active_plus_one_prior_for_ten_minute_overlap",
+        "binds": [
+          "user",
+          "current_session",
+          "operation",
+          "purpose",
+          "credential_version",
+          "session_security_version",
+          "scope",
+          "canonical_target_handle_or_absent_target_sentinel",
+          "resolved_target_session_id_or_absent_target_sentinel",
+          "opening_fingerprint",
+          "intent_fingerprint",
+          "nonce",
+          "key_version"
+        ],
+        "nonce": "32_random_bytes_base64url_unique_write_once",
+        "databaseVerification": "security_definer_procedure_verifies_attestation_before_session_revoke_mutation",
+        "runtimeCannotForge": "direct_cubby_runtime_sql_cannot_issue_or_substitute_valid_session_revoke_attestation"
+      }
+    },
+    "database": {
+      "clock": "postgresql_clock_timestamp",
+      "lockOrder": [
+        "global_security_transition_lock",
+        "user_security_state",
+        "current_session",
+        "target_sessions_by_session_id_ascending",
+        "session_security_activity_by_session_id_ascending",
+        "global_security_operation_identity"
+      ],
+      "directRuntimeDml": "cubby_runtime_direct_session_and_session_security_activity_dml_denied_security_definer_session_security_procedures_only"
+    },
+    "activity": {
+      "idleDays": 30,
+      "absoluteDays": 90,
+      "initialValues": {
+        "originalCreatedAt": "Session.createdAt",
+        "lastQualifyingAt": "Session.createdAt",
+        "idleWarningAt": "null",
+        "issuanceSessionSecurityVersion": "AccountSecurityState.sessionSecurityVersion"
+      },
+      "lifetime": {
+        "effectiveExpiry": "min(Session.expiresAt,original_created_at_plus_90_days,last_qualifying_at_plus_30_days)",
+        "clockComparison": "postgresql_clock_timestamp_greater_than_or_equal_to_effective_expiry",
+        "lockAndRecheck": "immediately_before_protected_response_or_write_commit_lock_session_and_activity_recheck_expire_activity_delete_session_and_deny_if_crossed"
+      },
+      "qualifyingUse": [
+        "successful_explicitly_allowlisted_foreground_document_navigation",
+        "successful_cubby_owned_non_GET_mutation_commit",
+        "successful_private_security_action"
+      ],
+      "requestClasses": {
+        "foregroundDocumentNavigation": {
+          "method": "POST",
+          "carrier": "visible_post_render_client_report_after_authenticated_layout_hydration",
+          "body": {
+            "requestClass": "foreground_document_navigation"
+          },
+          "route": "api_account_session_activity_exact_allowlist",
+          "success": "authenticated_protected_document_rendered_and_visible"
+        },
+        "cubbyOwnedNonGetMutation": {
+          "methods": [
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ],
+          "route": "authenticated_cubby_owned_route_or_server_action",
+          "success": "transaction_commit_success_and_executed_this_invocation_not_terminal_replay"
+        },
+        "privateSecurityAction": {
+          "methods": [
+            "POST"
+          ],
+          "identity": "explicit_server_side_private_security_action_allowlist_not_request_header",
+          "success": "security_transaction_commit_success"
+        },
+        "excludedHeaders": [
+          "Purpose: prefetch",
+          "Sec-Purpose: prefetch",
+          "Sec-Fetch-Mode: no-cors"
+        ],
+        "default": "exclude_any_request_not_matching_a_qualifying_class"
+      },
+      "excludedUse": [
+        "all_other_requests",
+        "failed",
+        "public_static",
+        "health",
+        "telemetry",
+        "worker",
+        "maintenance",
+        "background",
+        "prefetch"
+      ],
+      "warning": {
+        "derivation": "effective_expiry_minus_7_days",
+        "firstObserved": "once_when_database_clock_is_at_or_after_warning_threshold_and_before_effective_expiry_set_idle_warning_at_to_clock_timestamp",
+        "neverExtendsActivity": true
+      },
+      "rotation": {
+        "originalCreatedAt": "preserve_original_created_at_anchor",
+        "lastQualifyingAt": "preserve_existing_last_qualifying_at",
+        "neverResetsLifetime": true
+      },
+      "issuanceSessionSecurityVersion": {
+        "ordinaryAndBackfill": "current_account_security_state_session_security_version_create_initial_state_if_absent",
+        "emailChangeSuccessor": "prior_email_change_session_security_version_plus_one_matching_guarded_cutover_only",
+        "immutable": true,
+        "authorization": "mismatch_revoke_active_activity_delete_session_deny",
+        "listing": "current_issuance_session_security_version_only"
+      },
+      "cache": {
+        "disableCookieCache": true,
+        "authorization": "database_authorization_and_database_clock_lifetime_check_on_every_protected_request"
+      }
+    },
+    "privateEvents": {
+      "scope": "global_user_only",
+      "eventClass": "session",
+      "payload": "empty_object_only",
+      "emission": {
+        "neverFor": [
+          "list",
+          "warning",
+          "activity"
+        ],
+        "exactlyOneFor": [
+          "revoked",
+          "already_revoked",
+          "stale_security_version"
+        ],
+        "atomicWith": [
+          "operation",
+          "binding",
+          "grant",
+          "session",
+          "activity"
+        ],
+        "event": "operation_outcome_empty_object_only"
+      }
+    },
+    "readiness": {
+      "serverBoundary": "global_session_security_service_route_and_database_procedure_boundary",
+      "sourceActivation": {
+        "artifact": "docs/design/p1-3-phase7-readiness.json",
+        "authority": "phase7_source_readiness",
+        "state": "active_local_candidate",
+        "completeProgramRelease": "unreleased_until_phase9"
+      },
+      "sourceActivationSatisfiesForbiddenUntilReady": true,
+      "requires": [
+        "postgresql_global_user_authorization_and_direct_dml_denial",
+        "postgresql_lock_order_and_concurrent_scope_replay",
+        "database_verifiable_session_revoke_attestation_and_key_rotation",
+        "browser_safe_projection_confirmation_current_signout_and_stale_cache_denial",
+        "responsive_mobile_and_desktop_session_manager",
+        "accessibility_keyboard_focus_live_region_and_confirmation",
+        "all_phase7_exact_tree_reviews"
+      ],
+      "evidence": [
+        "current_one_others_all_scope_mapping_and_replay_carrier_proof",
+        "current_scope_survivor_authorization_and_post_signin_terminal_receipt_status_proof",
+        "all_scope_advanced_vector_post_signin_terminal_receipt_status_proof",
+        "same_session_submitted_pending_unknown_status_and_retry_proof",
+        "atomic_authorization_and_safe_session_projection_proof",
+        "production_document_mutation_private_security_qualifying_and_excluded_request_classification_proof",
+        "before_and_after_expiry_lock_recheck_race_proof",
+        "seven_day_warning_first_observed_and_non_extension_proof",
+        "rotation_anchor_preservation_proof",
+        "disable_cookie_cache_and_database_authorization_denial_proof",
+        "operation_outcome_event_atomicity_proof",
+        "responsive_mobile_and_desktop_session_manager_proof",
+        "accessibility_keyboard_focus_live_region_and_confirmation_proof",
+        "dual_independent_review_proof"
+      ],
+      "forbiddenUntilReady": [
+        "global_session_security_api_routes",
+        "global_session_security_server_actions",
+        "global_session_security_settings_ui",
+        "better_auth_list_sessions",
+        "better_auth_revoke_session",
+        "better_auth_revoke_other_sessions",
+        "better_auth_revoke_sessions",
+        "better_auth_sign_out"
+      ]
+    }
+  },
+  "phase8PrivateHistoryThrottlingAddendum": {
+    "release": {
+      "state": "complete_program_unreleased_until_phase9",
+      "forbids": [
+        "partial_history_release",
+        "better_auth_rate_limit_as_authority",
+        "household_audit_carrier",
+        "household_backup_carrier",
+        "ordinary_runtime_operator_reader"
+      ]
+    },
+    "persistenceTarget": {
+      "models": ["GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityThrottleKey"],
+      "GlobalSecurityEvent": {
+        "fields": ["id", "sequence_bigserial_unique", "userId", "eventType", "outcome", "operationId_nullable", "incidentId_nullable_unique", "safeProjection_empty_json", "createdAt_database_default"],
+        "relations": ["user_cascade", "incident_cascade"],
+        "indexes": ["userId_sequence", "unique_user_operation_eventType_outcome_when_operation_present", "unique_incidentId"],
+        "guards": ["closed_event_outcome_matrix", "operation_incident_exclusive_shape", "append_only_update_forbidden", "direct_delete_forbidden_while_user_exists", "delete_allowed_only_after_user_fk_cascade", "truncate_forbidden"]
+      },
+      "GlobalSecurityIncident": {
+        "fields": ["id", "userId_nullable", "layer", "normalizedKey", "windowStartedAt", "failureCount", "quietUntil_nullable", "state", "lastOutcomeAt", "createdAt"],
+        "identity": "unique_layer_normalizedKey_windowStartedAt",
+        "relations": ["optional_user_cascade", "events"],
+        "guards": ["layer_user_ownership", "deterministic_transition", "monotonic_count_time_quiet", "direct_delete_forbidden", "truncate_forbidden"]
+      },
+      "GlobalSecurityThrottleKey": {
+        "fields": ["singletonId_1", "keyDigest_sha256_32_bytes", "createdAt", "verifiedAt"],
+        "authority": "migrator_owner_provisioner_only",
+        "guards": ["singleton", "immutable_digest", "no_runtime_auth_or_operator_access"]
+      },
+      "migrationOrder": ["create_or_alter_models", "install_constraints_indexes", "install_guards", "revoke_table_dml", "grant_procedures", "post_migration_key_provision"]
+    },
+    "keys": {
+      "algorithm": "hmac_sha256_base64url_32_bytes",
+      "key": "CUBBY_THROTTLE_KEY_base64url_exactly_32_bytes",
+      "derivation": {
+        "identityFrame": "uint32be_utf8_domain_length_domain_uint32be_utf8_value_length_value",
+        "accountDomain": "cubby:phase8:account-identifier:v1",
+        "clientDomain": "cubby:phase8:client:v1",
+        "deploymentDomain": "cubby:phase8:deployment:v1",
+        "historyHandleDomain": "cubby:phase8:history-handle:v1",
+        "cursorDomain": "cubby:phase8:history-cursor:v1",
+        "digest": "hmac_sha256_full_32_bytes_base64url_no_padding"
+      },
+      "lifecycle": {
+        "rotation": "forbidden_until_separate_maintenance_gate",
+        "startupDigest": "owner_table_sha256_digest_must_match_configured_key",
+        "backup": "excluded",
+        "logging": "forbidden",
+        "ownerTable": "GlobalSecurityThrottleKey_singletonId_1_keyDigest_sha256_createdAt_verifiedAt",
+        "bootstrap": {
+          "migration": "create_empty_owner_only_table_before_key_provisioner",
+          "freshVolume": "post_migration_provisioner_inserts_singleton_digest",
+          "existingVolume": "post_migration_provisioner_locks_row_requires_exact_digest_and_updates_verifiedAt",
+          "restoreMismatch": "fail_before_server_start_without_replacing_digest",
+          "writes": "migrator_owner_provisioner_only"
+        }
+      },
+      "account_identifier": {
+        "normalize": "normalize_security_email_v1",
+        "frame": "account_identifier_v1_nul_normalized",
+        "userId": "privately_resolve_when_existing_otherwise_absent",
+        "persistedRawIdentifier": false
+      },
+      "client": {
+        "source": "configured_trusted_proxy_single_hop_address_else_unknown_client",
+        "trustedProxyConfig": "CUBBY_TRUSTED_PROXY_HOPS_integer_zero_or_one",
+        "forwardingHeader": "x_forwarded_for_exactly_one_canonical_address_only_when_hops_one",
+        "fallback": "unknown_client",
+        "frame": "client_v1_nul_canonical_or_unknown",
+        "persistedAddress": false,
+        "grammar": {
+          "hops0": "ignore_all_forwarding_headers_use_unknown_client",
+          "hops1": "x_forwarded_for_must_have_exactly_one_trimmed_token",
+          "multipleEmptyMalformed": "unknown_client",
+          "ipv4": "node_net_isIP_4_then_exact_four_base10_octets_0_to_255_no_leading_plus_or_zeros_except_zero",
+          "ipv6": "node_net_isIP_6_then_whatwg_url_hostname_lowercase_rfc5952_strip_brackets"
+        }
+      },
+      "deployment": {
+        "value": "deployment_v1",
+        "userId": "forbidden"
+      },
+      "normalizationVersion": 1
+    },
+    "throttle": {
+      "layers": ["account_identifier", "client", "deployment"],
+      "layerOrder": ["account_identifier", "client", "deployment"],
+      "failures": 5,
+      "windowMinutes": 15,
+      "quietMinutes": 15,
+      "databaseClockOnly": true,
+      "windowStart": "floor_database_epoch_seconds_divided_by_900_times_900",
+      "maxCount": 255,
+      "states": ["active", "quiet", "closed"],
+      "transitions": [
+        "missing_to_active_on_failure",
+        "active_increment_1_to_4",
+        "active_to_quiet_on_5",
+        "quiet_increment_without_deadline_extension",
+        "active_or_quiet_to_closed_after_deadline",
+        "closed_immutable"
+      ],
+      "precheck": "deny_when_any_applicable_layer_quiet_before_secret_verification",
+      "afterQuiet": "close_prior_and_start_new_window_on_next_failure",
+      "success": "append_success_evidence_without_mutating_incidents",
+      "uncertainty": "neutral_deny_with_fixed_15_minute_retry_deadline",
+      "externalResponse": "account_existence_neutral_invalid_or_retry_later",
+      "replay": "never_increment_status_or_identical_replay",
+      "applicability": {
+        "account_identifier": "only_when_user_privately_resolves",
+        "client": "always",
+        "deployment": "always"
+      },
+      "transaction": {
+        "isolation": "serializable",
+        "globalLock": "global-security-transition:v1",
+        "incidentLock": "pg_advisory_xact_lock_hashtextextended_global-security-incident:v1_layer_normalizedKey",
+        "order": ["account_identifier", "client", "deployment"],
+        "precheckAndFailure": "one_transaction_lock_all_applicable_identities_and_rows",
+        "uniqueConflict": "refetch_same_identity_for_update_and_reapply_transition"
+      },
+      "deadlines": {
+        "windowEnd": "windowStartedAt_plus_15_minutes",
+        "quietUntil": "fifth_failure_database_time_plus_15_minutes_immutable",
+        "denyPredicate": "state_quiet_and_database_time_strictly_less_than_quietUntil",
+        "expiryPredicate": "active_expires_when_database_time_greater_than_or_equal_to_windowEnd_quiet_expires_only_when_database_time_greater_than_or_equal_to_quietUntil",
+        "precedence": "quiet_deny_precedes_fixed_window_rollover_until_quietUntil",
+        "closeBeforeNew": "close_expired_active_or_quiet_row_then_lock_or_insert_current_fixed_window",
+        "existingCurrentWindow": "lock_and_apply_same_transition",
+        "maxCount": "least_255_failureCount_plus_one"
+      },
+      "neutrality": {
+        "status": 401,
+        "bodyCode": "INVALID_EMAIL_OR_PASSWORD",
+        "headers": "identical_no_retry_after_for_invalid_or_any_quiet_layer",
+        "quietWork": "one_fixed_dummy_password_verification_and_same_response_serialization_without_real_secret_verification",
+        "nonexistentWork": "better_auth_dummy_password_verification_plus_same_client_deployment_precheck",
+        "accountOnlyQuiet": "indistinguishable_from_nonexistent_identifier",
+        "retryGuidance": "generic_private_history_only_after_later_successful_sign_in"
+      }
+    },
+    "carriers": [
+      "sign_in_email",
+      "session_revoke_current_password",
+      "password_change_current_password",
+      "recovery_enrollment_current_password",
+      "email_change_current_password",
+      "recovery_code_rehearsal",
+      "recovery_reset_opening"
+    ],
+    "carrierMatrix": {
+      "sign_in_email": { "accountKeyInput": "submitted_email_normalized_before_lookup", "failure": "invalid_email_password_only", "success": "session_created" },
+      "current_password": { "accountKeyInput": "locked_current_user_email", "purposes": ["session_revoke", "password_change", "recovery_enrollment", "email_change"], "failure": "current_password_invalid_only", "success": "fresh_grant_issued_or_identical_replay" },
+      "recovery_code_rehearsal": { "accountKeyInput": "locked_current_user_email", "failure": "recovery_code_invalid_only", "success": "rehearsal_completed" },
+      "recovery_reset_opening": { "accountKeyInput": "locked_target_user_email_from_internal_user_id_before_code_verification", "failure": "neutral_absent_invalid_consumed_or_changed_code", "success": "restricted_recovery_session_issued_or_identical_replay" },
+      "excluded": ["stale_security_version", "idempotency_conflict", "operation_unknown", "expired_binding", "collision", "delivery_failure", "status_read", "terminal_replay"]
+    },
+    "events": {
+      "classes": ["credential", "grant", "recovery", "email_change", "session", "throttle", "operation_outcome"],
+      "safeProjection": "empty_object_only",
+      "appendOnly": true,
+      "incidentBinding": {
+        "field": "incidentId_nullable_unique",
+        "throttle": "required_matching_account_incident_and_user",
+        "nonThrottle": "forbidden"
+      },
+      "neutralLayerDisposition": "client_and_deployment_quiet_transitions_emit_no_private_event_and_are_operator_aggregate_only",
+      "operationBinding": {
+        "operation_outcome": "required",
+        "throttle": "forbidden"
+      },
+      "signIn": ["credential|sign_in_failed", "credential|sign_in_succeeded"],
+      "proof": ["grant|current_password_failed", "grant|current_password_verified"],
+      "throttle": ["throttle|quiet_started"],
+      "projectionMatrix": {
+        "credential": ["sign_in_failed", "sign_in_succeeded", "password_changed"],
+        "grant": ["current_password_failed", "current_password_verified", "grant_expired"],
+        "recovery": ["code_set_generated", "rehearsed", "rehearsal_failed", "reset_started", "reset_completed", "reset_failed"],
+        "email_change": ["requested", "verified", "completed", "cancelled", "expired", "failed"],
+        "session": ["revoked", "already_revoked", "stale_security_version", "expired"],
+        "throttle": ["quiet_started"],
+        "operation_outcome": ["completed", "rejected", "stale_security_version"]
+      },
+      "cardinality": {
+        "signInAttempt": "one_credential_event_per_delivered_200_or_401_when_user_privately_resolves",
+        "signInEvidenceUnavailable": "fixed_neutral_503_after_atomic_evidence_transaction_rollback_with_zero_event_and_no_session",
+        "operationBound": "unique_user_operation_eventType_outcome",
+        "throttle": "unique_incidentId_one_quiet_started_event_for_account_layer_only",
+        "neutralThrottle": "zero_private_events",
+        "atomicity": "sign_in_success_same_transaction_as_cubby_auth_session_insert_sign_in_failure_same_transaction_as_incident_other_classes_same_authoritative_transition",
+        "excluded": "zero_events_and_zero_counter_increment_for_status_terminal_replay_or_protocol_conflict"
+      },
+      "duplicate": "same_transition_exactly_once"
+    },
+    "reader": {
+      "authority": "same_global_user_active_ordinary_session",
+      "household": "forbidden",
+      "order": ["sequence_desc"],
+      "defaultLimit": 50,
+      "minLimit": 1,
+      "maxLimit": 100,
+      "fetch": "limit_plus_one",
+      "cursor": "hmac_authenticated_user_snapshot_max_sequence_last_sequence_schema_v1",
+      "handle": "base64url_first_22_bytes_hmac_historyHandleDomain_over_length_framed_userId_and_eventId",
+      "cursorCodec": {
+        "payload": "version_u8_1_snapshotMaxSequence_u64be_lastSequence_u64be_userIdLength_u16be_userId_utf8",
+        "token": "base64url_payload_dot_base64url_full_hmac_sha256_cursorDomain",
+        "verification": "constant_time_mac_exact_length_version_utf8_and_same_user",
+        "invalid": "422_security_history_cursor_invalid_for_malformed_or_foreign_user",
+        "predicate": "sequence_less_than_lastSequence_and_sequence_less_than_or_equal_to_snapshotMaxSequence"
+      },
+      "concurrency": "database_sequence_is_strictly_increasing_snapshotMaxSequence_captured_on_first_page_excludes_all_later_inserts",
+      "fields": ["handle", "eventClass", "action", "outcome", "occurredAt", "operationKey", "incident"],
+      "forbidden": ["operationId", "incidentId", "databaseId", "normalizedKey", "accountIdentifier", "ip", "location", "fullUserAgent", "household", "baby", "credential"],
+      "incidentProjection": {
+        "windowStartedAt": "incident_windowStartedAt",
+        "windowEndedAt": "quietUntil_else_windowStartedAt_plus_15_minutes",
+        "approximateFailures": ["5-9", "10-19", "20-49", "50+"],
+        "guidance": ["change_password", "review_sessions"],
+        "keys": "forbidden"
+      }
+    },
+    "export": {
+      "schemaVersion": 1,
+      "exportType": "cubby_global_security_history",
+      "format": "json",
+      "order": "oldest_first_repeatable_read",
+      "projection": "same_as_reader",
+      "filename": "cubby-global-security-history-v1-UTC.json",
+      "householdBackup": "excluded",
+      "carrier": "POST_api_account_security-history_export_application_json_confirmed_true",
+      "authority": "same_global_user_active_ordinary_session_and_database_recheck",
+      "snapshot": "repeatable_read_database_time_upper_bound_all_user_events",
+      "result": "200_application_json_content_disposition_attachment_or_stable_4xx",
+      "maximumEvents": 100000,
+      "tooLarge": "413_security_history_export_too_large"
+    },
+    "retention": {
+      "userBound": "until_user_fk_cascade_only",
+      "accountNeutralIncidents": "until_separate_maintenance_gate",
+      "directDelete": "forbidden",
+      "truncate": "forbidden",
+      "accountDeletionRoute": "disabled",
+      "acceptance": ["user_cascade_removes_user_bound", "neutral_incidents_survive", "household_backup_excludes_all"]
+    },
+    "operator": {
+      "carrier": "host_local_packaged_cli",
+      "databaseRole": "cubby_security_operator",
+      "authority": "execute_fixed_search_path_content_free_aggregate_only",
+      "fields": ["layer", "state", "coarseTimeBucket", "incidentCount"],
+      "forbidden": ["web_endpoint", "user", "normalizedKey", "rawIdentifier", "address", "perKeyCount", "drillDown", "ordinaryRuntimeTableRead"],
+      "coarseTimeBucket": "UTC_calendar_day",
+      "range": "from_inclusive_to_exclusive_maximum_31_days",
+      "function": "read_global_security_operator_aggregate(date,date)",
+      "cli": "dist/security-operator.mjs aggregate --from YYYY-MM-DD --to YYYY-MM-DD",
+      "output": "stdout_json_schema_v1_stderr_sanitized_nonzero_on_failure"
+    },
+    "privileges": {
+      "cubby_migrator": ["owner", "migrate", "provision_roles"],
+      "cubby_runtime": ["execute_throttle_precheck", "execute_throttle_failure", "execute_security_event_writer", "execute_private_history_reader", "no_direct_incident_or_event_dml"],
+      "cubby_auth": ["better_auth_identity_and_session_only", "no_incident_or_event_access"],
+      "cubby_security_operator": ["execute_operator_aggregate_only", "no_table_privileges", "no_user_rows", "no_runtime_inheritance"]
+    },
+    "deployment": {
+      "requiredSecrets": ["CUBBY_THROTTLE_KEY", "CUBBY_SECURITY_OPERATOR_DB_PASSWORD"],
+      "configuration": { "CUBBY_TRUSTED_PROXY_HOPS": [0, 1], "default": 0 },
+      "operatorUrl": "SECURITY_OPERATOR_DATABASE_URL_host_only_never_retained_by_server",
+      "startup": "provision_roles_migrate_provision_or_verify_throttle_key_then_unset_owner_and_operator_passwords_retain_throttle_key_as_runtime_secret_and_exec_server",
+      "runtimeKeyBoundary": "CUBBY_THROTTLE_KEY_retained_only_in_server_process_environment_never_child_cli_worker_logs_or_backups",
+      "failClosed": ["missing_or_malformed_key", "key_digest_mismatch", "invalid_proxy_hops", "operator_role_elevated_member_or_owner_objects"],
+      "backups": "exclude_key_operator_credentials_incidents_events_and_all_global_security_state"
+    },
+    "acceptance": {
+      "unit": ["key_framing", "client_canonicalization", "neutral_response", "cursor_codec", "safe_projection", "carrier_event_matrix"],
+      "postgresql": ["concurrent_fifth_failure_exactly_once", "quiet_equality_nonextension", "unique_conflict_recovery", "success_nonclear", "recovery_equivalence", "runtime_direct_dml_denial", "event_cardinality", "reader_user_isolation", "cursor_keyset", "repeatable_export", "user_cascade", "neutral_survival"],
+      "browser": ["existing_nonexisting_neutrality", "quiet_neutrality", "history_pagination", "export_confirmation", "responsive_accessibility", "no_secret_dom_network_storage"],
+      "operator": ["packaged_cli_role_only", "31_day_bound", "aggregate_content_free", "sanitized_failure"],
+      "deployment": ["fresh_and_existing_volume_role_provision", "key_digest_restore_mismatch", "startup_owner_operator_secret_scrub_and_runtime_throttle_key_retention", "verified_disposable_cleanup"]
+    }
+  }
+}

@@ -11,17 +11,12 @@ export const operation = {
       symbol: "authClient.signIn.email[1]",
       target: "better-auth/react#createAuthClient.signIn.email"
     },
-    {
-      kind: "auth_client_call",
-      symbol: "authClient.signUp.email[1]",
-      target: "better-auth/react#createAuthClient.signUp.email"
-    },
+
     {
       kind: "form_action",
       symbol: "onSubmit",
       target: "src/components/auth/auth-form.tsx#onSubmit"
-    },
-    { kind: "global_fetch", symbol: "fetch[1]", target: "globalThis.fetch" }
+    }
   ],
   disposition: "observed",
   deferredGateIds: [

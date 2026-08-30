@@ -10,16 +10,6 @@ export const operation = {
       kind: "server_value_import",
       symbol: "extractInviteToken",
       target: "src/server/services/registration.ts#extractInviteToken"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "getAppRegistrationPolicy",
-      target: "src/server/services/registration.ts#getAppRegistrationPolicy"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "getInviteByToken",
-      target: "src/server/services/invites.ts#getInviteByToken"
     }
   ],
   disposition: "observed",

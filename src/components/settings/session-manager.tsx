@@ -1,212 +1,332 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MonitorSmartphone, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth/client";
-import { isSessionReauthenticationRequired } from "@/lib/auth/client-errors";
-import { sessionDateLabel, sessionDeviceLabel } from "@/lib/auth/session-display";
+
+const operationStorageKey = "cubby:global-session-revoke-operation";
+const absentTargetHandle = "absent_target_handle";
+const crockford = "0123456789abcdefghjkmnpqrstvwxyz";
 
 type SessionRow = {
-  id: string;
-  token: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  expiresAt: string | Date;
-  userAgent?: string | null;
-  ipAddress?: string | null;
+  handle: string;
+  isCurrent: boolean;
+  deviceLabel: string;
+  createdAt: string;
+  lastQualifyingAt: string;
+  idleWarningAt: string | null;
+  expiresAt: string;
 };
 
-type LoadState = "loading" | "ready" | "reauthentication" | "error";
+type RevokeScope = "current" | "one" | "others" | "all";
+type RevokeAction = { scope: RevokeScope; targetHandle?: string; label: string };
+type OperationMetadata = { operationId: string; openingFingerprint: string; intentFingerprint: string };
+type LoadState = "loading" | "ready" | "error";
+type StatusResult = "terminal" | "pending" | "unknown";
+
+function frameUtf8(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const framed = new Uint8Array(4 + bytes.length);
+  new DataView(framed.buffer).setUint32(0, bytes.length, false);
+  framed.set(bytes, 4);
+  return framed;
+}
+
+async function sha256Framed(...values: string[]) {
+  const frames = values.map(frameUtf8);
+  const bytes = new Uint8Array(frames.reduce((total, frame) => total + frame.length, 0));
+  let offset = 0;
+  for (const frame of frames) {
+    bytes.set(frame, offset);
+    offset += frame.length;
+  }
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function mintOperationId() {
+  const random = crypto.getRandomValues(new Uint8Array(17));
+  let value = 0n;
+  for (const byte of random) value = (value << 8n) | BigInt(byte);
+  let encoded = "";
+  for (let index = 0; index < 26; index += 1) {
+    encoded = crockford[Number(value & 31n)] + encoded;
+    value >>= 5n;
+  }
+  return `gso_${encoded}`;
+}
+
+function readRetainedOperation(): OperationMetadata | null {
+  const value = sessionStorage.getItem(operationStorageKey);
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (
+      Object.keys(parsed).sort().join("|") === "intentFingerprint|openingFingerprint|operationId" &&
+      typeof parsed.operationId === "string" && /^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$/.test(parsed.operationId) &&
+      typeof parsed.openingFingerprint === "string" && /^[0-9a-f]{64}$/.test(parsed.openingFingerprint) &&
+      typeof parsed.intentFingerprint === "string" && /^[0-9a-f]{64}$/.test(parsed.intentFingerprint)
+    ) return parsed as OperationMetadata;
+  } catch {
+    // Invalid local metadata is not an operation authority.
+  }
+  sessionStorage.removeItem(operationStorageKey);
+  return null;
+}
+
+function dateLabel(value: string | null) {
+  if (!value) return "Not scheduled";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Unavailable" : date.toLocaleString();
+}
+
+async function responseData(response: Response) {
+  const body = await response.json().catch(() => null) as { ok?: boolean; data?: unknown; error?: { message?: string } } | null;
+  return { body, data: body?.data as Record<string, unknown> | undefined };
+}
 
 export function SessionManager() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [currentToken, setCurrentToken] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [message, setMessage] = useState("");
-  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmation, setConfirmation] = useState<RevokeAction | null>(null);
+  const [password, setPassword] = useState("");
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
+  async function load() {
     setLoadState("loading");
     setMessage("");
     try {
-      const [sessionsResult, currentResult] = await Promise.all([
-        authClient.listSessions(),
-        authClient.getSession()
-      ]);
-      if (sessionsResult.error) {
-        setSessions([]);
-        setLoadState(isSessionReauthenticationRequired(sessionsResult.error) ? "reauthentication" : "error");
-        if (!isSessionReauthenticationRequired(sessionsResult.error)) {
-          setMessage(sessionsResult.error.message ?? "Sessions could not be loaded.");
-        }
-        return;
-      }
-
-      const current = currentResult.data as { session?: { token?: string } } | null;
-      const token = current?.session?.token ?? null;
-      const loaded = (sessionsResult.data ?? []) as SessionRow[];
-      setCurrentToken(token);
-      setSessions(
-        [...loaded].sort((left, right) => {
-          if (left.token === token) return -1;
-          if (right.token === token) return 1;
-          return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-        })
-      );
+      const response = await fetch("/api/account/sessions", { cache: "no-store" });
+      const { body, data } = await responseData(response);
+      if (!response.ok || body?.ok !== true || !Array.isArray(data?.sessions)) throw new Error(body?.error?.message ?? "Sessions could not be loaded.");
+      setSessions(data.sessions as SessionRow[]);
       setLoadState("ready");
-    } catch {
+    } catch (error) {
       setSessions([]);
       setLoadState("error");
-      setMessage("Sessions could not be loaded.");
+      setMessage(error instanceof Error ? error.message : "Sessions could not be loaded.");
     }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  async function signInAgain() {
-    setBusyAction("reauthenticate");
-    await authClient.signOut().catch(() => undefined);
-    router.push(`/login?next=${encodeURIComponent("/app/settings/sessions")}`);
-    router.refresh();
   }
 
-  async function revoke(session: SessionRow) {
-    setBusyAction(session.token);
+  useEffect(() => { void load(); }, []);
+  useEffect(() => { if (confirmation) passwordRef.current?.focus(); }, [confirmation]);
+
+  function openConfirmation(action: RevokeAction) {
     setMessage("");
+    setPassword("");
+    setConfirmation(action);
+  }
+
+  function closeConfirmation() {
+    setPassword("");
+    setConfirmation(null);
+  }
+
+  async function checkStatus(metadata: OperationMetadata): Promise<StatusResult> {
     try {
-      if (session.token === currentToken) {
-        const signOutResult = await authClient.signOut();
-        if (signOutResult.error) {
-          setMessage(signOutResult.error.message ?? "This device could not be signed out.");
+      const response = await fetch("/api/account/sessions/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(metadata)
+      });
+      const { body, data } = await responseData(response);
+      if (!response.ok || body?.ok !== true) return "unknown";
+      if (data?.status === "revoked" || data?.status === "already_revoked" || data?.status === "stale_security_version") {
+        sessionStorage.removeItem(operationStorageKey);
+        return "terminal";
+      }
+      return data?.status === "pending" ? "pending" : "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
+
+  async function finishTerminalReconciliation(action: RevokeAction) {
+    closeConfirmation();
+    if (action.scope === "current" || action.scope === "all") {
+      router.push("/login");
+      router.refresh();
+    } else {
+      await load();
+    }
+  }
+
+  async function operationFor(action: RevokeAction) {
+    const target = action.targetHandle ?? absentTargetHandle;
+    const intentFingerprint = await sha256Framed(action.scope, target);
+    const retained = readRetainedOperation();
+    if (retained) {
+      const status = await checkStatus(retained);
+      if (status === "unknown") throw new Error("The previous sign-out result is still unknown. Try checking again before reissuing it.");
+      if (status === "pending" && retained.intentFingerprint !== intentFingerprint) {
+        throw new Error("Another session sign-out is still pending. Resolve it before starting a different action.");
+      }
+      if (status === "pending") return retained;
+      if (status === "terminal") return null;
+    }
+    const operationId = mintOperationId();
+    const metadata = {
+      operationId,
+      openingFingerprint: await sha256Framed("session_revoke_opening", operationId, action.scope, target),
+      intentFingerprint
+    };
+    sessionStorage.setItem(operationStorageKey, JSON.stringify(metadata));
+    return metadata;
+  }
+
+  async function confirmRevoke() {
+    if (!confirmation || !password) return;
+    const action = confirmation;
+    const currentPassword = password;
+    setPassword("");
+    setBusy(true);
+    setMessage("");
+    let metadata: OperationMetadata | null = null;
+    let reconciliationAttempted = false;
+    try {
+      metadata = await operationFor(action);
+      if (!metadata) {
+        closeConfirmation();
+        await load();
+        return;
+      }
+      const response = await fetch("/api/account/sessions/revoke", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...metadata,
+          scope: action.scope,
+          ...(action.targetHandle === undefined ? {} : { targetHandle: action.targetHandle }),
+          confirmed: true,
+          currentPassword
+        })
+      });
+      const { body, data } = await responseData(response);
+      if (!response.ok || body?.ok !== true) {
+        const status = await checkStatus(metadata);
+        reconciliationAttempted = true;
+        if (status === "terminal") {
+          await finishTerminalReconciliation(action);
           return;
         }
+        if (action.scope === "current" || action.scope === "all") {
+          router.push("/login");
+          router.refresh();
+          return;
+        }
+        throw new Error(body?.error?.message ?? "The session sign-out result is unknown. Check again before retrying.");
+      }
+      if (data?.status !== "revoked" && data?.status !== "already_revoked" && data?.status !== "stale_security_version") {
+        await checkStatus(metadata);
+        throw new Error("The session sign-out result is unknown. Check again before retrying.");
+      }
+      sessionStorage.removeItem(operationStorageKey);
+      if (data.status === "stale_security_version") throw new Error("Your security state changed. Sign in again before retrying.");
+      closeConfirmation();
+      if (data.signedOut === true || action.scope === "current" || action.scope === "all") {
         router.push("/login");
         router.refresh();
-        return;
+      } else {
+        await load();
       }
-
-      const result = await authClient.revokeSession({ token: session.token });
-      if (result.error) {
-        setLoadState(isSessionReauthenticationRequired(result.error) ? "reauthentication" : "error");
-        setMessage(result.error.message ?? "The session could not be revoked.");
-        return;
+    } catch (error) {
+      if (metadata && !reconciliationAttempted) {
+        const status = await checkStatus(metadata);
+        if (status === "terminal") {
+          await finishTerminalReconciliation(action);
+          return;
+        }
+        if (action.scope === "current" || action.scope === "all") {
+          router.push("/login");
+          router.refresh();
+          return;
+        }
       }
-      await load();
-    } catch {
-      setMessage("The session could not be revoked.");
+      setMessage(error instanceof Error ? error.message : "The session sign-out result is unknown. Check again before retrying.");
     } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function revokeOtherSessions() {
-    setBusyAction("others");
-    setMessage("");
-    try {
-      const result = await authClient.revokeOtherSessions();
-      if (result.error) {
-        setLoadState(isSessionReauthenticationRequired(result.error) ? "reauthentication" : "error");
-        setMessage(result.error.message ?? "Other sessions could not be revoked.");
-        return;
-      }
-      await load();
-    } catch {
-      setMessage("Other sessions could not be revoked.");
-    } finally {
-      setBusyAction(null);
+      setBusy(false);
     }
   }
 
   return (
-    <section className="space-y-4" aria-live="polite">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="space-y-4" aria-labelledby="active-sessions-heading">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-editorial text-xl font-bold">Active sessions</h2>
-          <p className="text-sm text-muted-foreground">Review browsers signed into your Cubby account.</p>
+          <h2 id="active-sessions-heading" className="font-editorial text-xl font-bold">Active sessions</h2>
+          <p className="text-sm text-muted-foreground">Review and securely sign out browsers using your Cubby account.</p>
+          <Link href="/app/settings/security-history" className="mt-2 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">View security history</Link>
         </div>
-        {loadState === "ready" && sessions.length > 1 ? (
-          <Button variant="secondary" onClick={() => void revokeOtherSessions()} disabled={busyAction !== null}>
-            Sign out other devices
-          </Button>
+        {loadState === "ready" && sessions.length > 0 ? (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {sessions.some((session) => !session.isCurrent) ? (
+              <Button variant="secondary" onClick={() => openConfirmation({ scope: "others", label: "other devices" })} disabled={busy}>Sign out other devices</Button>
+            ) : null}
+            <Button variant="secondary" onClick={() => openConfirmation({ scope: "all", label: "all devices" })} disabled={busy}>Sign out all devices</Button>
+          </div>
         ) : null}
       </div>
 
-      {loadState === "loading" ? (
-        <p className="rounded-lg border border-border bg-surface-soft p-4 text-sm text-muted-foreground">Loading active sessions...</p>
-      ) : null}
-
-      {loadState === "reauthentication" ? (
-        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-bold">Sign in again to manage sessions</p>
-              <p className="text-sm text-muted-foreground">
-                For security, Cubby allows session review and revocation for 10 minutes after signing in.
-              </p>
-            </div>
-          </div>
-          <Button onClick={() => void signInAgain()} disabled={busyAction !== null}>
-            {busyAction === "reauthenticate" ? "Signing out..." : "Sign in again"}
-          </Button>
-        </div>
-      ) : null}
-
+      {loadState === "loading" ? <p className="rounded-lg border border-border bg-surface-soft p-4 text-sm text-muted-foreground">Loading active sessions...</p> : null}
       {loadState === "error" ? (
         <div className="space-y-3 rounded-lg border border-danger/35 bg-danger/10 p-4">
-          <p className="text-sm text-danger">{message || "Sessions could not be loaded."}</p>
-          <Button variant="secondary" onClick={() => void load()} disabled={busyAction !== null}>
-            Try again
-          </Button>
+          <p role="alert" className="text-sm text-danger">{message || "Sessions could not be loaded."}</p>
+          <Button variant="secondary" onClick={() => void load()} disabled={busy}>Try again</Button>
         </div>
       ) : null}
+      {loadState === "ready" && sessions.length === 0 ? <p className="rounded-lg border border-border bg-surface-soft p-4 text-sm text-muted-foreground">No active sessions found.</p> : null}
 
-      {loadState === "ready" && sessions.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface-soft p-4 text-sm text-muted-foreground">No active sessions found.</p>
-      ) : null}
-
-      {loadState === "ready" && sessions.length ? (
-        <div className="space-y-3">
-          {sessions.map((session) => {
-            const current = session.token === currentToken;
-            return (
-              <div key={session.id || session.token} className="rounded-lg border border-border bg-card p-4">
-                <div className="flex items-start gap-3">
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
-                    <MonitorSmartphone className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-bold" title={session.userAgent ?? undefined}>{sessionDeviceLabel(session.userAgent)}</p>
-                      {current ? <span className="rounded-full bg-primary/14 px-2 py-0.5 text-xs font-bold text-primary">Current</span> : null}
-                    </div>
-                    <dl className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                      <div><dt className="inline font-semibold text-foreground">IP: </dt><dd className="inline">{session.ipAddress || "Unavailable"}</dd></div>
-                      <div><dt className="inline font-semibold text-foreground">Signed in: </dt><dd className="inline">{sessionDateLabel(session.createdAt)}</dd></div>
-                      <div><dt className="inline font-semibold text-foreground">Expires: </dt><dd className="inline">{sessionDateLabel(session.expiresAt)}</dd></div>
-                    </dl>
-                    <Button
-                      className="mt-3"
-                      variant="secondary"
-                      onClick={() => void revoke(session)}
-                      disabled={busyAction !== null}
-                    >
-                      {busyAction === session.token ? "Signing out..." : current ? "Sign out this device" : "Revoke session"}
-                    </Button>
+      {loadState === "ready" && sessions.length > 0 ? (
+        <ul className="grid gap-3 md:grid-cols-2">
+          {sessions.map((session) => (
+            <li key={session.handle} className="min-w-0 rounded-lg border border-border bg-card p-4">
+              <div className="flex items-start gap-3">
+                <span aria-hidden="true" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary"><MonitorSmartphone className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="break-words font-bold">{session.deviceLabel}</h3>
+                    {session.isCurrent ? <span className="rounded-full bg-primary/14 px-2 py-0.5 text-xs font-bold text-primary">Current device</span> : null}
                   </div>
+                  <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
+                    <div><dt className="inline font-semibold text-foreground">Signed in: </dt><dd className="inline">{dateLabel(session.createdAt)}</dd></div>
+                    <div><dt className="inline font-semibold text-foreground">Last active: </dt><dd className="inline">{dateLabel(session.lastQualifyingAt)}</dd></div>
+                    <div><dt className="inline font-semibold text-foreground">Expires: </dt><dd className="inline">{dateLabel(session.expiresAt)}</dd></div>
+                    {session.idleWarningAt ? <div><dt className="inline font-semibold text-foreground">Idle warning: </dt><dd className="inline">{dateLabel(session.idleWarningAt)}</dd></div> : null}
+                  </dl>
+                  <Button className="mt-3 w-full sm:w-auto" variant="secondary" onClick={() => openConfirmation({ scope: session.isCurrent ? "current" : "one", targetHandle: session.handle, label: session.isCurrent ? "this device" : session.deviceLabel })} disabled={busy}>
+                    {session.isCurrent ? "Sign out this device" : "Sign out this session"}
+                  </Button>
                 </div>
               </div>
-            );
-          })}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {confirmation ? (
+        <div role="region" aria-label="Confirm session sign-out" className="space-y-3 rounded-lg border border-danger/35 bg-danger/10 p-4">
+          <div>
+            <h3 className="font-bold">Confirm sign out of {confirmation.label}</h3>
+            <p className="text-sm text-muted-foreground">Enter your current password. This action may immediately end one or more active sessions.</p>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="session-current-password" className="text-sm font-semibold">Current password</label>
+            <input ref={passwordRef} id="session-current-password" type="password" autoComplete="current-password" maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-base" />
+          </div>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="secondary" onClick={closeConfirmation} disabled={busy}>Cancel</Button>
+            <Button onClick={() => void confirmRevoke()} disabled={busy || password.length === 0}>{busy ? "Checking status..." : "Confirm sign out"}</Button>
+          </div>
         </div>
       ) : null}
 
-      {loadState === "ready" && message ? <p className="text-sm text-danger">{message}</p> : null}
+      <div aria-live="polite" aria-atomic="true">
+        {message && loadState === "ready" ? <p role="alert" className="text-sm text-danger">{message}</p> : null}
+      </div>
     </section>
   );
 }

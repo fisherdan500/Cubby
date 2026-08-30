@@ -21,12 +21,9 @@ export default async function InvitePage({ params }: { params: { token: string }
               Sign in with the invited account to review this invitation. For privacy, unavailable and mismatched invitations look the same.
             </p>
             {!session?.user ? (
-              <div className="flex gap-3">
+              <div>
                 <Link href={`/login?next=/invite/${params.token}`}>
                   <Button>Sign in to review</Button>
-                </Link>
-                <Link href={`/register?next=/invite/${params.token}`}>
-                  <Button variant="secondary">Create account</Button>
                 </Link>
               </div>
             ) : null}
@@ -35,17 +32,14 @@ export default async function InvitePage({ params }: { params: { token: string }
           <>
             <h1 className="text-center font-editorial text-3xl font-bold">Join {invite.household.name}</h1>
             <p className="text-sm text-muted-foreground">
-              You were invited as {invite.role}. Sign in or create an account, then accept the invite.
+              You were invited as {invite.role}. Sign in with the invited account, then accept the invite.
             </p>
             {session?.user ? (
               <AcceptInviteButton token={params.token} />
             ) : (
-              <div className="flex gap-3">
+              <div>
                 <Link href={`/login?next=/invite/${params.token}`}>
                   <Button>Sign in</Button>
-                </Link>
-                <Link href={`/register?next=/invite/${params.token}`}>
-                  <Button variant="secondary">Create account</Button>
                 </Link>
               </div>
             )}

@@ -9,7 +9,9 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   TRUSTED_ORIGINS: z.string().optional(),
   ENABLE_REGISTRATION: z.string().default("true"),
-  APP_TIMEZONE: z.string().optional().transform((value) => normalizeTimeZone(value, DEFAULT_APP_TIMEZONE))
+  APP_TIMEZONE: z.string().optional().transform((value) => normalizeTimeZone(value, DEFAULT_APP_TIMEZONE)),
+  CUBBY_THROTTLE_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/).optional(),
+  CUBBY_TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(1).default(0)
 });
 
 export const env = envSchema.parse({
@@ -22,7 +24,9 @@ export const env = envSchema.parse({
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   TRUSTED_ORIGINS: process.env.TRUSTED_ORIGINS,
   ENABLE_REGISTRATION: process.env.ENABLE_REGISTRATION ?? "true",
-  APP_TIMEZONE: process.env.APP_TIMEZONE ?? DEFAULT_APP_TIMEZONE
+  APP_TIMEZONE: process.env.APP_TIMEZONE ?? DEFAULT_APP_TIMEZONE,
+  CUBBY_THROTTLE_KEY: process.env.CUBBY_THROTTLE_KEY,
+  CUBBY_TRUSTED_PROXY_HOPS: process.env.CUBBY_TRUSTED_PROXY_HOPS
 });
 
 export const automatedBackupConfig = readAutomatedBackupConfig({
