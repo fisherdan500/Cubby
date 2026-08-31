@@ -3082,9 +3082,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 3055,
+      "anchorEnd": 3162,
       "anchorFile": "package.json",
-      "anchorStart": 3046,
+      "anchorStart": 3153,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -3235,9 +3235,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 3156,
+      "anchorEnd": 3263,
       "anchorFile": "package.json",
-      "anchorStart": 3138,
+      "anchorStart": 3245,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -3248,6 +3248,23 @@
       "ownerId": "package_command:scripts/integrity-check.ts",
       "ownerModule": "scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
+      "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
+      "anchorEnd": 2898,
+      "anchorFile": "package.json",
+      "anchorStart": 2866,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:p1-3-migrator-bootstrap",
+        "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts:package_script:verify:p1-3-migrator-bootstrap:package.json#scripts.verify:p1-3-migrator-bootstrap",
+      "ownerId": "package_command:scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts"
     },
     {
       "anchorBytes": "operation === \"attest-successor\"",
@@ -3439,9 +3456,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 3099,
+      "anchorEnd": 3206,
       "anchorFile": "package.json",
-      "anchorStart": 3083,
+      "anchorStart": 3190,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -5449,10 +5466,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "eb75c263afdefe6f244aeac34fa1aade8aae746e352bc79fc5c3a9e09dd7bc99",
+  "semanticArtifactDigest": "1ebd058d814589ad98c48915d498afe7a82ae72d937b0a4d947bfae36c8fa8ec",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "35386b89b0d2b68b8e2a742c5b7466a9715defe1a7e86e40e41bb1154ccb3848",
+  "semanticCoverageDigest": "c91a49f756ace7fe7b1827e37dee9bc4a2412ae19d2e30b21243af3ec7ba2b87",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "ef1ebefd85e66705abbfadb0ab127ae9653db820ef4fbdcc280ed9886a37bf35"
+  "semanticFingerprint": "98452544d97dc9eb5ece15d31a099aa955c9957050cd193c59a5d7515df3141a"
 }

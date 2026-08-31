@@ -157,6 +157,11 @@ docker compose logs --tail 300 app
 
 The app container provisions or rotates the non-owner `cubby_runtime`, `cubby_auth`, `cubby_email_delivery`, and `cubby_security_operator` roles through the migration-owner connection, runs `prisma migrate deploy` with `MIGRATION_DATABASE_URL`, reconciles the fresh-auth and email-delivery keyrings into runtime-inaccessible owner tables, then removes migration-role and component-password variables before starting the Next server. Ordinary services use `DATABASE_URL`, Better Auth alone uses `AUTH_DATABASE_URL`, and only the encrypted SMTP worker uses `EMAIL_DELIVERY_DATABASE_URL`. The security operator role is not an app runtime role: it has no memberships, object ownership, or table privileges and can execute only its aggregate function. This applies on fresh and existing volumes and fails closed for absent, malformed, version-mismatched, or referenced-but-missing key material. Do not manually grant `cubby_runtime` direct Session DML, delivery receipt authority, or credential/key-table privileges.
 
+For a pre-P1-3 existing volume that is still owned by legacy bootstrap role
+`cubby`, follow [Existing-volume migration-owner bootstrap](ALWAYS_ON_UPDATES.md#existing-volume-migration-owner-bootstrap)
+before app startup. Do not improvise `REASSIGN OWNED`; the fixed-baseline rehearsal
+must pass before any live ownership transition.
+
 ### Host-local security aggregate
 
 The primary Compose package does not publish PostgreSQL. A host operator queries the content-free global incident aggregate by starting a one-off child in the running app image. Do not put the operator URL in Compose, an app environment file, or a worker configuration.
