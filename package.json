@@ -28,6 +28,7 @@
     "verify:browser-operation-pilot": "tsx scripts/browser-operation-pilot.acceptance-rehearsal.ts",
     "verify:sprout-preview-commit": "tsx scripts/sprout-preview-commit.acceptance-rehearsal.ts",
     "verify:update-preflight": "tsx scripts/update-preflight.ts",
+    "verify:p1-3-migrator-bootstrap": "tsx scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

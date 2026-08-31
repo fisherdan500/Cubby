@@ -53,6 +53,60 @@ procedure instead of improvising a down migration.
 
 ## Fail-Closed Preflight
 
+### Existing-volume migration-owner bootstrap
+
+Deployments created before the P1-3 role split may have a preserved PostgreSQL
+volume owned by the legacy bootstrap role `cubby`, while merged Compose now
+connects migrations as `cubby_migrator`. If the app restart-loops with a sanitized
+migration failure and read-only diagnosis proves that `cubby_migrator` is absent
+and no P1-3 migration has applied, stop the app and use the reviewed source-owned
+bootstrap before retrying startup. This is a live database ownership mutation and
+requires explicit recovery authorization plus a fresh verified backup.
+
+This recovery applies only after PostgreSQL has already been explicitly recreated
+with the merged Compose environment while preserving its named volume. Before the
+mutation, require the running container's configured `POSTGRES_USER` to be
+`cubby_migrator`, even though the preserved database still has only legacy role
+`cubby`. This proves `POSTGRES_PASSWORD` is the intended
+`CUBBY_MIGRATOR_DB_PASSWORD`, not the legacy password.
+
+From the exact merged repository root, stream the script into the existing healthy
+PostgreSQL container. The shell moves the intended password from the container
+environment to a PostgreSQL session setting; the value is not printed and is not
+expanded into the `docker`, shell, or `psql` argument list:
+
+```bash
+docker compose exec -T postgres sh -lc 'test "$POSTGRES_USER" = cubby_migrator && case "$POSTGRES_PASSWORD" in ""|*[!A-Za-z0-9_-]*) exit 64;; esac && export PGOPTIONS="-c cubby.bootstrap_migrator_password=$POSTGRES_PASSWORD" && exec psql -X -v ON_ERROR_STOP=1 -U cubby -d "$POSTGRES_DB"' < scripts/bootstrap-existing-migrator-role.sql
+```
+
+The script fails closed unless the session is the legacy superuser,
+`cubby_migrator` is absent, exactly 41 pre-P1-3 migrations are successfully
+applied, all six P1-3 migration IDs are absent from the ledger, and the session
+password setting is nonempty. It transfers only non-extension application relations,
+routines, enum/domain types, the `public` schema, and the Cubby database. It does
+not use `REASSIGN OWNED`, because the PostgreSQL bootstrap role owns system-required
+objects. PostgreSQL requires that original bootstrap role to retain `SUPERUSER`;
+the protocol makes it `NOLOGIN` and strips create/inherit/replication/bypass
+capabilities while leaving extension ownership intact.
+
+After the script succeeds, start only the app through the separately approved
+deployment procedure. Startup then provisions restricted roles, applies pending
+migrations, verifies key digests, and starts the server. Verify exact migration
+parity, role attributes/ownership, health, unchanged PostgreSQL identity/volume,
+and retained backup/staging/secret mounts. Never run this bootstrap when the
+migrator role already exists, when any target migration is partially applied, or
+against a fresh volume.
+
+The generated-credential fixed-baseline rehearsal is:
+
+```bash
+npm run verify:p1-3-migrator-bootstrap
+```
+
+It applies the 41-migration legacy baseline, performs the ownership transition,
+provisions restricted roles, applies the six P1-3 migrations, verifies key rows
+and ownership, then removes its project-scoped PostgreSQL resources.
+
 From the repository root, run the non-mutating preflight with the selected
 backup file:
 
