@@ -6,7 +6,7 @@ import Link from "next/link";
 import { MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const operationStorageKey = "cubby:global-session-revoke-operation";
+const operationStorageKeyPrefix = "cubby:global-session-revoke-operation";
 const absentTargetHandle = "absent_target_handle";
 const crockford = "0123456789abcdefghjkmnpqrstvwxyz";
 
@@ -58,7 +58,7 @@ function mintOperationId() {
   return `gso_${encoded}`;
 }
 
-function readRetainedOperation(): OperationMetadata | null {
+function readRetainedOperation(operationStorageKey: string): OperationMetadata | null {
   const value = sessionStorage.getItem(operationStorageKey);
   if (!value) return null;
   try {
@@ -87,8 +87,10 @@ async function responseData(response: Response) {
   return { body, data: body?.data as Record<string, unknown> | undefined };
 }
 
-export function SessionManager() {
+export function SessionManager({ accountScope }: { accountScope: string }) {
   const router = useRouter();
+  const operationStorageKey = `${operationStorageKeyPrefix}:${encodeURIComponent(accountScope)}`;
+  const accountScopeRef = useRef(accountScope);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [message, setMessage] = useState("");
@@ -96,38 +98,63 @@ export function SessionManager() {
   const [confirmation, setConfirmation] = useState<RevokeAction | null>(null);
   const [password, setPassword] = useState("");
   const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmationOpenerRef = useRef<HTMLButtonElement | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   async function load() {
+    const requestedAccountScope = accountScope;
+    if (accountScopeRef.current !== requestedAccountScope) return;
     setLoadState("loading");
     setMessage("");
     try {
       const response = await fetch("/api/account/sessions", { cache: "no-store" });
       const { body, data } = await responseData(response);
+      if (accountScopeRef.current !== requestedAccountScope) return;
       if (!response.ok || body?.ok !== true || !Array.isArray(data?.sessions)) throw new Error(body?.error?.message ?? "Sessions could not be loaded.");
       setSessions(data.sessions as SessionRow[]);
       setLoadState("ready");
     } catch (error) {
+      if (accountScopeRef.current !== requestedAccountScope) return;
       setSessions([]);
       setLoadState("error");
       setMessage(error instanceof Error ? error.message : "Sessions could not be loaded.");
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    accountScopeRef.current = accountScope;
+    setSessions([]);
+    setLoadState("loading");
+    setMessage("");
+    setBusy(false);
+    setConfirmation(null);
+    setPassword("");
+    readRetainedOperation(operationStorageKey);
+    void load();
+  // `load` deliberately captures this exact account scope and rejects late responses after a scope change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountScope, operationStorageKey]);
   useEffect(() => { if (confirmation) passwordRef.current?.focus(); }, [confirmation]);
 
-  function openConfirmation(action: RevokeAction) {
+  function openConfirmation(action: RevokeAction, opener: HTMLButtonElement) {
     setMessage("");
     setPassword("");
+    confirmationOpenerRef.current = opener;
     setConfirmation(action);
   }
 
   function closeConfirmation() {
     setPassword("");
     setConfirmation(null);
+    window.setTimeout(() => {
+      const opener = confirmationOpenerRef.current;
+      if (opener?.isConnected && !opener.disabled) opener.focus();
+      else headingRef.current?.focus();
+    }, 0);
   }
 
   async function checkStatus(metadata: OperationMetadata): Promise<StatusResult> {
+    if (accountScopeRef.current !== accountScope) return "unknown";
     try {
       const response = await fetch("/api/account/sessions/status", {
         method: "POST",
@@ -135,9 +162,10 @@ export function SessionManager() {
         body: JSON.stringify(metadata)
       });
       const { body, data } = await responseData(response);
+      if (accountScopeRef.current !== accountScope) return "unknown";
       if (!response.ok || body?.ok !== true) return "unknown";
       if (data?.status === "revoked" || data?.status === "already_revoked" || data?.status === "stale_security_version") {
-        sessionStorage.removeItem(operationStorageKey);
+        if (accountScopeRef.current === accountScope) sessionStorage.removeItem(operationStorageKey);
         return "terminal";
       }
       return data?.status === "pending" ? "pending" : "unknown";
@@ -147,6 +175,7 @@ export function SessionManager() {
   }
 
   async function finishTerminalReconciliation(action: RevokeAction) {
+    if (accountScopeRef.current !== accountScope) return;
     closeConfirmation();
     if (action.scope === "current" || action.scope === "all") {
       router.push("/login");
@@ -159,9 +188,11 @@ export function SessionManager() {
   async function operationFor(action: RevokeAction) {
     const target = action.targetHandle ?? absentTargetHandle;
     const intentFingerprint = await sha256Framed(action.scope, target);
-    const retained = readRetainedOperation();
+    if (accountScopeRef.current !== accountScope) throw new Error("account_scope_changed");
+    const retained = readRetainedOperation(operationStorageKey);
     if (retained) {
       const status = await checkStatus(retained);
+      if (accountScopeRef.current !== accountScope) throw new Error("account_scope_changed");
       if (status === "unknown") throw new Error("The previous sign-out result is still unknown. Try checking again before reissuing it.");
       if (status === "pending" && retained.intentFingerprint !== intentFingerprint) {
         throw new Error("Another session sign-out is still pending. Resolve it before starting a different action.");
@@ -175,6 +206,7 @@ export function SessionManager() {
       openingFingerprint: await sha256Framed("session_revoke_opening", operationId, action.scope, target),
       intentFingerprint
     };
+    if (accountScopeRef.current !== accountScope) throw new Error("account_scope_changed");
     sessionStorage.setItem(operationStorageKey, JSON.stringify(metadata));
     return metadata;
   }
@@ -189,12 +221,15 @@ export function SessionManager() {
     let metadata: OperationMetadata | null = null;
     let reconciliationAttempted = false;
     try {
+      if (accountScopeRef.current !== accountScope) return;
       metadata = await operationFor(action);
+      if (accountScopeRef.current !== accountScope) return;
       if (!metadata) {
         closeConfirmation();
         await load();
         return;
       }
+      if (accountScopeRef.current !== accountScope) return;
       const response = await fetch("/api/account/sessions/revoke", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -207,8 +242,10 @@ export function SessionManager() {
         })
       });
       const { body, data } = await responseData(response);
+      if (accountScopeRef.current !== accountScope) return;
       if (!response.ok || body?.ok !== true) {
         const status = await checkStatus(metadata);
+        if (accountScopeRef.current !== accountScope) return;
         reconciliationAttempted = true;
         if (status === "terminal") {
           await finishTerminalReconciliation(action);
@@ -223,8 +260,10 @@ export function SessionManager() {
       }
       if (data?.status !== "revoked" && data?.status !== "already_revoked" && data?.status !== "stale_security_version") {
         await checkStatus(metadata);
+        if (accountScopeRef.current !== accountScope) return;
         throw new Error("The session sign-out result is unknown. Check again before retrying.");
       }
+      if (accountScopeRef.current !== accountScope) return;
       sessionStorage.removeItem(operationStorageKey);
       if (data.status === "stale_security_version") throw new Error("Your security state changed. Sign in again before retrying.");
       closeConfirmation();
@@ -235,8 +274,10 @@ export function SessionManager() {
         await load();
       }
     } catch (error) {
+      if (accountScopeRef.current !== accountScope) return;
       if (metadata && !reconciliationAttempted) {
         const status = await checkStatus(metadata);
+        if (accountScopeRef.current !== accountScope) return;
         if (status === "terminal") {
           await finishTerminalReconciliation(action);
           return;
@@ -249,7 +290,7 @@ export function SessionManager() {
       }
       setMessage(error instanceof Error ? error.message : "The session sign-out result is unknown. Check again before retrying.");
     } finally {
-      setBusy(false);
+      if (accountScopeRef.current === accountScope) setBusy(false);
     }
   }
 
@@ -257,16 +298,19 @@ export function SessionManager() {
     <section className="space-y-4" aria-labelledby="active-sessions-heading">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 id="active-sessions-heading" className="font-editorial text-xl font-bold">Active sessions</h2>
+          <h2 ref={headingRef} id="active-sessions-heading" tabIndex={-1} className="font-editorial text-xl font-bold">Active sessions</h2>
           <p className="text-sm text-muted-foreground">Review and securely sign out browsers using your Cubby account.</p>
-          <Link href="/app/settings/security-history" className="mt-2 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">View security history</Link>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-primary">
+            <Link href="/account/security" className="underline-offset-4 hover:underline">Manage account security</Link>
+            <Link href="/app/settings/security-history" className="underline-offset-4 hover:underline">View security history</Link>
+          </div>
         </div>
         {loadState === "ready" && sessions.length > 0 ? (
           <div className="flex flex-col gap-2 sm:flex-row">
             {sessions.some((session) => !session.isCurrent) ? (
-              <Button variant="secondary" onClick={() => openConfirmation({ scope: "others", label: "other devices" })} disabled={busy}>Sign out other devices</Button>
+              <Button variant="secondary" onClick={(event) => openConfirmation({ scope: "others", label: "other devices" }, event.currentTarget)} disabled={busy}>Sign out other devices</Button>
             ) : null}
-            <Button variant="secondary" onClick={() => openConfirmation({ scope: "all", label: "all devices" })} disabled={busy}>Sign out all devices</Button>
+            <Button variant="secondary" onClick={(event) => openConfirmation({ scope: "all", label: "all devices" }, event.currentTarget)} disabled={busy}>Sign out all devices</Button>
           </div>
         ) : null}
       </div>
@@ -297,7 +341,7 @@ export function SessionManager() {
                     <div><dt className="inline font-semibold text-foreground">Expires: </dt><dd className="inline">{dateLabel(session.expiresAt)}</dd></div>
                     {session.idleWarningAt ? <div><dt className="inline font-semibold text-foreground">Idle warning: </dt><dd className="inline">{dateLabel(session.idleWarningAt)}</dd></div> : null}
                   </dl>
-                  <Button className="mt-3 w-full sm:w-auto" variant="secondary" onClick={() => openConfirmation({ scope: session.isCurrent ? "current" : "one", targetHandle: session.handle, label: session.isCurrent ? "this device" : session.deviceLabel })} disabled={busy}>
+                  <Button className="mt-3 w-full sm:w-auto" variant="secondary" onClick={(event) => openConfirmation({ scope: session.isCurrent ? "current" : "one", targetHandle: session.handle, label: session.isCurrent ? "this device" : session.deviceLabel }, event.currentTarget)} disabled={busy}>
                     {session.isCurrent ? "Sign out this device" : "Sign out this session"}
                   </Button>
                 </div>

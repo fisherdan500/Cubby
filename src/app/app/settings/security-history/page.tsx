@@ -6,7 +6,7 @@ export default async function SecurityHistoryPage() {
   const user = await requireUserPage();
   return (
     <AppShell title="Security history" userName={user.name}>
-      <SecurityHistory />
+      <SecurityHistory key={`history:${user.id}`} accountScope={user.id} headingLevel={2} />
     </AppShell>
   );
 }

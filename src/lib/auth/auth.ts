@@ -24,10 +24,7 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      console.info(`Password reset requested for ${user.email}: ${url}`);
-    }
+    revokeSessionsOnPasswordReset: true
   },
   databaseHooks: {
     session: {

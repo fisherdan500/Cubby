@@ -60,3 +60,18 @@ export async function verifyRecoveryCode(code: string, record: RecoveryCodeRecor
   const candidate = await hashRecoveryCode(code, record.salt);
   return timingSafeEqual(candidate.derivedKey as Buffer<ArrayBuffer>, record.derivedKey as Buffer<ArrayBuffer>);
 }
+
+const neutralRecoveryRecords = Array.from({ length: 9 }, (_, index): RecoveryCodeRecord => ({
+  salt: Buffer.alloc(16, index + 1),
+  derivedKey: Buffer.alloc(32, 0),
+  kdfVersion: 1
+}));
+
+export async function performNeutralRecoveryCodeVerification(
+  code: string,
+  verify: (value: string, record: RecoveryCodeRecord) => Promise<boolean> = verifyRecoveryCode
+) {
+  for (const record of neutralRecoveryRecords) {
+    await verify(code, record).catch(() => false);
+  }
+}

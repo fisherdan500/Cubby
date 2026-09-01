@@ -438,10 +438,11 @@ export async function changePasswordWithCurrentPassword(
   newPassword: string,
   verifier: { verify: (input: { hash: string; password: string }) => Promise<boolean> },
   hasher: { hash: (password: string) => Promise<string> },
-  signer: ReturnType<typeof createFreshAuthAttestationSigner> = createFreshAuthAttestationSigner()
+  signer: ReturnType<typeof createFreshAuthAttestationSigner> = createFreshAuthAttestationSigner(),
+  throttleContext?: FreshAuthThrottleContext
 ) {
   const replacementPasswordHash = await hasher.hash(newPassword);
-  await issueFreshAuthGrantForCurrentPassword(database, expected, { ...input, purpose: "password_change" }, currentPassword, verifier, { replacementPasswordHash, signer });
+  await issueFreshAuthGrantForCurrentPassword(database, expected, { ...input, purpose: "password_change" }, currentPassword, verifier, { replacementPasswordHash, signer }, undefined, throttleContext);
   return finalizePasswordChange(database, expected, input, newPassword, hasher, replacementPasswordHash);
 }
 
@@ -461,6 +462,24 @@ export async function finalizeStalePasswordChange(
     await tx.globalSecurityOperation.update({ where: { userId_operationId: { userId: expected.userId, operationId } }, data: { status: "stale", outcomeVersion: 1, outcomeCode: "stale_security_version", outcomeSnapshot: {}, terminalAt: now } });
     await tx.globalSecurityOperationBinding.update({ where: { id: binding.id }, data: { state: "terminal" } });
     await tx.$executeRaw`SELECT "write_global_security_event"(${expected.userId},'operation_outcome','stale_security_version',${operationId})`;
+  }, { isolationLevel: "Serializable" });
+}
+
+/** Safe terminal replay for a password transition after the user signs in again. */
+export async function getPasswordChangeStatus(
+  database: GlobalSecurityDatabase,
+  userId: string,
+  rawInput: { operationId: string; openingFingerprint: string; intentFingerprint: string }
+): Promise<{ operationId: string; status: string; outcomeCode: string | null; terminalAt: Date | null }> {
+  const operationId = assertGlobalSecurityOperationId(rawInput.operationId);
+  return database.$transaction(async (tx) => {
+    const binding = await tx.globalSecurityOperationBinding.findFirst({ where: { userId, operationId } });
+    const operation = binding && await tx.globalSecurityOperation.findFirst({
+      where: { bindingId: binding.id, userId, operationId },
+      select: { intentFingerprint: true, status: true, outcomeCode: true, terminalAt: true }
+    });
+    if (!binding || !operation || binding.operationKey !== GlobalSecurityOperationKey.passwordChange || binding.openingFingerprint !== rawInput.openingFingerprint || operation.intentFingerprint !== rawInput.intentFingerprint) throw new Error("not_found");
+    return { operationId, status: operation.status, outcomeCode: operation.outcomeCode, terminalAt: operation.terminalAt };
   }, { isolationLevel: "Serializable" });
 }
 
