@@ -147,11 +147,17 @@ export type StructuralIdentityAnchor = {
 };
 
 export const APPENDIX_A_SIDECAR_PATHS = [
+  "src/app/account/security/page.operation.ts",
   "src/app/api/account/appearance/issue/route.operation.ts",
   "src/app/api/account/appearance/route.operation.ts",
   "src/app/api/account/browser-operations/[operationId]/route.operation.ts",
   "src/app/api/account/browser-operations/partition/route.operation.ts",
+  "src/app/api/account/recovery/reset/route.operation.ts",
   "src/app/api/account/session-activity/route.operation.ts",
+  "src/app/api/account/security/email-change/route.operation.ts",
+  "src/app/api/account/security/password/route.operation.ts",
+  "src/app/api/account/security/password/status/route.operation.ts",
+  "src/app/api/account/security/recovery/route.operation.ts",
   "src/app/api/account/security-history/export/route.operation.ts",
   "src/app/api/account/security-history/route.operation.ts",
   "src/app/api/account/sessions/revoke/route.operation.ts",
@@ -232,6 +238,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/app/settings/sessions/page.operation.ts",
   "src/app/app/settings/units/page.operation.ts",
   "src/app/account/appearance/page.operation.ts",
+  "src/app/recovery/page.operation.ts",
   "src/app/invite/[token]/page.operation.ts",
   "src/app/layout.operation.ts",
   "src/app/login/page.operation.ts",
@@ -240,6 +247,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/platform/settings/page.operation.ts",
   "src/app/register/page.operation.ts",
   "src/components/actions/accept-invite-button.operation.ts",
+  "src/components/account-security-panel.operation.ts",
   "src/components/actions/activity-actions.operation.ts",
   "src/components/actions/baby-lifecycle-button.operation.ts",
   "src/components/actions/confirmed-activity-delete.operation.ts",

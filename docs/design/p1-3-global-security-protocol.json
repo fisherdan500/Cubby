@@ -421,7 +421,10 @@
       "recovery_code_ui",
       "foundation_only_release",
       "generic_better_auth_security_endpoints"
-    ]
+    ],
+    "sequencingDecision": "DEC-PROD-408",
+    "activationBoundary": "existing_user_password_recovery_email_all_or_none_before_initial_credentials",
+    "initialCredentialSignup": "remain_denied_until_separate_invitation_onboarding_program"
   },
   "routeInventory": [
     {
@@ -793,7 +796,7 @@
     "transaction": "serializable",
     "reauthorization": "both_version_components_equal_or_stale_security_version",
     "mutation": "callback_only_after_in_transaction_reauthorization",
-    "routeExposure": "none"
+    "routeExposure": "selected_existing_user_activation_under_DEC_PROD_408"
   },
   "phase3FreshAuthBoundary": {
     "operationIdentity": "gso_crockford_26_database_enforced",
@@ -807,7 +810,7 @@
     ],
     "replay": "matching_submitted_unexpired_grant_only_without_password_reverify",
     "status": "matching_binding_and_grant_only_with_expired_state_durably_terminalized",
-    "routeExposure": "none",
+    "routeExposure": "selected_existing_user_activation_under_DEC_PROD_408",
     "consumption": "matching_submitted_pending_operation_and_current_two_component_vector_only",
     "passwordAttestation": {
       "algorithm": "hmac_sha256",
@@ -835,7 +838,7 @@
     ],
     "terminalOutcome": "completed|changed",
     "postCommit": "normal_new_password_sign_in_required",
-    "routeExposure": "none",
+    "routeExposure": "selected_existing_user_activation_under_DEC_PROD_408",
     "credentialMutationReceipt": "security_definer_password_transition_procedure_with_attested_exact_replacement_hash_and_runtime_direct_write_denial",
     "privilegeBoundary": "direct_cubby_runtime_sql_requires_owner_key_verified_one_time_password_attestation_and_cannot_substitute_replacement_hash",
     "deploymentRoleLifecycle": "startup_provisions_runtime_role_then_migrates_then_owner_reconciles_versioned_attestation_keyring_before_unsetting_migration_secrets_and_starting_server"

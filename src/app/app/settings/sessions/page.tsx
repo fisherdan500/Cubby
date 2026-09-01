@@ -9,7 +9,7 @@ export default async function SessionsPage() {
     <AppShell title="Sessions" userName={user.name}>
       <div>
         <Card>
-          <SessionManager />
+          <SessionManager key={`sessions:${user.id}`} accountScope={user.id} />
         </Card>
       </div>
     </AppShell>

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "decision": "DEC-PROD-408",
+  "state": "review_candidate_unreleased",
+  "release": "all_or_none",
+  "requiredFamilies": {
+    "password": ["src/app/api/account/security/password/route.ts", "src/app/api/account/security/password/status/route.ts"],
+    "recovery": ["src/app/api/account/security/recovery/route.ts", "src/app/api/account/recovery/reset/route.ts", "src/app/recovery/page.tsx", "src/app/login/page.tsx"],
+    "emailChange": ["src/app/api/account/security/email-change/route.ts"],
+    "globalAccountSecurity": ["src/app/account/security/page.tsx", "src/components/account-security-panel.tsx", "src/app/app/settings/sessions/page.tsx", "src/app/app/settings/security-history/page.tsx"]
+  },
+  "genericBetterAuth": {
+    "allowed": ["/api/auth/sign-in/email"],
+    "denied": ["/api/auth/sign-up/email", "/api/auth/change-password", "/api/auth/request-password-reset", "/api/auth/reset-password", "/api/auth/list-sessions", "/api/auth/revoke-session", "/api/auth/revoke-other-sessions"]
+  },
+  "secrets": {
+    "emailVerification": "manual_input_only",
+    "recoveryCodes": "display_once_enrollment_response_only",
+    "browserStorage": "safe_operation_metadata_only"
+  }
+}

@@ -280,8 +280,16 @@ export async function beginRecoveryReset(
   const snapshotThrottle = "throttle" in snapshot ? snapshot.throttle : undefined;
   const snapshotQuiet = "quiet" in snapshot && snapshot.quiet;
   const matches: NonNullable<typeof snapshot.codes> = [];
-  if (snapshotQuiet) await crypto.verify(rawInput.code, dummyRecoveryRecord);
-  for (const record of snapshotQuiet ? [] : snapshot.codes ?? []) if (await crypto.verify(rawInput.code, { salt: Buffer.from(record.salt), derivedKey: Buffer.from(record.derivedKey), kdfVersion: record.kdfVersion as 1 })) matches.push(record);
+  const records = snapshot.codes ?? [];
+  if (records.length > 9) throw new Error("recovery_code_invalid");
+  for (let index = 0; index < 9; index += 1) {
+    const record = snapshotQuiet ? undefined : records[index];
+    const candidate = record
+      ? { salt: Buffer.from(record.salt), derivedKey: Buffer.from(record.derivedKey), kdfVersion: record.kdfVersion as 1 }
+      : dummyRecoveryRecord;
+    const valid = await crypto.verify(rawInput.code, candidate).catch(() => false);
+    if (record && valid) matches.push(record);
+  }
   if (matches.length !== 1) {
     await database.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('global-security-transition:v1', 0))`;
@@ -412,10 +420,11 @@ export async function recoverPasswordWithCode(
   newPassword: string,
   hasher: { hash: (password: string) => Promise<string> },
   crypto: { verify: (code: string, record: RecoveryCodeRecord) => Promise<boolean> } = { verify: verifyRecoveryCode },
-  signer: ReturnType<typeof createFreshAuthAttestationSigner> = createFreshAuthAttestationSigner()
+  signer: ReturnType<typeof createFreshAuthAttestationSigner> = createFreshAuthAttestationSigner(),
+  throttleContext?: FreshAuthThrottleContext
 ) {
   const replacementPasswordHash = await hasher.hash(newPassword);
-  const opened = await beginRecoveryReset(database, input, crypto, { replacementPasswordHash, signer });
+  const opened = await beginRecoveryReset(database, input, crypto, { replacementPasswordHash, signer }, throttleContext);
   const finalized = await finalizeRecoveryPasswordReset(database, { userId: input.userId, recoverySessionId: opened.recoverySessionId, operationId: input.operationId, credentialVersion: input.credentialVersion, sessionSecurityVersion: input.sessionSecurityVersion }, input, newPassword, hasher, replacementPasswordHash);
   return { ...finalized, recoverySessionId: opened.recoverySessionId };
 }

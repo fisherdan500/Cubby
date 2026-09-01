@@ -19,6 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
           <p className="text-sm text-muted-foreground">Sign in once and keep tracking on your own device.</p>
         </div>
         <AuthForm next={next} />
+        <p className="text-center text-sm text-muted-foreground"><Link href="/recovery" className="font-semibold text-primary underline-offset-4 hover:underline">Use an offline recovery code</Link></p>
       </Card>
     </main>
   );

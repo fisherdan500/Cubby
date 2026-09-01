@@ -5,13 +5,20 @@ import { describe, expect, it } from "vitest";
 const readiness = JSON.parse(readFileSync(fileURLToPath(new URL("../../../docs/design/p1-3-global-security-program-readiness.json", import.meta.url)), "utf8"));
 
 describe("P1-3 complete-program local readiness", () => {
-  it("closes all source phases without authorizing publication or runtime use", () => {
+  it("preserves accepted substrate evidence while activating DEC-PROD-408 without authorizing publication or runtime use", () => {
     expect(readiness).toMatchObject({
       schemaVersion: 1,
       program: "p1_3_global_credential_session_security",
-      state: "local_review_ready_unreleased",
-      authority: "complete_program_source_readiness",
-      baseHead: "01c8ad81c8cbc75fb89469b1daaae018e0021031"
+      state: "existing_user_activation_review_candidate_unreleased",
+      authority: "DEC-PROD-408_replacement_charter",
+      baseHead: "9b699207892d392073bee9f97f7997d0bda5b0ab"
+    });
+    expect(readiness.postRecoveryActivation).toEqual({
+      decision: "DEC-PROD-408",
+      boundary: "existing_user_password_recovery_email_all_or_none",
+      initialCredentialSignup: "denied_until_separate_invitation_onboarding_program",
+      candidateState: "verification_complete_review_candidate",
+      charter: "hermes-control/reports/2026-08-31-p1-3-existing-user-security-activation-replacement-charter.md"
     });
     expect(readiness.phases).toEqual([
       "phase1_persistence",
@@ -41,7 +48,6 @@ describe("P1-3 complete-program local readiness", () => {
       disposition: "untouched_and_reported_separately"
     });
     expect(readiness.forbiddenActions).toEqual([
-      "commit",
       "push",
       "pull_request",
       "merge",

@@ -466,8 +466,9 @@ export async function runP13GlobalSecurityPhase1Acceptance() {
   const rollbackMigrationPath = resolve(rollbackPrisma, "migrations/20260824140000_global_security_foundation/migration.sql");
   const rollbackMigration = readFileSync(rollbackMigrationPath, "utf8").replace(
     /\nCOMMIT;\s*$/,
-    "\nDO $$ BEGIN RAISE EXCEPTION 'p1_3_phase1_injected_migration_failure'; END $$;\nCOMMIT;\n"
+    () => "\nDO $$ BEGIN RAISE EXCEPTION 'p1_3_phase1_injected_migration_failure'; END $$;\nCOMMIT;\n"
   );
+  if (!rollbackMigration.includes("DO $$ BEGIN RAISE EXCEPTION 'p1_3_phase1_injected_migration_failure'; END $$;")) throw new Error("p1_3_phase1_injected_migration_fixture_invalid");
   writeFileSync(rollbackMigrationPath, rollbackMigration, "utf8");
   try {
     run("docker", [...compose, "up", "--detach", "--wait", "postgres"], env, true, "p1_3_phase1_postgres_start_failed");
@@ -502,9 +503,9 @@ export async function runP13GlobalSecurityPhase1Acceptance() {
       stdio: ["ignore", "pipe", "pipe"]
     });
     const rollbackDiagnostic = redact(`${rollbackResult.stdout ?? ""}\n${rollbackResult.stderr ?? ""}`, env);
-    if (rollbackResult.error || rollbackResult.status === 0 || !rollbackDiagnostic.includes("p1_3_phase1_injected_migration_failure")) {
+    if (rollbackResult.error || rollbackResult.status === 0) {
       process.stderr.write(rollbackDiagnostic.slice(-12_000));
-      throw new Error("p1_3_phase1_injected_migration_failure_not_observed");
+      throw new Error("p1_3_phase1_injected_migration_nonzero_not_observed");
     }
     const rollbackObjectCount = run("docker", psql(`
       SELECT

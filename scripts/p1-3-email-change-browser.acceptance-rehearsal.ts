@@ -9,7 +9,7 @@ import { runEmailSignInThrottleCarrier } from "../src/server/services/sign-in-em
 const root = resolve(import.meta.dirname, "..");
 const workerRuntime = resolve(root, "..", "..", "..", "worker-runtime");
 const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const operationStorageKey = "cubby:global-session-revoke-operation";
+const operationStorageKey = "cubby:global-session-revoke-operation:synthetic-user";
 
 type CdpMessage = { id?: number; method?: string; params?: unknown; result?: { result?: { value?: unknown }; exceptionDetails?: unknown }; error?: { message?: string } };
 type SyntheticMode = "pending-retry" | "terminal-reconciliation" | "current-redirect" | "all-redirect" | "layout";
@@ -42,8 +42,19 @@ const syntheticSecrets = {
   ...syntheticSessionInternals,
   firstPassword: "phase7-first-password-must-not-persist",
   secondPassword: "phase7-second-password-must-not-persist",
-  cancelPassword: "phase7-cancel-password-must-clear"
+  cancelPassword: "phase7-cancel-password-must-clear",
+  activationCurrentPassword: "activation-current-password-must-not-persist",
+  activationNextPassword: "activation-next-password-must-not-persist",
+  recoveryResetPassword: "activation-recovery-reset-password-must-not-persist",
+  recoveryEmail: "activation-owner@acceptance.invalid",
+  absentRecoveryEmail: "activation-absent@acceptance.invalid",
+  verification: "activation-verification-material-must-not-persist",
+  sessionToken: "activation-session-token-must-not-persist",
+  absentRecoveryCode: "ACTIVATION-ABSENT-RECOVERY-CODE"
 } as const;
+
+const activationRecoveryCodes = Array.from({ length: 10 }, (_, index) => `ACTIVATION-RECOVERY-${String(index + 1).padStart(2, "0")}`);
+const regeneratedRecoveryCodes = Array.from({ length: 10 }, (_, index) => `ACTIVATION-REGENERATED-${String(index + 1).padStart(2, "0")}`);
 
 const initialSessions: SyntheticSession[] = [
   {
@@ -134,6 +145,93 @@ const sessionManagerCss = `
 const securityHistoryCss = `${sessionManagerCss}
 ol{list-style:none;padding:0;margin:0}.sm\\:flex-row{flex-direction:column}.sm\\:justify-between{justify-content:flex-start}.sm\\:w-auto{width:100%}.rounded-lg{border-radius:8px}.border{border:1px solid #a8a29e}.p-4{padding:16px}.text-sm{font-size:14px}.text-xs{font-size:12px}@media(min-width:640px){.sm\\:flex-row{flex-direction:row}.sm\\:justify-between{justify-content:space-between}.sm\\:w-auto{width:auto}}`;
 
+const accountSecurityCss = `${sessionManagerCss}
+.mx-auto{margin-left:auto;margin-right:auto}.max-w-md{max-width:448px}.max-w-3xl{max-width:768px}.min-h-screen{min-height:100vh}.px-3{padding-left:12px;padding-right:12px}.py-12{padding-top:48px;padding-bottom:48px}.py-8{padding-top:32px;padding-bottom:32px}.p-4{padding:16px}.rounded-lg{border-radius:8px}.border{border:1px solid #a8a29e}.bg-card{background:#fff}.w-full{width:100%}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.font-mono{font-family:monospace}@media(min-width:768px){.md\\:px-8{padding-left:32px;padding-right:32px}}`;
+
+async function waitForHarnessSurface(client: Awaited<ReturnType<typeof cdpConnect>>, globalName: string, failure: string) {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
+    try {
+      const state = await client.call("Runtime.evaluate", { expression: `document.readyState==='complete'&&typeof globalThis.${globalName}==='function'`, returnByValue: true });
+      if (state.result?.result?.value === true) return;
+    } catch {
+      // A navigation can replace the execution context between CDP calls.
+    }
+    await new Promise((resolveWait) => setTimeout(resolveWait, 25));
+  }
+  throw new Error(failure);
+}
+
+async function runAccountSecurityAcceptance(client: Awaited<ReturnType<typeof cdpConnect>>, origin: string) {
+  const forbidden = [...Object.values(syntheticSecrets), ...activationRecoveryCodes, ...regeneratedRecoveryCodes];
+  const inspect = async (width: number, height: number, desktop: boolean) => {
+    await client.call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: !desktop });
+    await client.call("Page.navigate", { url: `${origin}/account-security` });
+    await waitForHarnessSurface(client, "__activationRemount", "activation_account_security_document_not_loaded");
+    const result = await client.call("Runtime.evaluate", {
+      expression: `(async()=>{
+        const secrets=${JSON.stringify(forbidden)};
+        const waitFor=async(predicate,code)=>{for(let attempt=0;attempt<240;attempt+=1){const value=predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}throw new Error(code)};
+        const named=(name)=>document.querySelector('[aria-label="'+name+'"]');
+        const button=(name)=>[...document.querySelectorAll('button')].find(node=>node.textContent?.trim()===name);
+        const setValue=(node,value)=>{if(!node)throw new Error('input_missing');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));};
+        const click=async(name)=>{const node=await waitFor(()=>button(name),'button_missing:'+name);node.focus();if(document.activeElement!==node)throw new Error('keyboard_focus_missing:'+name);node.click();await new Promise(resolve=>setTimeout(resolve,0));};
+        const storage=()=>({local:{...localStorage},session:{...sessionStorage}});
+        const assertNoSecrets=(stage,allowCodes=false)=>{const stored=JSON.stringify(storage());const storedIndex=secrets.findIndex(value=>stored.includes(value));if(storedIndex>=0)throw new Error('secret_storage_retention:'+stage+':'+storedIndex);const surfaces=[location.href,document.documentElement.outerHTML,stored];const values=allowCodes?secrets.filter(value=>!value.startsWith('ACTIVATION-')):secrets;const leakIndex=values.findIndex(value=>surfaces.some(surface=>surface.includes(value)));if(leakIndex>=0)throw new Error('secret_browser_surface:'+stage+':'+leakIndex);};
+        const controls=[...document.querySelectorAll('button,input')];
+        if(!controls.length||controls.some(control=>!(control.getAttribute('aria-label')||control.labels?.[0]?.textContent||control.textContent)?.trim()))throw new Error('activation_accessible_name_missing');
+        if(controls.some(control=>{const rect=control.getBoundingClientRect();return rect.width<44||rect.height<44}))throw new Error('activation_touch_target_invalid');
+        if(document.documentElement.scrollWidth>innerWidth||document.body.scrollWidth>innerWidth)throw new Error('activation_horizontal_overflow');
+        if(${desktop ? "true" : "false"}){assertNoSecrets('desktop');return{width:innerWidth,height:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth};}
+        sessionStorage.clear();localStorage.clear();await fetch('/__acceptance/activation-reset',{method:'POST'});globalThis.__activationRemount();await waitFor(()=>document.body.textContent.includes('Change password'),'activation_remount_missing');
+        setValue(named('Current password for password change'),${JSON.stringify(syntheticSecrets.activationCurrentPassword)});setValue(named('New password'),${JSON.stringify(syntheticSecrets.activationNextPassword)});await click('Change password');await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('Synthetic response lost'),'password_loss_missing');
+        const passwordMetadata=JSON.parse(sessionStorage.getItem('cubby:global-security:acceptance-user:password-operation'));if(Object.keys(passwordMetadata).sort().join('|')!=='intentFingerprint|openingFingerprint|operationId')throw new Error('password_metadata_invalid');assertNoSecrets('password-loss');
+        globalThis.__activationRemount();await waitFor(()=>button('Retry password change'),'password_same_id_retry_not_available');
+        setValue(named('Current password for password change'),${JSON.stringify(syntheticSecrets.activationCurrentPassword)});setValue(named('New password'),${JSON.stringify(syntheticSecrets.activationNextPassword)});await click('Retry password change');await waitFor(()=>globalThis.__activationRedirect==='/login','password_sign_in_redirect_missing');await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('Password changed. Sign in again'),'password_retry_missing');assertNoSecrets('password-retry');
+        setValue(named('Current password for recovery codes'),${JSON.stringify(syntheticSecrets.activationCurrentPassword)});await click('Create recovery codes');await waitFor(()=>document.querySelectorAll('[aria-label="Display-once recovery codes"] li').length===10,'recovery_codes_missing');await waitFor(()=>named('Current password for recovery codes')?.value==='','recovery_password_clear_missing');assertNoSecrets('recovery-create',true);
+        window.dispatchEvent(new Event('pagehide'));await waitFor(()=>!document.querySelector('[aria-label="Display-once recovery codes"]'),'recovery_navigation_clear_missing');assertNoSecrets('recovery-navigation');
+        globalThis.__activationRemount();await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('cannot be shown again'),'recovery_remount_status_missing');
+        setValue(named('Current password for recovery codes'),${JSON.stringify(syntheticSecrets.activationCurrentPassword)});await click('Regenerate recovery codes');await waitFor(()=>document.querySelectorAll('[aria-label="Display-once recovery codes"] li').length===10,'recovery regeneration missing');await waitFor(()=>named('Current password for recovery codes')?.value==='','recovery_regeneration_password_clear_missing');assertNoSecrets('recovery-regenerate',true);
+        await click('I saved these codes');await waitFor(()=>!document.querySelector('[aria-label="Display-once recovery codes"]'),'recovery_acknowledgement_clear_missing');setValue(document.querySelector('#rehearsal-code'),${JSON.stringify(regeneratedRecoveryCodes[0])});await waitFor(()=>!button('Rehearse code')?.disabled,'recovery_rehearsal_not_enabled');await click('Rehearse code');await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('Recovery enrollment is ready.'),'recovery_rehearsal_missing');assertNoSecrets('recovery-rehearsal');
+        setValue(named('Current password for email change'),${JSON.stringify(syntheticSecrets.activationCurrentPassword)});setValue(named('New email address'),${JSON.stringify(syntheticSecrets.recoveryEmail)});await waitFor(()=>!button('Send verification')?.disabled,'email_initiation_not_enabled');await click('Send verification');await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('Enter the verification material'),'email_initiation_missing');assertNoSecrets('email-initiation');
+        await click('Check email-change status');await waitFor(()=>!button('Cancel email change')?.disabled,'email_cancel_not_enabled');await click('Cancel email change');await waitFor(()=>!sessionStorage.getItem('cubby:global-security:acceptance-user:email-operation'),'email_cancel_storage_clear_missing');setValue(named('Current password for email change'),${JSON.stringify(syntheticSecrets.activationCurrentPassword)});setValue(named('New email address'),${JSON.stringify(syntheticSecrets.recoveryEmail)});await waitFor(()=>!button('Send verification')?.disabled,'email_second_initiation_not_enabled');await click('Send verification');setValue(document.querySelector('#email-verification'),${JSON.stringify(syntheticSecrets.verification)});await waitFor(()=>!button('Verify new address')?.disabled,'email_verify_not_enabled');await click('Verify new address');await waitFor(()=>!button('Complete email change')?.disabled,'email_cutover_not_enabled');await click('Complete email change');await waitFor(()=>!button('Confirm this device')?.disabled,'email_confirm_not_enabled');await click('Confirm this device');await waitFor(()=>!sessionStorage.getItem('cubby:global-security:acceptance-user:email-operation'),'email_confirm_storage_clear_missing');assertNoSecrets('email-final');
+        return{width:innerWidth,height:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth};
+      })()`,
+      awaitPromise: true,
+      returnByValue: true
+    });
+    if (result.result?.exceptionDetails) throw new Error(`activation_account_security_browser_interaction_failed:${JSON.stringify(result.result.exceptionDetails).slice(-1000)}`);
+    const value = result.result?.result?.value as { width?: number; height?: number; overflow?: number } | undefined;
+    if (!value || value.width !== width || value.height !== height || typeof value.overflow !== "number" || value.overflow > 0) throw new Error(`activation_account_security_viewport_invalid:${JSON.stringify(value)}`);
+  };
+  await inspect(375, 812, false);
+  const state = await fetch(`${origin}/__acceptance/state`).then((response) => response.json()) as { activationRequests?: string[]; passwordOperationIds?: string[]; recoveryOperationIds?: string[]; recoveryRehearsalOperationId?: string; emailActions?: string[] };
+  if (state.activationRequests?.join("|") !== "POST password|POST password-status|POST password|POST recovery:enroll|POST recovery:status|POST recovery:regenerate|POST recovery:acknowledge|POST recovery:rehearse|POST email:initiate|POST email:status|POST email:cancel|POST email:initiate|POST email:verify|POST email:cutover|POST email:confirm" || state.recoveryOperationIds?.length !== 2 || state.recoveryOperationIds[1] !== state.recoveryRehearsalOperationId || state.passwordOperationIds?.length !== 2 || state.passwordOperationIds[0] !== state.passwordOperationIds[1] || state.emailActions?.join("|") !== "initiate|status|cancel|initiate|verify|cutover|confirm") throw new Error(`activation_account_security_protocol_invalid:${state.activationRequests?.join("|") ?? "absent"}:${state.recoveryOperationIds?.length ?? -1}:${state.emailActions?.join("|") ?? "absent"}`);
+  await inspect(1280, 900, true);
+  console.log("P1_3_ACCOUNT_SECURITY_BROWSER_ACCEPTANCE_PASS");
+}
+
+async function runRecoveryResetAcceptance(client: Awaited<ReturnType<typeof cdpConnect>>, origin: string) {
+  const forbidden = [...Object.values(syntheticSecrets), ...activationRecoveryCodes, ...regeneratedRecoveryCodes];
+  const inspect = async (width: number, height: number, desktop: boolean) => {
+    await client.call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: !desktop });
+    await client.call("Page.navigate", { url: `${origin}/recovery` });
+    await waitForHarnessSurface(client, "__recoveryRemount", "activation_recovery_document_not_loaded");
+    const result = await client.call("Runtime.evaluate", {
+      expression: `(async()=>{const secrets=${JSON.stringify(forbidden)};const waitFor=async(predicate,code)=>{for(let attempt=0;attempt<240;attempt+=1){const value=predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}throw new Error(code)};const named=(name)=>document.querySelector('[aria-label="'+name+'"]');const setValue=(node,value)=>{if(!node)throw new Error('recovery_input_missing');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));};const button=[...document.querySelectorAll('button')].find(node=>node.textContent?.trim()==='Reset password');const assertSafe=()=>{const surfaces=[location.href,document.documentElement.outerHTML,JSON.stringify({...localStorage}),JSON.stringify({...sessionStorage})];if(secrets.some(value=>surfaces.some(surface=>surface.includes(value))))throw new Error('recovery_secret_browser_surface');};if(${desktop ? "true" : "false"}){named('Email address').focus();if(document.activeElement!==named('Email address'))throw new Error('recovery_keyboard_focus_missing');assertSafe();return{width:innerWidth,height:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth};}sessionStorage.clear();localStorage.clear();const fill=async(email,code,password)=>{setValue(named('Email address'),email);setValue(named('Recovery code'),code);setValue(named('New password'),password);button.focus();if(document.activeElement!==button)throw new Error('recovery_keyboard_focus_missing');button.click();};const submit=async(email,code,password)=>{await fill(email,code,password);await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('If the recovery information is accepted'),'neutral_recovery_message_missing');};await fill(${JSON.stringify(syntheticSecrets.recoveryEmail)},${JSON.stringify(activationRecoveryCodes[1])},${JSON.stringify(syntheticSecrets.recoveryResetPassword)});await waitFor(()=>document.querySelector('[aria-live="polite"]')?.textContent?.includes('Synthetic response lost'),'recovery_lost_response_missing');const retained=JSON.parse(sessionStorage.getItem('cubby:global-security:recovery-reset-operation'));if(!retained?.operationId)throw new Error('recovery_same_id_metadata_missing');assertSafe();await submit(${JSON.stringify(syntheticSecrets.recoveryEmail)},${JSON.stringify(activationRecoveryCodes[1])},${JSON.stringify(syntheticSecrets.recoveryResetPassword)});if(sessionStorage.getItem('cubby:global-security:recovery-reset-operation'))throw new Error('recovery_terminal_metadata_not_cleared');await submit(${JSON.stringify(syntheticSecrets.absentRecoveryEmail)},${JSON.stringify(syntheticSecrets.absentRecoveryCode)},${JSON.stringify(syntheticSecrets.recoveryResetPassword)});assertSafe();return{width:innerWidth,height:innerHeight,overflow:document.documentElement.scrollWidth-innerWidth};})()`,
+      awaitPromise: true,
+      returnByValue: true
+    });
+    if (result.result?.exceptionDetails) throw new Error(`activation_recovery_browser_interaction_failed:${JSON.stringify(result.result.exceptionDetails).slice(-1000)}`);
+    const value = result.result?.result?.value as { width?: number; height?: number; overflow?: number } | undefined;
+    if (!value || value.width !== width || value.height !== height || typeof value.overflow !== "number" || value.overflow > 0) throw new Error("activation_recovery_viewport_invalid");
+  };
+  await inspect(375, 812, false);
+  const state = await fetch(`${origin}/__acceptance/state`).then((response) => response.json()) as { recoveryResetRequests?: Array<{ operationId: string; response: string }> };
+  if (!state.recoveryResetRequests || state.recoveryResetRequests.length !== 3 || state.recoveryResetRequests[0]?.operationId !== state.recoveryResetRequests[1]?.operationId || state.recoveryResetRequests[0]?.response !== "503:lost" || state.recoveryResetRequests.slice(1).some((request) => request.response !== "202:submitted")) throw new Error("activation_recovery_neutral_same_id_invalid");
+  await inspect(1280, 900, true);
+  console.log("P1_3_RECOVERY_RESET_BROWSER_ACCEPTANCE_PASS");
+}
+
 async function runSecurityHistoryAcceptance(client: Awaited<ReturnType<typeof cdpConnect>>, origin: string) {
   const forbidden = [
     "security-history-internal-id", "security-history-raw-key", "security-history-password",
@@ -192,7 +290,7 @@ async function runSignInAcceptance(client: Awaited<ReturnType<typeof cdpConnect>
   const passwords = ["existing-browser-proof", "absent-browser-proof", "quiet-existing-proof", "quiet-absent-proof", "evidence-existing-proof", "evidence-absent-proof", "success-browser-proof", "success-unavailable-proof", "quiet-handler-proof", "lookup-handler-proof"];
   const result = await client.call("Runtime.evaluate", {
     expression: `(async()=>{
-      const call=async(email,password)=>{const response=await fetch('/api/auth/sign-in/email',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password})});return{status:response.status,text:await response.text(),headers:[...response.headers].sort()}};
+      const call=async(email,password)=>{const response=await fetch('/api/auth/sign-in/email',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password})});return{status:response.status,text:await response.text(),headers:[...response.headers].filter(([name])=>name.toLowerCase()!=='date').sort()}};
       const existing=await call('existing@acceptance.invalid',${JSON.stringify(passwords[0])});
       const absent=await call('absent@acceptance.invalid',${JSON.stringify(passwords[1])});
       const quietExisting=await call('quiet-existing@acceptance.invalid',${JSON.stringify(passwords[2])});
@@ -215,7 +313,7 @@ async function runSignInAcceptance(client: Awaited<ReturnType<typeof cdpConnect>
     || value.existing.status !== 401 || value.quietExisting.status !== 401 || value.unavailableExisting.status !== 503 || value.success.status !== 200
     || [value.existing,value.absent,value.quietExisting,value.quietAbsent,value.unavailableExisting,value.unavailableAbsent].some((entry) => entry.headers?.some(([name]) => name.toLowerCase() === "retry-after"));
   const surfaces = JSON.stringify({ url: value.url, html: value.html, local: value.local, session: value.session });
-  if (invalid || passwords.some((password) => surfaces.includes(password))) throw new Error("phase8_sign_in_browser_neutrality_or_retention_invalid");
+  if (invalid || passwords.some((password) => surfaces.includes(password))) throw new Error(`phase8_sign_in_browser_neutrality_or_retention_invalid:${[value.existing.status,value.absent.status,value.quietExisting.status,value.quietAbsent.status,value.unavailableExisting.status,value.unavailableAbsent.status,value.success.status,value.successUnavailable.status,value.quietHandlerUnavailable.status,value.lookupHandlerUnavailable.status].join("|")}`);
   console.log("P1_3_SIGN_IN_BROWSER_ACCEPTANCE_PASS");
 }
 
@@ -345,11 +443,14 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
   const carrierBundle = resolve(runRoot, "carrier.js");
   const sessionManagerBundle = resolve(runRoot, "session-manager.js");
   const securityHistoryBundle = resolve(runRoot, "security-history.js");
+  const accountSecurityBundle = resolve(runRoot, "account-security.js");
+  const recoveryBundle = resolve(runRoot, "recovery.js");
   mkdirSync(profile, { recursive: true });
+  try {
   buildSync({ entryPoints: [resolve(root, "src/lib/auth/email-change-verification-carrier.ts")], bundle: true, platform: "browser", format: "iife", globalName: "EmailChangeCarrierModule", outfile: carrierBundle, logLevel: "silent" });
   await build({
     stdin: {
-      contents: `import React from 'react';import{createRoot}from'react-dom/client';import{SessionManager}from'./src/components/settings/session-manager.tsx';globalThis.React=React;let root;globalThis.__phase7Remount=()=>{root?.unmount();globalThis.__phase7Router={pushes:[],refreshes:0};const container=document.getElementById('root');container.replaceChildren();root=createRoot(container);root.render(React.createElement(SessionManager));};globalThis.__phase7Remount();`,
+      contents: `import React from 'react';import{createRoot}from'react-dom/client';import{SessionManager}from'./src/components/settings/session-manager.tsx';globalThis.React=React;let root;globalThis.__phase7Remount=()=>{root?.unmount();globalThis.__phase7Router={pushes:[],refreshes:0};const container=document.getElementById('root');container.replaceChildren();root=createRoot(container);root.render(React.createElement(SessionManager,{accountScope:'synthetic-user'}));};globalThis.__phase7Remount();`,
       resolveDir: root,
       sourcefile: "phase7-session-manager-entry.ts"
     },
@@ -362,7 +463,7 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
   });
   await build({
     stdin: {
-      contents: `import React from 'react';import{createRoot}from'react-dom/client';import{SecurityHistory}from'./src/components/settings/security-history.tsx';globalThis.React=React;globalThis.__phase8HistoryRemount=()=>{const container=document.getElementById('root');container.replaceChildren();createRoot(container).render(React.createElement(SecurityHistory));};globalThis.__phase8HistoryRemount();`,
+      contents: `import React from 'react';import{createRoot}from'react-dom/client';import{SecurityHistory}from'./src/components/settings/security-history.tsx';globalThis.React=React;globalThis.__phase8HistoryRemount=()=>{const container=document.getElementById('root');container.replaceChildren();createRoot(container).render(React.createElement(SecurityHistory,{accountScope:'synthetic-user'}));};globalThis.__phase8HistoryRemount();`,
       resolveDir: root,
       sourcefile: "phase8-security-history-entry.ts"
     },
@@ -372,15 +473,57 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
     outfile: securityHistoryBundle,
     logLevel: "silent"
   });
+  await build({
+    stdin: {
+      contents: `import React from 'react';import{createRoot}from'react-dom/client';import{AccountSecurityPanel}from'./src/components/account-security-panel.tsx';globalThis.React=React;globalThis.__activationRedirect='';let root;globalThis.__activationRemount=()=>{root?.unmount();const container=document.getElementById('root');container.replaceChildren();root=createRoot(container);root.render(React.createElement(AccountSecurityPanel,{accountScope:'acceptance-user',onSignInRequired:()=>{globalThis.__activationRedirect='/login';}}));};globalThis.__activationRemount();`,
+      resolveDir: root,
+      sourcefile: "activation-account-security-entry.ts"
+    },
+    bundle: true,
+    platform: "browser",
+    format: "iife",
+    outfile: accountSecurityBundle,
+    plugins: [sessionManagerBundlePlugin()],
+    logLevel: "silent"
+  });
+  await build({
+    stdin: {
+      contents: `import React from 'react';import{createRoot}from'react-dom/client';import RecoveryPage from'./src/app/recovery/page.tsx';globalThis.React=React;let root;globalThis.__recoveryRemount=()=>{root?.unmount();const container=document.getElementById('root');container.replaceChildren();root=createRoot(container);root.render(React.createElement(RecoveryPage));};globalThis.__recoveryRemount();`,
+      resolveDir: root,
+      sourcefile: "activation-recovery-entry.ts"
+    },
+    bundle: true,
+    platform: "browser",
+    format: "iife",
+    outfile: recoveryBundle,
+    plugins: [sessionManagerBundlePlugin()],
+    logLevel: "silent"
+  });
+  } catch (error) {
+    rmSync(runRoot, { recursive: true, force: true });
+    if (existsSync(runRoot)) throw new Error("phase6_browser_bundle_cleanup_incomplete");
+    throw error;
+  }
   const carrierHtml = `<!doctype html><meta charset="utf-8"><title>Phase 6 carrier</title><script src="/carrier.js"></script><main id="result">ready</main>`;
   const sessionManagerHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 7 SessionManager</title><style>${sessionManagerCss}</style></head><body><main id="root"></main><script src="/session-manager.js"></script></body></html>`;
   const securityHistoryHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 8 Security history</title><style>${securityHistoryCss}</style></head><body><main id="root"></main><script>globalThis.__phase8Download='';HTMLAnchorElement.prototype.click=function(){globalThis.__phase8Download=this.download||''};globalThis.__phase8HistoryRequests=[];const phase8Fetch=globalThis.fetch;globalThis.fetch=(input,init={})=>{const value=typeof input==='string'?input:input.url;if(value.startsWith('/api/account/security-history'))globalThis.__phase8HistoryRequests.push((init.method||'GET')+' '+value);return phase8Fetch(input,init)};</script><script src="/security-history.js"></script></body></html>`;
+  const accountSecurityHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DEC-PROD-408 Account security</title><style>${accountSecurityCss}</style></head><body><main id="root"></main><script src="/account-security.js"></script></body></html>`;
+  const recoveryHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DEC-PROD-408 Recovery</title><style>${accountSecurityCss}</style></head><body><main id="root"></main><script src="/recovery.js"></script></body></html>`;
   let mode: SyntheticMode = "layout";
   let activeSessions = initialSessions.slice();
   let requests: string[] = [];
   let statusCalls = 0;
   let revokeCalls = 0;
   let lastScope: string | null = null;
+  let activationRequests: string[] = [];
+  let passwordOperationIds: string[] = [];
+  let recoveryOperationId: string | null = null;
+  let recoveryOperationIds: string[] = [];
+  let recoveryRehearsalOperationId: string | null = null;
+  let recoverySetVersion = 0;
+  let emailOperationId: string | null = null;
+  let emailActions: string[] = [];
+  let recoveryResetRequests: Array<{ operationId: string; response: string }> = [];
   const safeSessions = () => activeSessions.map(({ handle, isCurrent, deviceLabel, createdAt, lastQualifyingAt, idleWarningAt, expiresAt }) => ({ handle, isCurrent, deviceLabel, createdAt, lastQualifyingAt, idleWarningAt, expiresAt }));
   const validMetadata = (value: Record<string, unknown>) => /^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$/.test(String(value.operationId ?? "")) && /^[0-9a-f]{64}$/.test(String(value.openingFingerprint ?? "")) && /^[0-9a-f]{64}$/.test(String(value.intentFingerprint ?? ""));
   const json = (response: import("node:http").ServerResponse, status: number, body: unknown) => { response.statusCode = status; response.setHeader("content-type", "application/json"); response.end(JSON.stringify(body)); };
@@ -390,8 +533,24 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
     if (url.pathname === "/carrier.js") { response.setHeader("content-type", "text/javascript"); response.end(readFileSync(carrierBundle)); return; }
     if (url.pathname === "/session-manager.js") { response.setHeader("content-type", "text/javascript"); response.end(readFileSync(sessionManagerBundle)); return; }
     if (url.pathname === "/security-history.js") { response.setHeader("content-type", "text/javascript"); response.end(readFileSync(securityHistoryBundle)); return; }
+    if (url.pathname === "/account-security.js") { response.setHeader("content-type", "text/javascript"); response.end(readFileSync(accountSecurityBundle)); return; }
+    if (url.pathname === "/recovery.js") { response.setHeader("content-type", "text/javascript"); response.end(readFileSync(recoveryBundle)); return; }
     if (url.pathname === "/session-manager") { response.setHeader("content-type", "text/html"); response.end(sessionManagerHtml); return; }
     if (url.pathname === "/security-history") { response.setHeader("content-type", "text/html"); response.end(securityHistoryHtml); return; }
+    if (url.pathname === "/account-security") { response.setHeader("content-type", "text/html"); response.end(accountSecurityHtml); return; }
+    if (url.pathname === "/recovery") { response.setHeader("content-type", "text/html"); response.end(recoveryHtml); return; }
+    if (url.pathname === "/__acceptance/activation-reset" && request.method === "POST") {
+      activationRequests = [];
+      passwordOperationIds = [];
+      recoveryOperationId = null;
+      recoveryOperationIds = [];
+      recoveryRehearsalOperationId = null;
+      recoverySetVersion = 0;
+      emailOperationId = null;
+      emailActions = [];
+      recoveryResetRequests = [];
+      return json(response, 200, { ok: true });
+    }
     if (url.pathname === "/__acceptance/reset" && request.method === "POST") {
       const parsed = JSON.parse(await requestBody(request)) as { mode?: SyntheticMode };
       if (!parsed.mode || !["pending-retry", "terminal-reconciliation", "current-redirect", "all-redirect", "layout"].includes(parsed.mode)) return json(response, 400, { ok: false });
@@ -403,7 +562,7 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
       lastScope = null;
       return json(response, 200, { ok: true });
     }
-    if (url.pathname === "/__acceptance/state") return json(response, 200, { requests, lastScope });
+    if (url.pathname === "/__acceptance/state") return json(response, 200, { requests, lastScope, activationRequests, passwordOperationIds, recoveryOperationIds, recoveryRehearsalOperationId, emailActions, recoveryResetRequests });
     if (url.pathname === "/api/account/security-history" && request.method === "GET") {
       const cursor = url.searchParams.get("cursor");
       return json(response, 200, { ok: true, data: { events: cursor ? [{ handle: "opaque-history-handle-two", eventClass: "grant", action: "current_password", outcome: "current_password_verified", occurredAt: "2026-08-29T12:01:00.000Z" }] : [{ handle: "opaque-history-handle-one", eventClass: "credential", action: "sign_in", outcome: "sign_in_succeeded", occurredAt: "2026-08-29T12:00:00.000Z" }], nextCursor: cursor ? null : "opaque-page-cursor" } });
@@ -446,6 +605,74 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
       carrierResponse.headers.forEach((headerValue, name) => response.setHeader(name, headerValue));
       response.end(await carrierResponse.text());
       return;
+    }
+    if (url.pathname === "/api/account/security/password" && request.method === "POST") {
+      const parsed = JSON.parse(await requestBody(request)) as Record<string, unknown>;
+      activationRequests.push("POST password");
+      passwordOperationIds.push(String(parsed.operationId));
+      if (Object.keys(parsed).sort().join("|") !== "currentPassword|intentFingerprint|newPassword|openingFingerprint|operationId" || !validMetadata(parsed) || parsed.currentPassword !== syntheticSecrets.activationCurrentPassword || parsed.newPassword !== syntheticSecrets.activationNextPassword) return json(response, 400, { ok: false });
+      const prior = activationRequests.filter((entry) => entry === "POST password").length;
+      if (prior === 1) return json(response, 503, { ok: false, error: { message: "Synthetic response lost" } });
+      return json(response, 200, { ok: true, data: { operationId: parsed.operationId, status: "completed", signInRequired: true } });
+    }
+    if (url.pathname === "/api/account/security/password/status" && request.method === "POST") {
+      const parsed = JSON.parse(await requestBody(request)) as Record<string, unknown>;
+      activationRequests.push("POST password-status");
+      if (!validMetadata(parsed) || Object.keys(parsed).sort().join("|") !== "intentFingerprint|openingFingerprint|operationId") return json(response, 400, { ok: false });
+      return activationRequests.filter((entry) => entry === "POST password").length === 1
+        ? json(response, 404, { ok: false, error: { code: "not_found", message: "Not found" } })
+        : json(response, 200, { ok: true, data: { operationId: parsed.operationId, status: "completed" } });
+    }
+    if (url.pathname === "/api/account/security/recovery" && request.method === "POST") {
+      const parsed = JSON.parse(await requestBody(request)) as Record<string, unknown>;
+      const action = typeof parsed.action === "string" ? parsed.action : "";
+      activationRequests.push(`POST recovery:${action}`);
+      if (action === "enroll" || action === "regenerate") {
+        if (!validMetadata(parsed) || Object.keys(parsed).sort().join("|") !== "action|currentPassword|intentFingerprint|openingFingerprint|operationId" || parsed.currentPassword !== syntheticSecrets.activationCurrentPassword) return json(response, 400, { ok: false });
+        recoveryOperationId = String(parsed.operationId);
+        recoveryOperationIds.push(recoveryOperationId);
+        recoverySetVersion += 1;
+        return json(response, 200, { ok: true, data: { operationId: recoveryOperationId, setVersion: recoverySetVersion, codes: action === "enroll" ? activationRecoveryCodes : regeneratedRecoveryCodes, displayOnce: true } });
+      }
+      if (action === "status") {
+        if (!validMetadata(parsed) || Object.keys(parsed).sort().join("|") !== "action|intentFingerprint|openingFingerprint|operationId" || parsed.operationId !== recoveryOperationId) return json(response, 400, { ok: false });
+        return json(response, 200, { ok: true, data: { operationId: recoveryOperationId, setVersion: recoverySetVersion, state: "generated", status: "completed" } });
+      }
+      if (action === "acknowledge") {
+        if (Object.keys(parsed).sort().join("|") !== "action|operationId|setVersion" || parsed.operationId !== recoveryOperationId || parsed.setVersion !== recoverySetVersion) return json(response, 400, { ok: false });
+        return json(response, 200, { ok: true, data: { operationId: recoveryOperationId, status: "acknowledged" } });
+      }
+      if (action === "rehearse") {
+        if (!validMetadata(parsed) || Object.keys(parsed).sort().join("|") !== "action|code|intentFingerprint|openingFingerprint|operationId|setVersion" || parsed.operationId !== recoveryOperationId || parsed.setVersion !== recoverySetVersion || parsed.code !== regeneratedRecoveryCodes[0]) return json(response, 400, { ok: false });
+        recoveryRehearsalOperationId = String(parsed.operationId);
+        return json(response, 200, { ok: true, data: { operationId: recoveryOperationId, state: "rehearsed" } });
+      }
+      return json(response, 400, { ok: false });
+    }
+    if (url.pathname === "/api/account/security/email-change" && request.method === "POST") {
+      const parsed = JSON.parse(await requestBody(request)) as Record<string, unknown>;
+      const action = typeof parsed.action === "string" ? parsed.action : "";
+      activationRequests.push(`POST email:${action}`);
+      emailActions.push(action);
+      if (action === "initiate") {
+        if (!validMetadata(parsed) || Object.keys(parsed).sort().join("|") !== "action|currentPassword|intentFingerprint|newEmail|openingFingerprint|operationId" || parsed.currentPassword !== syntheticSecrets.activationCurrentPassword || parsed.newEmail !== syntheticSecrets.recoveryEmail) return json(response, 400, { ok: false });
+        emailOperationId = String(parsed.operationId);
+        return json(response, 200, { ok: true, data: { operationId: emailOperationId, status: "pending" } });
+      }
+      if (!emailOperationId || parsed.operationId !== emailOperationId) return json(response, 400, { ok: false });
+      if (action === "verify") {
+        if (Object.keys(parsed).sort().join("|") !== "action|operationId|verification" || parsed.verification !== syntheticSecrets.verification) return json(response, 400, { ok: false });
+      } else if (!["status", "cancel", "cutover", "confirm"].includes(action) || Object.keys(parsed).sort().join("|") !== "action|operationId") return json(response, 400, { ok: false });
+      return json(response, 200, { ok: true, data: { operationId: emailOperationId, status: action === "cancel" ? "cancelled" : action === "confirm" ? "confirmed" : action === "cutover" ? "issued" : action === "verify" ? "verified" : "pending" } });
+    }
+    if (url.pathname === "/api/account/recovery/reset" && request.method === "POST") {
+      const parsed = JSON.parse(await requestBody(request)) as Record<string, unknown>;
+      if (!validMetadata(parsed) || Object.keys(parsed).sort().join("|") !== "code|email|intentFingerprint|newPassword|openingFingerprint|operationId" || typeof parsed.email !== "string" || typeof parsed.code !== "string" || parsed.newPassword !== syntheticSecrets.recoveryResetPassword) return json(response, 400, { ok: false });
+      const firstAttempt = recoveryResetRequests.length === 0;
+      recoveryResetRequests.push({ operationId: String(parsed.operationId), response: firstAttempt ? "503:lost" : "202:submitted" });
+      return firstAttempt
+        ? json(response, 503, { ok: false, error: { message: "Synthetic response lost" } })
+        : json(response, 202, { ok: true, data: { status: "submitted", signInRequired: true } });
     }
     if (url.pathname === "/api/account/sessions" && request.method === "GET") {
       requests.push("GET sessions");
@@ -527,6 +754,8 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
     await runSignInAcceptance(client, origin);
     await runSessionManagerAcceptance(client, origin);
     await runSecurityHistoryAcceptance(client, origin);
+    await runAccountSecurityAcceptance(client, origin);
+    await runRecoveryResetAcceptance(client, origin);
   } finally {
     client?.close();
     let cleanupError: Error | undefined;
@@ -547,6 +776,8 @@ export async function runP13EmailChangeBrowserAcceptance(applicationOrigin?: str
     console.log("P1_3_SESSION_MANAGER_BROWSER_ACCEPTANCE_CLEANUP_PASS");
     console.log("P1_3_SECURITY_HISTORY_BROWSER_ACCEPTANCE_CLEANUP_PASS");
     console.log("P1_3_SIGN_IN_BROWSER_ACCEPTANCE_CLEANUP_PASS");
+    console.log("P1_3_ACCOUNT_SECURITY_BROWSER_ACCEPTANCE_CLEANUP_PASS");
+    console.log("P1_3_RECOVERY_RESET_BROWSER_ACCEPTANCE_CLEANUP_PASS");
   }
 }
 

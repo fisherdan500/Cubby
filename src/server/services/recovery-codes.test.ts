@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { generateRecoveryCodes, hashRecoveryCode, normalizeRecoveryCode, verifyRecoveryCode } from "@/server/services/recovery-codes";
+import { describe, expect, it, vi } from "vitest";
+import { generateRecoveryCodes, hashRecoveryCode, normalizeRecoveryCode, performNeutralRecoveryCodeVerification, verifyRecoveryCode } from "@/server/services/recovery-codes";
 
 describe("offline recovery code generation", () => {
+  it("performs the fixed neutral verification workload even when every comparison rejects", async () => {
+    const verify = vi.fn().mockRejectedValue(new Error("invalid"));
+    await performNeutralRecoveryCodeVerification("invalid", verify);
+    expect(verify).toHaveBeenCalledTimes(9);
+  });
   it("creates ten display-once normalized 120-bit Crockford Base32 recovery codes", () => {
     let index = 0;
     const codes = generateRecoveryCodes(() => {

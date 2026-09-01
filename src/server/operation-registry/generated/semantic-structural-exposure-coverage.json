@@ -105,6 +105,23 @@
       "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"recovery_reset_request_invalid\");\n    let raw: unknown;\n    try { raw = await request.json(); } catch { throw new Error(\"recovery_reset_request_invalid\"); }\n    const input = parseRequest(raw);\n    const users = await prisma.$queryRaw<Array<{ id: string }>>`\n      SELECT \"id\" FROM \"User\"\n      WHERE \"normalize_security_email_v1\"(\"email\")=\"normalize_security_email_v1\"(${input.email})\n      LIMIT 1\n    `;\n    const userId = users[0]?.id;\n    const accountNeutralThrottle = { key: configuredGlobalSecurityThrottleKey(), client: canonicalizeTrustedClient(env.CUBBY_TRUSTED_PROXY_HOPS, request.headers.get(\"x-forwarded-for\")) };\n    const state = await prisma.accountSecurityState.findUnique({ where: { userId: userId ?? \"cubby-absent-recovery-user\" }, select: { credentialVersion: true, sessionSecurityVersion: true } });\n    if (!userId || !state) {\n      const authContext = await auth.$context;\n      await authContext.password.hash(input.newPassword);\n      await precheckGlobalSecurityThrottle(prisma, accountNeutralThrottle);\n      await performNeutralRecoveryCodeVerification(input.code);\n      await recordGlobalSecurityThrottleFailure(prisma, accountNeutralThrottle);\n      return neutralRecoveryResponse();\n    }\n    const authContext = await auth.$context;\n    await recoverPasswordWithCode(\n      prisma,\n      { userId, operationId: input.operationId, openingFingerprint: input.openingFingerprint, intentFingerprint: input.intentFingerprint, code: input.code, credentialVersion: state.credentialVersion, sessionSecurityVersion: state.sessionSecurityVersion },\n      input.newPassword,\n      { hash: authContext.password.hash },\n      undefined,\n      undefined,\n      accountNeutralThrottle\n    );\n    await clearBetterAuthSessionCookies();\n    return neutralRecoveryResponse();\n  } catch (error) {\n    const code = error instanceof Error ? error.message : \"\";\n    if (code === \"recovery_reset_request_invalid\") return fail(code, \"Check the recovery request and try again.\", 422);\n    if ([\"recovery_code_invalid\", \"recovery_session_expired\", \"recovery_reset_authorization_required\", \"stale_security_version\", \"idempotency_conflict\", \"operation_outcome_unknown\"].includes(code)) return neutralRecoveryResponse();\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "5f914a8230373676b8ed58daa998f52b5134f8a8e689cd798210a144c4fb1c0b",
+      "anchorEnd": 4554,
+      "anchorFile": "src/app/api/account/recovery/reset/route.ts",
+      "anchorStart": 2112,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/recovery/reset/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/recovery/reset/route.ts:route_method:POST:src/app/api/account/recovery/reset/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/recovery/reset/route.ts",
+      "ownerModule": "src/app/api/account/recovery/reset/route.ts",
+      "sidecarPath": "src/app/api/account/recovery/reset/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"security_history_export_confirmation_required\");\n    let body: unknown;\n    try {\n      body = await request.json();\n    } catch {\n      throw new Error(\"security_history_export_confirmation_required\");\n    }\n    parseConfirmation(body);\n    const context = await requireGlobalSecurityContext();\n    const payload = await exportGlobalSecurityHistory(prisma, context);\n    return new Response(JSON.stringify(payload), {\n      headers: {\n        \"content-type\": \"application/json; charset=utf-8\",\n        \"content-disposition\": `attachment; filename=\\\"${globalSecurityHistoryExportFilename}\\\"`,\n        \"cache-control\": \"no-store\"\n      }\n    });\n  } catch (error) {\n    return exportError(error);\n  }\n}",
       "anchorDigest": "a1996d21cf5090f45c01b34ed943a7a6f918b2d6fb78860613de00879715740c",
       "anchorEnd": 1994,
@@ -137,6 +154,74 @@
       "ownerId": "api_route:src/app/api/account/security-history/route.ts",
       "ownerModule": "src/app/api/account/security-history/route.ts",
       "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"email_change_request_invalid\");\n    let raw: unknown;\n    try { raw = await request.json(); } catch { throw new Error(\"email_change_request_invalid\"); }\n    const input = parseRequest(raw);\n    if (input.action === \"initiate\") {\n      const [context, authContext] = await Promise.all([requireGlobalSecurityContext(), auth.$context]);\n      const result = await initiateVerifiedEmailChange(prisma, context, { ...input.metadata, newEmail: input.newEmail }, input.currentPassword, { verifier: { verify: authContext.password.verify }, throttleContext: { key: configuredGlobalSecurityThrottleKey(), client: canonicalizeTrustedClient(env.CUBBY_TRUSTED_PROXY_HOPS, request.headers.get(\"x-forwarded-for\")) } });\n      return ok({ operationId: result.operationId, status: result.status });\n    }\n    if (input.action === \"verify\") {\n      const context = await requireGlobalSecurityContext();\n      const result = await verifyEmailChangeToken(prisma, { userId: context.userId, operationId: input.operationId, token: input.verification });\n      return ok({ operationId: result.operationId, status: result.status });\n    }\n    if (input.action === \"cancel\") {\n      const context = await requireGlobalSecurityContext();\n      const result = await cancelVerifiedEmailChange(prisma, { userId: context.userId, operationId: input.operationId, sessionId: context.sessionId });\n      return ok(result);\n    }\n    if (input.action === \"status\") {\n      const context = await requireGlobalSecurityContext();\n      const result = await getVerifiedEmailChangeStatus(prisma, { userId: context.userId, operationId: input.operationId, sessionId: context.sessionId });\n      return ok({ operationId: result.operationId, status: result.status, oldAddressNoticeFailed: result.oldAddressNoticeFailed, cookieState: result.cookieState });\n    }\n    if (input.action === \"confirm\") {\n      const context = await requireGlobalSecuritySessionCredential();\n      const result = await confirmEmailChangeSuccessorCookieForAuthenticatedSession(prisma, context, { operationId: input.operationId });\n      return ok(result);\n    }\n    const context = await requireGlobalSecuritySessionCredential();\n    const successorSessionId = randomUUID();\n    const successorToken = randomBytes(32).toString(\"base64url\");\n    const successorExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);\n    const completed = await completeVerifiedEmailChange(prisma, { userId: context.userId, operationId: input.operationId, oldSessionId: context.sessionId, successorSessionId, successorToken, successorExpiresAt });\n    if (completed.status !== \"completed\") return ok({ operationId: completed.operationId, status: completed.status, signInRequired: true });\n    const user = await prisma.user.findUnique({ where: { id: context.userId }, select: { id: true, email: true, name: true, image: true, emailVerified: true } });\n    if (!user) throw new Error(\"email_change_completion_unavailable\");\n    const cookieContext = await auth.$context;\n    const emitted = await emitEmailChangeSuccessorCookie(prisma, { userId: context.userId, operationId: input.operationId, successorSessionId, successorToken, cookieContext: cookieContext as never, session: { id: successorSessionId, token: successorToken, userId: context.userId, expiresAt: successorExpiresAt } as never, user: user as never });\n    if (emitted.status === \"signed_out\") await clearBetterAuthSessionCookies();\n    return ok({ operationId: emitted.operationId, status: emitted.status, signInRequired: emitted.status === \"signed_out\" });\n  } catch (error) {\n    return emailChangeError(error);\n  }\n}",
+      "anchorDigest": "890eb95948745ad73e60141ef0a0ff7e16e6265805c4b3ed7d85bed8a7a26ead",
+      "anchorEnd": 8165,
+      "anchorFile": "src/app/api/account/security/email-change/route.ts",
+      "anchorStart": 4384,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/security/email-change/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/security/email-change/route.ts:route_method:POST:src/app/api/account/security/email-change/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/security/email-change/route.ts",
+      "ownerModule": "src/app/api/account/security/email-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/email-change/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"password_change_request_invalid\");\n    let raw: unknown;\n    try { raw = await request.json(); } catch { throw new Error(\"password_change_request_invalid\"); }\n    const input = parseRequest(raw);\n    const [context, authContext] = await Promise.all([requireGlobalSecurityContext(), auth.$context]);\n    const result = await changePasswordWithCurrentPassword(\n      prisma,\n      context,\n      input,\n      input.currentPassword,\n      input.newPassword,\n      { verify: authContext.password.verify },\n      { hash: authContext.password.hash },\n      undefined,\n      { key: configuredGlobalSecurityThrottleKey(), client: canonicalizeTrustedClient(env.CUBBY_TRUSTED_PROXY_HOPS, request.headers.get(\"x-forwarded-for\")) }\n    );\n    await clearBetterAuthSessionCookies();\n    return ok({ operationId: result.operationId, status: result.status, signInRequired: true });\n  } catch (error) {\n    return passwordChangeError(error);\n  }\n}",
+      "anchorDigest": "a8a4fcbefc99555fa709b2da733bcbf353c97f68ee942b8edb1733ce178f112b",
+      "anchorEnd": 4025,
+      "anchorFile": "src/app/api/account/security/password/route.ts",
+      "anchorStart": 2914,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/security/password/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/security/password/route.ts:route_method:POST:src/app/api/account/security/password/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/security/password/route.ts",
+      "ownerModule": "src/app/api/account/security/password/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"password_change_status_invalid\");\n    const input = await request.json() as Record<string, unknown>;\n    if (!input || Object.keys(input).sort().join(\"|\") !== \"intentFingerprint|openingFingerprint|operationId\" || typeof input.operationId !== \"string\" || !operationIdPattern.test(input.operationId) || typeof input.openingFingerprint !== \"string\" || !fingerprintPattern.test(input.openingFingerprint) || typeof input.intentFingerprint !== \"string\" || !fingerprintPattern.test(input.intentFingerprint)) throw new Error(\"password_change_status_invalid\");\n    const context = await requireGlobalSecurityContext();\n    return ok(await getPasswordChangeStatus(prisma, context.userId, { operationId: input.operationId, openingFingerprint: input.openingFingerprint, intentFingerprint: input.intentFingerprint }));\n  } catch (error) {\n    if (error instanceof Error && error.message === \"password_change_status_invalid\") return fail(error.message, \"Check the password change status request and try again.\", 422);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "f42ccc0635d2ed24277cb8a14029fe28598cf9217fe4db4b0aa0a04a363a75bc",
+      "anchorEnd": 1619,
+      "anchorFile": "src/app/api/account/security/password/status/route.ts",
+      "anchorStart": 399,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/security/password/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/security/password/status/route.ts:route_method:POST:src/app/api/account/security/password/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/security/password/status/route.ts",
+      "ownerModule": "src/app/api/account/security/password/status/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"recovery_request_invalid\");\n    let raw: unknown;\n    try { raw = await request.json(); } catch { throw new Error(\"recovery_request_invalid\"); }\n    const input = parseRequest(raw);\n    const context = await requireGlobalSecurityContext();\n    const throttleContext = { key: configuredGlobalSecurityThrottleKey(), client: canonicalizeTrustedClient(env.CUBBY_TRUSTED_PROXY_HOPS, request.headers.get(\"x-forwarded-for\")) };\n    if (input.action === \"enroll\" || input.action === \"regenerate\") {\n      const authContext = await auth.$context;\n      await issueFreshAuthGrantForCurrentPassword(prisma, context, { ...input.metadata, purpose: \"recovery_enrollment\" }, input.currentPassword, { verify: authContext.password.verify }, undefined, undefined, throttleContext);\n      const issued = await issueRecoveryCodeSet(prisma, context, input.metadata);\n      return ok({ operationId: issued.operationId, setVersion: issued.setVersion, codes: issued.codes, displayOnce: true });\n    }\n    if (input.action === \"acknowledge\") {\n      const result = await acknowledgeRecoveryCodeSetSaved(prisma, context, input);\n      return ok(result);\n    }\n    if (input.action === \"rehearse\") {\n      const result = await rehearseRecoveryCodeSet(prisma, context, { ...input.metadata, setVersion: input.setVersion, code: input.code }, undefined, throttleContext);\n      return ok(result);\n    }\n    const result = await getRecoveryEnrollmentStatus(prisma, context, input.metadata);\n    return ok({ operationId: result.operationId, setVersion: result.setVersion, state: result.state, status: result.status, outcomeCode: result.outcomeCode, remainingCodes: result.remainingCodes, terminalAt: result.terminalAt });\n  } catch (error) {\n    return recoveryError(error);\n  }\n}",
+      "anchorDigest": "51fffd411ccabe9845af9a24651a5f0f5c0bfc385ef9e8470bea5199c4c07981",
+      "anchorEnd": 6521,
+      "anchorFile": "src/app/api/account/security/recovery/route.ts",
+      "anchorStart": 4594,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/account/security/recovery/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/account/security/recovery/route.ts:route_method:POST:src/app/api/account/security/recovery/route.ts#POST",
+      "ownerId": "api_route:src/app/api/account/security/recovery/route.ts",
+      "ownerModule": "src/app/api/account/security/recovery/route.ts",
+      "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
     },
     {
       "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") return fail(\"session_activity_request_invalid\", \"The activity request is invalid.\", 422);\n    let body: unknown;\n    try { body = await request.json(); } catch { return fail(\"session_activity_request_invalid\", \"The activity request is invalid.\", 422); }\n    if (!body || typeof body !== \"object\" || Array.isArray(body) || Object.keys(body).length !== 1 || (body as Record<string, unknown>).requestClass !== \"foreground_document_navigation\") return fail(\"session_activity_request_invalid\", \"The activity request is invalid.\", 422);\n    const context = await requireGlobalSecurityContext();\n    await recordQualifyingGlobalSessionUseAfterSuccess(prisma, context, \"foreground_document_navigation\");\n    return ok({ recorded: true });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
@@ -1412,6 +1497,40 @@
       "ownerId": "api_route:src/app/api/timers/[id]/stop/route.ts",
       "ownerModule": "src/app/api/timers/[id]/stop/route.ts",
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/account/recovery/reset\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ ...submitted, ...operation }) })",
+      "anchorDigest": "e503143d75532b78574b4b373319b27728f5d210edf561dfde677f0abb1540bc",
+      "anchorEnd": 1878,
+      "anchorFile": "src/app/recovery/page.tsx",
+      "anchorStart": 1719,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/app/recovery/page.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/app/recovery/page.tsx",
+      "ownerModule": "src/app/recovery/page.tsx",
+      "sidecarPath": "src/app/recovery/page.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(path, { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload) })",
+      "anchorDigest": "2b167a6b175d222efd4a48d9d04f2fe3a58d879e7315b249a030702a0e139ebf",
+      "anchorEnd": 1787,
+      "anchorFile": "src/components/account-security-panel.tsx",
+      "anchorStart": 1676,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/account-security-panel.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/account-security-panel.tsx",
+      "ownerModule": "src/components/account-security-panel.tsx",
+      "sidecarPath": "src/components/account-security-panel.operation.ts"
     },
     {
       "anchorBytes": "fetch(`/api/invites/${token}/accept`, { method: \"POST\" })",
@@ -2691,9 +2810,9 @@
     {
       "anchorBytes": "fetch(`/api/account/security-history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : \"\"}`, { cache: \"no-store\" })",
       "anchorDigest": "0a49ba8a97f3d2b0385e1a361b4589ac6f857c56e8d7afb5b9a4092841aaf009",
-      "anchorEnd": 2021,
+      "anchorEnd": 2362,
       "anchorFile": "src/components/settings/security-history.tsx",
-      "anchorStart": 1904,
+      "anchorStart": 2245,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2708,9 +2827,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/security-history/export\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ confirmed: true })\n      })",
       "anchorDigest": "b577cf3fed80ff6dea0bb62d3e33be7e3905c48b4ff551b193ff6e431a5fea4e",
-      "anchorEnd": 3949,
+      "anchorEnd": 5153,
       "anchorFile": "src/components/settings/security-history.tsx",
-      "anchorStart": 3762,
+      "anchorStart": 4966,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2725,9 +2844,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/sessions\", { cache: \"no-store\" })",
       "anchorDigest": "3fdd9ef04e687048103932208e9c43c46279b7c311fae0e21f39161b74672d69",
-      "anchorEnd": 3941,
+      "anchorEnd": 4404,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 3888,
+      "anchorStart": 4351,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2742,9 +2861,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/sessions/status\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify(metadata)\n      })",
       "anchorDigest": "c3aa9033aa151f1859dce63c2839299be9e512b544bd15e768c7f3fb6ffd3e4e",
-      "anchorEnd": 5044,
+      "anchorEnd": 6419,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 4876,
+      "anchorStart": 6251,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2759,9 +2878,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/sessions/revoke\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          ...metadata,\n          scope: action.scope,\n          ...(action.targetHandle === undefined ? {} : { targetHandle: action.targetHandle }),\n          confirmed: true,\n          currentPassword\n        })\n      })",
       "anchorDigest": "41a82fc0c0e87ed1b9e165b72da4b38f2f9942186a660ea020b3f2f3261c50ad",
-      "anchorEnd": 7689,
+      "anchorEnd": 9715,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 7316,
+      "anchorStart": 9342,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -3945,6 +4064,23 @@
       "ownerId": "server_loader:src/app/account/appearance/page.tsx",
       "ownerModule": "src/app/account/appearance/page.tsx",
       "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 276,
+      "anchorFile": "src/app/account/security/page.tsx",
+      "anchorStart": 261,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/security/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/account/security/page.tsx",
+      "ownerModule": "src/app/account/security/page.tsx",
+      "sidecarPath": "src/app/account/security/page.operation.ts"
     },
     {
       "anchorBytes": "getActivityForEdit",
@@ -5466,10 +5602,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "1ebd058d814589ad98c48915d498afe7a82ae72d937b0a4d947bfae36c8fa8ec",
+  "semanticArtifactDigest": "cddf2bde26066589f90511e6f8a81b31ffd91a6b92df3cccb9030492d26abc54",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c91a49f756ace7fe7b1827e37dee9bc4a2412ae19d2e30b21243af3ec7ba2b87",
+  "semanticCoverageDigest": "e71e5cd687c0ef95541032ad9d1024aba47919f340406e7980d0b912739b67f5",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "98452544d97dc9eb5ece15d31a099aa955c9957050cd193c59a5d7515df3141a"
+  "semanticFingerprint": "cb88673244e7b8d705b53ad7a4082f43ac7b8618053783f03a8e4b8b7043d441"
 }

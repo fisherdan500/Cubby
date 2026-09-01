@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "program": "p1_3_global_credential_session_security",
-  "state": "local_review_ready_unreleased",
-  "authority": "complete_program_source_readiness",
-  "baseHead": "01c8ad81c8cbc75fb89469b1daaae018e0021031",
+  "state": "existing_user_activation_review_candidate_unreleased",
+  "authority": "DEC-PROD-408_replacement_charter",
+  "baseHead": "9b699207892d392073bee9f97f7997d0bda5b0ab",
   "phases": [
     { "id": "phase1_persistence", "state": "accepted_local_source" },
     { "id": "phase2_session_authorization", "state": "accepted_local_source" },
@@ -15,6 +15,13 @@
     { "id": "phase8_private_history_throttling", "state": "accepted_local_source" },
     { "id": "phase9_integrated_acceptance", "state": "accepted_local_source" }
   ],
+  "postRecoveryActivation": {
+    "decision": "DEC-PROD-408",
+    "boundary": "existing_user_password_recovery_email_all_or_none",
+    "initialCredentialSignup": "denied_until_separate_invitation_onboarding_program",
+    "candidateState": "verification_complete_review_candidate",
+    "charter": "hermes-control/reports/2026-08-31-p1-3-existing-user-security-activation-replacement-charter.md"
+  },
   "integratedGates": [
     { "id": "protocol_and_persistence", "state": "verified", "evidence": "src/server/services/global-security-design.test.ts" },
     { "id": "framework_route_cutover", "state": "verified", "evidence": "src/app/api/auth/[...all]/route.test.ts" },
@@ -32,7 +39,6 @@
     "disposition": "untouched_and_reported_separately"
   },
   "forbiddenActions": [
-    "commit",
     "push",
     "pull_request",
     "merge",

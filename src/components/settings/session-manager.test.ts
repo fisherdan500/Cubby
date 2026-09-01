@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React, { createElement } from "react";
 import { createHash, webcrypto } from "node:crypto";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -38,6 +38,7 @@ const sessions = [
     expiresAt: "2026-09-02T12:00:00.000Z"
   }
 ];
+const operationKey = (accountScope: string) => `cubby:global-session-revoke-operation:${encodeURIComponent(accountScope)}`;
 
 function frame(value: string) {
   const bytes = Buffer.from(value, "utf8");
@@ -66,10 +67,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("SessionManager", () => {
+  const renderManager = (accountScope = "user-one") => render(createElement(SessionManager, { accountScope }));
   it("loads only the safe session projection and renders responsive account-session actions", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(response(200, { ok: true, data: { sessions } }));
 
-    render(createElement(SessionManager));
+    renderManager();
 
     expect(await screen.findByText("Chrome on Windows")).toBeTruthy();
     expect(screen.getByText("Safari on iPhone")).toBeTruthy();
@@ -87,10 +89,11 @@ describe("SessionManager", () => {
     globalThis.fetch = vi.fn().mockResolvedValue(response(200, { ok: true, data: { sessions } }));
     const user = userEvent.setup();
     const confirmSpy = vi.spyOn(window, "confirm");
-    render(createElement(SessionManager));
+    renderManager();
     await screen.findByText("Safari on iPhone");
 
-    await user.click(screen.getByRole("button", { name: "Sign out this session" }));
+    const opener = screen.getByRole("button", { name: "Sign out this session" });
+    await user.click(opener);
 
     const confirmation = screen.getByRole("region", { name: "Confirm session sign-out" });
     const password = within(confirmation).getByLabelText("Current password");
@@ -99,6 +102,7 @@ describe("SessionManager", () => {
     expect(confirmSpy).not.toHaveBeenCalled();
     await user.click(within(confirmation).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("region", { name: "Confirm session sign-out" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(opener));
     expect(sessionStorage.length).toBe(0);
   });
 
@@ -109,7 +113,7 @@ describe("SessionManager", () => {
       .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
     globalThis.fetch = fetchMock;
     const user = userEvent.setup();
-    render(createElement(SessionManager));
+    renderManager();
     await screen.findByText("Safari on iPhone");
 
     await user.click(screen.getByRole("button", { name: "Sign out this session" }));
@@ -140,7 +144,7 @@ describe("SessionManager", () => {
       .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
     globalThis.fetch = fetchMock;
     const user = userEvent.setup();
-    render(createElement(SessionManager));
+    renderManager();
     await screen.findByText("Safari on iPhone");
 
     await user.click(screen.getByRole("button", { name: "Sign out this session" }));
@@ -173,7 +177,7 @@ describe("SessionManager", () => {
 
   it("does not reexecute a retained action once status reports an authoritative terminal result", async () => {
     const operationId = "gso_00000000000000000000000000";
-    sessionStorage.setItem("cubby:global-session-revoke-operation", JSON.stringify({
+    sessionStorage.setItem(operationKey("user-one"), JSON.stringify({
       operationId,
       openingFingerprint: digest("session_revoke_opening", operationId, "one", sessions[1].handle),
       intentFingerprint: digest("one", sessions[1].handle)
@@ -184,7 +188,7 @@ describe("SessionManager", () => {
       .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
     globalThis.fetch = fetchMock;
     const user = userEvent.setup();
-    render(createElement(SessionManager));
+    renderManager();
     await screen.findByText("Safari on iPhone");
 
     await user.click(screen.getByRole("button", { name: "Sign out this session" }));
@@ -209,7 +213,7 @@ describe("SessionManager", () => {
       .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
     globalThis.fetch = fetchMock;
     const user = userEvent.setup();
-    render(createElement(SessionManager));
+    renderManager();
     await screen.findByText("Safari on iPhone");
 
     await user.click(screen.getByRole("button", { name: "Sign out this session" }));
@@ -229,7 +233,7 @@ describe("SessionManager", () => {
       .mockResolvedValueOnce(response(200, { ok: true, data: { sessions } }))
       .mockResolvedValueOnce(response(200, { ok: true, data: { operationId: "gso_00000000000000000000000000", status: "revoked", signedOut: true } }));
     const user = userEvent.setup();
-    render(createElement(SessionManager));
+    renderManager();
     await screen.findByText("Safari on iPhone");
 
     await user.click(screen.getByRole("button", { name: buttonName }));
@@ -240,5 +244,120 @@ describe("SessionManager", () => {
     const body = JSON.parse(String((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[1][1]?.body));
     expect(body.scope).toBe(scope);
     expect(mocks.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("keeps another account's retained operation invisible and never probes or clears it", async () => {
+    const foreignOperation = {
+      operationId: "gso_00000000000000000000000000",
+      openingFingerprint: "a".repeat(64),
+      intentFingerprint: "b".repeat(64)
+    };
+    sessionStorage.setItem(operationKey("user-one"), JSON.stringify(foreignOperation));
+    globalThis.fetch = vi.fn().mockResolvedValue(response(200, { ok: true, data: { sessions } }));
+
+    renderManager("user-two");
+    await screen.findByText("Safari on iPhone");
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(operationKey("user-one"))).toBe(JSON.stringify(foreignOperation));
+  });
+
+  it("removes malformed current-account metadata without touching or probing foreign metadata", async () => {
+    sessionStorage.setItem(operationKey("user-one"), "foreign-retained-value");
+    sessionStorage.setItem(operationKey("user-two"), JSON.stringify({ operationId: "foreign-operation" }));
+    globalThis.fetch = vi.fn().mockResolvedValue(response(200, { ok: true, data: { sessions } }));
+
+    renderManager("user-two");
+    await screen.findByText("Safari on iPhone");
+
+    expect(sessionStorage.getItem(operationKey("user-one"))).toBe("foreign-retained-value");
+    expect(sessionStorage.getItem(operationKey("user-two"))).toBeNull();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a late session-list response from the previous account scope", async () => {
+    let resolveFirst!: (value: Response) => void;
+    let resolveSecond!: (value: Response) => void;
+    globalThis.fetch = vi.fn()
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveFirst = resolve; }))
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveSecond = resolve; }));
+    const view = renderManager("user-one");
+
+    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    await act(async () => resolveSecond(response(200, { ok: true, data: { sessions: [{ ...sessions[0], deviceLabel: "User two device" }] } })));
+    expect(await screen.findByText("User two device")).toBeTruthy();
+
+    await act(async () => resolveFirst(response(200, { ok: true, data: { sessions: [{ ...sessions[0], deviceLabel: "User one device" }] } })));
+    expect(screen.queryByText("User one device")).toBeNull();
+    expect(screen.getByText("User two device")).toBeTruthy();
+  });
+
+  it("does not submit a revoke after retained-status reconciliation crosses an account switch", async () => {
+    const operationId = "gso_00000000000000000000000000";
+    sessionStorage.setItem(operationKey("user-one"), JSON.stringify({
+      operationId,
+      openingFingerprint: digest("session_revoke_opening", operationId, "one", sessions[1].handle),
+      intentFingerprint: digest("one", sessions[1].handle)
+    }));
+    let resolveStatus!: (value: Response) => void;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { sessions } }))
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveStatus = resolve; }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
+    globalThis.fetch = fetchMock;
+    const view = renderManager("user-one");
+    await screen.findByText("Safari on iPhone");
+    await userEvent.click(screen.getByRole("button", { name: "Sign out this session" }));
+    await userEvent.type(screen.getByLabelText("Current password"), "old-account-password");
+    await userEvent.click(screen.getByRole("button", { name: "Confirm sign out" }));
+
+    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    await act(async () => resolveStatus(response(200, { ok: true, data: { operationId, status: "pending" } })));
+
+    expect(fetchMock.mock.calls.filter(([url]) => url === "/api/account/sessions/revoke")).toHaveLength(0);
+    expect(sessionStorage.getItem(operationKey("user-one"))).toBeTruthy();
+  });
+
+  it("does not navigate when a revoke response rejects after the account scope changes", async () => {
+    let rejectRevoke!: (error: Error) => void;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { sessions } }))
+      .mockImplementationOnce(() => new Promise<Response>((_resolve, reject) => { rejectRevoke = reject; }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
+    globalThis.fetch = fetchMock;
+    const view = renderManager("user-one");
+    await screen.findByText("Safari on iPhone");
+    await userEvent.click(screen.getByRole("button", { name: "Sign out all devices" }));
+    await userEvent.type(screen.getByLabelText("Current password"), "old-account-password");
+    await userEvent.click(screen.getByRole("button", { name: "Confirm sign out" }));
+
+    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    await act(async () => rejectRevoke(new Error("network")));
+
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate when failed-revoke status reconciliation rejects after an account switch", async () => {
+    let rejectStatus!: (error: Error) => void;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { sessions } }))
+      .mockResolvedValueOnce(response(503, { ok: false, error: { message: "lost response" } }))
+      .mockImplementationOnce(() => new Promise<Response>((_resolve, reject) => { rejectStatus = reject; }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { sessions: [sessions[0]] } }));
+    globalThis.fetch = fetchMock;
+    const view = renderManager("user-one");
+    await screen.findByText("Safari on iPhone");
+    await userEvent.click(screen.getByRole("button", { name: "Sign out all devices" }));
+    await userEvent.type(screen.getByLabelText("Current password"), "old-account-password");
+    await userEvent.click(screen.getByRole("button", { name: "Confirm sign out" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+
+    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    await act(async () => rejectStatus(new Error("network")));
+
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(operationKey("user-one"))).toBeTruthy();
   });
 });

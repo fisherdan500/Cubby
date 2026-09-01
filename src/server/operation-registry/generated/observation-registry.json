@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 64,
-    "client_binding": 27,
+    "api_route": 69,
+    "client_binding": 29,
     "instrumentation": 1,
     "package_command": 14,
     "server_action": 1,
-    "server_loader": 29,
+    "server_loader": 30,
     "worker": 6
   },
-  "declarationDigest": "cceb8499aa7af5e903107e2bfc26b9162e9c597909e58fe3fd92c9a1c1f5dbce",
+  "declarationDigest": "1a601eac9b25f7baff64e663c09264985d1a2c945f15fc5f85f400063c6b9cfe",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -660,6 +660,36 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/account/security/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/account/security/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/account/security/page.tsx",
+      "sidecarPath": "src/app/account/security/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "route_method",
             "symbol": "POST",
             "target": "src/app/api/account/appearance/issue/route.ts#POST"
@@ -792,6 +822,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/account/recovery/reset/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/recovery/reset/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/recovery/reset/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/recovery/reset/route.ts",
+      "sidecarPath": "src/app/api/account/recovery/reset/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/account/security-history/export/route.ts#POST"
           }
         ],
@@ -845,6 +905,126 @@
       },
       "id": "api_route:src/app/api/account/security-history/route.ts",
       "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/security/email-change/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security/email-change/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security/email-change/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security/email-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/email-change/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/security/password/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security/password/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security/password/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security/password/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/security/password/status/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security/password/status/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security/password/status/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security/password/status/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/status/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/security/recovery/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security/recovery/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security/recovery/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security/recovery/route.ts",
+      "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
     },
     {
       "declaration": {
@@ -3735,6 +3915,36 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/app/recovery/page.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/app/recovery/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/app/recovery/page.tsx",
+      "sidecarPath": "src/app/recovery/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "server_value_import",
             "symbol": "extractInviteToken",
             "target": "src/server/services/registration.ts#extractInviteToken"
@@ -3760,6 +3970,36 @@
       },
       "id": "server_loader:src/app/register/page.tsx",
       "sidecarPath": "src/app/register/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/account-security-panel.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/account-security-panel.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/account-security-panel.tsx",
+      "sidecarPath": "src/components/account-security-panel.operation.ts"
     },
     {
       "declaration": {
@@ -5262,7 +5502,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "7950f33d1bce8601e9f88f572c6743a96d5466173063d41963ede6ef4c95e366",
+  "generatorDigest": "493aa93bee5e95818edd7e8d0222218ed356a3d55f089f604aec3f29d5c38212",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -5362,6 +5602,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "5f914a8230373676b8ed58daa998f52b5134f8a8e689cd798210a144c4fb1c0b",
+          "anchorEnd": 4554,
+          "anchorFile": "src/app/api/account/recovery/reset/route.ts",
+          "anchorStart": 2112,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/recovery/reset/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/recovery/reset/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/recovery/reset/route.ts",
+      "sidecarPath": "src/app/api/account/recovery/reset/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "a1996d21cf5090f45c01b34ed943a7a6f918b2d6fb78860613de00879715740c",
           "anchorEnd": 1994,
           "anchorFile": "src/app/api/account/security-history/export/route.ts",
@@ -5396,6 +5655,82 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/account/security-history/route.ts",
       "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "890eb95948745ad73e60141ef0a0ff7e16e6265805c4b3ed7d85bed8a7a26ead",
+          "anchorEnd": 8165,
+          "anchorFile": "src/app/api/account/security/email-change/route.ts",
+          "anchorStart": 4384,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/email-change/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security/email-change/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/email-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/email-change/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "a8a4fcbefc99555fa709b2da733bcbf353c97f68ee942b8edb1733ce178f112b",
+          "anchorEnd": 4025,
+          "anchorFile": "src/app/api/account/security/password/route.ts",
+          "anchorStart": 2914,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/password/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security/password/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/password/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "f42ccc0635d2ed24277cb8a14029fe28598cf9217fe4db4b0aa0a04a363a75bc",
+          "anchorEnd": 1619,
+          "anchorFile": "src/app/api/account/security/password/status/route.ts",
+          "anchorStart": 399,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/password/status/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security/password/status/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/password/status/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/status/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "51fffd411ccabe9845af9a24651a5f0f5c0bfc385ef9e8470bea5199c4c07981",
+          "anchorEnd": 6521,
+          "anchorFile": "src/app/api/account/security/recovery/route.ts",
+          "anchorStart": 4594,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/recovery/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security/recovery/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/recovery/route.ts",
+      "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
     },
     {
       "bindings": [
@@ -6683,6 +7018,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 276,
+          "anchorFile": "src/app/account/security/page.tsx",
+          "anchorStart": 261,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/account/security/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/security/page.tsx",
+      "sidecarPath": "src/app/account/security/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "84878e1856af36f94bb807228b977b169e48fffe0ac6f04e6afc412fd68b6ed7",
           "anchorEnd": 698,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
@@ -7602,6 +7956,44 @@
     {
       "bindings": [
         {
+          "anchorDigest": "e503143d75532b78574b4b373319b27728f5d210edf561dfde677f0abb1540bc",
+          "anchorEnd": 1878,
+          "anchorFile": "src/app/recovery/page.tsx",
+          "anchorStart": 1719,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/app/recovery/page.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/app/recovery/page.tsx",
+      "sidecarPath": "src/app/recovery/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "2b167a6b175d222efd4a48d9d04f2fe3a58d879e7315b249a030702a0e139ebf",
+          "anchorEnd": 1787,
+          "anchorFile": "src/components/account-security-panel.tsx",
+          "anchorStart": 1676,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/account-security-panel.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/account-security-panel.tsx",
+      "sidecarPath": "src/components/account-security-panel.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "5bef3263d60f85efc60731aef05f6f1ccc3d568889e3162c24238493ef2ceb46",
           "anchorEnd": 531,
           "anchorFile": "src/components/actions/accept-invite-button.tsx",
@@ -8508,18 +8900,18 @@
       "bindings": [
         {
           "anchorDigest": "0a49ba8a97f3d2b0385e1a361b4589ac6f857c56e8d7afb5b9a4092841aaf009",
-          "anchorEnd": 2021,
+          "anchorEnd": 2362,
           "anchorFile": "src/components/settings/security-history.tsx",
-          "anchorStart": 1904,
+          "anchorStart": 2245,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "b577cf3fed80ff6dea0bb62d3e33be7e3905c48b4ff551b193ff6e431a5fea4e",
-          "anchorEnd": 3949,
+          "anchorEnd": 5153,
           "anchorFile": "src/components/settings/security-history.tsx",
-          "anchorStart": 3762,
+          "anchorStart": 4966,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
@@ -8536,27 +8928,27 @@
       "bindings": [
         {
           "anchorDigest": "3fdd9ef04e687048103932208e9c43c46279b7c311fae0e21f39161b74672d69",
-          "anchorEnd": 3941,
+          "anchorEnd": 4404,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 3888,
+          "anchorStart": 4351,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "c3aa9033aa151f1859dce63c2839299be9e512b544bd15e768c7f3fb6ffd3e4e",
-          "anchorEnd": 5044,
+          "anchorEnd": 6419,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 4876,
+          "anchorStart": 6251,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "41a82fc0c0e87ed1b9e165b72da4b38f2f9942186a660ea020b3f2f3261c50ad",
-          "anchorEnd": 7689,
+          "anchorEnd": 9715,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 7316,
+          "anchorStart": 9342,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
@@ -9618,8 +10010,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 142,
-  "observationDigest": "1a5678b32dd5e266e3eb32970fd5ec90e29a712ef045c591640f0d7d4cea7c64",
+  "observationCount": 150,
+  "observationDigest": "8dcbe047554b0c588e0ddf72c651e870792dda71fffce5522493d2af6f92ce7c",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -9716,6 +10108,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 4554,
+          "anchorFile": "src/app/api/account/recovery/reset/route.ts",
+          "anchorStart": 2112,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/recovery/reset/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/recovery/reset/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/recovery/reset/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/recovery/reset/route.ts",
+      "sidecarPath": "src/app/api/account/recovery/reset/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1994,
           "anchorFile": "src/app/api/account/security-history/export/route.ts",
           "anchorStart": 1113,
@@ -9748,6 +10158,78 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/account/security-history/route.ts",
       "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 8165,
+          "anchorFile": "src/app/api/account/security/email-change/route.ts",
+          "anchorStart": 4384,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security/email-change/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/email-change/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security/email-change/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/email-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/email-change/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 4025,
+          "anchorFile": "src/app/api/account/security/password/route.ts",
+          "anchorStart": 2914,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security/password/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/password/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security/password/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/password/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1619,
+          "anchorFile": "src/app/api/account/security/password/status/route.ts",
+          "anchorStart": 399,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security/password/status/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/password/status/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security/password/status/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/password/status/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/status/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 6521,
+          "anchorFile": "src/app/api/account/security/recovery/route.ts",
+          "anchorStart": 4594,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security/recovery/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/recovery/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security/recovery/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/recovery/route.ts",
+      "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
     },
     {
       "bindings": [
@@ -10976,6 +11458,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 276,
+          "anchorFile": "src/app/account/security/page.tsx",
+          "anchorStart": 261,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/account/security/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/account/security/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/security/page.tsx",
+      "sidecarPath": "src/app/account/security/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 698,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
           "anchorStart": 680,
@@ -11867,6 +12367,42 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1878,
+          "anchorFile": "src/app/recovery/page.tsx",
+          "anchorStart": 1719,
+          "kind": "global_fetch",
+          "ownerModule": "src/app/recovery/page.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/app/recovery/page.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/app/recovery/page.tsx",
+      "sidecarPath": "src/app/recovery/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1787,
+          "anchorFile": "src/components/account-security-panel.tsx",
+          "anchorStart": 1676,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/account-security-panel.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/account-security-panel.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/account-security-panel.tsx",
+      "sidecarPath": "src/components/account-security-panel.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 531,
           "anchorFile": "src/components/actions/accept-invite-button.tsx",
           "anchorStart": 474,
@@ -12749,18 +13285,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2021,
+          "anchorEnd": 2362,
           "anchorFile": "src/components/settings/security-history.tsx",
-          "anchorStart": 1904,
+          "anchorStart": 2245,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/security-history.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3949,
+          "anchorEnd": 5153,
           "anchorFile": "src/components/settings/security-history.tsx",
-          "anchorStart": 3762,
+          "anchorStart": 4966,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/security-history.tsx",
           "symbol": "fetch[2]",
@@ -12776,27 +13312,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3941,
+          "anchorEnd": 4404,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 3888,
+          "anchorStart": 4351,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/session-manager.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5044,
+          "anchorEnd": 6419,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 4876,
+          "anchorStart": 6251,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/session-manager.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7689,
+          "anchorEnd": 9715,
           "anchorFile": "src/components/settings/session-manager.tsx",
-          "anchorStart": 7316,
+          "anchorStart": 9342,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/session-manager.tsx",
           "symbol": "fetch[3]",
@@ -13817,6 +14353,12 @@
       "sidecarPath": "src/app/api/account/browser-operations/partition/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/account/recovery/reset/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/recovery/reset/route.ts",
+      "sidecarPath": "src/app/api/account/recovery/reset/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/account/security-history/export/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/account/security-history/export/route.ts",
@@ -13827,6 +14369,30 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/account/security-history/route.ts",
       "sidecarPath": "src/app/api/account/security-history/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security/email-change/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/email-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/email-change/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security/password/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/password/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security/password/status/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/password/status/route.ts",
+      "sidecarPath": "src/app/api/account/security/password/status/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security/recovery/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/recovery/route.ts",
+      "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/account/session-activity/route.ts",
@@ -14183,6 +14749,12 @@
       "sidecarPath": "src/app/account/appearance/page.operation.ts"
     },
     {
+      "id": "server_loader:src/app/account/security/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/security/page.tsx",
+      "sidecarPath": "src/app/account/security/page.operation.ts"
+    },
+    {
       "id": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
@@ -14349,6 +14921,18 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/register/page.tsx",
       "sidecarPath": "src/app/register/page.operation.ts"
+    },
+    {
+      "id": "client_binding:src/app/recovery/page.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/app/recovery/page.tsx",
+      "sidecarPath": "src/app/recovery/page.operation.ts"
+    },
+    {
+      "id": "client_binding:src/components/account-security-panel.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/account-security-panel.tsx",
+      "sidecarPath": "src/components/account-security-panel.operation.ts"
     },
     {
       "id": "client_binding:src/components/actions/accept-invite-button.tsx",
@@ -14645,9 +15229,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "63dec32dfe8a2efd8d01b17c76e2c815258d4c0502e7a581fdcf5aaafc36fd03",
+  "ownerSetDigest": "7804a2750e0ed9ea8f5f66bca461ab80c014b09a0ef4f3750dbacf0bd692f8bf",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "d4a116ce3f10e125cbad7fd7b45b95c409782b60a36805e49df73e630aefab04",
+  "registryDigest": "eb8ab279efc048efea91a3470862ee51d791868b1661e1d03f4a07c069d5d028",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
