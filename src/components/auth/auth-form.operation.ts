@@ -10,12 +10,6 @@ export const operation = {
       kind: "auth_client_call",
       symbol: "authClient.signIn.email[1]",
       target: "better-auth/react#createAuthClient.signIn.email"
-    },
-
-    {
-      kind: "form_action",
-      symbol: "onSubmit",
-      target: "src/components/auth/auth-form.tsx#onSubmit"
     }
   ],
   disposition: "observed",

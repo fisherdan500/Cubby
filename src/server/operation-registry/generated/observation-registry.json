@@ -9,7 +9,7 @@
     "server_loader": 30,
     "worker": 6
   },
-  "declarationDigest": "1a601eac9b25f7baff64e663c09264985d1a2c945f15fc5f85f400063c6b9cfe",
+  "declarationDigest": "52d4f4e6af2f6c4fb1944c96b621862a1cef031d93df9e2711e594c1f7cdc02e",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4173,11 +4173,6 @@
             "kind": "auth_client_call",
             "symbol": "authClient.signIn.email[1]",
             "target": "better-auth/react#createAuthClient.signIn.email"
-          },
-          {
-            "kind": "form_action",
-            "symbol": "onSubmit",
-            "target": "src/components/auth/auth-form.tsx#onSubmit"
           }
         ],
         "deferredGateIds": [
@@ -5697,8 +5692,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f42ccc0635d2ed24277cb8a14029fe28598cf9217fe4db4b0aa0a04a363a75bc",
-          "anchorEnd": 1619,
+          "anchorDigest": "b31fc2c4a30a141bff92febb40cbce21b34d5e2ce464dce63e0e75b185e5b8ea",
+          "anchorEnd": 1612,
           "anchorFile": "src/app/api/account/security/password/status/route.ts",
           "anchorStart": 399,
           "kind": "route_method",
@@ -8152,21 +8147,12 @@
       "bindings": [
         {
           "anchorDigest": "8c338518855b08f4e19bee92b7313625a92d75a84733d21c05c52ea5d6c2345f",
-          "anchorEnd": 792,
+          "anchorEnd": 1065,
           "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 711,
+          "anchorStart": 984,
           "kind": "auth_client_call",
           "symbol": "authClient.signIn.email[1]",
           "target": "better-auth/react#createAuthClient.signIn.email"
-        },
-        {
-          "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
-          "anchorEnd": 1008,
-          "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 991,
-          "kind": "form_action",
-          "symbol": "onSubmit",
-          "target": "src/components/auth/auth-form.tsx#onSubmit"
         }
       ],
       "disposition": "observed",
@@ -10011,7 +9997,7 @@
     }
   ],
   "observationCount": 150,
-  "observationDigest": "8dcbe047554b0c588e0ddf72c651e870792dda71fffce5522493d2af6f92ce7c",
+  "observationDigest": "a5d2003dcd9b96fb5e26a16d278dbe908c52fe0fafb6a88fa64dc628636b96ad",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -10198,7 +10184,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1619,
+          "anchorEnd": 1612,
           "anchorFile": "src/app/api/account/security/password/status/route.ts",
           "anchorStart": 399,
           "kind": "route_method",
@@ -12556,22 +12542,13 @@
     {
       "bindings": [
         {
-          "anchorEnd": 792,
+          "anchorEnd": 1065,
           "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 711,
+          "anchorStart": 984,
           "kind": "auth_client_call",
           "ownerModule": "src/components/auth/auth-form.tsx",
           "symbol": "authClient.signIn.email[1]",
           "target": "better-auth/react#createAuthClient.signIn.email"
-        },
-        {
-          "anchorEnd": 1008,
-          "anchorFile": "src/components/auth/auth-form.tsx",
-          "anchorStart": 991,
-          "kind": "form_action",
-          "ownerModule": "src/components/auth/auth-form.tsx",
-          "symbol": "onSubmit",
-          "target": "src/components/auth/auth-form.tsx#onSubmit"
         }
       ],
       "disposition": "observed",
@@ -15231,7 +15208,7 @@
   ],
   "ownerSetDigest": "7804a2750e0ed9ea8f5f66bca461ab80c014b09a0ef4f3750dbacf0bd692f8bf",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "eb8ab279efc048efea91a3470862ee51d791868b1661e1d03f4a07c069d5d028",
+  "registryDigest": "b89778e1efd45a89dfbc3b1dcfaca189868b35119b3b112d3fbd86d6412aa08c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

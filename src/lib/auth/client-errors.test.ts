@@ -13,9 +13,9 @@ describe("auth client errors", () => {
     );
   });
 
-  it("preserves ordinary authentication errors", () => {
-    expect(authFailureMessage("login", { status: 401, message: "Invalid email or password" })).toBe(
-      "Invalid email or password"
+  it("keeps ordinary sign-in failures generic", () => {
+    expect(authFailureMessage("login", { status: 401, message: "Provider disclosed an account-specific failure." })).toBe(
+      "Unable to sign in right now. Try again."
     );
   });
 });

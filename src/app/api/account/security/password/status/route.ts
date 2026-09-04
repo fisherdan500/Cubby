@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const input = await request.json() as Record<string, unknown>;
     if (!input || Object.keys(input).sort().join("|") !== "intentFingerprint|openingFingerprint|operationId" || typeof input.operationId !== "string" || !operationIdPattern.test(input.operationId) || typeof input.openingFingerprint !== "string" || !fingerprintPattern.test(input.openingFingerprint) || typeof input.intentFingerprint !== "string" || !fingerprintPattern.test(input.intentFingerprint)) throw new Error("password_change_status_invalid");
     const context = await requireGlobalSecurityContext();
-    return ok(await getPasswordChangeStatus(prisma, context.userId, { operationId: input.operationId, openingFingerprint: input.openingFingerprint, intentFingerprint: input.intentFingerprint }));
+    return ok(await getPasswordChangeStatus(prisma, context, { operationId: input.operationId, openingFingerprint: input.openingFingerprint, intentFingerprint: input.intentFingerprint }));
   } catch (error) {
     if (error instanceof Error && error.message === "password_change_status_invalid") return fail(error.message, "Check the password change status request and try again.", 422);
     return handleError(error);

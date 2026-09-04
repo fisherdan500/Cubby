@@ -158,6 +158,23 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv, capture = 
   return String(result.stdout ?? "").trim();
 }
 
+function runAsync(command: string, args: string[], env: NodeJS.ProcessEnv, code = "p1_3_phase1_acceptance_command_failed", cwd = root) {
+  return new Promise<string>((resolveCommand, rejectCommand) => {
+    const child = spawn(command, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += String(chunk); });
+    child.stderr.on("data", (chunk) => { stderr += String(chunk); });
+    child.once("error", () => rejectCommand(new Error(code)));
+    child.once("close", (status) => {
+      if (status === 0) return resolveCommand(stdout.trim());
+      const diagnostic = redact(`${stdout}\n${stderr}`, env).slice(-12_000);
+      if (diagnostic) process.stderr.write(diagnostic);
+      rejectCommand(new Error(code));
+    });
+  });
+}
+
 function acceptanceEnv(user: string, database: string, password: string) {
   const env = {} as NodeJS.ProcessEnv;
   for (const key of ["PATH", "Path", "PATHEXT", "SYSTEMROOT", "SystemRoot", "WINDIR", "COMSPEC", "TEMP", "TMP", "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "APPDATA", "LOCALAPPDATA", "PROGRAMDATA", "ProgramFiles", "ProgramW6432", "ProgramFiles(x86)", "HOME", "DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG"]) {
@@ -621,6 +638,45 @@ export async function runP13GlobalSecurityPhase1Acceptance() {
       sql(`SELECT (SELECT COUNT(*) FROM "GlobalSecurityIncident") || '|' || (SELECT COUNT(*) FROM "GlobalSecurityEvent" WHERE "userId"='${phase8OtherUser}' AND "eventType"='credential' AND "outcome"='sign_in_failed')`, `${rollbackCarrierIncidentBefore}|${rollbackCarrierEventBefore}`);
       await initializeGlobalSessionSecurityActivity(phase8Database, { userId: phase8User, sessionId: phase8Session });
       await initializeGlobalSessionSecurityActivity(phase8Database, { userId: phase8OtherUser, sessionId: phase8OtherSession });
+      const captureReaderApplicationName = `p1_3_phase8_capture_reader_${suffix}`;
+      const captureReaderUrl = new URL(runtimeDatabaseUrl);
+      captureReaderUrl.searchParams.set("application_name", captureReaderApplicationName);
+      const phase8CaptureReader = new PrismaClient({
+        datasourceUrl: captureReaderUrl.toString(),
+        transactionOptions: { isolationLevel: "Serializable", maxWait: 5_000, timeout: 10_000 }
+      });
+      const captureWriterReadyMarker = "PHASE8_CAPTURE_WRITER_READY";
+      const captureWriterQueryMarker = "phase8_capture_writer_hold";
+      const captureWriter = spawn("docker", psql(`BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('global-security-transition:v1',0)); SELECT '${captureWriterReadyMarker}'; SELECT pg_backend_pid(); SELECT pg_sleep(4) /* ${captureWriterQueryMarker} */; COMMIT;`), {
+        cwd: root,
+        env,
+        stdio: ["ignore", "pipe", "pipe"]
+      });
+      const captureWriterDone = new Promise<{ status: number | null }>((resolveDone) => {
+        captureWriter.once("error", () => resolveDone({ status: null }));
+        captureWriter.once("close", (status) => resolveDone({ status }));
+      });
+      try {
+        let captureWriterBackendPid = "";
+        for (let attempt = 0; attempt < 120 && !captureWriterBackendPid; attempt += 1) {
+          captureWriterBackendPid = await runAsync("docker", psql(`SELECT pid FROM pg_stat_activity WHERE pid<>pg_backend_pid() AND datname=current_database() AND state='active' AND query LIKE '%${captureWriterQueryMarker}%' LIMIT 1`), env, "phase8_capture_writer_probe_failed");
+          if (!captureWriterBackendPid) await new Promise((resolveWait) => setTimeout(resolveWait, 25));
+        }
+        if (!captureWriterBackendPid) throw new Error("phase8_capture_writer_readiness_missing");
+        console.log(captureWriterReadyMarker);
+        const captureReader = captureGlobalSecurityContext(phase8CaptureReader, { userId: phase8User, sessionId: phase8Session });
+        let captureWriterWaitObserved = false;
+        for (let attempt = 0; attempt < 200 && !captureWriterWaitObserved; attempt += 1) {
+          captureWriterWaitObserved = await runAsync("docker", psql(`SELECT ${captureWriterBackendPid}::integer = ANY(pg_blocking_pids(pid)) FROM pg_stat_activity WHERE pid<>pg_backend_pid() AND datname=current_database() AND state='active' AND wait_event_type='Lock' AND wait_event='advisory' LIMIT 1`), env, "phase8_capture_writer_wait_probe_failed") === "t";
+          if (!captureWriterWaitObserved) await new Promise((resolveWait) => setTimeout(resolveWait, 25));
+        }
+        if (!captureWriterWaitObserved) throw new Error("phase8_capture_writer_wait_missing");
+        const [writerResult] = await Promise.all([captureWriterDone, captureReader]);
+        if (writerResult.status !== 0) throw new Error("phase8_capture_writer_failed");
+        console.log("PHASE8_CAPTURE_WRITER_LOCK_ORDER_PASS");
+      } finally {
+        await phase8CaptureReader.$disconnect();
+      }
       const throttleInput = { key: throttleKey, userId: phase8User, accountIdentifier: `phase8-${suffix}@acceptance.invalid`, client: "198.51.100.208" };
       const absentInput = { key: throttleKey, client: "198.51.100.209" };
       if ((await precheckGlobalSecurityThrottle(phase8Database, throttleInput)).quiet || (await precheckGlobalSecurityThrottle(phase8Database, absentInput)).quiet) throw new Error("phase8_existing_nonexisting_precheck_invalid");
@@ -631,7 +687,7 @@ export async function runP13GlobalSecurityPhase1Acceptance() {
         sql(`SELECT string_agg("layer" || ':' || "state" || ':' || "failureCount",',' ORDER BY "layer") FROM (SELECT "layer","state","failureCount" FROM "GlobalSecurityIncident" WHERE "userId"='${phase8User}' OR "userId" IS NULL ORDER BY "createdAt" DESC LIMIT 3) scoped`, `account_identifier:active:${attempt},client:active:${attempt},deployment:active:${attempt}`);
       }
       const fifth = await Promise.all([recordGlobalSecurityThrottleFailure(phase8Database, throttleInput), recordGlobalSecurityThrottleFailure(phase8Database, throttleInput)]);
-      if (!fifth.every((result) => result.quiet)) throw new Error("phase8_concurrent_fifth_not_quiet");
+      if (!fifth.every((result) => result.quiet)) throw new Error(`phase8_concurrent_fifth_not_quiet:${fifth.map((result) => result.quiet ? "quiet" : "active").join("|")}`);
       sql(`SELECT COUNT(*) FROM "GlobalSecurityEvent" WHERE "userId"='${phase8User}' AND "eventType"='throttle' AND "outcome"='quiet_started'`, "1");
       const quietBefore = sql(`SELECT "quietUntil"::text || '|' || "failureCount" FROM "GlobalSecurityIncident" WHERE "userId"='${phase8User}' AND "layer"='account_identifier'`);
       await recordGlobalSecurityThrottleFailure(phase8Database, throttleInput);

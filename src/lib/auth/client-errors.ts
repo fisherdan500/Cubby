@@ -23,5 +23,6 @@ export function authFailureMessage(mode: "login" | "register", error: AuthClient
     return "Too many sign-in requests. Wait 10 seconds and try again.";
   }
   if (rateLimited) return "Too many account requests. Wait 10 seconds and try again.";
-  return error.message ?? "Authentication failed.";
+  if (mode === "login") return "Unable to sign in right now. Try again.";
+  return "Unable to create an account right now. Try again.";
 }
