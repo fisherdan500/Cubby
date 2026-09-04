@@ -89,6 +89,36 @@ describe("AccountSecurityPanel", () => {
     expect(screen.queryByText("display-once-code")).toBeNull();
   });
 
+  it("focuses issued display-once recovery codes without announcing the secrets through a live region", async () => {
+    renderPanel();
+    await userEvent.type(screen.getByLabelText("Current password for recovery codes"), "current password");
+    await userEvent.click(screen.getByRole("button", { name: "Create recovery codes" }));
+
+    const codes = await screen.findByRole("region", { name: "Display-once recovery codes" });
+    expect(codes.getAttribute("aria-live")).toBeNull();
+    expect(codes.getAttribute("aria-atomic")).toBeNull();
+    expect(codes.getAttribute("tabindex")).toBe("-1");
+    expect(document.activeElement).toBe(codes);
+    expect(sessionStorage.getItem("cubby:global-security:user-one:recovery-operation")).not.toMatch(/display-once-code/);
+  });
+
+  it("never renders server-provided account-security error detail", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ ok: false, error: { code: "rejected", message: "Backend detail with display-once-code" } })
+    } as Response);
+    renderPanel();
+    await userEvent.type(screen.getByLabelText("Current password for password change"), "current password");
+    await userEvent.type(screen.getByLabelText("New password"), "new password");
+    await userEvent.click(screen.getByRole("button", { name: "Change password" }));
+
+    const status = await screen.findByRole("status");
+    expect(status.textContent).toBe("Account security request could not be completed. Check status before retrying.");
+    expect(document.body.textContent).not.toContain("Backend detail");
+    expect(document.body.textContent).not.toContain("display-once-code");
+  });
+
   it("reuses the enrollment operation identity for rehearsal instead of opening a conflicting operation", async () => {
     renderPanel();
     await userEvent.type(screen.getByLabelText("Current password for recovery codes"), "current password");

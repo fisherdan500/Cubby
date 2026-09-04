@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "1a601eac9b25f7baff64e663c09264985d1a2c945f15fc5f85f400063c6b9cfe",
+  "declarationDigest": "52d4f4e6af2f6c4fb1944c96b621862a1cef031d93df9e2711e594c1f7cdc02e",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -152,17 +152,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "738548005d0dc4c1c7534f506e6536626174d442560965b0af26e069752767a7",
+          "digest": "14d8d4bec339059d4abea6bef4d6035bc8a33fcfb0397414a1d78b1e451f21d0",
           "file": "src/app/api/account/security/password/status/route.ts"
         }
       ],
       "declarationDigest": "e53c5efc136a2bfa2942862b75a3dd5c6a5619106850b019a52a72de23670381",
-      "fingerprint": "2b75e27b70df07ea3ca8e006b74d90758b21924a80b5e222e9f0f8bb1f19f1fc",
+      "fingerprint": "c09ae934464a900ac380a8326475c0207149533034ee550757fd9b065e0e6d00",
       "id": "fingerprint:api_route:src/app/api/account/security/password/status/route.ts",
       "ownerId": "api_route:src/app/api/account/security/password/status/route.ts",
       "ownerModule": "src/app/api/account/security/password/status/route.ts",
       "sidecarPath": "src/app/api/account/security/password/status/route.operation.ts",
-      "sourceDigest": "a7a80db8e7e90f460f6bd1b50354e84d41b7f8f75dcd5977c0082b1077610ced",
+      "sourceDigest": "9f1c652d56d42bd7d28603a5f4b5c7d7b658a78fa9904778f2d23078d4fc5141",
       "status": "declared"
     },
     {
@@ -1616,17 +1616,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8658064030c6b1553ce956ddcda8815d819dec5a61bf188afad7d3936dc49acc",
+          "digest": "bb24f5536ab23910b65bc2f6b1f2f6395fe55e8821943cd72e3666f4760cc4ef",
           "file": "src/components/account-security-panel.tsx"
         }
       ],
       "declarationDigest": "bfd57f25eafeff7a8e6a435af9ac8315f02dbe29fea48c07800423b2a59bf29f",
-      "fingerprint": "01994d38f1e81be3cd5bc6a18d99c9f795b485ca6bc4fd11b37976da90ac1210",
+      "fingerprint": "0e1cf7de4459d813249c054c0a8d323514ae7587412a273249e8280673451697",
       "id": "fingerprint:client_binding:src/components/account-security-panel.tsx",
       "ownerId": "client_binding:src/components/account-security-panel.tsx",
       "ownerModule": "src/components/account-security-panel.tsx",
       "sidecarPath": "src/components/account-security-panel.operation.ts",
-      "sourceDigest": "9484c48dc6d7500be20c5d6c7f5c1512a40d2ced2fe18f4b0a77df9e02633d7b",
+      "sourceDigest": "41ea88cc494ea2ee2728f0a72a51a5f76bc30fb96aaa759f282d06bf3fe9f615",
       "status": "declared"
     },
     {
@@ -1696,17 +1696,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "a4448ecfc9d4df0c64e23e62d175994d4b7ac77881a01452974035316391573b",
+          "digest": "1559947ed781b1c7c22c2b04a97852513e7c15275c63c2cdcefd1c6d52c2ce36",
           "file": "src/components/auth/auth-form.tsx"
         }
       ],
-      "declarationDigest": "6f46f23ec446a86c323b99e7335ea20a507b7254182937e407340d35c4ca3e29",
-      "fingerprint": "bd8210d630b5be58055181bbd279cfa75b225926636b7dd2c757c18fd37a9126",
+      "declarationDigest": "b00dede07a85eb6d91896ee1f98987baea1b31cdd5cf7985bf1651960bfe3016",
+      "fingerprint": "3279ecb9206addafbe5e7e20fab995a6478b43e4b6491d17f5f77e93c1567a7d",
       "id": "fingerprint:client_binding:src/components/auth/auth-form.tsx",
       "ownerId": "client_binding:src/components/auth/auth-form.tsx",
       "ownerModule": "src/components/auth/auth-form.tsx",
       "sidecarPath": "src/components/auth/auth-form.operation.ts",
-      "sourceDigest": "07eda1771ca23cf1bc67429629e30bc1d0e6b279a8cbac0cca75ad38006fea1b",
+      "sourceDigest": "c7d31530ac1554dff62f634542e1644e5aba7e1de903e24b82d317fcc636deed",
       "status": "declared"
     },
     {
@@ -2572,11 +2572,11 @@
   ],
   "generatorDigest": "493aa93bee5e95818edd7e8d0222218ed356a3d55f089f604aec3f29d5c38212",
   "generatorVersion": "r0.1",
-  "observationDigest": "8dcbe047554b0c588e0ddf72c651e870792dda71fffce5522493d2af6f92ce7c",
+  "observationDigest": "a5d2003dcd9b96fb5e26a16d278dbe908c52fe0fafb6a88fa64dc628636b96ad",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "7804a2750e0ed9ea8f5f66bca461ab80c014b09a0ef4f3750dbacf0bd692f8bf",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "eb8ab279efc048efea91a3470862ee51d791868b1661e1d03f4a07c069d5d028",
+  "registryDigest": "b89778e1efd45a89dfbc3b1dcfaca189868b35119b3b112d3fbd86d6412aa08c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

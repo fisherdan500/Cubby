@@ -94,7 +94,7 @@ describe("verified email change", () => {
         if (sql.includes('AS normalized')) return [{ normalized: "new@example.invalid" }];
         if (sql.includes('AS "normalizedCurrentEmail"')) return [{ email: "old@example.invalid", normalizedCurrentEmail: "old@example.invalid" }];
         if (sql.includes('AS "authorized"') || sql.includes('authorize_global_session_security')) return [{ authorized: true }];
-        if (sql.includes('FROM "User"') && sql.includes('FOR UPDATE')) return [{ id: "user-1", email: "old@example.invalid" }];
+        if (sql.includes('FROM "User"') && sql.includes('FOR NO KEY UPDATE')) return [{ id: "user-1", email: "old@example.invalid" }];
         if (sql.includes('FROM "Session"')) return [{ id: "session-1", userId: "user-1" }];
         if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 2, sessionSecurityVersion: 3 }];
         if (sql.includes('collision')) return [{ collision: false }];
@@ -133,7 +133,7 @@ describe("verified email change", () => {
         if (sql.includes('AS normalized')) return [{ normalized: "new@example.invalid" }];
         if (sql.includes('AS "normalizedCurrentEmail"')) return [{ email: "old@example.invalid", normalizedCurrentEmail: "old@example.invalid" }];
         if (sql.includes('AS "authorized"') || sql.includes('authorize_global_session_security')) return [{ authorized: true }];
-        if (sql.includes('FROM "User"') && sql.includes('FOR UPDATE')) return [{ id: "user-1", email: "old@example.invalid" }];
+        if (sql.includes('FROM "User"') && sql.includes('FOR NO KEY UPDATE')) return [{ id: "user-1", email: "old@example.invalid" }];
         if (sql.includes('FROM "Session"')) return [{ id: "session-1", userId: "user-1" }];
         if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 2, sessionSecurityVersion: 3 }];
         return [];
@@ -163,7 +163,7 @@ describe("verified email change", () => {
         if (sql.includes('AS normalized')) return [{ normalized: "new@example.invalid" }];
         if (sql.includes('AS "normalizedCurrentEmail"')) return [{ email: "old@example.invalid", normalizedCurrentEmail: "old@example.invalid" }];
         if (sql.includes('AS "authorized"') || sql.includes('authorize_global_session_security')) return [{ authorized: true }];
-        if (sql.includes('FROM "User"') && sql.includes('FOR UPDATE')) return [{ id: "user-1", email: "old@example.invalid" }];
+        if (sql.includes('FROM "User"') && sql.includes('FOR NO KEY UPDATE')) return [{ id: "user-1", email: "old@example.invalid" }];
         if (sql.includes('FROM "Session"')) return [{ id: "session-1", userId: "user-1" }];
         if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 2, sessionSecurityVersion: 3 }];
         return [];
@@ -188,7 +188,7 @@ describe("verified email change", () => {
         if (sql.includes('AS normalized')) return [{ normalized: "new@example.invalid" }];
         if (sql.includes('AS "normalizedCurrentEmail"')) return [{ email: " Old@Example.Invalid ", normalizedCurrentEmail: "old@example.invalid" }];
         if (sql.includes('AS "authorized"') || sql.includes('authorize_global_session_security')) return [{ authorized: true }];
-        if (sql.includes('FROM "User"') && sql.includes('FOR UPDATE')) return [{ id: "user-1", email: " Old@Example.Invalid " }];
+        if (sql.includes('FROM "User"') && sql.includes('FOR NO KEY UPDATE')) return [{ id: "user-1", email: " Old@Example.Invalid " }];
         if (sql.includes('FROM "Session"')) return [{ id: "session-1", userId: "user-1" }];
         if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 2, sessionSecurityVersion: 3 }];
         if (sql.includes('collision')) return [{ collision: true }];
@@ -206,7 +206,7 @@ describe("verified email change", () => {
 
     await expect(initiateVerifiedEmailChange(database as never, context, { operationId, openingFingerprint: "opening", intentFingerprint: "intent", newEmail: " New@Example.Invalid " }, "current-password", { verifier: { verify: vi.fn().mockResolvedValue(true) } })).resolves.toEqual({ operationId, status: "rejected" });
     const targetLock = tx.$executeRaw.mock.calls.find(([query]) => query.join(" ").includes('email-identity:v1:'))!;
-    const userLock = tx.$queryRaw.mock.calls.find(([query]) => query.join(" ").includes('FROM "User"') && query.join(" ").includes('FOR UPDATE'))!;
+    const userLock = tx.$queryRaw.mock.calls.find(([query]) => query.join(" ").includes('FROM "User"') && query.join(" ").includes('FOR NO KEY UPDATE'))!;
     expect(tx.$executeRaw.mock.invocationCallOrder[tx.$executeRaw.mock.calls.indexOf(targetLock)]).toBeLessThan(tx.$queryRaw.mock.invocationCallOrder[tx.$queryRaw.mock.calls.indexOf(userLock)]);
     expect(tx.$executeRaw.mock.calls.some(([query]) => query.join(" ").includes('reject_email_change_collision'))).toBe(true);
   });

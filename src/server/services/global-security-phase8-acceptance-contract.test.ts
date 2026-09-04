@@ -97,11 +97,35 @@ describe("Phase 8 disposable acceptance contract", () => {
       "concurrentExportPromise=exportGlobalSecurityHistory",
       "phase8_acceptance_reject_event",
       "runEmailSignInThrottleCarrier",
-      "synthetic_atomic_evidence_rollback"
-    ]) expect(postgresAcceptance).toContain(executableEvidence);
+      "synthetic_atomic_evidence_rollback",
+      "const captureWriter = spawn(\"docker\"",
+      "function runAsync",
+      "transactionOptions",
+      "timeout: 10_000",
+      "phase8_capture_writer_hold",
+      "SELECT pg_backend_pid(); SELECT pg_sleep(4)"
+    ]) expect(`${postgresAcceptance}\n${browserAcceptance}`).toContain(executableEvidence);
     expect(browserAcceptance).toContain("success-unavailable@acceptance.invalid");
     expect(browserAcceptance).toContain("quiet-handler-unavailable@acceptance.invalid");
     expect(browserAcceptance).toContain("lookup-handler-unavailable@acceptance.invalid");
     expect(browserAcceptance).toContain("synthetic_atomic_session_event_failure");
+  });
+
+  it("keeps a real capture-versus-event-writer transition-lock contention probe in the disposable PostgreSQL harness", () => {
+    const acceptance = readFileSync(postgresAcceptancePath, "utf8");
+
+    expect(acceptance).toContain("captureGlobalSecurityContext");
+    expect(acceptance).toContain("captureReaderApplicationName");
+    expect(acceptance).toContain('const captureWriter = spawn("docker"');
+    expect(acceptance).toContain("PHASE8_CAPTURE_WRITER_READY");
+    expect(acceptance).toContain("function runAsync");
+    expect(acceptance).toContain("transactionOptions");
+    expect(acceptance).toContain("timeout: 10_000");
+    expect(acceptance).toContain("phase8_capture_writer_hold");
+    expect(acceptance).toContain("SELECT pg_backend_pid(); SELECT pg_sleep(4)");
+    expect(acceptance).toContain("PHASE8_CAPTURE_WRITER_LOCK_ORDER_PASS");
+    expect(acceptance).toContain("phase8_capture_writer_wait_missing");
+    expect(acceptance).toContain("pg_blocking_pids");
+    expect(acceptance).not.toContain("const phase8CaptureWriter = new PrismaClient");
   });
 });

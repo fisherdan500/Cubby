@@ -190,9 +190,9 @@
       "sidecarPath": "src/app/api/account/security/password/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"password_change_status_invalid\");\n    const input = await request.json() as Record<string, unknown>;\n    if (!input || Object.keys(input).sort().join(\"|\") !== \"intentFingerprint|openingFingerprint|operationId\" || typeof input.operationId !== \"string\" || !operationIdPattern.test(input.operationId) || typeof input.openingFingerprint !== \"string\" || !fingerprintPattern.test(input.openingFingerprint) || typeof input.intentFingerprint !== \"string\" || !fingerprintPattern.test(input.intentFingerprint)) throw new Error(\"password_change_status_invalid\");\n    const context = await requireGlobalSecurityContext();\n    return ok(await getPasswordChangeStatus(prisma, context.userId, { operationId: input.operationId, openingFingerprint: input.openingFingerprint, intentFingerprint: input.intentFingerprint }));\n  } catch (error) {\n    if (error instanceof Error && error.message === \"password_change_status_invalid\") return fail(error.message, \"Check the password change status request and try again.\", 422);\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "f42ccc0635d2ed24277cb8a14029fe28598cf9217fe4db4b0aa0a04a363a75bc",
-      "anchorEnd": 1619,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (request.headers.get(\"content-type\")?.split(\";\", 1)[0]?.trim().toLowerCase() !== \"application/json\") throw new Error(\"password_change_status_invalid\");\n    const input = await request.json() as Record<string, unknown>;\n    if (!input || Object.keys(input).sort().join(\"|\") !== \"intentFingerprint|openingFingerprint|operationId\" || typeof input.operationId !== \"string\" || !operationIdPattern.test(input.operationId) || typeof input.openingFingerprint !== \"string\" || !fingerprintPattern.test(input.openingFingerprint) || typeof input.intentFingerprint !== \"string\" || !fingerprintPattern.test(input.intentFingerprint)) throw new Error(\"password_change_status_invalid\");\n    const context = await requireGlobalSecurityContext();\n    return ok(await getPasswordChangeStatus(prisma, context, { operationId: input.operationId, openingFingerprint: input.openingFingerprint, intentFingerprint: input.intentFingerprint }));\n  } catch (error) {\n    if (error instanceof Error && error.message === \"password_change_status_invalid\") return fail(error.message, \"Check the password change status request and try again.\", 422);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "b31fc2c4a30a141bff92febb40cbce21b34d5e2ce464dce63e0e75b185e5b8ea",
+      "anchorEnd": 1612,
       "anchorFile": "src/app/api/account/security/password/status/route.ts",
       "anchorStart": 399,
       "binding": {
@@ -1756,9 +1756,9 @@
     {
       "anchorBytes": "authClient.signIn.email({ email, password, rememberMe: true, callbackURL: next })",
       "anchorDigest": "8c338518855b08f4e19bee92b7313625a92d75a84733d21c05c52ea5d6c2345f",
-      "anchorEnd": 792,
+      "anchorEnd": 1065,
       "anchorFile": "src/components/auth/auth-form.tsx",
-      "anchorStart": 711,
+      "anchorStart": 984,
       "binding": {
         "kind": "auth_client_call",
         "symbol": "authClient.signIn.email[1]",
@@ -1766,23 +1766,6 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/auth/auth-form.tsx:auth_client_call:authClient.signIn.email[1]:better-auth/react#createAuthClient.signIn.email",
-      "ownerId": "client_binding:src/components/auth/auth-form.tsx",
-      "ownerModule": "src/components/auth/auth-form.tsx",
-      "sidecarPath": "src/components/auth/auth-form.operation.ts"
-    },
-    {
-      "anchorBytes": "action={onSubmit}",
-      "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
-      "anchorEnd": 1008,
-      "anchorFile": "src/components/auth/auth-form.tsx",
-      "anchorStart": 991,
-      "binding": {
-        "kind": "form_action",
-        "symbol": "onSubmit",
-        "target": "src/components/auth/auth-form.tsx#onSubmit"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/auth/auth-form.tsx:form_action:onSubmit:src/components/auth/auth-form.tsx#onSubmit",
       "ownerId": "client_binding:src/components/auth/auth-form.tsx",
       "ownerModule": "src/components/auth/auth-form.tsx",
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
@@ -5602,9 +5585,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "cddf2bde26066589f90511e6f8a81b31ffd91a6b92df3cccb9030492d26abc54",
+  "semanticArtifactDigest": "a4eebfab9c38abed94c3d99710691902226300fe899774e1663433209c8b3604",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "e71e5cd687c0ef95541032ad9d1024aba47919f340406e7980d0b912739b67f5",
+  "semanticCoverageDigest": "fea8ceb4bf631e849ff45aa935b629bbb453b609d3bde31c966a54294a48ef46",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "cb88673244e7b8d705b53ad7a4082f43ac7b8618053783f03a8e4b8b7043d441"

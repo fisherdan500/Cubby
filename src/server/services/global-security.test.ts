@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ queryRaw: vi.fn(), executeRaw: vi.fn(), stateUpsert: vi.fn(), stateUpdate: vi.fn(), transaction: vi.fn(), accountFindFirst: vi.fn(), accountUpdate: vi.fn(), passwordVerify: vi.fn(), passwordHash: vi.fn(), bindingFindFirst: vi.fn(), bindingCreate: vi.fn(), bindingUpdate: vi.fn(), operationFindFirst: vi.fn(), operationCreate: vi.fn(), operationUpdate: vi.fn(), grantCreate: vi.fn(), grantFindFirst: vi.fn(), grantUpdate: vi.fn(), grantUpdateMany: vi.fn(), sessionDeleteMany: vi.fn(), activityUpdateMany: vi.fn(), eventCreate: vi.fn() }));
 
-import { assertGlobalSecurityOperationId, captureGlobalSecurityContext, consumeFreshAuthGrantForCurrentContext, finalizePasswordChange, finalizeStalePasswordChange, getFreshAuthGrantStatus, issueFreshAuthGrant, issueFreshAuthGrantForCurrentPassword, lockGlobalSecurityContext, preauthorizeFreshAuthThrottle, reauthorizeGlobalSecurityContext, verifyCurrentPassword, withGlobalSecurityTransaction } from "@/server/services/global-security";
+import { assertGlobalSecurityOperationId, captureGlobalSecurityContext, consumeFreshAuthGrantForCurrentContext, finalizePasswordChange, finalizeStalePasswordChange, getFreshAuthGrantStatus, getPasswordChangeStatus, issueFreshAuthGrant, issueFreshAuthGrantForCurrentPassword, lockGlobalSecurityContext, preauthorizeFreshAuthThrottle, reauthorizeGlobalSecurityContext, verifyCurrentPassword, withGlobalSecurityTransaction } from "@/server/services/global-security";
 
 mocks.queryRaw.mockImplementation(async (query) => query.join(" ").includes('AS "createdAt"')
   ? [{ createdAt: new Date("2026-08-24T16:00:00.000Z"), expiresAt: new Date("2026-08-24T16:10:00.000Z") }]
@@ -16,6 +16,7 @@ describe("global security transaction boundary", () => {
     await expect(lockGlobalSecurityContext(tx, { userId: "user-1", sessionId: "session-1" })).resolves.toEqual({ userId: "user-1", sessionId: "session-1", credentialVersion: 1, sessionSecurityVersion: 1 });
     const queries = mocks.queryRaw.mock.calls.map(([query]) => query.join(" "));
     expect(queries[0]).toContain('FROM "User"');
+    expect(queries[0]).toContain("FOR NO KEY UPDATE");
     expect(queries[1]).toContain('FROM "Session"');
     expect(queries[2]).toContain('authorize_global_session_security');
     expect(mocks.stateUpsert.mock.invocationCallOrder[0]).toBeLessThan(mocks.queryRaw.mock.invocationCallOrder[1]);
@@ -58,13 +59,30 @@ describe("global security transaction boundary", () => {
   });
 
   it("captures an immutable user/session version vector inside a serializable transaction", async () => {
+    mocks.executeRaw.mockResolvedValue(1);
     mocks.queryRaw.mockResolvedValueOnce([{ id: "user-1" }]).mockResolvedValueOnce([{ id: "session-1", userId: "user-1" }]).mockResolvedValueOnce([{ authorized: true }]);
     mocks.stateUpsert.mockResolvedValue({ userId: "user-1", credentialVersion: 3, sessionSecurityVersion: 4 });
-    const tx = { $queryRaw: mocks.queryRaw, accountSecurityState: { upsert: mocks.stateUpsert } } as never;
+    const tx = { $queryRaw: mocks.queryRaw, $executeRaw: mocks.executeRaw, accountSecurityState: { upsert: mocks.stateUpsert } } as never;
     mocks.transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(captureGlobalSecurityContext({ $transaction: mocks.transaction }, { userId: "user-1", sessionId: "session-1" })).resolves.toEqual({ userId: "user-1", sessionId: "session-1", credentialVersion: 3, sessionSecurityVersion: 4 });
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
+  });
+
+  it("takes the shared transition lock before capture reads or locks user security state", async () => {
+    mocks.executeRaw.mockClear();
+    mocks.queryRaw.mockClear();
+    mocks.stateUpsert.mockClear();
+    mocks.executeRaw.mockResolvedValue(1);
+    mocks.queryRaw.mockResolvedValueOnce([{ id: "user-1" }]).mockResolvedValueOnce([{ id: "session-1", userId: "user-1" }]).mockResolvedValueOnce([{ authorized: true }]);
+    mocks.stateUpsert.mockResolvedValue({ userId: "user-1", credentialVersion: 3, sessionSecurityVersion: 4 });
+    const tx = { $queryRaw: mocks.queryRaw, $executeRaw: mocks.executeRaw, accountSecurityState: { upsert: mocks.stateUpsert } } as never;
+    mocks.transaction.mockImplementation(async (callback) => callback(tx));
+
+    await captureGlobalSecurityContext({ $transaction: mocks.transaction }, { userId: "user-1", sessionId: "session-1" });
+
+    expect(mocks.executeRaw.mock.calls.some(([query]) => query.join(" ").includes("global-security-transition:v1"))).toBe(true);
+    expect(mocks.executeRaw.mock.invocationCallOrder.at(-1)!).toBeLessThan(mocks.queryRaw.mock.invocationCallOrder.at(-3)!);
   });
 });
 
@@ -408,5 +426,29 @@ describe("fresh-auth grants", () => {
     expect(mocks.operationUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "stale", outcomeCode: "stale_security_version" }) }));
     expect(mocks.bindingUpdate).toHaveBeenCalledWith({ where: { id: "binding-1" }, data: { state: "terminal" } });
     expect(mocks.executeRaw.mock.calls.map(([query]) => query.join(" ")).some((sql) => sql.includes("write_global_security_event"))).toBe(true);
+  });
+});
+
+describe("password-change terminal status", () => {
+  it("takes the transition lock and reauthorizes the current session/version before reading a terminal outcome", async () => {
+    mocks.executeRaw.mockClear();
+    mocks.queryRaw.mockClear();
+    mocks.stateUpsert.mockClear();
+    mocks.bindingFindFirst.mockClear();
+    mocks.operationFindFirst.mockClear();
+    mocks.executeRaw.mockResolvedValue(1);
+    mocks.queryRaw.mockResolvedValueOnce([{ id: "user-1" }]).mockResolvedValueOnce([{ id: "session-1", userId: "user-1" }]).mockResolvedValueOnce([{ authorized: true }]);
+    mocks.stateUpsert.mockResolvedValue({ userId: "user-1", credentialVersion: 2, sessionSecurityVersion: 3 });
+    mocks.bindingFindFirst.mockResolvedValue({ id: "binding-1", operationKey: "passwordChange", openingFingerprint: "open-1" });
+    mocks.operationFindFirst.mockResolvedValue({ intentFingerprint: "intent-1", status: "completed", outcomeCode: "changed", terminalAt: new Date("2026-08-24T16:00:00.000Z") });
+    const tx = { $queryRaw: mocks.queryRaw, $executeRaw: mocks.executeRaw, accountSecurityState: { upsert: mocks.stateUpsert }, globalSecurityOperationBinding: { findFirst: mocks.bindingFindFirst }, globalSecurityOperation: { findFirst: mocks.operationFindFirst } } as never;
+    mocks.transaction.mockImplementation(async (callback) => callback(tx));
+    const expected = { userId: "user-1", sessionId: "session-1", credentialVersion: 2, sessionSecurityVersion: 3 };
+
+    await expect(getPasswordChangeStatus({ $transaction: mocks.transaction }, expected as never, { operationId: "gso_00000000000000000000000000", openingFingerprint: "open-1", intentFingerprint: "intent-1" })).resolves.toMatchObject({ status: "completed", outcomeCode: "changed" });
+
+    expect(mocks.executeRaw.mock.calls.some(([query]) => query.join(" ").includes("global-security-transition:v1"))).toBe(true);
+    expect(mocks.executeRaw.mock.invocationCallOrder.at(-1)!).toBeLessThan(mocks.queryRaw.mock.invocationCallOrder[0]!);
+    expect(mocks.bindingFindFirst).toHaveBeenCalledWith({ where: { userId: "user-1", operationId: "gso_00000000000000000000000000" } });
   });
 });

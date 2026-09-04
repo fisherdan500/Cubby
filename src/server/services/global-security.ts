@@ -18,7 +18,7 @@ export async function lockGlobalSecurityContext(
   identity: { userId: string; sessionId: string }
 ): Promise<GlobalSecurityContext> {
   const users = await tx.$queryRaw<Array<{ id: string }>>`
-    SELECT "id" FROM "User" WHERE "id" = ${identity.userId} FOR UPDATE
+    SELECT "id" FROM "User" WHERE "id" = ${identity.userId} FOR NO KEY UPDATE
   `;
   if (users.length !== 1) throw new Error("unauthenticated");
   const state = await tx.accountSecurityState.upsert({
@@ -42,7 +42,10 @@ export async function captureGlobalSecurityContext(
   identity: { userId: string; sessionId: string }
 ): Promise<GlobalSecurityContext> {
   return database.$transaction(
-    (tx) => lockGlobalSecurityContext(tx, identity),
+    async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('global-security-transition:v1', 0))`;
+      return lockGlobalSecurityContext(tx, identity);
+    },
     { isolationLevel: "Serializable" }
   );
 }
@@ -468,19 +471,19 @@ export async function finalizeStalePasswordChange(
 /** Safe terminal replay for a password transition after the user signs in again. */
 export async function getPasswordChangeStatus(
   database: GlobalSecurityDatabase,
-  userId: string,
+  expected: GlobalSecurityContext,
   rawInput: { operationId: string; openingFingerprint: string; intentFingerprint: string }
 ): Promise<{ operationId: string; status: string; outcomeCode: string | null; terminalAt: Date | null }> {
   const operationId = assertGlobalSecurityOperationId(rawInput.operationId);
-  return database.$transaction(async (tx) => {
-    const binding = await tx.globalSecurityOperationBinding.findFirst({ where: { userId, operationId } });
+  return withGlobalSecurityTransaction(database, expected, async (context, tx) => {
+    const binding = await tx.globalSecurityOperationBinding.findFirst({ where: { userId: context.userId, operationId } });
     const operation = binding && await tx.globalSecurityOperation.findFirst({
-      where: { bindingId: binding.id, userId, operationId },
+      where: { bindingId: binding.id, userId: context.userId, operationId },
       select: { intentFingerprint: true, status: true, outcomeCode: true, terminalAt: true }
     });
     if (!binding || !operation || binding.operationKey !== GlobalSecurityOperationKey.passwordChange || binding.openingFingerprint !== rawInput.openingFingerprint || operation.intentFingerprint !== rawInput.intentFingerprint) throw new Error("not_found");
     return { operationId, status: operation.status, outcomeCode: operation.outcomeCode, terminalAt: operation.terminalAt };
-  }, { isolationLevel: "Serializable" });
+  });
 }
 
 async function consumeFreshAuthGrant(
