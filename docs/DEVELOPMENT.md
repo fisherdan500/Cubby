@@ -71,6 +71,61 @@ TRUSTED_ORIGINS=http://localhost:3002,http://127.0.0.1:3002
 If these do not match the browser URL, Better Auth can reject sign-up or sign-in
 with an invalid origin error.
 
+### Invitation Protocol v2 (unreleased candidate)
+
+Invitation, initial credential, and recovery-readiness operations run in the
+`invitation_protocol` schema through execute-only login roles. Compose needs three
+additional isolated connections and their distinct generated passwords:
+
+```dotenv
+CUBBY_INVITATION_RUNTIME_DB_PASSWORD=replace-with-a-generated-invitation-runtime-db-password
+CUBBY_INVITATION_EXPIRY_DB_PASSWORD=replace-with-a-generated-invitation-expiry-db-password
+CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD=replace-with-a-generated-invitation-maintenance-db-password
+```
+
+Startup derives `INVITATION_DATABASE_URL`, `INVITATION_EXPIRY_DATABASE_URL`, and
+`INVITATION_MAINTENANCE_DATABASE_URL` for those roles. Use distinct values from
+every other role password and never commit real values.
+`scripts/provision-invitation-runtime-roles.mjs` provisions or rotates the three
+login roles; it refuses to proceed if a restricted role owns database objects.
+
+Each role is execute-only. Direct table access in `invitation_protocol`, and
+direct reads of the attestation key and recovery relations, are denied by design.
+If you add a procedure, grant it explicitly to the role that needs it and keep the
+private audit helper ungranted; the schema test and the disposable harness both
+assert the exact granted set, so a new procedure must be added to both.
+
+Recovery enrollment bridges to Global Security rather than re-implementing it.
+When working on that path, keep two invariants in mind:
+
+- Acquire the `global-security-transition:v1` advisory lock before any invitation
+  advisory lock or row lock in any procedure that touches canonical security
+  relations. Canonical operations take it first, so anything else inverts the
+  order.
+- Canonical guard triggers on those relations are security invoker and run as the
+  invitation protocol owner. Several are deferred constraint triggers that fire at
+  commit, so a missing execute grant on a canonical assertion helper appears as a
+  late `42501` rather than at the statement that caused it.
+
+The disposable acceptance harness has diagnostics that exist only inside its
+runtime. When both `CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL=1` and
+`CUBBY_P13_ACCEPTANCE_SIGN_IN_CARRIER_STAGE_FILE` equal their exact acceptance values,
+the auth route writes one fixed sign-in stage to the status mount and Better Auth
+receives a logger that reduces its fixed email sign-in warnings to closed
+categories. Without both values the auth configuration is unchanged. The harness
+reads only allow-listed fixed outputs, so a new probe must add its code to the
+observation list or its result is always empty.
+
+Two harness details look optional but are not. The disposable PostgreSQL
+healthcheck probes `127.0.0.1:5432`, because the image's first-start temporary
+server answers a socket-only `pg_isready` while TCP is still closed. Identities
+seeded directly into the database must store the lowercased email, because Better
+Auth looks users up by the lowercased submitted email with case-sensitive equality;
+`scripts/p1-3-invitation-browser-fixture-identity.ts` does this for seeded fixtures.
+
+Treat this whole program as not deployed. Deployment, cutover, and live invitation
+use are separately gated; do not treat merged source as a release.
+
 ## Network And Origin Configuration
 
 Docker Compose publishes `${APP_PORT}:3000` without a loopback-only host binding,
@@ -593,7 +648,19 @@ strings are interpreted as UTC instants, then grouped for display by
 
 ### Registration Is Unavailable
 
-Runtime account creation is intentionally fail-closed until Cubby's complete
-initial-credential protocol is implemented. Platform registration settings and
-household invite links are retained future policy inputs; they do not currently
-enable a signup form or password writer.
+Open runtime account creation is intentionally fail-closed. Platform registration
+settings do not enable a signup form or password writer. The only credential-creating
+path is the unreleased Invitation Protocol v2 candidate described above, which
+creates a first credential solely for the recipient of a live invitation.
+
+### Invitation Page Says It Cannot Continue
+
+The invitation corridor fails neutral rather than revealing whether an invitation
+exists, so a generic message covers several distinct causes. Check, in order:
+the invitation is still pending and unexpired; the recipient email matches the
+invitation case-insensitively; the browser kept the HttpOnly
+`cubby_invitation_claim` cookie for the claim; and the three invitation role
+connections are configured. A raw token is only ever accepted from the URL
+fragment on first load, so a link whose fragment was already consumed, stripped
+by a client, or reloaded after cleanup cannot be re-claimed and needs a
+replacement link.

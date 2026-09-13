@@ -9,6 +9,8 @@ const entrypoint = new URL("../../../docker/entrypoint.sh", import.meta.url).pat
 );
 const dockerfilePath = new URL("../../../Dockerfile", import.meta.url);
 const packageJsonPath = new URL("../../../package.json", import.meta.url);
+const nodeBuiltinProbePath = new URL("../../../scripts/p1-3-node-builtin-probe.mjs", import.meta.url);
+const standaloneBootstrapProbePath = new URL("../../../scripts/p1-3-standalone-bootstrap-probe.cjs", import.meta.url);
 const workerRuntime = new URL("../../../../../../worker-runtime/", import.meta.url).pathname.replace(/^\/(\w:)/, "$1");
 const sh = process.platform === "win32" ? "C:\\Program Files\\Git\\usr\\bin\\sh.exe" : "sh";
 
@@ -39,12 +41,19 @@ function runEntrypoint(migrationExit = 0) {
       DATABASE_URL: "postgresql://runtime@private-host/cubby",
       AUTH_DATABASE_URL: "postgresql://cubby_auth@private-host/cubby",
       EMAIL_DELIVERY_DATABASE_URL: "postgresql://cubby_email_delivery@private-host/cubby",
+      INVITATION_DATABASE_URL: "postgresql://cubby_invitation_runtime:invitation-password@private-host/cubby",
+      INVITATION_EXPIRY_DATABASE_URL: "postgresql://cubby_invitation_expiry_worker:expiry-password@private-host/cubby",
+      INVITATION_MAINTENANCE_DATABASE_URL: "postgresql://cubby_invitation_maintenance_worker:maintenance-password@private-host/cubby",
+
       CUBBY_THROTTLE_KEY: Buffer.alloc(32, 3).toString("base64url"),
       CUBBY_TRUSTED_PROXY_HOPS: "1",
       CUBBY_MIGRATOR_DB_PASSWORD: "migrator-password",
       CUBBY_RUNTIME_DB_PASSWORD: "runtime-password",
       CUBBY_AUTH_DB_PASSWORD: "auth-password",
       CUBBY_EMAIL_DELIVERY_DB_PASSWORD: "delivery-password",
+      CUBBY_INVITATION_RUNTIME_DB_PASSWORD: "invitation-password",
+      CUBBY_INVITATION_EXPIRY_DB_PASSWORD: "expiry-password",
+      CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD: "maintenance-password",
       CUBBY_SECURITY_OPERATOR_DB_PASSWORD: "operator-password",
       SECURITY_OPERATOR_DATABASE_URL: "postgresql://cubby_security_operator:operator-password@private-host/cubby"
     }
@@ -69,12 +78,27 @@ describe("container entrypoint contract", () => {
     expect(dockerfile.indexOf(normalize)).toBeLessThan(dockerfile.indexOf(execute));
   });
 
+  it("builds and runs the readiness guard's generated ESM before Prisma generation", () => {
+    const dockerfile = readFileSync(dockerfilePath, "utf8");
+    const buildGuard = "RUN npm run build:household-deletion-readiness";
+    const runGuard = "RUN node dist/household-deletion-readiness-guard.mjs";
+    const prisma = "RUN npx prisma generate";
+
+    expect(dockerfile).toContain(buildGuard);
+    expect(dockerfile).toContain(runGuard);
+    expect(dockerfile.indexOf(buildGuard)).toBeLessThan(dockerfile.indexOf(runGuard));
+    expect(dockerfile.indexOf(runGuard)).toBeLessThan(dockerfile.indexOf(prisma));
+  });
+
   it("runs migrations before starting the server", () => {
     const result = runEntrypoint();
 
     expect(result.status).toBe(0);
     expect(result.commands.trim().split("\n")).toEqual([
+      "/app/scripts/household-deletion-readiness-guard.mjs",
       "provision-security-runtime-role.mjs",
+      "provision-invitation-runtime-roles.mjs",
+      "node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma",
       "node_modules/prisma/build/index.js migrate deploy",
       "provision-fresh-auth-attestation-keys.mjs",
       "provision-email-delivery-keys.mjs",
@@ -92,16 +116,66 @@ describe("container entrypoint contract", () => {
     expect(result.stdout).toMatch(/entrypoint_pid=(\d+) server_pid=\1/);
   });
 
+  it("permits only the fixed synthetic startup-status surface", () => {
+    const source = readFileSync(entrypoint, "utf8");
+    const nodeBuiltinProbe = readFileSync(nodeBuiltinProbePath, "utf8");
+    const standaloneBootstrapProbe = readFileSync(standaloneBootstrapProbePath, "utf8");
+    const dockerfile = readFileSync(dockerfilePath, "utf8");
+    const acceptanceCompose = readFileSync(new URL("../../../scripts/p1-3-invitation.acceptance.compose.yml", import.meta.url), "utf8");
+
+    expect(source).toContain("write_startup_status");
+    expect(source).toContain("/run/cubby-acceptance-status/startup");
+    expect(source).toContain("CUBBY_STARTUP_STATUS_FILE");
+    expect(source).toContain("CUBBY_P13_ACCEPTANCE_INSTRUMENTATION_STAGE_FILE");
+    expect(source).toContain("/run/cubby-acceptance-status/instrumentation-stage");
+    expect(source).toContain("node /app/scripts/p1-3-node-builtin-probe.mjs >/dev/null 2>&1");
+    expect(nodeBuiltinProbe).toContain('process.getBuiltinModule("fs")');
+    expect(nodeBuiltinProbe).not.toMatch(/console\.|process\.stdout|process\.stderr/);
+    expect(source).toContain("node_builtin_ready");
+    expect(source).not.toContain("CUBBY_P13_ACCEPTANCE_BOOTSTRAP_PRELOAD");
+    expect(acceptanceCompose).not.toContain("CUBBY_P13_ACCEPTANCE_BOOTSTRAP_PRELOAD");
+    expect(source).toContain("bootstrap_exec_selected");
+    expect(source).toContain("exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js");
+    expect(source.indexOf("bootstrap_exec_selected")).toBeLessThan(
+      source.indexOf("exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js")
+    );
+    expect(dockerfile).toContain("COPY scripts/p1-3-standalone-bootstrap-probe.cjs /app/scripts/p1-3-standalone-bootstrap-probe.cjs");
+    expect(standaloneBootstrapProbe).not.toContain("CUBBY_P13_ACCEPTANCE_BOOTSTRAP_PRELOAD");
+    expect(standaloneBootstrapProbe).toContain('const stageFile = "/run/cubby-acceptance-status/instrumentation-stage"');
+    expect(standaloneBootstrapProbe).toContain("process.env.CUBBY_P13_ACCEPTANCE_INSTRUMENTATION_STAGE_FILE === stageFile");
+    expect(standaloneBootstrapProbe).toContain('const stages = Object.freeze([');
+    for (const stage of [
+      "preload_file_loaded",
+      "preload_guards_confirmed",
+      "standalone_server_module_entered",
+      "next_package_loaded",
+      "start_server_module_loaded",
+      "start_server_invoked",
+      "next_server_module_loaded",
+      "instrumentation_module_load_requested"
+    ]) expect(standaloneBootstrapProbe).toContain(`"${stage}"`);
+    expect(standaloneBootstrapProbe.indexOf('advance("preload_file_loaded")')).toBeLessThan(
+      standaloneBootstrapProbe.indexOf("process.env.CUBBY_P13_ACCEPTANCE_INSTRUMENTATION_STAGE_FILE === stageFile")
+    );
+    expect(standaloneBootstrapProbe.indexOf("process.env.CUBBY_P13_ACCEPTANCE_INSTRUMENTATION_STAGE_FILE === stageFile")).toBeLessThan(
+      standaloneBootstrapProbe.indexOf('advance("preload_guards_confirmed")')
+    );
+    expect(standaloneBootstrapProbe).toContain('process.getBuiltinModule("module")');
+    expect(standaloneBootstrapProbe).not.toMatch(/console\.|process\.stdout|process\.stderr|readFile|readdir/);
+  });
+
   it("fails closed with a fixed sanitized marker when migration fails", () => {
     const result = runEntrypoint(42);
     const output = `${result.stdout}${result.stderr}`;
 
     expect(result.status).not.toBe(0);
     expect(result.commands.trim().split("\n")).toEqual([
+      "/app/scripts/household-deletion-readiness-guard.mjs",
       "provision-security-runtime-role.mjs",
-      "node_modules/prisma/build/index.js migrate deploy"
+      "provision-invitation-runtime-roles.mjs",
+      "node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma"
     ]);
-    expect(output).toContain("cubby_startup phase=migration status=failed");
+    expect(output).toContain("cubby_startup phase=migration_connection status=failed");
     expect(output).not.toContain("server status=starting");
     expect(output).not.toContain("postgresql://");
     expect(output).not.toContain("private-host");
@@ -119,6 +193,8 @@ describe("container entrypoint contract", () => {
     const provisioner = readFileSync(new URL("../../../scripts/provision-security-runtime-role.mjs", import.meta.url), "utf8");
     expect(source).toContain('CUBBY_AUTH_DATABASE_URL="$AUTH_DATABASE_URL"');
     expect(source).toContain('CUBBY_EMAIL_DELIVERY_DATABASE_URL="$EMAIL_DELIVERY_DATABASE_URL"');
+    expect(source).toContain('DATABASE_URL="$MIGRATION_DATABASE_URL" node provision-invitation-runtime-roles.mjs');
+    expect(source).toContain("unset CUBBY_INVITATION_RUNTIME_DB_PASSWORD CUBBY_INVITATION_EXPIRY_DB_PASSWORD CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD");
     expect(source).toContain("CUBBY_AUTH_DB_PASSWORD");
     expect(source).toContain("CUBBY_EMAIL_DELIVERY_DB_PASSWORD");
     expect(source).not.toMatch(/unset[^\n]*AUTH_DATABASE_URL/);
@@ -135,7 +211,8 @@ describe("container entrypoint contract", () => {
     const compose = readFileSync(new URL("../../../docker-compose.yml", import.meta.url), "utf8");
     const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { scripts?: Record<string, string> };
 
-    expect(source.indexOf("provision-security-runtime-role.mjs")).toBeLessThan(source.indexOf("migrate deploy"));
+    expect(source.indexOf("provision-security-runtime-role.mjs")).toBeLessThan(source.indexOf("provision-invitation-runtime-roles.mjs"));
+    expect(source.indexOf("provision-invitation-runtime-roles.mjs")).toBeLessThan(source.indexOf("migrate deploy"));
     expect(source.indexOf("migrate deploy")).toBeLessThan(source.indexOf("provision-global-security-throttle-key.mjs"));
     expect(source).toContain('CUBBY_THROTTLE_KEY="$cubby_throttle_key" DATABASE_URL="$MIGRATION_DATABASE_URL" node provision-global-security-throttle-key.mjs');
     expect(source).toContain('export CUBBY_THROTTLE_KEY="$cubby_throttle_key"');
@@ -152,8 +229,13 @@ describe("container entrypoint contract", () => {
     expect(dockerfile).toContain("dist/security-operator.mjs");
     expect(packageJson.scripts?.["build:global-security-throttle-key"]).toContain("provision-global-security-throttle-key.mjs");
     expect(dockerfile).toContain("dist/provision-global-security-throttle-key.mjs");
+    expect(packageJson.scripts?.["build:household-deletion-readiness"]).toContain("household-deletion-readiness-guard.mjs");
+    expect(dockerfile).toContain("dist/household-deletion-readiness-guard.mjs");
     expect(result.environment.trim().split("\n")).toEqual([
+      "/app/scripts/household-deletion-readiness-guard.mjs key=present migrator=present runtime=present auth=present delivery=present operator=present operator_url=present",
       "provision-security-runtime-role.mjs key= migrator= runtime= auth= delivery= operator=present operator_url=",
+      "provision-invitation-runtime-roles.mjs key= migrator= runtime= auth= delivery= operator=present operator_url=",
+      "node_modules/prisma/build/index.js key= migrator= runtime= auth= delivery= operator= operator_url=",
       "node_modules/prisma/build/index.js key= migrator= runtime= auth= delivery= operator= operator_url=",
       "provision-fresh-auth-attestation-keys.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",
       "provision-email-delivery-keys.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",

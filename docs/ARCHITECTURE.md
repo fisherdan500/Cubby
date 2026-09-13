@@ -79,6 +79,8 @@ resolution. Offline expansion is intentionally deferred.
 - `src/lib`: shared runtime helpers, auth wiring, environment validation, Prisma client, and time utilities.
 - `src/server/auth`: current-user and household context helpers.
 - `src/server/services`: business logic used by pages and API routes.
+- `src/app/api/invitations`: invitation protocol route handlers, each with an operation sidecar.
+- `src/components/invitations`: invitation bootstrap, workflow, and manual management UI.
 - `prisma`: Prisma schema, migrations, and seed script.
 
 Pages and route handlers should stay thin. Put business rules, permission checks,
@@ -158,6 +160,145 @@ Lifecycle audits use `member.suspend` and `member.restore`. Duplicate requests
 are idempotent after the locked current state is read and do not duplicate audit
 events.
 
+## Invitation Protocol v2 Candidate
+
+Membership invitation, initial credential creation, and recovery readiness run
+through the dedicated `invitation_protocol` PostgreSQL schema rather than
+ordinary application SQL. Every operation is a fixed-search-path
+`SECURITY DEFINER` procedure owned by the non-login role
+`invitation_protocol_owner_NOLOGIN`. This program is not deployed: deployment,
+cutover, and live invitation use are separately gated, and it is not released
+behavior until then.
+
+Three isolated login roles reach the schema, each with execute-only access to the
+reviewed procedures for its purpose and no direct table rights:
+
+- `cubby_invitation_runtime`: request-scoped invitation operations.
+- `cubby_invitation_expiry_worker`: invitation expiry only.
+- `cubby_invitation_maintenance_worker`: terminal operation compaction only.
+
+Direct DML on `invitation_protocol` tables and direct reads of
+`FreshAuthAttestationKey`, `RecoveryCodeSet`, and `RecoveryCode` are denied to all
+three. The private audit helper is never granted to any login role; its effects
+are reachable only through terminal guarded transitions.
+
+### Operation Shape
+
+Operations follow the established browser-operation pattern of reserve, submit,
+status, and abandon against one client-supplied operation UUID, across the kinds
+`PRESENTATION_CLAIM`, `MANUAL_INVITE_CREATE`, `MANUAL_INVITE_REPLACE`,
+`CREDENTIAL_SETUP`, `RECOVERY_ENROLLMENT`, `RECOVERY_REHEARSAL`,
+`MEMBERSHIP_ACCEPTANCE`, `INVITE_REVOKE`, and `INVITE_REVOKE_ALL`.
+
+Each call carries a server-signed request attestation built from the fresh-auth
+attestation keyring: session, subject, membership episodes, operation kind and
+id, target, opening and intent fingerprints, purpose, nonce, and key version. The
+procedure reverifies the MAC, re-reads the owning rows under lock, and records the
+nonce in a replay registry, so a replayed carrier must match its stored
+projection exactly or the operation conflicts. Route handlers stay thin; the
+protocol is the authority.
+
+### Token And Corridor Boundary
+
+`/invite` receives the raw token only in the URL fragment.
+`src/lib/invitation-token-cutover.ts` consumes the fragment and the browser
+address is cleaned with `history.replaceState` before the single permitted
+token-bearing request is issued. Only the token hash is persisted; no raw token
+is stored, logged, or placed in a cookie. The claim reference lives in the
+HttpOnly, `SameSite=Strict` `cubby_invitation_claim` cookie, and invitation
+responses are `Cache-Control: no-store` with `Referrer-Policy: no-referrer`.
+
+`classify_invitation_setup_corridor_v2` gates the corridor from an attestation-signed
+session, returning exactly `setup_required`, `ordinary`, or `neutral`. It fails
+neutral rather than disclosing whether an invitation exists. Generic sign-in
+returns to `/invite/dispatch`, which binds the claim to the authenticated session
+and forwards to review or to the app.
+
+Recovery readiness and acceptance require an `InvitationAccountSetup` row anchored
+to the invitation's lineage, with an immutable `accountOrigin`. Credential setup
+creates it only for a new account (`invitation_created`); it never touches an
+existing account, because that step is unauthenticated. An existing credentialed
+account gets its row (`pre_existing`) only from `bind_post_signin_invitation_claim_v2`
+after an authenticated, email-matched sign-in. The corridor always classifies a
+pre-existing account as `ordinary`, even while an invitation claim is bound to it,
+and an unbound open claim never changes anyone's classification, so an unfinished,
+declined, revoked or expired invitation cannot remove an established member's
+household access. Such a member completes recovery readiness and acceptance from
+that ordinary session; the invitation procedures still authorize each step from the
+bound setup row, operation binding, session and signed attestation.
+A setup row already anchored to a different invitation fails the bind closed with the
+neutral result; re-inviting such an account is not yet supported.
+
+### Global Security Bridge
+
+Recovery enrollment does not re-implement account security. Global Security
+remains authoritative for fresh-authentication grants, recovery code sets and
+codes, replay, and rehearsal terminalization. The bridge correlates the two
+systems through `InvitationRecoveryEnrollmentBridge`, which holds a
+server-created canonical `gso_…` operation identity alongside the invitation
+operation. No invitation UUID is ever written into a canonical Global Security
+operation field.
+
+The enrollment sequence is reserve, server-held mapping authorization, fresh
+password re-entry, bridge bind, then submit:
+
+- The canonical operation identity is created by the server during reserve. A
+  browser-supplied identity is authorized against the server-held mapping
+  *before* any canonical grant exists, so a substituted identity mutates nothing.
+- Fresh authentication is explicit password re-entry; framework freshness
+  shortcuts are not accepted.
+- Submit generates ten recovery codes as a verifier batch of salt, derived key,
+  and KDF version with a batch digest. A dedicated issuance HMAC binds the
+  credential version, session security version, recovery set version, and the
+  verifier batch digest, and PostgreSQL reconstructs that vector before trusting
+  it.
+- An authenticated status that is not usable denies neutrally: submit returns the safe unavailable
+  receipt rather than raising, so no verifier batch is minted and nothing is disclosed.
+- Plaintext codes exist only in the response of the initial issuance. Replay
+  returns authenticated status without redisclosure and never mints a second
+  batch for the same issuance.
+- Rehearsal consumes exactly one code, leaves nine active, and terminalizes the
+  canonical issuance operation as `rehearsal_completed`.
+
+### Lock Order And Invoked Graph
+
+Canonical Global Security operations take the deployment transition advisory lock
+before their first row lock. Invitation procedures row-lock the same canonical
+state, so every bridged runtime procedure acquires that same
+`global-security-transition:v1` lock first, before any invitation advisory lock or
+row lock. Relying on the canonical statement triggers to acquire it later would
+invert the order and deadlock.
+
+Canonical guard triggers on the bridged relations are security invoker, so they
+execute as the invitation protocol owner under the invitation-only search path.
+The migration therefore pins a fixed search path on the invoked trigger graph and
+grants the owner execute on the canonical assertion helpers those triggers call.
+Several are deferred constraint triggers that only fire at commit, so a missing
+grant surfaces as a late insufficient-privilege failure rather than at the
+originating statement.
+
+### Canonical Issuance Effects
+
+Invitation submit mirrors the canonical `recovery-lifecycle.ts` sequence rather
+than inventing a parallel one: close restricted reset carriers on a superseded
+set, invalidate prior codes and sets, insert the new set, insert the ten codes,
+consume the fresh-auth grant, then write exactly one private
+`recovery`/`code_set_generated` event. The grant is consumed only once the
+complete set exists, which is what the deferred issuance authorization requires
+at commit.
+
+### Acceptance-Only Diagnostics
+
+The disposable acceptance runtime can observe why credential sign-in failed
+without retaining request content. Behind two exact environment guards, the
+sign-in throttle carrier reports one closed stage per request (for example
+`lookup-miss`, `parse`, `invalid-credentials`, or the positive control
+`handler-ok`), and `src/server/auth/acceptance-sign-in-rejection.ts` maps Better
+Auth's fixed warnings to `user-not-found`, `credential-account-not-found`,
+`password-not-found`, or `password-mismatch`. Outside those guards neither the
+observer nor the logger is attached, and authentication responses never depend
+on either.
+
 ## Data Model Overview
 
 The Prisma schema uses PostgreSQL and keeps a household boundary on user-owned
@@ -171,6 +312,7 @@ data. Important model groups include:
 - Integrations: `ApiKey`, `WebhookEndpoint`, `WebhookDelivery`.
 - Notifications: `PushSubscription`, `NotificationPreference`, `NotificationLog`.
 - Browser mutation infrastructure: `BrowserOperationBinding`, `BrowserMutationOperation`, and lifetime household operation tombstones. These rows are implementation/security state, not ordinary user history or logical household-export content.
+- Invitation protocol (candidate, `invitation_protocol` schema): `InvitationLineage`, `InvitationOperationIdentity`, `InvitationPresentationClaim`, `InvitationOperationBinding`, `InvitationOperationResult`, `InvitationOperationTombstone`, `InvitationAccountSetup`, `InvitationRecoveryEnrollmentBridge`, `InvitationRecoveryRehearsalChallenge`, `InvitationProcedureTransitionBinding`, and `InvitationSetupCorridorAttestationReceipt`. These are protocol and security state, not ordinary household history or logical export content.
 - Imports: `ImportBatch`, `ImportedRecord`.
 - Reference and calendar data: `Contact`, `MedicineCatalog`, `CalendarEvent`, event join tables, `VaccineDocument`.
 
@@ -340,6 +482,11 @@ tests near the service that owns the behavior:
 - Dashboard, warnings, date grouping: `dashboard.test.ts`.
 - Reports and routine analytics: `reports.test.ts`.
 - Sprout parsing/import mapping: `sprout-import.test.ts`.
+- Invitation protocol schema, procedures, and grants: `invitation-protocol-schema.test.ts`.
+- Invitation services and signed carriers: `invitation-service.test.ts`, `invitation-attestation.test.ts`, `invitation-carrier-compatibility.test.ts`.
+- Global Security bridge integrity, lock order, and canonical issuance effects: `invitation-recovery-bridge-integrity.test.ts`.
+- Invitation route layer, corridor, and transport: `invitation-route-layer.test.ts`, `invitation-setup-corridor.test.ts`, `invitation-recovery-transport.test.ts`.
+- Disposable acceptance harness and closed diagnostic contracts: `p1-3-invitation-browser-harness.test.ts`, `p1-3-invitation-acceptance-contract.test.ts`, `p1-3-recovery-submit-probe-contract.test.ts`.
 
 For UI, auth, schema, Docker, or import changes, use the verification guidance in
 [Development](DEVELOPMENT.md).

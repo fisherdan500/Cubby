@@ -43,6 +43,7 @@ const {
   validateStructuralFingerprint,
   validateGateEvidenceIntegrity,
   loadRepositoryProgram,
+  APPENDIX_A_SIDECAR_PATHS,
   parseSidecarSource,
   parseSemanticSidecarSource,
   parseSemanticSidecarFamily,
@@ -1387,7 +1388,7 @@ test("discovers distinct multi-method and Better Auth route symbols", () => {
       {
         ownerModule: "src/app/api/auth/[...all]/route.ts",
         symbol: "GET",
-        target: "better-auth/next-js#toNextJsHandler.GET"
+        target: "src/app/api/auth/[...all]/route.ts#GET"
       },
       {
         ownerModule: "src/app/api/auth/[...all]/route.ts",
@@ -1591,18 +1592,74 @@ test("declares the settings loader family", () => {
 
 test("declares the public and platform loader family", () => {
   assertDeclarationFamily([
-    "src/app/invite/[token]/page.operation.ts",
-    "src/app/login/page.operation.ts",
     "src/app/onboarding/page.operation.ts",
     "src/app/page.operation.ts",
-    "src/app/platform/settings/page.operation.ts",
-    "src/app/register/page.operation.ts"
+    "src/app/platform/settings/page.operation.ts"
   ]);
+});
+
+test("converges invitation registry owners and direct fetch bindings", () => {
+  const invitationSidecars = [
+    "src/app/invite/dispatch/page.operation.ts",
+    "src/components/invitations/invitation-bootstrap.operation.ts",
+    "src/components/invitations/invitation-workflow.operation.ts",
+    "src/components/invitations/manual-invitation-manager.operation.ts"
+  ];
+  const staleSidecars = [
+    "src/app/invite/[token]/page.operation.ts",
+    "src/app/login/page.operation.ts",
+    "src/app/register/page.operation.ts"
+  ];
+  assert.deepEqual(
+    APPENDIX_A_SIDECAR_PATHS.filter((sidecar) =>
+      invitationSidecars.includes(sidecar) || staleSidecars.includes(sidecar)
+    ),
+    invitationSidecars
+  );
+
+  const clientOwners = [
+    "src/app/invite/dispatch/page.tsx",
+    "src/components/invitations/invitation-bootstrap.tsx",
+    "src/components/invitations/invitation-workflow.tsx",
+    "src/components/invitations/manual-invitation-manager.tsx"
+  ];
+  const clientBindings = discoverClientBindings(
+    loadRepositoryProgram(repositoryRoot, clientOwners),
+    repositoryRoot,
+    clientOwners
+  );
+  assert.deepEqual(clientBindings.diagnostics, []);
+  assert.deepEqual(
+    clientBindings.observations.map(({ ownerModule, kind, symbol, target }) => ({
+      ownerModule,
+      kind,
+      symbol,
+      target
+    })),
+    clientOwners.map((ownerModule) => ({
+      ownerModule,
+      kind: "global_fetch",
+      symbol: "fetch[1]",
+      target: "globalThis.fetch"
+    }))
+  );
+
+  const registry = buildRepositoryRegistry(repositoryRoot);
+  assert.deepEqual(registry.diagnostics, []);
+  const declarations = new Map(
+    registry.declarations.map(({ sidecarPath, declaration }) => [sidecarPath, declaration])
+  );
+  assert.deepEqual(
+    declarations.get("src/app/app/settings/members/page.operation.ts")?.bindings.map(
+      ({ symbol }) => symbol
+    ),
+    ["listMembersAndInvites", "requireSettingsPage"]
+  );
 });
 
 test("declares the client action control family", () => {
   assertDeclarationFamily([
-    "src/components/actions/accept-invite-button.operation.ts",
+
     "src/components/actions/activity-actions.operation.ts",
     "src/components/actions/baby-lifecycle-button.operation.ts",
     "src/components/actions/confirmed-activity-delete.operation.ts"
@@ -1723,6 +1780,10 @@ test("discovers module-level and inline Server Actions without collapsing identi
     actual.observations.map(({ symbol, target }) => ({ symbol, target })),
     [
       {
+        symbol: "issueCalendarEventAction",
+        target: `${owner}#issueCalendarEventAction`
+      },
+      {
         symbol: "createCalendarEventAction",
         target: `${owner}#createCalendarEventAction`
       }
@@ -1840,6 +1901,22 @@ test("discovers server-loader value imports and excludes type-only imports", () 
     actual.observations.map(({ symbol, target }) => ({ symbol, target })),
     [
       {
+        symbol: "createCalendarEvent",
+        target: "src/server/services/calendar.ts#createCalendarEvent"
+      },
+      {
+        symbol: "issueCalendarEventBrowserOperation",
+        target: "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
+      },
+      {
+        symbol: "submitCalendarEventBrowserOperation",
+        target: "src/server/services/calendar.ts#submitCalendarEventBrowserOperation"
+      },
+      {
+        symbol: "browserOperationFailureResult",
+        target: "src/server/services/browser-operations.ts#browserOperationFailureResult"
+      },
+      {
         symbol: "requireUserPage",
         target: "src/server/auth/session.ts#requireUserPage"
       },
@@ -1850,10 +1927,6 @@ test("discovers server-loader value imports and excludes type-only imports", () 
       {
         symbol: "getCalendar",
         target: "src/server/services/calendar.ts#getCalendar"
-      },
-      {
-        symbol: "createCalendarEvent",
-        target: "src/server/services/calendar.ts#createCalendarEvent"
       }
     ]
   );
@@ -1945,12 +2018,6 @@ test("discovers fetch, form, imported action, and Better Auth callers exactly", 
       target
     })),
     [
-      {
-        ownerModule: owners[0],
-        kind: "form_action",
-        symbol: "createCalendarEventAction",
-        target: "src/app/app/calendar/actions.ts#createCalendarEventAction"
-      },
       ...[1, 2, 3].map((ordinal) => ({
         ownerModule: owners[1],
         kind: "global_fetch",
@@ -1966,45 +2033,14 @@ test("discovers fetch, form, imported action, and Better Auth callers exactly", 
       {
         ownerModule: owners[2],
         kind: "auth_client_call",
-        symbol: "authClient.signUp.email[1]",
-        target: "better-auth/react#createAuthClient.signUp.email"
-      },
-      {
-        ownerModule: owners[2],
-        kind: "auth_client_call",
         symbol: "authClient.signIn.email[1]",
         target: "better-auth/react#createAuthClient.signIn.email"
       },
-      {
-        ownerModule: owners[2],
-        kind: "global_fetch",
-        symbol: "fetch[1]",
-        target: "globalThis.fetch"
-      },
-      {
-        ownerModule: owners[2],
-        kind: "form_action",
-        symbol: "onSubmit",
-        target: `${owners[2]}#onSubmit`
-      },
-      {
-        ownerModule: owners[3],
-        kind: "auth_client_call",
-        symbol: "authClient.signOut[1]",
-        target: "better-auth/react#createAuthClient.signOut"
-      },
-      ...[
-        "authClient.listSessions[1]",
-        "authClient.getSession[1]",
-        "authClient.signOut[1]",
-        "authClient.signOut[2]",
-        "authClient.revokeSession[1]",
-        "authClient.revokeOtherSessions[1]"
-      ].map((symbol) => ({
+      ...[1, 2, 3].map((ordinal) => ({
         ownerModule: owners[4],
-        kind: "auth_client_call",
-        symbol,
-        target: `better-auth/react#createAuthClient.${symbol.replace(/^authClient\.|\[\d+\]$/g, "")}`
+        kind: "global_fetch",
+        symbol: `fetch[${ordinal}]`,
+        target: "globalThis.fetch"
       }))
     ]
   );
@@ -2127,7 +2163,7 @@ test("declares representative fetch and Better Auth client sidecars", () => {
   const required = new Set([
     "src/components/settings/registration-settings-form.operation.ts",
     "src/components/auth/auth-form.operation.ts",
-    "src/components/sign-out-button.operation.ts",
+    "src/components/calendar-event-submission.operation.ts",
     "src/components/settings/session-manager.operation.ts"
   ]);
   const registry = buildRepositoryRegistry(repositoryRoot, required);
@@ -2152,28 +2188,26 @@ test("discovers instrumentation start and worker tick wiring without guessing", 
       target
     })),
     [
-      {
-        ownerModule: owners[0],
-        kind: "worker_dynamic_import",
-        symbol: "startAutomatedBackupScheduler",
-        target: "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
-      },
-      {
-        ownerModule: owners[0],
-        kind: "worker_dynamic_import",
-        symbol: "startIntegrityScheduler",
-        target: "src/server/integrity-scheduler.ts#startIntegrityScheduler"
-      },
-      {
-        ownerModule: owners[0],
-        kind: "worker_dynamic_import",
-        symbol: "startSproutSourceRetentionScheduler",
-        target: "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
-      },
       ...[
         ["startAutomatedBackupScheduler", "automated-backup-scheduler"],
         ["startIntegrityScheduler", "integrity-scheduler"],
-        ["startSproutSourceRetentionScheduler", "sprout-source-retention-scheduler"]
+        ["startSproutSourceRetentionScheduler", "sprout-source-retention-scheduler"],
+        ["startBrowserOperationRetentionScheduler", "browser-operation-retention-scheduler"],
+        ["startEmailDeliveryScheduler", "email-delivery-scheduler"],
+        ["startEmailChangeLifecycleScheduler", "email-change-lifecycle-scheduler"]
+      ].map(([symbol, module]) => ({
+        ownerModule: owners[0],
+        kind: "worker_dynamic_import",
+        symbol,
+        target: `src/server/${module}.ts#${symbol}`
+      })),
+      ...[
+        ["startAutomatedBackupScheduler", "automated-backup-scheduler"],
+        ["startIntegrityScheduler", "integrity-scheduler"],
+        ["startSproutSourceRetentionScheduler", "sprout-source-retention-scheduler"],
+        ["startBrowserOperationRetentionScheduler", "browser-operation-retention-scheduler"],
+        ["startEmailDeliveryScheduler", "email-delivery-scheduler"],
+        ["startEmailChangeLifecycleScheduler", "email-change-lifecycle-scheduler"]
       ].map(([symbol, module]) => ({
         ownerModule: owners[0],
         kind: "worker_start_call",
@@ -2262,8 +2296,11 @@ test("discovers TypeScript package owners and exact CLI command variants", () =>
     "scripts/activity-update-safety-rehearsal.ts",
     "scripts/backup-recovery-rehearsal.ts",
     "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
+    "scripts/household-deletion-readiness-guard.ts",
     "scripts/integrity-check.ts",
+    "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
     "scripts/platform-owner.ts",
+    "scripts/security-operator.ts",
     "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
     "scripts/update-preflight.ts",
     "prisma/seed.ts"
@@ -2780,6 +2817,11 @@ test("classifies rehearsal, fixture, build-tool, and registry exclusions exactly
         packageScripts: ["verify:sprout-preview-commit"]
       },
       {
+        ownerModule: "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
+        category: "rehearsal",
+        packageScripts: ["verify:p1-3-migrator-bootstrap"]
+      },
+      {
         ownerModule: "scripts/generate-brand-icons.mjs",
         category: "build_tool",
         packageScripts: ["brand:icons"]
@@ -2904,7 +2946,7 @@ test("builds the bounded combined semantic artifact family as incomplete source-
       complete: false,
       scope: "platform_registration_and_browser_household_mutations"
     });
-    assert.equal(artifact.semanticDeclarationCount, 54);
+    assert.equal(artifact.semanticDeclarationCount, 56);
   }
 });
 
@@ -2929,7 +2971,7 @@ test("builds the combined platform and browser household mutation semantic aggre
           complete: false,
           scope: "platform_registration_and_browser_household_mutations"
         },
-        semanticDeclarationCount: 54
+        semanticDeclarationCount: 56
       }
     );
   }
@@ -2948,6 +2990,7 @@ test("builds the combined platform and browser household mutation semantic aggre
     "src/app/api/babies/[id]/reactivate/route.semantic.ts",
     "src/app/api/babies/route.semantic.ts",
     "src/app/api/dashboard/warnings/dismiss/route.semantic.ts",
+    "src/app/api/invites/[token]/revoke/route.semantic.ts",
     "src/app/api/invites/revoke-all/route.semantic.ts",
     "src/app/api/invites/route.semantic.ts",
     "src/app/api/members/[id]/restore/route.semantic.ts",
@@ -2967,7 +3010,7 @@ test("builds the combined platform and browser household mutation semantic aggre
     "src/server/services/calendar.semantic.ts",
     "src/server/services/dashboard.semantic.ts",
     "src/server/services/households.semantic.ts",
-    "src/server/services/integrations.semantic.ts",
+    "src/server/services/notification-preferences.semantic.ts",
     "src/server/services/invites.semantic.ts",
     "src/server/services/platform-authority.semantic.ts",
     "src/server/services/unit-preferences.semantic.ts"
@@ -3000,6 +3043,7 @@ test("builds the combined platform and browser household mutation semantic aggre
     ["src/app/api/babies/[id]/reactivate/route.ts", "POST", ["baby.reactivate"]],
     ["src/app/api/babies/route.ts", "POST", ["baby.create"]],
     ["src/app/api/dashboard/warnings/dismiss/route.ts", "POST", ["dashboard.warning.dismiss"]],
+    ["src/app/api/invites/[token]/revoke/route.ts", "POST", ["invite.revoke"]],
     ["src/app/api/invites/revoke-all/route.ts", "POST", ["invite.revoke_all"]],
     ["src/app/api/invites/route.ts", "POST", ["invite.create"]],
     ["src/app/api/members/[id]/restore/route.ts", "POST", ["member.restore"]],
@@ -3007,7 +3051,7 @@ test("builds the combined platform and browser household mutation semantic aggre
     ["src/app/api/members/[id]/route.ts", "PATCH", ["member.role.update"]],
     ["src/app/api/members/[id]/suspend/route.ts", "POST", ["member.suspend"]],
     ["src/app/api/notifications/preferences/route.ts", "POST", ["notification.preference.save"]],
-    ["src/app/api/settings/appearance/route.ts", "PATCH", ["settings.appearance.update"]],
+    ["src/app/api/settings/appearance/route.ts", "PATCH", ["household.accent.update"]],
     ["src/app/api/settings/units/route.ts", "PATCH", ["settings.units.update"]],
     ["src/app/api/timers/[id]/pause/route.ts", "POST", ["activity.timer.pause"]],
     ["src/app/api/timers/[id]/resume/route.ts", "POST", ["activity.timer.resume"]],
@@ -3028,19 +3072,20 @@ test("builds the combined platform and browser household mutation semantic aggre
     ["activity.undo_last", "src/server/services/activities.ts", "undoLastActivity"],
     ["activity.update", "src/server/services/activities.ts", "updateActivity"],
     ["baby.create", "src/server/services/households.ts", "addBaby"],
-    ["baby.deactivate", "src/server/services/households.ts", "deactivateBaby"],
-    ["baby.reactivate", "src/server/services/households.ts", "reactivateBaby"],
-    ["calendar_event.create", "src/server/services/calendar.ts", "createCalendarEvent"],
-    ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarning"],
+    ["baby.deactivate", "src/server/services/households.ts", "submitDeactivateBabyBrowserOperation"],
+    ["baby.reactivate", "src/server/services/households.ts", "submitReactivateBabyBrowserOperation"],
+    ["calendar_event.create", "src/server/services/calendar.ts", "submitCalendarEventBrowserOperation"],
+    ["dashboard.warning.dismiss", "src/server/services/dashboard.ts", "dismissDashboardWarningBrowserOperation"],
     ["invite.create", "src/server/services/invites.ts", "createInvite"],
+    ["invite.revoke", "src/server/services/invites.ts", "submitInviteRevokeBrowserOperation"],
     ["invite.revoke_all", "src/server/services/invites.ts", "revokeAllPendingInvites"],
     ["member.remove", "src/server/services/invites.ts", "removeMember"],
     ["member.restore", "src/server/services/invites.ts", "restoreMember"],
     ["member.role.update", "src/server/services/invites.ts", "updateMemberRole"],
     ["member.suspend", "src/server/services/invites.ts", "suspendMember"],
     ["notification.preference.save", "src/server/services/notification-preferences.ts", "submitNotificationPreferenceBrowserOperation"],
-    ["settings.appearance.update", "src/server/services/appearance.ts", "updateHouseholdAppearance"],
-    ["settings.units.update", "src/server/services/unit-preferences.ts", "updateUnitPreferences"]
+    ["household.accent.update", "src/server/services/appearance.ts", "submitHouseholdAppearanceBrowserOperation"],
+    ["settings.units.update", "src/server/services/unit-preferences.ts", "submitUnitPreferencesBrowserOperation"]
   ].sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))));
   assert.deepEqual(
     new Set(browserServices.map(([, ownerModule]) => ownerModule)),
@@ -3064,8 +3109,10 @@ test("builds the combined platform and browser household mutation semantic aggre
     "semantic-service:activity.create",
     "semantic-exposure:src/app/api/invites/route.ts#POST",
     "semantic-service:invite.create",
+    "semantic-exposure:src/app/api/invites/[token]/revoke/route.ts#POST",
+    "semantic-service:invite.revoke",
     "semantic-exposure:src/app/api/settings/appearance/route.ts#PATCH",
-    "semantic-service:settings.appearance.update",
+    "semantic-service:household.accent.update",
     "semantic-exposure:src/app/api/timers/[id]/pause/route.ts#POST",
     "semantic-service:activity.timer.pause",
     "semantic-exposure:src/app/app/calendar/actions.ts#createCalendarEventAction",
@@ -5030,6 +5077,21 @@ test("accounts for every sensitive client reference across aliases assignments a
     ],
     "each unconsumed sensitive source must fail even beside valid observations"
   );
+});
+
+test("does not misclassify a type-asserted global observer root as fetch", () => {
+  const program = createProgramFromSources(repositoryRoot, {
+    "src/features/asserted-global-observer.tsx": [
+      '"use client";',
+      'const observer = (globalThis as unknown as { onResult?: (value: string) => void }).onResult;',
+      'void observer;'
+    ].join("\n")
+  });
+  const owner = "src/features/asserted-global-observer.tsx";
+  const result = discoverClientBindings(program, repositoryRoot, [owner]);
+
+  assert.deepEqual(result.observations, []);
+  assert.deepEqual(result.diagnostics, []);
 });
 
 test("discovers statically registered workers without filename or start-name conventions", () => {
@@ -7103,10 +7165,52 @@ test("twelfth remediation closes the repository runtime invocation ledger", () =
     })),
     [
       {
+        path: "/app/scripts/household-deletion-readiness-guard.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/provision-security-runtime-role.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/provision-invitation-runtime-roles.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
         path: "/app/node_modules/prisma/build/index.js",
         codeOption: null,
         disposition: "structural_exclusion",
         category: "third_party_migration_cli",
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/provision-fresh-auth-attestation-keys.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/provision-email-delivery-keys.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/provision-global-security-throttle-key.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
         anchorFile: "docker/entrypoint.sh"
       },
       {
@@ -7667,7 +7771,7 @@ test("semantic artifacts emit individual declaration fingerprints and byte-check
       ...declarationFingerprintIds
     ])
   );
-  assert.equal(declarationFingerprintIds.length, 54);
+  assert.equal(declarationFingerprintIds.length, 56);
   const coverage = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-structural-exposure-coverage.json"]);
   assert.ok(coverage.entries.length > 12);
   assert.ok(coverage.entries.some((entry) => entry.coverage === "semantic_declared"));

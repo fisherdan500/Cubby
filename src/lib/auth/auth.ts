@@ -7,6 +7,7 @@ import { env, trustedOrigins } from "@/lib/env";
 import { assertUserCanStartSession } from "@/server/auth/member-status";
 import { withSuspendedSessionErrorTranslation } from "@/server/auth/session-adapter";
 import { initializeGlobalSessionSecurityActivity } from "@/server/services/global-session-security";
+import { acceptanceBetterAuthLoggerOptions } from "@/server/auth/acceptance-sign-in-rejection";
 
 export const SESSION_FRESH_AGE_SECONDS = 60 * 10;
 
@@ -52,7 +53,8 @@ export const auth = betterAuth({
       enabled: false
     }
   },
-  plugins: [nextCookies()]
+  plugins: [nextCookies()],
+  ...acceptanceBetterAuthLoggerOptions()
 });
 
 export type AuthSession = typeof auth.$Infer.Session;

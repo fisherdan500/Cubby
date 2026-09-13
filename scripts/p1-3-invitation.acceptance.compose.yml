@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${CUBBY_BROWSER_OPERATION_ACCEPTANCE_DATABASE:?generated database required}
+      POSTGRES_USER: ${CUBBY_BROWSER_OPERATION_ACCEPTANCE_USER:?generated user required}
+      POSTGRES_PASSWORD: ${CUBBY_BROWSER_OPERATION_ACCEPTANCE_PASSWORD:?generated password required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - invitation_acceptance_data:/var/lib/postgresql/data
+
+  app:
+    image: ${CUBBY_P13_INVITATION_APP_IMAGE:?generated compiled app image required}
+    pull_policy: never
+    environment:
+      DATABASE_URL: ${CUBBY_P13_INVITATION_RUNTIME_DATABASE_URL:?generated runtime database required}
+      AUTH_DATABASE_URL: ${CUBBY_P13_INVITATION_AUTH_DATABASE_URL:?generated auth database required}
+      EMAIL_DELIVERY_DATABASE_URL: ${CUBBY_P13_INVITATION_EMAIL_DELIVERY_DATABASE_URL:?generated delivery database required}
+      MIGRATION_DATABASE_URL: ${CUBBY_P13_INVITATION_MIGRATION_DATABASE_URL:?generated migrator database required}
+      INVITATION_DATABASE_URL: ${CUBBY_P13_INVITATION_DATABASE_URL:?generated invitation database required}
+      INVITATION_EXPIRY_DATABASE_URL: ${CUBBY_P13_INVITATION_EXPIRY_DATABASE_URL:?generated expiry database required}
+      INVITATION_MAINTENANCE_DATABASE_URL: ${CUBBY_P13_INVITATION_MAINTENANCE_DATABASE_URL:?generated maintenance database required}
+      CUBBY_RUNTIME_DB_PASSWORD: ${CUBBY_P13_INVITATION_APP_RUNTIME_DB_PASSWORD:?generated runtime role password required}
+      CUBBY_AUTH_DB_PASSWORD: ${CUBBY_P13_INVITATION_APP_AUTH_DB_PASSWORD:?generated auth role password required}
+      CUBBY_EMAIL_DELIVERY_DB_PASSWORD: ${CUBBY_P13_INVITATION_APP_EMAIL_DELIVERY_DB_PASSWORD:?generated delivery role password required}
+      CUBBY_SECURITY_OPERATOR_DB_PASSWORD: ${CUBBY_P13_INVITATION_APP_SECURITY_OPERATOR_DB_PASSWORD:?generated operator role password required}
+      CUBBY_INVITATION_RUNTIME_DB_PASSWORD: ${CUBBY_P13_INVITATION_PROTOCOL_RUNTIME_DB_PASSWORD:?generated invitation role password required}
+      CUBBY_INVITATION_EXPIRY_DB_PASSWORD: ${CUBBY_P13_INVITATION_PROTOCOL_EXPIRY_DB_PASSWORD:?generated expiry role password required}
+      CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD: ${CUBBY_P13_INVITATION_PROTOCOL_MAINTENANCE_DB_PASSWORD:?generated maintenance role password required}
+      CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: ${CUBBY_P13_INVITATION_FRESH_AUTH_KEYRING:?generated fresh-auth keyring required}
+      CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "2"
+      CUBBY_EMAIL_DELIVERY_KEYRING: ${CUBBY_P13_INVITATION_DELIVERY_KEYRING:?generated delivery keyring required}
+      CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION: "2"
+      CUBBY_THROTTLE_KEY: ${CUBBY_P13_INVITATION_THROTTLE_KEY:?generated throttle key required}
+      SMTP_HOST: ${SMTP_HOST:?generated SMTP host required}
+      SMTP_PORT: ${SMTP_PORT:?generated SMTP port required}
+      SMTP_USER: ${SMTP_USER:?generated SMTP user required}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?generated SMTP password required}
+      EMAIL_FROM: ${EMAIL_FROM:?generated SMTP sender required}
+      SMTP_SECURE: ${SMTP_SECURE:?generated SMTP transport mode required}
+      CUBBY_P13_ACCEPTANCE_HEALTH_SENTINEL: "1"
+      CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL: "1"
+      CUBBY_P13_RECOVERY_ROUTE_ORIGIN_OBSERVER: "1"
+      CUBBY_P13_ACCEPTANCE_INSTRUMENTATION_STAGE_FILE: /run/cubby-acceptance-status/instrumentation-stage
+      CUBBY_P13_ACCEPTANCE_SIGN_IN_CARRIER_STAGE_FILE: /run/cubby-acceptance-status/sign-in-carrier-stage
+
+      CUBBY_STARTUP_STATUS_FILE: /run/cubby-acceptance-status/startup
+      CUBBY_TRUSTED_PROXY_HOPS: "0"
+      BETTER_AUTH_SECRET: ${CUBBY_P13_INVITATION_BETTER_AUTH_SECRET:?generated auth secret required}
+      BETTER_AUTH_URL: ${CUBBY_P13_INVITATION_BROWSER_ORIGIN:?generated browser origin required}
+      TRUSTED_ORIGINS: ${CUBBY_P13_INVITATION_BROWSER_ORIGIN:?generated browser origin required}
+      ENABLE_REGISTRATION: "false"
+      APP_TIMEZONE: "UTC"
+      AUTOMATED_BACKUPS_ENABLED: "false"
+      INTEGRITY_CHECKS_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1::3000"
+    volumes:
+      - type: bind
+        source: ${CUBBY_P13_INVITATION_STATUS_ROOT:?generated startup-status root required}
+        target: /run/cubby-acceptance-status
+
+volumes:
+  invitation_acceptance_data:

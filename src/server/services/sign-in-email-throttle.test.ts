@@ -99,6 +99,100 @@ describe("email sign-in throttle carrier", () => {
     await expect(response.json()).resolves.toEqual({ code: "security_sign_in_evidence_unavailable" });
   });
 
+  it.each([
+    {
+      stage: "lookup",
+      overrides: { findUserIdByNormalizedEmail: vi.fn().mockRejectedValue(new Error("injected")) },
+      status: 401
+    },
+    {
+      stage: "precheck",
+      overrides: { precheck: vi.fn().mockRejectedValue(new Error("injected")) },
+      status: 503
+    },
+    {
+      stage: "handler",
+      overrides: { invoke: vi.fn().mockRejectedValue(new Error("injected")) },
+      status: 503
+    },
+    {
+      stage: "failure-recording",
+      overrides: { recordFailure: vi.fn().mockRejectedValue(new Error("injected")) },
+      status: 503
+    }
+  ])("reports only the fixed $stage carrier failure stage", async ({ stage, overrides, status }) => {
+    const observeFailureStage = vi.fn();
+    const response = await runEmailSignInThrottleCarrier(request(), dependencies({
+      ...overrides,
+      observeFailureStage
+    }));
+
+    expect(response.status).toBe(status);
+    expect(observeFailureStage).toHaveBeenCalledOnce();
+    expect(observeFailureStage).toHaveBeenCalledWith(stage);
+  });
+
+  it("marks recorded invalid credentials and strict-parse failures with fixed stages only", async () => {
+    const invalid = vi.fn();
+    await expect(runEmailSignInThrottleCarrier(request(), dependencies({ observeFailureStage: invalid }))).resolves.toMatchObject({ status: 401 });
+    expect(invalid).toHaveBeenCalledOnce();
+    expect(invalid).toHaveBeenCalledWith("invalid-credentials");
+
+    const miss = vi.fn();
+    await runEmailSignInThrottleCarrier(request(), dependencies({ findUserIdByNormalizedEmail: vi.fn().mockResolvedValue(undefined), observeFailureStage: miss }));
+    expect(miss).toHaveBeenCalledOnce();
+    expect(miss).toHaveBeenCalledWith("lookup-miss");
+
+    const parse = vi.fn();
+    const malformed = dependencies({ observeFailureStage: parse });
+    await expect(runEmailSignInThrottleCarrier(new Request("http://localhost/api/auth/sign-in/email", { method: "POST", body: "not-json" }), malformed)).resolves.toMatchObject({ status: 401 });
+    expect(parse).toHaveBeenCalledOnce();
+    expect(parse).toHaveBeenCalledWith("parse");
+    expect(malformed.recordFailure).not.toHaveBeenCalled();
+  });
+
+  it("emits the fixed positive-control stage only for a successful handler response", async () => {
+    const observeFailureStage = vi.fn();
+    const response = await runEmailSignInThrottleCarrier(request(), dependencies({
+      invoke: vi.fn().mockResolvedValue(new Response(JSON.stringify({ token: "opaque" }), { status: 200 })),
+      observeFailureStage
+    }));
+
+    expect(response.status).toBe(200);
+    expect(observeFailureStage).toHaveBeenCalledOnce();
+    expect(observeFailureStage).toHaveBeenCalledWith("handler-ok");
+
+    const throwing = await runEmailSignInThrottleCarrier(request(), dependencies({
+      invoke: vi.fn().mockResolvedValue(new Response(JSON.stringify({ token: "opaque" }), { status: 200 })),
+      observeFailureStage: () => { throw new Error("observer unavailable"); }
+    }));
+    expect(throwing.status).toBe(200);
+  });
+
+  it("keeps authentication behavior unchanged when the optional observer itself fails", async () => {
+    const response = await runEmailSignInThrottleCarrier(request(), dependencies({
+      invoke: vi.fn().mockResolvedValue(new Response("noncanonical", { status: 500 })),
+      observeFailureStage: () => { throw new Error("observer unavailable"); }
+    }));
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBeNull();
+    await expect(response.json()).resolves.toEqual({ code: "security_sign_in_evidence_unavailable" });
+  });
+
+  it("keeps the first causal carrier stage when a degraded fallback also fails", async () => {
+    const observeFailureStage = vi.fn();
+    const response = await runEmailSignInThrottleCarrier(request(), dependencies({
+      findUserIdByNormalizedEmail: vi.fn().mockRejectedValue(new Error("lookup failed")),
+      invoke: vi.fn().mockRejectedValue(new Error("synthetic handler failed")),
+      observeFailureStage
+    }));
+
+    expect(response.status).toBe(503);
+    expect(observeFailureStage).toHaveBeenCalledOnce();
+    expect(observeFailureStage).toHaveBeenCalledWith("lookup");
+  });
+
   it("normalizes canonical handler and atomic Session-event failures to the fixed neutral 503", async () => {
     for (const invoke of [
       vi.fn().mockRejectedValue(new Error("synthetic_session_event_failure")),

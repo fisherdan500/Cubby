@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
-import { hashInviteToken } from "@/server/services/invites";
 
 function envEnabled(value: string) {
   return ["1", "true", "yes", "on"].includes(value.toLowerCase());
@@ -12,7 +11,7 @@ type RegistrationPolicyReader = Pick<
   "household" | "platformAuditEvent" | "platformAuthority" | "platformSettings" | "user"
 >;
 
-type SignupPolicyReader = RegistrationPolicyReader & Pick<Prisma.TransactionClient, "invite">;
+type SignupPolicyReader = RegistrationPolicyReader;
 
 export async function getAppRegistrationPolicy(db: RegistrationPolicyReader = prisma) {
   const [authority, settings] = await Promise.all([
@@ -47,31 +46,9 @@ export async function getAppRegistrationPolicy(db: RegistrationPolicyReader = pr
   };
 }
 
-export async function signupPolicyForRequest(request: Request, db: SignupPolicyReader = prisma) {
-  const body = await request.clone().json().catch(() => ({}));
-  const callbackURL = typeof body.callbackURL === "string" ? body.callbackURL : "";
-  const signupEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  const inviteToken = extractInviteToken(callbackURL);
-  if (inviteToken) {
-    const invite = await db.invite.findUnique({
-      where: { tokenHash: hashInviteToken(inviteToken) },
-      select: { id: true, email: true, status: true, expiresAt: true }
-    });
-    if (invite?.status === "pending" && invite.expiresAt > new Date()) {
-      if (invite.email.trim().toLowerCase() !== signupEmail) {
-        return { allowed: false, reason: "invite_email_mismatch" as const };
-      }
-      return { allowed: true, reason: "invite" as const };
-    }
-  }
-
+export async function signupPolicyForRequest(_request: Request, db: SignupPolicyReader = prisma) {
   const policy = await getAppRegistrationPolicy(db);
   if (policy.bootstrapAccountAllowed) return { allowed: true, reason: "bootstrap" as const };
   if (policy.publicRegistrationAllowed) return { allowed: true, reason: "public" as const };
   return { allowed: false, reason: "closed" as const };
-}
-
-export function extractInviteToken(value: string) {
-  const match = value.match(/\/invite\/([^/?#]+)/);
-  return match?.[1];
 }

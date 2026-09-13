@@ -29,6 +29,44 @@ enum InviteStatus {
   expired
 }
 
+enum InvitationOperationKind {
+  PRESENTATION_CLAIM
+  MANUAL_INVITE_CREATE
+  MANUAL_INVITE_REPLACE
+  CREDENTIAL_SETUP
+  RECOVERY_ENROLLMENT
+  RECOVERY_REHEARSAL
+  MEMBERSHIP_ACCEPTANCE
+  INVITE_REVOKE
+  INVITE_REVOKE_ALL
+
+}
+
+enum InvitationOperationState {
+  PRESENTATION_OPEN
+  PRESENTATION_SUBJECT_BOUND
+  PRESENTATION_CLOSED
+  PREPARED
+  SUBMITTED
+  TERMINAL_FULL
+  COMPACTED
+  ABANDONED
+
+}
+
+enum InvitationTombstoneClass {
+  FULL_COMPACTION
+  RESERVATION_CLOSE
+
+}
+
+enum InvitationRecoveryChallengeState {
+  issued
+  consumed
+  expired
+
+}
+
 enum ActivityType {
   feeding
   diaper
@@ -469,6 +507,168 @@ model Invite {
   @@index([householdId, status])
   @@index([email])
   @@index([expiresAt])
+}
+
+model InvitationLineage {
+  id String @id @default(cuid())
+  householdId String
+  sourceInviteId String?
+  createdAt DateTime @default(now())
+  @@unique([householdId, id])
+  @@index([householdId])
+  @@ignore
+}
+
+model InvitationOperationIdentity {
+  id String @id @db.Uuid
+  operationId String @unique @db.Uuid
+  householdId String
+  lineageId String
+  operationKind InvitationOperationKind
+  state InvitationOperationState
+  subjectUserId String?
+  subjectRole HouseholdRole?
+  createdAt DateTime @default(now())
+  terminalAt DateTime?
+  @@unique([id, householdId, lineageId])
+  @@index([householdId, lineageId])
+  @@index([state, terminalAt])
+  @@ignore
+}
+
+model InvitationPresentationClaim {
+  identityId String @id @db.Uuid
+  householdId String
+  lineageId String
+  browserPartitionDigest Bytes
+  tokenHashDigest Bytes
+  subjectUserId String?
+  expiresAt DateTime
+  @@unique([identityId, householdId, lineageId])
+  @@index([householdId, expiresAt])
+  @@ignore
+}
+
+model InvitationOperationBinding {
+  identityId String @id @db.Uuid
+  householdId String
+  lineageId String
+  carrierKind String
+  carrierDigest Bytes
+  openingFingerprint Bytes
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@unique([identityId, householdId, lineageId])
+  @@ignore
+}
+
+model InvitationOperationResult {
+  identityId String @id @db.Uuid
+  householdId String
+  lineageId String
+  intentFingerprint Bytes?
+  status String
+  outcomeCode String?
+  safeOutcome Json?
+  terminalAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([identityId, householdId, lineageId])
+  @@ignore
+}
+
+model InvitationOperationTombstone {
+  identityId String @id @db.Uuid
+  householdId String
+  lineageId String
+  class InvitationTombstoneClass
+  operationKind InvitationOperationKind
+  terminalCode String
+  createdAt DateTime @default(now())
+  @@unique([identityId, householdId, lineageId])
+  @@ignore
+}
+
+model InvitationAccountSetup {
+  userId String @id
+  originLineageId String?
+  originLineageDigest Bytes
+  setupState String
+  accountOrigin String
+  recoverySetVersion Int?
+  createdAt DateTime @default(now())
+  @@index([originLineageId])
+  @@ignore
+}
+
+model InvitationRecoveryEnrollmentBridge {
+  identityId String @id @db.Uuid
+  householdId String
+  lineageId String
+  subjectUserId String
+  ordinarySessionId String
+  globalSecurityOperationId String @unique
+  verifierBatchDigest Bytes?
+  intentFingerprint Bytes?
+  freshAuthBoundAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([identityId, householdId, lineageId])
+  @@index([subjectUserId, globalSecurityOperationId])
+  @@ignore
+}
+
+model InvitationProcedureTransitionBinding {
+  procedureName String @id
+  operationKind InvitationOperationKind?
+  transition String
+  identityBehavior String
+
+  @@ignore
+}
+
+enum SetupCorridorResult {
+  setup_required
+  ordinary
+  neutral
+}
+
+model InvitationSetupCorridorAttestationReceipt {
+  nonce Bytes @id
+  ordinarySessionId String
+  subjectUserId String
+  purpose String
+  keyVersion Int
+  issuedAt DateTime
+  macDigest Bytes
+  acceptedAt DateTime @default(now())
+
+  @@index([ordinarySessionId, acceptedAt])
+  @@ignore
+}
+
+model InvitationRecoveryRehearsalChallenge {
+  operationIdentityId String @id @db.Uuid
+  householdId String
+  lineageId String
+  subjectUserId String
+  ordinarySessionId String
+  credentialVersion Int
+  sessionSecurityVersion Int
+  recoverySetVersion Int
+  selectedRecoveryCodeId String
+  operationId String @unique @db.Uuid
+  saveAcknowledgementVersion String
+  openingFingerprint Bytes
+  nonce Bytes @unique
+  expiresAt DateTime
+  state InvitationRecoveryChallengeState @default(issued)
+  consumedAt DateTime?
+  attestationKeyVersion Int?
+  attestationMacDigest Bytes?
+  intentFingerprint Bytes?
+  @@unique([operationIdentityId, householdId, lineageId])
+  @@index([subjectUserId, recoverySetVersion])
+  @@ignore
 }
 
 model Baby {

@@ -6,8 +6,6 @@ const mocks = vi.hoisted(() => ({
   userCount: vi.fn(),
   householdCount: vi.fn(),
   platformAuditEventCount: vi.fn(),
-  inviteFind: vi.fn(),
-  hashInviteToken: vi.fn((token: string) => `hashed:${token}`),
   env: {
     ENABLE_REGISTRATION: "false"
   }
@@ -20,20 +18,14 @@ vi.mock("@/lib/db/prisma", () => ({
     user: { count: mocks.userCount },
     household: { count: mocks.householdCount },
     platformAuditEvent: { count: mocks.platformAuditEventCount },
-    invite: { findUnique: mocks.inviteFind }
   }
 }));
 
 vi.mock("@/lib/env", () => ({ env: mocks.env, trustedOrigins: () => [] }));
-vi.mock("@/server/services/invites", () => ({ hashInviteToken: mocks.hashInviteToken }));
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: vi.fn() }));
 
-import {
-  extractInviteToken,
-  getAppRegistrationPolicy,
-  signupPolicyForRequest
-} from "@/server/services/registration";
+import { getAppRegistrationPolicy, signupPolicyForRequest } from "@/server/services/registration";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -43,7 +35,6 @@ beforeEach(() => {
   mocks.userCount.mockResolvedValue(1);
   mocks.householdCount.mockResolvedValue(0);
   mocks.platformAuditEventCount.mockResolvedValue(0);
-  mocks.inviteFind.mockResolvedValue(null);
 });
 
 describe("platform registration policy", () => {
@@ -128,47 +119,13 @@ describe("platform registration policy", () => {
     });
   });
 
-  it("continues to allow a valid household-membership invitation while public signup is closed", async () => {
-    mocks.inviteFind.mockResolvedValue({
-      id: "invite-1",
-      email: "invited@example.test",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 60_000)
-    });
+  it("does not interpret a legacy invitation token in a generic signup callback", async () => {
     const request = new Request("http://localhost/api/auth/sign-up/email", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "Invited@Example.Test", callbackURL: "/invite/token-123" })
+      body: JSON.stringify({ email: "invited@example.test", callbackURL: "/invite/token-123" })
     });
 
-    await expect(signupPolicyForRequest(request)).resolves.toEqual({ allowed: true, reason: "invite" });
-    expect(mocks.hashInviteToken).toHaveBeenCalledWith("token-123");
-  });
-
-  it("rejects a valid invite token when the signup email does not match the invite recipient", async () => {
-    mocks.inviteFind.mockResolvedValue({
-      id: "invite-1",
-      email: "invited@example.test",
-      status: "pending",
-      expiresAt: new Date(Date.now() + 60_000)
-    });
-    const request = new Request("http://localhost/api/auth/sign-up/email", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "other@example.test", callbackURL: "/invite/token-123" })
-    });
-
-    await expect(signupPolicyForRequest(request)).resolves.toEqual({
-      allowed: false,
-      reason: "invite_email_mismatch"
-    });
-  });
-});
-
-describe("registration helpers", () => {
-  it("extracts invite tokens from callback paths", () => {
-    expect(extractInviteToken("/invite/token-123")).toBe("token-123");
-    expect(extractInviteToken("http://localhost:3002/invite/abc?next=1")).toBe("abc");
-    expect(extractInviteToken("/onboarding")).toBeUndefined();
+    await expect(signupPolicyForRequest(request)).resolves.toEqual({ allowed: false, reason: "closed" });
   });
 });

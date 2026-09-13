@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand";
 import { getSession } from "@/server/auth/session";
+import { currentInvitationSetupCorridor } from "@/server/services/invitation-setup-corridor";
 
 const featureCards: Array<[string, React.ElementType, string]> = [
   ["Fast logging", Baby, "Large mobile controls for common care events."],
@@ -17,7 +18,9 @@ const featureCards: Array<[string, React.ElementType, string]> = [
 
 export default async function HomePage() {
   const session = await getSession();
-  if (session?.user) redirect("/app");
+  const corridor = session?.user ? await currentInvitationSetupCorridor("neutral_landing") : null;
+  if (corridor?.result === "setup_required") redirect("/invite");
+  if (corridor?.result === "ordinary") redirect("/app");
 
   return (
     <main className="min-h-screen overflow-hidden">

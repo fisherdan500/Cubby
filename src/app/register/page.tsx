@@ -2,10 +2,8 @@ import Link from "next/link";
 import { BrandLockup } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { extractInviteToken } from "@/server/services/registration";
 
 export default async function RegisterPage() {
-  extractInviteToken("");
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md space-y-5">

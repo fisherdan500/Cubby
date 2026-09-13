@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   getHouseholdLeaveOptions: vi.fn(),
   isPlatformOwner: vi.fn(),
   getAppRegistrationPolicy: vi.fn(),
+  currentInvitationSetupCorridor: vi.fn(),
   redirect: vi.fn()
 }));
 
@@ -31,6 +32,7 @@ vi.mock("@/server/services/platform-authority", () => ({ isPlatformOwner: mocks.
 vi.mock("@/server/services/registration", () => ({
   getAppRegistrationPolicy: mocks.getAppRegistrationPolicy
 }));
+vi.mock("@/server/services/invitation-setup-corridor", () => ({ currentInvitationSetupCorridor: mocks.currentInvitationSetupCorridor }));
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -38,6 +40,7 @@ beforeEach(() => {
   mocks.getHouseholdLeaveOptions.mockResolvedValue([]);
   mocks.isPlatformOwner.mockResolvedValue(false);
   mocks.getAppRegistrationPolicy.mockResolvedValue({ newHouseholdCreationAllowed: true });
+  mocks.currentInvitationSetupCorridor.mockResolvedValue({ result: "ordinary" });
 });
 
 describe("OnboardingPage", () => {

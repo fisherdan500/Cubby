@@ -15,6 +15,11 @@ export const operation = {
       kind: "server_value_import",
       symbol: "requireUserPage",
       target: "src/server/auth/session.ts#requireUserPage"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "requireInvitationSetupCorridor",
+      target: "src/server/services/invitation-setup-corridor.ts#requireInvitationSetupCorridor"
     }
   ],
   disposition: "observed",

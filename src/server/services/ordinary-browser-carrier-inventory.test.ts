@@ -16,9 +16,6 @@ const carriers = [
   ["baby.deactivate", "src/app/api/babies/[id]/deactivate/route.ts", "src/components/actions/baby-lifecycle-button.tsx"],
   ["baby.reactivate", "src/app/api/babies/[id]/reactivate/route.ts", "src/components/actions/baby-lifecycle-button.tsx"],
   ["dashboard.warning.dismiss", "src/app/api/dashboard/warnings/dismiss/route.ts", "src/components/dashboard/dashboard-warnings.tsx"],
-  ["invite.create", "src/app/api/invites/route.ts", "src/components/forms/invite-form.tsx"],
-  ["invite.revoke", "src/app/api/invites/[token]/revoke/route.ts", "src/components/settings/member-access-manager.tsx"],
-  ["invite.revoke_all", "src/app/api/invites/revoke-all/route.ts", "src/components/settings/member-access-manager.tsx"],
   ["member.restore", "src/app/api/members/[id]/restore/route.ts", "src/components/settings/member-access-manager.tsx"],
   ["member.remove", "src/app/api/members/[id]/route.ts", "src/components/settings/member-access-manager.tsx"],
   ["member.role.update", "src/app/api/members/[id]/route.ts", "src/components/settings/member-access-manager.tsx"],
@@ -30,10 +27,54 @@ const carriers = [
   ["account.appearance.update", "src/app/api/account/appearance/route.ts", "src/components/personal-appearance-form.tsx"]
 ] as const;
 
+const deniedLegacyInvitationRoutes = [
+  ["invite.create", "src/app/api/invites/route.ts"],
+  ["invite.revoke", "src/app/api/invites/[token]/revoke/route.ts"],
+  ["invite.revoke_all", "src/app/api/invites/revoke-all/route.ts"]
+] as const;
+
 describe("ordinary browser carrier closure inventory", () => {
-  it("covers exactly the closed 23-operation registry", () => {
-    expect(carriers.map(([operation]) => operation)).toHaveLength(23);
-    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(23);
+  it("covers exactly the closed 20-operation browser-operation registry", () => {
+    expect(carriers.map(([operation]) => operation)).toHaveLength(20);
+    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(20);
+  });
+
+  it.each(deniedLegacyInvitationRoutes)("%s remains an explicit fail-closed legacy route", (operation, ingress) => {
+    const source = read(ingress);
+    expect(source, operation).toContain('status: "unavailable"');
+    expect(source, operation).toContain('Cache-Control": "no-store"');
+    expect(source, operation).toContain('Referrer-Policy": "no-referrer"');
+    expect(source, operation).not.toContain("browser-operations");
+    expect(source, operation).not.toContain("@/server/services/invites");
+    expect(source, operation).not.toContain("expired");
+    expect(source, operation).not.toContain("410");
+  });
+
+  it("keeps token-free invitation carriers on retained same-ID status, replay, and expiry semantics", () => {
+    const manager = read("src/components/invitations/manual-invitation-manager.tsx");
+    const service = read("src/server/services/invitation-service.ts");
+    const protocol = read("prisma/migrations/20260904120000_invitation_protocol_v2/migration.sql");
+
+    expect(manager).toContain("sessionStorage");
+    expect(manager).toContain("operationId");
+    for (const endpoint of ["/api/invitations/manual/status", "/api/invitations/manual/replace/status", "/api/invitations/revoke", "/api/invitations/revoke-all"]) {
+      expect(manager).toContain(endpoint);
+    }
+    expect(manager).not.toContain("/api/invites");
+    expect(manager).not.toContain("browser-operations");
+
+    for (const procedure of ["status_manual_invite_create_v2", "status_manual_invite_replace_v2", "revoke_invitation_v2", "revoke_all_invitations_v2", "expire_invitation_v2"]) {
+      expect(service).toContain(procedure);
+    }
+    expect(protocol).toContain('"operationId" UUID NOT NULL UNIQUE');
+    expect(protocol).toContain("EXCEPTION WHEN unique_violation");
+    expect(protocol).toContain("status_manual_invite_create_v2','MANUAL_INVITE_CREATE','status','existing_identity_transition");
+    expect(protocol).toContain("status_manual_invite_replace_v2','MANUAL_INVITE_REPLACE','status','existing_identity_transition");
+    expect(protocol).toContain("revoke_invitation_v2','INVITE_REVOKE','atomic_submit','create_identity_binding_terminal_result_atomically");
+    expect(protocol).toContain("revoke_all_invitations_v2','INVITE_REVOKE_ALL','atomic_submit','create_identity_binding_terminal_result_atomically");
+    expect(protocol).toContain("IF result_row.\"intentFingerprint\" IS DISTINCT FROM intent_fingerprint THEN RAISE EXCEPTION 'invitation_operation_conflict'");
+    expect(protocol).toContain("expire_invitation_v2','PRESENTATION_CLAIM','close:expiry','existing_claim_identities_and_invite_transition");
+    expect(protocol).toContain("IF invite_row.\"status\"='expired' THEN RETURN");
   });
 
   it.each(carriers)("%s exposes an explicit compacted result at its transport", (operation, ingress) => {

@@ -55,12 +55,12 @@ docker compose up --build
 
 ### Bind the platform owner
 
-Runtime password signup is currently fail-closed pending Cubby's complete
-initial-credential protocol. After the migration is deployed and an intended owner
-account already exists through retained state or an approved future protocol, bind that
-exact account by stable user ID and confirming email. Cubby never guesses or
-selects an owner automatically, and binding requires a verified email/password
-account.
+Open password signup is fail-closed; the only credential-creating path is invitation
+protocol v2, for the recipient of a live invitation. After the migration is deployed
+and an intended owner account already exists through retained state or an approved
+future protocol, bind that exact account by stable user ID and confirming email.
+Cubby never guesses or selects an owner automatically, and binding requires a
+verified email/password account.
 
 Cubby does not have outbound email verification yet. Only while there is exactly
 one retained credential-backed account and no platform owner, a host operator may
@@ -160,6 +160,8 @@ for setup and troubleshooting details.
 - `DATABASE_URL`: non-owner `cubby_runtime` PostgreSQL connection used by the running server.
 - `AUTH_DATABASE_URL`: isolated `cubby_auth` connection used only by Better Auth for identity/session reads and Session persistence. Ordinary application SQL cannot directly create, update, or delete sessions.
 - `EMAIL_DELIVERY_DATABASE_URL`: isolated `cubby_email_delivery` connection retained only by the encrypted SMTP worker; it can claim and finalize delivery receipts but cannot read delivery tables directly.
+- `INVITATION_DATABASE_URL`, `INVITATION_EXPIRY_DATABASE_URL`, and `INVITATION_MAINTENANCE_DATABASE_URL`: isolated `cubby_invitation_runtime`, `cubby_invitation_expiry_worker`, and `cubby_invitation_maintenance_worker` connections for the invitation protocol candidate. Each is execute-only: it can call the reviewed fixed-search-path procedures for its purpose but cannot read or write `invitation_protocol` tables directly, and cannot read the attestation key or recovery relations.
+- `CUBBY_INVITATION_RUNTIME_DB_PASSWORD`, `CUBBY_INVITATION_EXPIRY_DB_PASSWORD`, and `CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD`: distinct generated passwords for those three roles. Never commit real values.
 - `MIGRATION_DATABASE_URL`: separate `cubby_migrator` owner connection used only while applying migrations; startup removes it before the server begins.
 - `CUBBY_RUNTIME_DB_PASSWORD`, `CUBBY_AUTH_DB_PASSWORD`, `CUBBY_EMAIL_DELIVERY_DB_PASSWORD`, `CUBBY_MIGRATOR_DB_PASSWORD`, and `CUBBY_SECURITY_OPERATOR_DB_PASSWORD`: distinct generated database-role passwords for Compose; the operator password is used only to provision or rotate the isolated login role and is removed before Next.js starts. Never commit real values.
 - `CUBBY_THROTTLE_KEY`: stable 32-byte base64url deployment secret for private throttle identities, history handles, and cursors. Startup verifies its digest; the key is excluded from logs and backups and has no ordinary rotation path.
@@ -205,6 +207,30 @@ unreleased until Phase 9.
 - [Roadmap](docs/ROADMAP.md): future features, known follow-ups, and parked ideas.
 - [Third-Party Assets](docs/THIRD_PARTY_ASSETS.md): local font packages and asset provenance.
 - [Agent Guide](AGENTS.md): project-specific instructions for Codex and other coding agents.
+
+## Invitation Protocol v2 Candidate
+
+Membership invitation, initial credential creation, and recovery readiness run in
+the dedicated `invitation_protocol` schema as fixed-search-path definer
+procedures, reached only through execute-only login roles with no direct table
+rights. A raw invitation token is accepted once from the URL fragment, the browser
+address is cleaned before the single token-bearing request, and only the token
+hash is persisted. The claim reference is an HttpOnly strict-same-site cookie and
+never a token.
+
+Recovery enrollment bridges to the existing Global Security lifecycle instead of
+duplicating it: the canonical operation identity is created server-side and
+authorized against the server-held mapping before any fresh-authentication grant
+exists, fresh authentication is explicit password re-entry, and ten recovery codes
+are issued display-once behind an issuance MAC that binds the credential, session,
+and set versions to the verifier batch digest. Replay returns authenticated status
+without redisclosure and never mints a second batch. Rehearsal consumes exactly
+one code and leaves nine active.
+
+Every bridged procedure takes the canonical `global-security-transition:v1` lock
+before its own locks so the order matches canonical operations. This program is not
+deployed: deployment, cutover, and live invitation use are separately gated, and it
+is not released behavior until then.
 
 ## License And Contributions
 

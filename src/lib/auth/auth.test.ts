@@ -39,6 +39,10 @@ describe("Better Auth session security configuration", () => {
     expect(configured.session.cookieCache.enabled).toBe(false);
   });
 
+  it("attaches no diagnostic logger outside the exact disposable acceptance runtime", () => {
+    expect(auth).not.toHaveProperty("logger");
+  });
+
   it("disables Better Auth's built-in limiter so Cubby's layered throttle is authoritative", () => {
     const configured = auth as unknown as { rateLimit: { enabled: boolean } };
 

@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { InviteForm } from "@/components/forms/invite-form";
+import { ManualInvitationManager } from "@/components/invitations/manual-invitation-manager";
 import { MemberAccessManager } from "@/components/settings/member-access-manager";
 import { Card } from "@/components/ui/card";
 import { requireSettingsPage } from "@/server/auth/page-access";
@@ -27,19 +27,21 @@ export default async function MembersPage() {
                 role: member.role,
                 disabledAt: member.disabledAt?.toISOString() ?? null
               }))}
-              invites={household.invites.map((invite) => ({
-                id: invite.id,
-                email: invite.email,
-                role: invite.role,
-                expiresAt: invite.expiresAt.toISOString()
-              }))}
+              invites={[]}
             />
           </Card>
         </section>
         <Card>
-          <h2 className="mb-1 text-lg font-bold">Invite member</h2>
-          <p className="mb-3 text-sm text-muted-foreground">Choose the access level this person should receive.</p>
-          <InviteForm canInviteAdmin={household.viewerRole === "owner"} />
+          <ManualInvitationManager
+            canInviteAdmin={household.viewerRole === "owner"}
+            isOwner={household.viewerRole === "owner"}
+            invites={household.invites.map((invite) => ({
+              id: invite.id,
+              email: invite.email,
+              role: invite.role as "admin" | "parent" | "caretaker" | "read_only",
+              expiresAt: invite.expiresAt.toISOString()
+            }))}
+          />
         </Card>
       </div>
     </AppShell>
