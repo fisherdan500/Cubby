@@ -8,9 +8,13 @@ import { getHouseholdLeaveOptions } from "@/server/services/household-leave";
 import { listHouseholdsForUser } from "@/server/services/households";
 import { isPlatformOwner } from "@/server/services/platform-authority";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
+import { currentInvitationSetupCorridor } from "@/server/services/invitation-setup-corridor";
 
 export default async function OnboardingPage() {
   const user = await requireUserPage();
+  const corridor = await currentInvitationSetupCorridor("membership");
+  if (corridor?.result === "setup_required") redirect("/invite");
+  if (corridor?.result === "neutral") redirect("/");
   const [memberships, leaveOptions] = await Promise.all([
     listHouseholdsForUser(user.id),
     getHouseholdLeaveOptions()

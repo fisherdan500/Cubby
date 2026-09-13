@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getContext: vi.fn(),
@@ -29,6 +29,8 @@ const ctx = { userId: "user-1", sessionId: "session-1", householdId: "household-
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-08-17T12:00:00.000Z"));
   vi.resetAllMocks();
   mocks.getContext.mockResolvedValue(ctx);
   mocks.requireFreshSession.mockResolvedValue({
@@ -37,6 +39,8 @@ beforeEach(() => {
   });
   mocks.issue.mockResolvedValue({ status: "open", operationId, bindingId: "binding-1" });
 });
+
+afterEach(() => vi.useRealTimers());
 
 describe("invite browser-v2 operations", () => {
   it("opens invite creation with a safe frozen role and expiry policy", async () => {

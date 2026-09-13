@@ -1,7 +1,7 @@
 import type { HouseholdRole } from "@prisma/client";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
-import { requireUser } from "@/server/auth/session";
+import { requireInvitationSetupCorridor } from "@/server/services/invitation-setup-corridor";
 import { hasPermission, type Permission } from "@/domain/roles";
 
 export const SELECTED_HOUSEHOLD_MEMBER_COOKIE = "cubby_household_member";
@@ -26,17 +26,19 @@ export function readHouseholdMemberCandidate(): HouseholdMemberCandidate {
 }
 
 export async function getHouseholdContext(memberId: string): Promise<HouseholdContext> {
-  const user = await requireUser();
+  const current = await requireInvitationSetupCorridor("membership");
+  if (!current) throw new Error("unauthenticated");
   if (!isValidMembershipEpisodeId(memberId)) throw new Error("not_found");
-  return resolveHouseholdContext(user.id, memberId, "not_found");
+  return resolveHouseholdContext(current.user.id, memberId, "not_found");
 }
 
 export async function getEffectiveHouseholdContext(): Promise<HouseholdContext> {
-  const user = await requireUser();
+  const current = await requireInvitationSetupCorridor("membership");
+  if (!current) throw new Error("unauthenticated");
   const candidate = readHouseholdMemberCandidate();
   if (candidate.status === "missing") throw new Error("household_selection_required");
   if (candidate.status === "invalid") throw new Error("household_selection_stale");
-  return resolveHouseholdContext(user.id, candidate.value, "household_selection_stale");
+  return resolveHouseholdContext(current.user.id, candidate.value, "household_selection_stale");
 }
 
 async function resolveHouseholdContext(

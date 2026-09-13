@@ -20,11 +20,43 @@ try {
   roles.push({ role: "cubby_security_operator", password: operatorPassword });
   if (new Set(roles.map(({ password }) => password)).size !== roles.length) throw new Error();
 } catch {
-  process.stderr.write("cubby_startup phase=runtime_role status=failed\n");
+  process.stdout.write("p1_3_invitation_acceptance_global_role_input_failed\n");
   process.exit(1);
 }
 
 const quoteLiteral = (value) => `'${value.replaceAll("'", "''")}'`;
+
+function globalRoleApplyFailureCode(error) {
+  const record = error && typeof error === "object" ? error : undefined;
+  const meta = record && "meta" in record && record.meta && typeof record.meta === "object" ? record.meta : undefined;
+  switch (meta?.code) {
+    case "42501": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_42501";
+    case "42703": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_42703";
+    case "42704": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_42704";
+    case "42883": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_42883";
+    case "0A000": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_0a000";
+    // The provisioner's own restricted-ownership guard. A source boundary, never infrastructure.
+    case "P0001": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_p0001";
+    // Remaining members of the charter's approved query-failure class, so a real SQLSTATE is never
+    // collapsed into the unclassified bucket the way Attempts 41 and 55 were.
+    case "22023": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_22023";
+    case "23502": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_23502";
+    case "23503": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_23503";
+    case "23505": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_23505";
+    case "55P03": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_55p03";
+    case "40001": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_40001";
+    case "40P01": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_40p01";
+    case "57014": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_57014";
+    case "53300": return "p1_3_invitation_acceptance_global_role_apply_sqlstate_53300";
+    default: break;
+  }
+  // Prisma initialization and connection failures carry a P1xxx code and no SQLSTATE: the disposable
+  // database was never reached, so this is an environment boundary rather than a protocol repair.
+  const initialization = record && typeof record.errorCode === "string" ? record.errorCode
+    : record && typeof record.code === "string" ? record.code : undefined;
+  if (initialization && /^P1\d{3}$/.test(initialization)) return "p1_3_invitation_acceptance_global_role_apply_unreachable";
+  return "p1_3_invitation_acceptance_global_role_apply_failed";
+}
 const prisma = new PrismaClient();
 
 try {
@@ -90,8 +122,8 @@ try {
     $$;
   `);
   process.stdout.write("cubby_startup phase=runtime_role status=succeeded\n");
-} catch {
-  process.stderr.write("cubby_startup phase=runtime_role status=failed\n");
+} catch (error) {
+  process.stdout.write(`${globalRoleApplyFailureCode(error)}\n`);
   process.exitCode = 1;
 } finally {
   await prisma.$disconnect();

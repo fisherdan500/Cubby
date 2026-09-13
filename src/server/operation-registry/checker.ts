@@ -186,6 +186,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/export/activities.csv/route.operation.ts",
   "src/app/api/export/activities.tsv/route.operation.ts",
   "src/app/api/health/route.operation.ts",
+  "src/app/api/p13-route-sentinel/route.operation.ts",
   "src/app/api/hooks/v1/babies/[babyId]/activities/route.operation.ts",
   "src/app/api/hooks/v1/babies/[babyId]/measurements/latest/route.operation.ts",
   "src/app/api/hooks/v1/babies/[babyId]/reference/route.operation.ts",
@@ -239,14 +240,12 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/app/settings/units/page.operation.ts",
   "src/app/account/appearance/page.operation.ts",
   "src/app/recovery/page.operation.ts",
-  "src/app/invite/[token]/page.operation.ts",
+  "src/app/invite/dispatch/page.operation.ts",
   "src/app/layout.operation.ts",
-  "src/app/login/page.operation.ts",
   "src/app/onboarding/page.operation.ts",
   "src/app/page.operation.ts",
   "src/app/platform/settings/page.operation.ts",
-  "src/app/register/page.operation.ts",
-  "src/components/actions/accept-invite-button.operation.ts",
+
   "src/components/account-security-panel.operation.ts",
   "src/components/actions/activity-actions.operation.ts",
   "src/components/actions/baby-lifecycle-button.operation.ts",
@@ -260,6 +259,9 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/forms/invite-form.operation.ts",
   "src/components/forms/onboarding-form.operation.ts",
   "src/components/household-selection-control.operation.ts",
+  "src/components/invitations/invitation-bootstrap.operation.ts",
+  "src/components/invitations/invitation-workflow.operation.ts",
+  "src/components/invitations/manual-invitation-manager.operation.ts",
   "src/components/personal-appearance-form.operation.ts",
   "src/components/settings/appearance-form.operation.ts",
   "src/components/settings/backup-download-button.operation.ts",
@@ -287,16 +289,49 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/backup-recovery-rehearsal.operation.ts",
   "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts",
+  "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts",
+  "scripts/p1-3-node-builtin-probe.operation.ts",
   "scripts/integrity-check.operation.ts",
   "scripts/platform-owner.operation.ts",
+  "scripts/household-deletion-readiness-guard.operation.ts",
   "scripts/provision-email-delivery-keys.operation.ts",
   "scripts/provision-global-security-throttle-key.operation.ts",
+  "scripts/provision-invitation-runtime-roles.operation.ts",
   "scripts/provision-fresh-auth-attestation-keys.operation.ts",
   "scripts/provision-security-runtime-role.operation.ts",
   "scripts/security-operator.operation.ts",
   "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
   "scripts/update-preflight.operation.ts",
-  "prisma/seed.operation.ts"
+  "prisma/seed.operation.ts",
+  "src/app/api/invitations/claim/route.operation.ts",
+  "src/app/api/invitations/claim/close/route.operation.ts",
+  "src/app/api/invitations/post-signin-bind/route.operation.ts",
+  "src/app/api/invitations/review/route.operation.ts",
+  "src/app/api/invitations/credentials/reserve/route.operation.ts",
+  "src/app/api/invitations/credentials/submit/route.operation.ts",
+  "src/app/api/invitations/credentials/status/route.operation.ts",
+  "src/app/api/invitations/credentials/abandon/route.operation.ts",
+  "src/app/api/invitations/recovery/enrollment/reserve/route.operation.ts",
+  "src/app/api/invitations/recovery/enrollment/fresh-auth/route.operation.ts",
+  "src/app/api/invitations/recovery/enrollment/submit/route.operation.ts",
+  "src/app/api/invitations/recovery/enrollment/status/route.operation.ts",
+  "src/app/api/invitations/recovery/enrollment/abandon/route.operation.ts",
+  "src/app/api/invitations/recovery/rehearsal/reserve/route.operation.ts",
+  "src/app/api/invitations/recovery/rehearsal/submit/route.operation.ts",
+  "src/app/api/invitations/recovery/rehearsal/status/route.operation.ts",
+  "src/app/api/invitations/recovery/rehearsal/abandon/route.operation.ts",
+  "src/app/api/invitations/accept/reserve/route.operation.ts",
+  "src/app/api/invitations/accept/submit/route.operation.ts",
+  "src/app/api/invitations/accept/status/route.operation.ts",
+  "src/app/api/invitations/accept/abandon/route.operation.ts",
+  "src/app/api/invitations/manual/create/route.operation.ts",
+  "src/app/api/invitations/manual/replace/route.operation.ts",
+  "src/app/api/invitations/manual/status/route.operation.ts",
+  "src/app/api/invitations/manual/abandon/route.operation.ts",
+  "src/app/api/invitations/manual/replace/status/route.operation.ts",
+  "src/app/api/invitations/manual/replace/abandon/route.operation.ts",
+  "src/app/api/invitations/revoke/route.operation.ts",
+  "src/app/api/invitations/revoke-all/route.operation.ts",
 ] as const;
 
 export type StructuralDiscovery = {
@@ -1172,6 +1207,15 @@ export function discoverClientBindings(
           sourceFile,
           repositoryRoot
         );
+        const localCallee = checker.getResolvedSignature(node)?.declaration;
+        const hasInspectableLocalBody = Boolean(
+          localCallee &&
+          localCallee.getSourceFile() === sourceFile &&
+          ((ts.isFunctionDeclaration(localCallee) && localCallee.body) ||
+            (ts.isFunctionExpression(localCallee) && localCallee.body) ||
+            ts.isArrowFunction(localCallee) ||
+            (ts.isMethodDeclaration(localCallee) && localCallee.body))
+        );
         const fetchBinding = resolveGlobalFetchBinding(checker, callee, sourceFile);
         let directClientBinding = Boolean(fetchBinding);
         if (fetchBinding) {
@@ -1184,6 +1228,7 @@ export function discoverClientBindings(
           );
         } else if (
           !delegatedCallInCallee &&
+          !hasInspectableLocalBody &&
           looksLikeFetchBinding(checker, callee, sourceFile)
         ) {
           coverSensitiveSources(callee);
@@ -1252,17 +1297,15 @@ export function discoverClientBindings(
             }
           }
         }
-        const localCallee = checker.getResolvedSignature(node)?.declaration;
-        const hasInspectableLocalBody = Boolean(
-          localCallee &&
-          localCallee.getSourceFile() === sourceFile &&
-          ((ts.isFunctionDeclaration(localCallee) && localCallee.body) ||
-            (ts.isFunctionExpression(localCallee) && localCallee.body) ||
-            ts.isArrowFunction(localCallee) ||
-            (ts.isMethodDeclaration(localCallee) && localCallee.body))
-        );
         if (!directClientBinding && !hasInspectableLocalBody) {
           for (const argument of node.arguments) {
+            const callback = unwrapParentheses(argument);
+            if (
+              (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) &&
+              callback.getSourceFile() === sourceFile
+            ) {
+              continue;
+            }
             if (
               isPotentialDelegatedClientBindingArgument(
                 checker,
@@ -3539,7 +3582,10 @@ function selectedShellRuntimeExclusion(
   if (
     anchorFile === "docker/entrypoint.sh" &&
     path === "/app/node_modules/prisma/build/index.js" &&
-    anchorBytes.includes("node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1")
+    (
+      anchorBytes.includes("node node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma >/dev/null 2>&1")
+      || anchorBytes.includes("node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1")
+    )
   ) {
     return {
       category: "third_party_migration_cli",
@@ -3548,12 +3594,25 @@ function selectedShellRuntimeExclusion(
   }
   if (
     anchorFile === "docker/entrypoint.sh" &&
-    path === "/app/server.js" &&
-    anchorBytes === "exec node server.js"
+    (
+      (
+        path === "/app/server.js" &&
+        (
+          anchorBytes === "exec node server.js"
+          || anchorBytes === "exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js"
+        )
+      )
+      || (
+        path === "/app/scripts/p1-3-standalone-bootstrap-probe.cjs" &&
+        anchorBytes === "exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js"
+      )
+    )
   ) {
     return {
       category: "application_server_runtime",
-      rationale: "copied application server runtime; observation-only structural exclusion"
+      rationale: path === "/app/server.js"
+        ? "copied application server runtime; observation-only structural exclusion"
+        : "acceptance-only application server preload; observation-only structural exclusion"
     };
   }
   return null;
@@ -11478,7 +11537,10 @@ function resolveStaticMemberValue(
   const expressions: ts.Expression[] = initialMember ? [initialMember] : [];
   let unsupportedWrite = target.computed;
   const sourceFile = target.root.getSourceFile();
-  const visit = (node: ts.Node) => {
+  const pendingNodes: ts.Node[] = [];
+  ts.forEachChild(sourceFile, (node) => pendingNodes.push(node));
+  while (pendingNodes.length > 0) {
+    const node = pendingNodes.pop()!;
     if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
       const writtenRoot = memberRootIdentifier(node.left);
       if (
@@ -11513,9 +11575,8 @@ function resolveStaticMemberValue(
     ) {
       unsupportedWrite = true;
     }
-    ts.forEachChild(node, visit);
-  };
-  ts.forEachChild(sourceFile, visit);
+    ts.forEachChild(node, (child) => pendingNodes.push(child));
+  }
   if (unsupportedWrite || expressions.length > 1) {
     return { kind: "unsupported", expressions };
   }
@@ -12660,9 +12721,7 @@ function directSensitiveClientReferenceKind(
     isGlobalIdentifier(checker, current, ownerSource) &&
     isIdentifierValueReference(current) &&
     !(
-      (ts.isPropertyAccessExpression(current.parent) ||
-        ts.isElementAccessExpression(current.parent)) &&
-      current.parent.expression === current
+      isGlobalObjectPropertyBase(current)
     )
   ) {
     return "global_fetch";
@@ -12721,6 +12780,20 @@ function directSensitiveClientReferenceKind(
     return "server_action";
   }
   return null;
+}
+
+/** Type assertions are transparent runtime wrappers, so their global base is not a fetch reference. */
+function isGlobalObjectPropertyBase(expression: ts.Expression): boolean {
+  let current: ts.Expression = expression;
+  let parent = current.parent;
+  while (
+    (ts.isAsExpression(parent) || ts.isTypeAssertionExpression(parent) || ts.isParenthesizedExpression(parent)) &&
+    parent.expression === current
+  ) {
+    current = parent;
+    parent = current.parent;
+  }
+  return (ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) && parent.expression === current;
 }
 
 function bindingElementSensitiveKind(

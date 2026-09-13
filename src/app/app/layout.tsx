@@ -2,9 +2,11 @@ import { HouseholdSelectionControl } from "@/components/household-selection-cont
 import { SessionActivityReporter } from "@/components/session-activity-reporter";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdSelectionState } from "@/server/services/household-selection";
+import { requireInvitationSetupCorridor } from "@/server/services/invitation-setup-corridor";
 
 export default async function AuthenticatedAppLayout({ children }: { children: React.ReactNode }) {
   await requireUserPage();
+  await requireInvitationSetupCorridor("membership");
   const selection = await getHouseholdSelectionState();
   const accentTheme = selection.selected?.accentTheme ?? "sage";
   return (

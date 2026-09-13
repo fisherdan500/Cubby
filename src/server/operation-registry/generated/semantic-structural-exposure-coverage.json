@@ -396,9 +396,9 @@
     {
       "anchorBytes": "export async function GET() {\n  return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n}",
       "anchorDigest": "1611d1871a87b1a622c1866f0bea19b8ab8910f838d71038ebf273ec3828a8b2",
-      "anchorEnd": 720,
+      "anchorEnd": 2779,
       "anchorFile": "src/app/api/auth/[...all]/route.ts",
-      "anchorStart": 603,
+      "anchorStart": 2662,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -411,11 +411,11 @@
       "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  const url = new URL(request.url);\n  if (url.pathname !== \"/api/auth/sign-in/email\") {\n    return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n  }\n  return runEmailSignInThrottleCarrier(request, {\n    throttleKey: configuredGlobalSecurityThrottleKey(),\n    trustedProxyHops: env.CUBBY_TRUSTED_PROXY_HOPS,\n    findUserIdByNormalizedEmail: async (normalizedEmail) => {\n      const rows = await prisma.$queryRaw<Array<{ id: string }>>`\n        SELECT \"id\" FROM \"User\"\n        WHERE \"normalize_security_email_v1\"(\"email\")=${normalizedEmail}\n        LIMIT 1\n      `;\n      return rows[0]?.id;\n    },\n    precheck: (input) => precheckGlobalSecurityThrottle(prisma, input),\n    recordFailure: (input, eventUserId) => prisma.$transaction(async (tx) => {\n      const result = await recordGlobalSecurityThrottleFailureInTransaction(tx, input);\n      if (eventUserId) await writeGlobalSecurityEvent(tx, eventUserId, \"credential\", \"sign_in_failed\");\n      return result;\n    }, { isolationLevel: \"Serializable\" }),\n    invoke: handlers.POST\n  });\n}",
-      "anchorDigest": "731c8bb27461e6c9aad40639453e43eca27be05921a3db221a4a9f84f962bedc",
-      "anchorEnd": 1838,
+      "anchorBytes": "export async function POST(request: Request) {\n  const url = new URL(request.url);\n  if (url.pathname !== \"/api/auth/sign-in/email\") {\n    return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n  }\n  const observeFailureStage = acceptanceCarrierFailureStageObserver();\n  return runEmailSignInThrottleCarrier(await canonicalSignInRequest(request), {\n    throttleKey: configuredGlobalSecurityThrottleKey(),\n    trustedProxyHops: env.CUBBY_TRUSTED_PROXY_HOPS,\n    findUserIdByNormalizedEmail: async (normalizedEmail) => {\n      const rows = await prisma.$queryRaw<Array<{ id: string }>>`\n        SELECT \"id\" FROM \"User\"\n        WHERE \"normalize_security_email_v1\"(\"email\")=${normalizedEmail}\n        LIMIT 1\n      `;\n      return rows[0]?.id;\n    },\n    precheck: (input) => precheckGlobalSecurityThrottle(prisma, input),\n    recordFailure: (input, eventUserId) => prisma.$transaction(async (tx) => {\n      const result = await recordGlobalSecurityThrottleFailureInTransaction(tx, input);\n      if (eventUserId) await writeGlobalSecurityEvent(tx, eventUserId, \"credential\", \"sign_in_failed\");\n      return result;\n    }, { isolationLevel: \"Serializable\" }),\n    invoke: handlers.POST,\n    ...(observeFailureStage ? { observeFailureStage } : {})\n  });\n}",
+      "anchorDigest": "37a5a64727d53249c532738d730404a90eb0014b65cbf72f34f3144ed5b25387",
+      "anchorEnd": 4059,
       "anchorFile": "src/app/api/auth/[...all]/route.ts",
-      "anchorStart": 722,
+      "anchorStart": 2781,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -768,11 +768,11 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET() {\n  try {\n    await verifyBrowserOperationInfrastructure();\n    return NextResponse.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return NextResponse.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
-      "anchorDigest": "ee3e06264c34341ff81c8967f79fb1f39f567fe318a9f4fd7d965cdb4bc8fa32",
-      "anchorEnd": 534,
+      "anchorBytes": "export async function GET() {\n  if (process.env.CUBBY_P13_ACCEPTANCE_HEALTH_SENTINEL === \"1\") {\n    return new Response(null, { status: 204 });\n  }\n  try {\n    const { verifyBrowserOperationInfrastructure } = await import(\"@/server/services/browser-operation-integrity\");\n    await verifyBrowserOperationInfrastructure();\n    return Response.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return Response.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
+      "anchorDigest": "959d009cb2dbf2f58a7a60583b2b580ef111515d90594af053432c0964444f54",
+      "anchorEnd": 613,
       "anchorFile": "src/app/api/health/route.ts",
-      "anchorStart": 255,
+      "anchorStart": 108,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -921,11 +921,504 @@
       "sidecarPath": "src/app/api/households/leave/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(_request: Request, { params }: { params: { token: string } }) {\n  try {\n    return ok(await acceptInvite(params.token));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "f7c857a61b702d88824fc380546b7cfb8c75316902c764884632ccb312ae6b37",
-      "anchorEnd": 353,
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"accept-abandon\"); }",
+      "anchorDigest": "c9b48d7bf0de379e777c6a088facdeccb190efeac76b5937094636f1193b3217",
+      "anchorEnd": 227,
+      "anchorFile": "src/app/api/invitations/accept/abandon/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/accept/abandon/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/accept/abandon/route.ts:route_method:POST:src/app/api/invitations/accept/abandon/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/accept/abandon/route.ts",
+      "ownerModule": "src/app/api/invitations/accept/abandon/route.ts",
+      "sidecarPath": "src/app/api/invitations/accept/abandon/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"accept-reserve\"); }",
+      "anchorDigest": "d51e6eaf9bc72209aa26573457fa6f2f15965e84a7e3a602ef702588f6e122d3",
+      "anchorEnd": 227,
+      "anchorFile": "src/app/api/invitations/accept/reserve/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/accept/reserve/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/accept/reserve/route.ts:route_method:POST:src/app/api/invitations/accept/reserve/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/accept/reserve/route.ts",
+      "ownerModule": "src/app/api/invitations/accept/reserve/route.ts",
+      "sidecarPath": "src/app/api/invitations/accept/reserve/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"accept-status\"); }",
+      "anchorDigest": "93c08ff81751281ea59bc57dbbcbf06ae9cffec99a89be7f769ad07870b00e8a",
+      "anchorEnd": 226,
+      "anchorFile": "src/app/api/invitations/accept/status/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/accept/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/accept/status/route.ts:route_method:POST:src/app/api/invitations/accept/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/accept/status/route.ts",
+      "ownerModule": "src/app/api/invitations/accept/status/route.ts",
+      "sidecarPath": "src/app/api/invitations/accept/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"accept-submit\"); }",
+      "anchorDigest": "4b849526ff509ef3cea5470b8010cfb4caa1ec0d2ecd96ca0ff57dc0ed737955",
+      "anchorEnd": 226,
+      "anchorFile": "src/app/api/invitations/accept/submit/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/accept/submit/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/accept/submit/route.ts:route_method:POST:src/app/api/invitations/accept/submit/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/accept/submit/route.ts",
+      "ownerModule": "src/app/api/invitations/accept/submit/route.ts",
+      "sidecarPath": "src/app/api/invitations/accept/submit/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"claim-close\"); }",
+      "anchorDigest": "30cea89de3b0a6f00f0e2e1fb6a43e7f019291a3543c471ded77c0d3f43d37cc",
+      "anchorEnd": 224,
+      "anchorFile": "src/app/api/invitations/claim/close/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/claim/close/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/claim/close/route.ts:route_method:POST:src/app/api/invitations/claim/close/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/claim/close/route.ts",
+      "ownerModule": "src/app/api/invitations/claim/close/route.ts",
+      "sidecarPath": "src/app/api/invitations/claim/close/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"claim\"); }",
+      "anchorDigest": "116fcfd8399c0dd4c7d097245a86c6e681182cf7ea954fedb9a8cf7b7254ef3a",
+      "anchorEnd": 218,
+      "anchorFile": "src/app/api/invitations/claim/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/claim/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/claim/route.ts:route_method:POST:src/app/api/invitations/claim/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/claim/route.ts",
+      "ownerModule": "src/app/api/invitations/claim/route.ts",
+      "sidecarPath": "src/app/api/invitations/claim/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"credential-abandon\"); }",
+      "anchorDigest": "b098d835504edbbe43fda3b61d5bc2ef63266e23f94ee5dfa6808e0d4c0edba4",
+      "anchorEnd": 231,
+      "anchorFile": "src/app/api/invitations/credentials/abandon/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/credentials/abandon/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/credentials/abandon/route.ts:route_method:POST:src/app/api/invitations/credentials/abandon/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/credentials/abandon/route.ts",
+      "ownerModule": "src/app/api/invitations/credentials/abandon/route.ts",
+      "sidecarPath": "src/app/api/invitations/credentials/abandon/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"credential-reserve\"); }",
+      "anchorDigest": "6fbf470031ca4a6acb800a59557049ce255927836230a0e38c7994002c93ec58",
+      "anchorEnd": 231,
+      "anchorFile": "src/app/api/invitations/credentials/reserve/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/credentials/reserve/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/credentials/reserve/route.ts:route_method:POST:src/app/api/invitations/credentials/reserve/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/credentials/reserve/route.ts",
+      "ownerModule": "src/app/api/invitations/credentials/reserve/route.ts",
+      "sidecarPath": "src/app/api/invitations/credentials/reserve/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"credential-status\"); }",
+      "anchorDigest": "6feca4c6b694562412ef952daf508f2c1bb350a2b24525239ee31d9fb5cfdc8a",
+      "anchorEnd": 230,
+      "anchorFile": "src/app/api/invitations/credentials/status/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/credentials/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/credentials/status/route.ts:route_method:POST:src/app/api/invitations/credentials/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/credentials/status/route.ts",
+      "ownerModule": "src/app/api/invitations/credentials/status/route.ts",
+      "sidecarPath": "src/app/api/invitations/credentials/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"credential-submit\"); }",
+      "anchorDigest": "84f0d6c35250daa50b29e8716e3783168ca9fb916e1240c260d48351c6957d0c",
+      "anchorEnd": 230,
+      "anchorFile": "src/app/api/invitations/credentials/submit/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/credentials/submit/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/credentials/submit/route.ts:route_method:POST:src/app/api/invitations/credentials/submit/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/credentials/submit/route.ts",
+      "ownerModule": "src/app/api/invitations/credentials/submit/route.ts",
+      "sidecarPath": "src/app/api/invitations/credentials/submit/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"manual-abandon\"); }",
+      "anchorDigest": "1d8f9919c3be57b706912e40f7f5d9c2ec1ea07d801647a029a5b2f2a39326ee",
+      "anchorEnd": 227,
+      "anchorFile": "src/app/api/invitations/manual/abandon/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/manual/abandon/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/manual/abandon/route.ts:route_method:POST:src/app/api/invitations/manual/abandon/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/manual/abandon/route.ts",
+      "ownerModule": "src/app/api/invitations/manual/abandon/route.ts",
+      "sidecarPath": "src/app/api/invitations/manual/abandon/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"manual-create\"); }",
+      "anchorDigest": "2d2a5c48a36c967bbf55b95439144d6b4703e87fcb4ef2045e6f4e188c29910d",
+      "anchorEnd": 226,
+      "anchorFile": "src/app/api/invitations/manual/create/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/manual/create/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/manual/create/route.ts:route_method:POST:src/app/api/invitations/manual/create/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/manual/create/route.ts",
+      "ownerModule": "src/app/api/invitations/manual/create/route.ts",
+      "sidecarPath": "src/app/api/invitations/manual/create/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"manual-replace-abandon\"); }",
+      "anchorDigest": "fd8c643ae5aef85b0251500d64dc0410b624300bf0669701230ef68536a579dc",
+      "anchorEnd": 235,
+      "anchorFile": "src/app/api/invitations/manual/replace/abandon/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/manual/replace/abandon/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/manual/replace/abandon/route.ts:route_method:POST:src/app/api/invitations/manual/replace/abandon/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/manual/replace/abandon/route.ts",
+      "ownerModule": "src/app/api/invitations/manual/replace/abandon/route.ts",
+      "sidecarPath": "src/app/api/invitations/manual/replace/abandon/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"manual-replace\"); }",
+      "anchorDigest": "7a9f9246d6f3b6b4d3065a28409a78298a8c18323ee5358ba444fa37da377d9e",
+      "anchorEnd": 227,
+      "anchorFile": "src/app/api/invitations/manual/replace/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/manual/replace/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/manual/replace/route.ts:route_method:POST:src/app/api/invitations/manual/replace/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/manual/replace/route.ts",
+      "ownerModule": "src/app/api/invitations/manual/replace/route.ts",
+      "sidecarPath": "src/app/api/invitations/manual/replace/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"manual-replace-status\"); }",
+      "anchorDigest": "046c4a9b98585bf89bd51318aa4ea3b4710a182ec532d1c7f70ba076acb8c002",
+      "anchorEnd": 234,
+      "anchorFile": "src/app/api/invitations/manual/replace/status/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/manual/replace/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/manual/replace/status/route.ts:route_method:POST:src/app/api/invitations/manual/replace/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/manual/replace/status/route.ts",
+      "ownerModule": "src/app/api/invitations/manual/replace/status/route.ts",
+      "sidecarPath": "src/app/api/invitations/manual/replace/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"manual-status\"); }",
+      "anchorDigest": "3a608950f3cc8f619e7b8895c4089606e5d61ae4c159fc26e171fae99a297acc",
+      "anchorEnd": 226,
+      "anchorFile": "src/app/api/invitations/manual/status/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/manual/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/manual/status/route.ts:route_method:POST:src/app/api/invitations/manual/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/manual/status/route.ts",
+      "ownerModule": "src/app/api/invitations/manual/status/route.ts",
+      "sidecarPath": "src/app/api/invitations/manual/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"post-signin-bind\"); }",
+      "anchorDigest": "8edcfc7c458aa4b27533861a3f215f071cf3c545f0e3352e4e3e9aa8a8f15d1a",
+      "anchorEnd": 229,
+      "anchorFile": "src/app/api/invitations/post-signin-bind/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/post-signin-bind/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/post-signin-bind/route.ts:route_method:POST:src/app/api/invitations/post-signin-bind/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/post-signin-bind/route.ts",
+      "ownerModule": "src/app/api/invitations/post-signin-bind/route.ts",
+      "sidecarPath": "src/app/api/invitations/post-signin-bind/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-enrollment-abandon\"); }",
+      "anchorDigest": "45ea7eb8ffe1d6746218b5f63850fe125f07b6d31e4d8efe9dde07ec43301fcd",
+      "anchorEnd": 240,
+      "anchorFile": "src/app/api/invitations/recovery/enrollment/abandon/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/enrollment/abandon/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/enrollment/abandon/route.ts:route_method:POST:src/app/api/invitations/recovery/enrollment/abandon/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/enrollment/abandon/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/enrollment/abandon/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/enrollment/abandon/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  return handleInvitationRoute(request, \"recovery-enrollment-fresh-auth\");\n}",
+      "anchorDigest": "8f3e6f9ef21ab28a4e5d032e359df0c9f3f4a43fdf9a62b624f8961ddca90f1b",
+      "anchorEnd": 247,
+      "anchorFile": "src/app/api/invitations/recovery/enrollment/fresh-auth/route.ts",
+      "anchorStart": 124,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/enrollment/fresh-auth/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/enrollment/fresh-auth/route.ts:route_method:POST:src/app/api/invitations/recovery/enrollment/fresh-auth/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/enrollment/fresh-auth/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/enrollment/fresh-auth/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/enrollment/fresh-auth/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-enrollment-reserve\"); }",
+      "anchorDigest": "98ab1bf1d95f98f937ba1445a4faae98a0b352c3ad323bf6b45230bb02009b72",
+      "anchorEnd": 240,
+      "anchorFile": "src/app/api/invitations/recovery/enrollment/reserve/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/enrollment/reserve/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/enrollment/reserve/route.ts:route_method:POST:src/app/api/invitations/recovery/enrollment/reserve/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/enrollment/reserve/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/enrollment/reserve/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/enrollment/reserve/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-enrollment-status\"); }",
+      "anchorDigest": "c5c4288024be96c3ac16053e821d34efaaabcbd00685e735deea78831e7249d6",
+      "anchorEnd": 239,
+      "anchorFile": "src/app/api/invitations/recovery/enrollment/status/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/enrollment/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/enrollment/status/route.ts:route_method:POST:src/app/api/invitations/recovery/enrollment/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/enrollment/status/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/enrollment/status/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/enrollment/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-enrollment-submit\"); }",
+      "anchorDigest": "bb31c2b67ee6d7a9aa90c57628c0c9bbca69a71f5af7237be7040b1fecbc9b88",
+      "anchorEnd": 239,
+      "anchorFile": "src/app/api/invitations/recovery/enrollment/submit/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/enrollment/submit/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/enrollment/submit/route.ts:route_method:POST:src/app/api/invitations/recovery/enrollment/submit/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/enrollment/submit/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/enrollment/submit/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/enrollment/submit/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-rehearsal-abandon\"); }",
+      "anchorDigest": "08171d6513b85cea708d97a7fb2df3054d6f84e7f266ec59b5bee54daa0dbbc1",
+      "anchorEnd": 239,
+      "anchorFile": "src/app/api/invitations/recovery/rehearsal/abandon/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/rehearsal/abandon/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/rehearsal/abandon/route.ts:route_method:POST:src/app/api/invitations/recovery/rehearsal/abandon/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/rehearsal/abandon/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/rehearsal/abandon/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/rehearsal/abandon/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-rehearsal-reserve\"); }",
+      "anchorDigest": "e961041641b300a3a7d136ea05b122b8f3845aa41f3e1d36010f3802f8107265",
+      "anchorEnd": 239,
+      "anchorFile": "src/app/api/invitations/recovery/rehearsal/reserve/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/rehearsal/reserve/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/rehearsal/reserve/route.ts:route_method:POST:src/app/api/invitations/recovery/rehearsal/reserve/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/rehearsal/reserve/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/rehearsal/reserve/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/rehearsal/reserve/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-rehearsal-status\"); }",
+      "anchorDigest": "4c3569ff6a3f1f9bd9d590adf9beee779901b9ec7d459579f5fa2ca4081c901c",
+      "anchorEnd": 238,
+      "anchorFile": "src/app/api/invitations/recovery/rehearsal/status/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/rehearsal/status/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/rehearsal/status/route.ts:route_method:POST:src/app/api/invitations/recovery/rehearsal/status/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/rehearsal/status/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/rehearsal/status/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/rehearsal/status/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"recovery-rehearsal-submit\"); }",
+      "anchorDigest": "4ebcfe8530675f2f5c9f0a2ab7e16c38cf91731241d10f34d81e7b082678c50a",
+      "anchorEnd": 238,
+      "anchorFile": "src/app/api/invitations/recovery/rehearsal/submit/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/recovery/rehearsal/submit/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/recovery/rehearsal/submit/route.ts:route_method:POST:src/app/api/invitations/recovery/rehearsal/submit/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/recovery/rehearsal/submit/route.ts",
+      "ownerModule": "src/app/api/invitations/recovery/rehearsal/submit/route.ts",
+      "sidecarPath": "src/app/api/invitations/recovery/rehearsal/submit/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET(request: Request) { return handleInvitationRoute(request, \"review\"); }",
+      "anchorDigest": "0137cc3cb4eab322dd06025dcd0213fd6e586d03323802e4b38fa4d35d5874f2",
+      "anchorEnd": 218,
+      "anchorFile": "src/app/api/invitations/review/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/invitations/review/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/review/route.ts:route_method:GET:src/app/api/invitations/review/route.ts#GET",
+      "ownerId": "api_route:src/app/api/invitations/review/route.ts",
+      "ownerModule": "src/app/api/invitations/review/route.ts",
+      "sidecarPath": "src/app/api/invitations/review/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"revoke-all\"); }",
+      "anchorDigest": "c4784fd308747441f7b4bfc0ad634436d276c13b86b105badfe1b08fea811c44",
+      "anchorEnd": 223,
+      "anchorFile": "src/app/api/invitations/revoke-all/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/revoke-all/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/revoke-all/route.ts:route_method:POST:src/app/api/invitations/revoke-all/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/revoke-all/route.ts",
+      "ownerModule": "src/app/api/invitations/revoke-all/route.ts",
+      "sidecarPath": "src/app/api/invitations/revoke-all/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"revoke\"); }",
+      "anchorDigest": "40148feda67bac061eb871c8f27b053c02e842660f2d97df633e541ab8c47bfe",
+      "anchorEnd": 219,
+      "anchorFile": "src/app/api/invitations/revoke/route.ts",
+      "anchorStart": 122,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/invitations/revoke/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/invitations/revoke/route.ts:route_method:POST:src/app/api/invitations/revoke/route.ts#POST",
+      "ownerId": "api_route:src/app/api/invitations/revoke/route.ts",
+      "ownerModule": "src/app/api/invitations/revoke/route.ts",
+      "sidecarPath": "src/app/api/invitations/revoke/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(_request: Request, _context: unknown) {\n  return NextResponse.json({ ok: true, data: { status: \"unavailable\" } }, { headers: { \"Cache-Control\": \"no-store\", \"Referrer-Policy\": \"no-referrer\" } });\n}",
+      "anchorDigest": "88ad0f8bdb02f48c31aea6e0b32a466392deb4b56eb7634f8dfc3c972634219f",
+      "anchorEnd": 309,
       "anchorFile": "src/app/api/invites/[token]/accept/route.ts",
-      "anchorStart": 149,
+      "anchorStart": 86,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -938,11 +1431,11 @@
       "sidecarPath": "src/app/api/invites/[token]/accept/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request, { params }: { params: { token: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    let body: Record<string, unknown> | undefined;\n    if (text.length > 0) {\n      const parsed = JSON.parse(text) as unknown;\n      if (!parsed || typeof parsed !== \"object\" || Array.isArray(parsed)) throw new Error(\"validation_error\");\n      body = parsed as Record<string, unknown>;\n    }\n    operationId = body?.operationId;\n    const input = { ...body, operationId, inviteId: params.token };\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueInviteRevokeBrowserOperation(input);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteRevokeBrowserOperation(input);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitInviteRevokeBrowserOperation(input) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await revokeInvite(params.token));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "97be65ab230c6d6dfb8dde45f6fb2312ec74a33a0d670debb14fc1de7b3b708d",
-      "anchorEnd": 1779,
+      "anchorBytes": "export async function POST(_request: Request, _context: unknown) {\n  return NextResponse.json({ ok: true, data: { status: \"unavailable\" } }, { headers: { \"Cache-Control\": \"no-store\", \"Referrer-Policy\": \"no-referrer\" } });\n}",
+      "anchorDigest": "88ad0f8bdb02f48c31aea6e0b32a466392deb4b56eb7634f8dfc3c972634219f",
+      "anchorEnd": 309,
       "anchorFile": "src/app/api/invites/[token]/revoke/route.ts",
-      "anchorStart": 312,
+      "anchorStart": 86,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -955,11 +1448,11 @@
       "sidecarPath": "src/app/api/invites/[token]/revoke/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null || typeof body !== \"object\" || Array.isArray(body)) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    operationId = (body as Record<string, unknown>).operationId;\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueInviteRevokeAllBrowserOperation({});\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteRevokeAllBrowserOperation({ operationId });\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitInviteRevokeAllBrowserOperation(body) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n    }\n    return ok(await revokeAllPendingInvites(body));\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "b41036aaaf8729013d0d3ed9b409bd1c9252ed809b39dd917e6f6f7cb399f304",
-      "anchorEnd": 1603,
+      "anchorBytes": "export async function POST(_request: Request) {\n  return NextResponse.json({ ok: true, data: { status: \"unavailable\" } }, { headers: { \"Cache-Control\": \"no-store\", \"Referrer-Policy\": \"no-referrer\" } });\n}",
+      "anchorDigest": "80086ea776cb147d26fcdde296dd899e6ad51fe4228d07374cc86cef313e61c5",
+      "anchorEnd": 290,
       "anchorFile": "src/app/api/invites/revoke-all/route.ts",
-      "anchorStart": 335,
+      "anchorStart": 86,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -972,11 +1465,11 @@
       "sidecarPath": "src/app/api/invites/revoke-all/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null || typeof body !== \"object\" || Array.isArray(body)) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    operationId = (body as Record<string, unknown>).operationId;\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      const issued = await issueInviteCreateBrowserOperation(body);\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 201 });\n    }\n    if (typeof operationId === \"string\" && operationId.startsWith(\"bmo_\")) {\n      const issued = await issueInviteCreateBrowserOperation(body);\n      const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitInviteCreateBrowserOperation(body) : issued;\n      return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : result.status === \"open\" ? 201 : 200 });\n    }\n    return ok(await createInvite(body), { status: 201 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "a7c8a1f98198854ce4848e4af43566513acf250f2bd9750471b264e61b71a546",
-      "anchorEnd": 1601,
+      "anchorBytes": "export async function POST(_request: Request) {\n  return NextResponse.json({ ok: true, data: { status: \"unavailable\" } }, { headers: { \"Cache-Control\": \"no-store\", \"Referrer-Policy\": \"no-referrer\" } });\n}",
+      "anchorDigest": "80086ea776cb147d26fcdde296dd899e6ad51fe4228d07374cc86cef313e61c5",
+      "anchorEnd": 290,
       "anchorFile": "src/app/api/invites/route.ts",
-      "anchorStart": 312,
+      "anchorStart": 86,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -1140,6 +1633,23 @@
       "ownerId": "api_route:src/app/api/onboarding/route.ts",
       "ownerModule": "src/app/api/onboarding/route.ts",
       "sidecarPath": "src/app/api/onboarding/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export function GET() {\n  if (process.env.CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL === \"1\") {\n    if (process.env.CUBBY_P13_ACCEPTANCE_ROUTE_HANDLER_MARKER === handlerMarkerPath) {\n      writeFileSync(handlerMarkerPath, \"entered\\n\", { encoding: \"utf8\", flag: \"w\", mode: 0o600 });\n    }\n    return new Response(null, { status: 204 });\n  }\n  return new Response(null, { status: 404 });\n}",
+      "anchorDigest": "ca5f331c2670245d9849835381e570e92d4a742476a3ba171355e17644e99a84",
+      "anchorEnd": 851,
+      "anchorFile": "src/app/api/p13-route-sentinel/route.ts",
+      "anchorStart": 471,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/p13-route-sentinel/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/p13-route-sentinel/route.ts:route_method:GET:src/app/api/p13-route-sentinel/route.ts#GET",
+      "ownerId": "api_route:src/app/api/p13-route-sentinel/route.ts",
+      "ownerModule": "src/app/api/p13-route-sentinel/route.ts",
+      "sidecarPath": "src/app/api/p13-route-sentinel/route.operation.ts"
     },
     {
       "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const operationId = new URL(request.url).searchParams.get(\"operationId\");\n    if (operationId !== null) return ok(await getPlatformRegistrationOperationStatus({ operationId }));\n    return ok(await getPlatformRegistrationSettings());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
@@ -1499,6 +2009,23 @@
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
     },
     {
+      "anchorBytes": "fetch(\"/api/invitations/post-signin-bind\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({}), cache: \"no-store\", signal: controller.signal })",
+      "anchorDigest": "151925b662fadfa06ab92fcb6acb3744dfee6d4516414a188fe59c143f236f16",
+      "anchorEnd": 619,
+      "anchorFile": "src/app/invite/dispatch/page.tsx",
+      "anchorStart": 436,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/app/invite/dispatch/page.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/app/invite/dispatch/page.tsx",
+      "ownerModule": "src/app/invite/dispatch/page.tsx",
+      "sidecarPath": "src/app/invite/dispatch/page.operation.ts"
+    },
+    {
       "anchorBytes": "fetch(\"/api/account/recovery/reset\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ ...submitted, ...operation }) })",
       "anchorDigest": "e503143d75532b78574b4b373319b27728f5d210edf561dfde677f0abb1540bc",
       "anchorEnd": 1878,
@@ -1531,23 +2058,6 @@
       "ownerId": "client_binding:src/components/account-security-panel.tsx",
       "ownerModule": "src/components/account-security-panel.tsx",
       "sidecarPath": "src/components/account-security-panel.operation.ts"
-    },
-    {
-      "anchorBytes": "fetch(`/api/invites/${token}/accept`, { method: \"POST\" })",
-      "anchorDigest": "5bef3263d60f85efc60731aef05f6f1ccc3d568889e3162c24238493ef2ceb46",
-      "anchorEnd": 531,
-      "anchorFile": "src/components/actions/accept-invite-button.tsx",
-      "anchorStart": 474,
-      "binding": {
-        "kind": "global_fetch",
-        "symbol": "fetch[1]",
-        "target": "globalThis.fetch"
-      },
-      "coverage": "structural_only",
-      "id": "client_binding:src/components/actions/accept-invite-button.tsx:global_fetch:fetch[1]:globalThis.fetch",
-      "ownerId": "client_binding:src/components/actions/accept-invite-button.tsx",
-      "ownerModule": "src/components/actions/accept-invite-button.tsx",
-      "sidecarPath": "src/components/actions/accept-invite-button.operation.ts"
     },
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
@@ -1754,9 +2264,9 @@
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
     },
     {
-      "anchorBytes": "authClient.signIn.email({ email, password, rememberMe: true, callbackURL: next })",
-      "anchorDigest": "8c338518855b08f4e19bee92b7313625a92d75a84733d21c05c52ea5d6c2345f",
-      "anchorEnd": 1065,
+      "anchorBytes": "authClient.signIn.email({ email, password, rememberMe: true, callbackURL: \"/invite/dispatch\" })",
+      "anchorDigest": "6759421470c1b24d56d22b7dc1d80c64f347c5c2b8cadd0aed0741ffb7f7e223",
+      "anchorEnd": 1079,
       "anchorFile": "src/components/auth/auth-form.tsx",
       "anchorStart": 984,
       "binding": {
@@ -2228,6 +2738,57 @@
       "ownerId": "client_binding:src/components/household-selection-control.tsx",
       "ownerModule": "src/components/household-selection-control.tsx",
       "sidecarPath": "src/components/household-selection-control.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/invitations/claim\", {\n          method: \"POST\",\n          headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({ token: fragment.rawToken, browserPartitionDigest }),\n          cache: \"no-store\",\n          signal: controller.signal\n        })",
+      "anchorDigest": "70f73d1e0de9d9c1147ae9c8d58a0a56c5cf009c7668b0c7645b8c639ab76502",
+      "anchorEnd": 1263,
+      "anchorFile": "src/components/invitations/invitation-bootstrap.tsx",
+      "anchorStart": 983,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/invitations/invitation-bootstrap.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/invitations/invitation-bootstrap.tsx",
+      "ownerModule": "src/components/invitations/invitation-bootstrap.tsx",
+      "sidecarPath": "src/components/invitations/invitation-bootstrap.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(path, {\n        method,\n        cache: \"no-store\",\n        signal: controller.signal,\n        ...(payload ? { headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload) } : {})\n      })",
+      "anchorDigest": "400ebc88fd67a711da0a3826e31f5315e873397b961cd054bb795116d3e49a2f",
+      "anchorEnd": 8333,
+      "anchorFile": "src/components/invitations/invitation-workflow.tsx",
+      "anchorStart": 8122,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/invitations/invitation-workflow.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/invitations/invitation-workflow.tsx",
+      "ownerModule": "src/components/invitations/invitation-workflow.tsx",
+      "sidecarPath": "src/components/invitations/invitation-workflow.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(path, { method: \"POST\", cache: \"no-store\", signal: controller.signal, headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload) })",
+      "anchorDigest": "3680b21b18e90aa22669513befecfe25b37f7162c8243cc68185b41e8c682d2c",
+      "anchorEnd": 3030,
+      "anchorFile": "src/components/invitations/manual-invitation-manager.tsx",
+      "anchorStart": 2873,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/invitations/manual-invitation-manager.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/invitations/manual-invitation-manager.tsx",
+      "ownerModule": "src/components/invitations/manual-invitation-manager.tsx",
+      "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts"
     },
     {
       "anchorBytes": "fetch(\"/api/account/browser-operations/partition\", { cache: \"no-store\" })",
@@ -2980,9 +3541,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler",
       "anchorDigest": "f1c4d682bbc4d40fcbdeda2e11b76dc78b52ef556523385fc564eadc56fecf7e",
-      "anchorEnd": 131,
+      "anchorEnd": 1559,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 102,
+      "anchorStart": 1530,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startAutomatedBackupScheduler",
@@ -2997,9 +3558,9 @@
     {
       "anchorBytes": "startBrowserOperationRetentionScheduler",
       "anchorDigest": "939653699352c733103de51a00c789a20c350e97bd86313ce79aec0402f44914",
-      "anchorEnd": 264,
+      "anchorEnd": 1692,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 225,
+      "anchorStart": 1653,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startBrowserOperationRetentionScheduler",
@@ -3014,9 +3575,9 @@
     {
       "anchorBytes": "startEmailChangeLifecycleScheduler",
       "anchorDigest": "0ebc04136eb326e054d6d707234f2fd2c60a8d10ea81189e3fba29bd73cf6d9a",
-      "anchorEnd": 349,
+      "anchorEnd": 1777,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 315,
+      "anchorStart": 1743,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startEmailChangeLifecycleScheduler",
@@ -3031,9 +3592,9 @@
     {
       "anchorBytes": "startEmailDeliveryScheduler",
       "anchorDigest": "3b4438b9d55de05d54cf3b073f6e58992bde32e634f076001d7106b468cd7899",
-      "anchorEnd": 303,
+      "anchorEnd": 1731,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 276,
+      "anchorStart": 1704,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startEmailDeliveryScheduler",
@@ -3048,9 +3609,9 @@
     {
       "anchorBytes": "startIntegrityScheduler",
       "anchorDigest": "1717bc9d903bf11d59fc23f79d07eac0ae893ae39fe128decd23ed185e24548e",
-      "anchorEnd": 166,
+      "anchorEnd": 1594,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 143,
+      "anchorStart": 1571,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startIntegrityScheduler",
@@ -3065,9 +3626,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler",
       "anchorDigest": "bd7dfaa9223fc1679c9fac61f1adcda2fafb6ecd65f665a5b6f3bf4ffa4e117c",
-      "anchorEnd": 213,
+      "anchorEnd": 1641,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 178,
+      "anchorStart": 1606,
       "binding": {
         "kind": "worker_dynamic_import",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -3082,9 +3643,9 @@
     {
       "anchorBytes": "startAutomatedBackupScheduler()",
       "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
-      "anchorEnd": 781,
+      "anchorEnd": 2705,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 750,
+      "anchorStart": 2674,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startAutomatedBackupScheduler",
@@ -3099,9 +3660,9 @@
     {
       "anchorBytes": "startBrowserOperationRetentionScheduler()",
       "anchorDigest": "8a6c4bc59c0a9ace67575338516ce74f1ddefee1604c8358de407952b119157c",
-      "anchorEnd": 908,
+      "anchorEnd": 2970,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 867,
+      "anchorStart": 2929,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startBrowserOperationRetentionScheduler",
@@ -3116,9 +3677,9 @@
     {
       "anchorBytes": "startEmailChangeLifecycleScheduler()",
       "anchorDigest": "a084f4c40f162b71a4a78f20c962c200ad913c8502aac74d09072593a4f4731f",
-      "anchorEnd": 989,
+      "anchorEnd": 3143,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 953,
+      "anchorStart": 3107,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startEmailChangeLifecycleScheduler",
@@ -3133,9 +3694,9 @@
     {
       "anchorBytes": "startEmailDeliveryScheduler()",
       "anchorDigest": "01ca7435448a5b7e591ccf8e802e240806435cd5b1d9709ac0510be2e81d379d",
-      "anchorEnd": 945,
+      "anchorEnd": 3053,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 916,
+      "anchorStart": 3024,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startEmailDeliveryScheduler",
@@ -3150,9 +3711,9 @@
     {
       "anchorBytes": "startIntegrityScheduler()",
       "anchorDigest": "625c2b34e32461840fc11278aa1a96cf4e709d79c720c09bd998cb6a09f76841",
-      "anchorEnd": 814,
+      "anchorEnd": 2784,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 789,
+      "anchorStart": 2759,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startIntegrityScheduler",
@@ -3167,9 +3728,9 @@
     {
       "anchorBytes": "startSproutSourceRetentionScheduler()",
       "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
-      "anchorEnd": 859,
+      "anchorEnd": 2875,
       "anchorFile": "src/instrumentation.ts",
-      "anchorStart": 822,
+      "anchorStart": 2838,
       "binding": {
         "kind": "worker_start_call",
         "symbol": "startSproutSourceRetentionScheduler",
@@ -3184,9 +3745,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 3162,
+      "anchorEnd": 4037,
       "anchorFile": "package.json",
-      "anchorStart": 3153,
+      "anchorStart": 4028,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -3201,9 +3762,9 @@
     {
       "anchorBytes": "\"verify:activity-update-safety\"",
       "anchorDigest": "ab81dd8446575d3e8db6556bc8428d6aca7040a50fcbea81f6bd73b9466a2034",
-      "anchorEnd": 2545,
+      "anchorEnd": 3324,
       "anchorFile": "package.json",
-      "anchorStart": 2514,
+      "anchorStart": 3293,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:activity-update-safety",
@@ -3218,9 +3779,9 @@
     {
       "anchorBytes": "\"verify:backup-recovery\"",
       "anchorDigest": "356ff55c9bda28971f0b30a6141af2b700cbf4c69d2f566517d2c35be28ce45e",
-      "anchorEnd": 2389,
+      "anchorEnd": 3168,
       "anchorFile": "package.json",
-      "anchorStart": 2365,
+      "anchorStart": 3144,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:backup-recovery",
@@ -3235,9 +3796,9 @@
     {
       "anchorBytes": "\"verify:update-rehearsal\"",
       "anchorDigest": "ad6ab6ca444dd0e736b38b2fb30832927d0bf9030c330047be097a31d88de645",
-      "anchorEnd": 2464,
+      "anchorEnd": 3243,
       "anchorFile": "package.json",
-      "anchorStart": 2439,
+      "anchorStart": 3218,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-rehearsal",
@@ -3252,9 +3813,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-pilot\"",
       "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-      "anchorEnd": 2634,
+      "anchorEnd": 3413,
       "anchorFile": "package.json",
-      "anchorStart": 2602,
+      "anchorStart": 3381,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-pilot",
@@ -3267,11 +3828,96 @@
       "sidecarPath": "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts"
     },
     {
+      "anchorBytes": "COPY --from=builder /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs",
+      "anchorDigest": "dfe959064d49957b43837988856898ca51e7b2d6f705680d0e49b3658994be00",
+      "anchorEnd": 2784,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 2664,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "household-deletion-readiness-guard.mjs",
+        "target": "Dockerfile#/app/dist/household-deletion-readiness-guard.mjs=>/app/scripts/household-deletion-readiness-guard.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/household-deletion-readiness-guard.ts:container_copy:household-deletion-readiness-guard.mjs:Dockerfile#/app/dist/household-deletion-readiness-guard.mjs=>/app/scripts/household-deletion-readiness-guard.mjs",
+      "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
+      "ownerModule": "scripts/household-deletion-readiness-guard.ts",
+      "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! node /app/scripts/household-deletion-readiness-guard.mjs",
+      "anchorDigest": "d82af34a94a2ece4ff20076146d9f9f048fb9e511139e03b5c08335b54f30c04",
+      "anchorEnd": 1092,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 1031,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "household-deletion-readiness-guard.mjs",
+        "target": "docker/entrypoint.sh#/app/scripts/household-deletion-readiness-guard.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/household-deletion-readiness-guard.ts:container_invocation:household-deletion-readiness-guard.mjs:docker/entrypoint.sh#/app/scripts/household-deletion-readiness-guard.mjs",
+      "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
+      "ownerModule": "scripts/household-deletion-readiness-guard.ts",
+      "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/household-deletion-readiness-guard.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/household-deletion-readiness-guard.mjs\"",
+      "anchorDigest": "bdcd6bf4f92821638db2fe0a688009cb7cf23d5a7884330bd5142d4904652aaa",
+      "anchorEnd": 1625,
+      "anchorFile": "package.json",
+      "anchorStart": 1442,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/household-deletion-readiness-guard.ts",
+        "target": "scripts/household-deletion-readiness-guard.ts=>dist/household-deletion-readiness-guard.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/household-deletion-readiness-guard.ts:package_build_entrypoint:scripts/household-deletion-readiness-guard.ts:scripts/household-deletion-readiness-guard.ts=>dist/household-deletion-readiness-guard.mjs",
+      "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
+      "ownerModule": "scripts/household-deletion-readiness-guard.ts",
+      "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:household-deletion-readiness"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/household-deletion-readiness-guard.ts:package_build_invocation:build:package.json#scripts.build:build:household-deletion-readiness",
+      "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
+      "ownerModule": "scripts/household-deletion-readiness-guard.ts",
+      "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts"
+    },
+    {
+      "anchorBytes": "\"build:household-deletion-readiness\"",
+      "anchorDigest": "eb38bb885e8439b3899c30f57bfd73dbfb58ef4b502d4e66609559bd9e3c4018",
+      "anchorEnd": 1440,
+      "anchorFile": "package.json",
+      "anchorStart": 1404,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "build:household-deletion-readiness",
+        "target": "package.json#scripts.build:household-deletion-readiness"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/household-deletion-readiness-guard.ts:package_script:build:household-deletion-readiness:package.json#scripts.build:household-deletion-readiness",
+      "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
+      "ownerModule": "scripts/household-deletion-readiness-guard.ts",
+      "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts"
+    },
+    {
       "anchorBytes": "COPY --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs",
       "anchorDigest": "96373fee9d77f24a267f340fda64e84453f13b5f3f1f38e8bdb468b1494285c1",
-      "anchorEnd": 1322,
+      "anchorEnd": 1896,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1251,
+      "anchorStart": 1825,
       "binding": {
         "kind": "container_copy",
         "symbol": "integrity-check.mjs",
@@ -3286,9 +3932,9 @@
     {
       "anchorBytes": "\"esbuild scripts/integrity-check.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/integrity-check.mjs\"",
       "anchorDigest": "97c14ba7b6bd29cec210f4b27c372840462a9e3236edb92a1ce73ddd54b523e8",
-      "anchorEnd": 831,
+      "anchorEnd": 959,
       "anchorFile": "package.json",
-      "anchorStart": 686,
+      "anchorStart": 814,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/integrity-check.ts",
@@ -3301,9 +3947,9 @@
       "sidecarPath": "scripts/integrity-check.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3320,9 +3966,9 @@
     {
       "anchorBytes": "\"build:integrity\"",
       "anchorDigest": "0bc4e1884466133d9c6a0672c4ad0e7ea55e2181e4d2eff74c1d410f060728ee",
-      "anchorEnd": 684,
+      "anchorEnd": 812,
       "anchorFile": "package.json",
-      "anchorStart": 667,
+      "anchorStart": 795,
       "binding": {
         "kind": "package_script",
         "symbol": "build:integrity",
@@ -3337,9 +3983,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 3263,
+      "anchorEnd": 4138,
       "anchorFile": "package.json",
-      "anchorStart": 3245,
+      "anchorStart": 4120,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -3354,9 +4000,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 2898,
+      "anchorEnd": 3677,
       "anchorFile": "package.json",
-      "anchorStart": 2866,
+      "anchorStart": 3645,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -3367,6 +4013,91 @@
       "ownerId": "package_command:scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
       "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
+      "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
+      "anchorEnd": 3787,
+      "anchorFile": "package.json",
+      "anchorStart": 3752,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:p1-3-invitation-acceptance",
+        "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/p1-3-invitation.acceptance-rehearsal.ts:package_script:verify:p1-3-invitation-acceptance:package.json#scripts.verify:p1-3-invitation-acceptance",
+      "ownerId": "package_command:scripts/p1-3-invitation.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "COPY --from=builder /app/dist/p1-3-node-builtin-probe.mjs /app/scripts/p1-3-node-builtin-probe.mjs",
+      "anchorDigest": "b209d0e7a0b00de2e3f1bfd34e5b8fc87196387fa92c40dfdcda5744cd8a653d",
+      "anchorEnd": 2883,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 2785,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "p1-3-node-builtin-probe.mjs",
+        "target": "Dockerfile#/app/dist/p1-3-node-builtin-probe.mjs=>/app/scripts/p1-3-node-builtin-probe.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/p1-3-node-builtin-probe.mjs:container_copy:p1-3-node-builtin-probe.mjs:Dockerfile#/app/dist/p1-3-node-builtin-probe.mjs=>/app/scripts/p1-3-node-builtin-probe.mjs",
+      "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
+      "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
+      "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts"
+    },
+    {
+      "anchorBytes": "if node /app/scripts/p1-3-node-builtin-probe.mjs >/dev/null 2>&1",
+      "anchorDigest": "46e82d5b92a6cea63ff3c9265bfb6efe4da42685d5c88c8d5b8bda2fee1b49f0",
+      "anchorEnd": 606,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 542,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "p1-3-node-builtin-probe.mjs",
+        "target": "docker/entrypoint.sh#/app/scripts/p1-3-node-builtin-probe.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/p1-3-node-builtin-probe.mjs:container_invocation:p1-3-node-builtin-probe.mjs:docker/entrypoint.sh#/app/scripts/p1-3-node-builtin-probe.mjs",
+      "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
+      "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
+      "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/p1-3-node-builtin-probe.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/p1-3-node-builtin-probe.mjs\"",
+      "anchorDigest": "9b8b12b23610200f5243a06981a56b614a5588fb0f3f9bf9f85d05debbfa4f23",
+      "anchorEnd": 1825,
+      "anchorFile": "package.json",
+      "anchorStart": 1663,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/p1-3-node-builtin-probe.mjs",
+        "target": "scripts/p1-3-node-builtin-probe.mjs=>dist/p1-3-node-builtin-probe.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/p1-3-node-builtin-probe.mjs:package_build_entrypoint:scripts/p1-3-node-builtin-probe.mjs:scripts/p1-3-node-builtin-probe.mjs=>dist/p1-3-node-builtin-probe.mjs",
+      "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
+      "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
+      "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:p13-node-builtin-probe"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/p1-3-node-builtin-probe.mjs:package_build_invocation:build:package.json#scripts.build:build:p13-node-builtin-probe",
+      "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
+      "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
+      "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts"
     },
     {
       "anchorBytes": "operation === \"attest-successor\"",
@@ -3490,9 +4221,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/platform-owner.mjs ./platform-owner.mjs",
       "anchorDigest": "bec935558d7c7706b278e6e19cde6b358c5d36e772e8290f5e10cfefc79484ed",
-      "anchorEnd": 1250,
+      "anchorEnd": 1824,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1181,
+      "anchorStart": 1755,
       "binding": {
         "kind": "container_copy",
         "symbol": "platform-owner.mjs",
@@ -3507,9 +4238,9 @@
     {
       "anchorBytes": "\"esbuild scripts/platform-owner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/platform-owner.mjs\"",
       "anchorDigest": "34b772e44b77afedfaf6840b1a18c5960dc89b1a081b95f1af2a8d9e76dc3555",
-      "anchorEnd": 661,
+      "anchorEnd": 789,
       "anchorFile": "package.json",
-      "anchorStart": 518,
+      "anchorStart": 646,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/platform-owner.ts",
@@ -3522,9 +4253,9 @@
       "sidecarPath": "scripts/platform-owner.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3541,9 +4272,9 @@
     {
       "anchorBytes": "\"build:platform-owner\"",
       "anchorDigest": "aef089f4250d574a5150392ba7e9c365c8a7337873033a55a6fe39d262f51929",
-      "anchorEnd": 516,
+      "anchorEnd": 644,
       "anchorFile": "package.json",
-      "anchorStart": 494,
+      "anchorStart": 622,
       "binding": {
         "kind": "package_script",
         "symbol": "build:platform-owner",
@@ -3558,9 +4289,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 3206,
+      "anchorEnd": 4081,
       "anchorFile": "package.json",
-      "anchorStart": 3190,
+      "anchorStart": 4065,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -3575,9 +4306,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/provision-email-delivery-keys.mjs ./provision-email-delivery-keys.mjs",
       "anchorDigest": "4ea88baa140ca9ff1bd7b1de27b4f5ce20682f13bf8b01e4ea2fd0618f0f8b11",
-      "anchorEnd": 1785,
+      "anchorEnd": 2469,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1686,
+      "anchorStart": 2370,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-email-delivery-keys.mjs",
@@ -3592,9 +4323,9 @@
     {
       "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-email-delivery-keys.mjs >/dev/null 2>&1",
       "anchorDigest": "1476c5acb9b73b2d526f9de0dfffe64f27561c90694a0546b9e71ba03d5efaf6",
-      "anchorEnd": 1559,
+      "anchorEnd": 3484,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 1461,
+      "anchorStart": 3386,
       "binding": {
         "kind": "container_invocation",
         "symbol": "provision-email-delivery-keys.mjs",
@@ -3609,9 +4340,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-email-delivery-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-email-delivery-keys.mjs\"",
       "anchorDigest": "205df456bca593073465bbbee38ad9ddf3a1ad9a37415a3052f823caff0a7f7c",
-      "anchorEnd": 1488,
+      "anchorEnd": 2267,
       "anchorFile": "package.json",
-      "anchorStart": 1314,
+      "anchorStart": 2093,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-email-delivery-keys.mjs",
@@ -3624,9 +4355,9 @@
       "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3643,9 +4374,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/provision-fresh-auth-attestation-keys.mjs ./provision-fresh-auth-attestation-keys.mjs",
       "anchorDigest": "80aee959215a20f62145c7ca0638216541a95523e0f0675bccbb963bb2d0ab04",
-      "anchorEnd": 1685,
+      "anchorEnd": 2369,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1570,
+      "anchorStart": 2254,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-fresh-auth-attestation-keys.mjs",
@@ -3660,9 +4391,9 @@
     {
       "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-fresh-auth-attestation-keys.mjs >/dev/null 2>&1",
       "anchorDigest": "cf988d60b11ab36c6e537d5ecac1d15d47268778e913262d3f428e9203b2f121",
-      "anchorEnd": 1367,
+      "anchorEnd": 3305,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 1261,
+      "anchorStart": 3199,
       "binding": {
         "kind": "container_invocation",
         "symbol": "provision-fresh-auth-attestation-keys.mjs",
@@ -3677,9 +4408,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-fresh-auth-attestation-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-fresh-auth-attestation-keys.mjs\"",
       "anchorDigest": "e88e8a3998b89168bdceb86457dede535d548cf55330ff7bff584b88b0c0c73c",
-      "anchorEnd": 1279,
+      "anchorEnd": 2058,
       "anchorFile": "package.json",
-      "anchorStart": 1089,
+      "anchorStart": 1868,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
@@ -3692,9 +4423,9 @@
       "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3711,9 +4442,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/provision-global-security-throttle-key.mjs ./provision-global-security-throttle-key.mjs",
       "anchorDigest": "8dd17cd88a049d158141f6fbabf0d6409a6e5b743623ad6c1e978e125ab8d19f",
-      "anchorEnd": 1903,
+      "anchorEnd": 2587,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1786,
+      "anchorStart": 2470,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-global-security-throttle-key.mjs",
@@ -3728,9 +4459,9 @@
     {
       "anchorBytes": "if ! CUBBY_THROTTLE_KEY=\"$cubby_throttle_key\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-global-security-throttle-key.mjs >/dev/null 2>&1",
       "anchorDigest": "ec34c2e543335fe9616b6d6904fb6d09b80256b3952ddf6807b338edc5102632",
-      "anchorEnd": 1793,
+      "anchorEnd": 3705,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 1645,
+      "anchorStart": 3557,
       "binding": {
         "kind": "container_invocation",
         "symbol": "provision-global-security-throttle-key.mjs",
@@ -3745,9 +4476,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-global-security-throttle-key.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-global-security-throttle-key.mjs\"",
       "anchorDigest": "04faa6246b4961b4ca13a7b21c086cf236f7abd5de9021ed0979e3d778124bd0",
-      "anchorEnd": 1724,
+      "anchorEnd": 2503,
       "anchorFile": "package.json",
-      "anchorStart": 1532,
+      "anchorStart": 2311,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-global-security-throttle-key.mjs",
@@ -3760,9 +4491,9 @@
       "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3777,11 +4508,79 @@
       "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
     },
     {
+      "anchorBytes": "COPY --from=builder /app/dist/provision-invitation-runtime-roles.mjs ./provision-invitation-runtime-roles.mjs",
+      "anchorDigest": "69070fdc59656e09ec7078a1f3b50c3b1cf5a3c6cb838b3ed69764592353fa09",
+      "anchorEnd": 2253,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 2144,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "provision-invitation-runtime-roles.mjs",
+        "target": "Dockerfile#/app/dist/provision-invitation-runtime-roles.mjs=>/app/provision-invitation-runtime-roles.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-invitation-runtime-roles.mjs:container_copy:provision-invitation-runtime-roles.mjs:Dockerfile#/app/dist/provision-invitation-runtime-roles.mjs=>/app/provision-invitation-runtime-roles.mjs",
+      "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
+      "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
+      "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-invitation-runtime-roles.mjs >/dev/null 2>&1",
+      "anchorDigest": "3cbb32c39020999aafa8682c0c70fe3aafa5e1573160a9b3018238b04da345dc",
+      "anchorEnd": 2533,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 2430,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "provision-invitation-runtime-roles.mjs",
+        "target": "docker/entrypoint.sh#/app/provision-invitation-runtime-roles.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-invitation-runtime-roles.mjs:container_invocation:provision-invitation-runtime-roles.mjs:docker/entrypoint.sh#/app/provision-invitation-runtime-roles.mjs",
+      "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
+      "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
+      "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/provision-invitation-runtime-roles.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-invitation-runtime-roles.mjs\"",
+      "anchorDigest": "dd8581faef5e2a5f43972ae17a112387ffb97856f01d82d42008b9bda4e52e94",
+      "anchorEnd": 1398,
+      "anchorFile": "package.json",
+      "anchorStart": 1214,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/provision-invitation-runtime-roles.mjs",
+        "target": "scripts/provision-invitation-runtime-roles.mjs=>dist/provision-invitation-runtime-roles.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-invitation-runtime-roles.mjs:package_build_entrypoint:scripts/provision-invitation-runtime-roles.mjs:scripts/provision-invitation-runtime-roles.mjs=>dist/provision-invitation-runtime-roles.mjs",
+      "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
+      "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
+      "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:invitation-runtime-roles"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-invitation-runtime-roles.mjs:package_build_invocation:build:package.json#scripts.build:build:invitation-runtime-roles",
+      "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
+      "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
+      "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts"
+    },
+    {
       "anchorBytes": "COPY --from=builder /app/dist/provision-security-runtime-role.mjs ./provision-security-runtime-role.mjs",
       "anchorDigest": "706e5ea8c0391acc55b975531e5aa1e6432850bf83110f1c2e4d8c62e6ddd1d1",
-      "anchorEnd": 1569,
+      "anchorEnd": 2143,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1466,
+      "anchorStart": 2040,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-security-runtime-role.mjs",
@@ -3796,9 +4595,9 @@
     {
       "anchorBytes": "if ! CUBBY_RUNTIME_DATABASE_URL=\"$DATABASE_URL\" CUBBY_AUTH_DATABASE_URL=\"$AUTH_DATABASE_URL\" CUBBY_EMAIL_DELIVERY_DATABASE_URL=\"$EMAIL_DELIVERY_DATABASE_URL\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-security-runtime-role.mjs >/dev/null 2>&1",
       "anchorDigest": "ed691e4c4a1d748049dfd847ce0631642fcf97254f20864733518f002cbd6711",
-      "anchorEnd": 950,
+      "anchorEnd": 2364,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 697,
+      "anchorStart": 2111,
       "binding": {
         "kind": "container_invocation",
         "symbol": "provision-security-runtime-role.mjs",
@@ -3813,9 +4612,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-security-runtime-role.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-security-runtime-role.mjs\"",
       "anchorDigest": "ed6b85d3dcb91b70a9eabfba9cab9cdb488792ca971460b8e0c6283cc2226cf6",
-      "anchorEnd": 1046,
+      "anchorEnd": 1174,
       "anchorFile": "package.json",
-      "anchorStart": 868,
+      "anchorStart": 996,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-security-runtime-role.mjs",
@@ -3828,9 +4627,9 @@
       "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3864,9 +4663,9 @@
     {
       "anchorBytes": "COPY --from=builder /app/dist/security-operator.mjs ./security-operator.mjs",
       "anchorDigest": "5243e985e2c98b3038b155bcf1ff0d8370ae51f74bd5fc5f7985b0d57c6ef9cf",
-      "anchorEnd": 1979,
+      "anchorEnd": 2663,
       "anchorFile": "Dockerfile",
-      "anchorStart": 1904,
+      "anchorStart": 2588,
       "binding": {
         "kind": "container_copy",
         "symbol": "security-operator.mjs",
@@ -3881,9 +4680,9 @@
     {
       "anchorBytes": "\"esbuild scripts/security-operator.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/security-operator.mjs\"",
       "anchorDigest": "7294f4b1ac1e5f3fc751cc4ec19a5537c4f92b0d3005618c0e5f0b9ed422c1ca",
-      "anchorEnd": 1906,
+      "anchorEnd": 2685,
       "anchorFile": "package.json",
-      "anchorStart": 1757,
+      "anchorStart": 2536,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/security-operator.ts",
@@ -3896,9 +4695,9 @@
       "sidecarPath": "scripts/security-operator.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
-      "anchorDigest": "73657d1ba6e3b810e8c70ca77f3391ade4697cc5c7f0baa45df41a881e980250",
-      "anchorEnd": 488,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:security-operator && next build\"",
+      "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
+      "anchorEnd": 616,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3915,9 +4714,9 @@
     {
       "anchorBytes": "\"build:security-operator\"",
       "anchorDigest": "a1750a76b982486d3994ada05cf17b378819261008b874324dd2a8e7a73bf652",
-      "anchorEnd": 1755,
+      "anchorEnd": 2534,
       "anchorFile": "package.json",
-      "anchorStart": 1730,
+      "anchorStart": 2509,
       "binding": {
         "kind": "package_script",
         "symbol": "build:security-operator",
@@ -3932,9 +4731,9 @@
     {
       "anchorBytes": "\"security:operator\"",
       "anchorDigest": "e1989d4a74966750816e4a60c9b003dc206fff378b1af3698c48681a4f7281cd",
-      "anchorEnd": 1931,
+      "anchorEnd": 2710,
       "anchorFile": "package.json",
-      "anchorStart": 1912,
+      "anchorStart": 2691,
       "binding": {
         "kind": "package_script",
         "symbol": "security:operator",
@@ -3949,9 +4748,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 2733,
+      "anchorEnd": 3512,
       "anchorFile": "package.json",
-      "anchorStart": 2703,
+      "anchorStart": 3482,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -3966,9 +4765,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 2825,
+      "anchorEnd": 3604,
       "anchorFile": "package.json",
-      "anchorStart": 2800,
+      "anchorStart": 3579,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -4401,6 +5200,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/app/layout.tsx:server_value_import:getHouseholdSelectionState:src/server/services/household-selection.ts#getHouseholdSelectionState",
+      "ownerId": "server_loader:src/app/app/layout.tsx",
+      "ownerModule": "src/app/app/layout.tsx",
+      "sidecarPath": "src/app/app/layout.operation.ts"
+    },
+    {
+      "anchorBytes": "requireInvitationSetupCorridor",
+      "anchorDigest": "98d928b595ae3e4c55aa39ad0f690d071dd4637335cfaf40656a4a36e5da480c",
+      "anchorEnd": 348,
+      "anchorFile": "src/app/app/layout.tsx",
+      "anchorStart": 318,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireInvitationSetupCorridor",
+        "target": "src/server/services/invitation-setup-corridor.ts#requireInvitationSetupCorridor"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/layout.tsx:server_value_import:requireInvitationSetupCorridor:src/server/services/invitation-setup-corridor.ts#requireInvitationSetupCorridor",
       "ownerId": "server_loader:src/app/app/layout.tsx",
       "ownerModule": "src/app/app/layout.tsx",
       "sidecarPath": "src/app/app/layout.operation.ts"
@@ -4850,9 +5666,9 @@
     {
       "anchorBytes": "listMembersAndInvites",
       "anchorDigest": "af3501c25335a18230e78088970dcdcf41fb73ce9790ff93449a1653b4533fb5",
-      "anchorEnd": 335,
+      "anchorEnd": 368,
       "anchorFile": "src/app/app/settings/members/page.tsx",
-      "anchorStart": 314,
+      "anchorStart": 347,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listMembersAndInvites",
@@ -4867,9 +5683,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 268,
+      "anchorEnd": 301,
       "anchorFile": "src/app/app/settings/members/page.tsx",
-      "anchorStart": 249,
+      "anchorStart": 282,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -5052,40 +5868,6 @@
       "sidecarPath": "src/app/app/settings/units/page.operation.ts"
     },
     {
-      "anchorBytes": "getInviteByToken",
-      "anchorDigest": "3173c472374cfc43bf357fd95d2c25f0e3e7abb54c38170a9b4ca099d110632d",
-      "anchorEnd": 331,
-      "anchorFile": "src/app/invite/[token]/page.tsx",
-      "anchorStart": 315,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getInviteByToken",
-        "target": "src/server/services/invites.ts#getInviteByToken"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/invite/[token]/page.tsx:server_value_import:getInviteByToken:src/server/services/invites.ts#getInviteByToken",
-      "ownerId": "server_loader:src/app/invite/[token]/page.tsx",
-      "ownerModule": "src/app/invite/[token]/page.tsx",
-      "sidecarPath": "src/app/invite/[token]/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getSession",
-      "anchorDigest": "ade4b3a567adfbb26fd787be91ddce39dbc12e2bb5e03f298a3fa2a82e285b13",
-      "anchorEnd": 273,
-      "anchorFile": "src/app/invite/[token]/page.tsx",
-      "anchorStart": 263,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getSession",
-        "target": "src/server/auth/session.ts#getSession"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/invite/[token]/page.tsx:server_value_import:getSession:src/server/auth/session.ts#getSession",
-      "ownerId": "server_loader:src/app/invite/[token]/page.tsx",
-      "ownerModule": "src/app/invite/[token]/page.tsx",
-      "sidecarPath": "src/app/invite/[token]/page.operation.ts"
-    },
-    {
       "anchorBytes": "getCurrentAuthenticatedAppearanceMode",
       "anchorDigest": "0d1bb8bc5cd61eff21fd5a0de71d8d94c091c040a93eb0a284d959e6294f5040",
       "anchorEnd": 473,
@@ -5103,21 +5885,21 @@
       "sidecarPath": "src/app/layout.operation.ts"
     },
     {
-      "anchorBytes": "extractInviteToken",
-      "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
-      "anchorEnd": 208,
-      "anchorFile": "src/app/login/page.tsx",
-      "anchorStart": 190,
+      "anchorBytes": "currentInvitationSetupCorridor",
+      "anchorDigest": "009ba0511ce8b55b4a5092eba6ed0b9d8390c80aff87e819f569b83b7f8f73b2",
+      "anchorEnd": 629,
+      "anchorFile": "src/app/onboarding/page.tsx",
+      "anchorStart": 599,
       "binding": {
         "kind": "server_value_import",
-        "symbol": "extractInviteToken",
-        "target": "src/server/services/registration.ts#extractInviteToken"
+        "symbol": "currentInvitationSetupCorridor",
+        "target": "src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor"
       },
       "coverage": "structural_only",
-      "id": "server_loader:src/app/login/page.tsx:server_value_import:extractInviteToken:src/server/services/registration.ts#extractInviteToken",
-      "ownerId": "server_loader:src/app/login/page.tsx",
-      "ownerModule": "src/app/login/page.tsx",
-      "sidecarPath": "src/app/login/page.operation.ts"
+      "id": "server_loader:src/app/onboarding/page.tsx:server_value_import:currentInvitationSetupCorridor:src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor",
+      "ownerId": "server_loader:src/app/onboarding/page.tsx",
+      "ownerModule": "src/app/onboarding/page.tsx",
+      "sidecarPath": "src/app/onboarding/page.operation.ts"
     },
     {
       "anchorBytes": "getAppRegistrationPolicy",
@@ -5205,6 +5987,23 @@
       "sidecarPath": "src/app/onboarding/page.operation.ts"
     },
     {
+      "anchorBytes": "currentInvitationSetupCorridor",
+      "anchorDigest": "009ba0511ce8b55b4a5092eba6ed0b9d8390c80aff87e819f569b83b7f8f73b2",
+      "anchorEnd": 416,
+      "anchorFile": "src/app/page.tsx",
+      "anchorStart": 386,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "currentInvitationSetupCorridor",
+        "target": "src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/page.tsx:server_value_import:currentInvitationSetupCorridor:src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor",
+      "ownerId": "server_loader:src/app/page.tsx",
+      "ownerModule": "src/app/page.tsx",
+      "sidecarPath": "src/app/page.operation.ts"
+    },
+    {
       "anchorBytes": "getSession",
       "anchorDigest": "ade4b3a567adfbb26fd787be91ddce39dbc12e2bb5e03f298a3fa2a82e285b13",
       "anchorEnd": 344,
@@ -5254,23 +6053,6 @@
       "ownerId": "server_loader:src/app/platform/settings/page.tsx",
       "ownerModule": "src/app/platform/settings/page.tsx",
       "sidecarPath": "src/app/platform/settings/page.operation.ts"
-    },
-    {
-      "anchorBytes": "extractInviteToken",
-      "anchorDigest": "db99597aa7790b25e5cb6fb4a3faba82e7078957877a7c8df660c079cbc6fe8a",
-      "anchorEnd": 201,
-      "anchorFile": "src/app/register/page.tsx",
-      "anchorStart": 183,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "extractInviteToken",
-        "target": "src/server/services/registration.ts#extractInviteToken"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/register/page.tsx:server_value_import:extractInviteToken:src/server/services/registration.ts#extractInviteToken",
-      "ownerId": "server_loader:src/app/register/page.tsx",
-      "ownerModule": "src/app/register/page.tsx",
-      "sidecarPath": "src/app/register/page.operation.ts"
     },
     {
       "anchorBytes": "setInterval(() => {\n    void tick();\n  }, automatedBackupConfig.pollMinutes * 60 * 1000)",
@@ -5585,10 +6367,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "a4eebfab9c38abed94c3d99710691902226300fe899774e1663433209c8b3604",
+  "semanticArtifactDigest": "43b0fbd0db14c0f99ead0de21852b43047cae90fed5279d037c4dcac346e7c92",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "fea8ceb4bf631e849ff45aa935b629bbb453b609d3bde31c966a54294a48ef46",
+  "semanticCoverageDigest": "35d7b4d5e95b4fcd93a08aaeab3b0b7a27af4b254ce6dffaaedd3c21d7553363",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "cb88673244e7b8d705b53ad7a4082f43ac7b8618053783f03a8e4b8b7043d441"
+  "semanticFingerprint": "af1f2d3e8a0f776421c628c1eee570e6f69e1994975cc63f06bc7c45eeb944d5"
 }

@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -11,7 +12,7 @@ const provisionerPath = resolve(process.cwd(), "scripts/provision-security-runti
 describe("security operator aggregate persistence", () => {
   it("creates only the fixed-search-path, bounded content-free incident aggregate", () => {
     expect(existsSync(migrationPath)).toBe(true);
-    const migration = readFileSync(migrationPath, "utf8");
+    const migration = readFileSync(migrationPath, "utf8").replaceAll("\r\n", "\n");
 
     expect(migration).toContain('CREATE OR REPLACE FUNCTION "read_global_security_operator_aggregate"(scope_from DATE, scope_to DATE)');
     expect(migration).toContain("SECURITY DEFINER SET search_path=pg_catalog,public");
@@ -31,15 +32,29 @@ describe("security operator aggregate persistence", () => {
   });
 
   it("keeps the operator role unowned, non-member, non-elevated, and without table grants", () => {
-    const provisioner = readFileSync(provisionerPath, "utf8");
+    const provisioner = readFileSync(provisionerPath, "utf8").replaceAll("\r\n", "\n");
 
     expect(provisioner).toContain('roles.push({ role: "cubby_security_operator", password: operatorPassword })');
     expect(provisioner).toContain("NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS");
     expect(provisioner).toContain("cubby_restricted_role_owns_objects");
     expect(provisioner).toContain("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public");
+    expect(provisioner).toContain("p1_3_invitation_acceptance_global_role_input_failed");
+    expect(provisioner).toContain("p1_3_invitation_acceptance_global_role_apply_failed");
     expect(provisioner).toContain("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public");
     expect(provisioner).toContain("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public");
     expect(provisioner).toContain("REVOKE ALL ON SCHEMA public");
     expect(provisioner).toContain("REVOKE ALL PRIVILEGES ON DATABASE");
+  });
+
+  it("emits a closed stdout code before attempting a database connection when role inputs are absent", () => {
+    const result = spawnSync(process.execPath, [provisionerPath], {
+      cwd: process.cwd(),
+      env: { NODE_ENV: "test" },
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout.trim()).toBe("p1_3_invitation_acceptance_global_role_input_failed");
   });
 });

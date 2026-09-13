@@ -6,3 +6,4 @@ coverage
 docker-data
 *.log
 README.md
+prisma/migrations/20260904100000_invitation_protocol_v6/

@@ -41,7 +41,7 @@ describe("AuthForm", () => {
     await userEvent.type(screen.getByLabelText("Password"), "current-password");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(mocks.signIn).toHaveBeenCalledWith({ email: "casey@example.test", password: "current-password", rememberMe: true, callbackURL: "/app?babyId=baby-1" }));
+    await waitFor(() => expect(mocks.signIn).toHaveBeenCalledWith({ email: "casey@example.test", password: "current-password", rememberMe: true, callbackURL: "/invite/dispatch" }));
     const error = await screen.findByRole("alert");
     expect(error.textContent).toBe("Unable to sign in right now. Try again.");
     expect(error.textContent).not.toContain("Provider disclosed");

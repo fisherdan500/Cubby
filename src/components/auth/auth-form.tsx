@@ -27,12 +27,12 @@ export function AuthForm({
     const email = String(formData.get("email"));
     const password = String(formData.get("password"));
     try {
-      const result = await authClient.signIn.email({ email, password, rememberMe: true, callbackURL: next });
+      const result = await authClient.signIn.email({ email, password, rememberMe: true, callbackURL: "/invite/dispatch" });
       if (result.error) {
         setError(authFailureMessage("login", result.error));
         return;
       }
-      router.push(next);
+      router.push("/invite/dispatch");
       router.refresh();
     } catch {
       setError("Unable to sign in right now. Try again.");

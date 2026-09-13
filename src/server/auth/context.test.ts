@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireUser: vi.fn(),
+  requireInvitationSetupCorridor: vi.fn(),
   cookieGet: vi.fn(),
   memberFindFirst: vi.fn()
 }));
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/headers", () => ({
   cookies: vi.fn(() => ({ get: mocks.cookieGet }))
 }));
-vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
+vi.mock("@/server/services/invitation-setup-corridor", () => ({ requireInvitationSetupCorridor: mocks.requireInvitationSetupCorridor }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: { householdMember: { findFirst: mocks.memberFindFirst } }
 }));
@@ -29,7 +29,7 @@ const activeMember = {
 describe("household request context", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireUser.mockResolvedValue({ id: "user-1" });
+    mocks.requireInvitationSetupCorridor.mockResolvedValue({ user: { id: "user-1" } });
     mocks.cookieGet.mockReturnValue({ value: "member-episode-2" });
     mocks.memberFindFirst.mockResolvedValue(activeMember);
   });
@@ -77,5 +77,13 @@ describe("household request context", () => {
     expect(mocks.memberFindFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ id: "member-episode-2", userId: "user-1" })
     }));
+  });
+
+  it("denies a setup or neutral corridor before looking up a household", async () => {
+    mocks.requireInvitationSetupCorridor.mockRejectedValue(new Error("invitation_setup_required"));
+
+    await expect(getEffectiveHouseholdContext()).rejects.toThrow("invitation_setup_required");
+
+    expect(mocks.memberFindFirst).not.toHaveBeenCalled();
   });
 });

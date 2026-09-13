@@ -10,6 +10,11 @@ export const operation = {
       kind: "server_value_import",
       symbol: "getSession",
       target: "src/server/auth/session.ts#getSession"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "currentInvitationSetupCorridor",
+      target: "src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor"
     }
   ],
   disposition: "observed",
