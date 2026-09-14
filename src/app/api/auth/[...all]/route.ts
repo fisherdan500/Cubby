@@ -14,7 +14,7 @@ import {
   runEmailSignInThrottleCarrier,
   type EmailSignInCarrierFailureStage
 } from "@/server/services/sign-in-email-throttle";
-import { takeBetterAuthSignInRejection } from "@/server/auth/acceptance-sign-in-rejection";
+import { runWithBetterAuthSignInRejectionScope, takeBetterAuthSignInRejection } from "@/server/auth/acceptance-sign-in-rejection";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +26,6 @@ function acceptanceCarrierFailureStageObserver() {
     process.env.CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL !== "1"
     || process.env.CUBBY_P13_ACCEPTANCE_SIGN_IN_CARRIER_STAGE_FILE !== acceptanceCarrierStagePath
   ) return undefined;
-  // Discard any rejection category left by an earlier request so this request's marker stays causal.
-  takeBetterAuthSignInRejection();
   return (observed: EmailSignInCarrierFailureStage) => {
     const allowed = ["lookup", "lookup-miss", "precheck", "handler", "failure-recording",
       "unauthorized-user-not-found", "unauthorized-credential-account-not-found", "unauthorized-email-not-verified",
@@ -64,7 +62,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ code: "AUTH_ENDPOINT_NOT_AVAILABLE" }, { status: 404 });
   }
   const observeFailureStage = acceptanceCarrierFailureStageObserver();
-  return runEmailSignInThrottleCarrier(await canonicalSignInRequest(request), {
+  const signInRequest = await canonicalSignInRequest(request);
+  const runCarrier = () => runEmailSignInThrottleCarrier(signInRequest, {
     throttleKey: configuredGlobalSecurityThrottleKey(),
     trustedProxyHops: env.CUBBY_TRUSTED_PROXY_HOPS,
     findUserIdByNormalizedEmail: async (normalizedEmail) => {
@@ -84,4 +83,6 @@ export async function POST(request: Request) {
     invoke: handlers.POST,
     ...(observeFailureStage ? { observeFailureStage } : {})
   });
+  // Acceptance observation keeps each sign-in request's rejection category in its own scope.
+  return observeFailureStage ? runWithBetterAuthSignInRejectionScope(runCarrier) : runCarrier();
 }

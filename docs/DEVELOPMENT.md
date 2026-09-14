@@ -112,7 +112,8 @@ runtime. When both `CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL=1` and
 `CUBBY_P13_ACCEPTANCE_SIGN_IN_CARRIER_STAGE_FILE` equal their exact acceptance values,
 the auth route writes one fixed sign-in stage to the status mount and Better Auth
 receives a logger that reduces its fixed email sign-in warnings to closed
-categories. Without both values the auth configuration is unchanged. The harness
+categories, kept per sign-in request. Without both values the auth configuration is
+unchanged. The harness
 reads only allow-listed fixed outputs, so a new probe must add its code to the
 observation list or its result is always empty.
 

@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { p13SeededFixtureEmail } from "../../../scripts/p1-3-invitation-browser-fixture-identity";
 import {
   observeBetterAuthSignInRejectionLog,
+  runWithBetterAuthSignInRejectionScope,
   takeBetterAuthSignInRejection
 } from "@/server/auth/acceptance-sign-in-rejection";
 
@@ -44,7 +45,7 @@ async function rejectionCode(action: Promise<unknown>) {
 }
 
 describe("fixture-seeded credential sign-in through real Better Auth", () => {
-  it("accepts the fixture-style existing recipient and creates exactly one session for that user", async () => {
+  it("accepts the fixture-style existing recipient and creates exactly one session for that user", () => runWithBetterAuthSignInRejectionScope(async () => {
     const { auth, db, userId, email, password } = await seededAuth();
     takeBetterAuthSignInRejection();
 
@@ -54,9 +55,9 @@ describe("fixture-seeded credential sign-in through real Better Auth", () => {
     expect(db.session).toHaveLength(1);
     expect(db.session[0]?.userId).toBe(userId);
     expect(takeBetterAuthSignInRejection()).toBeUndefined();
-  });
+  }));
 
-  it("signs in a fixture recipient whose base64url suffix contains uppercase characters", async () => {
+  it("signs in a fixture recipient whose base64url suffix contains uppercase characters", () => runWithBetterAuthSignInRejectionScope(async () => {
     // The browser fixture suffix is base64url, so it routinely contains uppercase letters.
     const { auth, db, userId, email, password } = await seededAuth(`Qz${randomBytes(18).toString("base64url")}`);
     takeBetterAuthSignInRejection();
@@ -66,9 +67,9 @@ describe("fixture-seeded credential sign-in through real Better Auth", () => {
     expect(result.user.id).toBe(userId);
     expect(db.session).toHaveLength(1);
     expect(takeBetterAuthSignInRejection()).toBeUndefined();
-  });
+  }));
 
-  it("maps Better Auth's real rejection warnings to the fixed acceptance categories", async () => {
+  it("maps Better Auth's real rejection warnings to the fixed acceptance categories", () => runWithBetterAuthSignInRejectionScope(async () => {
     const { auth, db, email, password } = await seededAuth();
     takeBetterAuthSignInRejection();
 
@@ -87,5 +88,5 @@ describe("fixture-seeded credential sign-in through real Better Auth", () => {
     await expect(rejectionCode(auth.api.signInEmail({ body: { email, password } }))).resolves.toBe("INVALID_EMAIL_OR_PASSWORD");
     expect(takeBetterAuthSignInRejection()).toBe("credential-account-not-found");
     expect(db.session).toHaveLength(0);
-  });
+  }));
 });

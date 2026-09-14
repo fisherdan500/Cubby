@@ -396,9 +396,9 @@
     {
       "anchorBytes": "export async function GET() {\n  return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n}",
       "anchorDigest": "1611d1871a87b1a622c1866f0bea19b8ab8910f838d71038ebf273ec3828a8b2",
-      "anchorEnd": 2779,
+      "anchorEnd": 2681,
       "anchorFile": "src/app/api/auth/[...all]/route.ts",
-      "anchorStart": 2662,
+      "anchorStart": 2564,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -411,11 +411,11 @@
       "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  const url = new URL(request.url);\n  if (url.pathname !== \"/api/auth/sign-in/email\") {\n    return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n  }\n  const observeFailureStage = acceptanceCarrierFailureStageObserver();\n  return runEmailSignInThrottleCarrier(await canonicalSignInRequest(request), {\n    throttleKey: configuredGlobalSecurityThrottleKey(),\n    trustedProxyHops: env.CUBBY_TRUSTED_PROXY_HOPS,\n    findUserIdByNormalizedEmail: async (normalizedEmail) => {\n      const rows = await prisma.$queryRaw<Array<{ id: string }>>`\n        SELECT \"id\" FROM \"User\"\n        WHERE \"normalize_security_email_v1\"(\"email\")=${normalizedEmail}\n        LIMIT 1\n      `;\n      return rows[0]?.id;\n    },\n    precheck: (input) => precheckGlobalSecurityThrottle(prisma, input),\n    recordFailure: (input, eventUserId) => prisma.$transaction(async (tx) => {\n      const result = await recordGlobalSecurityThrottleFailureInTransaction(tx, input);\n      if (eventUserId) await writeGlobalSecurityEvent(tx, eventUserId, \"credential\", \"sign_in_failed\");\n      return result;\n    }, { isolationLevel: \"Serializable\" }),\n    invoke: handlers.POST,\n    ...(observeFailureStage ? { observeFailureStage } : {})\n  });\n}",
-      "anchorDigest": "37a5a64727d53249c532738d730404a90eb0014b65cbf72f34f3144ed5b25387",
-      "anchorEnd": 4059,
+      "anchorBytes": "export async function POST(request: Request) {\n  const url = new URL(request.url);\n  if (url.pathname !== \"/api/auth/sign-in/email\") {\n    return NextResponse.json({ code: \"AUTH_ENDPOINT_NOT_AVAILABLE\" }, { status: 404 });\n  }\n  const observeFailureStage = acceptanceCarrierFailureStageObserver();\n  const signInRequest = await canonicalSignInRequest(request);\n  const runCarrier = () => runEmailSignInThrottleCarrier(signInRequest, {\n    throttleKey: configuredGlobalSecurityThrottleKey(),\n    trustedProxyHops: env.CUBBY_TRUSTED_PROXY_HOPS,\n    findUserIdByNormalizedEmail: async (normalizedEmail) => {\n      const rows = await prisma.$queryRaw<Array<{ id: string }>>`\n        SELECT \"id\" FROM \"User\"\n        WHERE \"normalize_security_email_v1\"(\"email\")=${normalizedEmail}\n        LIMIT 1\n      `;\n      return rows[0]?.id;\n    },\n    precheck: (input) => precheckGlobalSecurityThrottle(prisma, input),\n    recordFailure: (input, eventUserId) => prisma.$transaction(async (tx) => {\n      const result = await recordGlobalSecurityThrottleFailureInTransaction(tx, input);\n      if (eventUserId) await writeGlobalSecurityEvent(tx, eventUserId, \"credential\", \"sign_in_failed\");\n      return result;\n    }, { isolationLevel: \"Serializable\" }),\n    invoke: handlers.POST,\n    ...(observeFailureStage ? { observeFailureStage } : {})\n  });\n  // Acceptance observation keeps each sign-in request's rejection category in its own scope.\n  return observeFailureStage ? runWithBetterAuthSignInRejectionScope(runCarrier) : runCarrier();\n}",
+      "anchorDigest": "7f8025c030e5c0f24bd6aa41a4a0fafc5003da277ce1d0abd0bc5959f058fa10",
+      "anchorEnd": 4209,
       "anchorFile": "src/app/api/auth/[...all]/route.ts",
-      "anchorStart": 2781,
+      "anchorStart": 2683,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -6367,9 +6367,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "43b0fbd0db14c0f99ead0de21852b43047cae90fed5279d037c4dcac346e7c92",
+  "semanticArtifactDigest": "57d5740596d8d546fda0a67d1db7ff4b53d2183ec6edc533a456bc8271141ba3",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "35d7b4d5e95b4fcd93a08aaeab3b0b7a27af4b254ce6dffaaedd3c21d7553363",
+  "semanticCoverageDigest": "1eca4d2f17c79270ab68341960e62812a597774c342803451f0c0a199821bba0",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "af1f2d3e8a0f776421c628c1eee570e6f69e1994975cc63f06bc7c45eeb944d5"
