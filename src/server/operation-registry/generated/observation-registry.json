@@ -6993,18 +6993,18 @@
       "bindings": [
         {
           "anchorDigest": "1611d1871a87b1a622c1866f0bea19b8ab8910f838d71038ebf273ec3828a8b2",
-          "anchorEnd": 2779,
+          "anchorEnd": 2681,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2662,
+          "anchorStart": 2564,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/auth/[...all]/route.ts#GET"
         },
         {
-          "anchorDigest": "37a5a64727d53249c532738d730404a90eb0014b65cbf72f34f3144ed5b25387",
-          "anchorEnd": 4059,
+          "anchorDigest": "7f8025c030e5c0f24bd6aa41a4a0fafc5003da277ce1d0abd0bc5959f058fa10",
+          "anchorEnd": 4209,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2781,
+          "anchorStart": 2683,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/auth/[...all]/route.ts#POST"
@@ -11850,7 +11850,7 @@
     }
   ],
   "observationCount": 184,
-  "observationDigest": "79654f86a12b7ad0ece9fc96cccea4652690f47a5e38400d558e682686504c33",
+  "observationDigest": "9535bd486b2b2f25d88c1b50fa51a49d1324d281d7ac2e9adda4056d86eca6f5",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -12235,18 +12235,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2779,
+          "anchorEnd": 2681,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2662,
+          "anchorStart": 2564,
           "kind": "route_method",
           "ownerModule": "src/app/api/auth/[...all]/route.ts",
           "symbol": "GET",
           "target": "src/app/api/auth/[...all]/route.ts#GET"
         },
         {
-          "anchorEnd": 4059,
+          "anchorEnd": 4209,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2781,
+          "anchorStart": 2683,
           "kind": "route_method",
           "ownerModule": "src/app/api/auth/[...all]/route.ts",
           "symbol": "POST",
@@ -17985,7 +17985,7 @@
   ],
   "ownerSetDigest": "1ecfab1be8780e975fe20c81595d22eb180ea900009fa0ef2467b6d159afcbca",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "0e2f45a917f55428f010adbdfa78c7f6f2537a72a3550f92bace9ecd9a8180d3",
+  "registryDigest": "210732693bb0e52c0d1295f28541df381eb8ac814abe81bf205a4845220d63f6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

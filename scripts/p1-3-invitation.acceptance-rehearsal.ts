@@ -251,6 +251,7 @@ const browserDiagnosticCodes = new Set([
   "p1_3_invitation_acceptance_browser_new_user_sign_in_carrier_invalid_credentials_password_mismatch",
   "p1_3_invitation_acceptance_browser_new_user_sign_in_carrier_invalid_credentials_unclassified",
   "p1_3_invitation_acceptance_browser_new_user_sign_in_carrier_unreadable",
+  "p1_3_invitation_acceptance_browser_new_user_sign_in_carrier_handler_ok",
   "p1_3_invitation_acceptance_browser_new_user_acceptance_failed",
   "p1_3_invitation_acceptance_browser_new_user_acceptance_recovery_generate_failed",
   "p1_3_invitation_acceptance_browser_new_user_acceptance_recovery_copy_failed",
@@ -289,6 +290,7 @@ const browserDiagnosticCodes = new Set([
   "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_carrier_invalid_credentials_unclassified",
   "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_denial_probe_failed",
   "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_carrier_unreadable",
+  "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_carrier_handler_ok",
   "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_submit_form_error_forbidden",
   "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_submit_form_error_client",
   "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_submit_form_error_server",
@@ -467,7 +469,8 @@ function safeEnvironment(user: string, database: string, password: string): Node
     SMTP_HOST: "127.0.0.1",
     SMTP_PORT: "1",
     SMTP_USER: `${user}_smtp`,
-    SMTP_PASSWORD: password,
+    // The app never delivers through this placeholder transport, and it must not hold the database owner password.
+    SMTP_PASSWORD: randomBytes(24).toString("base64url"),
     EMAIL_FROM: "Cubby <noreply@acceptance.invalid>",
     SMTP_SECURE: "false"
   });
@@ -2061,17 +2064,27 @@ export function createLifecycle(mode: "acceptance" | "diagnostic", serviceProbe?
         const removal = spawnSync("docker", ["image", "rm", "--force", tag], { cwd: root, env: context.env, stdio: "ignore", timeout: 120_000 });
         cleanupCommandFailed ||= Boolean(removal.error) || removal.status !== 0;
       }
-      rmSync(context.temporaryRoot, { recursive: true, force: true });
-      if (cleanupCommandFailed || p13InvitationDisposablePreflightFailureCode({
+      // A locked browser profile must not skip the residue and normal-runtime proofs.
+      try {
+        rmSync(context.temporaryRoot, { recursive: true, force: true });
+      } catch {
+        cleanupCommandFailed = true;
+      }
+      const residue = p13InvitationDisposablePreflightFailureCode({
         temporaryRootPresent: existsSync(context.temporaryRoot),
         containersPresent: Boolean(resourceCount(context, "ps")),
         volumesPresent: Boolean(resourceCount(context, "volume")),
         networksPresent: Boolean(resourceCount(context, "network")),
         imagesPresent: Boolean(resourceCount(context, "image"))
-      })) {
-        throw new Error("p1_3_invitation_acceptance_cleanup_failed");
+      });
+      let normalRuntimeFailure: unknown;
+      try {
+        verifyP13InvitationNormalRuntime();
+      } catch (error) {
+        normalRuntimeFailure = error;
       }
-      verifyP13InvitationNormalRuntime();
+      if (cleanupCommandFailed || residue) throw new Error("p1_3_invitation_acceptance_cleanup_failed");
+      if (normalRuntimeFailure) throw normalRuntimeFailure;
     }
   };
 }

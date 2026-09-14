@@ -312,17 +312,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "9e951c62e516032d3a1107fa6ef254ed1c359280e374761ad1c3ce469259e01f",
+          "digest": "34c0bea46a475b00fbdc8f64eae50054d0096c174482593a8b587385a4adb7bb",
           "file": "src/app/api/auth/[...all]/route.ts"
         }
       ],
       "declarationDigest": "63819b3ed37e8cc75fcb9d117fdd5ecdc36cb9ba86ca4061f8b90ccf258975f3",
-      "fingerprint": "4a8ab91aa532f4a1b326f516308a4409c76758579ec50f2322343d288d7a22fb",
+      "fingerprint": "3354b3e449325ced3251bd1176b82902fdf5c76f18417883fe0e3422479da3b1",
       "id": "fingerprint:api_route:src/app/api/auth/[...all]/route.ts",
       "ownerId": "api_route:src/app/api/auth/[...all]/route.ts",
       "ownerModule": "src/app/api/auth/[...all]/route.ts",
       "sidecarPath": "src/app/api/auth/[...all]/route.operation.ts",
-      "sourceDigest": "04600f00e2a31c29e0bc4499daacbac09dc599ea3c2c1ae8e93d68d4207d6c68",
+      "sourceDigest": "12a54830f8dd7c5b915abbd98791ea9a11c0a221407d0f310b997d13fdcf8c83",
       "status": "declared"
     },
     {
@@ -2844,17 +2844,17 @@
           "file": "package.json"
         },
         {
-          "digest": "54322234ff73e4ae4f0db80a5dc29a02a2d1812950c91f6c5c4e8daa2f7cb524",
+          "digest": "32267ef1820f24f4ba146a645369c45031e9970a53d64d0d221b78adc9cbdb9c",
           "file": "scripts/p1-3-invitation.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "3b670fe4e766bf45be30bd0702beb9b5b9aabfed437b65d3ddd52e9eb918529e",
-      "fingerprint": "9223e98f2fee1da33860c4172fa24e7c009ec3d3397de87304d53ee78da210cf",
+      "fingerprint": "3f8508884d725cfb9d8934dc146d3a8ebbdff32a24282f7c486fcda8d928a182",
       "id": "fingerprint:package_command:scripts/p1-3-invitation.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/p1-3-invitation.acceptance-rehearsal.ts",
       "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "36e44e0405a383f491b88e37d9f171808d9ed7446c6466461615fc229c9df097",
+      "sourceDigest": "bc44e95f1ad150a3360f73950d87e0e11adae72f35f467e51d6becdad1fb34f7",
       "status": "declared"
     },
     {
@@ -3180,11 +3180,11 @@
   ],
   "generatorDigest": "5e27d4af8e61194d4b8ed9c5be2ba6f8478914cf5ba7a18c2dde52219476fd16",
   "generatorVersion": "r0.1",
-  "observationDigest": "79654f86a12b7ad0ece9fc96cccea4652690f47a5e38400d558e682686504c33",
+  "observationDigest": "9535bd486b2b2f25d88c1b50fa51a49d1324d281d7ac2e9adda4056d86eca6f5",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "1ecfab1be8780e975fe20c81595d22eb180ea900009fa0ef2467b6d159afcbca",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "0e2f45a917f55428f010adbdfa78c7f6f2537a72a3550f92bace9ecd9a8180d3",
+  "registryDigest": "210732693bb0e52c0d1295f28541df381eb8ac814abe81bf205a4845220d63f6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

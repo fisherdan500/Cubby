@@ -225,7 +225,10 @@ and an unbound open claim never changes anyone's classification, so an unfinishe
 declined, revoked or expired invitation cannot remove an established member's
 household access. Such a member completes recovery readiness and acceptance from
 that ordinary session; the invitation procedures still authorize each step from the
-bound setup row, operation binding, session and signed attestation.
+bound setup row, operation binding, session and signed attestation. Once a setup is
+`accepted`, invitation recovery enrollment and rehearsal refuse it, so a member cannot move
+their own setup back out of `accepted`
+(`20260914120000_invitation_recovery_accepted_state_guard`).
 A setup row already anchored to a different invitation fails the bind closed with the
 neutral result; re-inviting such an account is not yet supported.
 

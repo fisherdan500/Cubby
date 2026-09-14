@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   writeEvent: vi.fn(),
   queryRaw: vi.fn(),
   transaction: vi.fn(),
-  takeRejection: vi.fn()
+  takeRejection: vi.fn(),
+  runRejectionScope: vi.fn()
 }));
 
 const fsMocks = vi.hoisted(() => ({ writeFileSync: vi.fn() }));
@@ -33,7 +34,8 @@ vi.mock("@/server/services/sign-in-email-throttle", () => ({
   runEmailSignInThrottleCarrier: mocks.runCarrier
 }));
 vi.mock("@/server/auth/acceptance-sign-in-rejection", () => ({
-  takeBetterAuthSignInRejection: mocks.takeRejection
+  takeBetterAuthSignInRejection: mocks.takeRejection,
+  runWithBetterAuthSignInRejectionScope: mocks.runRejectionScope
 }));
 vi.mock("node:fs", () => fsMocks);
 import { GET, POST } from "@/app/api/auth/[...all]/route";
@@ -49,6 +51,7 @@ beforeEach(() => {
   mocks.authHandler.mockResolvedValue(new Response(null, { status: 200 }));
   mocks.configuredKey.mockReturnValue(Buffer.alloc(32, 1).toString("base64url"));
   mocks.runCarrier.mockResolvedValue(new Response(null, { status: 200 }));
+  mocks.runRejectionScope.mockImplementation((action: () => unknown) => action());
 });
 
 afterAll(() => {
@@ -105,10 +108,10 @@ describe("global auth route boundary", () => {
     expect(fsMocks.writeFileSync).toHaveBeenCalledOnce();
   });
 
-  it("refines invalid credentials with the fixed Better Auth rejection category after clearing stale categories", async () => {
+  it("refines invalid credentials with the fixed Better Auth rejection category from its own request scope", async () => {
     process.env.CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL = "1";
     process.env.CUBBY_P13_ACCEPTANCE_SIGN_IN_CARRIER_STAGE_FILE = carrierStagePath;
-    mocks.takeRejection.mockReturnValueOnce("user-not-found").mockReturnValueOnce("password-mismatch").mockReturnValueOnce(undefined);
+    mocks.takeRejection.mockReturnValueOnce("password-mismatch").mockReturnValueOnce(undefined);
 
     await POST(new Request("http://localhost/api/auth/sign-in/email", { method: "POST" }));
     const dependencies = mocks.runCarrier.mock.calls[0]?.[1] as {
@@ -118,10 +121,28 @@ describe("global auth route boundary", () => {
     dependencies.observeFailureStage?.("invalid-credentials");
     dependencies.observeFailureStage?.("parse");
 
-    expect(mocks.takeRejection).toHaveBeenCalledTimes(3);
+    expect(mocks.takeRejection).toHaveBeenCalledTimes(2);
     expect(fsMocks.writeFileSync.mock.calls.map((call) => call[1])).toEqual([
       "invalid-credentials-password-mismatch\n", "invalid-credentials-unclassified\n", "parse\n"
     ]);
+  });
+
+  it("opens a per-request rejection scope around the carrier only behind the exact acceptance guards", async () => {
+    process.env.CUBBY_P13_ACCEPTANCE_ROUTE_SENTINEL = "1";
+    process.env.CUBBY_P13_ACCEPTANCE_SIGN_IN_CARRIER_STAGE_FILE = carrierStagePath;
+
+    await POST(new Request("http://localhost/api/auth/sign-in/email", { method: "POST" }));
+
+    expect(mocks.runRejectionScope).toHaveBeenCalledOnce();
+    expect(mocks.runCarrier).toHaveBeenCalledOnce();
+    expect(mocks.runRejectionScope.mock.invocationCallOrder[0]).toBeLessThan(mocks.runCarrier.mock.invocationCallOrder[0]!);
+  });
+
+  it("does not open a rejection scope for ordinary sign-in", async () => {
+    await POST(new Request("http://localhost/api/auth/sign-in/email", { method: "POST" }));
+
+    expect(mocks.runRejectionScope).not.toHaveBeenCalled();
+    expect(mocks.runCarrier).toHaveBeenCalledOnce();
   });
 
   it("does not attach the carrier observer for a mismatched acceptance path", async () => {

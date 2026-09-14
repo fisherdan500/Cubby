@@ -146,7 +146,7 @@ describe("invitation browser harness behavioral boundaries", () => {
   });
 
   it("supplies generated SMTP settings before the compiled app starts its delivery scheduler", () => {
-    const { safeEnvironment } = load(["hostExecutableEnvironment", "safeEnvironment"], { process: { env: {} } });
+    const { safeEnvironment } = load(["hostExecutableEnvironment", "safeEnvironment"], { process: { env: {} }, randomBytes: () => Buffer.from("distinct-smtp-secret") });
     const environment = safeEnvironment("generated_user", "generated_database", "generated_password");
     const createTransport = vi.fn(() => ({ sendMail: vi.fn() })) as never;
 
@@ -155,8 +155,17 @@ describe("invitation browser harness behavioral boundaries", () => {
       host: "127.0.0.1",
       port: 1,
       secure: false,
-      auth: { user: "generated_user_smtp", pass: "generated_password" }
+      auth: { user: "generated_user_smtp", pass: Buffer.from("distinct-smtp-secret").toString("base64url") }
     }));
+  });
+
+  it("never hands the disposable database owner password to the app as its SMTP password", () => {
+    const { safeEnvironment } = load(["hostExecutableEnvironment", "safeEnvironment"], { process: { env: {} }, randomBytes: () => Buffer.from("distinct-smtp-secret") });
+    const environment = safeEnvironment("generated_user", "generated_database", "generated_password");
+
+    expect(environment.CUBBY_BROWSER_OPERATION_ACCEPTANCE_PASSWORD).toBe("generated_password");
+    expect(environment.SMTP_PASSWORD).toBe(Buffer.from("distinct-smtp-secret").toString("base64url"));
+    expect(environment.SMTP_PASSWORD).not.toBe("generated_password");
   });
 
   it("keeps its deadline when the wall clock moves backwards", async () => {
@@ -407,6 +416,33 @@ describe("invitation browser harness behavioral boundaries", () => {
     await lifecycle.verifyInvitationRuntime();
     expect(probe.mock.calls.length).toBe(1);
     expect(defaultProbe.mock.calls.length).toBe(0);
+  });
+
+  it("still proves residue absence and normal-runtime non-effect when temporary-root removal fails", async () => {
+    let removalAttempted = false;
+    const resourceCount = vi.fn(() => "");
+    const verifyP13InvitationNormalRuntime = vi.fn();
+    const { createLifecycle } = load(["createLifecycle", "p13InvitationDisposablePreflightFailureCode"], {
+      process: { env: { CUBBY_P13_INVITATION_LIFECYCLE_SUFFIX: "0123456789abcdef" }, stdout: { write() {} } },
+      randomBytes: () => Buffer.from("generated"),
+      safeEnvironment: () => ({ CUBBY_BROWSER_OPERATION_ACCEPTANCE_PASSWORD: "generated" }),
+      workerRuntime: "C:/Projects/Cubby/worker-runtime",
+      root: "C:/Projects/Cubby/worktrees/Cubby/p1-3-post-merge-hardening",
+      composeFile: "compose.yml",
+      dirname,
+      existsSync: () => removalAttempted,
+      mkdirSync: () => {},
+      configureP13InvitationBrowserEnvironment: () => {},
+      spawnSync: () => ({ status: 0 }),
+      rmSync: () => { removalAttempted = true; throw new Error("synthetic locked profile"); },
+      resourceCount,
+      verifyP13InvitationNormalRuntime
+    });
+    const lifecycle = createLifecycle("diagnostic");
+
+    await expect(lifecycle.cleanup()).rejects.toThrow("p1_3_invitation_acceptance_cleanup_failed");
+    expect(resourceCount).toHaveBeenCalled();
+    expect(verifyP13InvitationNormalRuntime).toHaveBeenCalledOnce();
   });
 
   it("uses a pre-reserved disposable project and temporary root before resource creation", () => {
@@ -954,7 +990,7 @@ describe("invitation browser harness behavioral boundaries", () => {
       "p1_3_invitation_acceptance_browser_new_user_sign_in_session_without_activity",
       "p1_3_invitation_acceptance_browser_new_user_sign_in_session_with_activity"
     ]) expect(source).toContain(`"${code}"`);
-    for (const stage of ["lookup", "precheck", "handler", "failure_recording"]) {
+    for (const stage of ["lookup", "precheck", "handler", "failure_recording", "handler_ok"]) {
       expect(source).toContain(`"p1_3_invitation_acceptance_browser_new_user_sign_in_carrier_${stage}"`);
     }
   });
@@ -982,7 +1018,7 @@ describe("invitation browser harness behavioral boundaries", () => {
     expect(source).toContain("p1_3_invitation_acceptance_browser_existing_recipient_sign_in_denial_probe_failed: /^(?:credential_account_absent|session_created|throttle_quiet|failure_recorded_only|no_evidence)$/");
     expect(source).toContain('context.env, "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_denial_probe_failed")');
     expect(source).not.toContain('context.env, "p1_3_invitation_acceptance_browser_existing_recipient_sign_in_denial_no_evidence")');
-    for (const stage of ["parse", "invalid_credentials_user_not_found", "invalid_credentials_credential_account_not_found", "invalid_credentials_password_not_found", "invalid_credentials_password_mismatch", "invalid_credentials_unclassified"]) {
+    for (const stage of ["handler_ok", "parse", "invalid_credentials_user_not_found", "invalid_credentials_credential_account_not_found", "invalid_credentials_password_not_found", "invalid_credentials_password_mismatch", "invalid_credentials_unclassified"]) {
       expect(source).toContain(`"p1_3_invitation_acceptance_browser_existing_recipient_sign_in_carrier_${stage}"`);
     }
   });
