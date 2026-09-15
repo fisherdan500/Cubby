@@ -49,6 +49,7 @@ COPY --from=builder /app/dist/provision-invitation-runtime-roles.mjs ./provision
 COPY --from=builder /app/dist/provision-fresh-auth-attestation-keys.mjs ./provision-fresh-auth-attestation-keys.mjs
 COPY --from=builder /app/dist/provision-email-delivery-keys.mjs ./provision-email-delivery-keys.mjs
 COPY --from=builder /app/dist/provision-global-security-throttle-key.mjs ./provision-global-security-throttle-key.mjs
+COPY --from=builder /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs
 COPY --from=builder /app/dist/security-operator.mjs ./security-operator.mjs
 COPY --from=builder /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs
 COPY --from=builder /app/dist/p1-3-node-builtin-probe.mjs /app/scripts/p1-3-node-builtin-probe.mjs

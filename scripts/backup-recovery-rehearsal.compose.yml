@@ -5,6 +5,9 @@ services:
       POSTGRES_DB: cubby_backup_rehearsal
       POSTGRES_USER: cubby_rehearsal
       POSTGRES_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_PASSWORD:?rehearsal password required}
+      # Deliberately non-UTC, like a production volume initialized with a local TZ: the app's
+      # database_timezone startup phase must still pin every connection to UTC so sign-in works.
+      TZ: America/New_York
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cubby_rehearsal -d cubby_backup_rehearsal"]
       interval: 2s

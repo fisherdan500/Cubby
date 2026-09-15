@@ -52,6 +52,10 @@ if ! DATABASE_URL="$MIGRATION_DATABASE_URL" node provision-invitation-runtime-ro
 fi
 unset CUBBY_INVITATION_RUNTIME_DB_PASSWORD CUBBY_INVITATION_EXPIRY_DB_PASSWORD CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD
 unset CUBBY_SECURITY_OPERATOR_DB_PASSWORD
+if ! CUBBY_RUNTIME_DATABASE_URL="$DATABASE_URL" DATABASE_URL="$MIGRATION_DATABASE_URL" node provision-database-timezone.mjs >/dev/null 2>&1; then
+  write_startup_status database_timezone failed >&2
+  exit 1
+fi
 if ! printf 'SELECT 1;' | DATABASE_URL="$MIGRATION_DATABASE_URL" node node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma >/dev/null 2>&1; then
   write_startup_status migration_connection failed >&2
   exit 1

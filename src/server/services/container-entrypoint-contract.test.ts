@@ -98,6 +98,7 @@ describe("container entrypoint contract", () => {
       "/app/scripts/household-deletion-readiness-guard.mjs",
       "provision-security-runtime-role.mjs",
       "provision-invitation-runtime-roles.mjs",
+      "provision-database-timezone.mjs",
       "node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma",
       "node_modules/prisma/build/index.js migrate deploy",
       "provision-fresh-auth-attestation-keys.mjs",
@@ -173,6 +174,7 @@ describe("container entrypoint contract", () => {
       "/app/scripts/household-deletion-readiness-guard.mjs",
       "provision-security-runtime-role.mjs",
       "provision-invitation-runtime-roles.mjs",
+      "provision-database-timezone.mjs",
       "node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma"
     ]);
     expect(output).toContain("cubby_startup phase=migration_connection status=failed");
@@ -235,6 +237,7 @@ describe("container entrypoint contract", () => {
       "/app/scripts/household-deletion-readiness-guard.mjs key=present migrator=present runtime=present auth=present delivery=present operator=present operator_url=present",
       "provision-security-runtime-role.mjs key= migrator= runtime= auth= delivery= operator=present operator_url=",
       "provision-invitation-runtime-roles.mjs key= migrator= runtime= auth= delivery= operator=present operator_url=",
+      "provision-database-timezone.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",
       "node_modules/prisma/build/index.js key= migrator= runtime= auth= delivery= operator= operator_url=",
       "node_modules/prisma/build/index.js key= migrator= runtime= auth= delivery= operator= operator_url=",
       "provision-fresh-auth-attestation-keys.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",

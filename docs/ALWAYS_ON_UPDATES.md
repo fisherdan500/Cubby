@@ -167,7 +167,10 @@ After preflight succeeds and the write freeze is in effect:
    ```
 
 5. Require migration `starting` then `succeeded`, followed by server `starting`.
-   If migration reports `failed`, stop. The server must not start.
+   If migration reports `failed`, stop. The server must not start. A
+   `database_timezone failed` marker means PostgreSQL or a database role is not
+   pinned to UTC; stop and correct it before retrying, because non-UTC sessions
+   break session-security guards and sign-in.
 6. Wait for both services to report healthy:
 
    ```bash
