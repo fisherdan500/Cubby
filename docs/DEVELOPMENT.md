@@ -545,6 +545,17 @@ Do not use browser timezone or per-baby timezone for current app grouping. Use
 `APP_TIMEZONE` and existing time helpers. Store timestamps as instants, then
 format/group for display using the app timezone.
 
+PostgreSQL itself must run in UTC. Prisma writes JavaScript `Date` values as
+UTC into `timestamp without time zone` columns, while database guards compare
+them with `clock_timestamp()` in the session time zone, so a non-UTC database
+makes app-written instants look hours in the future and fails security guards
+(this once blocked every new sign-in). The container entrypoint's
+`database_timezone` phase runs `ALTER DATABASE ... SET timezone TO 'UTC'` on
+every start and refuses to boot if any role-level override or the runtime
+connection is not UTC. Keep `TZ: UTC` on the postgres service; `APP_TIMEZONE`
+is an app-only display setting. The disposable backup rehearsal deliberately
+initializes PostgreSQL with `TZ: America/New_York` to catch regressions.
+
 ### Sprout Import
 
 Sprout import is a clean-room data importer, not a database restore. It should
