@@ -214,7 +214,7 @@ export function RegistrationSettingsForm({
           </span>
         </span>
       </label>
-      {error ? <p className="rounded-md bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p className="rounded-md bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
       <Button disabled={saving}>{saving ? "Saving…" : "Save registration policy"}</Button>
     </form>
   );

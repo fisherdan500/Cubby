@@ -20,7 +20,8 @@ import {
 import { displayLabel } from "@/lib/display-label";
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
-import { dateTimeInputValue } from "@/lib/timezone";
+import { addMinutes, formatClock, formatMinutes, isWallTime, minutesBetween, nowWallTime } from "@/lib/wall-time";
+import { useFollowNow, WhenField, type WhenValue } from "@/components/forms/when-field";
 
 type BabyOption = { id: string; name: string };
 type ActivityOperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
@@ -80,6 +81,19 @@ export function ActivityForm({
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
   const cancelHref = activityFormCancelHref({ returnTo, babyId: defaultBaby, returnDate, allowActivityDestination });
+  const timed = timerActivityTypes.includes(type as (typeof timerActivityTypes)[number]);
+  const savedStart = textValue(initial?.startedAt);
+  const savedEnd = textValue(initial?.endedAt);
+  const savedOccurred = textValue(initial?.occurredAt);
+  const [when, setWhen] = useState<WhenValue>(() => {
+    const saved = timed && isWallTime(savedStart) ? savedStart : savedOccurred;
+    return isWallTime(saved) ? { value: saved, followsNow: false } : { value: nowWallTime(appTimeZone), followsNow: true };
+  });
+  const [lengthMinutes, setLengthMinutes] = useState<number | null>(() =>
+    isWallTime(savedStart) && isWallTime(savedEnd) ? Math.max(0, minutesBetween(savedStart, savedEnd)) : null
+  );
+  const [activeTimer, setActiveTimer] = useState(false);
+  useFollowNow(when, setWhen, appTimeZone);
 
   function clearOperation(storageKey: string) {
     try {
@@ -182,23 +196,31 @@ export function ActivityForm({
         </div>
       </div>
       <FormSection title="When">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block space-y-2 text-sm font-semibold">
-            Baby
-            <select name="babyId" defaultValue={defaultBaby} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2">
-              {babies.map((baby) => (
-                <option key={baby.id} value={baby.id}>
-                  {baby.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-2 text-sm font-semibold">
-            Time
-            <Input name="occurredAt" type="datetime-local" defaultValue={String(initial?.occurredAt ?? localDateTimeValue(undefined, appTimeZone))} required />
-          </label>
-        </div>
-        {timeRangeFields(type, initial)}
+        <label className="block space-y-2 text-sm font-semibold">
+          Baby
+          <select name="babyId" defaultValue={defaultBaby} className={selectClass}>
+            {babies.map((baby) => (
+              <option key={baby.id} value={baby.id}>
+                {baby.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <WhenField label={timed ? "Started" : "Time"} when={when} onChange={setWhen} timeZone={appTimeZone} />
+        <input type="hidden" name="occurredAt" value={when.value} />
+        {timed ? (
+          <>
+            <input type="hidden" name="startedAt" value={when.value} />
+            <input type="hidden" name="endedAt" value={!activeTimer && lengthMinutes ? addMinutes(when.value, lengthMinutes) : ""} />
+            {activeTimer ? null : <LengthField minutes={lengthMinutes} onChange={setLengthMinutes} start={when.value} />}
+            {!activityIdField(initial) ? (
+              <label className="flex min-h-11 items-center gap-3 text-sm font-semibold">
+                <input name="activeTimer" type="checkbox" checked={activeTimer} onChange={(event) => setActiveTimer(event.target.checked)} className="h-5 w-5" />
+                Still going — start a timer instead
+              </label>
+            ) : null}
+          </>
+        ) : null}
       </FormSection>
 
       <FormSection title="Details">{typeFields(type, initial, unitPreferences, medicineNames, supplementNames)}</FormSection>
@@ -210,7 +232,7 @@ export function ActivityForm({
         </label>
       </FormSection>
 
-      {error ? <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
       <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-card/95 p-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <div className="grid grid-cols-2 gap-2 md:flex md:justify-end">
           <Link
@@ -238,30 +260,60 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-function localDateTimeValue(date: Date | undefined, timeZone: string) {
-  return dateTimeInputValue(date, timeZone);
-}
+const selectClass = "min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2 text-base sm:text-sm";
+const lengthPresets = [5, 10, 15, 20, 30, 45, 60];
 
-function timeRangeFields(type: ActivityTypeName, initial?: Record<string, unknown>) {
-  if (!timerActivityTypes.includes(type as (typeof timerActivityTypes)[number])) return null;
+function LengthField({ minutes, onChange, start }: { minutes: number | null; onChange: (minutes: number | null) => void; start: string }) {
+  const custom = minutes !== null && !lengthPresets.includes(minutes);
+  const [showCustom, setShowCustom] = useState(custom);
+  const pill = "inline-flex min-h-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors";
+  const on = "border-primary bg-primary text-primary-foreground";
+  const off = "border-border bg-card hover:bg-muted";
+
   return (
-    <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block space-y-2 text-sm font-semibold">
-          Start
-          <Input name="startedAt" type="datetime-local" defaultValue={String(initial?.startedAt ?? "")} />
-        </label>
-        <label className="block space-y-2 text-sm font-semibold">
-          End
-          <Input name="endedAt" type="datetime-local" defaultValue={String(initial?.endedAt ?? "")} />
-        </label>
+    <div role="group" aria-label="How long" className="space-y-2">
+      <p className="text-sm font-semibold">
+        How long <span className="font-normal text-muted-foreground">(optional)</span>
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {lengthPresets.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            aria-pressed={minutes === preset}
+            onClick={() => {
+              setShowCustom(false);
+              onChange(minutes === preset ? null : preset);
+            }}
+            className={`${pill} ${minutes === preset ? on : off}`}
+          >
+            {formatMinutes(preset)}
+          </button>
+        ))}
+        <button type="button" aria-pressed={showCustom} onClick={() => setShowCustom(!showCustom)} className={`${pill} ${showCustom ? on : off}`}>
+          Other
+        </button>
       </div>
-      {!activityIdField(initial) ? (
+      {showCustom ? (
         <label className="flex items-center gap-2 text-sm font-semibold">
-          <input name="activeTimer" type="checkbox" />
-          Start active timer
+          Minutes
+          <Input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            step="1"
+            value={custom ? String(minutes) : ""}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              onChange(Number.isInteger(next) && next > 0 ? next : null);
+            }}
+            className="w-28"
+          />
         </label>
       ) : null}
+      <p className="text-xs font-semibold text-muted-foreground" aria-live="polite">
+        {minutes ? `Ends ${formatClock(addMinutes(start, minutes))} · ${formatMinutes(minutes)}` : "No length — tap one if you know it."}
+      </p>
     </div>
   );
 }
@@ -577,7 +629,7 @@ function Select({
   return (
     <label className="block space-y-2 text-sm font-semibold">
       {label}
-      <select name={name} defaultValue={defaultValue} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 py-2">
+      <select name={name} defaultValue={defaultValue} className={selectClass}>
         {options.map((option) => (
           <option key={option || "none"} value={option}>
             {displayLabel(option)}
