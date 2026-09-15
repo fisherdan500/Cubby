@@ -1,10 +1,11 @@
 "use client";
 
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { Clock3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   addMinutes,
+  formatClock,
+  formatDay,
   formatMinutes,
   formatRelative,
   formatWall,
@@ -19,7 +20,11 @@ import {
 const quickOffsets = [0, 5, 15, 30, 60];
 const nudges = [-5, -1, 1, 5];
 const chip =
-  "inline-flex min-h-11 items-center justify-center rounded-full border border-border bg-card px-3 text-sm font-semibold transition-colors hover:bg-muted active:bg-border";
+  "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-border bg-card px-3 text-sm font-semibold transition-colors hover:bg-muted active:bg-border";
+const chipOn = "border-primary bg-primary text-primary-foreground hover:bg-primary active:bg-primary";
+
+/** One swipeable row of chips; keeps the form a single column tall instead of wrapping into blocks. */
+export const scrollRow = "-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 export type WhenValue = { value: string; followsNow: boolean };
 
@@ -69,19 +74,18 @@ export function WhenField({
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-left transition hover:bg-muted focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/20"
+        className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-border bg-card py-1.5 pl-3 pr-1.5 text-left transition hover:bg-muted focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/20"
       >
-        <Clock3 aria-hidden="true" className="h-5 w-5 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
-          <span className="block text-lg font-bold leading-tight">{formatWall(when.value, now)}</span>
+          <span className="block text-lg font-bold leading-tight tabular-nums">{formatClock(when.value)}</span>
           <span className="block text-xs font-semibold text-muted-foreground">
-            {when.followsNow ? "Now · updates until you save" : formatRelative(when.value, now)}
+            {formatDay(when.value, now)} · {when.followsNow ? "Now" : formatRelative(when.value, now)}
           </span>
         </span>
-        <span className="text-sm font-semibold text-primary">Change</span>
+        <span className="inline-flex min-h-11 items-center rounded-md bg-muted px-3 text-sm font-bold">Change</span>
       </button>
       {future ? <p className="text-xs font-semibold text-danger">This time is in the future.</p> : null}
-      <div className="flex flex-wrap gap-2">
+      <div className={scrollRow}>
         {quickOffsets.map((offset) => {
           const active = offset === 0 ? when.followsNow : !when.followsNow && when.value === addMinutes(now, -offset);
           return (
@@ -90,26 +94,12 @@ export function WhenField({
               type="button"
               aria-pressed={active}
               onClick={() => set(addMinutes(nowWallTime(timeZone), -offset), offset === 0)}
-              className={cn(chip, active && "border-primary bg-primary text-primary-foreground hover:bg-primary active:bg-primary")}
+              className={cn(chip, active && chipOn)}
             >
               {offset === 0 ? "Now" : `${formatMinutes(offset)} ago`}
             </button>
           );
         })}
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {nudges.map((minutes) => (
-          <button
-            key={minutes}
-            type="button"
-            aria-label={`${Math.abs(minutes)} ${Math.abs(minutes) === 1 ? "minute" : "minutes"} ${minutes < 0 ? "earlier" : "later"}`}
-            onClick={() => set(addMinutes(when.value, minutes))}
-            className={cn(chip, "rounded-lg tabular-nums")}
-          >
-            {minutes < 0 ? "−" : "+"}
-            {Math.abs(minutes)}
-          </button>
-        ))}
       </div>
       <p aria-live="polite" className="sr-only">
         {announcement}
@@ -215,7 +205,7 @@ function TimeSheet({
                 type="button"
                 aria-pressed={draft.date === day.date}
                 onClick={() => setDraft({ ...draft, date: day.date })}
-                className={cn(chip, "rounded-lg", draft.date === day.date && "border-primary bg-primary text-primary-foreground hover:bg-primary")}
+                className={cn(chip, "rounded-lg", draft.date === day.date && chipOn)}
               >
                 {day.label}
               </button>
@@ -230,6 +220,20 @@ function TimeSheet({
                 className="min-h-11 w-full rounded-lg border border-border bg-card px-2 text-base font-semibold sm:text-sm"
               />
             </label>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {nudges.map((minutes) => (
+              <button
+                key={minutes}
+                type="button"
+                aria-label={`${Math.abs(minutes)} ${Math.abs(minutes) === 1 ? "minute" : "minutes"} ${minutes < 0 ? "earlier" : "later"}`}
+                onClick={() => setDraft(wallParts(addMinutes(draftValue, minutes)))}
+                className={cn(chip, "rounded-lg tabular-nums")}
+              >
+                {minutes < 0 ? "−" : "+"}
+                {Math.abs(minutes)}
+              </button>
+            ))}
           </div>
           <div className="relative grid grid-cols-3 gap-2 rounded-xl bg-surface-soft p-2">
             <div aria-hidden="true" className="pointer-events-none absolute inset-x-2 top-1/2 h-11 -translate-y-1/2 rounded-lg bg-muted" />

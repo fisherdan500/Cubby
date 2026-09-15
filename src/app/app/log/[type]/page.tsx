@@ -29,7 +29,7 @@ export default async function LogActivityPage({
   return (
     <AppShell title={`Log ${activityLabels[type]}`} userName={user.name}>
       <div>
-        <Card className="mx-auto max-w-2xl">
+        <Card className="mx-auto max-w-lg">
           {babies.length ? (
             <ActivityForm
               babies={babies}

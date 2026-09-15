@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
+import { parseUnitPreferences } from "@/domain/unit-preferences";
 import { activityDetailHref } from "@/lib/activity-navigation";
 import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calendar-layout";
 import { requireUserPage } from "@/server/auth/session";
@@ -290,7 +291,7 @@ function CalendarDrawer({
                         <p className="font-black">{activityLabels[type]}</p>
                         <p className="text-xs font-bold text-muted-foreground">{formatTime(activity.occurredAt, calendar.timezone)}</p>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity)}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity, { volume: parseUnitPreferences(calendar.home.household.settings?.unitPreferences).volume })}</p>
                     </Link>
                   );
                 })}

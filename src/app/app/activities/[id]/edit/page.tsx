@@ -32,7 +32,7 @@ export default async function EditActivityPage({ params, searchParams }: { param
 
   return (
     <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
-      <div className="mx-auto max-w-2xl space-y-4">
+      <div className="mx-auto max-w-lg space-y-4">
         <Card>
           <ActivityForm
             babies={babies}

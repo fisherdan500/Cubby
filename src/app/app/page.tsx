@@ -16,6 +16,8 @@ import {
   type DailySummaryActivityType
 } from "@/domain/activity";
 import { hasPermission } from "@/domain/roles";
+import { parseUnitPreferences } from "@/domain/unit-preferences";
+import type { VolumeUnit } from "@/domain/units";
 import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
 import { activityDetailHref } from "@/lib/activity-navigation";
 import { requireUserPage } from "@/server/auth/session";
@@ -112,6 +114,7 @@ export default async function DashboardPage({
                 activities={visibleActivities}
                 timeZone={currentDashboard.selectedDate.timezone}
                 returnTo={dashboardReturnTo(baby.id, currentDashboard.selectedDate.key, selectedSummaryType)}
+                volume={parseUnitPreferences(currentDashboard.home.household.settings?.unitPreferences).volume}
               />
             )}
           </section>
@@ -398,7 +401,7 @@ function dashboardReturnTo(babyId: string, date: string, selectedType?: DailySum
 
 type TimelineActivity = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
 
-function Timeline({ activities, timeZone, returnTo }: { activities: TimelineActivity[]; timeZone: string; returnTo: string }) {
+function Timeline({ activities, timeZone, returnTo, volume }: { activities: TimelineActivity[]; timeZone: string; returnTo: string; volume: VolumeUnit }) {
   const groups = activities.reduce<Record<string, TimelineActivity[]>>((acc, activity) => {
     const label = periodLabel(activity.occurredAt, timeZone);
     acc[label] = acc[label] ?? [];
@@ -426,7 +429,7 @@ function Timeline({ activities, timeZone, returnTo }: { activities: TimelineActi
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="font-black">{activityLabels[type]}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity)}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity, { volume })}</p>
                     </div>
                     <p className="shrink-0 text-right text-xs font-semibold text-muted-foreground">
                       {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
