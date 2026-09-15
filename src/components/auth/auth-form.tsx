@@ -52,7 +52,7 @@ export function AuthForm({
         Password
         <Input name="password" type="password" autoComplete="current-password" required minLength={8} aria-invalid={error ? true : undefined} aria-describedby={error ? "sign-in-error" : undefined} />
       </label>
-      {error ? <p ref={errorRef} id="sign-in-error" role="alert" aria-live="assertive" aria-atomic="true" tabIndex={-1} className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p ref={errorRef} id="sign-in-error" role="alert" aria-live="assertive" aria-atomic="true" tabIndex={-1} className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Working..." : "Sign in"}
       </Button>

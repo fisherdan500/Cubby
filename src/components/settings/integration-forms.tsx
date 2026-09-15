@@ -85,7 +85,7 @@ export function WebhookForm() {
       <Input name="name" placeholder="Webhook name" required />
       <Input name="url" type="url" placeholder="https://example.com/cubby" required />
       <Input name="events" defaultValue="activity_created,activity_updated,activity_deleted,timer_started,timer_stopped" />
-      {error ? <p className="rounded-md bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p className="rounded-md bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
       <Button>Create webhook</Button>
     </form>
   );

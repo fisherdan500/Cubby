@@ -111,7 +111,7 @@ export function UnitPreferencesForm({ preferences, medicineNames, supplementName
     </div></section>
     <ItemUnits title="Medicine dose units" kind="medicine" names={medicineNames} units={preferences.medicineUnits} />
     <ItemUnits title="Supplement dose units" kind="supplement" names={supplementNames} units={preferences.supplementUnits} />
-    {error ? <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+    {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
     {saved ? <p role="status" className="rounded-lg bg-primary/10 p-3 text-sm font-semibold text-primary">Unit defaults saved.</p> : null}
     <Button type="submit" disabled={submitting}>{submitting ? "Saving..." : "Save unit defaults"}</Button>
   </form>;

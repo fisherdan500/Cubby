@@ -41,7 +41,7 @@ export function OnboardingForm() {
         <Input name="birthDate" type="date" />
       </label>
       <Textarea className="hidden" aria-hidden />
-      {error ? <p className="rounded-lg bg-red-500/10 p-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
       <Button className="w-full">Start tracking</Button>
     </form>
   );
