@@ -12,6 +12,8 @@ import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { listActivities } from "@/server/services/activities";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
+import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
+import type { VolumeUnit } from "@/domain/units";
 
 type HistoryActivity = Awaited<ReturnType<typeof listActivities>>[number];
 
@@ -22,12 +24,15 @@ export default async function HistoryPage({
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
-  const activityResults = await listActivities({
-    babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
-    type: searchParams.type,
-    search: searchParams.search,
-    page: historyPageQuery(searchParams.cursor)
-  });
+  const [activityResults, unitSettings] = await Promise.all([
+    listActivities({
+      babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
+      type: searchParams.type,
+      search: searchParams.search,
+      page: historyPageQuery(searchParams.cursor)
+    }),
+    getActivityUnitPreferences()
+  ]);
   const { items: activities, nextCursor } = paginateHistoryItems(activityResults);
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const returnTo = historyHref({
@@ -99,7 +104,7 @@ export default async function HistoryPage({
               </div>
               <div className="space-y-2">
                 {group.activities.map((activity) => (
-                  <ActivityRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={env.APP_TIMEZONE} />
+                  <ActivityRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={env.APP_TIMEZONE} volume={unitSettings.preferences.volume} />
                 ))}
               </div>
             </section>
@@ -136,7 +141,7 @@ export default async function HistoryPage({
   );
 }
 
-function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivity; returnTo: string; timeZone: string }) {
+function ActivityRow({ activity, returnTo, timeZone, volume }: { activity: HistoryActivity; returnTo: string; timeZone: string; volume: VolumeUnit }) {
   const type = activity.type as ActivityTypeName;
   const actor = activity.actorMember.displayName ?? activity.actorMember.user.name;
   const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
@@ -157,7 +162,7 @@ function ActivityRow({ activity, returnTo, timeZone }: { activity: HistoryActivi
               {" - "}
               {actor}
             </p>
-            <p className="mt-1 line-clamp-2 text-sm">{describeActivity(activity)}</p>
+            <p className="mt-1 line-clamp-2 text-sm">{describeActivity(activity, { volume })}</p>
           </div>
         </div>
       </Link>

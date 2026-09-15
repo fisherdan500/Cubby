@@ -45,7 +45,7 @@ export function convertLength(amount: number, from: string | null | undefined, t
   return source === "in" ? amount * centimetersPerInch : amount / centimetersPerInch;
 }
 
-function normalizeVolumeUnit(unit: string): VolumeUnit | null {
+export function normalizeVolumeUnit(unit: string): VolumeUnit | null {
   const normalized = unit.trim().toLocaleLowerCase("en-US").replace(/\./g, "");
   if (["oz", "fl oz", "floz", "ounce", "ounces"].includes(normalized)) return "oz";
   if (["ml", "milliliter", "milliliters", "millilitre", "millilitres"].includes(normalized)) return "mL";

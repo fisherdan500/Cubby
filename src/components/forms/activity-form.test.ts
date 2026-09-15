@@ -29,7 +29,7 @@ function renderActivity(activityId?: string) {
 }
 
 async function submitMountedActivity(activityId?: string) {
-  const form = screen.getByRole("button", { name: activityId ? "Save changes" : "Log activity" }).closest("form") as HTMLFormElement;
+  const form = screen.getByRole("button", { name: activityId ? "Save changes" : "Log note" }).closest("form") as HTMLFormElement;
   const key = Object.keys(form).find((value) => value.startsWith("__reactProps$"));
   const props = (form as unknown as Record<string, { action: (data: FormData) => Promise<void> }>)[key!];
   await act(async () => { await props.action(new FormData(form)); });
@@ -51,8 +51,8 @@ describe("ActivityForm browser-v2 handling", () => {
     await userEvent.type(note, "Mounted carrier note");
 
     expect(note.value).toBe("Mounted carrier note");
-    expect((screen.getByRole("combobox", { name: "Baby" }) as HTMLSelectElement).value).toBe("baby-1");
-    expect(screen.getByRole("button", { name: "Log activity" })).toBeTruthy();
+    expect((document.querySelector('input[name="babyId"]') as HTMLInputElement).value).toBe("baby-1");
+    expect(screen.getByRole("button", { name: "Log note" })).toBeTruthy();
   });
 
   it.each([
@@ -69,7 +69,7 @@ describe("ActivityForm browser-v2 handling", () => {
       babies: [{ id: "baby-1", name: "Avery" }], type: "note", selectedBabyId: "baby-1", activityId, initial,
       successTo: "/done", appTimeZone: "UTC", unitPreferences: defaultUnitPreferences, medicineNames: [], supplementNames: []
     }));
-    const form = screen.getByRole("button", { name: activityId ? "Save changes" : "Log activity" }).closest("form") as HTMLFormElement;
+    const form = screen.getByRole("button", { name: activityId ? "Save changes" : "Log note" }).closest("form") as HTMLFormElement;
     const reactPropsKey = Object.keys(form).find((key) => key.startsWith("__reactProps$"));
     const props = (form as unknown as Record<string, { action: (data: FormData) => Promise<void> }>)[reactPropsKey!];
     await act(async () => { await props.action(new FormData(form)); });

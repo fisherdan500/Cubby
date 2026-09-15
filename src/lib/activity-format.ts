@@ -16,6 +16,7 @@ import type {
   SupplementLog,
   VaccineLog
 } from "@prisma/client";
+import { convertVolume, normalizeVolumeUnit, type VolumeUnit } from "@/domain/units";
 
 export type ActivityWithDetails = ActivityLog & {
   baby: Baby;
@@ -65,14 +66,28 @@ export function formatElapsedBadge(date: Date | string | null | undefined, now =
   return `${hours}:${String(rest).padStart(2, "0")}`;
 }
 
-export function describeActivity(activity: ActivityWithDetails) {
+/**
+ * Shows a volume exactly as saved; when a household display unit is given and the saved unit differs,
+ * appends an approximate conversion so mixed-unit days stay comparable. The saved value never changes.
+ */
+export function formatVolume(amount: unknown, unit: string | null | undefined, display?: VolumeUnit) {
+  const saved = `${amount} ${unit ?? ""}`.trim();
+  const source = unit ? normalizeVolumeUnit(unit) : null;
+  if (!display || !source || source === display) return saved;
+  const converted = convertVolume(Number(amount), source, display);
+  if (converted === null) return saved;
+  const rounded = display === "oz" ? Math.round(converted * 10) / 10 : Math.round(converted);
+  return `${saved} (≈ ${rounded} ${display})`;
+}
+
+export function describeActivity(activity: ActivityWithDetails, options: { volume?: VolumeUnit } = {}) {
   switch (activity.type) {
     case "feeding":
       return [
         activity.feeding?.mode,
         activity.feeding?.bottleType,
         activity.feeding?.food,
-        activity.feeding?.amount ? `${activity.feeding.amount} ${activity.feeding.unit ?? ""}`.trim() : "",
+        activity.feeding?.amount ? formatVolume(activity.feeding.amount, activity.feeding.unit, options.volume) : "",
         activity.feeding?.side ? `${activity.feeding.side} side` : "",
         formatDuration(activity.durationSeconds)
       ]
@@ -102,7 +117,7 @@ export function describeActivity(activity: ActivityWithDetails) {
         .join(" - ");
     case "pumping":
       return [
-        activity.pumping?.amount ? `${activity.pumping.amount} ${activity.pumping.unit ?? ""}`.trim() : "",
+        activity.pumping?.amount ? formatVolume(activity.pumping.amount, activity.pumping.unit, options.volume) : "",
         activity.pumping?.leftAmount ? `L ${activity.pumping.leftAmount}` : "",
         activity.pumping?.rightAmount ? `R ${activity.pumping.rightAmount}` : "",
         activity.pumping?.inventoryAction,
@@ -172,7 +187,7 @@ export function describeActivity(activity: ActivityWithDetails) {
       return [
         activity.milkInventory?.action,
         activity.milkInventory?.amount
-          ? `${activity.milkInventory.amount} ${activity.milkInventory.unit ?? ""}`.trim()
+          ? formatVolume(activity.milkInventory.amount, activity.milkInventory.unit, options.volume)
           : "",
         activity.milkInventory?.storage,
         activity.milkInventory?.label
