@@ -2288,17 +2288,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "40110e52a2f528446a3f2f5040ed23010bafa7c63c569d3ed119777722037459",
+          "digest": "53c48e9fc95ad3afe959aa01c21b23e34ed207b1f5ab67f41f05888f6fc756dc",
           "file": "src/components/invitations/invitation-workflow.tsx"
         }
       ],
       "declarationDigest": "0762bb0d3f3ddbd4a2801b3f9cf12e52aba369f7e341e0846e480f22dda1a501",
-      "fingerprint": "d3325f9a47a6ce0d75e9e5ad4c08cc11c606d5e4eec00e2eb95ef43995517ff8",
+      "fingerprint": "0b2d0de4efd6fea1a136a0e62dded203c695a336592b98d322027773c0f12daf",
       "id": "fingerprint:client_binding:src/components/invitations/invitation-workflow.tsx",
       "ownerId": "client_binding:src/components/invitations/invitation-workflow.tsx",
       "ownerModule": "src/components/invitations/invitation-workflow.tsx",
       "sidecarPath": "src/components/invitations/invitation-workflow.operation.ts",
-      "sourceDigest": "7fc5f3319371ac8b91bcbf68018ef1bf27788df841e8a6e1aac863269a05945b",
+      "sourceDigest": "385f70e1c806db3360384fe7466f17bda171e5f0fc8430d8cd5ce3f9c3a2bead",
       "status": "declared"
     },
     {
@@ -3180,11 +3180,11 @@
   ],
   "generatorDigest": "5e27d4af8e61194d4b8ed9c5be2ba6f8478914cf5ba7a18c2dde52219476fd16",
   "generatorVersion": "r0.1",
-  "observationDigest": "9535bd486b2b2f25d88c1b50fa51a49d1324d281d7ac2e9adda4056d86eca6f5",
+  "observationDigest": "aea0ad01d54de80c7d9cc1d8b2adec11f694da014b7e0960069ce22d5d84d6e2",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "1ecfab1be8780e975fe20c81595d22eb180ea900009fa0ef2467b6d159afcbca",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "210732693bb0e52c0d1295f28541df381eb8ac814abe81bf205a4845220d63f6",
+  "registryDigest": "ee4fa85a7d65f8ca8b1eb629d21a140f4712c1b69720cae7c114bea0b475dfd6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

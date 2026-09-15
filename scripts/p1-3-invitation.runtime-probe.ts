@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
 
-import { manualDiagnosticCodes, manualDiagnosticSqlCode, manualDiagnosticSteps, manualManagementPostconditionCodes, type ManualDiagnosticStep, validateManualManagementAcceptance } from "./p1-3-invitation.runtime-probe-contract";
+import { crossLineageReinvitationPostconditionCodes, manualDiagnosticCodes, manualDiagnosticSqlCode, manualDiagnosticSteps, manualManagementPostconditionCodes, type ManualDiagnosticStep, type P13CrossLineageReinvitationAcceptance, validateCrossLineageReinvitationAcceptance, validateManualManagementAcceptance } from "./p1-3-invitation.runtime-probe-contract";
 import { invitationFingerprint, prepareRecoveryVerifierBatch } from "../src/server/services/invitation-attestation";
 import { classifyInvitationSetupCorridor } from "../src/server/services/invitation-setup-corridor";
 import { getInvitationServices } from "../src/server/services/invitation-service";
@@ -21,6 +21,8 @@ const fail = (code: string): never => { throw new Error(code); };
 const runtimeProbeCodes = new Set([
   ...manualDiagnosticCodes,
   ...manualManagementPostconditionCodes,
+  ...crossLineageReinvitationPostconditionCodes,
+  "p1_3_invitation_acceptance_runtime_cross_lineage_bind_invalid",
   "p1_3_invitation_acceptance_runtime_probe_failed",
   "p1_3_invitation_acceptance_runtime_persistence_invalid",
   "p1_3_invitation_acceptance_runtime_manual_management_failed",
@@ -120,6 +122,137 @@ async function seedFixture(database: PrismaClient): Promise<{ issuer: Fixture; c
     await tx.session.create({ data: { id: credentialless.sessionId, token: randomBytes(32).toString("base64url"), userId: credentialless.userId, expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), createdAt: now, updatedAt: now } });
   });
   return { issuer, credentialless };
+}
+
+type RecipientFixture = { userId: string; sessionId: string; email: string };
+
+const recipientRequest = (recipient: RecipientFixture, openingFingerprint: Buffer, intentFingerprint: Buffer | null = null) => ({
+  ordinarySessionId: recipient.sessionId, subjectUserId: recipient.userId, issuerMembershipEpisodeId: null,
+  subjectMembershipEpisodeId: null, openingFingerprint, intentFingerprint,
+});
+
+async function seedRecipientFixture(database: PrismaClient): Promise<RecipientFixture> {
+  const suffix = randomBytes(18).toString("base64url");
+  const now = new Date();
+  const userId = `p13_recipient_${suffix}`;
+  const sessionId = `p13_recipient_session_${suffix}`;
+  const email = `p13-recipient-${suffix}@acceptance.invalid`;
+  let credential = randomBytes(32).toString("base64url");
+  const password = await hashPassword(credential);
+  credential = "";
+  await database.$transaction(async (tx) => {
+    await tx.user.create({ data: { id: userId, name: `Fixture recipient ${suffix}`, email, emailVerified: true, createdAt: now, updatedAt: now } });
+    await tx.account.create({ data: { id: `p13_recipient_account_${suffix}`, accountId: `p13_recipient_credential_${suffix}`, providerId: "credential", userId, password, createdAt: now, updatedAt: now } });
+    await tx.accountSecurityState.create({ data: { userId, credentialVersion: 1, sessionSecurityVersion: 1, securityUpdatedAt: now } });
+    await tx.session.create({ data: { id: sessionId, token: randomBytes(32).toString("base64url"), userId, expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), createdAt: now, updatedAt: now } });
+  });
+  return { userId, sessionId, email };
+}
+
+async function claimWithOperationId(services: Services, token: string): Promise<{ identityId: string; claimOperationId: string }> {
+  const receipt = record(await services.claim({ token, browserPartitionDigest: randomDigest() }));
+  const identityId = receipt.claimIdentityId;
+  const claimOperationId = receipt.operationId;
+  if (typeof identityId !== "string" || typeof claimOperationId !== "string") fail("p1_3_invitation_acceptance_claim_invalid");
+  return { identityId: identityId as string, claimOperationId: claimOperationId as string };
+}
+
+async function accountSetupOrigin(database: PrismaClient, userId: string) {
+  const rows = await database.$queryRaw<Array<{ originLineageId: string | null; originLineageDigestHex: string | null }>>(Prisma.sql`
+    SELECT "originLineageId", encode("originLineageDigest",'hex') AS "originLineageDigestHex" FROM invitation_protocol."InvitationAccountSetup" WHERE "userId"=${userId}
+  `);
+  return rows[0] ?? { originLineageId: null, originLineageDigestHex: null };
+}
+
+async function lineageForClaimIdentity(database: PrismaClient, identityId: string) {
+  const rows = await database.$queryRaw<Array<{ lineageId: string }>>(Prisma.sql`
+    SELECT "lineageId" FROM invitation_protocol."InvitationOperationIdentity" WHERE "id"=${identityId}::uuid
+  `);
+  return rows[0]?.lineageId ?? null;
+}
+
+/**
+ * DEC-PROD-413: an account whose InvitationAccountSetup already belongs to a different invitation
+ * lineage may bind to a new invitation only when the prior invitation is no longer active. This proves
+ * both branches on real disposable PostgreSQL: takeover when the prior invite is revoked, and unchanged
+ * fail-closed denial when a (different) prior invite is still pending and unexpired.
+ */
+async function runCrossLineageReinvitationAcceptance(services: Services, database: PrismaClient, checkpoint: (step: ManualDiagnosticStep) => void): Promise<P13CrossLineageReinvitationAcceptance> {
+  checkpoint("cross_lineage_recipient_fixture");
+  const recipient = await seedRecipientFixture(database);
+  const { issuer } = await seedFixture(database);
+  const role = "parent";
+
+  async function inviteRecipient(label: string): Promise<{ inviteId: string; token: string }> {
+    const id = operationId(); const opening = randomDigest();
+    const intent = invitationFingerprint("manual_invite_create", { operationId: id, householdId: issuer.householdId, role, label });
+    await services.manualCreate.reserve({ operationId: id, householdId: issuer.householdId, role, expiresInHours: 24, recipientEmail: recipient.email, request: request(issuer, opening) });
+    const receipt = await services.manualCreate.submit({ operationId: id, householdId: issuer.householdId, request: request(issuer, opening, intent) });
+    const token = tokenFromInitialReceipt(receipt);
+    const invite = await inviteByTokenHash(database, createHash("sha256").update(token, "utf8").digest("hex"));
+    if (!invite) fail("p1_3_invitation_acceptance_pending_invite_missing");
+    return { inviteId: invite.id, token };
+  }
+
+  async function bindRecipient(claimIdentityId: string, claimOperationId: string) {
+    const opening = randomDigest();
+    return record(await services.bind({ sessionId: recipient.sessionId, claimIdentityId, request: { ...recipientRequest(recipient, opening), operationId: claimOperationId } }));
+  }
+
+  checkpoint("cross_lineage_first_invite_create");
+  const first = await inviteRecipient("cross-lineage-first");
+  checkpoint("cross_lineage_first_invite_claim");
+  const firstClaim = await claimWithOperationId(services, first.token);
+  checkpoint("cross_lineage_first_bind");
+  const firstBindReceipt = await bindRecipient(firstClaim.identityId, firstClaim.claimOperationId);
+  const firstBindSucceeded = firstBindReceipt.status === "review";
+  checkpoint("cross_lineage_first_origin_read");
+  const firstLineageId = await lineageForClaimIdentity(database, firstClaim.identityId);
+  const firstOrigin = await accountSetupOrigin(database, recipient.userId);
+  const firstOriginMatches = firstLineageId !== null && firstOrigin.originLineageId === firstLineageId;
+
+  checkpoint("cross_lineage_first_revoke");
+  const revokeId = operationId(); const revokeOpening = randomDigest();
+  const revokeIntent = invitationFingerprint("invite_revoke", { operationId: revokeId, inviteId: first.inviteId });
+  await services.revoke({ inviteId: first.inviteId, operationId: revokeId, request: request(issuer, revokeOpening, revokeIntent) });
+
+  checkpoint("cross_lineage_second_invite_create");
+  const second = await inviteRecipient("cross-lineage-second");
+  checkpoint("cross_lineage_second_invite_claim");
+  const secondClaim = await claimWithOperationId(services, second.token);
+  checkpoint("cross_lineage_takeover_bind");
+  const takeoverReceipt = await bindRecipient(secondClaim.identityId, secondClaim.claimOperationId);
+  const takeoverSucceeded = takeoverReceipt.status === "review";
+  checkpoint("cross_lineage_takeover_read");
+  const secondLineageId = await lineageForClaimIdentity(database, secondClaim.identityId);
+  const takeoverOrigin = await accountSetupOrigin(database, recipient.userId);
+  const takeoverOriginMatches = secondLineageId !== null && takeoverOrigin.originLineageId === secondLineageId;
+  const expectedDigest = secondLineageId ? createHash("sha256").update(secondLineageId, "utf8").digest("hex") : null;
+  const takeoverDigestMatches = expectedDigest !== null && takeoverOrigin.originLineageDigestHex === expectedDigest;
+  const priorInvite = await database.$queryRaw<Array<{ status: string }>>(Prisma.sql`SELECT "status"::text FROM public."Invite" WHERE "id"=${first.inviteId}`);
+  const priorInviteRevoked = priorInvite[0]?.status === "revoked";
+
+  // The second invite (now the recipient's current, still-pending lineage) is the "prior invitation" for
+  // this third bind attempt: it must still deny, exactly as before this charter, because it is active.
+  checkpoint("cross_lineage_active_invite_create");
+  const third = await inviteRecipient("cross-lineage-active");
+  checkpoint("cross_lineage_active_invite_claim");
+  const thirdClaim = await claimWithOperationId(services, third.token);
+  checkpoint("cross_lineage_active_bind_denied");
+  const deniedReceipt = await bindRecipient(thirdClaim.identityId, thirdClaim.claimOperationId);
+  const failedClosed = deniedReceipt.status === "unavailable";
+  checkpoint("cross_lineage_active_origin_read");
+  const afterDenialOrigin = await accountSetupOrigin(database, recipient.userId);
+  const originLineageUnchanged = afterDenialOrigin.originLineageId === takeoverOrigin.originLineageId && afterDenialOrigin.originLineageDigestHex === takeoverOrigin.originLineageDigestHex;
+
+  checkpoint("cross_lineage_postconditions");
+  const result: P13CrossLineageReinvitationAcceptance = {
+    firstBind: { succeeded: firstBindSucceeded, originLineageMatchesFirst: firstOriginMatches },
+    takeover: { succeeded: takeoverSucceeded, originLineageMatchesSecond: takeoverOriginMatches, originLineageDigestMatchesSecond: takeoverDigestMatches, priorInviteRevoked },
+    stillActiveDenial: { failedClosed, originLineageUnchanged },
+  };
+  validateCrossLineageReinvitationAcceptance(result);
+  return result;
 }
 
 async function operationState(database: PrismaClient, operationIdValue: string): Promise<OperationState> {
@@ -296,6 +429,7 @@ async function run() {
   try {
     const services = await getInvitationServices().catch(() => fail("p1_3_invitation_acceptance_runtime_service_bootstrap_failed"));
     await runManualManagementDiagnostic((checkpoint) => runManualManagementAcceptance(services, fixture, checkpoint));
+    await runManualManagementDiagnostic((checkpoint) => runCrossLineageReinvitationAcceptance(services, fixture, checkpoint).then(() => undefined));
 
     // Recipient and browser phases remain deliberately neutral-only and incomplete.
     const missingClaimIdentityId = operationId(); const missingInviteId = "p13-nonexistent-invite"; const missingHouseholdId = "p13-nonexistent-household";
