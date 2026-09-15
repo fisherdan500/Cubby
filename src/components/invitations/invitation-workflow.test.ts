@@ -102,6 +102,20 @@ describe("InvitationWorkflow rendered behavior", () => {
     await waitFor(() => expect(generated).toBe(true));
     expect(screen.queryByText("DISPLAY-ONCE-0")).toBeNull();
   });
+
+  it("shows a regeneration notice only when the account already has prior recovery codes", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (path) => response(String(path) === "/api/invitations/review" ? { ...review, hasPriorRecoveryCodes: true } : { status: "unavailable" }));
+    render(createElement(InvitationWorkflow));
+    await screen.findByRole("button", { name: "Generate recovery codes" });
+    expect(await screen.findByText("Completing this will invalidate any previously issued recovery codes.")).toBeTruthy();
+  });
+
+  it("omits the regeneration notice for a first-time enrollment with no prior codes", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (path) => response(String(path) === "/api/invitations/review" ? { ...review, hasPriorRecoveryCodes: false } : { status: "unavailable" }));
+    render(createElement(InvitationWorkflow));
+    await screen.findByRole("button", { name: "Generate recovery codes" });
+    expect(screen.queryByText("Completing this will invalidate any previously issued recovery codes.")).toBeNull();
+  });
 });
 
 describe("invitation workflow UI contract", () => {
@@ -118,6 +132,7 @@ describe("invitation workflow UI contract", () => {
     expect(workflow).toContain("aria-live=\"polite\"");
     expect(workflow).toContain("AbortController");
     expect(workflow).toContain("remainingActiveCount");
+    expect(workflow).toContain("hasPriorRecoveryCodes");
   });
 
   it("dispatches only a bound review to the invitation page and all neutral outcomes to the landing page", () => {

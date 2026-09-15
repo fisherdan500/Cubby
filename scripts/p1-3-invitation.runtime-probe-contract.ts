@@ -3,7 +3,12 @@ export const manualDiagnosticSteps = [
   "create_invite_read", "create_persistence", "create_status", "create_replay", "create_conflict",
   "replace_reserve", "replace_submit", "replace_token", "replace_read", "replace_status",
   "pending_create", "pending_claim", "single_revoke", "single_read", "bulk_create", "bulk_revoke", "bulk_read",
-  "authority_reserve", "authority_disable", "authority_submit", "credentialless_classify", "postconditions"
+  "authority_reserve", "authority_disable", "authority_submit", "credentialless_classify", "postconditions",
+  "cross_lineage_recipient_fixture", "cross_lineage_first_invite_create", "cross_lineage_first_invite_claim",
+  "cross_lineage_first_bind", "cross_lineage_first_origin_read", "cross_lineage_first_revoke",
+  "cross_lineage_second_invite_create", "cross_lineage_second_invite_claim", "cross_lineage_takeover_bind",
+  "cross_lineage_takeover_read", "cross_lineage_active_invite_create", "cross_lineage_active_invite_claim",
+  "cross_lineage_active_bind_denied", "cross_lineage_active_origin_read", "cross_lineage_postconditions"
 ] as const;
 export type ManualDiagnosticStep = typeof manualDiagnosticSteps[number];
 export const manualDiagnosticSqlStates = new Set(["42883", "42804", "42501", "42702", "23502", "23503", "23505", "23514", "22P02", "0A000", "55006", "P0001"]);
@@ -210,6 +215,39 @@ export function validateManualManagementAcceptance(value: P13ManualManagementAcc
     ["p1_3_invitation_acceptance_runtime_postcondition_privacy_audit_status_invalid", value.privacy.rawTokenAbsentFromAuditAndStatus],
     ["p1_3_invitation_acceptance_runtime_postcondition_privacy_credentialless_invalid", value.privacy.credentiallessExistingUserDenied],
     ["p1_3_invitation_acceptance_runtime_postcondition_household_deletion_invalid", value.householdDeletion.absentAndFailClosed],
+  ] as const;
+  const failure = checks.find(([, valid]) => !valid);
+  if (failure) throw new Error(failure[0]);
+}
+
+export type P13CrossLineageReinvitationAcceptance = {
+  firstBind: { succeeded: boolean; originLineageMatchesFirst: boolean };
+  takeover: { succeeded: boolean; originLineageMatchesSecond: boolean; originLineageDigestMatchesSecond: boolean; priorInviteRevoked: boolean };
+  stillActiveDenial: { failedClosed: boolean; originLineageUnchanged: boolean };
+};
+
+export const crossLineageReinvitationPostconditionCodes = new Set([
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_first_bind_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_first_origin_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_bind_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_origin_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_digest_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_prior_invite_state_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_active_denial_invalid",
+  "p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_active_origin_unchanged_invalid",
+]);
+
+/** Pure gate for the concrete postcondition reads collected by the cross-lineage re-invitation probe. */
+export function validateCrossLineageReinvitationAcceptance(value: P13CrossLineageReinvitationAcceptance) {
+  const checks = [
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_first_bind_invalid", value.firstBind.succeeded],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_first_origin_invalid", value.firstBind.originLineageMatchesFirst],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_bind_invalid", value.takeover.succeeded],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_origin_invalid", value.takeover.originLineageMatchesSecond],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_digest_invalid", value.takeover.originLineageDigestMatchesSecond],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_takeover_prior_invite_state_invalid", value.takeover.priorInviteRevoked],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_active_denial_invalid", value.stillActiveDenial.failedClosed],
+    ["p1_3_invitation_acceptance_runtime_postcondition_cross_lineage_active_origin_unchanged_invalid", value.stillActiveDenial.originLineageUnchanged],
   ] as const;
   const failure = checks.find(([, valid]) => !valid);
   if (failure) throw new Error(failure[0]);

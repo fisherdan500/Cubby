@@ -229,8 +229,14 @@ bound setup row, operation binding, session and signed attestation. Once a setup
 `accepted`, invitation recovery enrollment and rehearsal refuse it, so a member cannot move
 their own setup back out of `accepted`
 (`20260914120000_invitation_recovery_accepted_state_guard`).
-A setup row already anchored to a different invitation fails the bind closed with the
-neutral result; re-inviting such an account is not yet supported.
+A setup row already anchored to a different invitation lineage may bind to a new invitation
+only when that prior invitation is no longer pending and unexpired (revoked, expired, or
+otherwise inactive); it then takes over onto the new lineage, updating `originLineageId`
+and its matching `originLineageDigest` together. While the prior invitation is still
+pending and unexpired, bind fails closed with the same neutral result as before
+(`20260915120000_invitation_recovery_notice_and_cross_lineage_takeover`). The review
+snapshot also discloses `hasPriorRecoveryCodes`, so the client can warn that generating
+recovery codes will invalidate an existing account's prior set before it happens.
 
 ### Global Security Bridge
 

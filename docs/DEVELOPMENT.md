@@ -117,6 +117,15 @@ unchanged. The harness
 reads only allow-listed fixed outputs, so a new probe must add its code to the
 observation list or its result is always empty.
 
+`scripts/p1-3-invitation.runtime-probe.ts` also exercises the conditional
+cross-lineage re-invitation takeover directly through `createInvitationServices`
+against the disposable database, with no browser involved: an existing account
+binds to a first invitation, that invitation is revoked, a second invitation for
+the same recipient takes over the account's `InvitationAccountSetup` origin, and a
+third invitation is denied while the second remains active. Postcondition codes
+for this scenario live in `p1-3-invitation.runtime-probe-contract.ts` alongside
+the manual create/replace/revoke ones and follow the same fixed-code discipline.
+
 Two harness details look optional but are not. The disposable PostgreSQL
 healthcheck probes `127.0.0.1:5432`, because the image's first-start temporary
 server answers a socket-only `pg_isready` while TCP is still closed. Identities
