@@ -23,7 +23,29 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://cubby_rehearsal:${CUBBY_BACKUP_REHEARSAL_PASSWORD:?rehearsal password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      # MIGRATION_DATABASE_URL is the rehearsal's bootstrap superuser (cubby_rehearsal); every other
+      # role below is created/rotated at startup by the app's own provisioning scripts, exactly as
+      # docker-compose.yml's cubby_migrator/cubby_runtime/etc. split works in production.
+      MIGRATION_DATABASE_URL: postgresql://cubby_rehearsal:${CUBBY_BACKUP_REHEARSAL_PASSWORD:?rehearsal password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      DATABASE_URL: postgresql://cubby_runtime:${CUBBY_BACKUP_REHEARSAL_RUNTIME_PASSWORD:?rehearsal runtime password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      AUTH_DATABASE_URL: postgresql://cubby_auth:${CUBBY_BACKUP_REHEARSAL_AUTH_DB_PASSWORD:?rehearsal auth db password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      EMAIL_DELIVERY_DATABASE_URL: postgresql://cubby_email_delivery:${CUBBY_BACKUP_REHEARSAL_EMAIL_DELIVERY_DB_PASSWORD:?rehearsal email delivery db password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      CUBBY_SECURITY_OPERATOR_DB_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_SECURITY_OPERATOR_PASSWORD:?rehearsal security operator password required}
+      CUBBY_THROTTLE_KEY: ${CUBBY_BACKUP_REHEARSAL_THROTTLE_KEY:?rehearsal throttle key required}
+      CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: ${CUBBY_BACKUP_REHEARSAL_FRESH_AUTH_KEYRING:?rehearsal fresh-auth keyring required}
+      CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "1"
+      CUBBY_EMAIL_DELIVERY_KEYRING: ${CUBBY_BACKUP_REHEARSAL_EMAIL_DELIVERY_KEYRING:?rehearsal email-delivery keyring required}
+      CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION: "1"
+      # The email-delivery worker's startup tick constructs its SMTP adapter eagerly even with an
+      # empty delivery queue, so config must be present; these values are never actually reached
+      # since the rehearsal never queues an email (same placeholder pattern the P1-3 invitation
+      # disposable harness already uses successfully).
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: "1"
+      SMTP_USER: cubby_rehearsal_smtp
+      SMTP_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_SMTP_PASSWORD:?rehearsal smtp password required}
+      EMAIL_FROM: Cubby <noreply@rehearsal.invalid>
+      SMTP_SECURE: "false"
       BETTER_AUTH_SECRET: ${CUBBY_BACKUP_REHEARSAL_AUTH_SECRET:?rehearsal auth secret required}
       BETTER_AUTH_URL: http://localhost:3000
       TRUSTED_ORIGINS: http://127.0.0.1:*
@@ -32,6 +54,12 @@ services:
       AUTOMATED_BACKUPS_ENABLED: "false"
       AUTOMATED_BACKUP_DIRECTORY: /var/lib/cubby/backups
       AUTOMATED_BACKUP_RETENTION_COUNT: "2"
+      CUBBY_INVITATION_RUNTIME_DB_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_INVITATION_RUNTIME_PASSWORD:?rehearsal invitation runtime password required}
+      CUBBY_INVITATION_EXPIRY_DB_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_INVITATION_EXPIRY_PASSWORD:?rehearsal invitation expiry password required}
+      CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD: ${CUBBY_BACKUP_REHEARSAL_INVITATION_MAINTENANCE_PASSWORD:?rehearsal invitation maintenance password required}
+      INVITATION_DATABASE_URL: postgresql://cubby_invitation_runtime:${CUBBY_BACKUP_REHEARSAL_INVITATION_RUNTIME_PASSWORD:?rehearsal invitation runtime password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      INVITATION_EXPIRY_DATABASE_URL: postgresql://cubby_invitation_expiry_worker:${CUBBY_BACKUP_REHEARSAL_INVITATION_EXPIRY_PASSWORD:?rehearsal invitation expiry password required}@postgres:5432/cubby_backup_rehearsal?schema=public
+      INVITATION_MAINTENANCE_DATABASE_URL: postgresql://cubby_invitation_maintenance_worker:${CUBBY_BACKUP_REHEARSAL_INVITATION_MAINTENANCE_PASSWORD:?rehearsal invitation maintenance password required}@postgres:5432/cubby_backup_rehearsal?schema=public
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 2s
