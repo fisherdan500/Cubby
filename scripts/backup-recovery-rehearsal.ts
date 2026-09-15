@@ -28,6 +28,14 @@ export function selectMigrationPrefix(migrations: string[]) {
   return migrations.slice(0, migrations.indexOf(UPDATE_REHEARSAL_BASELINE) + 1);
 }
 
+// The entrypoint's startup sequence emits one "cubby_startup phase=<name> status=failed" line for
+// whichever specific pre-server step first fails (configuration, runtime_role,
+// invitation_runtime_roles, migration_connection, migration_apply, fresh_auth_attestation_keys,
+// email_delivery_keys, global_security_throttle_key, or readiness_guard); it never emits a single
+// generic "phase=migration status=failed" line. Accepting any named phase's failure, rather than one
+// fixed phase name, keeps this contract correct as startup phases are added.
+const anyPreServerPhaseFailed = /cubby_startup phase=\w+ status=failed/;
+
 export function assertMigrationFailureContract(observation: {
   error: unknown;
   status: number | null;
@@ -43,7 +51,8 @@ export function assertMigrationFailureContract(observation: {
     observation.error ||
     observation.status === null ||
     observation.status === 0 ||
-    !observation.output.includes("cubby_startup phase=migration status=failed") ||
+    !anyPreServerPhaseFailed.test(observation.output) ||
+    observation.output.includes("cubby_startup phase=migration status=succeeded") ||
     observation.output.includes("cubby_startup phase=server status=starting") ||
     observation.containerState.status !== "exited" ||
     observation.containerState.exitCode === 0 ||
@@ -179,11 +188,32 @@ function isolatedEnvironment(databaseUrl: string): NodeJS.ProcessEnv {
   return { ...env, NODE_ENV: "test", DATABASE_URL: databaseUrl };
 }
 
-function isolatedDockerEnvironment(
-  password: string,
-  authSecret: string,
-  backupDirectory: string
-): NodeJS.ProcessEnv {
+type RehearsalRuntimeSecrets = {
+  password: string;
+  authSecret: string;
+  backupDirectory: string;
+  runtimePassword: string;
+  authDbPassword: string;
+  emailDeliveryDbPassword: string;
+  securityOperatorPassword: string;
+  invitationRuntimePassword: string;
+  invitationExpiryPassword: string;
+  invitationMaintenancePassword: string;
+  freshAuthKeyringKeyVersion1: string;
+  emailDeliveryKeyringKeyVersion1: string;
+  throttleKey: string;
+  smtpPassword: string;
+};
+
+/**
+ * The app now requires the full multi-role provisioning set (global security roles,
+ * throttle key, fresh-auth and email-delivery keys) on top of the invitation-runtime
+ * roles, matching docker-compose.yml's app service exactly. All role/operator
+ * passwords must be mutually distinct per provision-security-runtime-role.mjs and
+ * provision-invitation-runtime-roles.mjs; the two keyrings each carry a single active
+ * key version (1), which is all their provisioning scripts require.
+ */
+function isolatedDockerEnvironment(secrets: RehearsalRuntimeSecrets): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of ["COMPOSE_FILE", "COMPOSE_PROJECT_NAME", "COMPOSE_PROFILES", "COMPOSE_ENV_FILES"]) {
     delete env[key];
@@ -191,9 +221,20 @@ function isolatedDockerEnvironment(
   return {
     ...env,
     COMPOSE_DISABLE_ENV_FILE: "true",
-    CUBBY_BACKUP_REHEARSAL_PASSWORD: password,
-    CUBBY_BACKUP_REHEARSAL_AUTH_SECRET: authSecret,
-    CUBBY_BACKUP_REHEARSAL_DIRECTORY: backupDirectory
+    CUBBY_BACKUP_REHEARSAL_PASSWORD: secrets.password,
+    CUBBY_BACKUP_REHEARSAL_AUTH_SECRET: secrets.authSecret,
+    CUBBY_BACKUP_REHEARSAL_DIRECTORY: secrets.backupDirectory,
+    CUBBY_BACKUP_REHEARSAL_RUNTIME_PASSWORD: secrets.runtimePassword,
+    CUBBY_BACKUP_REHEARSAL_AUTH_DB_PASSWORD: secrets.authDbPassword,
+    CUBBY_BACKUP_REHEARSAL_EMAIL_DELIVERY_DB_PASSWORD: secrets.emailDeliveryDbPassword,
+    CUBBY_BACKUP_REHEARSAL_SECURITY_OPERATOR_PASSWORD: secrets.securityOperatorPassword,
+    CUBBY_BACKUP_REHEARSAL_INVITATION_RUNTIME_PASSWORD: secrets.invitationRuntimePassword,
+    CUBBY_BACKUP_REHEARSAL_INVITATION_EXPIRY_PASSWORD: secrets.invitationExpiryPassword,
+    CUBBY_BACKUP_REHEARSAL_INVITATION_MAINTENANCE_PASSWORD: secrets.invitationMaintenancePassword,
+    CUBBY_BACKUP_REHEARSAL_FRESH_AUTH_KEYRING: `1:${secrets.freshAuthKeyringKeyVersion1}`,
+    CUBBY_BACKUP_REHEARSAL_EMAIL_DELIVERY_KEYRING: `1:${secrets.emailDeliveryKeyringKeyVersion1}`,
+    CUBBY_BACKUP_REHEARSAL_THROTTLE_KEY: secrets.throttleKey,
+    CUBBY_BACKUP_REHEARSAL_SMTP_PASSWORD: secrets.smtpPassword
   };
 }
 
@@ -205,6 +246,22 @@ export function runBackupRecoveryRehearsal() {
   const rehearsalPassword = randomBytes(24).toString("hex");
   const rehearsalAuthSecret = randomBytes(32).toString("hex");
   const rehearsalAppPassword = randomBytes(24).toString("base64url");
+  const rehearsalRuntimeSecrets: RehearsalRuntimeSecrets = {
+    password: rehearsalPassword,
+    authSecret: rehearsalAuthSecret,
+    backupDirectory: "",
+    runtimePassword: randomBytes(24).toString("base64url"),
+    authDbPassword: randomBytes(24).toString("base64url"),
+    emailDeliveryDbPassword: randomBytes(24).toString("base64url"),
+    securityOperatorPassword: randomBytes(24).toString("base64url"),
+    invitationRuntimePassword: randomBytes(24).toString("base64url"),
+    invitationExpiryPassword: randomBytes(24).toString("base64url"),
+    invitationMaintenancePassword: randomBytes(24).toString("base64url"),
+    freshAuthKeyringKeyVersion1: randomBytes(32).toString("base64url"),
+    emailDeliveryKeyringKeyVersion1: randomBytes(32).toString("base64url"),
+    throttleKey: randomBytes(32).toString("base64url"),
+    smtpPassword: randomBytes(24).toString("base64url")
+  };
   const failureContainer = `${projectName}_migration_failure`;
   const config: DisposableConfig = {
     projectName,
@@ -222,7 +279,7 @@ export function runBackupRecoveryRehearsal() {
 
   try {
     assertDisposableRehearsalConfig(config);
-    dockerEnv = isolatedDockerEnvironment(rehearsalPassword, rehearsalAuthSecret, config.backupDirectory);
+    dockerEnv = isolatedDockerEnvironment({ ...rehearsalRuntimeSecrets, backupDirectory: config.backupDirectory });
     migrationCwd = mkdtempSync(resolve(tmpdir(), "cubby-backup-rehearsal-"));
     symlinkSync(resolve(repositoryRoot, "node_modules"), resolve(migrationCwd, "node_modules"), "junction");
     const isolatedPrismaDir = resolve(migrationCwd, "prisma");
@@ -392,7 +449,22 @@ export function runBackupRecoveryRehearsal() {
       "--health-retries", "1",
       "--health-start-period", "0s",
       "--entrypoint", "/bin/sh",
-      "--env", `DATABASE_URL=postgresql://cubby_rehearsal:${rehearsalPassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      // --network none makes every one of these unreachable regardless of host/port; they only need
+      // to be present (and locally well-formed enough to pass each script's own pre-network
+      // validation) so the container reaches and fails at a real network-dependent startup phase
+      // rather than the earlier presence-only configuration check.
+      "--env", `DATABASE_URL=postgresql://cubby_runtime:${rehearsalRuntimeSecrets.runtimePassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `MIGRATION_DATABASE_URL=postgresql://cubby_rehearsal:${rehearsalPassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `AUTH_DATABASE_URL=postgresql://cubby_auth:${rehearsalRuntimeSecrets.authDbPassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `EMAIL_DELIVERY_DATABASE_URL=postgresql://cubby_email_delivery:${rehearsalRuntimeSecrets.emailDeliveryDbPassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `INVITATION_DATABASE_URL=postgresql://cubby_invitation_runtime:${rehearsalRuntimeSecrets.invitationRuntimePassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `INVITATION_EXPIRY_DATABASE_URL=postgresql://cubby_invitation_expiry_worker:${rehearsalRuntimeSecrets.invitationExpiryPassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `INVITATION_MAINTENANCE_DATABASE_URL=postgresql://cubby_invitation_maintenance_worker:${rehearsalRuntimeSecrets.invitationMaintenancePassword}@127.0.0.1:1/cubby_backup_rehearsal`,
+      "--env", `CUBBY_INVITATION_RUNTIME_DB_PASSWORD=${rehearsalRuntimeSecrets.invitationRuntimePassword}`,
+      "--env", `CUBBY_INVITATION_EXPIRY_DB_PASSWORD=${rehearsalRuntimeSecrets.invitationExpiryPassword}`,
+      "--env", `CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD=${rehearsalRuntimeSecrets.invitationMaintenancePassword}`,
+      "--env", `CUBBY_SECURITY_OPERATOR_DB_PASSWORD=${rehearsalRuntimeSecrets.securityOperatorPassword}`,
+      "--env", `CUBBY_THROTTLE_KEY=${rehearsalRuntimeSecrets.throttleKey}`,
       "--env", `BETTER_AUTH_SECRET=${rehearsalAuthSecret}`,
       "--env", "BETTER_AUTH_URL=http://127.0.0.1:3000",
       appImage, "-c", "sleep 2; exec /usr/local/bin/cubby-entrypoint"
