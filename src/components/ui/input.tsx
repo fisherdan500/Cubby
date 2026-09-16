@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
@@ -18,6 +18,19 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
     <textarea
       className={cn(
         "min-h-24 w-full rounded-lg border border-border bg-card px-3 py-2 text-base outline-none sm:text-sm transition focus:border-ring focus:ring-4 focus:ring-ring/20",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Native select styled like Input: same height, focus ring, and 16px mobile text so iOS does not zoom. */
+export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cn(
+        "min-h-11 min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2 text-base font-semibold outline-none sm:text-sm transition focus:border-ring focus:ring-4 focus:ring-ring/20",
         className
       )}
       {...props}

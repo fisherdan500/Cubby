@@ -91,7 +91,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
             <div className="flex gap-2">
               <button
                 type="button"
-                className="min-h-10 rounded-lg px-3 text-xs font-black text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-lg px-3 text-xs font-black text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={allSelected}
                 onClick={() => onChange([...routineActivityTypes])}
               >
@@ -99,7 +99,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
               </button>
               <button
                 type="button"
-                className="min-h-10 rounded-lg px-3 text-xs font-black text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-lg px-3 text-xs font-black text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={defaultsSelected}
                 onClick={() => onChange([...defaultRoutineActivityTypes])}
               >
