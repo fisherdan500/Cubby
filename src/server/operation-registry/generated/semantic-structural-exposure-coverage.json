@@ -2606,9 +2606,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 5955,
+      "anchorEnd": 5963,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 5940,
+      "anchorStart": 5948,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -2623,9 +2623,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 801,
+      "anchorEnd": 809,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 736,
+      "anchorStart": 744,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2640,9 +2640,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${currentOperationId}`, { cache: \"no-store\" })",
       "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-      "anchorEnd": 2517,
+      "anchorEnd": 2525,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 2440,
+      "anchorStart": 2448,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2657,9 +2657,9 @@
     {
       "anchorBytes": "fetch(\"/api/invites?issue=1\", {\n          method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(input)\n        })",
       "anchorDigest": "e84ac0b9d27e7351ee448775db45ab9e1dda386542e6da317f13ea79a205bc26",
-      "anchorEnd": 3975,
+      "anchorEnd": 3983,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 3830,
+      "anchorStart": 3838,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2674,9 +2674,9 @@
     {
       "anchorBytes": "fetch(\"/api/invites\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ ...input, operationId: currentOperationId })\n      })",
       "anchorDigest": "b928837e232b2bc92dadc06c13c466ccabde700b3d02cf8a56eee3a20d2f6b66",
-      "anchorEnd": 4572,
+      "anchorEnd": 4580,
       "anchorFile": "src/components/forms/invite-form.tsx",
-      "anchorStart": 4383,
+      "anchorStart": 4391,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -5122,9 +5122,9 @@
     {
       "anchorBytes": "getCalendar",
       "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-      "anchorEnd": 1153,
+      "anchorEnd": 1161,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1142,
+      "anchorStart": 1150,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getCalendar",
@@ -5139,9 +5139,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 1090,
+      "anchorEnd": 1098,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1069,
+      "anchorStart": 1077,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5173,9 +5173,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1027,
+      "anchorEnd": 1035,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1012,
+      "anchorStart": 1020,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5207,9 +5207,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 894,
+      "anchorEnd": 949,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 868,
+      "anchorStart": 923,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5224,9 +5224,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 816,
+      "anchorEnd": 871,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 795,
+      "anchorStart": 850,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5241,9 +5241,9 @@
     {
       "anchorBytes": "listActivities",
       "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-      "anchorEnd": 746,
+      "anchorEnd": 801,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 732,
+      "anchorStart": 787,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivities",
@@ -5258,9 +5258,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 690,
+      "anchorEnd": 745,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 675,
+      "anchorStart": 730,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5462,9 +5462,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 627,
+      "anchorEnd": 674,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 606,
+      "anchorStart": 653,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5479,9 +5479,9 @@
     {
       "anchorBytes": "getReports",
       "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-      "anchorEnd": 689,
+      "anchorEnd": 736,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 679,
+      "anchorStart": 726,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getReports",
@@ -5496,9 +5496,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 564,
+      "anchorEnd": 611,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 549,
+      "anchorStart": 596,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6452,9 +6452,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "3a45c4d430b66ee363e520f40d09cd4d3c88ae0a9e2bc6038c130302c6fd6b85",
+  "semanticArtifactDigest": "65c2e931b3416cbe6334c145d06eb5e7145914d2bc6fa07717b9a8eda9c19a20",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "378045f77f2f7bdb3303aca06f797c4fc9923f8a3684ac943d7887517f7949fc",
+  "semanticCoverageDigest": "53848053389f16e7712a0bdbdc686cca4dbdc5ac6b0e200d27e38a2742044170",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "2462db18003e42fdcfc5a3db98a1a79d72e06ceba44fecdd4a2e3de7c67e8bfd"

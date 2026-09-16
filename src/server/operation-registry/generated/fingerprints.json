@@ -1680,33 +1680,33 @@
           "file": "src/app/app/calendar/actions.ts"
         },
         {
-          "digest": "9531657d099aeec13425bc88c9e3dbcd7e6831c0f3394314a98df3bfb6532ef0",
+          "digest": "1e091cdfa7c44078117550277d925e9f64017eef0eb11a5fea8adda03a0dabd8",
           "file": "src/app/app/calendar/page.tsx"
         }
       ],
       "declarationDigest": "19c37a3926df789f72a86b7a0e445a13dc81d4e7169d26e20c35df4e5503b5cc",
-      "fingerprint": "b0ba2230f8445866e882700ec87f73b5c81ad2c0b60616e372c33e3986fa8016",
+      "fingerprint": "eb4d664dc18fef00973ed09b9fa5b9e3b47ea5dca5f5c6f08258ece89d1f2a8f",
       "id": "fingerprint:server_loader:src/app/app/calendar/page.tsx",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts",
-      "sourceDigest": "2be8ed293635185cbca4207173462f3f99396b5cda9bde78c5f11f5b4fc9d7c3",
+      "sourceDigest": "1d089f69c3a212cf734f8a62d33c6e66aed4bc048b9427282603179862749583",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "40c1759c9bf73c93ea888d8393b93dee283d9f58eec88b4513f2cb9bc11f44d7",
+          "digest": "b16c126f3f7679b0ec93ba29fce76aabdd16b9e74e8b563c59ed32fdc9fce086",
           "file": "src/app/app/history/page.tsx"
         }
       ],
       "declarationDigest": "708a076e44cfdccb4e362afb9a9936915ddd5b139a55d03ba8149d033bff8584",
-      "fingerprint": "b105986f426beb0ac32f4ed3c6626f04d7e2483a4dad23d348cada911acdbee7",
+      "fingerprint": "d1276e3976bd0c8531f58bc27ea564325433f498006af51c05f2e8f94e40fd57",
       "id": "fingerprint:server_loader:src/app/app/history/page.tsx",
       "ownerId": "server_loader:src/app/app/history/page.tsx",
       "ownerModule": "src/app/app/history/page.tsx",
       "sidecarPath": "src/app/app/history/page.operation.ts",
-      "sourceDigest": "2ea403a354e758348cdb4dc2ce6309e14b067b3e4f469a680ec06516271745d6",
+      "sourceDigest": "cb9b286c17112e23426bad30a1a1966f9f39f8771d8b61519d3956d151b5a810",
       "status": "declared"
     },
     {
@@ -1760,33 +1760,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "04e39628080b60e319e9132f0ef9ed6419aec0005f094fafa7ac7fcf1c1f34a6",
+          "digest": "00c7a9cbb919dd2b13a1d7d1154aec685420fc56ee3c44d4d9adc4570bb0a305",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "70291a8b0bd0e696e0a3471b9fb12297eb381ae7ed972bfe485b799fffa7226a",
+      "fingerprint": "ec1b0e165b1d7c4fbfa6402f8fe431c5f1612b1956e2fc5a147964895896c1c5",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "331179488950a8f68f6f55b192657719236c3b27d47a65fe7e5a74ecafaf2bde",
+      "sourceDigest": "b1add17d63916b7ea9a360a6be52d5d0a8416760a59c3b87bebf1fa76b20321c",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "2b8b08b0dc4a5a856b5e654ae0531df830623b7f34c18a8c0122cd9fd2325d3d",
+          "digest": "f0c1f58dddd8d99c5f93e5b5fab1bd392c8796aaaae2af500594e09db4f3cefe",
           "file": "src/app/app/reports/page.tsx"
         }
       ],
       "declarationDigest": "0b4aa76d23d2e1e0cfcb726d04c91d37d7368b7080d303d9d030b77704431883",
-      "fingerprint": "4e533dee87074d9a6255d5d802d344db563aa0a603fbd3f47316d86335a91320",
+      "fingerprint": "d1903734f75b36c00ccb9d2594c95cb54e867407855f7179f09d59f487c7d47d",
       "id": "fingerprint:server_loader:src/app/app/reports/page.tsx",
       "ownerId": "server_loader:src/app/app/reports/page.tsx",
       "ownerModule": "src/app/app/reports/page.tsx",
       "sidecarPath": "src/app/app/reports/page.operation.ts",
-      "sourceDigest": "817be1cbc4fe252d643eb8aec9dc25901e1cecbe256eb938f9a4706d86e89fd4",
+      "sourceDigest": "e2dbf7f08831bce85743366e871a5c4908740185f2135eaf6436ca18c1e80305",
       "status": "declared"
     },
     {
@@ -2048,33 +2048,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "dd89277878101a1d2b60fc01a825ae4d0f4aaf46c1f94627cf45ad45343826d3",
+          "digest": "767c0ca3eb484ba97d26e19dde8ecda4541fd0fd63ec9019d8d53fcc0d1fa75f",
           "file": "src/app/recovery/page.tsx"
         }
       ],
       "declarationDigest": "c1fdd12f3cf486d81065630e134338166e4d0b521a0a96a035134208948dc039",
-      "fingerprint": "21f3a1291901cbab30b77056dd40a04dd786ee13fe71f1858b39c799791e4e96",
+      "fingerprint": "21b091fe7a94639faaa45a64440419d00c4962ca525a2ed08e463f848f3a8892",
       "id": "fingerprint:client_binding:src/app/recovery/page.tsx",
       "ownerId": "client_binding:src/app/recovery/page.tsx",
       "ownerModule": "src/app/recovery/page.tsx",
       "sidecarPath": "src/app/recovery/page.operation.ts",
-      "sourceDigest": "b197efc898d2f8e8d7e9b788a86c8869ed663f0cd92b8c50a6525b227498fb8b",
+      "sourceDigest": "9cae312c4439c4874afecae3e2467237135fa35fc29204d1e03934b9f7ef292c",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "bb24f5536ab23910b65bc2f6b1f2f6395fe55e8821943cd72e3666f4760cc4ef",
+          "digest": "4b9a666d9ab0912610e026f48ecb8623b6e879d42bb3aec01842e777aa1fb64d",
           "file": "src/components/account-security-panel.tsx"
         }
       ],
       "declarationDigest": "bfd57f25eafeff7a8e6a435af9ac8315f02dbe29fea48c07800423b2a59bf29f",
-      "fingerprint": "b020526d81200cf4fb3461a26dbeecc6cf360aba8b9056e6a9a09d63540646ee",
+      "fingerprint": "6a40d2dbfd40ce87c3dbe5f54ed6181cffe40c5bc4732e6e9533ad1cb7fc8f4b",
       "id": "fingerprint:client_binding:src/components/account-security-panel.tsx",
       "ownerId": "client_binding:src/components/account-security-panel.tsx",
       "ownerModule": "src/components/account-security-panel.tsx",
       "sidecarPath": "src/components/account-security-panel.operation.ts",
-      "sourceDigest": "fce1287b94022d9a10a8c6e838c6c0b30fb7f73deb91924012402a9c272aaea0",
+      "sourceDigest": "e4c51887079c0bc1ec05dfc8ab1d8d4ecbc7d3a64974cdc040df416249ac5a01",
       "status": "declared"
     },
     {
@@ -2224,17 +2224,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "808986b5df9fcd921304fd1fcb43f130065eca5107b8d3f8b9d34bbe6162fc03",
+          "digest": "1dd5d0a2acf376b6dcff7c12e5d7c765800da1b6d765f428c50ba8f9c8abfb2e",
           "file": "src/components/forms/invite-form.tsx"
         }
       ],
       "declarationDigest": "343b9994f393c42aebb2160d1052a093120a68205560a36a889537fbceaeabdc",
-      "fingerprint": "5a02cb9dab29b7d76f86894abd15cf68d154504e1ed92111af6a1ae6639b5b0f",
+      "fingerprint": "aab5585b9a189d4b0c453160060d6e27e377c885dcf7f17d3f28580de25c3818",
       "id": "fingerprint:client_binding:src/components/forms/invite-form.tsx",
       "ownerId": "client_binding:src/components/forms/invite-form.tsx",
       "ownerModule": "src/components/forms/invite-form.tsx",
       "sidecarPath": "src/components/forms/invite-form.operation.ts",
-      "sourceDigest": "815c3daab1d4e22384d99906f217916c41a5eae6a89cf147ab4102754b772cba",
+      "sourceDigest": "f964904d6e6e7a9ac845d71e7440c86460fef7fbdc440aaec1b14a8f1af0d3a5",
       "status": "declared"
     },
     {
@@ -2496,17 +2496,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "484d07d68752aeecbe4a759cc12ac580d650f96fb755c2a95604f58b9b5a28cb",
+          "digest": "cdd8d9323c14f4293742faff90df985f3c39b2cd5e62fe91ad5d60ed0231a2be",
           "file": "src/components/settings/session-manager.tsx"
         }
       ],
       "declarationDigest": "16faa646f273ccf4a23f6c5ac732d85c0c2e198f564ce8daa256547fa98313c1",
-      "fingerprint": "1aca572ae7acf6a014028a113b525a19d9d2aefe9ec233498fba2889862719ce",
+      "fingerprint": "388530551746022a8503e5aad251422c8a6fc88b34bf3c4b187ee9126291dabd",
       "id": "fingerprint:client_binding:src/components/settings/session-manager.tsx",
       "ownerId": "client_binding:src/components/settings/session-manager.tsx",
       "ownerModule": "src/components/settings/session-manager.tsx",
       "sidecarPath": "src/components/settings/session-manager.operation.ts",
-      "sourceDigest": "215992aa68d5a4dd7fb6ba9b2c2edd2c8167fcdaecbfab9a8c47c27832688c82",
+      "sourceDigest": "00425efa2074c6633c8e7158619169079e72d3f9deb959eb537344f3dfc8108d",
       "status": "declared"
     },
     {
@@ -3216,11 +3216,11 @@
   ],
   "generatorDigest": "a206236b03fe57808bfc5e93072291096d9c49ee81e3e21b5782a67cdd2aaa1a",
   "generatorVersion": "r0.1",
-  "observationDigest": "f1b85e1dd4ba1d371c747d48ba6e3687d27ec2526b93f9e900b94f646e85ad48",
+  "observationDigest": "575d295564ff6fc895f740bb504e80127e2e42358d05d0bbe86b7f785dc82a2b",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "c24a4944503645f6c5ac93a96c9f82a7c17237037fe761f7b0ce28b76d09a63d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "dddcc4dfde4a0543058fc20fa4bea7bdb9aedf7beaf084a45f65a64d3aae130e",
+  "registryDigest": "1085b9278bce39687f3f2215ebb1c20402b58cbb5cb58ec6ec632c063b371cb4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
