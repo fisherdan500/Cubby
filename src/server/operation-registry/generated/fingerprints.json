@@ -2768,10 +2768,6 @@
           "file": "package.json"
         },
         {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
-        },
-        {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
@@ -2781,12 +2777,12 @@
         }
       ],
       "declarationDigest": "cfc9e48a4f21a149ddcc6ee22a1787f0ec42dd6d49b156495f544aed3fd5e222",
-      "fingerprint": "c4d74f1e3fbbf12418cc6a6c9abbc8196c7591715135ca2d7fc11f1cbdbfebf5",
+      "fingerprint": "4ee721b49e23751034f09411859fdde99a99e0505dcb0ea311763c22157731d5",
       "id": "fingerprint:package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerModule": "scripts/household-deletion-readiness-guard.ts",
       "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts",
-      "sourceDigest": "169b23e5faca62ad78470996cba729ce93f3bcf51c1bc1a8a02e5994ba9d8de8",
+      "sourceDigest": "724cd68accca1ce2a9b09a896723160a48173eef9d814147eeb858f2f12de031",
       "status": "declared"
     },
     {
@@ -2804,10 +2800,6 @@
           "file": "package.json"
         },
         {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
-        },
-        {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
@@ -2817,12 +2809,12 @@
         }
       ],
       "declarationDigest": "c653663765b8b9c3e8e21f3903713c66fa1a8ee927409604794b4302728c15a1",
-      "fingerprint": "418cf6842da64858ad41828b04b56113c916e029cc241f85f104c2db6700473d",
+      "fingerprint": "d59846daef66a56bce8b6c87760cdbaf78bdb934a940115f56731d33cda1ccd1",
       "id": "fingerprint:package_command:scripts/integrity-check.ts",
       "ownerId": "package_command:scripts/integrity-check.ts",
       "ownerModule": "scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts",
-      "sourceDigest": "50e3fa22cf40cc1b4befbb9f1b9f61122a5370d297dc2c3813f417d9f9dbb2a4",
+      "sourceDigest": "5ae8653edbfbb0b641ce472c29bb10e2949e28f75434504ae8db1ed6d2b99bed",
       "status": "declared"
     },
     {
@@ -2884,10 +2876,6 @@
           "file": "package.json"
         },
         {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
-        },
-        {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
@@ -2897,12 +2885,12 @@
         }
       ],
       "declarationDigest": "1562497e78e2dd043661a15cff76be29362091a45e2c1d757532854b6f75fc10",
-      "fingerprint": "1a6613c5a1c98f01e9a72b194fafa5ccf9534b9427c3af74ebce29c4c5214e29",
+      "fingerprint": "99dd578bcf36c37af50c139351c920b562ad7873b800293fbf4d13cba3c5d6f6",
       "id": "fingerprint:package_command:scripts/p1-3-node-builtin-probe.mjs",
       "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
       "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
       "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts",
-      "sourceDigest": "4006d7fa4987f317d5ec9e5ca62e023f5ce106914a38dd0da1e98e3ea281c029",
+      "sourceDigest": "6bba9e369523e43654fb821322537c90bc5773a1f37516663a8654917c201f00",
       "status": "declared"
     },
     {
@@ -2918,10 +2906,6 @@
         {
           "digest": "c1df55dd79fd8ef95675bd9b250cfa3860682831d8c05764cf38bda5120ef5b3",
           "file": "package.json"
-        },
-        {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
         },
         {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
@@ -2933,12 +2917,12 @@
         }
       ],
       "declarationDigest": "3246f88ee86d13812b057916cb440a2a626faf92c3fdf8fa60bc959d2712f9c2",
-      "fingerprint": "c9e1eda6f885f95844e9e1a7ee1e133fb098c21b0ae62b30419e62a75c0e0282",
+      "fingerprint": "a5a31caf01e40a4446601946e2154b4eead7bdf68b5a9e0d8c356274f7bfbbf3",
       "id": "fingerprint:package_command:scripts/platform-owner.ts",
       "ownerId": "package_command:scripts/platform-owner.ts",
       "ownerModule": "scripts/platform-owner.ts",
       "sidecarPath": "scripts/platform-owner.operation.ts",
-      "sourceDigest": "4fbdd1f5024ba400d37503882317b7254e1ade8644f480048a6e546cebfa2291",
+      "sourceDigest": "bffc8b8ad350efd896d0c3e2e773fcbbaa6d8f6e01d62f94a41889c08818cb77",
       "status": "declared"
     },
     {
@@ -2958,10 +2942,6 @@
         {
           "digest": "c1df55dd79fd8ef95675bd9b250cfa3860682831d8c05764cf38bda5120ef5b3",
           "file": "package.json"
-        },
-        {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
         },
         {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
@@ -2973,12 +2953,12 @@
         }
       ],
       "declarationDigest": "b955075c076d41c34cde29144ddbe77893af4324035949a0e3b49701fd0aedaf",
-      "fingerprint": "b596597b029d6ff14880e60e2ae7190763bd709a991bdd91cf54f1cd83efb65d",
+      "fingerprint": "394f7addbe02496ea564f0f692206f4539d2464989a0165f68bb3bf931d90831",
       "id": "fingerprint:package_command:scripts/provision-database-timezone.mjs",
       "ownerId": "package_command:scripts/provision-database-timezone.mjs",
       "ownerModule": "scripts/provision-database-timezone.mjs",
       "sidecarPath": "scripts/provision-database-timezone.operation.ts",
-      "sourceDigest": "ee498a65184852dba6a587931ddb5b02e598a22a1d09e7ef21b74ea0e31ffa97",
+      "sourceDigest": "6bd1c55f5db25234eff2301ce1f110f95eafc8ee236ddae1994677eeb70c5343",
       "status": "declared"
     },
     {
@@ -2998,10 +2978,6 @@
         {
           "digest": "c1df55dd79fd8ef95675bd9b250cfa3860682831d8c05764cf38bda5120ef5b3",
           "file": "package.json"
-        },
-        {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
         },
         {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
@@ -3013,12 +2989,12 @@
         }
       ],
       "declarationDigest": "3ec0a70c2151c092806abb5fdb0e3a4e9778e9ba1eff50f220322ae849b25f89",
-      "fingerprint": "c253f25103d5794143f2373662a4de3e8333200234a40b10beba58747bf47acf",
+      "fingerprint": "e8a6b4a70a55139d49bc3b34b88ae0d250ac5bdc1e5a6c18290d8cb8d307e6e5",
       "id": "fingerprint:package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerModule": "scripts/provision-email-delivery-keys.mjs",
       "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts",
-      "sourceDigest": "7c045087246c2ad8515d6b2e48515502c4a418cc0100e1b8fcb44be75ff96071",
+      "sourceDigest": "867adcb50704aefe400938ab27e70d70fd6baaa15a2f7b374f37254244a8529a",
       "status": "declared"
     },
     {
@@ -3038,10 +3014,6 @@
         {
           "digest": "c1df55dd79fd8ef95675bd9b250cfa3860682831d8c05764cf38bda5120ef5b3",
           "file": "package.json"
-        },
-        {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
         },
         {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
@@ -3053,12 +3025,12 @@
         }
       ],
       "declarationDigest": "f08aa3cb50e2250ca24f5bd928a7ba51ee1a982abc73714f6e84e5f527c9bd3d",
-      "fingerprint": "2a6842c203400980d98a86e7de9c305af1c1c9d8da54e71236116fecdbd4a23a",
+      "fingerprint": "4dac3918c0562afe98bb05f7a50f07f7c914443dd155533c07830de36a0216ef",
       "id": "fingerprint:package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
       "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
       "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
       "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts",
-      "sourceDigest": "cd5af0a1b7d093073ceebc0cc1845f5b4894b07fbb421edc53488b4b9e24e991",
+      "sourceDigest": "ed1a40aca2d9bfd8cc8d92f39f2712c89cdd2157dc1c502da435a6a03f2ebf82",
       "status": "declared"
     },
     {
@@ -3078,10 +3050,6 @@
         {
           "digest": "c1df55dd79fd8ef95675bd9b250cfa3860682831d8c05764cf38bda5120ef5b3",
           "file": "package.json"
-        },
-        {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
         },
         {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
@@ -3093,12 +3061,12 @@
         }
       ],
       "declarationDigest": "aaabe40de6ef27d59c1228e7565317489f805861274300b1166b27f5533abee4",
-      "fingerprint": "ce1afd258c2d74fcc714332f7d3b4df0c68ded488dce62b1099ba3c86466ea2b",
+      "fingerprint": "12701592705709bf8a09a09286681af1de55347766592e49327c4d15ff8ccb8a",
       "id": "fingerprint:package_command:scripts/provision-global-security-throttle-key.mjs",
       "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
       "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
       "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts",
-      "sourceDigest": "1a886695a9a0a0845eb8b2466cf4e97c3f216dbc8a3053424f3a8ab82528f934",
+      "sourceDigest": "e08614e5ff359f1fb7dae54a2ef10bdce4482d4e6aae5fb6e42848cb30d7b527",
       "status": "declared"
     },
     {
@@ -3118,10 +3086,6 @@
         {
           "digest": "c1df55dd79fd8ef95675bd9b250cfa3860682831d8c05764cf38bda5120ef5b3",
           "file": "package.json"
-        },
-        {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
         },
         {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
@@ -3133,12 +3097,12 @@
         }
       ],
       "declarationDigest": "7ce38019bcbd51bb1cec16a6430bfdb6f547936df292131645910ad144e9cc02",
-      "fingerprint": "3358105966547455e94ca07c14e4479d1d1df731990a090e3da27413e71a1276",
+      "fingerprint": "d224e7a71e92d218e653a3f276cd287d298449f9d0df8bc230407c19e4fae0c9",
       "id": "fingerprint:package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
       "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts",
-      "sourceDigest": "ef6b51b334f9190aa19deebf12ea7aa3a91b462bbb4d03e86563a7caa3f3dd80",
+      "sourceDigest": "cc1ba468713ff8d3e37ea119f97d9a3703455e21571e218e7a7da454204116cf",
       "status": "declared"
     },
     {
@@ -3160,10 +3124,6 @@
           "file": "package.json"
         },
         {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
-        },
-        {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
@@ -3173,12 +3133,12 @@
         }
       ],
       "declarationDigest": "875b0cb9cbc0ed831f536ef3b3803eac8e55dc67ed20616103c71b0ef2eb3113",
-      "fingerprint": "6934db3d63b3d1b4f3200ad56b9671c0f57bfc32ca13a04ca9df0491d7c1f3e4",
+      "fingerprint": "93078d93c3f0dd20040a42fefdca19030fb329f7538b0de1446b503e999d886d",
       "id": "fingerprint:package_command:scripts/provision-security-runtime-role.mjs",
       "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
       "ownerModule": "scripts/provision-security-runtime-role.mjs",
       "sidecarPath": "scripts/provision-security-runtime-role.operation.ts",
-      "sourceDigest": "b8daae13150090917465c4753b83fed0dc0ea02cfe259ca8e7532965b00d7bbd",
+      "sourceDigest": "e0a7aa3cc92b15b2ca090d356de1c65543172109db04c2bbe70b5333717494f9",
       "status": "declared"
     },
     {
@@ -3196,10 +3156,6 @@
           "file": "package.json"
         },
         {
-          "digest": "eff926a2fbf3645a877f4dd8622cdc0a9ed82b579ee637cf5ce9c4c2bb9310e1",
-          "file": "scripts/.repro.compose.yml"
-        },
-        {
           "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
@@ -3209,12 +3165,12 @@
         }
       ],
       "declarationDigest": "f96c68b2729a122fcbaabe348a0e1febca5b8fddc254edcc963e7292333b5311",
-      "fingerprint": "56c3e7fec7e23850aedc5b4ea773547687062a3b41f81d2ab23cc4b962f12128",
+      "fingerprint": "b4ef04bb9a2b5ba23492873edde89c85ead3b5778395eeceb78e669d7710cda6",
       "id": "fingerprint:package_command:scripts/security-operator.ts",
       "ownerId": "package_command:scripts/security-operator.ts",
       "ownerModule": "scripts/security-operator.ts",
       "sidecarPath": "scripts/security-operator.operation.ts",
-      "sourceDigest": "062269038491ffb6b7b87cf8968d68d630c3e75fa4cbd5719e3dff9bdaaa7ce1",
+      "sourceDigest": "db4b04d1ed15bc4970309070e42b9c72e7f4a2c68f97103048f9da17e691f6a8",
       "status": "declared"
     },
     {
@@ -3260,11 +3216,11 @@
   ],
   "generatorDigest": "a206236b03fe57808bfc5e93072291096d9c49ee81e3e21b5782a67cdd2aaa1a",
   "generatorVersion": "r0.1",
-  "observationDigest": "1828cb7e25cdd09f2e9968fa4a90a4ae96954b6fc19946345aea290da8b0948d",
+  "observationDigest": "575d295564ff6fc895f740bb504e80127e2e42358d05d0bbe86b7f785dc82a2b",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "c24a4944503645f6c5ac93a96c9f82a7c17237037fe761f7b0ce28b76d09a63d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "043b31cc168ea23ef0c9873bae2312331bcfc73cd6271b6ff7fd5ea86eb69006",
+  "registryDigest": "1085b9278bce39687f3f2215ebb1c20402b58cbb5cb58ec6ec632c063b371cb4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
@@ -3324,15 +3280,11 @@
       "id": "runtime:docker-compose.yml:3015:main:eval"
     },
     {
-      "fingerprint": "7aeaf6f8ee768cd357c1db6fc6cb185db389e2169ec42d3b60839a2122ccc022",
-      "id": "runtime:scripts/.repro.compose.yml:4694:main:eval"
-    },
-    {
       "fingerprint": "50a60f79fc13507c7018f68e33c3e5c1d333c3cf3760148120c2ba2dea34deca",
       "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:4695:main:eval"
     }
   ],
-  "runtimeInvocationLedgerDigest": "dcf59a226ab1cfed652b2f2ed4603171439e9e76f5eef6f087014d9e3df8f00a",
+  "runtimeInvocationLedgerDigest": "51c51a34fdce0e683df7dbefc976d3b3baaad44bb2d51b4acdda08022629c687",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1
