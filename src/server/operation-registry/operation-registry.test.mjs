@@ -2299,6 +2299,7 @@ test("discovers TypeScript package owners and exact CLI command variants", () =>
     "scripts/household-deletion-readiness-guard.ts",
     "scripts/integrity-check.ts",
     "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
+    "scripts/p1-3-invitation.acceptance-rehearsal.ts",
     "scripts/platform-owner.ts",
     "scripts/security-operator.ts",
     "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
@@ -2495,8 +2496,9 @@ test("binds packaged command entrypoints through package build and Docker COPY a
         "WORKDIR /app",
         "FROM node:22 AS runner",
         "WORKDIR /app",
-        "COPY --from=builder /app/dist/platform-owner.mjs ./platform-owner.mjs",
-        "COPY --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs"
+        // The runtime image copies bundles as the unprivileged runtime user, in either flag order.
+        "COPY --from=builder --chown=node:node /app/dist/platform-owner.mjs ./platform-owner.mjs",
+        "COPY --chown=node:node --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs"
       ].join("\n") + "\n"
     );
 
@@ -2551,6 +2553,27 @@ test("binds packaged command entrypoints through package build and Docker COPY a
           diagnostic.code === "unsupported_container_command" &&
           diagnostic.detail === "container_bundle_build_missing:dist/rogue.mjs"
       )
+    );
+
+    writeFixture(
+      "Dockerfile",
+      [
+        "FROM node:22 AS builder",
+        "WORKDIR /app",
+        "FROM node:22 AS runner",
+        "WORKDIR /app",
+        "COPY --from=builder --chown=root:root /app/dist/platform-owner.mjs ./platform-owner.mjs",
+        "COPY --from=builder /app/dist/integrity-check.mjs ./integrity-check.mjs"
+      ].join("\n") + "\n"
+    );
+    const foreignOwnership = buildRepositoryRegistry(temporaryRoot);
+    assert.ok(
+      foreignOwnership.diagnostics.some(
+        (diagnostic) =>
+          diagnostic.code === "unsupported_container_command" &&
+          diagnostic.detail === "unsupported_operational_bundle_copy_shape"
+      ),
+      "only the unprivileged runtime ownership flag may accompany an operational bundle copy"
     );
   } finally {
     rmSync(temporaryRoot, { recursive: true, force: true });
@@ -2820,6 +2843,11 @@ test("classifies rehearsal, fixture, build-tool, and registry exclusions exactly
         ownerModule: "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
         category: "rehearsal",
         packageScripts: ["verify:p1-3-migrator-bootstrap"]
+      },
+      {
+        ownerModule: "scripts/p1-3-invitation.acceptance-rehearsal.ts",
+        category: "rehearsal",
+        packageScripts: ["verify:p1-3-invitation-acceptance"]
       },
       {
         ownerModule: "scripts/generate-brand-icons.mjs",

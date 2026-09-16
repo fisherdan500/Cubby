@@ -294,6 +294,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/integrity-check.operation.ts",
   "scripts/platform-owner.operation.ts",
   "scripts/household-deletion-readiness-guard.operation.ts",
+  "scripts/provision-database-timezone.operation.ts",
   "scripts/provision-email-delivery-keys.operation.ts",
   "scripts/provision-global-security-throttle-key.operation.ts",
   "scripts/provision-invitation-runtime-roles.operation.ts",
@@ -3253,7 +3254,7 @@ export function discoverContainerCommandBindings(
     readonly anchorStart: number;
     readonly anchorEnd: number;
   }> = [];
-  const copyPattern = /^\s*COPY\s+--from=builder\s+(\/app\/dist\/[^\s]+\.[cm]?js)\s+([^\s]+\.[cm]?js)\s*$/gm;
+  const copyPattern = new RegExp(OPERATIONAL_BUNDLE_COPY_SHAPE, "gm");
   for (const dockerfile of selectedDiscovery.dockerfiles) {
     for (const match of dockerfile.source.matchAll(copyPattern)) {
       if (match.index === undefined) continue;
@@ -3994,8 +3995,16 @@ function discoverNestedContainerShellExecutables(source: string): readonly strin
   return [...executables];
 }
 
+/**
+ * Operational bundle copies must name the builder stage explicitly and may carry the runtime
+ * ownership flag in either order; every other COPY shape stays unsupported.
+ */
+const OPERATIONAL_BUNDLE_COPY_FLAGS = String.raw`(?:--from=builder\s+(?:--chown=node:node\s+)?|--chown=node:node\s+--from=builder\s+)`;
+const OPERATIONAL_BUNDLE_COPY_SHAPE =
+  String.raw`^\s*COPY\s+${OPERATIONAL_BUNDLE_COPY_FLAGS}(\/app\/dist\/[^\s]+\.[cm]?js)\s+([^\s]+\.[cm]?js)\s*$`;
+
 function copyPatternForLine(line: string): boolean {
-  return /^\s*COPY\s+--from=builder\s+\/app\/dist\/[^\s]+\.[cm]?js\s+[^\s]+\.[cm]?js\s*$/.test(line);
+  return new RegExp(OPERATIONAL_BUNDLE_COPY_SHAPE).test(line);
 }
 
 type ShellWord = {
