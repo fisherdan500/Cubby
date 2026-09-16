@@ -34,7 +34,7 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
   return prisma.$transaction(async (transaction) => {
     const tx = transaction as unknown as StatusTransaction;
     await tx.$executeRaw`SELECT "lock_household_browser_operation_identity"(${ctx.householdId}, ${operationId})`;
-    await tx.$queryRaw`SELECT "id" FROM "Session" WHERE "id" = ${authSession.session.id} AND "userId" = ${ctx.userId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT "id" FROM "lock_actor_session_for_operation"(${ctx.userId}, ${authSession.session.id})`;
     const currentSession = await tx.session.findFirst({ where: { id: authSession.session.id, userId: ctx.userId, expiresAt: { gt: new Date() } }, select: { id: true } });
     if (!currentSession) throw new Error("unauthenticated");
     await tx.$queryRaw`SELECT "id" FROM "HouseholdMember" WHERE "id" = ${ctx.memberId} AND "householdId" = ${ctx.householdId} FOR UPDATE`;

@@ -31,9 +31,7 @@ async function lockAndRevalidateFreshSession(
     expiresAt: Date;
   }>>`
     SELECT "id", "userId", "createdAt", "expiresAt"
-    FROM "Session"
-    WHERE "id" = ${freshSession.session.id}
-    FOR UPDATE
+    FROM "lock_actor_session_for_operation"(${freshSession.user.id}, ${freshSession.session.id})
   `;
   const session = sessions[0];
   if (!session || session.userId !== freshSession.user.id || session.expiresAt <= new Date()) {

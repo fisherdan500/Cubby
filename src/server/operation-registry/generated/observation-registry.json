@@ -11955,7 +11955,7 @@
     }
   ],
   "observationCount": 185,
-  "observationDigest": "575d295564ff6fc895f740bb504e80127e2e42358d05d0bbe86b7f785dc82a2b",
+  "observationDigest": "1828cb7e25cdd09f2e9968fa4a90a4ae96954b6fc19946345aea290da8b0948d",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18150,7 +18150,7 @@
   ],
   "ownerSetDigest": "c24a4944503645f6c5ac93a96c9f82a7c17237037fe761f7b0ce28b76d09a63d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "1085b9278bce39687f3f2215ebb1c20402b58cbb5cb58ec6ec632c063b371cb4",
+  "registryDigest": "043b31cc168ea23ef0c9873bae2312331bcfc73cd6271b6ff7fd5ea86eb69006",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
@@ -18369,6 +18369,23 @@
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
+      "anchorEnd": 4824,
+      "anchorFile": "scripts/.repro.compose.yml",
+      "anchorStart": 4694,
+      "codeOption": "-e",
+      "disposition": "structural_exclusion",
+      "exclusion": {
+        "category": "healthcheck_probe_runtime",
+        "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
+      },
+      "fingerprint": "7aeaf6f8ee768cd357c1db6fc6cb185db389e2169ec42d3b60839a2122ccc022",
+      "id": "runtime:scripts/.repro.compose.yml:4694:main:eval",
+      "ownerModule": null,
+      "path": null,
+      "role": "main"
+    },
+    {
+      "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
       "anchorEnd": 4825,
       "anchorFile": "scripts/backup-recovery-rehearsal.compose.yml",
       "anchorStart": 4695,
@@ -18385,7 +18402,7 @@
       "role": "main"
     }
   ],
-  "runtimeInvocationLedgerDigest": "51c51a34fdce0e683df7dbefc976d3b3baaad44bb2d51b4acdda08022629c687",
+  "runtimeInvocationLedgerDigest": "dcf59a226ab1cfed652b2f2ed4603171439e9e76f5eef6f087014d9e3df8f00a",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1,
@@ -18396,6 +18413,14 @@
       "file": "docker-compose.yml",
       "kind": "container_build_selector",
       "start": 1257,
+      "targetFile": "Dockerfile"
+    },
+    {
+      "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
+      "end": 784,
+      "file": "scripts/.repro.compose.yml",
+      "kind": "container_build_selector",
+      "start": 727,
       "targetFile": "Dockerfile"
     },
     {

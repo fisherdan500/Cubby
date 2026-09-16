@@ -64,7 +64,7 @@ describe("household browser operation status", () => {
       code: "operation_prepared"
     });
     const locks = mocks.queryRaw.mock.calls.map(([query]) => query.join(" "));
-    expect(locks.findIndex((query) => query.includes('FROM "Session"'))).toBeLessThan(
+    expect(locks.findIndex((query) => query.includes('"lock_actor_session_for_operation"') || query.includes('"lock_user_sessions_for_operation"'))).toBeLessThan(
       locks.findIndex((query) => query.includes('FROM "HouseholdMember"'))
     );
   });
