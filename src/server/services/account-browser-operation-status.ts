@@ -21,7 +21,7 @@ export async function getAccountBrowserOperationStatus(rawOperationId: unknown):
   return prisma.$transaction(async (transaction) => {
     const tx = transaction as unknown as AccountStatusTransaction;
     await tx.$executeRaw`SELECT "lock_account_browser_operation_identity"(${context.userId}, ${operationId})`;
-    await tx.$queryRaw`SELECT "id" FROM "Session" WHERE "id" = ${context.sessionId} AND "userId" = ${context.userId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT "id" FROM "lock_actor_session_for_operation"(${context.userId}, ${context.sessionId})`;
     const currentSession = await tx.session.findFirst({
       where: { id: context.sessionId, userId: context.userId, expiresAt: { gt: new Date() } },
       select: { id: true, userId: true }

@@ -101,7 +101,7 @@ describe("household member access management", () => {
       callback({
         $queryRaw: (...args: unknown[]) => {
           const query = Array.isArray(args[0]) ? args[0][0] : "";
-          return typeof query === "string" && query.includes('FROM "Session"')
+          return typeof query === "string" && query.includes('"lock_actor_session_for_operation"') || query.includes('"lock_user_sessions_for_operation"')
             ? mocks.sessionLock(...args)
             : mocks.memberLock(...args);
         },
