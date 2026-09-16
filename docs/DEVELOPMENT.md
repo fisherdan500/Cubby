@@ -572,6 +572,22 @@ connection is not UTC. Keep `TZ: UTC` on the postgres service; `APP_TIMEZONE`
 is an app-only display setting. The disposable backup rehearsal deliberately
 initializes PostgreSQL with `TZ: America/New_York` to catch regressions.
 
+### Line Endings
+
+Prisma migration `.sql` files (and `scripts/bootstrap-existing-migrator-role.sql`)
+are committed LF-only, matching what Linux/Docker checkouts (CI, production)
+read. `.gitattributes` pins `*.sql text eol=lf` so a Windows checkout with
+`core.autocrlf=true` does not silently rewrite them to CRLF. Before that rule
+existed, a Windows-only CRLF checkout made two migration-content tests fail
+locally that always passed in the real (LF) checkout used everywhere else
+(`browser-operation-household-foundation-migration.test.ts`,
+`global-security-persistence-migration.test.ts`), while masking a third,
+already-latent bug in `invitation-recovery-notice-and-cross-lineage-takeover.test.ts`
+that only happened to pass because of the same accidental CRLF. If a git
+checkout still shows CRLF in a `.sql` file, delete the file and run
+`git checkout -- <path>` (a plain `git checkout --` on an unmodified path can
+no-op without re-applying the attribute).
+
 ### Sprout Import
 
 Sprout import is a clean-room data importer, not a database restore. It should
