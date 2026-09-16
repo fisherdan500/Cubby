@@ -4,12 +4,12 @@
     "api_route": 99,
     "client_binding": 32,
     "instrumentation": 1,
-    "package_command": 18,
+    "package_command": 19,
     "server_action": 1,
     "server_loader": 27,
     "worker": 6
   },
-  "declarationDigest": "a8a920ae6ae8d20b47af3ad14cb566b55a7b0e8dcc2d462bf6dad950378be6a6",
+  "declarationDigest": "4a8adb6415d729ab8e2b0b40168c392ba0a2cd0d4ecfa481e844df93f0cd8a35",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -450,6 +450,51 @@
       },
       "id": "package_command:scripts/platform-owner.ts",
       "sidecarPath": "scripts/platform-owner.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "container_copy",
+            "symbol": "provision-database-timezone.mjs",
+            "target": "Dockerfile#/app/dist/provision-database-timezone.mjs=>/app/provision-database-timezone.mjs"
+          },
+          {
+            "kind": "container_invocation",
+            "symbol": "provision-database-timezone.mjs",
+            "target": "docker/entrypoint.sh#/app/provision-database-timezone.mjs"
+          },
+          {
+            "kind": "package_build_entrypoint",
+            "symbol": "scripts/provision-database-timezone.mjs",
+            "target": "scripts/provision-database-timezone.mjs=>dist/provision-database-timezone.mjs"
+          },
+          {
+            "kind": "package_build_invocation",
+            "symbol": "build",
+            "target": "package.json#scripts.build:build:database-timezone"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "package_command:scripts/provision-database-timezone.mjs",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/provision-database-timezone.mjs",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/provision-database-timezone.mjs",
+      "sidecarPath": "scripts/provision-database-timezone.operation.ts"
     },
     {
       "declaration": {
@@ -4145,6 +4190,11 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getActivityUnitPreferences",
+            "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getHeaderBabySelector",
             "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
           },
@@ -6589,7 +6639,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "5e27d4af8e61194d4b8ed9c5be2ba6f8478914cf5ba7a18c2dde52219476fd16",
+  "generatorDigest": "a206236b03fe57808bfc5e93072291096d9c49ee81e3e21b5782a67cdd2aaa1a",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8824,18 +8874,18 @@
         },
         {
           "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-          "anchorEnd": 1087,
+          "anchorEnd": 1153,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1076,
+          "anchorStart": 1142,
           "kind": "server_value_import",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 1024,
+          "anchorEnd": 1090,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1003,
+          "anchorStart": 1069,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
@@ -8851,9 +8901,9 @@
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 961,
+          "anchorEnd": 1027,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 946,
+          "anchorStart": 1012,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -8877,6 +8927,15 @@
     },
     {
       "bindings": [
+        {
+          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
+          "anchorEnd": 894,
+          "anchorFile": "src/app/app/history/page.tsx",
+          "anchorStart": 868,
+          "kind": "server_value_import",
+          "symbol": "getActivityUnitPreferences",
+          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+        },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
           "anchorEnd": 816,
@@ -9027,18 +9086,18 @@
       "bindings": [
         {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1108,
+          "anchorEnd": 1224,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1088,
+          "anchorStart": 1204,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1046,
+          "anchorEnd": 1162,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1031,
+          "anchorStart": 1147,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9900,45 +9959,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 7530,
+          "anchorEnd": 10068,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7515,
+          "anchorStart": 10053,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 1582,
+          "anchorEnd": 2052,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 1517,
+          "anchorStart": 1987,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 4497,
+          "anchorEnd": 5714,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 4420,
+          "anchorStart": 5637,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 5776,
+          "anchorEnd": 6993,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 5604,
+          "anchorStart": 6821,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 6529,
+          "anchorEnd": 7746,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6324,
+          "anchorStart": 7541,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -10381,9 +10440,9 @@
         },
         {
           "anchorDigest": "ac2e66165003cf16573ea913a681bdedba637adb4cb6a6bb7721e1dfb3c85bac",
-          "anchorEnd": 3877,
+          "anchorEnd": 3876,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 3818,
+          "anchorStart": 3817,
           "kind": "global_fetch",
           "symbol": "fetch[6]",
           "target": "globalThis.fetch"
@@ -11073,9 +11132,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 4037,
+          "anchorEnd": 4275,
           "anchorFile": "package.json",
-          "anchorStart": 4028,
+          "anchorStart": 4266,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -11099,9 +11158,9 @@
       "bindings": [
         {
           "anchorDigest": "ab81dd8446575d3e8db6556bc8428d6aca7040a50fcbea81f6bd73b9466a2034",
-          "anchorEnd": 3324,
+          "anchorEnd": 3562,
           "anchorFile": "package.json",
-          "anchorStart": 3293,
+          "anchorStart": 3531,
           "kind": "package_script",
           "symbol": "verify:activity-update-safety",
           "target": "package.json#scripts.verify:activity-update-safety"
@@ -11125,18 +11184,18 @@
       "bindings": [
         {
           "anchorDigest": "356ff55c9bda28971f0b30a6141af2b700cbf4c69d2f566517d2c35be28ce45e",
-          "anchorEnd": 3168,
+          "anchorEnd": 3406,
           "anchorFile": "package.json",
-          "anchorStart": 3144,
+          "anchorStart": 3382,
           "kind": "package_script",
           "symbol": "verify:backup-recovery",
           "target": "package.json#scripts.verify:backup-recovery"
         },
         {
           "anchorDigest": "ad6ab6ca444dd0e736b38b2fb30832927d0bf9030c330047be097a31d88de645",
-          "anchorEnd": 3243,
+          "anchorEnd": 3481,
           "anchorFile": "package.json",
-          "anchorStart": 3218,
+          "anchorStart": 3456,
           "kind": "package_script",
           "symbol": "verify:update-rehearsal",
           "target": "package.json#scripts.verify:update-rehearsal"
@@ -11161,9 +11220,9 @@
       "bindings": [
         {
           "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-          "anchorEnd": 3413,
+          "anchorEnd": 3651,
           "anchorFile": "package.json",
-          "anchorStart": 3381,
+          "anchorStart": 3619,
           "kind": "package_script",
           "symbol": "verify:browser-operation-pilot",
           "target": "package.json#scripts.verify:browser-operation-pilot"
@@ -11186,10 +11245,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "dfe959064d49957b43837988856898ca51e7b2d6f705680d0e49b3658994be00",
-          "anchorEnd": 2784,
+          "anchorDigest": "966bfbf0ed7ea272d7bbd981da0544dd117f2bb8a5f04cd14949bfd9f631f839",
+          "anchorEnd": 4560,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2664,
+          "anchorStart": 4422,
           "kind": "container_copy",
           "symbol": "household-deletion-readiness-guard.mjs",
           "target": "Dockerfile#/app/dist/household-deletion-readiness-guard.mjs=>/app/scripts/household-deletion-readiness-guard.mjs"
@@ -11205,16 +11264,16 @@
         },
         {
           "anchorDigest": "bdcd6bf4f92821638db2fe0a688009cb7cf23d5a7884330bd5142d4904652aaa",
-          "anchorEnd": 1625,
+          "anchorEnd": 1660,
           "anchorFile": "package.json",
-          "anchorStart": 1442,
+          "anchorStart": 1477,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/household-deletion-readiness-guard.ts",
           "target": "scripts/household-deletion-readiness-guard.ts=>dist/household-deletion-readiness-guard.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11223,9 +11282,9 @@
         },
         {
           "anchorDigest": "eb38bb885e8439b3899c30f57bfd73dbfb58ef4b502d4e66609559bd9e3c4018",
-          "anchorEnd": 1440,
+          "anchorEnd": 1475,
           "anchorFile": "package.json",
-          "anchorStart": 1404,
+          "anchorStart": 1439,
           "kind": "package_script",
           "symbol": "build:household-deletion-readiness",
           "target": "package.json#scripts.build:household-deletion-readiness"
@@ -11241,26 +11300,26 @@
     {
       "bindings": [
         {
-          "anchorDigest": "96373fee9d77f24a267f340fda64e84453f13b5f3f1f38e8bdb468b1494285c1",
-          "anchorEnd": 1896,
+          "anchorDigest": "6469934a9c31ae1bb945e67d3a213635d84a6f943af02d85a4a632ab3fe6f09c",
+          "anchorEnd": 3414,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1825,
+          "anchorStart": 3325,
           "kind": "container_copy",
           "symbol": "integrity-check.mjs",
           "target": "Dockerfile#/app/dist/integrity-check.mjs=>/app/integrity-check.mjs"
         },
         {
           "anchorDigest": "97c14ba7b6bd29cec210f4b27c372840462a9e3236edb92a1ce73ddd54b523e8",
-          "anchorEnd": 959,
+          "anchorEnd": 994,
           "anchorFile": "package.json",
-          "anchorStart": 814,
+          "anchorStart": 849,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/integrity-check.ts",
           "target": "scripts/integrity-check.ts=>dist/integrity-check.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11269,18 +11328,18 @@
         },
         {
           "anchorDigest": "0bc4e1884466133d9c6a0672c4ad0e7ea55e2181e4d2eff74c1d410f060728ee",
-          "anchorEnd": 812,
+          "anchorEnd": 847,
           "anchorFile": "package.json",
-          "anchorStart": 795,
+          "anchorStart": 830,
           "kind": "package_script",
           "symbol": "build:integrity",
           "target": "package.json#scripts.build:integrity"
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 4138,
+          "anchorEnd": 4376,
           "anchorFile": "package.json",
-          "anchorStart": 4120,
+          "anchorStart": 4358,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -11297,9 +11356,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 3677,
+          "anchorEnd": 3915,
           "anchorFile": "package.json",
-          "anchorStart": 3645,
+          "anchorStart": 3883,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -11323,9 +11382,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 3787,
+          "anchorEnd": 4025,
           "anchorFile": "package.json",
-          "anchorStart": 3752,
+          "anchorStart": 3990,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -11348,10 +11407,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "b209d0e7a0b00de2e3f1bfd34e5b8fc87196387fa92c40dfdcda5744cd8a653d",
-          "anchorEnd": 2883,
+          "anchorDigest": "7ca283f72641952c4b347328ab7d06c2f2d47b04ae0586b28a11c29a46af7a61",
+          "anchorEnd": 4677,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2785,
+          "anchorStart": 4561,
           "kind": "container_copy",
           "symbol": "p1-3-node-builtin-probe.mjs",
           "target": "Dockerfile#/app/dist/p1-3-node-builtin-probe.mjs=>/app/scripts/p1-3-node-builtin-probe.mjs"
@@ -11367,16 +11426,16 @@
         },
         {
           "anchorDigest": "9b8b12b23610200f5243a06981a56b614a5588fb0f3f9bf9f85d05debbfa4f23",
-          "anchorEnd": 1825,
+          "anchorEnd": 1860,
           "anchorFile": "package.json",
-          "anchorStart": 1663,
+          "anchorStart": 1698,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/p1-3-node-builtin-probe.mjs",
           "target": "scripts/p1-3-node-builtin-probe.mjs=>dist/p1-3-node-builtin-probe.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11457,26 +11516,26 @@
           "target": "scripts/platform-owner.ts#parsePlatformOwnerCommand:verify-bootstrap"
         },
         {
-          "anchorDigest": "bec935558d7c7706b278e6e19cde6b358c5d36e772e8290f5e10cfefc79484ed",
-          "anchorEnd": 1824,
+          "anchorDigest": "16964ad1dfe52aa6020d948969aeb84b54c3fceabfa66776ec5e90a3d7be91a0",
+          "anchorEnd": 3324,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1755,
+          "anchorStart": 3237,
           "kind": "container_copy",
           "symbol": "platform-owner.mjs",
           "target": "Dockerfile#/app/dist/platform-owner.mjs=>/app/platform-owner.mjs"
         },
         {
           "anchorDigest": "34b772e44b77afedfaf6840b1a18c5960dc89b1a081b95f1af2a8d9e76dc3555",
-          "anchorEnd": 789,
+          "anchorEnd": 824,
           "anchorFile": "package.json",
-          "anchorStart": 646,
+          "anchorStart": 681,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/platform-owner.ts",
           "target": "scripts/platform-owner.ts=>dist/platform-owner.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11485,18 +11544,18 @@
         },
         {
           "anchorDigest": "aef089f4250d574a5150392ba7e9c365c8a7337873033a55a6fe39d262f51929",
-          "anchorEnd": 644,
+          "anchorEnd": 679,
           "anchorFile": "package.json",
-          "anchorStart": 622,
+          "anchorStart": 657,
           "kind": "package_script",
           "symbol": "build:platform-owner",
           "target": "package.json#scripts.build:platform-owner"
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 4081,
+          "anchorEnd": 4319,
           "anchorFile": "package.json",
-          "anchorStart": 4065,
+          "anchorStart": 4303,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -11512,35 +11571,81 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4ea88baa140ca9ff1bd7b1de27b4f5ce20682f13bf8b01e4ea2fd0618f0f8b11",
-          "anchorEnd": 2469,
+          "anchorDigest": "2a92011c4766dc9f7a69e1428da6256b8ace4b2764b70c4ce948aee1b3ea1548",
+          "anchorEnd": 4327,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2370,
+          "anchorStart": 4214,
+          "kind": "container_copy",
+          "symbol": "provision-database-timezone.mjs",
+          "target": "Dockerfile#/app/dist/provision-database-timezone.mjs=>/app/provision-database-timezone.mjs"
+        },
+        {
+          "anchorDigest": "fa82d1e305973a14f036438f9a12a2efffa3dbb9301ca4462bc8b0e89563118a",
+          "anchorEnd": 2912,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 2773,
+          "kind": "container_invocation",
+          "symbol": "provision-database-timezone.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-database-timezone.mjs"
+        },
+        {
+          "anchorDigest": "6ea242375526696849ec948fda03b14222f2125815a7a9d6856b7368fe49dc80",
+          "anchorEnd": 2741,
+          "anchorFile": "package.json",
+          "anchorStart": 2571,
+          "kind": "package_build_entrypoint",
+          "symbol": "scripts/provision-database-timezone.mjs",
+          "target": "scripts/provision-database-timezone.mjs=>dist/provision-database-timezone.mjs"
+        },
+        {
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:database-timezone"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "package_command:scripts/provision-database-timezone.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-database-timezone.mjs",
+      "sidecarPath": "scripts/provision-database-timezone.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "8760fe085f1fef583af6a11c1a4c88c3f93ae3712c47af44f3ffdd91eece953a",
+          "anchorEnd": 4077,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 3960,
           "kind": "container_copy",
           "symbol": "provision-email-delivery-keys.mjs",
           "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
         },
         {
           "anchorDigest": "1476c5acb9b73b2d526f9de0dfffe64f27561c90694a0546b9e71ba03d5efaf6",
-          "anchorEnd": 3484,
+          "anchorEnd": 3694,
           "anchorFile": "docker/entrypoint.sh",
-          "anchorStart": 3386,
+          "anchorStart": 3596,
           "kind": "container_invocation",
           "symbol": "provision-email-delivery-keys.mjs",
           "target": "docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs"
         },
         {
           "anchorDigest": "205df456bca593073465bbbee38ad9ddf3a1ad9a37415a3052f823caff0a7f7c",
-          "anchorEnd": 2267,
+          "anchorEnd": 2302,
           "anchorFile": "package.json",
-          "anchorStart": 2093,
+          "anchorStart": 2128,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/provision-email-delivery-keys.mjs",
           "target": "scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11558,35 +11663,35 @@
     {
       "bindings": [
         {
-          "anchorDigest": "80aee959215a20f62145c7ca0638216541a95523e0f0675bccbb963bb2d0ab04",
-          "anchorEnd": 2369,
+          "anchorDigest": "af4c2958fc374854821afd78d5beb2b37e4f33bd932950565c7402d07806809f",
+          "anchorEnd": 3959,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2254,
+          "anchorStart": 3826,
           "kind": "container_copy",
           "symbol": "provision-fresh-auth-attestation-keys.mjs",
           "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
         },
         {
           "anchorDigest": "cf988d60b11ab36c6e537d5ecac1d15d47268778e913262d3f428e9203b2f121",
-          "anchorEnd": 3305,
+          "anchorEnd": 3515,
           "anchorFile": "docker/entrypoint.sh",
-          "anchorStart": 3199,
+          "anchorStart": 3409,
           "kind": "container_invocation",
           "symbol": "provision-fresh-auth-attestation-keys.mjs",
           "target": "docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs"
         },
         {
           "anchorDigest": "e88e8a3998b89168bdceb86457dede535d548cf55330ff7bff584b88b0c0c73c",
-          "anchorEnd": 2058,
+          "anchorEnd": 2093,
           "anchorFile": "package.json",
-          "anchorStart": 1868,
+          "anchorStart": 1903,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
           "target": "scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11604,35 +11709,35 @@
     {
       "bindings": [
         {
-          "anchorDigest": "8dd17cd88a049d158141f6fbabf0d6409a6e5b743623ad6c1e978e125ab8d19f",
-          "anchorEnd": 2587,
+          "anchorDigest": "b5c0844e64a8731bbc6a51252001ed091d2dc6d00af4c045b1e7694ec709fc73",
+          "anchorEnd": 4213,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2470,
+          "anchorStart": 4078,
           "kind": "container_copy",
           "symbol": "provision-global-security-throttle-key.mjs",
           "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
         },
         {
           "anchorDigest": "ec34c2e543335fe9616b6d6904fb6d09b80256b3952ddf6807b338edc5102632",
-          "anchorEnd": 3705,
+          "anchorEnd": 3915,
           "anchorFile": "docker/entrypoint.sh",
-          "anchorStart": 3557,
+          "anchorStart": 3767,
           "kind": "container_invocation",
           "symbol": "provision-global-security-throttle-key.mjs",
           "target": "docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs"
         },
         {
           "anchorDigest": "04faa6246b4961b4ca13a7b21c086cf236f7abd5de9021ed0979e3d778124bd0",
-          "anchorEnd": 2503,
+          "anchorEnd": 2538,
           "anchorFile": "package.json",
-          "anchorStart": 2311,
+          "anchorStart": 2346,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/provision-global-security-throttle-key.mjs",
           "target": "scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11650,10 +11755,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "69070fdc59656e09ec7078a1f3b50c3b1cf5a3c6cb838b3ed69764592353fa09",
-          "anchorEnd": 2253,
+          "anchorDigest": "5ce628bf79dd5f7f7fbc1666a7801f60fe4f2def2cc5d7b99b40e8837e254d06",
+          "anchorEnd": 3825,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2144,
+          "anchorStart": 3698,
           "kind": "container_copy",
           "symbol": "provision-invitation-runtime-roles.mjs",
           "target": "Dockerfile#/app/dist/provision-invitation-runtime-roles.mjs=>/app/provision-invitation-runtime-roles.mjs"
@@ -11669,16 +11774,16 @@
         },
         {
           "anchorDigest": "dd8581faef5e2a5f43972ae17a112387ffb97856f01d82d42008b9bda4e52e94",
-          "anchorEnd": 1398,
+          "anchorEnd": 1433,
           "anchorFile": "package.json",
-          "anchorStart": 1214,
+          "anchorStart": 1249,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/provision-invitation-runtime-roles.mjs",
           "target": "scripts/provision-invitation-runtime-roles.mjs=>dist/provision-invitation-runtime-roles.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11696,10 +11801,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "706e5ea8c0391acc55b975531e5aa1e6432850bf83110f1c2e4d8c62e6ddd1d1",
-          "anchorEnd": 2143,
+          "anchorDigest": "050d53df7097507f33d6640838357abee6a41749f2ff4185ab602aeaa3615866",
+          "anchorEnd": 3697,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2040,
+          "anchorStart": 3576,
           "kind": "container_copy",
           "symbol": "provision-security-runtime-role.mjs",
           "target": "Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs"
@@ -11715,16 +11820,16 @@
         },
         {
           "anchorDigest": "ed6b85d3dcb91b70a9eabfba9cab9cdb488792ca971460b8e0c6283cc2226cf6",
-          "anchorEnd": 1174,
+          "anchorEnd": 1209,
           "anchorFile": "package.json",
-          "anchorStart": 996,
+          "anchorStart": 1031,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/provision-security-runtime-role.mjs",
           "target": "scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11751,26 +11856,26 @@
           "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
         },
         {
-          "anchorDigest": "5243e985e2c98b3038b155bcf1ff0d8370ae51f74bd5fc5f7985b0d57c6ef9cf",
-          "anchorEnd": 2663,
+          "anchorDigest": "085033173f4af300b24122305ba8d6fa4076ea182004db164214a9e4b810f240",
+          "anchorEnd": 4421,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2588,
+          "anchorStart": 4328,
           "kind": "container_copy",
           "symbol": "security-operator.mjs",
           "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
         },
         {
           "anchorDigest": "7294f4b1ac1e5f3fc751cc4ec19a5537c4f92b0d3005618c0e5f0b9ed422c1ca",
-          "anchorEnd": 2685,
+          "anchorEnd": 2923,
           "anchorFile": "package.json",
-          "anchorStart": 2536,
+          "anchorStart": 2774,
           "kind": "package_build_entrypoint",
           "symbol": "scripts/security-operator.ts",
           "target": "scripts/security-operator.ts=>dist/security-operator.mjs"
         },
         {
-          "anchorDigest": "7d923df42b3530270620067e23261154f6f7b094b091cdd0d133bc7f4740a428",
-          "anchorEnd": 616,
+          "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -11779,18 +11884,18 @@
         },
         {
           "anchorDigest": "a1750a76b982486d3994ada05cf17b378819261008b874324dd2a8e7a73bf652",
-          "anchorEnd": 2534,
+          "anchorEnd": 2772,
           "anchorFile": "package.json",
-          "anchorStart": 2509,
+          "anchorStart": 2747,
           "kind": "package_script",
           "symbol": "build:security-operator",
           "target": "package.json#scripts.build:security-operator"
         },
         {
           "anchorDigest": "e1989d4a74966750816e4a60c9b003dc206fff378b1af3698c48681a4f7281cd",
-          "anchorEnd": 2710,
+          "anchorEnd": 2948,
           "anchorFile": "package.json",
-          "anchorStart": 2691,
+          "anchorStart": 2929,
           "kind": "package_script",
           "symbol": "security:operator",
           "target": "package.json#scripts.security:operator"
@@ -11807,9 +11912,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 3512,
+          "anchorEnd": 3750,
           "anchorFile": "package.json",
-          "anchorStart": 3482,
+          "anchorStart": 3720,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -11833,9 +11938,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 3604,
+          "anchorEnd": 3842,
           "anchorFile": "package.json",
-          "anchorStart": 3579,
+          "anchorStart": 3817,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -11849,8 +11954,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 184,
-  "observationDigest": "aea0ad01d54de80c7d9cc1d8b2adec11f694da014b7e0960069ce22d5d84d6e2",
+  "observationCount": 185,
+  "observationDigest": "f1b85e1dd4ba1d371c747d48ba6e3687d27ec2526b93f9e900b94f646e85ad48",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -13981,18 +14086,18 @@
           "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
-          "anchorEnd": 1087,
+          "anchorEnd": 1153,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1076,
+          "anchorStart": 1142,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
-          "anchorEnd": 1024,
+          "anchorEnd": 1090,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1003,
+          "anchorStart": 1069,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getHeaderBabySelector",
@@ -14008,9 +14113,9 @@
           "target": "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
         },
         {
-          "anchorEnd": 961,
+          "anchorEnd": 1027,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 946,
+          "anchorStart": 1012,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "requireUserPage",
@@ -14034,6 +14139,15 @@
     },
     {
       "bindings": [
+        {
+          "anchorEnd": 894,
+          "anchorFile": "src/app/app/history/page.tsx",
+          "anchorStart": 868,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/history/page.tsx",
+          "symbol": "getActivityUnitPreferences",
+          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+        },
         {
           "anchorEnd": 816,
           "anchorFile": "src/app/app/history/page.tsx",
@@ -14179,18 +14293,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1108,
+          "anchorEnd": 1224,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1088,
+          "anchorStart": 1204,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1046,
+          "anchorEnd": 1162,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1031,
+          "anchorStart": 1147,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -15025,45 +15139,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 7530,
+          "anchorEnd": 10068,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7515,
+          "anchorStart": 10053,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 1582,
+          "anchorEnd": 2052,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 1517,
+          "anchorStart": 1987,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4497,
+          "anchorEnd": 5714,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 4420,
+          "anchorStart": 5637,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5776,
+          "anchorEnd": 6993,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 5604,
+          "anchorStart": 6821,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6529,
+          "anchorEnd": 7746,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6324,
+          "anchorStart": 7541,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -15493,9 +15607,9 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3877,
+          "anchorEnd": 3876,
           "anchorFile": "src/components/settings/integration-forms.tsx",
-          "anchorStart": 3818,
+          "anchorStart": 3817,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/integration-forms.tsx",
           "symbol": "fetch[6]",
@@ -16168,9 +16282,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4037,
+          "anchorEnd": 4275,
           "anchorFile": "package.json",
-          "anchorStart": 4028,
+          "anchorStart": 4266,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -16186,9 +16300,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3324,
+          "anchorEnd": 3562,
           "anchorFile": "package.json",
-          "anchorStart": 3293,
+          "anchorStart": 3531,
           "kind": "package_script",
           "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
           "symbol": "verify:activity-update-safety",
@@ -16204,18 +16318,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3168,
+          "anchorEnd": 3406,
           "anchorFile": "package.json",
-          "anchorStart": 3144,
+          "anchorStart": 3382,
           "kind": "package_script",
           "ownerModule": "scripts/backup-recovery-rehearsal.ts",
           "symbol": "verify:backup-recovery",
           "target": "package.json#scripts.verify:backup-recovery"
         },
         {
-          "anchorEnd": 3243,
+          "anchorEnd": 3481,
           "anchorFile": "package.json",
-          "anchorStart": 3218,
+          "anchorStart": 3456,
           "kind": "package_script",
           "ownerModule": "scripts/backup-recovery-rehearsal.ts",
           "symbol": "verify:update-rehearsal",
@@ -16231,9 +16345,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3413,
+          "anchorEnd": 3651,
           "anchorFile": "package.json",
-          "anchorStart": 3381,
+          "anchorStart": 3619,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-pilot",
@@ -16249,9 +16363,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2784,
+          "anchorEnd": 4560,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2664,
+          "anchorStart": 4422,
           "kind": "container_copy",
           "ownerModule": "scripts/household-deletion-readiness-guard.ts",
           "symbol": "household-deletion-readiness-guard.mjs",
@@ -16267,16 +16381,16 @@
           "target": "docker/entrypoint.sh#/app/scripts/household-deletion-readiness-guard.mjs"
         },
         {
-          "anchorEnd": 1625,
+          "anchorEnd": 1660,
           "anchorFile": "package.json",
-          "anchorStart": 1442,
+          "anchorStart": 1477,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/household-deletion-readiness-guard.ts",
           "symbol": "scripts/household-deletion-readiness-guard.ts",
           "target": "scripts/household-deletion-readiness-guard.ts=>dist/household-deletion-readiness-guard.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16285,9 +16399,9 @@
           "target": "package.json#scripts.build:build:household-deletion-readiness"
         },
         {
-          "anchorEnd": 1440,
+          "anchorEnd": 1475,
           "anchorFile": "package.json",
-          "anchorStart": 1404,
+          "anchorStart": 1439,
           "kind": "package_script",
           "ownerModule": "scripts/household-deletion-readiness-guard.ts",
           "symbol": "build:household-deletion-readiness",
@@ -16303,25 +16417,25 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1896,
+          "anchorEnd": 3414,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1825,
+          "anchorStart": 3325,
           "kind": "container_copy",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "integrity-check.mjs",
           "target": "Dockerfile#/app/dist/integrity-check.mjs=>/app/integrity-check.mjs"
         },
         {
-          "anchorEnd": 959,
+          "anchorEnd": 994,
           "anchorFile": "package.json",
-          "anchorStart": 814,
+          "anchorStart": 849,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "scripts/integrity-check.ts",
           "target": "scripts/integrity-check.ts=>dist/integrity-check.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16330,18 +16444,18 @@
           "target": "package.json#scripts.build:build:integrity"
         },
         {
-          "anchorEnd": 812,
+          "anchorEnd": 847,
           "anchorFile": "package.json",
-          "anchorStart": 795,
+          "anchorStart": 830,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "build:integrity",
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 4138,
+          "anchorEnd": 4376,
           "anchorFile": "package.json",
-          "anchorStart": 4120,
+          "anchorStart": 4358,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -16357,9 +16471,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3677,
+          "anchorEnd": 3915,
           "anchorFile": "package.json",
-          "anchorStart": 3645,
+          "anchorStart": 3883,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -16375,9 +16489,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3787,
+          "anchorEnd": 4025,
           "anchorFile": "package.json",
-          "anchorStart": 3752,
+          "anchorStart": 3990,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -16393,9 +16507,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2883,
+          "anchorEnd": 4677,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2785,
+          "anchorStart": 4561,
           "kind": "container_copy",
           "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
           "symbol": "p1-3-node-builtin-probe.mjs",
@@ -16411,16 +16525,16 @@
           "target": "docker/entrypoint.sh#/app/scripts/p1-3-node-builtin-probe.mjs"
         },
         {
-          "anchorEnd": 1825,
+          "anchorEnd": 1860,
           "anchorFile": "package.json",
-          "anchorStart": 1663,
+          "anchorStart": 1698,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
           "symbol": "scripts/p1-3-node-builtin-probe.mjs",
           "target": "scripts/p1-3-node-builtin-probe.mjs=>dist/p1-3-node-builtin-probe.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16501,25 +16615,25 @@
           "target": "scripts/platform-owner.ts#parsePlatformOwnerCommand:verify-bootstrap"
         },
         {
-          "anchorEnd": 1824,
+          "anchorEnd": 3324,
           "anchorFile": "Dockerfile",
-          "anchorStart": 1755,
+          "anchorStart": 3237,
           "kind": "container_copy",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform-owner.mjs",
           "target": "Dockerfile#/app/dist/platform-owner.mjs=>/app/platform-owner.mjs"
         },
         {
-          "anchorEnd": 789,
+          "anchorEnd": 824,
           "anchorFile": "package.json",
-          "anchorStart": 646,
+          "anchorStart": 681,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "scripts/platform-owner.ts",
           "target": "scripts/platform-owner.ts=>dist/platform-owner.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16528,18 +16642,18 @@
           "target": "package.json#scripts.build:build:platform-owner"
         },
         {
-          "anchorEnd": 644,
+          "anchorEnd": 679,
           "anchorFile": "package.json",
-          "anchorStart": 622,
+          "anchorStart": 657,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "build:platform-owner",
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 4081,
+          "anchorEnd": 4319,
           "anchorFile": "package.json",
-          "anchorStart": 4065,
+          "anchorStart": 4303,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -16555,34 +16669,79 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2469,
+          "anchorEnd": 4327,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2370,
+          "anchorStart": 4214,
+          "kind": "container_copy",
+          "ownerModule": "scripts/provision-database-timezone.mjs",
+          "symbol": "provision-database-timezone.mjs",
+          "target": "Dockerfile#/app/dist/provision-database-timezone.mjs=>/app/provision-database-timezone.mjs"
+        },
+        {
+          "anchorEnd": 2912,
+          "anchorFile": "docker/entrypoint.sh",
+          "anchorStart": 2773,
+          "kind": "container_invocation",
+          "ownerModule": "scripts/provision-database-timezone.mjs",
+          "symbol": "provision-database-timezone.mjs",
+          "target": "docker/entrypoint.sh#/app/provision-database-timezone.mjs"
+        },
+        {
+          "anchorEnd": 2741,
+          "anchorFile": "package.json",
+          "anchorStart": 2571,
+          "kind": "package_build_entrypoint",
+          "ownerModule": "scripts/provision-database-timezone.mjs",
+          "symbol": "scripts/provision-database-timezone.mjs",
+          "target": "scripts/provision-database-timezone.mjs=>dist/provision-database-timezone.mjs"
+        },
+        {
+          "anchorEnd": 651,
+          "anchorFile": "package.json",
+          "anchorStart": 196,
+          "kind": "package_build_invocation",
+          "ownerModule": "scripts/provision-database-timezone.mjs",
+          "symbol": "build",
+          "target": "package.json#scripts.build:build:database-timezone"
+        }
+      ],
+      "disposition": "observed",
+      "id": "package_command:scripts/provision-database-timezone.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-database-timezone.mjs",
+      "sidecarPath": "scripts/provision-database-timezone.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 4077,
+          "anchorFile": "Dockerfile",
+          "anchorStart": 3960,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-email-delivery-keys.mjs",
           "symbol": "provision-email-delivery-keys.mjs",
           "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
         },
         {
-          "anchorEnd": 3484,
+          "anchorEnd": 3694,
           "anchorFile": "docker/entrypoint.sh",
-          "anchorStart": 3386,
+          "anchorStart": 3596,
           "kind": "container_invocation",
           "ownerModule": "scripts/provision-email-delivery-keys.mjs",
           "symbol": "provision-email-delivery-keys.mjs",
           "target": "docker/entrypoint.sh#/app/provision-email-delivery-keys.mjs"
         },
         {
-          "anchorEnd": 2267,
+          "anchorEnd": 2302,
           "anchorFile": "package.json",
-          "anchorStart": 2093,
+          "anchorStart": 2128,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/provision-email-delivery-keys.mjs",
           "symbol": "scripts/provision-email-delivery-keys.mjs",
           "target": "scripts/provision-email-delivery-keys.mjs=>dist/provision-email-delivery-keys.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16600,34 +16759,34 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2369,
+          "anchorEnd": 3959,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2254,
+          "anchorStart": 3826,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
           "symbol": "provision-fresh-auth-attestation-keys.mjs",
           "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
         },
         {
-          "anchorEnd": 3305,
+          "anchorEnd": 3515,
           "anchorFile": "docker/entrypoint.sh",
-          "anchorStart": 3199,
+          "anchorStart": 3409,
           "kind": "container_invocation",
           "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
           "symbol": "provision-fresh-auth-attestation-keys.mjs",
           "target": "docker/entrypoint.sh#/app/provision-fresh-auth-attestation-keys.mjs"
         },
         {
-          "anchorEnd": 2058,
+          "anchorEnd": 2093,
           "anchorFile": "package.json",
-          "anchorStart": 1868,
+          "anchorStart": 1903,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
           "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
           "target": "scripts/provision-fresh-auth-attestation-keys.mjs=>dist/provision-fresh-auth-attestation-keys.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16645,34 +16804,34 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2587,
+          "anchorEnd": 4213,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2470,
+          "anchorStart": 4078,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
           "symbol": "provision-global-security-throttle-key.mjs",
           "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
         },
         {
-          "anchorEnd": 3705,
+          "anchorEnd": 3915,
           "anchorFile": "docker/entrypoint.sh",
-          "anchorStart": 3557,
+          "anchorStart": 3767,
           "kind": "container_invocation",
           "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
           "symbol": "provision-global-security-throttle-key.mjs",
           "target": "docker/entrypoint.sh#/app/provision-global-security-throttle-key.mjs"
         },
         {
-          "anchorEnd": 2503,
+          "anchorEnd": 2538,
           "anchorFile": "package.json",
-          "anchorStart": 2311,
+          "anchorStart": 2346,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
           "symbol": "scripts/provision-global-security-throttle-key.mjs",
           "target": "scripts/provision-global-security-throttle-key.mjs=>dist/provision-global-security-throttle-key.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16690,9 +16849,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2253,
+          "anchorEnd": 3825,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2144,
+          "anchorStart": 3698,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
           "symbol": "provision-invitation-runtime-roles.mjs",
@@ -16708,16 +16867,16 @@
           "target": "docker/entrypoint.sh#/app/provision-invitation-runtime-roles.mjs"
         },
         {
-          "anchorEnd": 1398,
+          "anchorEnd": 1433,
           "anchorFile": "package.json",
-          "anchorStart": 1214,
+          "anchorStart": 1249,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
           "symbol": "scripts/provision-invitation-runtime-roles.mjs",
           "target": "scripts/provision-invitation-runtime-roles.mjs=>dist/provision-invitation-runtime-roles.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16735,9 +16894,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2143,
+          "anchorEnd": 3697,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2040,
+          "anchorStart": 3576,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-security-runtime-role.mjs",
           "symbol": "provision-security-runtime-role.mjs",
@@ -16753,16 +16912,16 @@
           "target": "docker/entrypoint.sh#/app/provision-security-runtime-role.mjs"
         },
         {
-          "anchorEnd": 1174,
+          "anchorEnd": 1209,
           "anchorFile": "package.json",
-          "anchorStart": 996,
+          "anchorStart": 1031,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/provision-security-runtime-role.mjs",
           "symbol": "scripts/provision-security-runtime-role.mjs",
           "target": "scripts/provision-security-runtime-role.mjs=>dist/provision-security-runtime-role.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16789,25 +16948,25 @@
           "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
         },
         {
-          "anchorEnd": 2663,
+          "anchorEnd": 4421,
           "anchorFile": "Dockerfile",
-          "anchorStart": 2588,
+          "anchorStart": 4328,
           "kind": "container_copy",
           "ownerModule": "scripts/security-operator.ts",
           "symbol": "security-operator.mjs",
           "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
         },
         {
-          "anchorEnd": 2685,
+          "anchorEnd": 2923,
           "anchorFile": "package.json",
-          "anchorStart": 2536,
+          "anchorStart": 2774,
           "kind": "package_build_entrypoint",
           "ownerModule": "scripts/security-operator.ts",
           "symbol": "scripts/security-operator.ts",
           "target": "scripts/security-operator.ts=>dist/security-operator.mjs"
         },
         {
-          "anchorEnd": 616,
+          "anchorEnd": 651,
           "anchorFile": "package.json",
           "anchorStart": 196,
           "kind": "package_build_invocation",
@@ -16816,18 +16975,18 @@
           "target": "package.json#scripts.build:build:security-operator"
         },
         {
-          "anchorEnd": 2534,
+          "anchorEnd": 2772,
           "anchorFile": "package.json",
-          "anchorStart": 2509,
+          "anchorStart": 2747,
           "kind": "package_script",
           "ownerModule": "scripts/security-operator.ts",
           "symbol": "build:security-operator",
           "target": "package.json#scripts.build:security-operator"
         },
         {
-          "anchorEnd": 2710,
+          "anchorEnd": 2948,
           "anchorFile": "package.json",
-          "anchorStart": 2691,
+          "anchorStart": 2929,
           "kind": "package_script",
           "ownerModule": "scripts/security-operator.ts",
           "symbol": "security:operator",
@@ -16843,9 +17002,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3512,
+          "anchorEnd": 3750,
           "anchorFile": "package.json",
-          "anchorStart": 3482,
+          "anchorStart": 3720,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -16861,9 +17020,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3604,
+          "anchorEnd": 3842,
           "anchorFile": "package.json",
-          "anchorStart": 3579,
+          "anchorStart": 3817,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -17935,6 +18094,12 @@
       "sidecarPath": "scripts/platform-owner.operation.ts"
     },
     {
+      "id": "package_command:scripts/provision-database-timezone.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/provision-database-timezone.mjs",
+      "sidecarPath": "scripts/provision-database-timezone.operation.ts"
+    },
+    {
       "id": "package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerKind": "package_command",
       "ownerModule": "scripts/provision-email-delivery-keys.mjs",
@@ -17983,9 +18148,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "1ecfab1be8780e975fe20c81595d22eb180ea900009fa0ef2467b6d159afcbca",
+  "ownerSetDigest": "c24a4944503645f6c5ac93a96c9f82a7c17237037fe761f7b0ce28b76d09a63d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "ee4fa85a7d65f8ca8b1eb629d21a140f4712c1b69720cae7c114bea0b475dfd6",
+  "registryDigest": "dddcc4dfde4a0543058fc20fa4bea7bdb9aedf7beaf084a45f65a64d3aae130e",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
@@ -18045,191 +18210,205 @@
       "role": "main"
     },
     {
-      "anchorBytes": "' | DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma >/dev/null 2>&1",
-      "anchorEnd": 2942,
+      "anchorBytes": "if ! CUBBY_RUNTIME_DATABASE_URL=\"$DATABASE_URL\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-database-timezone.mjs >/dev/null 2>&1",
+      "anchorEnd": 2912,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 2795,
+      "anchorStart": 2773,
+      "codeOption": null,
+      "disposition": "container_invocation",
+      "exclusion": null,
+      "fingerprint": "da84b7890491b96572e77520680619e78ac33331ef0f0fc8ea29958a4c23a58c",
+      "id": "runtime:docker/entrypoint.sh:2773:main:/app/provision-database-timezone.mjs",
+      "ownerModule": "scripts/provision-database-timezone.mjs",
+      "path": "/app/provision-database-timezone.mjs",
+      "role": "main"
+    },
+    {
+      "anchorBytes": "' | DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node node_modules/prisma/build/index.js db execute --stdin --schema prisma/schema.prisma >/dev/null 2>&1",
+      "anchorEnd": 3152,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 3005,
       "codeOption": null,
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "third_party_migration_cli",
         "rationale": "third-party migration CLI runtime; observation-only structural exclusion"
       },
-      "fingerprint": "d4ef37fe45809cf2f75caa855c1323a703032b5890894cdbff2f3d4e6d5684f4",
-      "id": "runtime:docker/entrypoint.sh:2795:main:/app/node_modules/prisma/build/index.js",
+      "fingerprint": "22066f564f1fc1ce0c811c096c5a7fb975fe1c0131ce711c0532b40225153105",
+      "id": "runtime:docker/entrypoint.sh:3005:main:/app/node_modules/prisma/build/index.js",
       "ownerModule": null,
       "path": "/app/node_modules/prisma/build/index.js",
       "role": "main"
     },
     {
       "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node node_modules/prisma/build/index.js migrate deploy >/dev/null 2>&1",
-      "anchorEnd": 3130,
+      "anchorEnd": 3340,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 3016,
+      "anchorStart": 3226,
       "codeOption": null,
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "third_party_migration_cli",
         "rationale": "third-party migration CLI runtime; observation-only structural exclusion"
       },
-      "fingerprint": "1696b7952c3c276a31bf65c52ac1a1b195d0af94ef09473eb06e1caa0ca266c2",
-      "id": "runtime:docker/entrypoint.sh:3016:main:/app/node_modules/prisma/build/index.js",
+      "fingerprint": "81ebd2d8fc665733c51339baafcb32fb7b0d4a2cc3ed73eb330bb59a692d1787",
+      "id": "runtime:docker/entrypoint.sh:3226:main:/app/node_modules/prisma/build/index.js",
       "ownerModule": null,
       "path": "/app/node_modules/prisma/build/index.js",
       "role": "main"
     },
     {
       "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-fresh-auth-attestation-keys.mjs >/dev/null 2>&1",
-      "anchorEnd": 3305,
+      "anchorEnd": 3515,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 3199,
+      "anchorStart": 3409,
       "codeOption": null,
       "disposition": "container_invocation",
       "exclusion": null,
-      "fingerprint": "f7cfe9deaaae6ea2681b3f56ce8392d5a2f93fb83e12de53fd34b51c2516244a",
-      "id": "runtime:docker/entrypoint.sh:3199:main:/app/provision-fresh-auth-attestation-keys.mjs",
+      "fingerprint": "31e61b2af46dd9742e203115c85f45c4168c00e47ba20130a0e81d79c0b84673",
+      "id": "runtime:docker/entrypoint.sh:3409:main:/app/provision-fresh-auth-attestation-keys.mjs",
       "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
       "path": "/app/provision-fresh-auth-attestation-keys.mjs",
       "role": "main"
     },
     {
       "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-email-delivery-keys.mjs >/dev/null 2>&1",
-      "anchorEnd": 3484,
+      "anchorEnd": 3694,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 3386,
+      "anchorStart": 3596,
       "codeOption": null,
       "disposition": "container_invocation",
       "exclusion": null,
-      "fingerprint": "86f3e3203adcb0ef2fad3870a5cd46c317ad85b4aab1ca2055c44980dc2e2c54",
-      "id": "runtime:docker/entrypoint.sh:3386:main:/app/provision-email-delivery-keys.mjs",
+      "fingerprint": "e69ba540bf405638e23e1b563bae9ad7b412a3cf840cc3e426864c56c8dfb0b9",
+      "id": "runtime:docker/entrypoint.sh:3596:main:/app/provision-email-delivery-keys.mjs",
       "ownerModule": "scripts/provision-email-delivery-keys.mjs",
       "path": "/app/provision-email-delivery-keys.mjs",
       "role": "main"
     },
     {
       "anchorBytes": "if ! CUBBY_THROTTLE_KEY=\"$cubby_throttle_key\" DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-global-security-throttle-key.mjs >/dev/null 2>&1",
-      "anchorEnd": 3705,
+      "anchorEnd": 3915,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 3557,
+      "anchorStart": 3767,
       "codeOption": null,
       "disposition": "container_invocation",
       "exclusion": null,
-      "fingerprint": "8abaf7e889b7349977deb5e9a8dcc1c91f3b2ce91e0aaeb2380b68d5b845448d",
-      "id": "runtime:docker/entrypoint.sh:3557:main:/app/provision-global-security-throttle-key.mjs",
+      "fingerprint": "3ac5b7c4aa00a1f75e000eb2a4a90139c2bf2067c0de4b0b4febac2c4347bccf",
+      "id": "runtime:docker/entrypoint.sh:3767:main:/app/provision-global-security-throttle-key.mjs",
       "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
       "path": "/app/provision-global-security-throttle-key.mjs",
       "role": "main"
     },
     {
       "anchorBytes": "exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js",
-      "anchorEnd": 4170,
+      "anchorEnd": 4380,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 4092,
+      "anchorStart": 4302,
       "codeOption": "--require",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "application_server_runtime",
         "rationale": "acceptance-only application server preload; observation-only structural exclusion"
       },
-      "fingerprint": "63327197bcf315443626e453a9c62ef604fde5553d440d41234674612ab63454",
-      "id": "runtime:docker/entrypoint.sh:4092:code_module:/app/scripts/p1-3-standalone-bootstrap-probe.cjs",
+      "fingerprint": "0078f004d583d802ebbfdc919e12e499494814ae0695ab5f251f47bd729e41b8",
+      "id": "runtime:docker/entrypoint.sh:4302:code_module:/app/scripts/p1-3-standalone-bootstrap-probe.cjs",
       "ownerModule": null,
       "path": "/app/scripts/p1-3-standalone-bootstrap-probe.cjs",
       "role": "code_module"
     },
     {
       "anchorBytes": "exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js",
-      "anchorEnd": 4170,
+      "anchorEnd": 4380,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 4092,
+      "anchorStart": 4302,
       "codeOption": null,
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "application_server_runtime",
         "rationale": "copied application server runtime; observation-only structural exclusion"
       },
-      "fingerprint": "65fcbe4bf4d431950acbbdeed1b7364ed568177e0785050ece97368eb361a76d",
-      "id": "runtime:docker/entrypoint.sh:4092:main:/app/server.js",
+      "fingerprint": "cf0671bca6b64de35f3980593aa45a5ed85cb76a803900b87bd1ac8fb77cbf09",
+      "id": "runtime:docker/entrypoint.sh:4302:main:/app/server.js",
       "ownerModule": null,
       "path": "/app/server.js",
       "role": "main"
     },
     {
       "anchorBytes": "exec node server.js",
-      "anchorEnd": 4193,
+      "anchorEnd": 4403,
       "anchorFile": "docker/entrypoint.sh",
-      "anchorStart": 4174,
+      "anchorStart": 4384,
       "codeOption": null,
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "application_server_runtime",
         "rationale": "copied application server runtime; observation-only structural exclusion"
       },
-      "fingerprint": "c43dca267a6deeb8d53f37ec7f628d69d7945b4f443326dd876985fad96f3ea8",
-      "id": "runtime:docker/entrypoint.sh:4174:main:/app/server.js",
+      "fingerprint": "49eada3ef59f15143f03c1608bcb5d66bf7f1a61ef216fe42b13f386ca2fc755",
+      "id": "runtime:docker/entrypoint.sh:4384:main:/app/server.js",
       "ownerModule": null,
       "path": "/app/server.js",
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 3069,
+      "anchorEnd": 3145,
       "anchorFile": "docker-compose.yml",
-      "anchorStart": 2939,
+      "anchorStart": 3015,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "701a0f50a149e17bbd67984c68bb8a9ab23c79e7164f1d3e4b3a693055eb4d3a",
-      "id": "runtime:docker-compose.yml:2939:main:eval",
+      "fingerprint": "01b9d16bfa0de572d085c3df1993e2832fb454e4f530709f55de457112b773d6",
+      "id": "runtime:docker-compose.yml:3015:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 1361,
+      "anchorEnd": 4825,
       "anchorFile": "scripts/backup-recovery-rehearsal.compose.yml",
-      "anchorStart": 1231,
+      "anchorStart": 4695,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "6be433724f1d84407c4e3033db9b6b9c6a543b8a36f06fde35aee17489cd6d7b",
-      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:1231:main:eval",
+      "fingerprint": "50a60f79fc13507c7018f68e33c3e5c1d333c3cf3760148120c2ba2dea34deca",
+      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:4695:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     }
   ],
-  "runtimeInvocationLedgerDigest": "f186a9923d44218b7d9304bded5207ecb0af6c15020ffe6885a264bcc3f9053c",
+  "runtimeInvocationLedgerDigest": "51c51a34fdce0e683df7dbefc976d3b3baaad44bb2d51b4acdda08022629c687",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1,
   "structuralIdentityAnchors": [
     {
       "anchorDigest": "b955511c0cd0a0eb6752e0983a50d13b5b5897c376a8e504423326af522affac",
-      "end": 1193,
+      "end": 1269,
       "file": "docker-compose.yml",
       "kind": "container_build_selector",
-      "start": 1181,
+      "start": 1257,
       "targetFile": "Dockerfile"
     },
     {
       "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
-      "end": 566,
+      "end": 784,
       "file": "scripts/backup-recovery-rehearsal.compose.yml",
       "kind": "container_build_selector",
-      "start": 509,
+      "start": 727,
       "targetFile": "Dockerfile"
     },
     {
-      "anchorDigest": "81855e856efd1ba0c57e56c229275aa798ba31357832759193f0e42db24a574e",
-      "end": 3382,
+      "anchorDigest": "de87a3c24ca3ae75d96063b465bac7ca07933e04c4c68260874d1f0fb997c0a6",
+      "end": 5323,
       "file": "Dockerfile",
       "kind": "container_dockerfile",
       "start": 0,

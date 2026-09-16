@@ -8,6 +8,11 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "getActivityUnitPreferences",
+      target: "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getHeaderBabySelector",
       target: "src/server/services/baby-selector.ts#getHeaderBabySelector"
     },
