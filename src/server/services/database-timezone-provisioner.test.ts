@@ -42,7 +42,7 @@ describe("database timezone invariant", () => {
     expect(entrypoint.indexOf("unset CUBBY_SECURITY_OPERATOR_DB_PASSWORD")).toBeLessThan(entrypoint.indexOf(step));
     expect(entrypoint.indexOf(step)).toBeLessThan(entrypoint.indexOf("db execute --stdin"));
     expect(entrypoint.indexOf(step)).toBeLessThan(entrypoint.indexOf("migrate deploy"));
-    expect(dockerfile).toContain("COPY --from=builder /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs");
+    expect(dockerfile).toContain("COPY --from=builder --chown=node:node /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs");
     expect(packageJson.scripts["build:database-timezone"]).toContain("scripts/provision-database-timezone.mjs");
     expect(packageJson.scripts.build).toContain("npm run build:database-timezone");
   });

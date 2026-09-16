@@ -78,16 +78,18 @@ describe("container entrypoint contract", () => {
     expect(dockerfile.indexOf(normalize)).toBeLessThan(dockerfile.indexOf(execute));
   });
 
-  it("builds and runs the readiness guard's generated ESM before Prisma generation", () => {
+  it("builds and runs the readiness guard's generated ESM before the application build", () => {
     const dockerfile = readFileSync(dockerfilePath, "utf8");
     const buildGuard = "RUN npm run build:household-deletion-readiness";
     const runGuard = "RUN node dist/household-deletion-readiness-guard.mjs";
-    const prisma = "RUN npx prisma generate";
+    // The application build generates the Prisma client itself; see image-build-cache-contract.
+    const build = dockerfile.search(/^RUN (?:--mount=\S+ )*npm run build\r?$/m);
 
     expect(dockerfile).toContain(buildGuard);
     expect(dockerfile).toContain(runGuard);
+    expect(build).toBeGreaterThan(0);
     expect(dockerfile.indexOf(buildGuard)).toBeLessThan(dockerfile.indexOf(runGuard));
-    expect(dockerfile.indexOf(runGuard)).toBeLessThan(dockerfile.indexOf(prisma));
+    expect(dockerfile.indexOf(runGuard)).toBeLessThan(build);
   });
 
   it("runs migrations before starting the server", () => {
@@ -140,7 +142,7 @@ describe("container entrypoint contract", () => {
     expect(source.indexOf("bootstrap_exec_selected")).toBeLessThan(
       source.indexOf("exec node --require /app/scripts/p1-3-standalone-bootstrap-probe.cjs server.js")
     );
-    expect(dockerfile).toContain("COPY scripts/p1-3-standalone-bootstrap-probe.cjs /app/scripts/p1-3-standalone-bootstrap-probe.cjs");
+    expect(dockerfile).toContain("COPY --chown=node:node scripts/p1-3-standalone-bootstrap-probe.cjs /app/scripts/p1-3-standalone-bootstrap-probe.cjs");
     expect(standaloneBootstrapProbe).not.toContain("CUBBY_P13_ACCEPTANCE_BOOTSTRAP_PRELOAD");
     expect(standaloneBootstrapProbe).toContain('const stageFile = "/run/cubby-acceptance-status/instrumentation-stage"');
     expect(standaloneBootstrapProbe).toContain("process.env.CUBBY_P13_ACCEPTANCE_INSTRUMENTATION_STAGE_FILE === stageFile");

@@ -220,6 +220,22 @@ Logs:
 docker compose logs --tail 300 app
 ```
 
+### Rebuild speed
+
+The image build requires BuildKit, which Docker Compose v2 and `docker build` use
+by default. Two BuildKit cache mounts hold only recomputable caches - the npm
+download cache and Next's incremental compiler cache - so a cold builder produces
+the same image, just more slowly. Runtime dependencies install from the lockfile
+in their own stage rather than by copying the builder's `node_modules` and pruning
+it, so that layer stays cached until `package.json`, `package-lock.json` or the
+Prisma schema changes. Runtime files are installed and copied as the unprivileged
+`node` user, because a recursive `chown` of `/app` in a late stage rewrote every
+`node_modules` and `.next` file into a fresh layer and measured about five minutes
+of every rebuild. Source-only rebuilds therefore redo the application build and
+little else. `src/server/services/image-build-cache-contract.test.ts` pins
+this arrangement, including the Prisma CLI staying a runtime dependency because
+the entrypoint runs `migrate deploy`.
+
 The app container provisions or rotates the non-owner `cubby_runtime`, `cubby_auth`, `cubby_email_delivery`, and `cubby_security_operator` roles through the migration-owner connection, runs `prisma migrate deploy` with `MIGRATION_DATABASE_URL`, reconciles the fresh-auth and email-delivery keyrings into runtime-inaccessible owner tables, then removes migration-role and component-password variables before starting the Next server. Ordinary services use `DATABASE_URL`, Better Auth alone uses `AUTH_DATABASE_URL`, and only the encrypted SMTP worker uses `EMAIL_DELIVERY_DATABASE_URL`. The security operator role is not an app runtime role: it has no memberships, object ownership, or table privileges and can execute only its aggregate function. This applies on fresh and existing volumes and fails closed for absent, malformed, version-mismatched, or referenced-but-missing key material. Do not manually grant `cubby_runtime` direct Session DML, delivery receipt authority, or credential/key-table privileges.
 
 For a pre-P1-3 existing volume that is still owned by legacy bootstrap role
