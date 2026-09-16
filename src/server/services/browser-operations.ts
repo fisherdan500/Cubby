@@ -267,7 +267,7 @@ function submitBindingMatches(
 }
 
 async function lockCurrentActor(tx: BrowserOperationTransaction, ctx: BrowserOperationContext) {
-  await tx.$queryRaw`SELECT "id" FROM "Session" WHERE "id" = ${ctx.sessionId} AND "userId" = ${ctx.userId} FOR UPDATE`;
+  await tx.$queryRaw`SELECT "id" FROM "lock_actor_session_for_operation"(${ctx.userId}, ${ctx.sessionId})`;
   const session = await tx.session.findFirst({
     where: { id: ctx.sessionId, userId: ctx.userId, expiresAt: { gt: new Date() } }
   });

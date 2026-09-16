@@ -70,7 +70,7 @@ const apiKeyRevokeBrowserSchema = z.object({ operationId: z.unknown(), apiKeyId:
 async function reauthorizeApiKeyOwner(tx: { $queryRaw: typeof prisma.$queryRaw }, ctx: { userId: string; role: string }, freshSession: Awaited<ReturnType<typeof requireFreshSession>>) {
   if (ctx.role !== "owner" || freshSession.user.id !== ctx.userId) throw new Error("not_found");
   const sessions = await tx.$queryRaw<Array<{ userId: string; createdAt: Date; expiresAt: Date }>>`
-    SELECT "userId", "createdAt", "expiresAt" FROM "Session" WHERE "id" = ${freshSession.session.id} FOR UPDATE
+    SELECT "userId", "createdAt", "expiresAt" FROM "lock_actor_session_for_operation"(${freshSession.user.id}, ${freshSession.session.id})
   `;
   const session = sessions[0];
   if (!session || session.userId !== freshSession.user.id || session.expiresAt <= new Date()) throw new Error("unauthenticated");

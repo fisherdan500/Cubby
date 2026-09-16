@@ -122,7 +122,7 @@ beforeEach(() => {
     $executeRaw: mocks.policyLock,
     $queryRaw: (...args: unknown[]) => {
       const query = Array.isArray(args[0]) ? args[0][0] : "";
-      if (typeof query === "string" && query.includes('FROM "Session"')) return mocks.sessionLock(...args);
+      if (typeof query === "string" && query.includes('"lock_actor_session_for_operation"') || query.includes('"lock_user_sessions_for_operation"')) return mocks.sessionLock(...args);
       if (typeof query === "string" && query.includes('FROM "WebhookEndpoint"')) return mocks.endpointLock(...args);
       return mocks.memberLock(...args);
     },

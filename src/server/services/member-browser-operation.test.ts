@@ -77,7 +77,7 @@ describe("member browser-v2 operations", () => {
   it("submits only the exact opened target, revision, role, disabled and deleted state", async () => {
     const update = vi.fn();
     mocks.execute.mockImplementation(async (input) => input.execute({
-      $queryRaw: vi.fn().mockImplementation((parts) => String(parts[0]).includes('FROM "Session"')
+      $queryRaw: vi.fn().mockImplementation((parts) => /lock_(actor_session|user_sessions)_for_operation/.test(String(parts[0]))
         ? [{ id: "session-owner", userId: "user-owner", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }]
         : [{ id: target.id }]),
       householdMember: { findUnique: vi.fn().mockResolvedValue({ ...target, role: "admin" }), update },
@@ -97,7 +97,7 @@ describe("member browser-v2 operations", () => {
   it("locks target sessions before the target member during suspension", async () => {
     const queryRaw = vi.fn().mockImplementation((parts) => {
       const query = String(parts[0]);
-      if (query.includes('FROM "Session"')) return [{ id: "session-locked", userId: query.includes("user-target") ? "user-target" : "user-owner", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }];
+      if (query.includes('"lock_actor_session_for_operation"') || query.includes('"lock_user_sessions_for_operation"')) return [{ id: "session-locked", userId: query.includes("user-target") ? "user-target" : "user-owner", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }];
       return [{ id: target.id }];
     });
     mocks.execute.mockImplementation(async (input) => {
@@ -115,7 +115,7 @@ describe("member browser-v2 operations", () => {
 
     await submitMemberBrowserOperation("suspend", { operationId, memberId: target.id });
     const queries = queryRaw.mock.calls.map(([parts]) => String(parts[0]));
-    const sessionCalls = queries.map((query, index) => query.includes('FROM "Session"') ? index : -1).filter((index) => index >= 0);
+    const sessionCalls = queries.map((query, index) => query.includes('"lock_actor_session_for_operation"') || query.includes('"lock_user_sessions_for_operation"') ? index : -1).filter((index) => index >= 0);
     const memberCall = queries.findIndex((query) => query.includes('FROM "HouseholdMember"'));
     expect(sessionCalls).toHaveLength(2);
     expect(sessionCalls[1]).toBeLessThan(memberCall);

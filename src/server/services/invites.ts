@@ -353,9 +353,7 @@ async function lockAndRevalidateFreshSession(
     expiresAt: Date;
   }>>`
     SELECT "id", "userId", "createdAt", "expiresAt"
-    FROM "Session"
-    WHERE "id" = ${freshSession.session.id}
-    FOR UPDATE
+    FROM "lock_actor_session_for_operation"(${freshSession.user.id}, ${freshSession.session.id})
   `;
   const session = sessions[0];
   if (!session || session.userId !== freshSession.user.id || session.expiresAt <= new Date()) {
@@ -659,7 +657,7 @@ async function lockTargetMemberSessions(tx: Prisma.TransactionClient, householdI
   });
   if (!target) throw new Error("not_found");
   await tx.$queryRaw<Array<{ id: string }>>`
-    SELECT "id" FROM "Session" WHERE "userId" = ${target.userId} ORDER BY "id" FOR UPDATE
+    SELECT "id" FROM "lock_user_sessions_for_operation"(${target.userId})
   `;
   return target.userId;
 }

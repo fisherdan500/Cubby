@@ -117,7 +117,7 @@ describe("invite browser-v2 operations", () => {
     expect(revoke).toMatchObject({ operationKey: "inviteRevoke", targetKind: "invite", targetId: "invite-1", permission: "member.manage" });
     expect(revoke.preActorLock).toBeTypeOf("function");
     const snapshot = await revoke.targetSnapshot({
-      $queryRaw: vi.fn().mockImplementation((parts) => String(parts[0]).includes("Session") ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
+      $queryRaw: vi.fn().mockImplementation((parts) => /lock_(actor_session|user_sessions)_for_operation/.test(String(parts[0])) ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
       invite: { findUnique: vi.fn().mockResolvedValue({ id: "invite-1", householdId: "household-1", role: "parent", status: "pending", updatedAt: new Date("2026-08-17T12:00:00.000Z") }) }
     }, ctx);
     expect(snapshot).toEqual({ version: 1, status: "pending", updatedAt: "2026-08-17T12:00:00.000Z" });
@@ -133,7 +133,7 @@ describe("invite browser-v2 operations", () => {
     mocks.execute.mockImplementation(async (input) => {
       const update = vi.fn().mockResolvedValue({ id: "invite-1", status: "revoked", revokedAt: new Date("2026-08-17T12:01:00.000Z") });
       const outcome = await input.execute({
-        $queryRaw: vi.fn().mockImplementation((parts) => String(parts[0]).includes("Session") ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
+        $queryRaw: vi.fn().mockImplementation((parts) => /lock_(actor_session|user_sessions)_for_operation/.test(String(parts[0])) ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
         invite: { findUnique: vi.fn().mockResolvedValue({
           id: "invite-1", householdId: "household-1", email: "recipient@example.test", role: "parent", status: "pending",
           updatedAt: new Date("2026-08-17T12:00:00.000Z")
@@ -155,7 +155,7 @@ describe("invite browser-v2 operations", () => {
 
   it("fails closed before mutation when an invite revision, target state, actor, or role changed", async () => {
     mocks.execute.mockImplementation(async (input) => input.execute({
-      $queryRaw: vi.fn().mockImplementation((parts) => String(parts[0]).includes("Session") ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
+      $queryRaw: vi.fn().mockImplementation((parts) => /lock_(actor_session|user_sessions)_for_operation/.test(String(parts[0])) ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-1" }]),
       invite: { findUnique: vi.fn().mockResolvedValue({
         id: "invite-1", householdId: "household-1", email: "recipient@example.test", role: "parent", status: "revoked",
         updatedAt: new Date("2026-08-17T12:01:00.000Z")
@@ -170,7 +170,7 @@ describe("invite browser-v2 operations", () => {
       const update = vi.fn().mockResolvedValue({ status: "revoked" });
       const outcome = await input.execute({
         $executeRaw: vi.fn(),
-        $queryRaw: vi.fn().mockImplementation((parts) => String(parts[0]).includes("Session") ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-a" }, { id: "invite-b" }]),
+        $queryRaw: vi.fn().mockImplementation((parts) => /lock_(actor_session|user_sessions)_for_operation/.test(String(parts[0])) ? [{ id: "session-1", userId: "user-1", createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }] : [{ id: "invite-a" }, { id: "invite-b" }]),
         invite: { findMany: vi.fn().mockResolvedValue([
           { id: "invite-a", email: "a@example.test", role: "parent", status: "pending" },
           { id: "invite-b", email: "b@example.test", role: "caretaker", status: "pending" }
