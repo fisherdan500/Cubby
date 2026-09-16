@@ -8,7 +8,7 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
-import { requireFreshSession } from "@/server/auth/session";
+import { getSession } from "@/server/auth/session";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { recordQualifyingGlobalSessionUseAfterSuccess } from "@/server/services/global-session-security";
 
@@ -169,8 +169,21 @@ export function browserOperationFailureResult(operationId: unknown, error: unkno
   return null;
 }
 
+/**
+ * Everyday browser operations bind to the caller's live session. Requiring a *fresh* sign-in here
+ * made every activity, timer, calendar and household-preference mutation fail with
+ * fresh_authentication_required ten minutes after signing in. Sensitive operations keep their own
+ * freshness checks at the point of use (API keys, admin invites, leaving a household, and the
+ * global security flows for password, email and recovery), so this context stays ordinary.
+ */
+async function requireSessionBoundUser() {
+  const session = await getSession();
+  if (!session?.user?.id || !session.session?.id) throw new Error("unauthenticated");
+  return session;
+}
+
 async function getBrowserOperationContextForBabyScope(babyId: unknown, includeInactive: boolean): Promise<BrowserOperationContext> {
-  const session = await requireFreshSession();
+  const session = await requireSessionBoundUser();
   const ctx = await getEffectiveHouseholdContext();
   if (session.user.id !== ctx.userId) throw new Error("forbidden");
   const parsedBabyId = z.string().min(1).parse(babyId);
@@ -191,7 +204,7 @@ export function getBrowserOperationContextForLifecycleBaby(babyId: unknown) {
 }
 
 export async function getBrowserOperationContextForHousehold(): Promise<BrowserOperationContext> {
-  const session = await requireFreshSession();
+  const session = await requireSessionBoundUser();
   const ctx = await getEffectiveHouseholdContext();
   if (session.user.id !== ctx.userId) throw new Error("forbidden");
   return { ...ctx, sessionId: session.session.id };

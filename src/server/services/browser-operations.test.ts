@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireFreshSession: vi.fn(),
+  getSession: vi.fn(),
   getEffectiveHouseholdContext: vi.fn(),
   requirePermission: vi.fn(),
   sessionFindFirst: vi.fn(),
@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   recordQualifyingUse: vi.fn()
 }));
 
-vi.mock("@/server/auth/session", () => ({ requireFreshSession: mocks.requireFreshSession }));
+vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession }));
 vi.mock("@/server/auth/context", () => ({
   getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
@@ -112,7 +112,7 @@ function calendarOperation(opening: unknown, intent: unknown, overrides: Record<
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.requireFreshSession.mockResolvedValue({ user: { id: "user-1" }, session: { id: "session-1" } });
+  mocks.getSession.mockResolvedValue({ user: { id: "user-1" }, session: { id: "session-1" } });
   mocks.getEffectiveHouseholdContext.mockResolvedValue({ ...ctx, sessionId: undefined });
   mocks.sessionFindFirst.mockResolvedValue({ id: "session-1", userId: "user-1", expiresAt: new Date(Date.now() + 60_000) });
   mocks.householdFindFirst.mockResolvedValue({ id: "household-1", deletedAt: null });

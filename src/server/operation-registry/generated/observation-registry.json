@@ -8874,18 +8874,18 @@
         },
         {
           "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-          "anchorEnd": 1153,
+          "anchorEnd": 1161,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1142,
+          "anchorStart": 1150,
           "kind": "server_value_import",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 1090,
+          "anchorEnd": 1098,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1069,
+          "anchorStart": 1077,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
@@ -8901,9 +8901,9 @@
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1027,
+          "anchorEnd": 1035,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1012,
+          "anchorStart": 1020,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -8929,36 +8929,36 @@
       "bindings": [
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 894,
+          "anchorEnd": 949,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 868,
+          "anchorStart": 923,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 816,
+          "anchorEnd": 871,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 795,
+          "anchorStart": 850,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 746,
+          "anchorEnd": 801,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 732,
+          "anchorStart": 787,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 690,
+          "anchorEnd": 745,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 675,
+          "anchorStart": 730,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9114,27 +9114,27 @@
       "bindings": [
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 627,
+          "anchorEnd": 674,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 606,
+          "anchorStart": 653,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-          "anchorEnd": 689,
+          "anchorEnd": 736,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 679,
+          "anchorStart": 726,
           "kind": "server_value_import",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 564,
+          "anchorEnd": 611,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 549,
+          "anchorStart": 596,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10069,45 +10069,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 5955,
+          "anchorEnd": 5963,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 5940,
+          "anchorStart": 5948,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/invite-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 801,
+          "anchorEnd": 809,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 736,
+          "anchorStart": 744,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 2517,
+          "anchorEnd": 2525,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 2440,
+          "anchorStart": 2448,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "e84ac0b9d27e7351ee448775db45ab9e1dda386542e6da317f13ea79a205bc26",
-          "anchorEnd": 3975,
+          "anchorEnd": 3983,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 3830,
+          "anchorStart": 3838,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "b928837e232b2bc92dadc06c13c466ccabde700b3d02cf8a56eee3a20d2f6b66",
-          "anchorEnd": 4572,
+          "anchorEnd": 4580,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 4383,
+          "anchorStart": 4391,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -11955,7 +11955,7 @@
     }
   ],
   "observationCount": 185,
-  "observationDigest": "f1b85e1dd4ba1d371c747d48ba6e3687d27ec2526b93f9e900b94f646e85ad48",
+  "observationDigest": "575d295564ff6fc895f740bb504e80127e2e42358d05d0bbe86b7f785dc82a2b",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14086,18 +14086,18 @@
           "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
-          "anchorEnd": 1153,
+          "anchorEnd": 1161,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1142,
+          "anchorStart": 1150,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
-          "anchorEnd": 1090,
+          "anchorEnd": 1098,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1069,
+          "anchorStart": 1077,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getHeaderBabySelector",
@@ -14113,9 +14113,9 @@
           "target": "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
         },
         {
-          "anchorEnd": 1027,
+          "anchorEnd": 1035,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1012,
+          "anchorStart": 1020,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "requireUserPage",
@@ -14140,36 +14140,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 894,
+          "anchorEnd": 949,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 868,
+          "anchorStart": 923,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 816,
+          "anchorEnd": 871,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 795,
+          "anchorStart": 850,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 746,
+          "anchorEnd": 801,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 732,
+          "anchorStart": 787,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 690,
+          "anchorEnd": 745,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 675,
+          "anchorStart": 730,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "requireUserPage",
@@ -14320,27 +14320,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 627,
+          "anchorEnd": 674,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 606,
+          "anchorStart": 653,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 689,
+          "anchorEnd": 736,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 679,
+          "anchorStart": 726,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
         },
         {
-          "anchorEnd": 564,
+          "anchorEnd": 611,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 549,
+          "anchorStart": 596,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "requireUserPage",
@@ -15247,45 +15247,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5955,
+          "anchorEnd": 5963,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 5940,
+          "anchorStart": 5948,
           "kind": "form_action",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/invite-form.tsx#submit"
         },
         {
-          "anchorEnd": 801,
+          "anchorEnd": 809,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 736,
+          "anchorStart": 744,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2517,
+          "anchorEnd": 2525,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 2440,
+          "anchorStart": 2448,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3975,
+          "anchorEnd": 3983,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 3830,
+          "anchorStart": 3838,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4572,
+          "anchorEnd": 4580,
           "anchorFile": "src/components/forms/invite-form.tsx",
-          "anchorStart": 4383,
+          "anchorStart": 4391,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/invite-form.tsx",
           "symbol": "fetch[4]",
@@ -18150,7 +18150,7 @@
   ],
   "ownerSetDigest": "c24a4944503645f6c5ac93a96c9f82a7c17237037fe761f7b0ce28b76d09a63d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "dddcc4dfde4a0543058fc20fa4bea7bdb9aedf7beaf084a45f65a64d3aae130e",
+  "registryDigest": "1085b9278bce39687f3f2215ebb1c20402b58cbb5cb58ec6ec632c063b371cb4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
