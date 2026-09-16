@@ -359,7 +359,7 @@ export function SessionManager({ accountScope }: { accountScope: string }) {
           </div>
           <div className="space-y-1">
             <label htmlFor="session-current-password" className="text-sm font-semibold">Current password</label>
-            <input ref={passwordRef} id="session-current-password" type="password" autoComplete="current-password" maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-base" />
+            <input ref={passwordRef} id="session-current-password" type="password" autoComplete="current-password" maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-base outline-none sm:text-sm transition focus:border-ring focus:ring-4 focus:ring-ring/20 py-2 text-base" />
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={closeConfirmation} disabled={busy}>Cancel</Button>

@@ -42,9 +42,14 @@ describe("secondary workflow mobile contracts", () => {
   it("keeps member grids, controls, and actions within their available width", () => {
     expect(membersSource).toContain('className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]"');
     expect(membersSource).toContain('<section className="min-w-0 space-y-4">');
-    expect(inputSource).toContain('"min-h-11 min-w-0 w-full');
+    // Width containment for text and select controls lives in the shared primitives, so the
+    // invite form only has to use them instead of repeating the classes on every control.
+    expect(inputSource.match(/"min-h-11 min-w-0 w-full/g) ?? []).toHaveLength(2);
+    expect(inputSource).toContain("export function Select(");
     expect(inviteFormSource).toContain('<form action={submit} className="min-w-0 space-y-3">');
-    expect(inviteFormSource).toContain('className="min-h-11 min-w-0 w-full');
+    expect(inviteFormSource).toContain('<Select id="invite-role"');
+    expect(inviteFormSource).toContain('<Select id="invite-expiry"');
+    expect(inviteFormSource).not.toContain("<select");
     expect(memberManagerSource).toContain('className="mt-3 flex flex-wrap gap-2"');
     expect(memberManagerSource).toContain('className="flex min-w-0 flex-1 basis-64 gap-2"');
     expect(memberManagerSource).not.toContain('sm:grid-cols-[minmax(0,1fr)_auto_auto]');

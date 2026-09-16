@@ -7,7 +7,7 @@ import { CalendarFocusRestore } from "@/components/calendar-focus-restore";
 import { CalendarScrollPair } from "@/components/calendar-scroll-pair";
 import { CalendarEventSubmission } from "@/components/calendar-event-submission";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@/components/ui/input";
+import { Input, Select, Textarea } from "@/components/ui/input";
 import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
@@ -369,13 +369,13 @@ function NewEventForm({
 
           <label className="block space-y-2 text-sm font-bold">
             <span>Event Type</span>
-            <select name="eventType" defaultValue="Appointment" className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm">
+            <Select name="eventType" defaultValue="Appointment">
               {eventTypes.map((type) => (
                 <option key={type} value={type}>
                   {type}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="flex min-h-11 items-center gap-3 text-sm font-bold">

@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
+import { Input, Select } from "@/components/ui/input";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { describeActivity } from "@/lib/activity-format";
 import { activityDetailHref } from "@/lib/activity-navigation";
@@ -54,28 +55,23 @@ export default async function HistoryPage({
             <label htmlFor="history-type" className="sr-only">
               Activity type
             </label>
-            <select
-              id="history-type"
-              name="type"
-              defaultValue={searchParams.type ?? ""}
-              className="min-h-11 w-36 rounded-lg border border-border bg-card px-3 text-sm font-semibold sm:w-48"
-            >
+            <Select id="history-type" name="type" defaultValue={searchParams.type ?? ""} className="w-36 sm:w-48">
               <option value="">All types</option>
               {activityTypes.map((type) => (
                 <option key={type} value={type}>
                   {activityLabels[type]}
                 </option>
               ))}
-            </select>
+            </Select>
             <label htmlFor="history-search" className="sr-only">
               Search activity history
             </label>
-            <input
+            <Input
               id="history-search"
               name="search"
               defaultValue={searchParams.search ?? ""}
               placeholder="Search notes, meds, milestones"
-              className="min-h-11 min-w-0 flex-1 basis-44 rounded-lg border border-border bg-card px-3 text-sm sm:max-w-80"
+              className="flex-1 basis-44 sm:max-w-80"
             />
             {hasActiveFilters ? (
               <Link

@@ -6,6 +6,7 @@ import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { RoutineTab } from "@/components/reports/routine-tab";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -52,8 +53,8 @@ export default async function ReportsPage({
               <input name="babyId" type="hidden" value={report.baby.id} />
               <input name="tab" type="hidden" value={tab} />
               <input name="routineWindow" type="hidden" value={report.routine.window} />
-              <input name="start" type="date" defaultValue={report.startKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
-              <input name="end" type="date" defaultValue={report.endKey} className="min-h-11 w-full rounded-lg border border-border bg-card px-3 sm:w-48" />
+              <Input name="start" type="date" defaultValue={report.startKey} className="sm:w-48" />
+              <Input name="end" type="date" defaultValue={report.endKey} className="sm:w-48" />
             </AutoSubmitForm>
           </Card>
 

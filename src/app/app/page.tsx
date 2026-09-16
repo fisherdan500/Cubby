@@ -134,7 +134,7 @@ function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
       </div>
 
       <details className="group sm:hidden">
-        <summary className="flex min-h-10 cursor-pointer list-none items-center justify-center rounded-lg border border-border bg-card/70 text-sm font-black text-foreground marker:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg border border-border bg-card/70 text-sm font-black text-foreground marker:hidden">
           More
         </summary>
         <div className="mt-2 grid grid-cols-4 gap-2">
@@ -178,17 +178,17 @@ function QuickActionLink({
       <div className="flex flex-col items-center gap-1.5">
         <div className={`flex ${primary ? "h-5" : "h-4"} items-center justify-center`}>
           {badge ? (
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-black leading-none ${elapsedBadgeClasses[type]}`}>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-black leading-none ${elapsedBadgeClasses[type]}`}>
               {badge}
             </span>
           ) : null}
         </div>
         <ActivityArtwork type={type} size={primary ? "xl" : "lg"} />
-        <p className={`${primary ? "text-sm" : "text-[11px]"} font-black leading-tight text-muted-foreground`}>
+        <p className={`${primary ? "text-sm" : "text-xs"} font-black leading-tight text-muted-foreground`}>
           {quickActionLabel(type)}
         </p>
         {active ? (
-          <span className="rounded-full bg-primary/16 px-2 py-0.5 text-[10px] font-black leading-none text-primary">Active</span>
+          <span className="rounded-full bg-primary/16 px-2 py-0.5 text-[11px] font-black leading-none text-primary">Active</span>
         ) : null}
       </div>
     </Link>

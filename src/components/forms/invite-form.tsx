@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 
@@ -134,19 +134,19 @@ export function InviteForm({ canInviteAdmin }: { canInviteAdmin: boolean }) {
       <label className="sr-only" htmlFor="invite-email">Email</label>
       <Input id="invite-email" name="email" type="email" placeholder="caretaker@example.com" required />
       <label className="sr-only" htmlFor="invite-role">Role</label>
-      <select id="invite-role" name="role" className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm">
+      <Select id="invite-role" name="role">
         <option value="caretaker">Caretaker</option>
         <option value="parent">Parent</option>
         <option value="read_only">Read only</option>
         {canInviteAdmin ? <option value="admin">Admin</option> : null}
-      </select>
+      </Select>
       <label className="sr-only" htmlFor="invite-expiry">Invitation expiry</label>
-      <select id="invite-expiry" name="expiresInHours" defaultValue="" className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm">
+      <Select id="invite-expiry" name="expiresInHours" defaultValue="">
         <option value="">Default expiry</option>
         <option value="1">1 hour</option>
         <option value="24">1 day</option>
         <option value="168">7 days</option>
-      </select>
+      </Select>
       {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
       {acceptUrl ? (
         <div className="rounded-lg bg-muted p-3 text-sm">

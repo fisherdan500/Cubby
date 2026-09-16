@@ -26,7 +26,7 @@ export function MobileBottomNav({ selectedBabyId }: { selectedBabyId?: string })
               key={item.href}
               href={withBabyId(item.href, selectedBabyId)}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-black transition",
+                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-xs font-black transition",
                 active
                   ? "bg-primary/14 text-primary ring-1 ring-primary/20"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
