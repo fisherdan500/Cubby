@@ -1,6 +1,27 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { cancelVerifiedEmailChange, completeVerifiedEmailChange, confirmEmailChangeRotationCookie, confirmEmailChangeSuccessorCookieForAuthenticatedSession, emitEmailChangeSuccessorCookie, expireUnconfirmedEmailChangeRotation, expireVerifiedEmailChange, failEmailChangeRotationCookie, getVerifiedEmailChangeStatus, initiateVerifiedEmailChange, verifyEmailChangeToken } from "@/server/services/email-change";
+
+// Synthetic (not a real secret): satisfies env.ts's CUBBY_THROTTLE_KEY format check only, so the
+// throttle-configured branch is exercised by the test itself rather than by whatever the ambient
+// environment happens to configure. Never derived from or equal to a real deployment key.
+const SYNTHETIC_THROTTLE_KEY = "A".repeat(43);
+const throttleConfig = vi.hoisted(() => ({ key: undefined as string | undefined }));
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/env")>();
+  return {
+    ...actual,
+    env: new Proxy(actual.env, {
+      get(target, prop, receiver) {
+        if (prop === "CUBBY_THROTTLE_KEY") return throttleConfig.key;
+        return Reflect.get(target, prop, receiver);
+      }
+    })
+  };
+});
+afterEach(() => {
+  throttleConfig.key = undefined;
+});
 
 const operationId = "gso_00000000000000000000000000";
 const context = { userId: "user-1", sessionId: "session-1", credentialVersion: 2, sessionSecurityVersion: 3 };
@@ -209,6 +230,39 @@ describe("verified email change", () => {
     const userLock = tx.$queryRaw.mock.calls.find(([query]) => query.join(" ").includes('FROM "User"') && query.join(" ").includes('FOR NO KEY UPDATE'))!;
     expect(tx.$executeRaw.mock.invocationCallOrder[tx.$executeRaw.mock.calls.indexOf(targetLock)]).toBeLessThan(tx.$queryRaw.mock.invocationCallOrder[tx.$queryRaw.mock.calls.indexOf(userLock)]);
     expect(tx.$executeRaw.mock.calls.some(([query]) => query.join(" ").includes('reject_email_change_collision'))).toBe(true);
+  });
+
+  it("initiates through the throttle preauthorization pass when a throttle key is configured", async () => {
+    throttleConfig.key = SYNTHETIC_THROTTLE_KEY;
+    const userFindUnique = vi.fn().mockResolvedValue({ email: "old@example.invalid" });
+    const tx = {
+      $executeRaw: vi.fn().mockResolvedValue(1),
+      $queryRaw: vi.fn(async (query) => {
+        const sql = query.join(" ");
+        if (sql.includes('"quiet", "deadline"')) return [{ quiet: false, deadline: null }];
+        if (sql.includes('AS normalized')) return [{ normalized: "new@example.invalid" }];
+        if (sql.includes('AS "normalizedCurrentEmail"')) return [{ email: " Old@Example.Invalid ", normalizedCurrentEmail: "old@example.invalid" }];
+        if (sql.includes('AS "authorized"') || sql.includes('authorize_global_session_security')) return [{ authorized: true }];
+        if (sql.includes('FROM "User"') && sql.includes('FOR NO KEY UPDATE')) return [{ id: "user-1", email: " Old@Example.Invalid " }];
+        if (sql.includes('FROM "Session"')) return [{ id: "session-1", userId: "user-1" }];
+        if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 2, sessionSecurityVersion: 3 }];
+        if (sql.includes('collision')) return [{ collision: true }];
+        if (sql.includes('clock_timestamp')) return [{ createdAt: new Date("2030-01-01T00:00:00Z"), expiresAt: new Date("2030-01-01T00:10:00Z") }];
+        return [];
+      }),
+      accountSecurityState: { upsert: vi.fn().mockResolvedValue({ userId: "user-1", credentialVersion: 2, sessionSecurityVersion: 3 }) },
+      user: { findUnique: userFindUnique },
+      account: { findFirst: vi.fn().mockResolvedValue({ password: "stored-hash" }) },
+      globalSecurityOperationBinding: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn().mockResolvedValue({ id: "binding-1" }), update: vi.fn().mockResolvedValue({}) },
+      globalSecurityOperation: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn().mockResolvedValue({}) },
+      freshAuthGrant: { create: vi.fn().mockResolvedValue({ id: "grant-1" }) },
+      emailChange: { findFirst: vi.fn().mockResolvedValue(null) }
+    };
+    const database = { $transaction: vi.fn(async (callback) => callback(tx)) };
+
+    await expect(initiateVerifiedEmailChange(database as never, context, { operationId, openingFingerprint: "opening", intentFingerprint: "intent", newEmail: " New@Example.Invalid " }, "current-password", { verifier: { verify: vi.fn().mockResolvedValue(true) } })).resolves.toEqual({ operationId, status: "rejected" });
+    expect(userFindUnique).toHaveBeenCalledWith({ where: { id: "user-1" }, select: { email: true } });
+    expect(tx.$queryRaw.mock.calls.some(([query]) => query.join(" ").includes('"quiet", "deadline"'))).toBe(true);
   });
 
   it("terminalizes an already-issued email change when initiation replay observes a stale version", async () => {

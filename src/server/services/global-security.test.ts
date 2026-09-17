@@ -1,12 +1,37 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ queryRaw: vi.fn(), executeRaw: vi.fn(), stateUpsert: vi.fn(), stateUpdate: vi.fn(), transaction: vi.fn(), accountFindFirst: vi.fn(), accountUpdate: vi.fn(), passwordVerify: vi.fn(), passwordHash: vi.fn(), bindingFindFirst: vi.fn(), bindingCreate: vi.fn(), bindingUpdate: vi.fn(), operationFindFirst: vi.fn(), operationCreate: vi.fn(), operationUpdate: vi.fn(), grantCreate: vi.fn(), grantFindFirst: vi.fn(), grantUpdate: vi.fn(), grantUpdateMany: vi.fn(), sessionDeleteMany: vi.fn(), activityUpdateMany: vi.fn(), eventCreate: vi.fn() }));
+// Synthetic (not a real secret): satisfies env.ts's CUBBY_THROTTLE_KEY format check only, so the
+// throttle-configured branch is exercised by the test itself rather than by whatever the ambient
+// environment happens to configure. Never derived from or equal to a real deployment key.
+const SYNTHETIC_THROTTLE_KEY = "A".repeat(43);
+const throttleConfig = vi.hoisted(() => ({ key: undefined as string | undefined }));
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/env")>();
+  return {
+    ...actual,
+    env: new Proxy(actual.env, {
+      get(target, prop, receiver) {
+        if (prop === "CUBBY_THROTTLE_KEY") return throttleConfig.key;
+        return Reflect.get(target, prop, receiver);
+      }
+    })
+  };
+});
+afterEach(() => {
+  throttleConfig.key = undefined;
+  // A test that needs pattern-matched raw results replaces the shared implementation, so restore
+  // the module-level default rather than letting it leak into the tests that follow.
+  mocks.queryRaw.mockImplementation(baseQueryRaw);
+});
+
+const mocks = vi.hoisted(() => ({ queryRaw: vi.fn(), executeRaw: vi.fn(), stateUpsert: vi.fn(), stateUpdate: vi.fn(), transaction: vi.fn(), accountFindFirst: vi.fn(), accountUpdate: vi.fn(), passwordVerify: vi.fn(), passwordHash: vi.fn(), bindingFindFirst: vi.fn(), bindingCreate: vi.fn(), bindingUpdate: vi.fn(), operationFindFirst: vi.fn(), operationCreate: vi.fn(), operationUpdate: vi.fn(), grantCreate: vi.fn(), grantFindFirst: vi.fn(), grantUpdate: vi.fn(), grantUpdateMany: vi.fn(), sessionDeleteMany: vi.fn(), activityUpdateMany: vi.fn(), eventCreate: vi.fn(), userFindUnique: vi.fn() }));
 
 import { assertGlobalSecurityOperationId, captureGlobalSecurityContext, consumeFreshAuthGrantForCurrentContext, finalizePasswordChange, finalizeStalePasswordChange, getFreshAuthGrantStatus, getPasswordChangeStatus, issueFreshAuthGrant, issueFreshAuthGrantForCurrentPassword, lockGlobalSecurityContext, preauthorizeFreshAuthThrottle, reauthorizeGlobalSecurityContext, verifyCurrentPassword, withGlobalSecurityTransaction } from "@/server/services/global-security";
 
-mocks.queryRaw.mockImplementation(async (query) => query.join(" ").includes('AS "createdAt"')
+const baseQueryRaw = async (query: { join: (separator: string) => string }) => query.join(" ").includes('AS "createdAt"')
   ? [{ createdAt: new Date("2026-08-24T16:00:00.000Z"), expiresAt: new Date("2026-08-24T16:10:00.000Z") }]
-  : [{ authorized: true }]);
+  : [{ authorized: true }];
+mocks.queryRaw.mockImplementation(baseQueryRaw);
 
 describe("global security transaction boundary", () => {
   it("locks the user session and creates/reads non-resettable security state before a protected action", async () => {
@@ -184,6 +209,44 @@ describe("fresh-auth grants", () => {
     expect(mocks.bindingCreate.mock.invocationCallOrder[0]).toBeLessThan(mocks.operationCreate.mock.invocationCallOrder[0]);
     expect(mocks.operationCreate.mock.invocationCallOrder[0]).toBeLessThan(mocks.grantCreate.mock.invocationCallOrder[0]);
     expect(mocks.grantCreate.mock.invocationCallOrder[0]).toBeLessThan(mocks.bindingUpdate.mock.invocationCallOrder[0]);
+    expect(mocks.userFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("issues one password-change grant through the throttle preauthorization pass when a throttle key is configured", async () => {
+    throttleConfig.key = SYNTHETIC_THROTTLE_KEY;
+    mocks.executeRaw.mockResolvedValue(1);
+    mocks.queryRaw.mockImplementation(async (query) => {
+      const sql = query.join(" ");
+      if (sql.includes('FROM "User"')) return [{ id: "user-1" }];
+      if (sql.includes('FROM "Session"')) return [{ id: "session-1", userId: "user-1" }];
+      if (sql.includes('"quiet", "deadline"')) return [{ quiet: false, deadline: null }];
+      return [{ authorized: true }];
+    });
+    mocks.stateUpsert.mockResolvedValue({ userId: "user-1", credentialVersion: 1, sessionSecurityVersion: 1 });
+    mocks.bindingFindFirst.mockResolvedValue(null);
+    mocks.userFindUnique.mockResolvedValue({ email: "user-1@example.com" });
+    mocks.accountFindFirst.mockResolvedValue({ password: "stored-hash" });
+    mocks.passwordVerify.mockResolvedValue(true);
+    mocks.bindingCreate.mockResolvedValue({ id: "binding-1" });
+    mocks.operationCreate.mockResolvedValue({ operationId: "gso_00000000000000000000000000" });
+    mocks.grantCreate.mockResolvedValue({ id: "grant-1" });
+    mocks.bindingUpdate.mockResolvedValue({ id: "binding-1" });
+    const tx = {
+      $queryRaw: mocks.queryRaw,
+      $executeRaw: mocks.executeRaw,
+      accountSecurityState: { upsert: mocks.stateUpsert },
+      user: { findUnique: mocks.userFindUnique },
+      account: { findFirst: mocks.accountFindFirst },
+      globalSecurityOperationBinding: { findFirst: mocks.bindingFindFirst, create: mocks.bindingCreate, update: mocks.bindingUpdate },
+      globalSecurityOperation: { findFirst: mocks.operationFindFirst, create: mocks.operationCreate },
+      freshAuthGrant: { findFirst: mocks.grantFindFirst, create: mocks.grantCreate }
+    } as never;
+    mocks.transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(issueFreshAuthGrantForCurrentPassword({ $transaction: mocks.transaction }, { userId: "user-1", sessionId: "session-1", credentialVersion: 1, sessionSecurityVersion: 1 }, { operationId: "gso_00000000000000000000000000", purpose: "password_change", openingFingerprint: "open-1", intentFingerprint: "intent-1" }, "current-password", { verify: mocks.passwordVerify }, { replacementPasswordHash: "new-hash", signer: { digestReplacementPasswordHash: vi.fn(() => Buffer.alloc(32, 7)), sign: vi.fn(() => ({ keyVersion: 1, nonce: "A".repeat(43), mac: Buffer.alloc(32, 8) })), signRecoveryReset: vi.fn(), signSessionRevoke: vi.fn() } })).resolves.toEqual({ operationId: "gso_00000000000000000000000000", grantId: "grant-1" });
+    expect(mocks.userFindUnique).toHaveBeenCalledWith({ where: { id: "user-1" }, select: { email: true } });
+    const throttleQueries = mocks.queryRaw.mock.calls.filter(([query]) => query.join(" ").includes('"quiet", "deadline"'));
+    expect(throttleQueries.length).toBeGreaterThan(0);
   });
 
   it("rejects an invalid current password before creating a binding, operation, or grant", async () => {
