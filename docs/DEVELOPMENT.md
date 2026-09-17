@@ -506,6 +506,20 @@ longer had), which no unit test caught because the service layer is normally
 exercised directly, bypassing the real restricted database role a running app
 connects as.
 
+The aged session then exercises one mutation per context helper that takes the
+session row lock, because a privilege or freshness regression in any of them is
+invisible to the activity path alone:
+
+| Family | Context helper | Endpoint(s) | Asserted result |
+| --- | --- | --- | --- |
+| Timer stop | `getBrowserOperationContextForBaby` | `POST /api/timers/{id}/stop` | `timerState` is `stopped` with an `endedAt` |
+| Unit preferences | `getBrowserOperationContextForHousehold` | `POST /api/settings/units/issue` then `PATCH /api/settings/units` | `HouseholdSettings.unitPreferences` actually changed |
+| Account appearance | `lockCurrentAccountActor` | `POST /api/account/appearance/issue` then `PATCH /api/account/appearance` | `User.appearanceMode` actually changed |
+
+Unit preferences and account appearance issue their opening in a separate call,
+so the two-step form is covered as well as the activity route's single call.
+Account appearance is the only family that locks `"User"` alongside `"Session"`.
+
 The operation-registry checker's own test harness
 (`src/server/operation-registry/operation-registry.test.mjs`) is a large,
 sequential, non-vitest script (a plain `node` entrypoint with its own minimal
