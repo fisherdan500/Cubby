@@ -486,6 +486,39 @@ npm run verify:activity-update-safety
 It runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
+The operation-registry checker's own test harness
+(`src/server/operation-registry/operation-registry.test.mjs`) is a large,
+sequential, non-vitest script (a plain `node` entrypoint with its own minimal
+`test()` collector, not wired into the vitest `include` glob): most of its
+~165 cases run in milliseconds, but 49 of them each build the full
+real-repository TypeScript program from scratch (no shared cache across
+cases) and take roughly two minutes apiece, so a full run takes well over an
+hour. Routine work should use the fast subset, which skips those (tagged
+`[slow]` in their names) and finishes in roughly 20 minutes instead - still
+dominated by the ~100 remaining cases that each build a small synthetic
+`ts.Program` from scratch (no shared TypeScript lib cache), just without the
+49 full-repository builds:
+
+```bash
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/server/operation-registry/operation-registry.test.mjs --fast
+```
+
+The fast subset currently reproduces 2 pre-existing failures that are
+unrelated to registry content and fail identically on main, even run alone
+(`resolves single static client property assignments and rejects ambiguous
+property flow`, `twelfth remediation closes the repository runtime
+invocation ledger`); they are not caused by tagging or by skipping the slow
+cases.
+
+Run the full command (drop `--fast`) before a registry-affecting release,
+since the slow cases are the ones that actually type-check discovery against
+the live source tree. This is intentionally not a package.json script: the
+checker's own `unsupported_package_command_owner`/appendix rules mean adding
+one would require either giving this harness a real operation declaration or
+threading it through the same hardcoded self-reference the checker uses for
+`scripts/operation-registry.ts` itself, and this file changes often enough
+that isn't worth the upkeep for an already-optional command.
+
 Household browser-operation schema, status, retention, compaction, and tombstone changes require focused source contracts plus the separately authorized disposable PostgreSQL acceptance. Ordinary Cubby JSON household backups deliberately exclude browser-operation bindings, full receipts, tombstones, and integrity state; full-system recovery must restore that database infrastructure before readiness enables writes.
 
 Global account appearance uses a separate non-household operation binding/full/tombstone ledger. Tests must prove no household lookup or member authority enters Personal appearance, while Session/User revision reauthorization, same-ID status, compaction, and 410 behavior remain equivalent to the household operation contract.
