@@ -1,5 +1,27 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { acknowledgeRecoveryCodeSetSaved, beginRecoveryReset, finalizeRecoveryPasswordReset, getRecoveryEnrollmentStatus, getRecoveryResetStatus, issueRecoveryCodeSet, rehearseRecoveryCodeSet } from "@/server/services/recovery-lifecycle";
+
+// Synthetic (not a real secret): satisfies env.ts's CUBBY_THROTTLE_KEY format check only so tests
+// can exercise the throttle-configured branch deterministically, independent of the ambient
+// environment. Never derived from or equal to a real deployment key.
+const SYNTHETIC_THROTTLE_KEY = "A".repeat(43);
+
+let throttleKeyOverride: string | undefined;
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/env")>();
+  return {
+    ...actual,
+    env: new Proxy(actual.env, {
+      get(target, prop, receiver) {
+        if (prop === "CUBBY_THROTTLE_KEY") return throttleKeyOverride;
+        return Reflect.get(target, prop, receiver);
+      }
+    })
+  };
+});
+afterEach(() => {
+  throttleKeyOverride = undefined;
+});
 
 const operationId = "gso_0123456789abcdefghjkmnpqrs";
 const context = { userId: "user-1", sessionId: "session-1", credentialVersion: 3, sessionSecurityVersion: 4 };
@@ -9,10 +31,12 @@ function transactionHarness() {
     $executeRaw: vi.fn().mockResolvedValue(1),
     $queryRaw: vi.fn(async (query) => {
       const sql = query.join(" ");
-      if (sql.includes('FROM "User"')) return [{ id: "user-1" }];
+      if (sql.includes('FROM "User"')) return [{ id: "user-1", email: "user-1@example.com" }];
+      if (sql.includes('"quiet", "deadline"')) return [{ quiet: false, deadline: null }];
       if (sql.includes('> clock_timestamp()') || sql.includes('authorize_global_session_security')) return [{ authorized: true }];
       return [{ id: "session-1", userId: "user-1" }];
     }),
+    user: { findUnique: vi.fn().mockResolvedValue({ email: "user-1@example.com" }) },
     accountSecurityState: { upsert: vi.fn().mockResolvedValue({ userId: "user-1", credentialVersion: 3, sessionSecurityVersion: 4 }) },
     globalSecurityOperationBinding: {
       findFirst: vi.fn().mockResolvedValue({ id: "binding-1", sessionId: "session-1", recoverySessionId: null, operationKey: "recoveryEnrollment", securityVersion: 3, sessionSecurityVersion: 4, openingFingerprint: "opening-1", state: "submitted", expiresAt: new Date("2030-01-01") }),
@@ -140,6 +164,19 @@ describe("recovery-code lifecycle", () => {
     expect(tx.globalSecurityOperation.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "completed", outcomeCode: "rehearsal_completed", outcomeSnapshot: { setVersion: 1, remainingCodes: 9 } }) }));
   });
 
+  it("consumes exactly one matching code for mandatory rehearsal with throttle configured", async () => {
+    throttleKeyOverride = SYNTHETIC_THROTTLE_KEY;
+    const { tx, database } = transactionHarness();
+    const records = Array.from({ length: 10 }, (_, index) => ({ id: `code-${index + 1}`, salt: Buffer.alloc(16, index + 1), derivedKey: Buffer.alloc(32, index + 1), kdfVersion: 1, state: "active" }));
+    tx.recoveryCodeSet.findFirst.mockResolvedValue({ userId: "user-1", setVersion: 1, issuanceOperationId: operationId, state: "rehearsalRequired" });
+    tx.recoveryCode.findMany.mockResolvedValue(records);
+    tx.recoveryCode.findFirst.mockResolvedValue(records[3]);
+    const verify = vi.fn(async (_code, record) => record.derivedKey[0] === 4);
+
+    await expect(rehearseRecoveryCodeSet(database as never, context, { operationId, openingFingerprint: "opening-1", intentFingerprint: "intent-1", setVersion: 1, code: "0000-0000-0000-0000-0000-0003" }, { verify })).resolves.toEqual({ operationId, setVersion: 1, state: "rehearsed", remainingCodes: 9 });
+    expect(tx.user.findUnique).toHaveBeenCalledWith({ where: { id: "user-1" }, select: { email: true } });
+  });
+
   it("terminalizes a wrong rehearsal code without consuming any code or marking readiness", async () => {
     const { tx, database } = transactionHarness();
     const records = [{ id: "code-1", salt: Buffer.alloc(16, 1), derivedKey: Buffer.alloc(32, 1), kdfVersion: 1, state: "active" }];
@@ -153,13 +190,27 @@ describe("recovery-code lifecycle", () => {
     expect(tx.globalSecurityOperationBinding.update).toHaveBeenCalledWith({ where: { id: "binding-1" }, data: { state: "terminal" } });
   });
 
+  it("terminalizes a wrong rehearsal code without consuming any code or marking readiness, with throttle configured", async () => {
+    throttleKeyOverride = SYNTHETIC_THROTTLE_KEY;
+    const { tx, database } = transactionHarness();
+    const records = [{ id: "code-1", salt: Buffer.alloc(16, 1), derivedKey: Buffer.alloc(32, 1), kdfVersion: 1, state: "active" }];
+    tx.recoveryCodeSet.findFirst.mockResolvedValue({ userId: "user-1", setVersion: 1, issuanceOperationId: operationId, state: "rehearsalRequired" });
+    tx.recoveryCode.findMany.mockResolvedValue(records);
+
+    await expect(rehearseRecoveryCodeSet(database as never, context, { operationId, openingFingerprint: "opening-1", intentFingerprint: "intent-1", setVersion: 1, code: "0000-0000-0000-0000-0000-0003" }, { verify: vi.fn(async () => false) })).rejects.toThrow("recovery_code_invalid");
+    expect(tx.user.findUnique).toHaveBeenCalledWith({ where: { id: "user-1" }, select: { email: true } });
+  });
+
   it("consumes one rehearsed active code into a ten-minute recovery-session-only reset operation", async () => {
     const tx = {
       $executeRaw: vi.fn().mockResolvedValue(1),
-      $queryRaw: vi.fn()
-        .mockResolvedValueOnce([{ id: "user-1" }]).mockResolvedValueOnce([{ credentialVersion: 7, sessionSecurityVersion: 8 }])
-        .mockResolvedValueOnce([{ id: "user-1" }]).mockResolvedValueOnce([{ credentialVersion: 7, sessionSecurityVersion: 8 }])
-        .mockResolvedValueOnce([{ createdAt: new Date("2026-08-28T12:00:00Z"), expiresAt: new Date("2026-08-28T12:10:00Z") }]),
+      $queryRaw: vi.fn(async (query) => {
+        const sql = query.join(" ");
+        if (sql.includes('FROM "User"')) return [{ id: "user-1", email: "user-1@example.com" }];
+        if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 7, sessionSecurityVersion: 8 }];
+        if (sql.includes('"quiet", "deadline"')) return [{ quiet: false, deadline: null }];
+        return [{ createdAt: new Date("2026-08-28T12:00:00Z"), expiresAt: new Date("2026-08-28T12:10:00Z") }];
+      }),
       recoveryCodeSet: { findFirst: vi.fn().mockResolvedValue({ setVersion: 2, state: "rehearsed" }) },
       recoveryCode: {
         findMany: vi.fn().mockResolvedValue([{ id: "code-9", salt: Buffer.alloc(16, 9), derivedKey: Buffer.alloc(32, 9), kdfVersion: 1 }]),
@@ -177,6 +228,34 @@ describe("recovery-code lifecycle", () => {
     expect(tx.recoverySession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "user-1", recoveryCodeId: "code-9", operationId, purpose: "recovery_reset", state: "restricted", createdAt: expect.any(Date), expiresAt: expect.any(Date) }) });
     expect(tx.globalSecurityOperationBinding.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "user-1", sessionId: null, recoverySessionId: "recovery-session-1", operationId, operationKey: "recoveryReset", securityVersion: 7, sessionSecurityVersion: 8, state: "open" }) });
     expect(tx.recoveryCode.update).toHaveBeenCalledWith({ where: { id: "code-9" }, data: { state: "consumed", consumedPurpose: "recoveryReset", consumedOperationId: operationId, consumedAt: expect.any(Date) } });
+  });
+
+  it("consumes one rehearsed active code into a ten-minute recovery-session-only reset operation, with throttle configured", async () => {
+    throttleKeyOverride = SYNTHETIC_THROTTLE_KEY;
+    const tx = {
+      $executeRaw: vi.fn().mockResolvedValue(1),
+      $queryRaw: vi.fn(async (query) => {
+        const sql = query.join(" ");
+        if (sql.includes('FROM "User"')) return [{ id: "user-1", email: "user-1@example.com" }];
+        if (sql.includes('FROM "AccountSecurityState"')) return [{ credentialVersion: 7, sessionSecurityVersion: 8 }];
+        if (sql.includes('"quiet", "deadline"')) return [{ quiet: false, deadline: null }];
+        return [{ createdAt: new Date("2026-08-28T12:00:00Z"), expiresAt: new Date("2026-08-28T12:10:00Z") }];
+      }),
+      recoveryCodeSet: { findFirst: vi.fn().mockResolvedValue({ setVersion: 2, state: "rehearsed" }) },
+      recoveryCode: {
+        findMany: vi.fn().mockResolvedValue([{ id: "code-9", salt: Buffer.alloc(16, 9), derivedKey: Buffer.alloc(32, 9), kdfVersion: 1 }]),
+        findFirst: vi.fn().mockResolvedValue({ id: "code-9", salt: Buffer.alloc(16, 9), derivedKey: Buffer.alloc(32, 9), kdfVersion: 1 }),
+        update: vi.fn().mockResolvedValue({})
+      },
+      recoverySession: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn().mockResolvedValue({ id: "recovery-session-1" }) },
+      globalSecurityOperationBinding: { create: vi.fn().mockResolvedValue({ id: "binding-reset-1" }), update: vi.fn().mockResolvedValue({}) },
+      globalSecurityOperation: { create: vi.fn().mockResolvedValue({}) }
+    };
+    const database = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const verify = vi.fn(async () => true);
+
+    await expect(beginRecoveryReset(database as never, { userId: "user-1", operationId, openingFingerprint: "reset-opening", intentFingerprint: "reset-intent", code: "0000-0000-0000-0000-0000-0009" }, { verify })).resolves.toEqual({ operationId, recoverySessionId: "recovery-session-1", expiresAt: expect.any(Date) });
+    expect(tx.recoverySession.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "user-1", recoveryCodeId: "code-9", operationId, purpose: "recovery_reset", state: "restricted", createdAt: expect.any(Date), expiresAt: expect.any(Date) }) });
   });
 
   it("replays an already-open matching restricted reset without rechecking or redisplaying the consumed code", async () => {
