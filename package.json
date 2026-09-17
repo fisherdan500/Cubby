@@ -30,6 +30,7 @@
     "verify:update-rehearsal": "tsx scripts/backup-recovery-rehearsal.ts",
     "verify:activity-update-safety": "tsx scripts/activity-update-safety-rehearsal.ts",
     "verify:browser-operation-pilot": "tsx scripts/browser-operation-pilot.acceptance-rehearsal.ts",
+    "verify:browser-operation-save-path": "tsx scripts/browser-operation-save-path.acceptance-rehearsal.ts",
     "verify:sprout-preview-commit": "tsx scripts/sprout-preview-commit.acceptance-rehearsal.ts",
     "verify:update-preflight": "tsx scripts/update-preflight.ts",
     "verify:p1-3-migrator-bootstrap": "tsx scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",

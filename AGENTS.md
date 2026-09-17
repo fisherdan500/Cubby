@@ -71,6 +71,7 @@ Choose the smallest verification set that covers the risk:
 - Service logic: run targeted Vitest tests plus `npm run test` when the change is shared.
 - Prisma schema changes: run Prisma validation/generation, migrations, tests, and `npm run build`.
 - Auth, registration, permissions, import, backup, or integration changes: include permission/cross-household tests.
+- Database role/privilege grants or session-freshness changes: also run `npm run verify:browser-operation-save-path` (see docs/DEVELOPMENT.md "Verification Commands") - unit tests exercise the service layer directly and will not catch a restricted-role privilege regression.
 - Docker-sensitive changes, especially Sprout SQLite import or startup behavior: run `docker compose up --build -d` and inspect app logs.
 
 Full acceptance set (run only for a milestone/release gate, a broad shared change, or when the active goal explicitly requires it):

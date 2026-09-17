@@ -486,6 +486,26 @@ npm run verify:activity-update-safety
 It runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
+Database role/privilege changes (grants, revokes, row-lock or SECURITY DEFINER
+functions) and session-freshness changes additionally require the separately
+gated disposable end-to-end save-path rehearsal:
+
+```bash
+npm run verify:browser-operation-save-path
+```
+
+It boots the real app image against a disposable Postgres with the exact
+production role/grant topology (the app's own entrypoint provisioning scripts
+create it), signs in over real HTTP, and saves an activity twice - once
+immediately and once on a session artificially aged past
+`SESSION_FRESH_AGE_SECONDS` - while asserting `cubby_runtime` still has no
+`UPDATE` grant on `"Session"`. This is the exact reproduction shape that found
+the two 2026-08-24 to 2026-09-16 live incidents (`requireFreshSession()` on
+every mutation; the row-lock helper needing a privilege `cubby_runtime` no
+longer had), which no unit test caught because the service layer is normally
+exercised directly, bypassing the real restricted database role a running app
+connects as.
+
 The operation-registry checker's own test harness
 (`src/server/operation-registry/operation-registry.test.mjs`) is a large,
 sequential, non-vitest script (a plain `node` entrypoint with its own minimal

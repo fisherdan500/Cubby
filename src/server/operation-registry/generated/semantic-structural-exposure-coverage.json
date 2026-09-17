@@ -3745,9 +3745,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 4275,
+      "anchorEnd": 4384,
       "anchorFile": "package.json",
-      "anchorStart": 4266,
+      "anchorStart": 4375,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -3826,6 +3826,23 @@
       "ownerId": "package_command:scripts/browser-operation-pilot.acceptance-rehearsal.ts",
       "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:browser-operation-save-path\"",
+      "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
+      "anchorEnd": 3756,
+      "anchorFile": "package.json",
+      "anchorStart": 3720,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:browser-operation-save-path",
+        "target": "package.json#scripts.verify:browser-operation-save-path"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts:package_script:verify:browser-operation-save-path:package.json#scripts.verify:browser-operation-save-path",
+      "ownerId": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
     },
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs",
@@ -3983,9 +4000,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 4376,
+      "anchorEnd": 4485,
       "anchorFile": "package.json",
-      "anchorStart": 4358,
+      "anchorStart": 4467,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -4000,9 +4017,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 3915,
+      "anchorEnd": 4024,
       "anchorFile": "package.json",
-      "anchorStart": 3883,
+      "anchorStart": 3992,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -4017,9 +4034,9 @@
     {
       "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
       "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-      "anchorEnd": 4025,
+      "anchorEnd": 4134,
       "anchorFile": "package.json",
-      "anchorStart": 3990,
+      "anchorStart": 4099,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-invitation-acceptance",
@@ -4289,9 +4306,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 4319,
+      "anchorEnd": 4428,
       "anchorFile": "package.json",
-      "anchorStart": 4303,
+      "anchorStart": 4412,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -4816,9 +4833,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 3750,
+      "anchorEnd": 3859,
       "anchorFile": "package.json",
-      "anchorStart": 3720,
+      "anchorStart": 3829,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -4833,9 +4850,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 3842,
+      "anchorEnd": 3951,
       "anchorFile": "package.json",
-      "anchorStart": 3817,
+      "anchorStart": 3926,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -6452,10 +6469,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "5250c7e50977aaa868cd79b774425c7e0d13e525c25e6c953c7d3c7dc234c413",
+  "semanticArtifactDigest": "047d2e2f5b4671dfe1cb3fa5c8183645aaba221911a1e3d62ecaf097708d3873",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "53848053389f16e7712a0bdbdc686cca4dbdc5ac6b0e200d27e38a2742044170",
+  "semanticCoverageDigest": "5d4ed6675663f9587b629b2590004e06618f69271e3ebfad8a36e8b40ce5318a",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "d7982c04aa8817d779fd34dd9770233b2508b016586b9eafc34114c9dcbf3e87"
+  "semanticFingerprint": "78c1b76eb975253565efa077610e87291e61b1259e48e5117e334445caf30d39"
 }
