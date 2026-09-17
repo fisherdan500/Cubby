@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
@@ -306,15 +307,22 @@ describe("invitation browser harness behavioral boundaries", () => {
   });
 
   it("verifies the Node/TSX fixed-code IPC transport with a synthetic child only", async () => {
-    const fixture = resolve("../../../worker-runtime/p13-source-ipc-fixture.ts");
+    // Must not be cwd-relative: resolve() here is relative to the working directory, so any
+    // path climbing out of the repository lands somewhere different for a worktree than for
+    // the primary checkout, and writes outside the repository either way.
+    const fixtureDirectory = mkdtempSync(join(tmpdir(), "cubby-p13-source-ipc-"));
+    const fixture = join(fixtureDirectory, "p13-source-ipc-fixture.ts");
     const code = "p1_3_invitation_acceptance_runtime_probe_failed";
     writeFileSync(fixture, `const code: string = ${JSON.stringify(code)}; process.send!(code); process.exitCode = 1;\n`);
     const { runRuntimeProbe } = load(["runRuntimeProbe"], {
       spawn, root: process.cwd(), runtimeDiagnosticCodes: new Set([code]),
       p13InvitationRuntimeProbeCommand: () => ({ executable: process.execPath, args: ["--import", "tsx", fixture] })
     });
-    await expect(runRuntimeProbe(context)).rejects.toThrow(code);
-    // Retain the generated source fixture; no retained-resource cleanup.
+    try {
+      await expect(runRuntimeProbe(context)).rejects.toThrow(code);
+    } finally {
+      rmSync(fixtureDirectory, { recursive: true, force: true });
+    }
   });
 
   it("rejects an invalid mode before creating any lifecycle", async () => {
