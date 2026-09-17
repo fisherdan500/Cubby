@@ -523,12 +523,32 @@ dominated by the ~100 remaining cases that each build a small synthetic
 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/server/operation-registry/operation-registry.test.mjs --fast
 ```
 
-The fast subset currently reproduces 2 pre-existing failures that are
-unrelated to registry content and fail identically on main, even run alone
-(`resolves single static client property assignments and rejects ambiguous
-property flow`, `twelfth remediation closes the repository runtime
-invocation ledger`); they are not caused by tagging or by skipping the slow
-cases.
+The fast subset currently reproduces 1 pre-existing failure, unchanged by
+tagging or by skipping the slow cases: `resolves single static client
+property assignments and rejects ambiguous property flow`. Root cause is
+identified: `resolveStaticMemberValue`'s whole-file assignment scan
+(`checker.ts`) collects children with `ts.forEachChild(node, (n) =>
+pendingNodes.push(n))`, and `Array.prototype.push` returns the array's new
+length - a truthy number - which makes `forEachChild` stop after the very
+first child instead of visiting every sibling. In production this silently
+limits static property-flow resolution (e.g. `obj.prop = fetch; ...;
+obj.prop(...)`) to whatever the first top-level statement of a file happens
+to touch; it fails closed (emits `unsupported_client_binding`) rather than
+mis-resolving, so it is a completeness gap, not a false-negative safety
+issue. Wrapping the callbacks in a block (so they return `undefined`) fixes
+this test in isolation, but unlocking the intended whole-file traversal at
+real-repository scale currently causes `RangeError: Maximum call stack size
+exceeded` in ~30 other fast-subset cases: `nodeContainsSymbol`'s recursive
+`ts.forEachChild(node, visit)` walk overflows first, and converting that one
+function to an iterative work-list (the same pattern already used elsewhere
+in this file) only moves the overflow into `resolveStaticRootFlow`'s own
+mutual recursion over multi-candidate (`unsupported`-kind) static values.
+That resolver family (`resolveStaticRootFlow` /
+`resolveStaticMemberValue` / `resolveStaticVariableValue` /
+`resolveGlobalFetchBinding`) has no depth bound or trampolining, only cycle
+guards (`seen/seenMembers`), so fixing this for real needs a deliberate
+depth-limited or iterative redesign across that family, not a local patch -
+out of scope for a routine fix and deferred pending that design decision.
 
 Run the full command (drop `--fast`) before a registry-affecting release,
 since the slow cases are the ones that actually type-check discovery against

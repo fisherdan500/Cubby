@@ -2835,6 +2835,11 @@ test("classifies rehearsal, fixture, build-tool, and registry exclusions exactly
         packageScripts: ["verify:browser-operation-pilot"]
       },
       {
+        ownerModule: "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+        category: "rehearsal",
+        packageScripts: ["verify:browser-operation-save-path"]
+      },
+      {
         ownerModule: "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
         category: "rehearsal",
         packageScripts: ["verify:sprout-preview-commit"]
@@ -7193,6 +7198,13 @@ test("twelfth remediation closes the repository runtime invocation ledger", () =
     })),
     [
       {
+        path: "/app/scripts/p1-3-node-builtin-probe.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
         path: "/app/scripts/household-deletion-readiness-guard.mjs",
         codeOption: null,
         disposition: "container_invocation",
@@ -7211,6 +7223,20 @@ test("twelfth remediation closes the repository runtime invocation ledger", () =
         codeOption: null,
         disposition: "container_invocation",
         category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/provision-database-timezone.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/node_modules/prisma/build/index.js",
+        codeOption: null,
+        disposition: "structural_exclusion",
+        category: "third_party_migration_cli",
         anchorFile: "docker/entrypoint.sh"
       },
       {
@@ -7242,6 +7268,20 @@ test("twelfth remediation closes the repository runtime invocation ledger", () =
         anchorFile: "docker/entrypoint.sh"
       },
       {
+        path: "/app/scripts/p1-3-standalone-bootstrap-probe.cjs",
+        codeOption: "--require",
+        disposition: "structural_exclusion",
+        category: "application_server_runtime",
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
+        path: "/app/server.js",
+        codeOption: null,
+        disposition: "structural_exclusion",
+        category: "application_server_runtime",
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
         path: "/app/server.js",
         codeOption: null,
         disposition: "structural_exclusion",
@@ -7261,6 +7301,13 @@ test("twelfth remediation closes the repository runtime invocation ledger", () =
         disposition: "structural_exclusion",
         category: "healthcheck_probe_runtime",
         anchorFile: "scripts/backup-recovery-rehearsal.compose.yml"
+      },
+      {
+        path: null,
+        codeOption: "-e",
+        disposition: "structural_exclusion",
+        category: "healthcheck_probe_runtime",
+        anchorFile: "scripts/browser-operation-save-path.acceptance.compose.yml"
       }
     ]
   );
