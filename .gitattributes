@@ -1,0 +1,4 @@
+# Prisma migration files (and the one bootstrap SQL script) must check out with
+# LF regardless of platform, matching the LF-only git blobs and every
+# Linux/Docker checkout (CI, production). See docs/DEVELOPMENT.md "Line Endings".
+*.sql text eol=lf

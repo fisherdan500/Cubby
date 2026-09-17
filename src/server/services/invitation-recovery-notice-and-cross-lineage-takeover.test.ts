@@ -140,7 +140,7 @@ describe("invitation recovery notice and cross-lineage takeover migration", () =
 
       // digest_text is computed over reviewVersion/disclosureCopyVersion/snapshot only; that statement
       // must be byte-identical, proving the new field cannot affect the disclosure integrity digest.
-      const digestLine = (body: string) => body.split("\r\n").find((line) => line.trimStart().startsWith("digest_text:="));
+      const digestLine = (body: string) => body.split(/\r?\n/).find((line) => line.trimStart().startsWith("digest_text:="));
       expect(digestLine(replacement.body)).toBe(digestLine(original.body));
       expect(digestLine(original.body)).toBeTruthy();
 
