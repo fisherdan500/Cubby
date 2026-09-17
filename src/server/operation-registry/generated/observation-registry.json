@@ -4,12 +4,12 @@
     "api_route": 99,
     "client_binding": 32,
     "instrumentation": 1,
-    "package_command": 19,
+    "package_command": 20,
     "server_action": 1,
     "server_loader": 27,
     "worker": 6
   },
-  "declarationDigest": "4a8adb6415d729ab8e2b0b40168c392ba0a2cd0d4ecfa481e844df93f0cd8a35",
+  "declarationDigest": "2ac3451afdf825a6e6fdcf2a980b4852c36fc1a03b82a6d0f34d707a1866f7ab",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -152,6 +152,40 @@
       },
       "id": "package_command:scripts/browser-operation-pilot.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:browser-operation-save-path",
+            "target": "package.json#scripts.verify:browser-operation-save-path"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -6600,6 +6634,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "packageScripts": [
+        "verify:browser-operation-save-path"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "packageScripts": [
         "verify:sprout-preview-commit"
@@ -6639,7 +6681,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "a206236b03fe57808bfc5e93072291096d9c49ee81e3e21b5782a67cdd2aaa1a",
+  "generatorDigest": "9fe415cffef4b841e53f412f6ec999559c71426d512e031ff85b045a0b61e709",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11132,9 +11174,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 4275,
+          "anchorEnd": 4384,
           "anchorFile": "package.json",
-          "anchorStart": 4266,
+          "anchorStart": 4375,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -11245,6 +11287,32 @@
     {
       "bindings": [
         {
+          "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
+          "anchorEnd": 3756,
+          "anchorFile": "package.json",
+          "anchorStart": 3720,
+          "kind": "package_script",
+          "symbol": "verify:browser-operation-save-path",
+          "target": "package.json#scripts.verify:browser-operation-save-path"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+        "packageScripts": [
+          "verify:browser-operation-save-path"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "966bfbf0ed7ea272d7bbd981da0544dd117f2bb8a5f04cd14949bfd9f631f839",
           "anchorEnd": 4560,
           "anchorFile": "Dockerfile",
@@ -11337,9 +11405,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 4376,
+          "anchorEnd": 4485,
           "anchorFile": "package.json",
-          "anchorStart": 4358,
+          "anchorStart": 4467,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -11356,9 +11424,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 3915,
+          "anchorEnd": 4024,
           "anchorFile": "package.json",
-          "anchorStart": 3883,
+          "anchorStart": 3992,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -11382,9 +11450,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 4025,
+          "anchorEnd": 4134,
           "anchorFile": "package.json",
-          "anchorStart": 3990,
+          "anchorStart": 4099,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -11553,9 +11621,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 4319,
+          "anchorEnd": 4428,
           "anchorFile": "package.json",
-          "anchorStart": 4303,
+          "anchorStart": 4412,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -11912,9 +11980,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 3750,
+          "anchorEnd": 3859,
           "anchorFile": "package.json",
-          "anchorStart": 3720,
+          "anchorStart": 3829,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -11938,9 +12006,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 3842,
+          "anchorEnd": 3951,
           "anchorFile": "package.json",
-          "anchorStart": 3817,
+          "anchorStart": 3926,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -11954,8 +12022,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 185,
-  "observationDigest": "575d295564ff6fc895f740bb504e80127e2e42358d05d0bbe86b7f785dc82a2b",
+  "observationCount": 186,
+  "observationDigest": "0cda05e2546b807ebe6bbaa96b025e1cbabad7095c458caffac3de2055e43847",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -16282,9 +16350,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4275,
+          "anchorEnd": 4384,
           "anchorFile": "package.json",
-          "anchorStart": 4266,
+          "anchorStart": 4375,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -16359,6 +16427,24 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 3756,
+          "anchorFile": "package.json",
+          "anchorStart": 3720,
+          "kind": "package_script",
+          "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+          "symbol": "verify:browser-operation-save-path",
+          "target": "package.json#scripts.verify:browser-operation-save-path"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -16453,9 +16539,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 4376,
+          "anchorEnd": 4485,
           "anchorFile": "package.json",
-          "anchorStart": 4358,
+          "anchorStart": 4467,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -16471,9 +16557,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3915,
+          "anchorEnd": 4024,
           "anchorFile": "package.json",
-          "anchorStart": 3883,
+          "anchorStart": 3992,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -16489,9 +16575,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4025,
+          "anchorEnd": 4134,
           "anchorFile": "package.json",
-          "anchorStart": 3990,
+          "anchorStart": 4099,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -16651,9 +16737,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 4319,
+          "anchorEnd": 4428,
           "anchorFile": "package.json",
-          "anchorStart": 4303,
+          "anchorStart": 4412,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -17002,9 +17088,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3750,
+          "anchorEnd": 3859,
           "anchorFile": "package.json",
-          "anchorStart": 3720,
+          "anchorStart": 3829,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -17020,9 +17106,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3842,
+          "anchorEnd": 3951,
           "anchorFile": "package.json",
-          "anchorStart": 3817,
+          "anchorStart": 3926,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -18058,6 +18144,12 @@
       "sidecarPath": "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts"
     },
     {
+      "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
+    },
+    {
       "id": "package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/household-deletion-readiness-guard.ts",
@@ -18148,9 +18240,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "c24a4944503645f6c5ac93a96c9f82a7c17237037fe761f7b0ce28b76d09a63d",
+  "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "1085b9278bce39687f3f2215ebb1c20402b58cbb5cb58ec6ec632c063b371cb4",
+  "registryDigest": "01a8166cfa344aaa13e6c1c93ec08df17319e0c35004a8242b150fda5c54a5ad",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
@@ -18383,9 +18475,26 @@
       "ownerModule": null,
       "path": null,
       "role": "main"
+    },
+    {
+      "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
+      "anchorEnd": 4969,
+      "anchorFile": "scripts/browser-operation-save-path.acceptance.compose.yml",
+      "anchorStart": 4839,
+      "codeOption": "-e",
+      "disposition": "structural_exclusion",
+      "exclusion": {
+        "category": "healthcheck_probe_runtime",
+        "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
+      },
+      "fingerprint": "f41011f45b67b23744f858f6f2f2247f57736805fdbe0fee37f003f289e874fc",
+      "id": "runtime:scripts/browser-operation-save-path.acceptance.compose.yml:4839:main:eval",
+      "ownerModule": null,
+      "path": null,
+      "role": "main"
     }
   ],
-  "runtimeInvocationLedgerDigest": "51c51a34fdce0e683df7dbefc976d3b3baaad44bb2d51b4acdda08022629c687",
+  "runtimeInvocationLedgerDigest": "6313f3760b57379240d83461b6be56b9e74239e8f7f9c2ca62becf0c953e1a46",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1,
@@ -18404,6 +18513,14 @@
       "file": "scripts/backup-recovery-rehearsal.compose.yml",
       "kind": "container_build_selector",
       "start": 727,
+      "targetFile": "Dockerfile"
+    },
+    {
+      "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
+      "end": 635,
+      "file": "scripts/browser-operation-save-path.acceptance.compose.yml",
+      "kind": "container_build_selector",
+      "start": 578,
       "targetFile": "Dockerfile"
     },
     {
