@@ -309,7 +309,7 @@ test("semantic sidecars require one registry type import", () => {
   );
 });
 
-test("semantic sidecars require exactly one exported declaration", () => {
+test("[slow] semantic sidecars require exactly one exported declaration", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -420,7 +420,7 @@ export const semantic = {
   );
 });
 
-test("semantic exposures reject nonstructural binding pairs", () => {
+test("[slow] semantic exposures reject nonstructural binding pairs", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -447,7 +447,7 @@ export const semantic = {
   );
 });
 
-test("semantic exposures reject duplicate normalized identities", () => {
+test("[slow] semantic exposures reject duplicate normalized identities", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -490,7 +490,7 @@ export const semantic = [
   );
 });
 
-test("semantic variants reject unresolved query parameter branches", () => {
+test("[slow] semantic variants reject unresolved query parameter branches", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -524,7 +524,7 @@ export const semantic = {
   );
 });
 
-test("semantic variants receive distinct canonical identities", () => {
+test("[slow] semantic variants receive distinct canonical identities", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -571,7 +571,7 @@ export const semantic = [
   assert.deepEqual(parsed.diagnostics, []);
 });
 
-test("semantic exposures require the complete fixed axis map", () => {
+test("[slow] semantic exposures require the complete fixed axis map", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -588,7 +588,7 @@ export const semantic = {
   assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "incomplete_semantic_axis_map"));
 });
 
-test("semantic sidecar families resolve service rows across allowed sidecars", () => {
+test("[slow] semantic sidecar families resolve service rows across allowed sidecars", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const family = parseSemanticSidecarFamily([
     {
@@ -614,7 +614,7 @@ export const semantic = [{
   assert.equal(family.declarations.length, 2);
 });
 
-test("authorized platform registration POST semantic pair closes", () => {
+test("[slow] authorized platform registration POST semantic pair closes", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const family = parseSemanticSidecarFamily([
     {
@@ -632,7 +632,7 @@ test("authorized platform registration POST semantic pair closes", () => {
   assert.ok(family.declarations.some((declaration) => declaration.kind === "service" && declaration.id === "platform.registration.allocate"));
 });
 
-test("authorized platform registration PUT semantic pair closes", () => {
+test("[slow] authorized platform registration PUT semantic pair closes", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const family = parseSemanticSidecarFamily([
     { fileName: "src/app/api/platform/registration/route.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/app/api/platform/registration/route.semantic.ts"), "utf8") },
@@ -644,7 +644,7 @@ test("authorized platform registration PUT semantic pair closes", () => {
   assert.ok(family.declarations.some((declaration) => declaration.kind === "service" && declaration.id === "platform.registration.complete"));
 });
 
-test("authorized semantic family contains exactly twelve selected declarations", () => {
+test("[slow] authorized semantic family contains exactly twelve selected declarations", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const family = parseSemanticSidecarFamily([
     { fileName: "src/app/api/platform/registration/route.semantic.ts", sourceText: readFileSync(resolve(repositoryRoot, "src/app/api/platform/registration/route.semantic.ts"), "utf8") },
@@ -697,7 +697,7 @@ test("authorized semantic family contains exactly twelve selected declarations",
   ));
 });
 
-test("semantic axes reject malformed deferred gate states", () => {
+test("[slow] semantic axes reject malformed deferred gate states", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -715,7 +715,7 @@ export const semantic = {
   assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
 });
 
-test("semantic exposure axes retain R3/R4 phase fences", () => {
+test("[slow] semantic exposure axes retain R3/R4 phase fences", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   for (const [axis, gateId] of [
     ["browser_immutable_binding_stale_behavior", "gate.browser_binding_staleness"],
@@ -741,7 +741,7 @@ export const semantic = {
   }
 });
 
-test("semantic service axes retain R3/R4 phase fences", () => {
+test("[slow] semantic service axes retain R3/R4 phase fences", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/server/services/platform-authority.semantic.ts",
@@ -757,7 +757,7 @@ export const semantic = [{
   assert.deepEqual(parsed.diagnostics, []);
 });
 
-test("semantic exposure axes retain exclusive service ownership", () => {
+test("[slow] semantic exposure axes retain exclusive service ownership", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   for (const [axis, gateId] of [
     ["permission_commit_reauthorization", "gate.permission_commit_reauthorization"],
@@ -784,7 +784,7 @@ export const semantic = {
   }
 });
 
-test("semantic axes resolve reviewed local source symbols", () => {
+test("[slow] semantic axes resolve reviewed local source symbols", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -807,7 +807,7 @@ export const semantic = {
   assert.equal(parsed.declarations?.[0]?.axes.carrier_authority_guard.current.authority, "source_reviewed");
 });
 
-test("semantic fingerprints canonical parsed source anchors", () => {
+test("[slow] semantic fingerprints canonical parsed source anchors", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -938,7 +938,7 @@ test("semantic fingerprints bind schema and generator bytes", () => {
   }
 });
 
-test("semantic axes reject traversal source references", () => {
+test("[slow] semantic axes reject traversal source references", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -959,7 +959,7 @@ export const semantic = {
   assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
 });
 
-test("semantic axes reject unresolved source symbols", () => {
+test("[slow] semantic axes reject unresolved source symbols", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -980,7 +980,7 @@ export const semantic = {
   assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
 });
 
-test("semantic axes resolve reviewed local source spans", () => {
+test("[slow] semantic axes resolve reviewed local source spans", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -1005,7 +1005,7 @@ export const semantic = {
   assert.ok(fingerprint.digest);
 });
 
-test("semantic axes reject out-of-range source spans", () => {
+test("[slow] semantic axes reject out-of-range source spans", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -1026,7 +1026,7 @@ export const semantic = {
   assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
 });
 
-test("semantic axes reject empty source-reference closures", () => {
+test("[slow] semantic axes reject empty source-reference closures", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -1047,7 +1047,7 @@ export const semantic = {
   assert.ok(parsed.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_axis_state"));
 });
 
-test("semantic axes require evidence for not-applicable current states", () => {
+test("[slow] semantic axes require evidence for not-applicable current states", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const parsed = parseSemanticSidecarSource(
     "src/app/api/platform/registration/route.semantic.ts",
@@ -1068,7 +1068,7 @@ export const semantic = {
   assert.deepEqual(parsed.diagnostics, []);
 });
 
-test("semantic aliases reject unresolved direct re-exports", () => {
+test("[slow] semantic aliases reject unresolved direct re-exports", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -1096,7 +1096,7 @@ export const semantic = {
   );
 });
 
-test("semantic aliases resolve current direct re-exports", () => {
+test("[slow] semantic aliases resolve current direct re-exports", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -1133,7 +1133,7 @@ export const semantic = {
   assert.deepEqual(parsed.diagnostics, []);
 });
 
-test("semantic exposures reject missing service operation rows", () => {
+test("[slow] semantic exposures reject missing service operation rows", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -1161,7 +1161,7 @@ export const semantic = [
   );
 });
 
-test("semantic service rows reject stale exported symbols", () => {
+test("[slow] semantic service rows reject stale exported symbols", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -1198,7 +1198,7 @@ export const semantic = [
   );
 });
 
-test("semantic exposures reject cross-family service operations", () => {
+test("[slow] semantic exposures reject cross-family service operations", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -1237,7 +1237,7 @@ export const semantic = [
   );
 });
 
-test("semantic service rows resolve current exported symbols", () => {
+test("[slow] semantic service rows resolve current exported symbols", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   assert.deepEqual(registry.diagnostics, []);
   const parsed = parseSemanticSidecarSource(
@@ -1312,7 +1312,7 @@ export const semantic = [
   );
 });
 
-test("enumerates registry-tree sidecars and requires the exact schema type import", () => {
+test("[slow] enumerates registry-tree sidecars and requires the exact schema type import", () => {
   const roguePath = resolve(
     repositoryRoot,
     "src/server/operation-registry/rogue-fixture.operation.ts"
@@ -1360,7 +1360,7 @@ test("enumerates registry-tree sidecars and requires the exact schema type impor
   }
 });
 
-test("discovers distinct multi-method and Better Auth route symbols", () => {
+test("[slow] discovers distinct multi-method and Better Auth route symbols", () => {
   const owners = [
     "src/app/api/activities/route.ts",
     "src/app/api/auth/[...all]/route.ts"
@@ -1598,7 +1598,7 @@ test("declares the public and platform loader family", () => {
   ]);
 });
 
-test("converges invitation registry owners and direct fetch bindings", () => {
+test("[slow] converges invitation registry owners and direct fetch bindings", () => {
   const invitationSidecars = [
     "src/app/invite/dispatch/page.operation.ts",
     "src/components/invitations/invitation-bootstrap.operation.ts",
@@ -1708,7 +1708,7 @@ test("declares the remaining TypeScript package command family", () => {
   ]);
 });
 
-test("resolves route aliases, renamed exports, and export-star targets exactly", () => {
+test("[slow] resolves route aliases, renamed exports, and export-star targets exactly", () => {
   const owners = [
     "src/app/api/platform/registration/route.ts",
     "src/app/api/settings/registration/route.ts"
@@ -1771,7 +1771,7 @@ test("declares canonical and public registration alias sidecars", () => {
   for (const sidecar of required) assert.ok(declared.has(sidecar));
 });
 
-test("discovers module-level and inline Server Actions without collapsing identity", () => {
+test("[slow] discovers module-level and inline Server Actions without collapsing identity", () => {
   const owner = "src/app/app/calendar/actions.ts";
   const program = loadRepositoryProgram(repositoryRoot, [owner]);
   const actual = discoverServerActions(program, repositoryRoot, [owner]);
@@ -1892,7 +1892,7 @@ test("discovers exported and re-exported Server Actions outside src/app", () => 
   }
 });
 
-test("discovers server-loader value imports and excludes type-only imports", () => {
+test("[slow] discovers server-loader value imports and excludes type-only imports", () => {
   const owner = "src/app/app/calendar/page.tsx";
   const program = loadRepositoryProgram(repositoryRoot, [owner]);
   const actual = discoverServerLoaderBindings(program, repositoryRoot, [owner]);
@@ -1999,7 +1999,7 @@ test("declares representative calendar action and loader sidecars", () => {
   for (const sidecar of required) assert.ok(declared.has(sidecar));
 });
 
-test("discovers fetch, form, imported action, and Better Auth callers exactly", () => {
+test("[slow] discovers fetch, form, imported action, and Better Auth callers exactly", () => {
   const owners = [
     "src/app/app/calendar/page.tsx",
     "src/components/settings/registration-settings-form.tsx",
@@ -2172,7 +2172,7 @@ test("declares representative fetch and Better Auth client sidecars", () => {
   for (const sidecar of required) assert.ok(declared.has(sidecar));
 });
 
-test("discovers instrumentation start and worker tick wiring without guessing", () => {
+test("[slow] discovers instrumentation start and worker tick wiring without guessing", () => {
   const owners = [
     "src/instrumentation.ts",
     "src/server/automated-backup-scheduler.ts"
@@ -2291,7 +2291,7 @@ test("declares representative instrumentation and backup-worker sidecars", () =>
   for (const sidecar of required) assert.ok(declared.has(sidecar));
 });
 
-test("discovers TypeScript package owners and exact CLI command variants", () => {
+test("[slow] discovers TypeScript package owners and exact CLI command variants", () => {
   const packageOwners = [
     "scripts/activity-update-safety-rehearsal.ts",
     "scripts/backup-recovery-rehearsal.ts",
@@ -2956,7 +2956,7 @@ test("rejects generated drift and tamper without writing", () => {
   }
 });
 
-test("builds the bounded combined semantic artifact family as incomplete source-reviewed output", () => {
+test("[slow] builds the bounded combined semantic artifact family as incomplete source-reviewed output", () => {
   const built = buildSemanticRepositoryArtifacts(repositoryRoot);
   assert.deepEqual(built.diagnostics, []);
   assert.deepEqual(Object.keys(built.artifacts), [
@@ -2978,7 +2978,7 @@ test("builds the bounded combined semantic artifact family as incomplete source-
   }
 });
 
-test("builds the combined platform and browser household mutation semantic aggregate contract", () => {
+test("[slow] builds the combined platform and browser household mutation semantic aggregate contract", () => {
   const built = buildSemanticRepositoryArtifacts(repositoryRoot);
   assert.deepEqual(built.diagnostics, []);
 
@@ -3172,7 +3172,7 @@ test("builds the combined platform and browser household mutation semantic aggre
   );
 });
 
-test("semantic artifact builder rejects unlisted repository semantic sidecars", () => {
+test("[slow] semantic artifact builder rejects unlisted repository semantic sidecars", () => {
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-unexpected-semantic-sidecar-"));
   try {
     cpSync(repositoryRoot, temporaryRoot, {
@@ -3202,7 +3202,7 @@ test("semantic artifact builder rejects unlisted repository semantic sidecars", 
   }
 });
 
-test("semantic artifact builder rejects linked source directories", () => {
+test("[slow] semantic artifact builder rejects linked source directories", () => {
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-linked-semantic-sidecar-"));
   try {
     cpSync(repositoryRoot, temporaryRoot, {
@@ -3231,7 +3231,7 @@ test("semantic artifact builder rejects linked source directories", () => {
   }
 });
 
-test("semantic artifact validation fails closed for unexpected, mixed aggregate, and readiness claims", () => {
+test("[slow] semantic artifact validation fails closed for unexpected, mixed aggregate, and readiness claims", () => {
   const built = buildSemanticRepositoryArtifacts(repositoryRoot);
   assert.deepEqual(built.diagnostics, []);
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-semantic-artifact-validation-"));
@@ -3393,7 +3393,7 @@ test("invalidates fingerprints for owner, sidecar, target, and anchor drift", ()
   );
 });
 
-test("versions owner identity and hashes the full normalized observation anchors", () => {
+test("[slow] versions owner identity and hashes the full normalized observation anchors", () => {
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), "cubby-observation-digest-"));
   const writeFixture = (file, content) => {
     const target = resolve(temporaryRoot, file);
@@ -4013,7 +4013,7 @@ test("discovers arrow decoders, renamed parsers, static tables, and rejects dyna
   );
 });
 
-test("rejects blank declaration and gate strings and compares exact exclusion rationales", () => {
+test("[slow] rejects blank declaration and gate strings and compares exact exclusion rationales", () => {
   const operationSource = (body) =>
     `import type { OperationDeclaration } from "@/server/operation-registry/schema"; export const operation = ${body} as const satisfies OperationDeclaration;`;
   const validBindingBody = validBody.replace(
@@ -4079,7 +4079,7 @@ test("rejects blank declaration and gate strings and compares exact exclusion ra
   }
 });
 
-test("binds declaration and versioned registry digests across every generated artifact", () => {
+test("[slow] binds declaration and versioned registry digests across every generated artifact", () => {
   const baseline = buildRepositoryArtifacts(repositoryRoot);
   assert.equal(baseline.declarationDigestVersion, "normalized-declarations.v1");
   assert.equal(
@@ -6677,7 +6677,7 @@ test("discovers an explicit cross-class owner fixture independently of the regis
   }
 });
 
-test("final check reports fixed independent omissions as missing sidecars", () => {
+test("[slow] final check reports fixed independent omissions as missing sidecars", () => {
   const simulatedOmissions = [
     {
       id: "api_route:src/app/api/fixture/route.ts",
@@ -7716,7 +7716,7 @@ test("tenth remediation rejects every unclosed Compose build selector", () => {
   }
 });
 
-test("semantic exposures fail closed without an export name or reviewed service linkage policy", () => {
+test("[slow] semantic exposures fail closed without an export name or reviewed service linkage policy", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const source = `import type { SemanticExposureDeclaration } from "@/server/operation-registry/schema";
 export const semantic = {
@@ -7755,7 +7755,7 @@ export const semantic = {
   assert.ok(malformedNotApplicable.diagnostics.some((diagnostic) => diagnostic.code === "invalid_semantic_service_linkage"));
 });
 
-test("semantic service declarations require the fixed reviewed ten-axis contract", () => {
+test("[slow] semantic service declarations require the fixed reviewed ten-axis contract", () => {
   const registry = buildRepositoryRegistry(repositoryRoot);
   const family = parseSemanticSidecarFamily([
     {
@@ -7779,7 +7779,7 @@ export const semantic = [{
   assert.ok(family.diagnostics.some((diagnostic) => diagnostic.code === "incomplete_semantic_axis_map"));
 });
 
-test("semantic artifacts emit individual declaration fingerprints and byte-checked structural coverage", () => {
+test("[slow] semantic artifacts emit individual declaration fingerprints and byte-checked structural coverage", () => {
   const built = buildSemanticRepositoryArtifacts(repositoryRoot);
   assert.deepEqual(built.diagnostics, []);
   const fingerprints = JSON.parse(built.artifacts["src/server/operation-registry/generated/semantic-fingerprints.json"]);
@@ -7820,13 +7820,24 @@ function snapshotTree(root) {
   return output;
 }
 
-const pattern = process.argv[2] ? new RegExp(process.argv[2], "i") : null;
+// `--skip-slow` (or `--fast`) excludes tests tagged "[slow]" - each one performs its own
+// uncached, real-repository ts.Program build (createProgramFromSources/buildRepositoryRegistry/
+// buildRepositoryArtifacts/buildSemanticRepositoryArtifacts over `repositoryRoot`), which is what
+// makes a full run take well over an hour. The fast subset covers the same discovery/validation
+// logic through the small-virtual-source tests and is meant for routine use; run without the flag
+// for full coverage before a registry-affecting release.
+const cliArgs = process.argv.slice(2);
+const skipSlow = cliArgs.includes("--skip-slow") || cliArgs.includes("--fast");
+const patternArg = cliArgs.find((arg) => !arg.startsWith("--"));
+const pattern = patternArg ? new RegExp(patternArg, "i") : null;
 let failures = 0;
 for (const current of tests) {
   if (pattern && !pattern.test(current.name)) continue;
+  if (skipSlow && current.name.startsWith("[slow] ")) continue;
+  const startedAt = Date.now();
   try {
     await current.run();
-    console.log(`PASS ${current.name}`);
+    console.log(`PASS ${current.name} (${Date.now() - startedAt}ms)`);
   } catch (error) {
     failures += 1;
     console.error(`FAIL ${current.name}`);

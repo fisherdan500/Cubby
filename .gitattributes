@@ -2,3 +2,8 @@
 # LF regardless of platform, matching the LF-only git blobs and every
 # Linux/Docker checkout (CI, production). See docs/DEVELOPMENT.md "Line Endings".
 *.sql text eol=lf
+
+# Same reasoning: this file's git blob is already LF-only, but a Windows
+# checkout with core.autocrlf=true was silently converting it to CRLF, which
+# would otherwise turn any edit into a whole-file diff.
+src/server/operation-registry/operation-registry.test.mjs text eol=lf
