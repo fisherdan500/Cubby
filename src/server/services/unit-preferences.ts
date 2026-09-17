@@ -133,12 +133,14 @@ export async function submitUnitPreferencesBrowserOperation(raw: { operationId?:
         });
         if (updated.count !== 1) throw new Error("stale_revision");
       }
+      // settings.units.update is one of the actions the audit contract records without a payload
+      // (emptyAuditPayloadSchema, alongside backup.export, household.create and audit.view).
+      // Passing the preference objects here made writeAudit reject every unit-preferences change
+      // with a ZodError, surfacing as a 422 - the action is audited, its content is not.
       await writeAudit(lockedCtx, {
         action: "settings.units.update",
         entityType: "household",
-        entityId: lockedCtx.householdId,
-        before: opening.unitPreferences as Prisma.InputJsonValue,
-        after: preferences as Prisma.InputJsonValue
+        entityId: lockedCtx.householdId
       }, tx);
       return { kind: "units_updated", code: "ok", settingsScope: "household" } as const;
     }

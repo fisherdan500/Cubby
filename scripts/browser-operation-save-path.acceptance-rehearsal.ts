@@ -16,7 +16,15 @@ import { fileURLToPath } from "node:url";
 // topology (the app's own entrypoint provisioning scripts create it, same as docker-compose.yml),
 // signs in for real, and saves an activity twice: immediately (a session-freshness regression alone
 // would not have failed this) and again on a session artificially aged past
-// SESSION_FRESH_AGE_SECONDS (this is what actually broke). See docs/DEVELOPMENT.md
+// SESSION_FRESH_AGE_SECONDS (this is what actually broke).
+//
+// The break hit every ordinary browser-operation mutation, not just activity.create, so the aged
+// session then exercises one mutation per context helper that takes the session row lock:
+// baby-scoped (timer stop), household-scoped (unit preferences, via the separately issued opening
+// rather than the activity route's single call) and account-scoped (account appearance, which locks
+// "User" as well as "Session"). Each asserts the row actually changed in the database, and the
+// probe asserts cubby_runtime still holds no UPDATE grant on "Session" - the boundary whose
+// violation the SECURITY DEFINER lock functions exist to avoid. See docs/DEVELOPMENT.md
 // "Verification Commands".
 
 const REHEARSAL_COMPOSE_FILE = "scripts/browser-operation-save-path.acceptance.compose.yml";
@@ -99,6 +107,7 @@ export function runBrowserOperationSavePathRehearsal() {
   };
   const dockerEnv = isolatedDockerEnvironment(secrets);
   let composeAttempted = false;
+  let passed = false;
   let migrationCwd: string | undefined;
 
   try {
@@ -167,7 +176,17 @@ export function runBrowserOperationSavePathRehearsal() {
     });
 
     console.log("BROWSER_OPERATION_SAVE_PATH_ACCEPTANCE_PASS");
+    passed = true;
   } finally {
+    // Teardown destroys the containers, so a failure would otherwise leave only the probe's HTTP
+    // status with no server-side cause - the app returns a generic server_error body by design.
+    // Dump the app log before tearing down whenever the run did not pass.
+    if (!passed && composeAttempted) {
+      const appLog = spawnSync("docker", [...composeArgs, "logs", "--no-color", "--tail", "80", "app"], { cwd: repositoryRoot, env: dockerEnv, encoding: "utf8" });
+      console.error("--- app log (last 80 lines, captured before teardown) ---");
+      console.error(`${appLog.stdout ?? ""}${appLog.stderr ?? ""}`);
+      console.error("--- end app log ---");
+    }
     if (composeAttempted) {
       spawnSync("docker", [...composeArgs, "down", "--volumes", "--remove-orphans", "--rmi", "local"], { cwd: repositoryRoot, env: dockerEnv, stdio: "ignore" });
     }
