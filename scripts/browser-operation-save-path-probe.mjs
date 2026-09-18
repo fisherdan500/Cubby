@@ -551,6 +551,85 @@ const passwordChangeBody = (cookieHeader) => ({
   body: JSON.stringify({ ...securityOperationMetadata(), currentPassword: password, newPassword })
 });
 
+// Recovery enrollment is the offline fallback for losing the password, so it matters that it works
+// against the real restricted role rather than only in service tests. It re-authenticates with the
+// current password, like the password change below, so the aged session drives it.
+async function securityPost(path, body, label) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: baseUrl, cookie: agedCookie },
+    body: JSON.stringify(body)
+  });
+  const parsed = await response.json().catch(() => null);
+  if (!response.ok || parsed?.ok !== true) {
+    throw new Error(`browser_operation_save_path_probe_${label}_failed:${response.status}:${JSON.stringify(parsed)}`);
+  }
+  return parsed.data;
+}
+
+// Every follow-up action reuses this exact metadata: the set is looked up by its issuance
+// operationId, and the binding check compares the fingerprints too, so a fresh operation id here
+// reads as "no such enrollment" rather than as a new request.
+const recoveryMetadata = securityOperationMetadata();
+const enrolled = await securityPost(
+  "/api/account/security/recovery",
+  { action: "enroll", ...recoveryMetadata, currentPassword: password },
+  "recovery_enroll"
+);
+if (!Array.isArray(enrolled?.codes) || enrolled.codes.length === 0 || enrolled.displayOnce !== true) {
+  throw new Error(`browser_operation_save_path_probe_recovery_codes_missing:${JSON.stringify(enrolled)}`);
+}
+
+await securityPost(
+  "/api/account/security/recovery",
+  { action: "acknowledge", operationId: enrolled.operationId, setVersion: enrolled.setVersion },
+  "recovery_acknowledge"
+);
+
+// Rehearsing spends one real code, which is the only way to prove the set is usable rather than
+// merely stored.
+await securityPost(
+  "/api/account/security/recovery",
+  { action: "rehearse", ...recoveryMetadata, setVersion: enrolled.setVersion, code: enrolled.codes[0] },
+  "recovery_rehearse"
+);
+const recoveryStatus = await securityPost(
+  "/api/account/security/recovery",
+  { action: "status", ...recoveryMetadata },
+  "recovery_status"
+);
+if (typeof recoveryStatus?.remainingCodes !== "number" || recoveryStatus.remainingCodes >= enrolled.codes.length) {
+  throw new Error(`browser_operation_save_path_probe_recovery_code_not_spent:${JSON.stringify(recoveryStatus)}`);
+}
+
+// Email change is covered as far as this harness honestly can: initiate, status and cancel all run
+// server-side, while verify and cutover need the token that only reaches a real mailbox. Driving
+// those would mean reaching into delivery internals and asserting against the harness's own
+// plumbing rather than the app.
+const emailChangeMetadata = securityOperationMetadata();
+const initiated = await securityPost(
+  "/api/account/security/email-change",
+  { action: "initiate", ...emailChangeMetadata, currentPassword: password, newEmail: "save-path-rotated@rehearsal.invalid" },
+  "email_change_initiate"
+);
+const emailChangeStatus = await securityPost(
+  "/api/account/security/email-change",
+  { action: "status", operationId: initiated.operationId },
+  "email_change_status"
+);
+if (emailChangeStatus?.status !== "pending") {
+  throw new Error(`browser_operation_save_path_probe_email_change_not_pending:${JSON.stringify(emailChangeStatus)}`);
+}
+await securityPost(
+  "/api/account/security/email-change",
+  { action: "cancel", operationId: initiated.operationId },
+  "email_change_cancel"
+);
+const cancelledUser = await prisma.user.findUnique({ where: { id: handoff.userId }, select: { email: true } });
+if (cancelledUser?.email !== handoff.email) {
+  throw new Error(`browser_operation_save_path_probe_email_changed_without_verification:${cancelledUser?.email}`);
+}
+
 // Session age is deliberately NOT the gate here: a password change re-authenticates with the
 // current password itself (issueFreshAuthGrantForCurrentPassword), not with a recent sign-in, so it
 // is driven from the aged session on purpose. "signed_out" is the success status - the credential
