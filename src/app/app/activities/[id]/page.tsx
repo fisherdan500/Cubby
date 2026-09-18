@@ -38,7 +38,8 @@ export default async function ActivityDetailPage({
 
   return (
     <AppShell title={activityLabels[type]} userName={user.name}>
-      <article className="mx-auto max-w-3xl space-y-4">
+      {/* Bottom padding keeps the last card clear of the fixed action bar below. */}
+      <article className="mx-auto max-w-3xl space-y-4 pb-20">
         <Card className="space-y-5 p-5 sm:p-6">
           <header className="flex min-w-0 items-center gap-4">
             <ActivityArtwork type={type} size="xl" />
@@ -75,12 +76,15 @@ export default async function ActivityDetailPage({
           </Card>
         ) : null}
 
-        {/* Every action lives in one bar pinned just above the phone's bottom navigation, so leaving,
-            editing and deleting are all within thumb reach instead of at the top of the screen. Delete
-            is a small icon, not a full-width button, and still asks for confirmation. */}
+        {/* Every action lives in one bar FIXED just above the phone's bottom navigation - not sticky,
+            which only pinned once an activity was long enough and otherwise left the bar halfway up
+            a short one. Fixed means it is in exactly the same spot for every activity and never
+            scrolls. On desktop, where there is no bottom navigation, it sits at the bottom of the
+            content column clear of the sidebar. Delete is a small icon and still asks to confirm. */}
+        <div className="fixed inset-x-0 bottom-[4.75rem] z-20 px-3 md:bottom-4 md:left-64 md:px-6">
         <nav
           aria-label="Activity actions"
-          className="sticky bottom-[4.75rem] z-20 flex items-center gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-soft backdrop-blur md:bottom-4"
+          className="mx-auto flex max-w-3xl items-center gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-soft backdrop-blur"
         >
           <Link
             replace
@@ -100,6 +104,7 @@ export default async function ActivityDetailPage({
           ) : null}
           {canDelete ? <ConfirmedActivityDelete id={activity.id} returnTo={returnTo} trigger="icon" /> : null}
         </nav>
+        </div>
       </article>
     </AppShell>
   );
