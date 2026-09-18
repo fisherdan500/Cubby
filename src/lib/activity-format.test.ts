@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { formatElapsedBadge, formatVolume } from "@/lib/activity-format";
+import { formatElapsedBadge, formatTimeSince, formatVolume } from "@/lib/activity-format";
 
 describe("activity formatting", () => {
+  it("says how long ago something happened in words a tired reader can take in at a glance", () => {
+    const now = new Date("2026-06-19T17:05:00.000Z");
+    expect(formatTimeSince(new Date("2026-06-19T17:04:40.000Z"), now)).toBe("just now");
+    expect(formatTimeSince(new Date("2026-06-19T16:48:00.000Z"), now)).toBe("17m ago");
+    expect(formatTimeSince(new Date("2026-06-19T14:31:00.000Z"), now)).toBe("2h 34m ago");
+    expect(formatTimeSince(new Date("2026-06-19T14:05:00.000Z"), now)).toBe("3h ago");
+    expect(formatTimeSince(new Date("2026-06-16T17:05:00.000Z"), now)).toBe("3d ago");
+  });
+
+  it("never reports a future time as a negative duration", () => {
+    expect(formatTimeSince(new Date("2026-06-19T18:00:00.000Z"), new Date("2026-06-19T17:05:00.000Z"))).toBe("just now");
+    expect(formatTimeSince(null)).toBeNull();
+  });
+
   it("formats elapsed badge time as hours and padded minutes", () => {
     expect(formatElapsedBadge(new Date("2026-06-19T14:31:00.000Z"), new Date("2026-06-19T17:05:00.000Z"))).toBe("2:34");
   });

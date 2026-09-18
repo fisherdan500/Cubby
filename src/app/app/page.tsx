@@ -17,7 +17,7 @@ import {
 import { hasPermission } from "@/domain/roles";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import type { VolumeUnit } from "@/domain/units";
-import { describeActivity, formatDateTime, formatDuration, formatElapsedBadge } from "@/lib/activity-format";
+import { describeActivity, formatDateTime, formatDuration, formatTimeSince } from "@/lib/activity-format";
 import { activityDetailHref } from "@/lib/activity-navigation";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
@@ -30,12 +30,6 @@ const quickActions: ActivityTypeName[] = [
 const primaryQuickActionTypes = new Set<ActivityTypeName>(["sleep", "feeding", "diaper"]);
 const primaryQuickActions = quickActions.filter((type) => primaryQuickActionTypes.has(type));
 const secondaryQuickActions = quickActions.filter((type) => !primaryQuickActionTypes.has(type));
-
-const elapsedBadgeClasses: Partial<Record<ActivityTypeName, string>> = {
-  sleep: "activity-tone-sleep text-foreground",
-  feeding: "activity-tone-feeding text-foreground",
-  diaper: "activity-tone-diaper text-foreground"
-};
 
 type DashboardPageData = NonNullable<Awaited<ReturnType<typeof getDashboardPageData>>>;
 type DashboardData = DashboardPageData["dashboard"];
@@ -128,8 +122,10 @@ function DayStrip({ babyId, dashboard }: { babyId: string; dashboard: DashboardW
       ))}
 
       <details className="group sm:hidden">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg border border-border bg-card/70 text-sm font-black text-foreground marker:hidden">
-          More
+        {/* Still a full 44px target, but a quiet text control rather than a bordered button the
+            same weight as the tiles above it. */}
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg text-sm font-black text-muted-foreground transition hover:bg-muted hover:text-foreground marker:hidden">
+          More activities
         </summary>
         <div className="mt-2 grid grid-cols-4 gap-2">
           {secondaryQuickActions.map((type) => (
@@ -156,7 +152,7 @@ function RunningTimerTile({ type, timer }: { type: ActivityTypeName; timer: Acti
       <span className="rounded-full bg-primary/16 px-2 py-0.5 text-xs font-black leading-none text-primary">
         {paused ? "Paused" : "Running"}
       </span>
-      <ActivityArtwork type={type} size="xl" />
+      <ActivityArtwork type={type} size="lg" />
       <p className="text-sm font-black leading-tight text-foreground">{quickActionLabel(type)}</p>
       <div className="flex w-full flex-wrap justify-center gap-1">
         {paused ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
@@ -196,7 +192,7 @@ function QuickActionLink({
   dashboard: DashboardWithBaby;
   priority: "primary" | "secondary";
 }) {
-  const badge = elapsedBadge(type, dashboard);
+  const since = timeSince(type, dashboard);
   const active = dashboard.activeTimers.some((timer) => timer.type === type);
   const primary = priority === "primary";
 
@@ -205,22 +201,22 @@ function QuickActionLink({
       href={activityLogHref(type, dashboard)}
       className={
         primary
-          ? "rounded-lg border border-border bg-card/80 p-2 text-center shadow-soft transition hover:border-primary/35 hover:bg-card"
+          ? "rounded-lg border border-border bg-card/80 px-1 py-2 text-center shadow-soft transition hover:border-primary/35 hover:bg-card"
           : "min-w-0 rounded-lg p-1 text-center transition hover:bg-muted sm:min-w-20"
       }
     >
-      <div className="flex flex-col items-center gap-1.5">
-        <div className={`flex ${primary ? "h-5" : "h-4"} items-center justify-center`}>
-          {badge ? (
-            <span className={`rounded-full px-2 py-0.5 text-xs font-black leading-none ${elapsedBadgeClasses[type]}`}>
-              {badge}
-            </span>
-          ) : null}
-        </div>
-        <ActivityArtwork type={type} size={primary ? "xl" : "lg"} />
-        <p className={`${primary ? "text-sm" : "text-xs"} font-black leading-tight text-muted-foreground`}>
+      <div className="flex flex-col items-center gap-1">
+        <ActivityArtwork type={type} size="lg" />
+        <p className={`${primary ? "text-sm" : "text-xs"} font-black leading-tight text-foreground`}>
           {quickActionLabel(type)}
         </p>
+        {/* Time since the last one, as words under the name, so it reads as "Feed, 2h ago" rather
+            than an unlabelled number floating above the tile. */}
+        {primary ? (
+          <p className="min-h-4 text-xs font-semibold leading-tight text-muted-foreground">
+            {since ?? "None yet"}
+          </p>
+        ) : null}
         {active ? (
           <span className="rounded-full bg-primary/16 px-2 py-0.5 text-[11px] font-black leading-none text-primary">Active</span>
         ) : null}
@@ -375,7 +371,9 @@ function DailySummary({
     <section className="space-y-2">
       <h2 className="text-sm font-black">Daily Summary</h2>
       {items.length ? (
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
+        // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
+        // pushed the day's log below the first screen on a phone.
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
           {items.map((item) => (
             <SummaryItem
               key={item.key}
@@ -421,7 +419,7 @@ function SummaryItem({
     <Link
       href={href}
       aria-current={selected ? "true" : undefined}
-      className={`flex min-h-14 min-w-0 items-center gap-2 rounded-md border p-2 transition sm:min-w-32 sm:px-3 ${
+      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full border py-1 pl-1 pr-3 transition ${
         selected
           ? "border-primary/60 bg-primary/20 ring-1 ring-primary/30"
           : "border-border bg-card/60 hover:border-primary/40 hover:bg-muted"
@@ -429,8 +427,8 @@ function SummaryItem({
     >
       <ActivityArtwork type={type} size="xs" />
       <div className="min-w-0">
-        <p className="truncate text-sm font-black leading-none sm:text-base">{value}</p>
-        <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
+        <p className="whitespace-nowrap text-sm font-black leading-none">{value}</p>
+        <p className="max-w-40 truncate text-[11px] font-semibold leading-tight text-muted-foreground">{label}</p>
       </div>
     </Link>
   );
@@ -513,10 +511,10 @@ function periodLabel(date: Date, timeZone: string) {
   return "Night";
 }
 
-function elapsedBadge(type: ActivityTypeName, dashboard: DashboardData) {
-  if (type === "sleep") return formatElapsedBadge(dashboard.lastSleep?.endedAt ?? dashboard.lastSleep?.occurredAt);
-  if (type === "feeding") return formatElapsedBadge(dashboard.lastFeeding?.occurredAt);
-  if (type === "diaper") return formatElapsedBadge(dashboard.lastDiaper?.occurredAt);
+function timeSince(type: ActivityTypeName, dashboard: DashboardData) {
+  if (type === "sleep") return formatTimeSince(dashboard.lastSleep?.endedAt ?? dashboard.lastSleep?.occurredAt);
+  if (type === "feeding") return formatTimeSince(dashboard.lastFeeding?.occurredAt);
+  if (type === "diaper") return formatTimeSince(dashboard.lastDiaper?.occurredAt);
   return null;
 }
 

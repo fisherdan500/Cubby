@@ -9128,18 +9128,18 @@
       "bindings": [
         {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1179,
+          "anchorEnd": 1176,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1159,
+          "anchorStart": 1156,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1117,
+          "anchorEnd": 1114,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1102,
+          "anchorStart": 1099,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -12023,7 +12023,7 @@
     }
   ],
   "observationCount": 186,
-  "observationDigest": "7994e1b015fd010a192d53f91a2dd16e85e5e14b640d075091b09d63a074c60b",
+  "observationDigest": "e3c2d9d019d1bac65937e31c84f6e97d264ddc90d806a659d732a588bacc1b85",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14361,18 +14361,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1179,
+          "anchorEnd": 1176,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1159,
+          "anchorStart": 1156,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1117,
+          "anchorEnd": 1114,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1102,
+          "anchorStart": 1099,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -18242,7 +18242,7 @@
   ],
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "370502c0eece3a7baeb096cca61eb2e42ae95f7c235b78438b87e98042f89124",
+  "registryDigest": "565ad6296b38387a8b051a8e965ae8ab3ee08bc5c3393f9c94ae1899293cc521",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
