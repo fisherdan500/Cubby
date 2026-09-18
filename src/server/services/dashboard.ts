@@ -58,6 +58,10 @@ const dashboardWarningOpeningSnapshotSchema = z.object({
 export type DashboardDate = {
   key: string;
   label: string;
+  shortLabel: string;
+  todayKey: string;
+  isToday: boolean;
+  isYesterday: boolean;
   previous: string;
   next: string;
   start: Date;
@@ -403,9 +407,16 @@ export function resolveDashboardDate(input: string | undefined, timezone = env.A
   const key = isValidDateKey(input) ? input : dateKeyInTimeZone(now, safeTimezone);
   const previous = addDaysToDateKey(key, -1);
   const next = addDaysToDateKey(key, 1);
+  // The household's own today, so the date strip can say "Today" and "Yesterday" instead of making
+  // someone read a date to work out where they are. Computed in the household zone, never the host's.
+  const todayKey = dateKeyInTimeZone(now, safeTimezone);
   return {
     key,
     label: formatDashboardDateLabel(key, safeTimezone),
+    shortLabel: formatDashboardShortDateLabel(key, safeTimezone),
+    todayKey,
+    isToday: key === todayKey,
+    isYesterday: key === addDaysToDateKey(todayKey, -1),
     previous,
     next,
     start: zonedDateStart(key, safeTimezone),
@@ -419,6 +430,15 @@ function isValidDateKey(value: string | undefined): value is string {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function formatDashboardShortDateLabel(key: string, timezone: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: timezone
+  }).format(zonedDateStart(key, timezone));
 }
 
 function formatDashboardDateLabel(key: string, timezone: string) {

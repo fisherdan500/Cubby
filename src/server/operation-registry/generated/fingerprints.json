@@ -1760,17 +1760,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "00c7a9cbb919dd2b13a1d7d1154aec685420fc56ee3c44d4d9adc4570bb0a305",
+          "digest": "cf7f22131aa2a646d58a77b124d8db9a6ea3875e7a0c35f45bfd6cb76e508e50",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "1ef43ab7876c0df27cf8fbd6c2fea41dd4b59d11933579971fa26c29b1b5b676",
+      "fingerprint": "28c48296ab0177829f50b30863c606fde82eb65b2831ed4afa1e4809d3ef63a0",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "c0dafb4d66efcc95024d06f0b838218f9c4301b8c462468f65ddd7cc56413244",
+      "sourceDigest": "26b33c3c98896a6182402442eae5fafa7eb7dbff93673b984f99e1316a4c43aa",
       "status": "declared"
     },
     {
@@ -3280,11 +3280,11 @@
   ],
   "generatorDigest": "186f8e00ea8a0b09457a6f47c945d2c36e9a2a3a9e353293e402d792ecb4614c",
   "generatorVersion": "r0.1",
-  "observationDigest": "0cda05e2546b807ebe6bbaa96b025e1cbabad7095c458caffac3de2055e43847",
+  "observationDigest": "7994e1b015fd010a192d53f91a2dd16e85e5e14b640d075091b09d63a074c60b",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "bf89cd43942082f67571aa17483847c824023849969bf901c1ae09e7ed5bd2b0",
+  "registryDigest": "370502c0eece3a7baeb096cca61eb2e42ae95f7c235b78438b87e98042f89124",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
