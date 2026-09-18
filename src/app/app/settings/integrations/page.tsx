@@ -6,7 +6,17 @@ import { listApiKeys, listWebhooks } from "@/server/services/integrations";
 
 export default async function IntegrationsSettingsPage() {
   const { user } = await requireSettingsPage("integration.manage");
-  const [apiKeys, webhooks] = await Promise.all([listApiKeys(), listWebhooks()]);
+  // listApiKeys deliberately requires a recent sign-in. It runs while this page renders, so on an
+  // ordinary long-lived session that requirement took the whole screen down with a 500 - including
+  // the webhook half, which has no such requirement. The keys stay hidden, as intended, but the
+  // page explains why instead of failing.
+  const [apiKeys, webhooks] = await Promise.all([
+    listApiKeys().catch((error: unknown) => {
+      if (error instanceof Error && error.message === "fresh_authentication_required") return null;
+      throw error;
+    }),
+    listWebhooks()
+  ]);
 
   return (
     <AppShell title="Integrations" userName={user.name}>
@@ -17,8 +27,13 @@ export default async function IntegrationsSettingsPage() {
             <p className="text-sm text-muted-foreground">New API-key issuance is unavailable until the versioned credential rotation workflow is ready.</p>
           </Card>
           <Card className="space-y-3">
-            {apiKeys.length ? null : <p className="text-sm text-muted-foreground">No API keys yet.</p>}
-            {apiKeys.map((key) => (
+            {apiKeys === null ? (
+              <p className="text-sm text-muted-foreground">
+                API keys are shown only for a short time after signing in. Sign out and back in to view or revoke them.
+              </p>
+            ) : null}
+            {apiKeys?.length === 0 ? <p className="text-sm text-muted-foreground">No API keys yet.</p> : null}
+            {(apiKeys ?? []).map((key) => (
               <div key={key.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-md bg-muted p-3">
                 <div className="min-w-0 flex-1">
                   <p className="break-words font-black">{key.name}</p>

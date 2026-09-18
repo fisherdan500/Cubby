@@ -378,6 +378,48 @@ if (webhookResponse.status !== 201 || typeof webhookId !== "string") {
   throw new Error(`browser_operation_save_path_probe_webhook_create_failed:${webhookResponse.status}:${JSON.stringify(webhookBody)}`);
 }
 
+// Every mutation above is a write. Nothing checked that the app's own pages still render, and a
+// server component that throws takes the screen down for a signed-in household - which is exactly
+// how the 2026-09-15 outage presented. These are read-only GETs on the ALREADY-AGED session, since
+// that is the normal state of a household that signed in weeks ago.
+const renderedPages = [
+  "/app",
+  "/app/history",
+  "/app/calendar",
+  "/app/reports",
+  "/app/nursery",
+  "/app/babies",
+  "/app/settings",
+  "/app/settings/appearance",
+  "/app/settings/units",
+  "/app/settings/members",
+  "/app/settings/integrations",
+  "/app/settings/backups",
+  "/app/settings/export",
+  "/app/settings/notifications",
+  "/app/settings/sessions",
+  "/app/settings/security-history",
+  "/app/settings/leave",
+  "/app/log/feeding",
+  "/app/log/diaper",
+  `/app/activities/${timerActivityId}`,
+  `/app/activities/${timerActivityId}/edit`
+];
+for (const path of renderedPages) {
+  const page = await fetch(`${baseUrl}${path}`, { headers: { cookie }, redirect: "manual" });
+  if (page.status >= 400) {
+    throw new Error(`browser_operation_save_path_probe_page_failed:${path}:${page.status}`);
+  }
+  // A thrown server component can still answer 200 with an error boundary, so assert the shell
+  // actually rendered rather than trusting the status alone.
+  if (page.status === 200) {
+    const html = await page.text();
+    if (!html.includes("Log Entry")) {
+      throw new Error(`browser_operation_save_path_probe_page_shell_missing:${path}`);
+    }
+  }
+}
+
 // Signing in again produces a fresh session, which is the other half of the boundary: the same two
 // operations that just refused must now succeed.
 const freshSignIn = await fetch(`${baseUrl}/api/auth/sign-in/email`, {

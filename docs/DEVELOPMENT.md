@@ -535,6 +535,13 @@ hardcoding it. Posting the arguments with a `Next-Action` header instead would
 mean reproducing React's own reply encoding, which is version-specific and would
 test that reimplementation rather than the app.
 
+The same aged session then requests every signed-in page and asserts the app
+shell actually rendered, not merely that the status was 200 - a server component
+that throws can still answer 200 behind an error boundary. Writes were covered
+long before reads were, and a page that throws takes the screen down for a
+household that is signed in and has done nothing wrong, which is how the
+2026-09-15 outage presented.
+
 Each family is driven with exactly the request body its own UI control sends -
 undo-last, for instance, posts only `{operationId}`, because the button cannot
 know which activity the issue step picked. Sending a more convenient body would
