@@ -64,7 +64,11 @@ const activityAuditPayloadSchema = z.object({
   type: z.string().min(1).max(80).optional(),
   timerState: z.string().min(1).max(80).optional(),
   source: z.string().min(1).max(80).optional(),
-  deletedAt: z.string().datetime().nullable().optional()
+  deletedAt: z.string().datetime().nullable().optional(),
+  // Undo-last reads this back as the revision it is allowed to undo (auditActivityState), so the
+  // payload has to carry it. It is a timestamp of the same row the entry already identifies, in
+  // keeping with the minimization the rest of this schema enforces.
+  updatedAt: z.string().datetime().optional()
 }).strict();
 
 const memberSelfLeaveBeforeSchema = z.object({

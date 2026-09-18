@@ -126,11 +126,15 @@ function auditActivityPayload(activity: {
   timerState: string;
   source?: string | null;
   deletedAt?: Date | null;
+  updatedAt?: Date | null;
 }) {
   return {
     type: activity.type,
     timerState: activity.timerState,
     ...(activity.source ? { source: activity.source } : {}),
+    // auditActivityState requires this and returns null without it, which made undo-last reject
+    // every activity as an unknown revision.
+    ...(activity.updatedAt ? { updatedAt: activity.updatedAt.toISOString() } : {}),
     deletedAt: activity.deletedAt?.toISOString() ?? null
   };
 }
@@ -1558,10 +1562,37 @@ export async function submitActivityTimerBrowserOperation(operation: "pause" | "
   });
 }
 
+async function undoLastBindingTarget(
+  ctx: { householdId: string; memberId: string },
+  operationId: unknown
+): Promise<string> {
+  if (typeof operationId !== "string" || !operationId) throw new Error("validation_error");
+  const binding = await prisma.browserOperationBinding.findFirst({
+    where: {
+      householdId: ctx.householdId,
+      operationId,
+      actorMemberId: ctx.memberId,
+      operationKey: BrowserOperationKey.activityUndoLast
+    },
+    select: { targetId: true }
+  });
+  if (!binding?.targetId) throw new Error("not_found");
+  return binding.targetId;
+}
+
 export async function submitActivityUndoLastBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
   const record = activityBrowserOpeningInput(raw);
-  const activityId = requiredActivityBrowserId(record, "activityId");
   const ctx = await getBrowserOperationContextForHousehold();
+  // Undo-last is the one activity operation whose target the caller cannot name: the issue step
+  // picks the member's most recent create/delete itself, and the client only ever learns an
+  // operation id back. Requiring activityId in the submit body therefore rejected every real
+  // request with validation_error - the Undo last button sends exactly `{operationId}`. The target
+  // is taken from the binding the issue step recorded instead; every check below still runs against
+  // that binding's snapshot inside the transaction, so the operation stays pinned to what was
+  // opened rather than to whatever is newest at submit time.
+  const activityId = typeof record.activityId === "string" && record.activityId
+    ? record.activityId
+    : await undoLastBindingTarget(ctx, record.operationId);
   return executeHouseholdBrowserOperation({
     ctx, operationId: record.operationId, operationKey: BrowserOperationKey.activityUndoLast, intent: { activityId }, targetKind: "activity", targetId: activityId, permission: "activity.read",
     validate: async (tx, lockedCtx, binding) => {

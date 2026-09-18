@@ -123,31 +123,31 @@
       "id": "semantic-exposure:src/app/app/calendar/actions.ts#createCalendarEventAction"
     },
     {
-      "digest": "d5366fdabdeefadae87c16835b20b9ac22b88ceba8c59ef85ad7321113443ffe",
+      "digest": "a9924b5f1c9e29f05b766277f8662f58131f41735cf6e193f4317ae0f1aa1ab3",
       "id": "semantic-service:activity.create"
     },
     {
-      "digest": "f589270d43b12c92e0a3d3829ac27bd3159eae9d1c602aef3cb489fca902f16f",
+      "digest": "9ece911eb3dce2e5ca13aef4aa0b9261f19e6383ee27317722899944bb0a5a39",
       "id": "semantic-service:activity.delete"
     },
     {
-      "digest": "790930f6d06bda1d160304e44437680bb51391d644e4a8f853aed32fc7b02c9e",
+      "digest": "9a09bf026c1cf0a4aa27d571c3958613239677b89b574e6250d4c143efefe2f6",
       "id": "semantic-service:activity.timer.pause"
     },
     {
-      "digest": "3ccb8cf65df7096c59b0619c1f70460d653200d15e97a1fdf648761995e47510",
+      "digest": "a433d360d0ea37a29dce32a3c2752aca8571cda22519356cee3eff584e0bf87c",
       "id": "semantic-service:activity.timer.resume"
     },
     {
-      "digest": "22d38e5dda284c494ae36444b7bce7706d04b6d2d22b58cfda50397f2acba88d",
+      "digest": "a0061c183d34d48373af733727409e8cdd9dcd631bcf2e22e1b32b5422b664c0",
       "id": "semantic-service:activity.timer.stop"
     },
     {
-      "digest": "62b52abc8a32a4d3a2062dfc378b67361c0bc5beb4f5051fd5caeb9a9f79afad",
+      "digest": "a5368e5eb2328c70696c90761f9ff7d51c8cc4851635b877b0e3514b73f20384",
       "id": "semantic-service:activity.undo_last"
     },
     {
-      "digest": "7ef8f4c9ef57cf29104a4acda28a99ff90416f3c262c9f4d1f89b202bf7203da",
+      "digest": "c54ebaad42dfaa81fe1952b86250f498c5f54dfba696f7e8ab043b54ff742836",
       "id": "semantic-service:activity.update"
     },
     {
@@ -227,7 +227,7 @@
       "id": "semantic-service:settings.units.update"
     },
     {
-      "digest": "caff77d04cc4d1455e926ccfaa1e4c327b8844f3e52da5adb0eef64530ed5fef",
+      "digest": "32eea9dfe69174a9211afcdd5dd5a92bec1b8e083b5249485b791779e7af671f",
       "id": "semantic:browser_household_mutations"
     },
     {
@@ -241,10 +241,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "fc4ab075a3fd141bcaeebab26b4c6907bdeee06c4fc917575ec62b45cd0223e3",
+  "semanticArtifactDigest": "f51585538fdfacf474293ac57839436bfbc2f82bdf682d1979f1682b01d8d0f2",
   "semanticArtifactVersion": "semantic-artifact.v1",
   "semanticCoverageDigest": "5d4ed6675663f9587b629b2590004e06618f69271e3ebfad8a36e8b40ce5318a",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "dc2b4dccd3e06dd43a0dd217b3f6edb47bc9f670987e496f11e329a656e167ce"
+  "semanticFingerprint": "71ba116514c1aaa231901d710213b0351e66ae08f4fbcbb683c40db7d8fb96b8"
 }
