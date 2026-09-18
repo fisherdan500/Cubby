@@ -1644,17 +1644,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "37653ac736531850ce64b4cd8b463aa22072472ada3c3c808de05fbfa0f0c791",
+          "digest": "3c2730c693bf85b83daa51e366eedb53dc762719a3366325af2d5e135ab47847",
           "file": "src/app/app/activities/[id]/page.tsx"
         }
       ],
       "declarationDigest": "7db689af1701252bff79d689cc65d47d28b401ad8933e95b5f469603025660c1",
-      "fingerprint": "e22f1eefdba10cfab215feebadff36022209c9612b2a94d4dd80d2c893c7a5c6",
+      "fingerprint": "e587eb1b773ef210f5a3aff934540fff17dca887a0d2e6d132cb103dfcb62349",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts",
-      "sourceDigest": "d56908712611db6bda1a716c474f4ce37db963953ba4c0b83d0ddd63b1b69b1f",
+      "sourceDigest": "dbbf00a4cbf038ff2fca2204503129c52b721069aeb0395630ae41675ae4bbe4",
       "status": "declared"
     },
     {
@@ -1760,17 +1760,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "b78b5e1e077caff5569cf6db12456e10023d95965c80c825c0ee539bf10a01d5",
+          "digest": "c6bef769c1ea75c46a37d2e005a683abc85661932d33ecbcb4da6ada41a720f0",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "d2307d9ea89a28da1b6d2ce6f043f73f1027ee96813fdaa904531f1392ec4e1f",
+      "fingerprint": "49e234ebb30e84e797ab1c1d2a48d63d1802bd91b1bf92cb977fa6fe87e64561",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "47820d7ca4f0726b85f2910bbd67ea0fddab4a80ab4295bb06958507f74a07d1",
+      "sourceDigest": "c67e0df8ec468b8ce534e567f19035f2232608e8ec0b39408fe2dae6534628a5",
       "status": "declared"
     },
     {
@@ -2112,17 +2112,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "6b6c0f48c5db6d6824d60b358a5373e1881c40fb2b6feceeab58a2afb9439a0f",
+          "digest": "7601bcc09a70249de5688ca067ca1f4425297835fe668bba812658757ec1eda8",
           "file": "src/components/actions/confirmed-activity-delete.tsx"
         }
       ],
       "declarationDigest": "2e0a4b59c479029f22986789a2eb74123e3623e155088bea7652c8439ba420e2",
-      "fingerprint": "b0a8c9313922a426610d83c3ce843bc10ab36d4161949562f8c32347af3ae5b5",
+      "fingerprint": "9551c4b3e462c22c2d44ed3411f3658ba2ef84373a8f398afa35527c2cf4568c",
       "id": "fingerprint:client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts",
-      "sourceDigest": "125c1bcb113b72857ceb92909f612044ef23aa8581481fb54a997fb9c7a50550",
+      "sourceDigest": "f8d3a125dd93bb19e00c738820f8b76d163c57a41eeda0774034fcdf795ac36e",
       "status": "declared"
     },
     {
@@ -3280,11 +3280,11 @@
   ],
   "generatorDigest": "186f8e00ea8a0b09457a6f47c945d2c36e9a2a3a9e353293e402d792ecb4614c",
   "generatorVersion": "r0.1",
-  "observationDigest": "e3c2d9d019d1bac65937e31c84f6e97d264ddc90d806a659d732a588bacc1b85",
+  "observationDigest": "62fbbb88fe39f80fd6bc3222d55bcef5fbc38d1bab4e716086942ba7cf4905d2",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "565ad6296b38387a8b051a8e965ae8ab3ee08bc5c3393f9c94ae1899293cc521",
+  "registryDigest": "c9eac03056c5c812a0964e33ef1775976aa56ef46ffeb597495d25a5b997ceab",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

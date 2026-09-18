@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
-import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } from "@/components/actions/activity-actions";
+import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
+import { DayPickerHeading } from "@/components/dashboard/day-picker-heading";
 import { ZeroActiveBabies } from "@/components/dashboard/zero-active-babies";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,9 +66,10 @@ export default async function DashboardPage({
         <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (
         <div className="space-y-5">
-          {/* One strip: which day you are looking at, and what you can add to it. Separating those
-              made the top of the screen read as two unrelated toolbars. */}
-          <DayStrip babyId={baby.id} dashboard={currentDashboard} />
+          <DayStrip dashboard={currentDashboard} />
+          {/* The day switcher sits with the summary and log it controls, below the actions, rather
+              than above the quick-action tiles. */}
+          <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
           <DailySummary
             summary={currentDashboard.dailySummary}
             babyId={baby.id}
@@ -76,11 +78,10 @@ export default async function DashboardPage({
           />
           <DashboardWarnings warnings={currentDashboard.warnings} />
 
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold">Daily log</h2>
-              <UndoLastButton />
-            </div>
+          {/* The "Daily log" heading and the Undo last button are hidden for now at the User's request:
+              the heading repeated what the screen already says, and Undo last risked more harm than
+              good in its prominent position. UndoLastButton itself is kept for a later placement. */}
+          <section aria-label="Daily log" className="space-y-3">
             {visibleActivities.length === 0 ? (
               <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No activity for this date.</p>
             ) : (
@@ -98,11 +99,9 @@ export default async function DashboardPage({
   );
 }
 
-function DayStrip({ babyId, dashboard }: { babyId: string; dashboard: DashboardWithBaby }) {
+function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
   return (
     <section className="space-y-3 border-y border-border bg-surface/70 px-1 py-3 sm:px-2 sm:py-4">
-      <DateNavigator babyId={babyId} selectedDate={dashboard.selectedDate} />
-
       <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
         {primaryQuickActions.map((type) => {
           // A running timer takes over its own tile rather than opening a second card further down
@@ -238,7 +237,10 @@ function activityLogHref(type: ActivityTypeName, dashboard: DashboardWithBaby) {
 function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate: DashboardWithBaby["selectedDate"] }) {
   // "Today" and "Yesterday" read faster than a date at 3am; anything older keeps the weekday so the
   // day is still identifiable without doing arithmetic.
-  const heading = selectedDate.isToday ? "Today" : selectedDate.isYesterday ? "Yesterday" : selectedDate.shortLabel;
+  const relative = selectedDate.isToday || selectedDate.isYesterday;
+  // Any other day shows its date once. The year only appears when it differs from this year's.
+  const sameYear = selectedDate.key.slice(0, 4) === selectedDate.todayKey.slice(0, 4);
+  const heading = selectedDate.isToday ? "Today" : selectedDate.isYesterday ? "Yesterday" : sameYear ? selectedDate.shortLabel : selectedDate.label;
   const showReturnToToday = !selectedDate.isToday;
 
   return (
@@ -250,14 +252,15 @@ function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate:
       >
         <ChevronLeft className="h-5 w-5" />
       </Link>
-      <div className="min-w-0 flex-1 text-center">
-        <p className="truncate text-base font-black leading-tight">{heading}</p>
-        {/* The full date stays available when the heading is relative, so the strip never hides
-            which day is actually open. */}
-        <p className="truncate text-xs font-semibold text-muted-foreground">
-          {selectedDate.isToday || selectedDate.isYesterday ? selectedDate.shortLabel : selectedDate.label}
-        </p>
-      </div>
+      {/* Tapping the day opens a calendar to jump anywhere. Today and Yesterday keep the date as a
+          second line so the relative label never hides which day is open; other days show it once. */}
+      <DayPickerHeading
+        babyId={babyId}
+        dateKey={selectedDate.key}
+        maxDateKey={selectedDate.todayKey}
+        heading={heading}
+        subheading={relative ? selectedDate.shortLabel : undefined}
+      />
       <Link
         href={`/app?babyId=${babyId}&date=${selectedDate.next}`}
         className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"

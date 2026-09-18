@@ -39,37 +39,19 @@ export default async function ActivityDetailPage({
   return (
     <AppShell title={activityLabels[type]} userName={user.name}>
       <article className="mx-auto max-w-3xl space-y-4">
-        <nav aria-label="Activity navigation">
-          <Link replace href={returnTo} className="inline-flex min-h-11 items-center text-sm font-bold text-primary hover:underline">
-            ← {activityBackLabel(returnTo)}
-          </Link>
-        </nav>
-
         <Card className="space-y-5 p-5 sm:p-6">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              <ActivityArtwork type={type} size="xl" />
-              <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-normal text-muted-foreground">
-                  {activity.baby.name}
-                  {isInactiveBaby ? " - Inactive" : ""}
-                </p>
-                <h2 className="font-editorial text-2xl font-black text-foreground sm:text-3xl">{activityLabels[type]}</h2>
-                <p className="mt-1 text-sm font-semibold text-muted-foreground">{formatOccurredAt(activity.occurredAt)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Recorded by {actorName}</p>
-              </div>
+          <header className="flex min-w-0 items-center gap-4">
+            <ActivityArtwork type={type} size="xl" />
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-normal text-muted-foreground">
+                {activity.baby.name}
+                {isInactiveBaby ? " - Inactive" : ""}
+              </p>
+              <h2 className="font-editorial text-2xl font-black text-foreground sm:text-3xl">{activityLabels[type]}</h2>
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">{formatOccurredAt(activity.occurredAt)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Recorded by {actorName}</p>
             </div>
-            {canUpdate ? (
-              <Link
-                replace
-                href={activityEditHref(activity.id, returnTo)}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted sm:w-auto"
-              >
-                Edit
-              </Link>
-            ) : null}
           </header>
-
         </Card>
 
         {presentation.sections.map((section) => (
@@ -93,7 +75,31 @@ export default async function ActivityDetailPage({
           </Card>
         ) : null}
 
-        {canDelete ? <ConfirmedActivityDelete id={activity.id} returnTo={returnTo} /> : null}
+        {/* Every action lives in one bar pinned just above the phone's bottom navigation, so leaving,
+            editing and deleting are all within thumb reach instead of at the top of the screen. Delete
+            is a small icon, not a full-width button, and still asks for confirmation. */}
+        <nav
+          aria-label="Activity actions"
+          className="sticky bottom-[4.75rem] z-20 flex items-center gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-soft backdrop-blur md:bottom-4"
+        >
+          <Link
+            replace
+            href={returnTo}
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center rounded-lg px-3 text-sm font-bold text-primary transition hover:bg-muted"
+          >
+            <span className="truncate">← {activityBackLabel(returnTo)}</span>
+          </Link>
+          {canUpdate ? (
+            <Link
+              replace
+              href={activityEditHref(activity.id, returnTo)}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card px-5 text-sm font-semibold text-foreground transition hover:bg-muted"
+            >
+              Edit
+            </Link>
+          ) : null}
+          {canDelete ? <ConfirmedActivityDelete id={activity.id} returnTo={returnTo} trigger="icon" /> : null}
+        </nav>
       </article>
     </AppShell>
   );
