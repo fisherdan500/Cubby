@@ -513,12 +513,24 @@ invisible to the activity path alone:
 | Family | Context helper | Endpoint(s) | Asserted result |
 | --- | --- | --- | --- |
 | Timer stop | `getBrowserOperationContextForBaby` | `POST /api/timers/{id}/stop` | `timerState` is `stopped` with an `endedAt` |
+| Activity delete | household-scoped activity family | `DELETE /api/activities/{id}` | the row is soft-deleted |
+| Undo last | household-scoped activity family | `POST /api/activities/undo-last` | the last created activity is undone |
+| Warning dismiss | `getBrowserOperationContextForBaby` | `POST /api/dashboard/warnings/dismiss` | a dismissal row exists for the live warning |
+| Baby deactivate / reactivate | `getBrowserOperationContextForLifecycleBaby` | `POST /api/babies/{id}/deactivate` then `/reactivate` | `inactiveAt` is set, then cleared |
 | Unit preferences | `getBrowserOperationContextForHousehold` | `POST /api/settings/units/issue` then `PATCH /api/settings/units` | `HouseholdSettings.unitPreferences` actually changed |
 | Account appearance | `lockCurrentAccountActor` | `POST /api/account/appearance/issue` then `PATCH /api/account/appearance` | `User.appearanceMode` actually changed |
 
 Unit preferences and account appearance issue their opening in a separate call,
 so the two-step form is covered as well as the activity route's single call.
 Account appearance is the only family that locks `"User"` alongside `"Session"`.
+
+Each family is driven with exactly the request body its own UI control sends -
+undo-last, for instance, posts only `{operationId}`, because the button cannot
+know which activity the issue step picked. Sending a more convenient body would
+have hidden the defect that the submit path demanded an `activityId` no caller
+has. The warning fingerprint likewise comes from the app's own
+`buildDashboardWarningItems`, not a reimplementation of its hashing, because the
+dismiss path only accepts a warning the dashboard would currently show.
 
 The operation-registry checker's own test harness
 (`src/server/operation-registry/operation-registry.test.mjs`) is a large,

@@ -13,7 +13,7 @@ if (!baseUrl || !handoffFile || !password || !prismaClientPath || !migrationData
 }
 
 const handoff = JSON.parse(await readFile(handoffFile, "utf8"));
-for (const field of ["email", "householdId", "memberId", "babyId"]) {
+for (const field of ["email", "householdId", "memberId", "babyId", "feedingWarningFingerprint"]) {
   if (typeof handoff[field] !== "string" || !handoff[field]) throw new Error(`browser_operation_save_path_probe_handoff_invalid:${field}`);
 }
 
@@ -225,6 +225,90 @@ const appearance = await prisma.user.findUnique({
 });
 if (appearance?.appearanceMode !== "dark") {
   throw new Error(`browser_operation_save_path_probe_appearance_not_persisted:${appearance?.appearanceMode}`);
+}
+
+// The remaining families the dashboard and settings screens actually drive. Each one runs the same
+// issue/submit path through the same restricted role, and each writes an audit row whose payload the
+// audit contract validates - the two places the last round's defects hid. None of them had ever been
+// exercised end to end against a real database.
+async function createDisposableActivity(label) {
+  const response = await fetch(`${baseUrl}/api/activities`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: baseUrl, cookie },
+    body: JSON.stringify({
+      operationId: operationId(),
+      babyId: handoff.babyId,
+      type: "diaper",
+      kind: "wet",
+      occurredAt: new Date().toISOString()
+    })
+  });
+  const body = await response.json().catch(() => null);
+  const activityId = body?.data?.outcome?.activityId;
+  if (!response.ok || body?.data?.status !== "completed" || typeof activityId !== "string") {
+    throw new Error(`browser_operation_save_path_probe_seed_activity_failed:${label}:${response.status}:${JSON.stringify(body)}`);
+  }
+  return activityId;
+}
+
+// Baby-scoped: dismissing a dashboard warning (the only family issued through the baby-scoped path
+// besides activity.create, so it is the one that must still record its babyId on the binding).
+await submitOperation("warning_dismiss_aged_session", {
+  submitPath: "/api/dashboard/warnings/dismiss",
+  method: "POST",
+  payload: { babyId: handoff.babyId, type: "feeding", fingerprint: handoff.feedingWarningFingerprint }
+});
+const dismissals = await prisma.dashboardWarningDismissal.count({
+  where: { babyId: handoff.babyId, fingerprint: handoff.feedingWarningFingerprint }
+});
+if (dismissals !== 1) {
+  throw new Error(`browser_operation_save_path_probe_warning_dismissal_not_persisted:${dismissals}`);
+}
+
+// Household-scoped activity family: delete, and undo-last. Both were dead alongside timer stop until
+// the binding shape was corrected, and neither is covered by the create/update pair above.
+const deletableId = await createDisposableActivity("delete");
+await submitOperation("activity_delete_aged_session", {
+  submitPath: `/api/activities/${deletableId}`,
+  method: "DELETE",
+  payload: {}
+});
+const deleted = await prisma.activityLog.findUnique({ where: { id: deletableId }, select: { deletedAt: true } });
+if (!deleted?.deletedAt) {
+  throw new Error("browser_operation_save_path_probe_activity_delete_not_persisted");
+}
+
+const undoableId = await createDisposableActivity("undo");
+await submitOperation("activity_undo_last_aged_session", {
+  submitPath: "/api/activities/undo-last",
+  method: "POST",
+  payload: {}
+});
+const undone = await prisma.activityLog.findUnique({ where: { id: undoableId }, select: { deletedAt: true } });
+if (!undone?.deletedAt) {
+  throw new Error("browser_operation_save_path_probe_activity_undo_not_persisted");
+}
+
+// Baby lifecycle, the settings-screen pair. Deactivate then reactivate so the fixture baby is left
+// exactly as it started and later runs are unaffected.
+await submitOperation("baby_deactivate_aged_session", {
+  submitPath: `/api/babies/${handoff.babyId}/deactivate`,
+  method: "POST",
+  payload: {}
+});
+const deactivated = await prisma.baby.findUnique({ where: { id: handoff.babyId }, select: { inactiveAt: true } });
+if (!deactivated?.inactiveAt) {
+  throw new Error("browser_operation_save_path_probe_baby_deactivate_not_persisted");
+}
+
+await submitOperation("baby_reactivate_aged_session", {
+  submitPath: `/api/babies/${handoff.babyId}/reactivate`,
+  method: "POST",
+  payload: {}
+});
+const reactivated = await prisma.baby.findUnique({ where: { id: handoff.babyId }, select: { inactiveAt: true } });
+if (reactivated?.inactiveAt) {
+  throw new Error("browser_operation_save_path_probe_baby_reactivate_not_persisted");
 }
 
 console.log("BROWSER OPERATION SAVE PATH PASSED");
