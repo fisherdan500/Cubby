@@ -535,6 +535,18 @@ hardcoding it. Posting the arguments with a `Next-Action` header instead would
 mean reproducing React's own reply encoding, which is version-specific and would
 test that reimplementation rather than the app.
 
+Recovery enrollment runs on the same aged session: enroll, acknowledge, then
+rehearse a real code and confirm one was spent, which is the only way to show the
+set is usable rather than merely stored. Every follow-up action reuses the
+enrollment's own `operationId` and fingerprints - the set is looked up by its
+issuance operation, so fresh metadata reads as "no such enrollment".
+
+Email change is covered as far as this harness honestly can: `initiate`,
+`status` and `cancel` all run server-side, and the address is asserted unchanged
+afterwards. `verify` and `cutover` need the token that only reaches a real
+mailbox; driving them would mean asserting against the harness's own delivery
+plumbing rather than the app, so they are deliberately out of scope here.
+
 The run ends with a real password change, the highest-consequence flow the app
 has: fresh-auth grant, throttle preauthorization, the global security operation
 ledger, credential rotation and session revocation - the machinery whose failure
