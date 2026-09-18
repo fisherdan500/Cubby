@@ -67,6 +67,26 @@ export function formatElapsedBadge(date: Date | string | null | undefined, now =
 }
 
 /**
+ * "17m ago", "2h 34m ago", "3d ago" - for the dashboard tiles, where a bare "2:34" read like a stat
+ * with no label. Anything in the future (a clock skew, or an entry logged ahead) reads as "just now"
+ * rather than a negative duration.
+ */
+export function formatTimeSince(date: Date | string | null | undefined, now = new Date()) {
+  if (!date) return null;
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return null;
+  const minutes = Math.floor((now.getTime() - value.getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    const rest = minutes % 60;
+    return rest ? `${hours}h ${rest}m ago` : `${hours}h ago`;
+  }
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/**
  * Shows a volume exactly as saved; when a household display unit is given and the saved unit differs,
  * appends an approximate conversion so mixed-unit days stay comparable. The saved value never changes.
  */
