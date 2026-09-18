@@ -535,6 +535,17 @@ hardcoding it. Posting the arguments with a `Next-Action` header instead would
 mean reproducing React's own reply encoding, which is version-specific and would
 test that reimplementation rather than the app.
 
+The run ends with a real password change, the highest-consequence flow the app
+has: fresh-auth grant, throttle preauthorization, the global security operation
+ledger, credential rotation and session revocation - the machinery whose failure
+took sign-in down on 2026-09-15. It asserts `credentialVersion` advanced, that
+the old password no longer signs in and that the new one does. Session age is
+deliberately not the gate: a password change re-authenticates with the current
+password itself (`issueFreshAuthGrantForCurrentPassword`), so it is driven from
+the aged session on purpose, and `signed_out` is its success status. The 409
+`password_change_sign_in_required` covers a different condition - the grant
+machinery refusing a stale security version - not an old session.
+
 The same aged session then requests every signed-in page and asserts the app
 shell actually rendered, not merely that the status was 200 - a server component
 that throws can still answer 200 behind an error boundary. Writes were covered

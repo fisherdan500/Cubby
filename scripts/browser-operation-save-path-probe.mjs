@@ -420,6 +420,10 @@ for (const path of renderedPages) {
   }
 }
 
+// Kept so the freshness boundary can still be exercised from the aged side after the fresh sign-in
+// below replaces the working cookie.
+const agedCookie = cookie;
+
 // Signing in again produces a fresh session, which is the other half of the boundary: the same two
 // operations that just refused must now succeed.
 const freshSignIn = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
@@ -522,6 +526,65 @@ const calendarEvent = await prisma.calendarEvent.findFirst({
 });
 if (!calendarEvent) {
   throw new Error(`browser_operation_save_path_probe_calendar_event_not_persisted:${(await calendarResponse.text().catch(() => "")).slice(0, 200)}`);
+}
+
+// Changing a password is the highest-consequence flow the app has - fresh-auth grant, throttle
+// preauthorization, the global security operation ledger, credential rotation and session
+// revocation - and it is the flow whose machinery took sign-in down for the household on
+// 2026-09-15. Until now it was only exercised at the service and SQL layers, never once over HTTP
+// against the real restricted role. It runs last because it rotates the credential and clears the
+// session cookies, exactly as it does for a real person.
+function securityOperationMetadata() {
+  const alphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+  const hex = () => Array.from(randomBytes(32), (value) => value.toString(16).padStart(2, "0")).join("");
+  return {
+    operationId: `gso_${Array.from(randomBytes(26), (value) => alphabet[value & 31]).join("")}`,
+    openingFingerprint: hex(),
+    intentFingerprint: hex()
+  };
+}
+
+const newPassword = `${password}-rotated`;
+const passwordChangeBody = (cookieHeader) => ({
+  method: "POST",
+  headers: { "content-type": "application/json", origin: baseUrl, cookie: cookieHeader },
+  body: JSON.stringify({ ...securityOperationMetadata(), currentPassword: password, newPassword })
+});
+
+// Session age is deliberately NOT the gate here: a password change re-authenticates with the
+// current password itself (issueFreshAuthGrantForCurrentPassword), not with a recent sign-in, so it
+// is driven from the aged session on purpose. "signed_out" is the success status - the credential
+// rotates and every session is revoked. The 409 password_change_sign_in_required exists for a
+// different condition: the grant machinery refusing a stale security version.
+const passwordChange = await fetch(`${baseUrl}/api/account/security/password`, passwordChangeBody(agedCookie));
+const passwordChangeResult = await passwordChange.json().catch(() => null);
+if (!passwordChange.ok || passwordChangeResult?.data?.status !== "signed_out" || passwordChangeResult?.data?.signInRequired !== true) {
+  throw new Error(`browser_operation_save_path_probe_password_change_failed:${passwordChange.status}:${JSON.stringify(passwordChangeResult)}`);
+}
+
+const securityState = await prisma.accountSecurityState.findUnique({
+  where: { userId: handoff.userId },
+  select: { credentialVersion: true }
+});
+if ((securityState?.credentialVersion ?? 0) < 2) {
+  throw new Error(`browser_operation_save_path_probe_credential_version_not_rotated:${securityState?.credentialVersion}`);
+}
+
+// The rotation is only real if the old secret stops working and the new one starts.
+const staleSignIn = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+  method: "POST",
+  headers: { "content-type": "application/json", origin: baseUrl },
+  body: JSON.stringify({ email: handoff.email, password, rememberMe: false })
+});
+if (staleSignIn.ok) throw new Error("browser_operation_save_path_probe_old_password_still_accepted");
+
+const rotatedSignIn = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+  method: "POST",
+  headers: { "content-type": "application/json", origin: baseUrl },
+  body: JSON.stringify({ email: handoff.email, password: newPassword, rememberMe: false })
+});
+if (!rotatedSignIn.ok) {
+  throw new Error(`browser_operation_save_path_probe_rotated_password_rejected:${rotatedSignIn.status}`);
 }
 
 console.log("BROWSER OPERATION SAVE PATH PASSED");
