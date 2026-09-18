@@ -9128,18 +9128,18 @@
       "bindings": [
         {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1176,
+          "anchorEnd": 1238,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1156,
+          "anchorStart": 1218,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1114,
+          "anchorEnd": 1176,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1099,
+          "anchorStart": 1161,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9825,36 +9825,36 @@
       "bindings": [
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 965,
+          "anchorEnd": 1004,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 900,
+          "anchorStart": 939,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "502e6e619bb789d0f922219c1e8244d4097f05c081f0fbd1b2b47b97500135ff",
-          "anchorEnd": 3969,
+          "anchorEnd": 4369,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 3903,
+          "anchorStart": 4303,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "7527928970a5790d8524ff83ec97d40552755c28bf5fb2056dd27e957976fef3",
-          "anchorEnd": 5105,
+          "anchorEnd": 5505,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 4964,
+          "anchorStart": 5364,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "bc84519e43d1ba89b830fdd377b37af4d862c6e11a589fdf3e6d5a34366a2984",
-          "anchorEnd": 5784,
+          "anchorEnd": 6184,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 5622,
+          "anchorStart": 6022,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -12023,7 +12023,7 @@
     }
   ],
   "observationCount": 186,
-  "observationDigest": "e3c2d9d019d1bac65937e31c84f6e97d264ddc90d806a659d732a588bacc1b85",
+  "observationDigest": "62fbbb88fe39f80fd6bc3222d55bcef5fbc38d1bab4e716086942ba7cf4905d2",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14361,18 +14361,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1176,
+          "anchorEnd": 1238,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1156,
+          "anchorStart": 1218,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1114,
+          "anchorEnd": 1176,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1099,
+          "anchorStart": 1161,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -15036,36 +15036,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 965,
+          "anchorEnd": 1004,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 900,
+          "anchorStart": 939,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3969,
+          "anchorEnd": 4369,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 3903,
+          "anchorStart": 4303,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5105,
+          "anchorEnd": 5505,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 4964,
+          "anchorStart": 5364,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5784,
+          "anchorEnd": 6184,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 5622,
+          "anchorStart": 6022,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[4]",
@@ -18242,7 +18242,7 @@
   ],
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "565ad6296b38387a8b051a8e965ae8ab3ee08bc5c3393f9c94ae1899293cc521",
+  "registryDigest": "c9eac03056c5c812a0964e33ef1775976aa56ef46ffeb597495d25a5b997ceab",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

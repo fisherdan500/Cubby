@@ -2198,9 +2198,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 965,
+      "anchorEnd": 1004,
       "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-      "anchorStart": 900,
+      "anchorStart": 939,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2215,9 +2215,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${current}`, { cache: \"no-store\" })",
       "anchorDigest": "502e6e619bb789d0f922219c1e8244d4097f05c081f0fbd1b2b47b97500135ff",
-      "anchorEnd": 3969,
+      "anchorEnd": 4369,
       "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-      "anchorStart": 3903,
+      "anchorStart": 4303,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2232,9 +2232,9 @@
     {
       "anchorBytes": "fetch(`${target}?issue=1`, {\n          method: \"DELETE\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n        })",
       "anchorDigest": "7527928970a5790d8524ff83ec97d40552755c28bf5fb2056dd27e957976fef3",
-      "anchorEnd": 5105,
+      "anchorEnd": 5505,
       "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-      "anchorStart": 4964,
+      "anchorStart": 5364,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2249,9 +2249,9 @@
     {
       "anchorBytes": "fetch(target, {\n        method: \"DELETE\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId: current })\n      })",
       "anchorDigest": "bc84519e43d1ba89b830fdd377b37af4d862c6e11a589fdf3e6d5a34366a2984",
-      "anchorEnd": 5784,
+      "anchorEnd": 6184,
       "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-      "anchorStart": 5622,
+      "anchorStart": 6022,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -5445,9 +5445,9 @@
     {
       "anchorBytes": "getDashboardPageData",
       "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-      "anchorEnd": 1176,
+      "anchorEnd": 1238,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1156,
+      "anchorStart": 1218,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboardPageData",
@@ -5462,9 +5462,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1114,
+      "anchorEnd": 1176,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1099,
+      "anchorStart": 1161,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6469,9 +6469,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "46b48cf648509e45b91762b33c15783e5e25c0387452cee534b20f9913fa6309",
+  "semanticArtifactDigest": "199995a4779bf209b98e8eac8dca1e27f6ef8cc304facefe3b50c0835c5034dd",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "54261af59526bb12e50e7d88b371ec0de6e6ba15b6fc33ee72efbde4ef91c801",
+  "semanticCoverageDigest": "20482883178ce20943aa17cda7368c77645e581ebb0945c05e7aad32dc4a49dd",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "ff76b68fc041ca18a787cc6e4fb92fbf8fca1080162f32bfc91866fbca01c105"

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { activityDeleteError } from "@/lib/activity-delete";
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
@@ -54,7 +55,18 @@ async function operationResponse(response: Response) {
   return { response, result, status: result?.ok ? result.data?.status : undefined };
 }
 
-export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo: string }) {
+export function ConfirmedActivityDelete({
+  id,
+  returnTo,
+  trigger = "button"
+}: {
+  id: string;
+  returnTo: string;
+  // "icon" is the small trash control used in the activity page's bottom action bar. It keeps the
+  // same two-step confirmation - that confirmation, not the trigger's size, is what prevents an
+  // accidental delete - but the question opens upward from the bar, next to the thumb that tapped it.
+  trigger?: "button" | "icon";
+}) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -158,6 +170,45 @@ export function ConfirmedActivityDelete({ id, returnTo }: { id: string; returnTo
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (trigger === "icon") {
+    return (
+      <div ref={triggerContainer} className="relative shrink-0">
+        <button
+          type="button"
+          aria-label="Delete activity"
+          aria-expanded={confirming}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
+          onClick={() => {
+            hasOpened.current = true;
+            setConfirming((open) => !open);
+          }}
+        >
+          <Trash2 className="h-5 w-5" aria-hidden="true" />
+        </button>
+        {confirming ? (
+          <section
+            className="absolute bottom-full right-0 z-10 mb-2 w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-lg border border-danger/40 bg-card p-4 shadow-soft"
+            aria-label="Confirm activity deletion"
+          >
+            <div>
+              <h2 ref={confirmationHeading} tabIndex={-1} className="font-black text-danger">Delete this activity?</h2>
+              <p className="mt-1 text-sm text-muted-foreground">This cannot be undone.</p>
+            </div>
+            {error ? <p role="alert" className="text-sm font-semibold text-danger">{error}</p> : null}
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant="secondary" disabled={submitting} onClick={() => setConfirming(false)}>
+                Keep
+              </Button>
+              <Button type="button" variant="danger" disabled={submitting} onClick={remove}>
+                {submitting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </section>
+        ) : null}
+      </div>
+    );
   }
 
   if (!confirming) {
