@@ -47,6 +47,21 @@ const householdScopedKeys = [
 // Issued by issueBrowserOperation, which writes the baby it locked.
 const babyScopedKeys = ["activity.create", "baby.deactivate", "baby.reactivate", "dashboard.warning.dismiss", "calendar_event.create"];
 
+// Keys whose binding must record the thing they act on. notification.preference.save is here
+// because 20260824120100 re-listed every case and silently reverted its clause to IS NULL, which
+// made saving notification preferences unsatisfiable until 20260918120000 restored it.
+const targetedKeys = [
+  "activity.update",
+  "activity.delete",
+  "activity.undo_last",
+  "activity.timer.stop",
+  "notification.preference.save",
+  "member.role.update",
+  "member.suspend",
+  "invite.revoke",
+  "api_key.revoke"
+];
+
 describe("browser operation binding target shape", () => {
   const constraint = currentTargetShapeConstraint();
 
@@ -63,6 +78,14 @@ describe("browser operation binding target shape", () => {
       const clause = constraint.match(new RegExp(`WHEN '${key.replace(/\./g, "\\.")}' THEN ([^\\n]+)`))?.[1];
       expect(clause, `${key} is missing from the constraint`).toBeDefined();
       expect(clause, `${key} is baby-scoped and must keep recording its baby`).toContain('"babyId" IS NOT NULL');
+    }
+  });
+
+  it("requires a target id wherever the code binds one", () => {
+    for (const key of targetedKeys) {
+      const clause = constraint.match(new RegExp(`WHEN '${key.replace(/\./g, "\\.")}' THEN ([^\\n]+)`))?.[1];
+      expect(clause, `${key} is missing from the constraint`).toBeDefined();
+      expect(clause, `${key} binds a target, so the constraint must require one`).toContain('"targetId" IS NOT NULL');
     }
   });
 

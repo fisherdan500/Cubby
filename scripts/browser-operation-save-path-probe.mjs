@@ -13,7 +13,7 @@ if (!baseUrl || !handoffFile || !password || !prismaClientPath || !migrationData
 }
 
 const handoff = JSON.parse(await readFile(handoffFile, "utf8"));
-for (const field of ["email", "householdId", "memberId", "babyId", "feedingWarningFingerprint"]) {
+for (const field of ["email", "householdId", "memberId", "babyId", "feedingWarningFingerprint", "targetMemberId", "apiKeyId"]) {
   if (typeof handoff[field] !== "string" || !handoff[field]) throw new Error(`browser_operation_save_path_probe_handoff_invalid:${field}`);
 }
 
@@ -37,7 +37,7 @@ if (!signIn.ok) throw new Error(`browser_operation_save_path_probe_sign_in_faile
 const setCookie = signIn.headers.get("set-cookie") ?? "";
 const sessionTokenCookie = setCookie.match(/(?:^|,\s*)((?:__Secure-)?better-auth\.session_token=[^;,]+)/)?.[1];
 if (!sessionTokenCookie) throw new Error("browser_operation_save_path_probe_session_cookie_missing");
-const cookie = `${sessionTokenCookie}; cubby_household_member=${encodeURIComponent(handoff.memberId)}`;
+let cookie = `${sessionTokenCookie}; cubby_household_member=${encodeURIComponent(handoff.memberId)}`;
 
 // The exact class of runtime break this rehearsal pins: an ordinary browser-operation mutation
 // (activity.create) must succeed against the REAL restricted `cubby_runtime` role, which has no
@@ -310,6 +310,107 @@ const reactivated = await prisma.baby.findUnique({ where: { id: handoff.babyId }
 if (reactivated?.inactiveAt) {
   throw new Error("browser_operation_save_path_probe_baby_reactivate_not_persisted");
 }
+
+// The families above are the ordinary ones: they must work on a session far past
+// SESSION_FRESH_AGE_SECONDS. The boundary has another side that matters just as much - member
+// management and API keys deliberately require a recent sign-in, and PR #74's fix only scoped
+// requireFreshSession() back to those call sites rather than removing it. Both sides are asserted
+// here, so a future "fix" that widens or drops freshness fails loudly instead of silently.
+async function expectRefusal(label, { submitPath, method, payload, code }) {
+  const response = await fetch(`${baseUrl}${submitPath}`, {
+    method,
+    headers: { "content-type": "application/json", origin: baseUrl, cookie },
+    body: JSON.stringify({ operationId: operationId(), ...payload })
+  });
+  const body = await response.json().catch(() => null);
+  if (response.status !== 403 || body?.error?.code !== code) {
+    throw new Error(`browser_operation_save_path_probe_expected_refusal:${label}:${response.status}:${JSON.stringify(body)}`);
+  }
+}
+
+await expectRefusal("member_role_update_aged_session", {
+  submitPath: `/api/members/${handoff.targetMemberId}`,
+  method: "PATCH",
+  payload: { role: "parent" },
+  code: "fresh_authentication_required"
+});
+
+await expectRefusal("api_key_revoke_aged_session", {
+  submitPath: `/api/settings/api-keys/${handoff.apiKeyId}/revoke`,
+  method: "POST",
+  payload: {},
+  code: "fresh_authentication_required"
+});
+
+// Ordinary household family with no freshness requirement, two-step like unit preferences.
+await submitOperation("notification_preference_aged_session", {
+  issuePath: "/api/notifications/preferences/issue",
+  submitPath: "/api/notifications/preferences",
+  method: "POST",
+  payload: {
+    externalDeliveryEnabled: false,
+    babyScope: { mode: "all" },
+    categories: [],
+    channels: [],
+    interruptionLevel: "time_sensitive",
+    destinationIds: []
+  }
+});
+const preference = await prisma.notificationPreference.findFirst({
+  where: { householdId: handoff.householdId, memberId: handoff.memberId },
+  select: { interruptionLevel: true }
+});
+// The API takes the wire value "time_sensitive"; Prisma reads the enum back as "timeSensitive".
+if (preference?.interruptionLevel !== "timeSensitive") {
+  throw new Error(`browser_operation_save_path_probe_notification_preference_not_persisted:${preference?.interruptionLevel}`);
+}
+
+// A direct (non-operation) household write that still goes through the audit contract, which is
+// where the unit-preferences defect lived.
+const webhookResponse = await fetch(`${baseUrl}/api/settings/webhooks`, {
+  method: "POST",
+  headers: { "content-type": "application/json", origin: baseUrl, cookie },
+  body: JSON.stringify({ name: "Save path rehearsal", url: "https://rehearsal.invalid/hook", events: ["activity_created"] })
+});
+const webhookBody = await webhookResponse.json().catch(() => null);
+const webhookId = webhookBody?.data?.id;
+if (webhookResponse.status !== 201 || typeof webhookId !== "string") {
+  throw new Error(`browser_operation_save_path_probe_webhook_create_failed:${webhookResponse.status}:${JSON.stringify(webhookBody)}`);
+}
+
+// Signing in again produces a fresh session, which is the other half of the boundary: the same two
+// operations that just refused must now succeed.
+const freshSignIn = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+  method: "POST",
+  headers: { "content-type": "application/json", origin: baseUrl },
+  body: JSON.stringify({ email: handoff.email, password, rememberMe: false })
+});
+if (!freshSignIn.ok) throw new Error(`browser_operation_save_path_probe_fresh_sign_in_failed:${freshSignIn.status}`);
+const freshCookieValue = (freshSignIn.headers.get("set-cookie") ?? "")
+  .match(/(?:^|,\s*)((?:__Secure-)?better-auth\.session_token=[^;,]+)/)?.[1];
+if (!freshCookieValue) throw new Error("browser_operation_save_path_probe_fresh_session_cookie_missing");
+cookie = `${freshCookieValue}; cubby_household_member=${encodeURIComponent(handoff.memberId)}`;
+
+await submitOperation("member_role_update_fresh_session", {
+  submitPath: `/api/members/${handoff.targetMemberId}`,
+  method: "PATCH",
+  payload: { role: "parent" }
+});
+const targetMember = await prisma.householdMember.findUnique({
+  where: { id: handoff.targetMemberId },
+  select: { role: true }
+});
+if (targetMember?.role !== "parent") {
+  throw new Error(`browser_operation_save_path_probe_member_role_not_persisted:${targetMember?.role}`);
+}
+
+await submitOperation("api_key_revoke_fresh_session", {
+  submitPath: `/api/settings/api-keys/${handoff.apiKeyId}/revoke`,
+  method: "POST",
+  payload: {}
+});
+const revokedKey = await prisma.apiKey.findUnique({ where: { id: handoff.apiKeyId }, select: { revokedAt: true } });
+if (!revokedKey?.revokedAt) throw new Error("browser_operation_save_path_probe_api_key_not_revoked");
 
 console.log("BROWSER OPERATION SAVE PATH PASSED");
 await prisma.$disconnect();
