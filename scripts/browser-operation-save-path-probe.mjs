@@ -437,5 +437,50 @@ const restored = await prisma.householdMember.findUnique({
 });
 if (restored?.disabledAt) throw new Error("browser_operation_save_path_probe_member_not_restored");
 
+// Creating a calendar event is the only mutation with no HTTP route: the client component calls a
+// Server Action directly. The browser posts the page route with a Next-Action header, so that is
+// exactly what happens here - same session, same cookies, same aged-session question as the rest.
+// Until now this path was only exercised at the persistence layer (browser-operation-pilot inserts
+// bindings in SQL), which cannot catch an app-layer break like the ones the HTTP families had.
+const calendarActionId = process.env.REHEARSAL_CALENDAR_ACTION_ID;
+if (!calendarActionId) throw new Error("browser_operation_save_path_probe_calendar_action_id_missing");
+
+const calendarTitle = `Save path rehearsal ${randomBytes(6).toString("hex")}`;
+const calendarForm = new FormData();
+// The no-JavaScript submission shape: a plain multipart body carrying $ACTION_ID_<id>, which Next
+// hands to the action as its FormData argument. Posting the arguments with a Next-Action header
+// instead would mean reproducing React's own reply encoding, which is version-specific and would be
+// testing the reimplementation rather than the app.
+calendarForm.set(`$ACTION_ID_${calendarActionId}`, "");
+calendarForm.set("operationId", operationId());
+calendarForm.set("babyId", handoff.babyId);
+calendarForm.set("title", calendarTitle);
+calendarForm.set("eventType", "Appointment");
+calendarForm.set("startDate", "2026-09-20");
+calendarForm.set("startTime", "09:00");
+calendarForm.set("endDate", "2026-09-20");
+calendarForm.set("endTime", "10:00");
+calendarForm.set("location", "Rehearsal");
+calendarForm.set("description", "Created through the Server Action");
+
+const calendarResponse = await fetch(`${baseUrl}/app/calendar`, {
+  method: "POST",
+  headers: { origin: baseUrl, cookie },
+  body: calendarForm,
+  redirect: "manual"
+});
+// A no-JS action submission answers 200 or a 303 back to the page; either is success at this layer.
+if (calendarResponse.status >= 400) {
+  throw new Error(`browser_operation_save_path_probe_calendar_action_failed:${calendarResponse.status}:${(await calendarResponse.text()).slice(0, 400)}`);
+}
+// The action's own result travels in an RSC stream; the database is the assertion that matters.
+const calendarEvent = await prisma.calendarEvent.findFirst({
+  where: { householdId: handoff.householdId, title: calendarTitle },
+  select: { id: true, eventType: true }
+});
+if (!calendarEvent) {
+  throw new Error(`browser_operation_save_path_probe_calendar_event_not_persisted:${(await calendarResponse.text().catch(() => "")).slice(0, 200)}`);
+}
+
 console.log("BROWSER OPERATION SAVE PATH PASSED");
 await prisma.$disconnect();
