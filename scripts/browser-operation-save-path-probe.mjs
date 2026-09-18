@@ -412,5 +412,30 @@ await submitOperation("api_key_revoke_fresh_session", {
 const revokedKey = await prisma.apiKey.findUnique({ where: { id: handoff.apiKeyId }, select: { revokedAt: true } });
 if (!revokedKey?.revokedAt) throw new Error("browser_operation_save_path_probe_api_key_not_revoked");
 
+// Suspension is the one member operation that also revokes the target's sessions, so it exercises
+// lock_user_sessions_for_operation - the second SECURITY DEFINER lock added in PR #76, which until
+// now had no end-to-end coverage at all. Restore puts the fixture back the way it started.
+await submitOperation("member_suspend_fresh_session", {
+  submitPath: `/api/members/${handoff.targetMemberId}/suspend`,
+  method: "POST",
+  payload: {}
+});
+const suspended = await prisma.householdMember.findUnique({
+  where: { id: handoff.targetMemberId },
+  select: { disabledAt: true }
+});
+if (!suspended?.disabledAt) throw new Error("browser_operation_save_path_probe_member_not_suspended");
+
+await submitOperation("member_restore_fresh_session", {
+  submitPath: `/api/members/${handoff.targetMemberId}/restore`,
+  method: "POST",
+  payload: {}
+});
+const restored = await prisma.householdMember.findUnique({
+  where: { id: handoff.targetMemberId },
+  select: { disabledAt: true }
+});
+if (restored?.disabledAt) throw new Error("browser_operation_save_path_probe_member_not_restored");
+
 console.log("BROWSER OPERATION SAVE PATH PASSED");
 await prisma.$disconnect();
