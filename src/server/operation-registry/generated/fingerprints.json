@@ -1840,17 +1840,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "69ec86f2018f92f016e45214102825a0ba4e6c0710c799386d8d08d5ef8c8f08",
+          "digest": "d91495f0c54ff219231b2fd5f403a8d964ff17ba6cb7dd659a3b9e2b6d608ef9",
           "file": "src/app/app/settings/integrations/page.tsx"
         }
       ],
       "declarationDigest": "ea927c4d22143f1aa3a1119ee0b559ff88f9d56354f5371180b3532e8970440e",
-      "fingerprint": "f79fa65cdb36f2cb1691b5c9bb23c0feede71890b3283f99ae2e8e4c0901470e",
+      "fingerprint": "c907540cf805e3bc3cbe5a657f1192e5bca52b28f23f2421266ea1f2056b656a",
       "id": "fingerprint:server_loader:src/app/app/settings/integrations/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/integrations/page.tsx",
       "ownerModule": "src/app/app/settings/integrations/page.tsx",
       "sidecarPath": "src/app/app/settings/integrations/page.operation.ts",
-      "sourceDigest": "8c91e67cbad1be3e3b81b66638d39d32b5c0187f07726ff68bf202d023c18b7d",
+      "sourceDigest": "2393d8eed1f258eaab8f3d863ee827b6ed1b113a3f7768091aa63f96e7b1e07a",
       "status": "declared"
     },
     {
