@@ -5445,9 +5445,9 @@
     {
       "anchorBytes": "getDashboardPageData",
       "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-      "anchorEnd": 1224,
+      "anchorEnd": 1179,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1204,
+      "anchorStart": 1159,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboardPageData",
@@ -5462,9 +5462,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1162,
+      "anchorEnd": 1117,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1147,
+      "anchorStart": 1102,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6469,10 +6469,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "f51585538fdfacf474293ac57839436bfbc2f82bdf682d1979f1682b01d8d0f2",
+  "semanticArtifactDigest": "9eb5088478bea8eeead71b1c0c4f6278765e87a49a0c2b199399844c878044e9",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "5d4ed6675663f9587b629b2590004e06618f69271e3ebfad8a36e8b40ce5318a",
+  "semanticCoverageDigest": "33407b59be809c0c84e7a00b031353edb56a682518f224938fe3a525c6413912",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "71ba116514c1aaa231901d710213b0351e66ae08f4fbcbb683c40db7d8fb96b8"
+  "semanticFingerprint": "ff76b68fc041ca18a787cc6e4fb92fbf8fca1080162f32bfc91866fbca01c105"
 }

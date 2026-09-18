@@ -7,7 +7,6 @@ import { PauseTimerButton, ResumeTimerButton, StopTimerButton, UndoLastButton } 
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { ZeroActiveBabies } from "@/components/dashboard/zero-active-babies";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   activityLabels,
   filterActivitiesBySummaryType,
@@ -72,8 +71,9 @@ export default async function DashboardPage({
         <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (
         <div className="space-y-5">
-          <QuickActionRail dashboard={currentDashboard} />
-          <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
+          {/* One strip: which day you are looking at, and what you can add to it. Separating those
+              made the top of the screen read as two unrelated toolbars. */}
+          <DayStrip babyId={baby.id} dashboard={currentDashboard} />
           <DailySummary
             summary={currentDashboard.dailySummary}
             babyId={baby.id}
@@ -81,26 +81,6 @@ export default async function DashboardPage({
             selectedType={selectedSummaryType}
           />
           <DashboardWarnings warnings={currentDashboard.warnings} />
-
-          {currentDashboard.activeTimers.length ? (
-            <Card className="space-y-3">
-              <h2 className="text-lg font-bold">Active timers</h2>
-              {currentDashboard.activeTimers.map((timer) => (
-                <div key={timer.id} className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3">
-                  <div>
-                    <p className="font-semibold">{activityLabels[timer.type as ActivityTypeName]}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {timer.timerState === "paused" ? "Paused" : "Started"} {formatDateTime(timer.startedAt)}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {timer.timerState === "paused" ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
-                    <StopTimerButton id={timer.id} />
-                  </div>
-                </div>
-              ))}
-            </Card>
-          ) : null}
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -124,14 +104,28 @@ export default async function DashboardPage({
   );
 }
 
-function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
+function DayStrip({ babyId, dashboard }: { babyId: string; dashboard: DashboardWithBaby }) {
   return (
     <section className="space-y-3 border-y border-border bg-surface/70 px-1 py-3 sm:px-2 sm:py-4">
+      <DateNavigator babyId={babyId} selectedDate={dashboard.selectedDate} />
+
       <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
-        {primaryQuickActions.map((type) => (
-          <QuickActionLink key={type} type={type} dashboard={dashboard} priority="primary" />
-        ))}
+        {primaryQuickActions.map((type) => {
+          // A running timer takes over its own tile rather than opening a second card further down
+          // the screen: the thing you started and the thing you stop are the same object.
+          const timer = dashboard.activeTimers.find((entry) => entry.type === type);
+          return timer ? (
+            <RunningTimerTile key={type} type={type} timer={timer} />
+          ) : (
+            <QuickActionLink key={type} type={type} dashboard={dashboard} priority="primary" />
+          );
+        })}
       </div>
+
+      {/* Timers on non-primary types keep their controls here rather than losing them entirely. */}
+      {dashboard.activeTimers.filter((timer) => !primaryQuickActionTypes.has(timer.type as ActivityTypeName)).map((timer) => (
+        <RunningTimerRow key={timer.id} timer={timer} />
+      ))}
 
       <details className="group sm:hidden">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg border border-border bg-card/70 text-sm font-black text-foreground marker:hidden">
@@ -150,6 +144,46 @@ function QuickActionRail({ dashboard }: { dashboard: DashboardWithBaby }) {
         ))}
       </div>
     </section>
+  );
+}
+
+type ActiveTimer = DashboardWithBaby["activeTimers"][number];
+
+function RunningTimerTile({ type, timer }: { type: ActivityTypeName; timer: ActiveTimer }) {
+  const paused = timer.timerState === "paused";
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 p-2 text-center shadow-soft">
+      <span className="rounded-full bg-primary/16 px-2 py-0.5 text-xs font-black leading-none text-primary">
+        {paused ? "Paused" : "Running"}
+      </span>
+      <ActivityArtwork type={type} size="xl" />
+      <p className="text-sm font-black leading-tight text-foreground">{quickActionLabel(type)}</p>
+      <div className="flex w-full flex-wrap justify-center gap-1">
+        {paused ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
+        <StopTimerButton id={timer.id} />
+      </div>
+    </div>
+  );
+}
+
+function RunningTimerRow({ timer }: { timer: ActiveTimer }) {
+  const type = timer.type as ActivityTypeName;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/10 p-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <ActivityArtwork type={type} size="xs" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black">{activityLabels[type]}</p>
+          <p className="truncate text-xs font-semibold text-muted-foreground">
+            {timer.timerState === "paused" ? "Paused" : "Started"} {formatDateTime(timer.startedAt)}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-wrap justify-end gap-1">
+        {timer.timerState === "paused" ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
+        <StopTimerButton id={timer.id} />
+      </div>
+    </div>
   );
 }
 
@@ -206,23 +240,43 @@ function activityLogHref(type: ActivityTypeName, dashboard: DashboardWithBaby) {
 }
 
 function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate: DashboardWithBaby["selectedDate"] }) {
+  // "Today" and "Yesterday" read faster than a date at 3am; anything older keeps the weekday so the
+  // day is still identifiable without doing arithmetic.
+  const heading = selectedDate.isToday ? "Today" : selectedDate.isYesterday ? "Yesterday" : selectedDate.shortLabel;
+  const showReturnToToday = !selectedDate.isToday;
+
   return (
-    <nav className="flex items-center justify-center gap-5">
+    <nav className="flex items-center gap-1" aria-label="Choose a day">
       <Link
         href={`/app?babyId=${babyId}&date=${selectedDate.previous}`}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
         aria-label="Previous day"
       >
         <ChevronLeft className="h-5 w-5" />
       </Link>
-      <p className="min-w-40 text-center text-sm font-black">{selectedDate.label}</p>
+      <div className="min-w-0 flex-1 text-center">
+        <p className="truncate text-base font-black leading-tight">{heading}</p>
+        {/* The full date stays available when the heading is relative, so the strip never hides
+            which day is actually open. */}
+        <p className="truncate text-xs font-semibold text-muted-foreground">
+          {selectedDate.isToday || selectedDate.isYesterday ? selectedDate.shortLabel : selectedDate.label}
+        </p>
+      </div>
       <Link
         href={`/app?babyId=${babyId}&date=${selectedDate.next}`}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
         aria-label="Next day"
       >
         <ChevronRight className="h-5 w-5" />
       </Link>
+      {showReturnToToday ? (
+        <Link
+          href={`/app?babyId=${babyId}&date=${selectedDate.todayKey}`}
+          className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-xs font-black text-primary transition hover:bg-muted"
+        >
+          Today
+        </Link>
+      ) : null}
     </nav>
   );
 }
@@ -412,9 +466,13 @@ function Timeline({ activities, timeZone, returnTo, volume }: { activities: Time
   return (
     <div className="space-y-5">
       {Object.entries(groups).map(([label, items]) => (
-        <div key={label} className="relative border-l border-border pl-6">
-          <h3 className="mb-3 text-sm font-black text-foreground">{label}</h3>
-          <div className="space-y-3">
+        <div key={label} className="space-y-1.5">
+          {/* A quiet pill instead of a heading and a rail. The whitespace between groups carries the
+              structure, so a busy day reads as a rhythm rather than a ledger. */}
+          <p className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-xs font-black text-muted-foreground">
+            {label}
+          </p>
+          <div className="space-y-1.5">
             {items.map((activity) => {
               const type = activity.type as ActivityTypeName;
               return (
@@ -423,18 +481,18 @@ function Timeline({ activities, timeZone, returnTo, volume }: { activities: Time
                   key={activity.id}
                   prefetch={false}
                   href={activityDetailHref(activity.id, returnTo)}
-                  className="relative block rounded-md border border-border bg-background/45 p-3 hover:bg-muted"
+                  className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-muted"
                 >
-                  <ActivityArtwork type={type} size="xs" className="absolute -left-[41px] top-2 ring-4 ring-background" />
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-black">{activityLabels[type]}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity, { volume })}</p>
-                    </div>
-                    <p className="shrink-0 text-right text-xs font-semibold text-muted-foreground">
-                      {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
-                    </p>
+                  {/* The artwork is the row's only visual anchor - it replaces the rail dot rather
+                      than sitting beside one, so the eye scans a single column of shapes. */}
+                  <ActivityArtwork type={type} size="xs" className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black leading-tight">{activityLabels[type]}</p>
+                    <p className="truncate text-xs text-muted-foreground">{describeActivity(activity, { volume })}</p>
                   </div>
+                  <p className="shrink-0 text-right text-xs font-semibold tabular-nums text-muted-foreground">
+                    {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
+                  </p>
                 </Link>
               );
             })}
