@@ -2296,6 +2296,7 @@ test("[slow] discovers TypeScript package owners and exact CLI command variants"
     "scripts/activity-update-safety-rehearsal.ts",
     "scripts/backup-recovery-rehearsal.ts",
     "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
+    "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
     "scripts/household-deletion-readiness-guard.ts",
     "scripts/integrity-check.ts",
     "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
@@ -3475,6 +3476,11 @@ test("[slow] versions owner identity and hashes the full normalized observation 
         targetFile: "Dockerfile"
       },
       {
+        kind: "container_build_selector",
+        file: "scripts/browser-operation-save-path.acceptance.compose.yml",
+        targetFile: "Dockerfile"
+      },
+      {
         kind: "container_dockerfile",
         file: "Dockerfile",
         targetFile: "Dockerfile"
@@ -3497,6 +3503,7 @@ test("[slow] versions owner identity and hashes the full normalized observation 
       "docker-compose.yml",
       "package.json",
       "scripts/backup-recovery-rehearsal.compose.yml",
+      "scripts/browser-operation-save-path.acceptance.compose.yml",
       "scripts/platform-owner.ts"
     ]
   );

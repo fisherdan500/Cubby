@@ -528,7 +528,7 @@ sequential, non-vitest script (a plain `node` entrypoint with its own minimal
 real-repository TypeScript program from scratch (no shared cache across
 cases) and take roughly two minutes apiece, so a full run takes well over an
 hour. Routine work should use the fast subset, which skips those (tagged
-`[slow]` in their names) and finishes in roughly 20 minutes instead - still
+`[slow]` in their names) and finishes in roughly 12 minutes instead - still
 dominated by the ~100 remaining cases that each build a small synthetic
 `ts.Program` from scratch (no shared TypeScript lib cache), just without the
 49 full-repository builds:
@@ -537,32 +537,42 @@ dominated by the ~100 remaining cases that each build a small synthetic
 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/server/operation-registry/operation-registry.test.mjs --fast
 ```
 
-The fast subset currently reproduces 1 pre-existing failure, unchanged by
-tagging or by skipping the slow cases: `resolves single static client
-property assignments and rejects ambiguous property flow`. Root cause is
-identified: `resolveStaticMemberValue`'s whole-file assignment scan
-(`checker.ts`) collects children with `ts.forEachChild(node, (n) =>
-pendingNodes.push(n))`, and `Array.prototype.push` returns the array's new
-length - a truthy number - which makes `forEachChild` stop after the very
-first child instead of visiting every sibling. In production this silently
-limits static property-flow resolution (e.g. `obj.prop = fetch; ...;
-obj.prop(...)`) to whatever the first top-level statement of a file happens
-to touch; it fails closed (emits `unsupported_client_binding`) rather than
-mis-resolving, so it is a completeness gap, not a false-negative safety
-issue. Wrapping the callbacks in a block (so they return `undefined`) fixes
-this test in isolation, but unlocking the intended whole-file traversal at
-real-repository scale currently causes `RangeError: Maximum call stack size
-exceeded` in ~30 other fast-subset cases: `nodeContainsSymbol`'s recursive
-`ts.forEachChild(node, visit)` walk overflows first, and converting that one
-function to an iterative work-list (the same pattern already used elsewhere
-in this file) only moves the overflow into `resolveStaticRootFlow`'s own
-mutual recursion over multi-candidate (`unsupported`-kind) static values.
-That resolver family (`resolveStaticRootFlow` /
-`resolveStaticMemberValue` / `resolveStaticVariableValue` /
-`resolveGlobalFetchBinding`) has no depth bound or trampolining, only cycle
-guards (`seen/seenMembers`), so fixing this for real needs a deliberate
-depth-limited or iterative redesign across that family, not a local patch -
-out of scope for a routine fix and deferred pending that design decision.
+### Static-flow resolver limits
+
+`resolveStaticMemberValue` used to collect children with
+`ts.forEachChild(node, (n) => pendingNodes.push(n))`. `push` returns the array's
+new length - truthy - and `forEachChild` stops at the first truthy visitor
+result, so the scan stopped after a file's first child. Static property flow
+(`obj.prop = fetch; ...; obj.prop(...)`) therefore resolved only against
+whatever the first top-level statement touched. It failed closed, so it was a
+completeness gap rather than a false approval, but the engine had never
+traversed a whole file.
+
+Restoring the traversal exposed what the bug had hidden, and the resolver family
+(`resolveStaticRootFlow` / `resolveStaticParameterRootFlow` /
+`resolveStaticMemberValue` / `resolveStaticVariableValue`) now bounds both
+failure modes it revealed:
+
+- **Depth.** Long non-cyclic alias chains overflowed the call stack. The family
+  shares a depth counter (`staticRootFlowDepthLimit`) and reports `ambiguous`
+  beyond it - the same fail-closed answer it already gives for a chain it cannot
+  follow. `nodeContainsSymbol` is an iterative work-list for the same reason.
+- **Work.** A value assigned more than once resolves every candidate with its own
+  copy of the `seen` set, so chained multi-assignment values fan out
+  exponentially - that never overflows, it simply never finishes. A per-resolution
+  budget (`staticRootFlowWorkBudget`) bounds it, also failing closed.
+
+Both resolvers also cache per declaration and per root symbol, since each
+resolution scans its whole source file and the same value is asked for
+repeatedly across candidate paths. That caching is why the fast subset is now
+*faster* (~12 min) than it was before the traversal was restored (~20 min),
+despite doing strictly more work per resolution.
+
+Restoring whole-file traversal changed no observed binding in this repository -
+the regenerated artifacts differ only in digests - so it removes a latent blind
+spot rather than reclassifying existing code. `operation-registry-resolver-depth.test.ts`
+pins the traversal, the headroom for real chains, and the fail-closed behaviour
+past the limits.
 
 Run the full command (drop `--fast`) before a registry-affecting release,
 since the slow cases are the ones that actually type-check discovery against
