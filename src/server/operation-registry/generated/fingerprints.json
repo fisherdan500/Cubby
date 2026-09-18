@@ -1644,17 +1644,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "3c2730c693bf85b83daa51e366eedb53dc762719a3366325af2d5e135ab47847",
+          "digest": "1a5e2fa3df36d2b661ee8f91602ea945c78dad2f57d38b303fc5ed6b8d5852aa",
           "file": "src/app/app/activities/[id]/page.tsx"
         }
       ],
       "declarationDigest": "7db689af1701252bff79d689cc65d47d28b401ad8933e95b5f469603025660c1",
-      "fingerprint": "e587eb1b773ef210f5a3aff934540fff17dca887a0d2e6d132cb103dfcb62349",
+      "fingerprint": "f395a7e4996823dd5f91b48ad7b0bdb255f79e30575298845b792a0b6829a3c3",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts",
-      "sourceDigest": "dbbf00a4cbf038ff2fca2204503129c52b721069aeb0395630ae41675ae4bbe4",
+      "sourceDigest": "4ea014e37621abb734da74880c91d7dba112df27cd0234d6822ec00d98d55f56",
       "status": "declared"
     },
     {
