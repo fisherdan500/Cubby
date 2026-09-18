@@ -107,13 +107,13 @@
       "status": "deferred"
     }
   ],
-  "generatorDigest": "9fe415cffef4b841e53f412f6ec999559c71426d512e031ff85b045a0b61e709",
+  "generatorDigest": "186f8e00ea8a0b09457a6f47c945d2c36e9a2a3a9e353293e402d792ecb4614c",
   "generatorVersion": "r0.1",
   "observationDigest": "0cda05e2546b807ebe6bbaa96b025e1cbabad7095c458caffac3de2055e43847",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "01a8166cfa344aaa13e6c1c93ec08df17319e0c35004a8242b150fda5c54a5ad",
+  "registryDigest": "bf89cd43942082f67571aa17483847c824023849969bf901c1ae09e7ed5bd2b0",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedgerDigest": "6313f3760b57379240d83461b6be56b9e74239e8f7f9c2ca62becf0c953e1a46",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",

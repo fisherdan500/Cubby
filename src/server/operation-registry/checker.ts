@@ -10804,7 +10804,52 @@ type StaticRootFlowOptions = {
   readonly identifyRoot: (identifier: ts.Identifier) => string | null;
 };
 
+/**
+ * The static-flow resolvers are mutually recursive over alias and reassignment chains. Their `seen`
+ * sets prevent cycles but bound neither depth nor total work, and once resolveStaticMemberValue
+ * actually walks whole files, real source breaks them two different ways:
+ *
+ *  - depth: a long non-cyclic chain exhausts the call stack (RangeError);
+ *  - work: a value with several assignments resolves each candidate independently, with its own
+ *    copy of the `seen` set, so chained multi-assignment values fan out exponentially. That does
+ *    not overflow - it simply never finishes. A depth bound alone does not fix it, because the
+ *    explosion is in the width of the tree, not its height.
+ *
+ * Both are bounded here, and both fail closed to `ambiguous` - the answer the checker already gives
+ * for a chain it cannot follow, which surfaces as unsupported_client_binding rather than a wrong
+ * approval. The work budget is per top-level resolution, so one pathological value cannot spend the
+ * budget of the next. operation-registry-resolver-depth.test.ts pins the limits and the headroom.
+ */
+const staticRootFlowDepthLimit = 100;
+const staticRootFlowWorkBudget = 20000;
+let staticRootFlowDepth = 0;
+let staticRootFlowWork = 0;
+
+function enterStaticRootFlow(): boolean {
+  if (staticRootFlowDepth === 0) staticRootFlowWork = 0;
+  if (staticRootFlowDepth >= staticRootFlowDepthLimit) return false;
+  if (staticRootFlowWork >= staticRootFlowWorkBudget) return false;
+  staticRootFlowDepth += 1;
+  staticRootFlowWork += 1;
+  return true;
+}
+
 function resolveStaticRootFlow(
+  checker: ts.TypeChecker,
+  expression: ts.Expression,
+  options: StaticRootFlowOptions,
+  path: readonly StaticRootFlowSegment[] = [],
+  seenSymbols = new Set<ts.Symbol>()
+): StaticRootFlowResolution {
+  if (!enterStaticRootFlow()) return { kind: "ambiguous" };
+  try {
+    return resolveStaticRootFlowAtDepth(checker, expression, options, path, seenSymbols);
+  } finally {
+    staticRootFlowDepth -= 1;
+  }
+}
+
+function resolveStaticRootFlowAtDepth(
   checker: ts.TypeChecker,
   expression: ts.Expression,
   options: StaticRootFlowOptions,
@@ -11343,6 +11388,23 @@ function resolveStaticParameterRootFlow(
   path: readonly StaticRootFlowSegment[],
   seenSymbols: ReadonlySet<ts.Symbol>
 ): StaticRootFlowResolution {
+  // Shares the counters with resolveStaticRootFlow: the two recurse into each other, so a bound on
+  // either alone would not bound the chain.
+  if (!enterStaticRootFlow()) return { kind: "ambiguous" };
+  try {
+    return resolveStaticParameterRootFlowAtDepth(checker, parameter, options, path, seenSymbols);
+  } finally {
+    staticRootFlowDepth -= 1;
+  }
+}
+
+function resolveStaticParameterRootFlowAtDepth(
+  checker: ts.TypeChecker,
+  parameter: ts.ParameterDeclaration,
+  options: StaticRootFlowOptions,
+  path: readonly StaticRootFlowSegment[],
+  seenSymbols: ReadonlySet<ts.Symbol>
+): StaticRootFlowResolution {
   const callable = parameter.parent;
   if (
     !ts.isFunctionDeclaration(callable) &&
@@ -11533,7 +11595,34 @@ type StaticMemberAssignmentTarget = {
   readonly computed: boolean;
 };
 
+/**
+ * Same shape of waste as resolveStaticVariableValue: resolving `obj.prop` scans the whole file for
+ * assignments to it, and the same member is asked for repeatedly across candidate paths. The answer
+ * depends only on the root symbol and the member path within that symbol's file, so it is cached on
+ * the root symbol - a per-program object, so nothing leaks between programs.
+ */
+const staticMemberValueCache = new WeakMap<ts.Symbol, Map<string, StaticVariableValue>>();
+
 function resolveStaticMemberValue(
+  checker: ts.TypeChecker,
+  expression: ts.Expression
+): StaticVariableValue {
+  const cacheTarget = staticMemberAssignmentTarget(checker, expression);
+  const cacheKey = cacheTarget && !cacheTarget.computed ? cacheTarget.parts.join(" ") : undefined;
+  if (cacheTarget && cacheKey !== undefined) {
+    const cached = staticMemberValueCache.get(cacheTarget.rootSymbol)?.get(cacheKey);
+    if (cached) return cached;
+  }
+  const resolved = resolveStaticMemberValueUncached(checker, expression);
+  if (cacheTarget && cacheKey !== undefined) {
+    const bySymbol = staticMemberValueCache.get(cacheTarget.rootSymbol) ?? new Map<string, StaticVariableValue>();
+    bySymbol.set(cacheKey, resolved);
+    staticMemberValueCache.set(cacheTarget.rootSymbol, bySymbol);
+  }
+  return resolved;
+}
+
+function resolveStaticMemberValueUncached(
   checker: ts.TypeChecker,
   expression: ts.Expression
 ): StaticVariableValue {
@@ -11548,7 +11637,10 @@ function resolveStaticMemberValue(
   let unsupportedWrite = target.computed;
   const sourceFile = target.root.getSourceFile();
   const pendingNodes: ts.Node[] = [];
-  ts.forEachChild(sourceFile, (node) => pendingNodes.push(node));
+  // Array.prototype.push returns the new length, and ts.forEachChild stops at the first truthy
+  // visitor result - so an expression-bodied arrow here collected only the file's first child and
+  // silently skipped every other statement. The block body returns undefined and walks them all.
+  ts.forEachChild(sourceFile, (node) => { pendingNodes.push(node); });
   while (pendingNodes.length > 0) {
     const node = pendingNodes.pop()!;
     if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
@@ -11585,7 +11677,7 @@ function resolveStaticMemberValue(
     ) {
       unsupportedWrite = true;
     }
-    ts.forEachChild(node, (child) => pendingNodes.push(child));
+    ts.forEachChild(node, (child) => { pendingNodes.push(child); });
   }
   if (unsupportedWrite || expressions.length > 1) {
     return { kind: "unsupported", expressions };
@@ -11643,7 +11735,27 @@ function isMemberPathPrefix(
   return prefix.every((part, index) => part === target[index]);
 }
 
+/**
+ * Resolving one variable scans its whole source file, and the root-flow resolver asks for the same
+ * variable once per candidate path - so a value written twice fans out into 2^n identical scans.
+ * The answer depends only on the declaration's own file, so it is cached per declaration node,
+ * which turns that fan-out back into linear work. Declaration nodes belong to a single ts.Program,
+ * so entries cannot leak between programs, and the WeakMap releases them with the program.
+ */
+const staticVariableValueCache = new WeakMap<ts.VariableDeclaration, StaticVariableValue>();
+
 function resolveStaticVariableValue(
+  checker: ts.TypeChecker,
+  declaration: ts.VariableDeclaration
+): StaticVariableValue {
+  const cached = staticVariableValueCache.get(declaration);
+  if (cached) return cached;
+  const resolved = resolveStaticVariableValueUncached(checker, declaration);
+  staticVariableValueCache.set(declaration, resolved);
+  return resolved;
+}
+
+function resolveStaticVariableValueUncached(
   checker: ts.TypeChecker,
   declaration: ts.VariableDeclaration
 ): StaticVariableValue {
@@ -11793,16 +11905,15 @@ function nodeContainsSymbol(
   root: ts.Node,
   symbol: ts.Symbol
 ): boolean {
-  let found = false;
-  const visit = (node: ts.Node) => {
-    if (ts.isIdentifier(node) && checker.getSymbolAtLocation(node) === symbol) {
-      found = true;
-      return;
-    }
-    if (!found) ts.forEachChild(node, visit);
-  };
-  visit(root);
-  return found;
+  // Iterative work-list rather than recursion: once resolveStaticMemberValue actually walks whole
+  // files, a recursive visit overflows the call stack on real, deeply nested source.
+  const pending: ts.Node[] = [root];
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    if (ts.isIdentifier(node) && checker.getSymbolAtLocation(node) === symbol) return true;
+    ts.forEachChild(node, (child) => { pending.push(child); });
+  }
+  return false;
 }
 
 function hasPotentialBetterAuthAssignment(
