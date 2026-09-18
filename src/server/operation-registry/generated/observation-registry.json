@@ -8787,36 +8787,36 @@
       "bindings": [
         {
           "anchorDigest": "84878e1856af36f94bb807228b977b169e48fffe0ac6f04e6afc412fd68b6ed7",
-          "anchorEnd": 698,
+          "anchorEnd": 776,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 680,
+          "anchorStart": 758,
           "kind": "server_value_import",
           "symbol": "getActivityForEdit",
           "target": "src/server/services/activities.ts#getActivityForEdit"
         },
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 838,
+          "anchorEnd": 916,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 812,
+          "anchorStart": 890,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 763,
+          "anchorEnd": 841,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 747,
+          "anchorStart": 825,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 638,
+          "anchorEnd": 716,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 623,
+          "anchorStart": 701,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9054,27 +9054,27 @@
       "bindings": [
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 495,
+          "anchorEnd": 573,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 469,
+          "anchorStart": 547,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 420,
+          "anchorEnd": 498,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 404,
+          "anchorStart": 482,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 362,
+          "anchorEnd": 440,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 347,
+          "anchorStart": 425,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -12023,7 +12023,7 @@
     }
   ],
   "observationCount": 186,
-  "observationDigest": "62fbbb88fe39f80fd6bc3222d55bcef5fbc38d1bab4e716086942ba7cf4905d2",
+  "observationDigest": "458e9d2433a3e841dfd0dc4a5f118670829285bbecdd35cd7c1c5a795c6f99cc",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14028,36 +14028,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 698,
+          "anchorEnd": 776,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 680,
+          "anchorStart": 758,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
           "symbol": "getActivityForEdit",
           "target": "src/server/services/activities.ts#getActivityForEdit"
         },
         {
-          "anchorEnd": 838,
+          "anchorEnd": 916,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 812,
+          "anchorStart": 890,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 763,
+          "anchorEnd": 841,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 747,
+          "anchorStart": 825,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 638,
+          "anchorEnd": 716,
           "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-          "anchorStart": 623,
+          "anchorStart": 701,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
           "symbol": "requireUserPage",
@@ -14289,27 +14289,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 495,
+          "anchorEnd": 573,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 469,
+          "anchorStart": 547,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 420,
+          "anchorEnd": 498,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 404,
+          "anchorStart": 482,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 362,
+          "anchorEnd": 440,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 347,
+          "anchorStart": 425,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "requireUserPage",
@@ -18242,7 +18242,7 @@
   ],
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "c9eac03056c5c812a0964e33ef1775976aa56ef46ffeb597495d25a5b997ceab",
+  "registryDigest": "aedd7556847a90f937e2d390cc35f41f7dce80ae3ac1b4fab48011c5aaf2e329",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

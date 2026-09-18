@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ActivityForm } from "@/components/forms/activity-form";
+import { ActivityFormHeader } from "@/components/forms/activity-form-header";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { activityDetailHref, activityFallbackHref, safeActivityReturnTo } from "@/lib/activity-navigation";
@@ -32,8 +33,10 @@ export default async function EditActivityPage({ params, searchParams }: { param
 
   return (
     <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
-      <div className="mx-auto max-w-lg space-y-4">
-        <Card>
+      {/* Bottom padding keeps the last field clear of the form's fixed Cancel / Save bar. */}
+      <div className="mx-auto max-w-lg space-y-4 pb-20">
+        <Card className="space-y-4">
+          <ActivityFormHeader type={type} />
           <ActivityForm
             babies={babies}
             type={type}
