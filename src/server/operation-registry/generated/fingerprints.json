@@ -2756,17 +2756,17 @@
           "file": "package.json"
         },
         {
-          "digest": "88551412fbcb7da5cee2315288f8a8cf9e4594c2e28534d1e6340d2ae0957470",
+          "digest": "cdfd09075a5f4379be924a521e242c5c2853ea58acb057aa663bde1e888e8198",
           "file": "scripts/browser-operation-save-path.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "6117c2d8a86fdc63dc5d4a85551aa0f807f1830e91ef8521692af476a8c8746a",
-      "fingerprint": "9c1a67e0cb53d778849263dd84947da64706969b6e6815bf985de078032d689f",
+      "fingerprint": "9c49bca548695a1f365449029b75f46d6c579b3cd9f7570abe7de26e46da093c",
       "id": "fingerprint:package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
       "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "d4b088e97b7ed652cf37d049bd00137abb08076fc6de207bf8630d88969a4233",
+      "sourceDigest": "ea48b5b566ae8f929e3370c08758246bf2bd208034d0d9a54bd5c04db7c64b8f",
       "status": "declared"
     },
     {

@@ -149,6 +149,18 @@ export function runBrowserOperationSavePathRehearsal() {
     const publishedApp = run("docker", [...composeArgs, "port", "app", "3000"], { cwd: repositoryRoot, env: dockerEnv, capture: true });
     const appPort = parsePublishedPort(publishedApp, 3000);
 
+    // Creating a calendar event is the one mutation reachable only through a Server Action, so it
+    // cannot be driven by URL like the HTTP families. The browser posts the page route with a
+    // Next-Action header carrying a build-specific id, so the id is read out of the image that was
+    // just built rather than hardcoded: the compiled page maps each id to the export it calls.
+    const calendarPageBundle = resolve(migrationCwd, "calendar-page-bundle.js");
+    run("docker", [...composeArgs, "cp", "app:/app/.next/server/app/app/calendar/page.js", calendarPageBundle], { cwd: repositoryRoot, env: dockerEnv });
+    const calendarActionId = readFileSync(calendarPageBundle, "utf8")
+      // The mapping reads `"<id>":()=>Promise.resolve().then(r.bind(r,72437)).then(e=>e.createCalendarEventAction)`.
+      // Matching up to the export name avoids counting the nested parentheses in the bind call.
+      .match(/"([0-9a-f]{40})"\s*:[^"]{0,200}?\.createCalendarEventAction\b/)?.[1];
+    if (!calendarActionId) throw new Error("browser_operation_save_path_rehearsal_calendar_action_id_missing");
+
     // The app is healthy, so migrations and role provisioning are done; seed the fixture now,
     // through the bootstrap superuser connection (unaffected by role provisioning, since it's the
     // container's original POSTGRES_USER, not a role the app created).
@@ -168,6 +180,7 @@ export function runBrowserOperationSavePathRehearsal() {
       env: {
         ...process.env,
         REHEARSAL_APP_BASE_URL: `http://127.0.0.1:${appPort}`,
+        REHEARSAL_CALENDAR_ACTION_ID: calendarActionId,
         REHEARSAL_HANDOFF_FILE: handoffFile,
         REHEARSAL_APP_PASSWORD: rehearsalAppPassword,
         REHEARSAL_PRISMA_CLIENT_PATH: generatedClientDirectory,

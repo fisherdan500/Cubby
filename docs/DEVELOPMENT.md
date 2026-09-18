@@ -517,12 +517,23 @@ invisible to the activity path alone:
 | Undo last | household-scoped activity family | `POST /api/activities/undo-last` | the last created activity is undone |
 | Warning dismiss | `getBrowserOperationContextForBaby` | `POST /api/dashboard/warnings/dismiss` | a dismissal row exists for the live warning |
 | Baby deactivate / reactivate | `getBrowserOperationContextForLifecycleBaby` | `POST /api/babies/{id}/deactivate` then `/reactivate` | `inactiveAt` is set, then cleared |
+| Calendar event create | Server Action, not an HTTP route | `POST /app/calendar` with `$ACTION_ID_<id>` | the event row exists |
 | Unit preferences | `getBrowserOperationContextForHousehold` | `POST /api/settings/units/issue` then `PATCH /api/settings/units` | `HouseholdSettings.unitPreferences` actually changed |
 | Account appearance | `lockCurrentAccountActor` | `POST /api/account/appearance/issue` then `PATCH /api/account/appearance` | `User.appearanceMode` actually changed |
 
 Unit preferences and account appearance issue their opening in a separate call,
 so the two-step form is covered as well as the activity route's single call.
 Account appearance is the only family that locks `"User"` alongside `"Session"`.
+
+Creating a calendar event is the only mutation with no HTTP route: a client
+component calls a Server Action directly. It is driven here the way a browser
+without JavaScript submits one - a plain multipart body carrying
+`$ACTION_ID_<id>`, which Next hands to the action as its `FormData` argument.
+The id is build-specific, so the rehearsal reads it out of the image it just
+built (the compiled page maps each id to the export it calls) rather than
+hardcoding it. Posting the arguments with a `Next-Action` header instead would
+mean reproducing React's own reply encoding, which is version-specific and would
+test that reimplementation rather than the app.
 
 Each family is driven with exactly the request body its own UI control sends -
 undo-last, for instance, posts only `{operationId}`, because the button cannot
