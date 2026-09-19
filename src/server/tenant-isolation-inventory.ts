@@ -4,7 +4,7 @@ export const prismaModelNames = [
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
   "GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityOperation", "GlobalSecurityOperationBinding", "GlobalSecurityOperationReservationTombstone", "GlobalSecurityOperationTombstone", "GlobalSecurityThrottleKey", "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "InvitationAccountSetup", "InvitationLineage", "InvitationOperationBinding", "InvitationOperationIdentity", "InvitationOperationResult", "InvitationOperationTombstone", "InvitationPresentationClaim", "InvitationRecoveryRehearsalChallenge", "InvitationSetupCorridorAttestationReceipt", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog", "PasswordChangeCredentialMutation", "RecoveryResetCredentialMutation", "InvitationProcedureTransitionBinding", "InvitationRecoveryEnrollmentBridge",
-  "NotificationPreference", "NotificationPreferenceBaby", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlayLog", "PumpingLog",
+  "NotificationPreference", "NotificationPreferenceBaby", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlatformSetupCode", "PlayLog", "PumpingLog",
   "PushSubscription", "RecoveryCode", "RecoveryCodeSet", "RecoverySession", "Reminder", "Session", "SessionSecurityActivity", "SleepLog", "SupplementLog", "User", "VaccineDocument", "VaccineLog",
   "Verification", "WebhookDelivery", "WebhookEndpoint"
 ] as const;
@@ -82,6 +82,7 @@ export const tenantIsolationInventory = [
   { model: "PlatformAuthority", ownership: "global", operationClasses: ["platform_authority"], disposition: "excluded" },
   { model: "PlatformRegistrationOperation", ownership: "global", operationClasses: ["platform_registration_operation"], disposition: "excluded" },
   { model: "PlatformSettings", ownership: "global", operationClasses: ["platform_settings"], disposition: "excluded" },
+  { model: "PlatformSetupCode", ownership: "global", operationClasses: ["platform_setup_claim"], disposition: "excluded" },
   { model: "PasswordChangeCredentialMutation", ownership: "global", operationClasses: ["global_security_password_change_receipt"], disposition: "excluded" },
   { model: "RecoveryResetCredentialMutation", ownership: "global", operationClasses: ["global_security_recovery_reset_receipt"], disposition: "excluded" },
   { model: "PushSubscription", ownership: "direct", operationClasses: ["notification_write"], disposition: "deferred_constraint" },

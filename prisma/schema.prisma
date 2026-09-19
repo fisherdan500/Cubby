@@ -296,6 +296,16 @@ model PlatformSettings {
   authority               PlatformAuthority        @relation(fields: [id], references: [id], onDelete: Restrict)
 }
 
+// The one-time code that lets the first account claim platform ownership (see
+// 20260919120000_platform_owner_setup_claim). Only the SHA-256 digest is stored; no application role
+// can read it, and it is written only by the startup provisioner and consumed by claim_platform_setup.
+model PlatformSetupCode {
+  id         String   @id @default("platform")
+  codeDigest String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
 enum PlatformRegistrationOperationStatus {
   pending
   completed

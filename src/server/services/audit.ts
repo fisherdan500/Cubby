@@ -56,6 +56,7 @@ const platformAuditActionSchema = z.enum([
   "platform.owner.bootstrap",
   "platform.owner.bootstrap_user.verify",
   "platform.owner.recover",
+  "platform.owner.setup_claim",
   "platform.owner.successor_user.verify",
   "platform.registration.update"
 ]);

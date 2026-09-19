@@ -76,6 +76,7 @@ describe("explicit host-local bootstrap verification", () => {
   });
 
   it("locally verifies only the sole explicit credential account and audits the attestation", async () => {
+    mocks.queryRaw.mockResolvedValue([{ id: "user-explicit", emailVerified: true }]);
     await expect(
       verifyBootstrapPlatformOwnerCandidate({
         userId: "user-explicit",
@@ -84,17 +85,30 @@ describe("explicit host-local bootstrap verification", () => {
       })
     ).resolves.toEqual({ id: "user-explicit", emailVerified: true });
 
-    expect(mocks.executeRaw).toHaveBeenCalledTimes(2);
     expect(mocks.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.userCount.mock.invocationCallOrder[0]
     );
     expect(mocks.userCount).toHaveBeenCalledWith();
-    expect(mocks.userUpdate).toHaveBeenCalledWith({
-      where: { id: "user-explicit" },
-      data: { emailVerified: true },
-      select: { id: true, emailVerified: true }
-    });
+    // The verified flag is written only through the guarded database function, never a direct update.
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.queryRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain('"platform_host_verify_user_email"(');
+    expect(mocks.queryRaw.mock.calls[0]?.slice(1)).toEqual(["user-explicit", "owner@example.test", null]);
     expect(mocks.auditCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ action: "platform.owner.bootstrap_user.verify", eventHash: expect.stringMatching(/^[a-f0-9]{64}$/) }) });
+  });
+
+  it("surfaces the database guard's own precondition code instead of a generic failure", async () => {
+    mocks.queryRaw.mockRejectedValue(
+      new Error("Raw query failed. Code: `P0001`. Message: `ERROR: platform_owner_bootstrap_user_count_mismatch`")
+    );
+    await expect(
+      verifyBootstrapPlatformOwnerCandidate({
+        userId: "user-explicit",
+        confirmEmail: "owner@example.test",
+        acknowledgement: BOOTSTRAP_VERIFICATION_ACKNOWLEDGEMENT
+      })
+    ).rejects.toThrow("platform_owner_bootstrap_user_count_mismatch");
+    expect(mocks.auditCreate).not.toHaveBeenCalled();
   });
 
   it("requires the exact high-friction acknowledgement", async () => {
@@ -168,7 +182,11 @@ describe("host-local successor attestation", () => {
       email: "successor@example.test",
       emailVerified: false
     });
-    mocks.userUpdate.mockResolvedValue({ id: "successor-user", emailVerified: true });
+    mocks.queryRaw.mockImplementation(async (strings: TemplateStringsArray) =>
+      strings.join(" ").includes("platform_host_verify_user_email")
+        ? [{ id: "successor-user", emailVerified: true }]
+        : [{ id: "platform" }]
+    );
   });
 
   it("attests the explicit credential successor and records a host-local audit event", async () => {
@@ -189,19 +207,17 @@ describe("host-local successor attestation", () => {
       },
       select: { id: true }
     });
-    expect(mocks.userUpdate).toHaveBeenCalledWith({
-      where: { id: "successor-user" },
-      data: { emailVerified: true },
-      select: { id: true, emailVerified: true }
-    });
-    expect(mocks.queryRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.queryRaw).toHaveBeenCalledTimes(2);
     expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain('FROM "PlatformAuthority"');
     expect(mocks.queryRaw.mock.calls[0]?.[0].join(" ")).toContain("FOR UPDATE");
+    expect(mocks.queryRaw.mock.calls[1]?.[0].join(" ")).toContain('"platform_host_verify_user_email"(');
+    expect(mocks.queryRaw.mock.calls[1]?.slice(1)).toEqual(["successor-user", "successor@example.test", "current-owner"]);
     expect(mocks.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.authorityFindUnique.mock.invocationCallOrder[0]
     );
     expect(mocks.authorityFindUnique.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.userUpdate.mock.invocationCallOrder[0]
+      mocks.queryRaw.mock.invocationCallOrder[1]
     );
     expect(mocks.authorityCreate).not.toHaveBeenCalled();
     expect(mocks.authorityUpdateMany).not.toHaveBeenCalled();

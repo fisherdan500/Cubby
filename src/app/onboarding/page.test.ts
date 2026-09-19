@@ -39,7 +39,7 @@ beforeEach(() => {
   mocks.listHouseholdsForUser.mockResolvedValue([]);
   mocks.getHouseholdLeaveOptions.mockResolvedValue([]);
   mocks.isPlatformOwner.mockResolvedValue(false);
-  mocks.getAppRegistrationPolicy.mockResolvedValue({ newHouseholdCreationAllowed: true });
+  mocks.getAppRegistrationPolicy.mockResolvedValue({ platformOwnerBound: true, newHouseholdCreationAllowed: true });
   mocks.currentInvitationSetupCorridor.mockResolvedValue({ result: "ordinary" });
 });
 
@@ -80,6 +80,24 @@ describe("OnboardingPage", () => {
 
     expect(html).toContain("Verify your email before creating a household.");
     expect(html).toContain("Your email address must be verified before you can create a household.");
+    expect(html).not.toContain('data-testid="onboarding-form"');
+    expect(html).not.toContain('href="/setup"');
+  });
+
+  it("points the first account of an unowned install at the setup-code claim", async () => {
+    mocks.requireUserPage.mockResolvedValue({
+      id: "first-user",
+      email: "first@example.test",
+      emailVerified: false,
+      name: "First"
+    });
+    mocks.getAppRegistrationPolicy.mockResolvedValue({ platformOwnerBound: false, newHouseholdCreationAllowed: false });
+    const OnboardingPage = (await import("@/app/onboarding/page")).default;
+
+    const html = renderToStaticMarkup(await OnboardingPage());
+
+    expect(html).toContain('href="/setup"');
+    expect(html).toContain("Finish setup with your setup code");
     expect(html).not.toContain('data-testid="onboarding-form"');
   });
 });

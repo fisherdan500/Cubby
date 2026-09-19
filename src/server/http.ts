@@ -60,6 +60,10 @@ export function handleError(error: unknown) {
     if (error.message === "suspended_membership_must_leave") return fail("suspended_membership_must_leave", "Leave your suspended household membership before creating another household.", 409);
     if (error.message === "email_not_verified") return fail("email_not_verified", "Verify your email before creating a household.", 403);
     if (error.message === "platform_uninitialized") return fail("platform_uninitialized", "Platform authority is not initialized.", 409);
+    if (error.message === "platform_setup_code_invalid") return fail("platform_setup_code_invalid", "That setup code isn't valid. Copy the latest code from the Cubby container log - each one works once, expires after 24 hours, and restarting Cubby issues a new one.", 422);
+    if (error.message === "platform_owner_already_bound") return fail("platform_owner_already_bound", "Cubby already has a platform owner.", 409);
+    if (error.message === "platform_setup_account_ineligible") return fail("platform_setup_account_ineligible", "Sign in with an email-and-password account to claim setup.", 403);
+    if (error.message === "platform_setup_retry") return fail("platform_setup_retry", "Setup was busy for a moment. Try again.", 409);
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);
     if (error.message === "baby_inactive") return fail("baby_inactive", "Inactive babies cannot receive new activity or timers.", 409);
     if (error.message === "stale_revision") return fail("stale_revision", "This item changed before your request completed. Refresh and try again.", 409);

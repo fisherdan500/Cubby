@@ -289,8 +289,11 @@ export async function runDecProd407BrowserAcceptance() {
     await clickText(client, "Create account");
     await assert(client, "location.pathname === '/onboarding'", "dec407_browser_registration_navigation_failed");
 
-    const userId = psql(`UPDATE "User" SET "emailVerified"=true WHERE "email"='${email}'; SELECT "id" FROM "User" WHERE "email"='${email}'`, true).split(/\r?\n/).filter(Boolean).at(-1);
+    // The verified flag is guarded against direct writes (guard_user_email_change), so the rehearsal
+    // verifies the bootstrap account through the same supported host command an operator uses.
+    const userId = psql(`SELECT "id" FROM "User" WHERE "email"='${email}'`, true).split(/\r?\n/).filter(Boolean).at(-1);
     if (!userId) fail("dec407_browser_registered_user_missing");
+    docker(["exec", app, "node", "/app/platform-owner.mjs", "verify-bootstrap", "--user-id", userId, "--confirm-email", email, "--acknowledgement", "I_ACCEPT_LOCAL_BOOTSTRAP_EMAIL_VERIFICATION"], false, "dec407_browser_platform_verify_failed");
     docker(["exec", app, "node", "/app/platform-owner.mjs", "bind", "--user-id", userId, "--confirm-email", email], false, "dec407_browser_platform_bind_failed");
 
     await navigate(client, `${origin}/platform/settings`);

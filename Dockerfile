@@ -63,6 +63,7 @@ COPY --from=builder --chown=node:node /app/dist/provision-invitation-runtime-rol
 COPY --from=builder --chown=node:node /app/dist/provision-fresh-auth-attestation-keys.mjs ./provision-fresh-auth-attestation-keys.mjs
 COPY --from=builder --chown=node:node /app/dist/provision-email-delivery-keys.mjs ./provision-email-delivery-keys.mjs
 COPY --from=builder --chown=node:node /app/dist/provision-global-security-throttle-key.mjs ./provision-global-security-throttle-key.mjs
+COPY --from=builder --chown=node:node /app/dist/provision-platform-setup-code.mjs ./provision-platform-setup-code.mjs
 COPY --from=builder --chown=node:node /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs
 COPY --from=builder --chown=node:node /app/dist/security-operator.mjs ./security-operator.mjs
 COPY --from=builder --chown=node:node /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs

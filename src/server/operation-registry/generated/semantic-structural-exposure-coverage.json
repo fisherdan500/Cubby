@@ -1703,6 +1703,23 @@
       "sidecarPath": "src/app/api/platform/registration/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const input: unknown = await request.json();\n    return ok(await claimPlatformSetup(input));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c2c4ab121da5514d5a8ed75191fa9287686531a7a677903744c81ef142d111bc",
+      "anchorEnd": 370,
+      "anchorFile": "src/app/api/platform/setup/route.ts",
+      "anchorStart": 162,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/platform/setup/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/platform/setup/route.ts:route_method:POST:src/app/api/platform/setup/route.ts#POST",
+      "ownerId": "api_route:src/app/api/platform/setup/route.ts",
+      "ownerModule": "src/app/api/platform/setup/route.ts",
+      "sidecarPath": "src/app/api/platform/setup/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const text = await request.text();\n    if (!text) throw new Error(\"validation_error\");\n    const parsed = JSON.parse(text) as unknown;\n    if (!parsed || typeof parsed !== \"object\" || Array.isArray(parsed)) throw new Error(\"validation_error\");\n    operationId = (parsed as Record<string, unknown>).operationId;\n    const input = { operationId, apiKeyId: params.id };\n    const issued = await issueApiKeyRevokeBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") return operationResponse(issued);\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitApiKeyRevokeBrowserOperation(input) : issued;\n    return operationResponse(result);\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return operationResponse(failure);\n    return handleError(error);\n  }\n}",
       "anchorDigest": "d811f628f6f0bafd532ee4835acbad0b29f13072ecc218983b50044f1f459a2d",
       "anchorEnd": 1582,
@@ -2859,6 +2876,40 @@
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
     },
     {
+      "anchorBytes": "action={submit}",
+      "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
+      "anchorEnd": 1456,
+      "anchorFile": "src/components/platform-setup-claim-form.tsx",
+      "anchorStart": 1441,
+      "binding": {
+        "kind": "form_action",
+        "symbol": "submit",
+        "target": "src/components/platform-setup-claim-form.tsx#submit"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/platform-setup-claim-form.tsx:form_action:submit:src/components/platform-setup-claim-form.tsx#submit",
+      "ownerId": "client_binding:src/components/platform-setup-claim-form.tsx",
+      "ownerModule": "src/components/platform-setup-claim-form.tsx",
+      "sidecarPath": "src/components/platform-setup-claim-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/platform/setup\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ code: String(formData.get(\"code\") ?? \"\") })\n      })",
+      "anchorDigest": "f41445b23c46638b461bf9cb772fba670cb5164e601b60ba8e7d520c98ac869d",
+      "anchorEnd": 685,
+      "anchorFile": "src/components/platform-setup-claim-form.tsx",
+      "anchorStart": 490,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/platform-setup-claim-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/platform-setup-claim-form.tsx",
+      "ownerModule": "src/components/platform-setup-claim-form.tsx",
+      "sidecarPath": "src/components/platform-setup-claim-form.operation.ts"
+    },
+    {
       "anchorBytes": "fetch(\"/api/account/session-activity\", {\n    method: \"POST\",\n    headers: { \"content-type\": \"application/json\" },\n    body: JSON.stringify({ requestClass: \"foreground_document_navigation\" }),\n    keepalive: true\n  })",
       "anchorDigest": "4b59847f7c77d8513bbbfbb5d78bf9928871ff6598e1ee9dc923755f70e85e33",
       "anchorEnd": 373,
@@ -3745,9 +3796,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 4384,
+      "anchorEnd": 4629,
       "anchorFile": "package.json",
-      "anchorStart": 4375,
+      "anchorStart": 4620,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -3762,9 +3813,9 @@
     {
       "anchorBytes": "\"verify:activity-update-safety\"",
       "anchorDigest": "ab81dd8446575d3e8db6556bc8428d6aca7040a50fcbea81f6bd73b9466a2034",
-      "anchorEnd": 3562,
+      "anchorEnd": 3807,
       "anchorFile": "package.json",
-      "anchorStart": 3531,
+      "anchorStart": 3776,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:activity-update-safety",
@@ -3779,9 +3830,9 @@
     {
       "anchorBytes": "\"verify:backup-recovery\"",
       "anchorDigest": "356ff55c9bda28971f0b30a6141af2b700cbf4c69d2f566517d2c35be28ce45e",
-      "anchorEnd": 3406,
+      "anchorEnd": 3651,
       "anchorFile": "package.json",
-      "anchorStart": 3382,
+      "anchorStart": 3627,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:backup-recovery",
@@ -3796,9 +3847,9 @@
     {
       "anchorBytes": "\"verify:update-rehearsal\"",
       "anchorDigest": "ad6ab6ca444dd0e736b38b2fb30832927d0bf9030c330047be097a31d88de645",
-      "anchorEnd": 3481,
+      "anchorEnd": 3726,
       "anchorFile": "package.json",
-      "anchorStart": 3456,
+      "anchorStart": 3701,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-rehearsal",
@@ -3813,9 +3864,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-pilot\"",
       "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-      "anchorEnd": 3651,
+      "anchorEnd": 3896,
       "anchorFile": "package.json",
-      "anchorStart": 3619,
+      "anchorStart": 3864,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-pilot",
@@ -3830,9 +3881,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-save-path\"",
       "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
-      "anchorEnd": 3756,
+      "anchorEnd": 4001,
       "anchorFile": "package.json",
-      "anchorStart": 3720,
+      "anchorStart": 3965,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-save-path",
@@ -3847,9 +3898,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs",
       "anchorDigest": "966bfbf0ed7ea272d7bbd981da0544dd117f2bb8a5f04cd14949bfd9f631f839",
-      "anchorEnd": 4560,
+      "anchorEnd": 4678,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4422,
+      "anchorStart": 4540,
       "binding": {
         "kind": "container_copy",
         "symbol": "household-deletion-readiness-guard.mjs",
@@ -3881,9 +3932,9 @@
     {
       "anchorBytes": "\"esbuild scripts/household-deletion-readiness-guard.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/household-deletion-readiness-guard.mjs\"",
       "anchorDigest": "bdcd6bf4f92821638db2fe0a688009cb7cf23d5a7884330bd5142d4904652aaa",
-      "anchorEnd": 1660,
+      "anchorEnd": 1697,
       "anchorFile": "package.json",
-      "anchorStart": 1477,
+      "anchorStart": 1514,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/household-deletion-readiness-guard.ts",
@@ -3896,9 +3947,9 @@
       "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3915,9 +3966,9 @@
     {
       "anchorBytes": "\"build:household-deletion-readiness\"",
       "anchorDigest": "eb38bb885e8439b3899c30f57bfd73dbfb58ef4b502d4e66609559bd9e3c4018",
-      "anchorEnd": 1475,
+      "anchorEnd": 1512,
       "anchorFile": "package.json",
-      "anchorStart": 1439,
+      "anchorStart": 1476,
       "binding": {
         "kind": "package_script",
         "symbol": "build:household-deletion-readiness",
@@ -3949,9 +4000,9 @@
     {
       "anchorBytes": "\"esbuild scripts/integrity-check.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/integrity-check.mjs\"",
       "anchorDigest": "97c14ba7b6bd29cec210f4b27c372840462a9e3236edb92a1ce73ddd54b523e8",
-      "anchorEnd": 994,
+      "anchorEnd": 1031,
       "anchorFile": "package.json",
-      "anchorStart": 849,
+      "anchorStart": 886,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/integrity-check.ts",
@@ -3964,9 +4015,9 @@
       "sidecarPath": "scripts/integrity-check.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -3983,9 +4034,9 @@
     {
       "anchorBytes": "\"build:integrity\"",
       "anchorDigest": "0bc4e1884466133d9c6a0672c4ad0e7ea55e2181e4d2eff74c1d410f060728ee",
-      "anchorEnd": 847,
+      "anchorEnd": 884,
       "anchorFile": "package.json",
-      "anchorStart": 830,
+      "anchorStart": 867,
       "binding": {
         "kind": "package_script",
         "symbol": "build:integrity",
@@ -4000,9 +4051,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 4485,
+      "anchorEnd": 4730,
       "anchorFile": "package.json",
-      "anchorStart": 4467,
+      "anchorStart": 4712,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -4017,9 +4068,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 4024,
+      "anchorEnd": 4269,
       "anchorFile": "package.json",
-      "anchorStart": 3992,
+      "anchorStart": 4237,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -4034,9 +4085,9 @@
     {
       "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
       "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-      "anchorEnd": 4134,
+      "anchorEnd": 4379,
       "anchorFile": "package.json",
-      "anchorStart": 4099,
+      "anchorStart": 4344,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-invitation-acceptance",
@@ -4051,9 +4102,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/p1-3-node-builtin-probe.mjs /app/scripts/p1-3-node-builtin-probe.mjs",
       "anchorDigest": "7ca283f72641952c4b347328ab7d06c2f2d47b04ae0586b28a11c29a46af7a61",
-      "anchorEnd": 4677,
+      "anchorEnd": 4795,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4561,
+      "anchorStart": 4679,
       "binding": {
         "kind": "container_copy",
         "symbol": "p1-3-node-builtin-probe.mjs",
@@ -4085,9 +4136,9 @@
     {
       "anchorBytes": "\"esbuild scripts/p1-3-node-builtin-probe.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/p1-3-node-builtin-probe.mjs\"",
       "anchorDigest": "9b8b12b23610200f5243a06981a56b614a5588fb0f3f9bf9f85d05debbfa4f23",
-      "anchorEnd": 1860,
+      "anchorEnd": 1897,
       "anchorFile": "package.json",
-      "anchorStart": 1698,
+      "anchorStart": 1735,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/p1-3-node-builtin-probe.mjs",
@@ -4100,9 +4151,9 @@
       "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4255,9 +4306,9 @@
     {
       "anchorBytes": "\"esbuild scripts/platform-owner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/platform-owner.mjs\"",
       "anchorDigest": "34b772e44b77afedfaf6840b1a18c5960dc89b1a081b95f1af2a8d9e76dc3555",
-      "anchorEnd": 824,
+      "anchorEnd": 861,
       "anchorFile": "package.json",
-      "anchorStart": 681,
+      "anchorStart": 718,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/platform-owner.ts",
@@ -4270,9 +4321,9 @@
       "sidecarPath": "scripts/platform-owner.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4289,9 +4340,9 @@
     {
       "anchorBytes": "\"build:platform-owner\"",
       "anchorDigest": "aef089f4250d574a5150392ba7e9c365c8a7337873033a55a6fe39d262f51929",
-      "anchorEnd": 679,
+      "anchorEnd": 716,
       "anchorFile": "package.json",
-      "anchorStart": 657,
+      "anchorStart": 694,
       "binding": {
         "kind": "package_script",
         "symbol": "build:platform-owner",
@@ -4306,9 +4357,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 4428,
+      "anchorEnd": 4673,
       "anchorFile": "package.json",
-      "anchorStart": 4412,
+      "anchorStart": 4657,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -4323,9 +4374,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs",
       "anchorDigest": "2a92011c4766dc9f7a69e1428da6256b8ace4b2764b70c4ce948aee1b3ea1548",
-      "anchorEnd": 4327,
+      "anchorEnd": 4445,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4214,
+      "anchorStart": 4332,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-database-timezone.mjs",
@@ -4357,9 +4408,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-database-timezone.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-database-timezone.mjs\"",
       "anchorDigest": "6ea242375526696849ec948fda03b14222f2125815a7a9d6856b7368fe49dc80",
-      "anchorEnd": 2741,
+      "anchorEnd": 2986,
       "anchorFile": "package.json",
-      "anchorStart": 2571,
+      "anchorStart": 2816,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-database-timezone.mjs",
@@ -4372,9 +4423,9 @@
       "sidecarPath": "scripts/provision-database-timezone.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4425,9 +4476,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-email-delivery-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-email-delivery-keys.mjs\"",
       "anchorDigest": "205df456bca593073465bbbee38ad9ddf3a1ad9a37415a3052f823caff0a7f7c",
-      "anchorEnd": 2302,
+      "anchorEnd": 2339,
       "anchorFile": "package.json",
-      "anchorStart": 2128,
+      "anchorStart": 2165,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-email-delivery-keys.mjs",
@@ -4440,9 +4491,9 @@
       "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4493,9 +4544,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-fresh-auth-attestation-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-fresh-auth-attestation-keys.mjs\"",
       "anchorDigest": "e88e8a3998b89168bdceb86457dede535d548cf55330ff7bff584b88b0c0c73c",
-      "anchorEnd": 2093,
+      "anchorEnd": 2130,
       "anchorFile": "package.json",
-      "anchorStart": 1903,
+      "anchorStart": 1940,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-fresh-auth-attestation-keys.mjs",
@@ -4508,9 +4559,9 @@
       "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4561,9 +4612,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-global-security-throttle-key.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-global-security-throttle-key.mjs\"",
       "anchorDigest": "04faa6246b4961b4ca13a7b21c086cf236f7abd5de9021ed0979e3d778124bd0",
-      "anchorEnd": 2538,
+      "anchorEnd": 2575,
       "anchorFile": "package.json",
-      "anchorStart": 2346,
+      "anchorStart": 2383,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-global-security-throttle-key.mjs",
@@ -4576,9 +4627,9 @@
       "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4629,9 +4680,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-invitation-runtime-roles.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-invitation-runtime-roles.mjs\"",
       "anchorDigest": "dd8581faef5e2a5f43972ae17a112387ffb97856f01d82d42008b9bda4e52e94",
-      "anchorEnd": 1433,
+      "anchorEnd": 1470,
       "anchorFile": "package.json",
-      "anchorStart": 1249,
+      "anchorStart": 1286,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-invitation-runtime-roles.mjs",
@@ -4644,9 +4695,9 @@
       "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4659,6 +4710,74 @@
       "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
       "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts"
+    },
+    {
+      "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-platform-setup-code.mjs ./provision-platform-setup-code.mjs",
+      "anchorDigest": "6d390bc1923967fe7f1497623e146ac3278115d5881488e8e85e575513cb34ea",
+      "anchorEnd": 4331,
+      "anchorFile": "Dockerfile",
+      "anchorStart": 4214,
+      "binding": {
+        "kind": "container_copy",
+        "symbol": "provision-platform-setup-code.mjs",
+        "target": "Dockerfile#/app/dist/provision-platform-setup-code.mjs=>/app/provision-platform-setup-code.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-platform-setup-code.mjs:container_copy:provision-platform-setup-code.mjs:Dockerfile#/app/dist/provision-platform-setup-code.mjs=>/app/provision-platform-setup-code.mjs",
+      "ownerId": "package_command:scripts/provision-platform-setup-code.mjs",
+      "ownerModule": "scripts/provision-platform-setup-code.mjs",
+      "sidecarPath": "scripts/provision-platform-setup-code.operation.ts"
+    },
+    {
+      "anchorBytes": "if ! DATABASE_URL=\"$MIGRATION_DATABASE_URL\" node provision-platform-setup-code.mjs 2>/dev/null",
+      "anchorDigest": "adc229d52cc95818517c2e5abefd3497a4fbeab0894c390e0d861b8835a1e4db",
+      "anchorEnd": 4370,
+      "anchorFile": "docker/entrypoint.sh",
+      "anchorStart": 4276,
+      "binding": {
+        "kind": "container_invocation",
+        "symbol": "provision-platform-setup-code.mjs",
+        "target": "docker/entrypoint.sh#/app/provision-platform-setup-code.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-platform-setup-code.mjs:container_invocation:provision-platform-setup-code.mjs:docker/entrypoint.sh#/app/provision-platform-setup-code.mjs",
+      "ownerId": "package_command:scripts/provision-platform-setup-code.mjs",
+      "ownerModule": "scripts/provision-platform-setup-code.mjs",
+      "sidecarPath": "scripts/provision-platform-setup-code.operation.ts"
+    },
+    {
+      "anchorBytes": "\"esbuild scripts/provision-platform-setup-code.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-platform-setup-code.mjs\"",
+      "anchorDigest": "75de10906823e2df6e2aaf3b821db93b9fc1ebf8bb00674075505e3c71b75c93",
+      "anchorEnd": 2784,
+      "anchorFile": "package.json",
+      "anchorStart": 2610,
+      "binding": {
+        "kind": "package_build_entrypoint",
+        "symbol": "scripts/provision-platform-setup-code.mjs",
+        "target": "scripts/provision-platform-setup-code.mjs=>dist/provision-platform-setup-code.mjs"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-platform-setup-code.mjs:package_build_entrypoint:scripts/provision-platform-setup-code.mjs:scripts/provision-platform-setup-code.mjs=>dist/provision-platform-setup-code.mjs",
+      "ownerId": "package_command:scripts/provision-platform-setup-code.mjs",
+      "ownerModule": "scripts/provision-platform-setup-code.mjs",
+      "sidecarPath": "scripts/provision-platform-setup-code.operation.ts"
+    },
+    {
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
+      "anchorFile": "package.json",
+      "anchorStart": 196,
+      "binding": {
+        "kind": "package_build_invocation",
+        "symbol": "build",
+        "target": "package.json#scripts.build:build:platform-setup-code"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/provision-platform-setup-code.mjs:package_build_invocation:build:package.json#scripts.build:build:platform-setup-code",
+      "ownerId": "package_command:scripts/provision-platform-setup-code.mjs",
+      "ownerModule": "scripts/provision-platform-setup-code.mjs",
+      "sidecarPath": "scripts/provision-platform-setup-code.operation.ts"
     },
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-security-runtime-role.mjs ./provision-security-runtime-role.mjs",
@@ -4697,9 +4816,9 @@
     {
       "anchorBytes": "\"esbuild scripts/provision-security-runtime-role.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-security-runtime-role.mjs\"",
       "anchorDigest": "ed6b85d3dcb91b70a9eabfba9cab9cdb488792ca971460b8e0c6283cc2226cf6",
-      "anchorEnd": 1209,
+      "anchorEnd": 1246,
       "anchorFile": "package.json",
-      "anchorStart": 1031,
+      "anchorStart": 1068,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/provision-security-runtime-role.mjs",
@@ -4712,9 +4831,9 @@
       "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4748,9 +4867,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/security-operator.mjs ./security-operator.mjs",
       "anchorDigest": "085033173f4af300b24122305ba8d6fa4076ea182004db164214a9e4b810f240",
-      "anchorEnd": 4421,
+      "anchorEnd": 4539,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4328,
+      "anchorStart": 4446,
       "binding": {
         "kind": "container_copy",
         "symbol": "security-operator.mjs",
@@ -4765,9 +4884,9 @@
     {
       "anchorBytes": "\"esbuild scripts/security-operator.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/security-operator.mjs\"",
       "anchorDigest": "7294f4b1ac1e5f3fc751cc4ec19a5537c4f92b0d3005618c0e5f0b9ed422c1ca",
-      "anchorEnd": 2923,
+      "anchorEnd": 3168,
       "anchorFile": "package.json",
-      "anchorStart": 2774,
+      "anchorStart": 3019,
       "binding": {
         "kind": "package_build_entrypoint",
         "symbol": "scripts/security-operator.ts",
@@ -4780,9 +4899,9 @@
       "sidecarPath": "scripts/security-operator.operation.ts"
     },
     {
-      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:database-timezone && npm run build:security-operator && next build\"",
-      "anchorDigest": "151483dcaeb90292255fefacd951092c3d5ebd97406d5fa1ca8befa39ae7535a",
-      "anchorEnd": 651,
+      "anchorBytes": "\"prisma generate && npm run build:platform-owner && npm run build:integrity && npm run build:security-runtime-role && npm run build:invitation-runtime-roles && npm run build:household-deletion-readiness && npm run build:p13-node-builtin-probe && npm run build:fresh-auth-attestation-keys && npm run build:email-delivery-keys && npm run build:global-security-throttle-key && npm run build:platform-setup-code && npm run build:database-timezone && npm run build:security-operator && next build\"",
+      "anchorDigest": "0ed1d88a841ece922f243eb6da5c40ea97c0311952bde1c9c6effa75a5b37855",
+      "anchorEnd": 688,
       "anchorFile": "package.json",
       "anchorStart": 196,
       "binding": {
@@ -4799,9 +4918,9 @@
     {
       "anchorBytes": "\"build:security-operator\"",
       "anchorDigest": "a1750a76b982486d3994ada05cf17b378819261008b874324dd2a8e7a73bf652",
-      "anchorEnd": 2772,
+      "anchorEnd": 3017,
       "anchorFile": "package.json",
-      "anchorStart": 2747,
+      "anchorStart": 2992,
       "binding": {
         "kind": "package_script",
         "symbol": "build:security-operator",
@@ -4816,9 +4935,9 @@
     {
       "anchorBytes": "\"security:operator\"",
       "anchorDigest": "e1989d4a74966750816e4a60c9b003dc206fff378b1af3698c48681a4f7281cd",
-      "anchorEnd": 2948,
+      "anchorEnd": 3193,
       "anchorFile": "package.json",
-      "anchorStart": 2929,
+      "anchorStart": 3174,
       "binding": {
         "kind": "package_script",
         "symbol": "security:operator",
@@ -4833,9 +4952,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 3859,
+      "anchorEnd": 4104,
       "anchorFile": "package.json",
-      "anchorStart": 3829,
+      "anchorStart": 4074,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -4850,9 +4969,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 3951,
+      "anchorEnd": 4196,
       "anchorFile": "package.json",
-      "anchorStart": 3926,
+      "anchorStart": 4171,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -5851,6 +5970,23 @@
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts"
     },
     {
+      "anchorBytes": "getAppRegistrationPolicy",
+      "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
+      "anchorEnd": 555,
+      "anchorFile": "src/app/app/settings/page.tsx",
+      "anchorStart": 531,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getAppRegistrationPolicy",
+        "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getAppRegistrationPolicy:src/server/services/registration.ts#getAppRegistrationPolicy",
+      "ownerId": "server_loader:src/app/app/settings/page.tsx",
+      "ownerModule": "src/app/app/settings/page.tsx",
+      "sidecarPath": "src/app/app/settings/page.operation.ts"
+    },
+    {
       "anchorBytes": "getEffectiveHouseholdContext",
       "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
       "anchorEnd": 360,
@@ -6155,6 +6291,57 @@
       "ownerId": "server_loader:src/app/platform/settings/page.tsx",
       "ownerModule": "src/app/platform/settings/page.tsx",
       "sidecarPath": "src/app/platform/settings/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getAppRegistrationPolicy",
+      "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
+      "anchorEnd": 412,
+      "anchorFile": "src/app/setup/page.tsx",
+      "anchorStart": 388,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getAppRegistrationPolicy",
+        "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/setup/page.tsx:server_value_import:getAppRegistrationPolicy:src/server/services/registration.ts#getAppRegistrationPolicy",
+      "ownerId": "server_loader:src/app/setup/page.tsx",
+      "ownerModule": "src/app/setup/page.tsx",
+      "sidecarPath": "src/app/setup/page.operation.ts"
+    },
+    {
+      "anchorBytes": "isPlatformOwner",
+      "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
+      "anchorEnd": 331,
+      "anchorFile": "src/app/setup/page.tsx",
+      "anchorStart": 316,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "isPlatformOwner",
+        "target": "src/server/services/platform-authority.ts#isPlatformOwner"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/setup/page.tsx:server_value_import:isPlatformOwner:src/server/services/platform-authority.ts#isPlatformOwner",
+      "ownerId": "server_loader:src/app/setup/page.tsx",
+      "ownerModule": "src/app/setup/page.tsx",
+      "sidecarPath": "src/app/setup/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 274,
+      "anchorFile": "src/app/setup/page.tsx",
+      "anchorStart": 259,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/setup/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/setup/page.tsx",
+      "ownerModule": "src/app/setup/page.tsx",
+      "sidecarPath": "src/app/setup/page.operation.ts"
     },
     {
       "anchorBytes": "setInterval(() => {\n    void tick();\n  }, automatedBackupConfig.pollMinutes * 60 * 1000)",
@@ -6469,10 +6656,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "49103281853361539440a2bf2fdcbe834cf73d0cf455b4657aa80ac4eab47f24",
+  "semanticArtifactDigest": "d079239a324a2e93ccd7ccd9de40faeb3c35f457c84f1bf4a04465faf483cf63",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "9902931cdf06e5ee0cf636181ffa062b8e319b22ec9165b78264b730d457797a",
+  "semanticCoverageDigest": "e5c84e13a13542aa9b818216b836f8936fe3dc7be3a6f6dace885f17b59fd854",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "ff76b68fc041ca18a787cc6e4fb92fbf8fca1080162f32bfc91866fbca01c105"
+  "semanticFingerprint": "49a4367e70215fdd847519da2b91c2daf90f386bce758ed71ee14bcea4cbb67c"
 }

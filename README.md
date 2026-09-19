@@ -53,6 +53,26 @@ docker compose up --build
 
 5. Open `http://localhost:3000`, or the port configured with `APP_PORT`.
 
+### First-time setup: claim platform ownership
+
+While Cubby has no platform owner, every start prints a one-time setup code to the
+app container's log:
+
+```bash
+docker compose logs app
+```
+
+Look for `Cubby has no platform owner yet`. Sign in (or create the first account),
+open `/setup` and enter the code. That account becomes the verified platform owner,
+with household creation closed and public registration off, exactly as `bind` below
+leaves it; open household creation from `/platform/settings`. The code works once and
+expires after 24 hours; restarting Cubby issues a new one. Only its SHA-256 digest is
+stored, and no application database role can read it.
+
+The first account is never promoted automatically: whoever reaches a new install's
+registration page first could otherwise take the platform. The code proves access to
+the host's logs instead.
+
 ### Bind the platform owner
 
 Open password signup is fail-closed; the only credential-creating path is invitation
