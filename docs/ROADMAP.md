@@ -46,7 +46,14 @@ implementation, merge, deployment, and cleanup approvals.
 
 ### Confirmed-Decision Delivery Program
 
-- Status: active; P0, P1.1, P1-2, and P1-7 have accepted merged evidence, and P1-3 invitation protocol v2 has merged source evidence pending deployment; its accepted-state recovery guard must merge before any deployment. P1-4 is selected only for a bounded read-only exact-main delta reconciliation; P1-1, P1-5, and P1-6 remain partial, and P1-8 remains blocked. Post-merge exact-head review, deployment, cutover, and cleanup remain separate gates.
+- Status: active (reconciled 2026-09-19 against PR #101).
+  - Accepted, with merged evidence: P0, P1.1, P1-2, P1-6 and P1-7.
+  - P1-3: Invitation Protocol v2 is merged (#64), with the accepted-state recovery guard (#65) and the recovery-code notice and cross-lineage re-invitation (#66). Ownership transfer, support access, merge and deletion remain open.
+  - P1-4: every browser-operation and HTTP mutation family is covered by the disposable save-path acceptance rehearsal (#79, #83, #85–#91).
+  - P1-1: host-local account verification is repaired and a one-time setup-code ownership claim was added (#100).
+  - Partial: P1-1, P1-3, P1-4 and P1-5. Blocked: P1-8.
+  - In progress, in order: P1-5 display-time correctness (household zone everywhere, invalid zones fail visibly), then a P2 activity add/edit conformance sweep across all 14 types.
+  - Deployment and cleanup remain separate gates.
 - Priority: high
 - Goal: Reconcile all confirmed product policy against the exact application tree, then deliver missing behavior in dependency order without mistaking decisions for implementation.
 - Acceptance: P0 assigns every `DEC-PROD-001` through `DEC-PROD-402` an evidence-backed `implemented`, `partially implemented`, `missing`, `policy-only/no build`, or `deferred by confirmed sequence` disposition and names the smallest safe first slice; P1 establishes identity, platform/household authority, authorization, data-integrity, audit, migration, and recovery foundations; P2 completes the canonical 14-type activity contract, subtype-first field matrices, drafts, date/time controls, timers, and personal dashboard editor; P3 completes daily care coordination, handoff, caregiver coverage, shared-device, and accessibility journeys; P4 passes system-of-record reliability, integrity, performance, update, backup, host-loss, and outage-continuity gates; P5 delivers reports, schedules, reminders, and care artifacts over authoritative data; P6 adds only approved optional domain depth; P7 adds narrow capability-gated integrations and quick capture; P8 leaves optional AI, offline/PWA, and broader distribution until the local deterministic core is dependable.
