@@ -2048,17 +2048,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "bae4e6320be51937a6dfeefe5cf38706b8ff5fe602498c30eba59a406289ad7c",
+          "digest": "1fd6634eb27466089ca8d951aafff71382e31387edaf98df95544059d46ec2e8",
           "file": "src/app/setup/page.tsx"
         }
       ],
       "declarationDigest": "842eaef5e914000abbfc1acfe3726490479f279125cecd7d22cd7fd51ce31265",
-      "fingerprint": "a084e349792f274ec1de336af3dc7cf4c3c5de2ff312bfa441d78f7aa557c60b",
+      "fingerprint": "28d299d35e4c1b159da17c06182b3561a03051be711255be2326737da05d74f1",
       "id": "fingerprint:server_loader:src/app/setup/page.tsx",
       "ownerId": "server_loader:src/app/setup/page.tsx",
       "ownerModule": "src/app/setup/page.tsx",
       "sidecarPath": "src/app/setup/page.operation.ts",
-      "sourceDigest": "439b27f2572c70a2ba87ea465a6d60ea5d867a4f9ea3db8ff5e0b6dc45a448bb",
+      "sourceDigest": "4f869ce4eadcb544a81fb82cd62a88729d8cd4875d539c2c0daff086459f2012",
       "status": "declared"
     },
     {
@@ -2144,17 +2144,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "7601bcc09a70249de5688ca067ca1f4425297835fe668bba812658757ec1eda8",
+          "digest": "8a9b67dd1e0d25b1d646a04614c37fc83ab1de3ea5c181f77a8992e4de160148",
           "file": "src/components/actions/confirmed-activity-delete.tsx"
         }
       ],
       "declarationDigest": "2e0a4b59c479029f22986789a2eb74123e3623e155088bea7652c8439ba420e2",
-      "fingerprint": "979b9342edf8d891089e1ea44ac299d29b595cbcd6f5bd9403a996dd68bf79e6",
+      "fingerprint": "eb2853267e8538ca2c046552fc750928d49adb4fcfa4d606ea1a0c30d4c8d210",
       "id": "fingerprint:client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts",
-      "sourceDigest": "2097cbca129f937975748395de77345f3468e32b9e86d9701ab50f0649ab2e90",
+      "sourceDigest": "406192a35394cd1c3d6b58b6992cf8fa4de6918a827a12b22f9657710b459baf",
       "status": "declared"
     },
     {

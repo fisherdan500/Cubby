@@ -30,6 +30,7 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const moreActive = pathname.startsWith("/app/nursery") || pathname.startsWith("/app/settings") || pathname === "/app/babies";
 
@@ -39,6 +40,9 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
 
   useEffect(() => {
     if (!open) return;
+    // Keyboard and screen-reader users land on the first choice instead of staying on the trigger with
+    // the sheet opened somewhere above them.
+    panelRef.current?.querySelector<HTMLElement>("a[href], button")?.focus();
 
     function handlePointerDown(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
@@ -59,10 +63,19 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
   }, [open]);
 
   return (
-    <div ref={rootRef} className="md:hidden">
+    <div
+      ref={rootRef}
+      className="md:hidden"
+      onBlur={(event) => {
+        // Tabbing out of the sheet closes it, so it never lingers over the page behind focus.
+        if (open && !rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
       {open ? (
         <div
+          ref={panelRef}
           id="mobile-more-panel"
+          role="group"
           aria-label="More"
           className="fixed inset-x-3 bottom-[4.75rem] z-40 space-y-0.5 rounded-xl border border-border bg-card p-2 text-card-foreground shadow-xl"
         >

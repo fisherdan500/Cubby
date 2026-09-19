@@ -154,4 +154,19 @@ describe("ConfirmedActivityDelete", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[3][1]?.body))).toEqual({ operationId: replacementId });
     expect(sessionStorage.getItem(storageKey)).toBeNull();
   });
+
+  it("backs out of the icon popover with Escape, deleting nothing and returning focus to the trash icon", async () => {
+    globalThis.fetch = vi.fn();
+    const user = userEvent.setup();
+    render(createElement(ConfirmedActivityDelete, { id: "activity-1", returnTo: "/app", trigger: "icon" }));
+    const trigger = screen.getByRole("button", { name: "Delete activity" });
+
+    await user.click(trigger);
+    expect(screen.getByRole("region", { name: "Confirm activity deletion" })).toBeTruthy();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("region", { name: "Confirm activity deletion" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
 });
