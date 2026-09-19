@@ -295,6 +295,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-node-builtin-probe.operation.ts",
+  "scripts/performance-budgets.acceptance-rehearsal.operation.ts",
   "scripts/integrity-check.operation.ts",
   "scripts/platform-owner.operation.ts",
   "scripts/household-deletion-readiness-guard.operation.ts",

@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cubby_performance_budgets
+      POSTGRES_USER: cubby_performance_rehearsal
+      POSTGRES_PASSWORD: ${CUBBY_PERFORMANCE_REHEARSAL_PASSWORD:?rehearsal password required}
+      TZ: UTC
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cubby_performance_rehearsal -d cubby_performance_budgets"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - performance_rehearsal_postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Same role topology as production and as the save-path rehearsal: the app's own entrypoint
+      # provisions cubby_runtime and friends, so measured work runs through the real restricted role
+      # and the real grants, not a superuser shortcut.
+      MIGRATION_DATABASE_URL: postgresql://cubby_performance_rehearsal:${CUBBY_PERFORMANCE_REHEARSAL_PASSWORD:?rehearsal password required}@postgres:5432/cubby_performance_budgets?schema=public
+      DATABASE_URL: postgresql://cubby_runtime:${CUBBY_PERFORMANCE_REHEARSAL_RUNTIME_PASSWORD:?rehearsal runtime password required}@postgres:5432/cubby_performance_budgets?schema=public
+      AUTH_DATABASE_URL: postgresql://cubby_auth:${CUBBY_PERFORMANCE_REHEARSAL_AUTH_DB_PASSWORD:?rehearsal auth db password required}@postgres:5432/cubby_performance_budgets?schema=public
+      EMAIL_DELIVERY_DATABASE_URL: postgresql://cubby_email_delivery:${CUBBY_PERFORMANCE_REHEARSAL_EMAIL_DELIVERY_DB_PASSWORD:?rehearsal email delivery db password required}@postgres:5432/cubby_performance_budgets?schema=public
+      CUBBY_SECURITY_OPERATOR_DB_PASSWORD: ${CUBBY_PERFORMANCE_REHEARSAL_SECURITY_OPERATOR_PASSWORD:?rehearsal security operator password required}
+      CUBBY_THROTTLE_KEY: ${CUBBY_PERFORMANCE_REHEARSAL_THROTTLE_KEY:?rehearsal throttle key required}
+      CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: ${CUBBY_PERFORMANCE_REHEARSAL_FRESH_AUTH_KEYRING:?rehearsal fresh-auth keyring required}
+      CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "1"
+      CUBBY_EMAIL_DELIVERY_KEYRING: ${CUBBY_PERFORMANCE_REHEARSAL_EMAIL_DELIVERY_KEYRING:?rehearsal email-delivery keyring required}
+      CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION: "1"
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: "1"
+      SMTP_USER: cubby_performance_rehearsal_smtp
+      SMTP_PASSWORD: ${CUBBY_PERFORMANCE_REHEARSAL_SMTP_PASSWORD:?rehearsal smtp password required}
+      EMAIL_FROM: Cubby <noreply@rehearsal.invalid>
+      SMTP_SECURE: "false"
+      BETTER_AUTH_SECRET: ${CUBBY_PERFORMANCE_REHEARSAL_AUTH_SECRET:?rehearsal auth secret required}
+      BETTER_AUTH_URL: http://localhost:3000
+      TRUSTED_ORIGINS: http://127.0.0.1:*
+      APP_TIMEZONE: Etc/UTC
+      ENABLE_REGISTRATION: "false"
+      # Background work would add unrelated load to a measurement run.
+      AUTOMATED_BACKUPS_ENABLED: "false"
+      INTEGRITY_CHECKS_ENABLED: "false"
+      CUBBY_INVITATION_RUNTIME_DB_PASSWORD: ${CUBBY_PERFORMANCE_REHEARSAL_INVITATION_RUNTIME_PASSWORD:?rehearsal invitation runtime password required}
+      CUBBY_INVITATION_EXPIRY_DB_PASSWORD: ${CUBBY_PERFORMANCE_REHEARSAL_INVITATION_EXPIRY_PASSWORD:?rehearsal invitation expiry password required}
+      CUBBY_INVITATION_MAINTENANCE_DB_PASSWORD: ${CUBBY_PERFORMANCE_REHEARSAL_INVITATION_MAINTENANCE_PASSWORD:?rehearsal invitation maintenance password required}
+      INVITATION_DATABASE_URL: postgresql://cubby_invitation_runtime:${CUBBY_PERFORMANCE_REHEARSAL_INVITATION_RUNTIME_PASSWORD:?rehearsal invitation runtime password required}@postgres:5432/cubby_performance_budgets?schema=public
+      INVITATION_EXPIRY_DATABASE_URL: postgresql://cubby_invitation_expiry_worker:${CUBBY_PERFORMANCE_REHEARSAL_INVITATION_EXPIRY_PASSWORD:?rehearsal invitation expiry password required}@postgres:5432/cubby_performance_budgets?schema=public
+      INVITATION_MAINTENANCE_DATABASE_URL: postgresql://cubby_invitation_maintenance_worker:${CUBBY_PERFORMANCE_REHEARSAL_INVITATION_MAINTENANCE_PASSWORD:?rehearsal invitation maintenance password required}@postgres:5432/cubby_performance_budgets?schema=public
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+      start_period: 60s
+    ports:
+      - "127.0.0.1::3000"
+
+volumes:
+  performance_rehearsal_postgres_data:
