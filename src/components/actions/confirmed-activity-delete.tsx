@@ -174,7 +174,17 @@ export function ConfirmedActivityDelete({
 
   if (trigger === "icon") {
     return (
-      <div ref={triggerContainer} className="relative shrink-0">
+      <div
+        ref={triggerContainer}
+        className="relative shrink-0"
+        onKeyDown={(event) => {
+          // The popover floats over the page, so Escape backs out of it like any other popup.
+          if (event.key === "Escape" && confirming && !submitting) {
+            event.preventDefault();
+            setConfirming(false);
+          }
+        }}
+      >
         <button
           type="button"
           aria-label="Delete activity"

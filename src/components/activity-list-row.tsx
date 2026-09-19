@@ -46,7 +46,7 @@ export function ActivityListRow({
         <p className="text-xs font-semibold tabular-nums text-muted-foreground">
           {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
         </p>
-        {meta ? <p className="max-w-24 truncate text-[0.6875rem] text-muted-foreground/80">{meta}</p> : null}
+        {meta ? <p className="max-w-24 truncate text-[0.6875rem] text-muted-foreground">{meta}</p> : null}
       </div>
     </Link>
   );

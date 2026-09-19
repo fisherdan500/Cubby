@@ -59,7 +59,9 @@ describe("secondary workflow mobile contracts", () => {
     expect(appShellSource).toContain('<main className="app-shell-content');
     expect(globalsSource).toContain("@media (max-width: 767px)");
     expect(globalsSource).toContain(".app-shell-content :where(");
-    expect(globalsSource).toContain("scroll-margin-block: 6rem;");
+    // Clears the bottom navigation plus the pinned activity/form action bar above it.
+    expect(globalsSource).toContain("scroll-margin-bottom: 9.5rem;");
+    expect(globalsSource).toContain("scroll-margin-top: 4rem;");
   });
 
   it("uses shared visible focus styling for quiet-hour time inputs", () => {
