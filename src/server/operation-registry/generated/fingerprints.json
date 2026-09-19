@@ -1628,17 +1628,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "6dc90aaba39bc8d4178ddea3a2759e264635547b4853ac4f4b583c767df4c98a",
+          "digest": "005ec2fb2236b926e500bcfb0dd41da5e90a29a2f1132df35c28c192689ff336",
           "file": "src/app/app/activities/[id]/edit/page.tsx"
         }
       ],
       "declarationDigest": "8f1343ae3639493f39746966897cd3f62df100becad55c4fb7b529673d49225f",
-      "fingerprint": "b2a6de167ef51a85b527a294f70734f8d73288d8fc7216a5c8ecb60e9dbc0453",
+      "fingerprint": "8f41cfaa050359fde1b5057aa1c402298fc11f1695346f4c66198efd25af5963",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/edit/page.operation.ts",
-      "sourceDigest": "00a06950db71fd39ede28637b756781f36a7afc4f1888f8fc55ee4cc7aac9d84",
+      "sourceDigest": "b9e9abd13c2064c33a4b8666a105a24412690be3583f9a50815ad200824ec187",
       "status": "declared"
     },
     {
@@ -1728,17 +1728,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "3c182c345a057138e0ab232c9bdee8cd4c0fd3059f802e9411f6465273d53b87",
+          "digest": "59b2959ed3656a33c860c04d6f56d6ad3ed142c93363674e3b15c41ace4fa3d6",
           "file": "src/app/app/log/[type]/page.tsx"
         }
       ],
       "declarationDigest": "3054a9558526deb2de087383eb4c96b359eb27f63fdf9b881097110bbcafecb6",
-      "fingerprint": "babb8ef362a44351cb8da1ea61ff468e2682eafc2eae7ec3e30d99de8f7ef7af",
+      "fingerprint": "e3f22acd8cd5d97aac75248291528bc90f9d1b72575c7a82e6930f3f5969c678",
       "id": "fingerprint:server_loader:src/app/app/log/[type]/page.tsx",
       "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts",
-      "sourceDigest": "a98f957024fa294690bb059c7c215b71377c51dd8cd93aa0c76e3cbb80cb1d83",
+      "sourceDigest": "fcd6867f4108f36fc4dd4de7ae80fcf07d9ff874426f7594b3be4ecbbbed467d",
       "status": "declared"
     },
     {
@@ -2192,17 +2192,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "0baccff004a72e37cdb1ea08f919d85f869510cb8fcd2bc50633d42e481e3705",
+          "digest": "5b70a2ff11cf73bdaad36ba6774b8bd8d5b7c20b4b8c4df4de854bd0b9e34357",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "040a72fbe2e25bea67a6ce185b4cedff7ef5435c8b0d2d4c6da4e7a53ad903a3",
+      "fingerprint": "6f3d9ddeb274408acb0fbc22895250360a011f9e05ed3373647f61aa898323e7",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "1eb320e8840f800e510a4ddb3dfd1f239495e75a3566fd7f04373ef33c08a644",
+      "sourceDigest": "b62c8fec36494ac7e0424f49b96138deb24787ea804ba7631a2758a6faa49edd",
       "status": "declared"
     },
     {
@@ -3280,11 +3280,11 @@
   ],
   "generatorDigest": "186f8e00ea8a0b09457a6f47c945d2c36e9a2a3a9e353293e402d792ecb4614c",
   "generatorVersion": "r0.1",
-  "observationDigest": "62fbbb88fe39f80fd6bc3222d55bcef5fbc38d1bab4e716086942ba7cf4905d2",
+  "observationDigest": "458e9d2433a3e841dfd0dc4a5f118670829285bbecdd35cd7c1c5a795c6f99cc",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "c9eac03056c5c812a0964e33ef1775976aa56ef46ffeb597495d25a5b997ceab",
+  "registryDigest": "aedd7556847a90f937e2d390cc35f41f7dce80ae3ac1b4fab48011c5aaf2e329",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

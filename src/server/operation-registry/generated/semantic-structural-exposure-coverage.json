@@ -4952,9 +4952,9 @@
     {
       "anchorBytes": "getActivityForEdit",
       "anchorDigest": "84878e1856af36f94bb807228b977b169e48fffe0ac6f04e6afc412fd68b6ed7",
-      "anchorEnd": 698,
+      "anchorEnd": 776,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 680,
+      "anchorStart": 758,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityForEdit",
@@ -4969,9 +4969,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 838,
+      "anchorEnd": 916,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 812,
+      "anchorStart": 890,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -4986,9 +4986,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 763,
+      "anchorEnd": 841,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 747,
+      "anchorStart": 825,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -5003,9 +5003,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 638,
+      "anchorEnd": 716,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 623,
+      "anchorStart": 701,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5343,9 +5343,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 495,
+      "anchorEnd": 573,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 469,
+      "anchorStart": 547,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5360,9 +5360,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 420,
+      "anchorEnd": 498,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 404,
+      "anchorStart": 482,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -5377,9 +5377,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 362,
+      "anchorEnd": 440,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 347,
+      "anchorStart": 425,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6469,9 +6469,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "199995a4779bf209b98e8eac8dca1e27f6ef8cc304facefe3b50c0835c5034dd",
+  "semanticArtifactDigest": "d018f3b172e74b44d25701d1ce5c725c4dd303834e9bfbd68a95be03acaa0eab",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "20482883178ce20943aa17cda7368c77645e581ebb0945c05e7aad32dc4a49dd",
+  "semanticCoverageDigest": "2ca1c8fcbdfb30b135dd6c9e2ee511b0ea9d89e12c5e79a75b14ec3044de7052",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "ff76b68fc041ca18a787cc6e4fb92fbf8fca1080162f32bfc91866fbca01c105"

@@ -226,7 +226,7 @@ export function ActivityForm({
   );
 
   return (
-    <form action={submit} className="space-y-4 pb-20 md:pb-0">
+    <form action={submit} className="space-y-4">
       {activityId && initial?.updatedAt ? <input type="hidden" name="expectedUpdatedAt" value={String(initial.updatedAt)} /> : null}
       <BabyField babies={babies} defaultBaby={defaultBaby} />
       <TypeFields
@@ -234,19 +234,25 @@ export function ActivityForm({
         slots={{ initial, editing: Boolean(initial), preferences: unitPreferences, medicineNames, supplementNames, when: whenSection, notes }}
       />
 
-      {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
-      <div className="sticky bottom-20 z-20 -mx-4 border-t border-border bg-card/95 p-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
-        <div className="grid grid-cols-[auto_1fr] gap-2 md:flex md:justify-end">
-          <Link
-            replace={allowActivityDestination}
-            href={cancelHref}
-            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-muted px-4 py-2 text-base font-semibold text-foreground transition hover:bg-border md:min-w-32"
-          >
-            Cancel
-          </Link>
-          <Button type="submit" disabled={submitting} aria-live="polite" className="min-h-12 w-full text-base md:w-auto md:min-w-44">
-            {submitting ? (activityId ? "Saving..." : "Logging...") : activityId ? "Save changes" : `Log ${activityLabels[type].toLowerCase()}`}
-          </Button>
+      {/* Cancel and Save share the activity page's bar: FIXED just above the phone's bottom navigation, the
+          same height and in the same spot on every form, so the thumb always finds them and they never
+          scroll. The page adds bottom padding so the last field stays clear of
+          it. An error shows inside the bar, right above the button that caused it, not off-screen. */}
+      <div className="fixed inset-x-0 bottom-[4.75rem] z-20 px-3 md:bottom-4 md:left-64 md:px-6">
+        <div className="mx-auto max-w-lg space-y-2 rounded-xl border border-border bg-card/95 p-2 shadow-soft backdrop-blur">
+          {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
+          <div className="flex items-center gap-2">
+            <Link
+              replace={allowActivityDestination}
+              href={cancelHref}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg px-4 text-sm font-bold text-primary transition hover:bg-muted"
+            >
+              Cancel
+            </Link>
+            <Button type="submit" disabled={submitting} aria-live="polite" className="min-h-11 flex-1 text-base">
+              {submitting ? (activityId ? "Saving..." : "Logging...") : activityId ? "Save changes" : `Log ${activityLabels[type].toLowerCase()}`}
+            </Button>
+          </div>
         </div>
       </div>
     </form>

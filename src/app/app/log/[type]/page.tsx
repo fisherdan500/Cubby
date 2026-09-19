@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ActivityForm } from "@/components/forms/activity-form";
+import { ActivityFormHeader } from "@/components/forms/activity-form-header";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { env } from "@/lib/env";
@@ -28,8 +29,10 @@ export default async function LogActivityPage({
 
   return (
     <AppShell title={`Log ${activityLabels[type]}`} userName={user.name}>
-      <div>
-        <Card className="mx-auto max-w-lg">
+      {/* Bottom padding keeps the last field clear of the form's fixed Cancel / Log bar. */}
+      <div className="pb-20">
+        <Card className="mx-auto max-w-lg space-y-4">
+          <ActivityFormHeader type={type} />
           {babies.length ? (
             <ActivityForm
               babies={babies}
