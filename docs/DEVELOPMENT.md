@@ -501,6 +501,30 @@ npm run verify:activity-update-safety
 It runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
+Query, index, schema or page-data changes on the everyday workflows additionally
+require the disposable performance rehearsal, which measures the `DEC-PROD-225`
+budgets over the deterministic `DEC-PROD-226` datasets:
+
+```bash
+npm run verify:performance-1y
+npm run verify:performance-5y
+```
+
+Each boots the real app image against a disposable Postgres with the production
+role topology, seeds a fixed synthetic household (two babies; one year is 13,140
+activities and five years is 65,700, with typed details, timers, notes and
+corrections), runs `VACUUM ANALYZE` so the planner is not measured cold, signs in
+over real HTTP, and takes 15 warm samples per workflow after 3 warm-ups. It fails
+when a p95 exceeds its budget: 2 s for dashboard and recent-history useful
+content, 1 s for a baby switch, and 2 s for an authoritative save, timer start or
+timer stop. Evidence is one `PERFORMANCE_BUDGET_EVIDENCE` line with p50/p95/p99
+per workflow and the exact dataset counts.
+
+These are **server outcomes over loopback**: the time for the app to return the
+complete authenticated HTML or an authoritative mutation result. The 100 ms
+"visible accessible input acknowledgement" budget is a client paint measurement
+and is deliberately **not** measured here; it needs a browser harness.
+
 Database role/privilege changes (grants, revokes, row-lock or SECURITY DEFINER
 functions) and session-freshness changes additionally require the separately
 gated disposable end-to-end save-path rehearsal:
