@@ -48,14 +48,19 @@ const authenticatedHtml = await authenticatedPage.text();
 const expectedStarted = new Intl.DateTimeFormat("en", {
   month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Etc/UTC"
 }).format(new Date(handoff.startedAt));
+// The dashboard no longer groups timers under an "Active timers" card: since the calm-dashboard
+// rebuild each running or paused timer takes over its own tile or row, labelled with its state. These
+// are Play timers, which are not one of the three quick-action tiles, so they render as rows reading
+// "Paused <time>" and "Started <time>". The point of the assertion is unchanged: both restored timers
+// must be visible, in their own states, with the preserved start time.
 const timerProbe = {
   pageOk: authenticatedPage.ok,
-  activeTimers: authenticatedHtml.includes("Active timers"),
-  paused: authenticatedHtml.includes("Paused"),
+  startedRow: authenticatedHtml.includes("Started"),
+  pausedRow: authenticatedHtml.includes("Paused"),
   expectedStarted: authenticatedHtml.includes(expectedStarted),
   databaseTimerStates: Array.isArray(handoff.timerProbeState) ? handoff.timerProbeState : null
 };
-if (!timerProbe.pageOk || !timerProbe.activeTimers || !timerProbe.paused || !timerProbe.expectedStarted) {
+if (!timerProbe.pageOk || !timerProbe.startedRow || !timerProbe.pausedRow || !timerProbe.expectedStarted) {
   throw new Error(`rehearsal_app_timer_incoherent:${JSON.stringify(timerProbe)}`);
 }
 
