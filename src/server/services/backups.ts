@@ -285,7 +285,7 @@ function decimalValue(value: unknown) {
 
 type BackupActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
-function activityToInput(activity: BackupActivity) {
+export function activityToInput(activity: BackupActivity) {
   const base = {
     id: activity.id,
     babyId: activity.babyId,
