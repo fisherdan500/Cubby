@@ -4,14 +4,12 @@ import { ChevronLeft, ChevronRight, Clock3, MapPin, PlusCircle, Users, X } from 
 import { AppShell } from "@/components/app-shell";
 import { CalendarDrawerShell } from "@/components/calendar-drawer-shell";
 import { CalendarFocusRestore } from "@/components/calendar-focus-restore";
-import { CalendarScrollPair } from "@/components/calendar-scroll-pair";
 import { CalendarEventSubmission } from "@/components/calendar-event-submission";
+import { ActivityListRow } from "@/components/activity-list-row";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
-import { describeActivity } from "@/lib/activity-format";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
-import { activityDetailHref } from "@/lib/activity-navigation";
 import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calendar-layout";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -38,22 +36,32 @@ export default async function CalendarPage({
         <div className="rounded-lg border border-border bg-card p-4">Add a baby before viewing the calendar.</div>
       ) : (
         <div className="space-y-0">
+          {/* The month bar uses the same quiet card surface as the dashboard's day navigator, rather than
+              a solid primary band, so the days - not the chrome - carry the colour. */}
           <div className={`${calendarFullBleedClassName} sticky top-16 z-10 -mt-5 md:top-20`}>
-            <section className="border-b border-border bg-primary/85 text-primary-foreground">
-              <div className="grid min-h-9 grid-cols-[56px_1fr_56px] items-center px-2 py-1 md:px-6">
+            <section className="border-b border-border bg-card/95 backdrop-blur">
+              <div className="grid grid-cols-[56px_1fr_56px] items-center px-2 py-1 md:px-6">
                 <Link
                   href={calendarHref(calendar.baby.id, calendar.previousMonth)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-primary-foreground/10"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full text-primary hover:bg-muted"
                   aria-label="Previous month"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </Link>
-                <div className="text-center">
-                  <h2 className="text-xl font-black">{calendar.monthLabel}</h2>
+                <div className="flex min-w-0 items-center justify-center gap-1">
+                  <h2 className="truncate text-lg font-black">{calendar.monthLabel}</h2>
+                  {calendar.monthKey !== calendar.todayKey.slice(0, 7) ? (
+                    <Link
+                      href={calendarHref(calendar.baby.id, calendar.todayKey.slice(0, 7))}
+                      className="inline-flex min-h-11 shrink-0 items-center rounded-lg px-2 text-sm font-bold text-primary hover:bg-muted"
+                    >
+                      Today
+                    </Link>
+                  ) : null}
                 </div>
                 <Link
                   href={calendarHref(calendar.baby.id, calendar.nextMonth)}
-                  className="inline-flex h-11 w-11 items-center justify-center justify-self-end rounded-full hover:bg-primary-foreground/10"
+                  className="inline-flex h-11 w-11 items-center justify-center justify-self-end rounded-full text-primary hover:bg-muted"
                   aria-label="Next month"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -62,38 +70,57 @@ export default async function CalendarPage({
             </section>
           </div>
 
+          {/* The month fits the screen: no sideways scrolling on a phone. A phone cell is one tap target
+              showing the date and a few dots (event colours, then activity tones); the day sheet it
+              opens holds the detail. From md up there is room for the event chips themselves. */}
           <div className={calendarFullBleedClassName}>
-            <CalendarScrollPair
-              weekdays={
-                <div className="grid min-w-[860px] grid-cols-7 py-3 text-center text-sm font-black text-muted-foreground">
-                  {weekdays.map((day) => (
-                    <div key={day}>{day}</div>
-                  ))}
-                </div>
-              }
-              days={
-                <div className="min-w-[860px]">
-              <div className="grid grid-cols-7 border-l border-border">
+            <div className="grid grid-cols-7 border-b border-border bg-background py-2 text-center text-xs font-black text-muted-foreground md:text-sm">
+              {weekdays.map((day) => (
+                <div key={day}>{day}</div>
+              ))}
+            </div>
+            <section aria-label={`${calendar.monthLabel} days`} className="grid grid-cols-7 border-l border-border">
                 {calendar.days.map((day) => {
                   const activityEntries = Object.entries(day.counts);
+                  const markers = [
+                    ...day.events.map((event) => ({ key: `event:${event.id}`, style: { backgroundColor: event.color ?? "hsl(var(--primary))" }, className: "" })),
+                    ...activityEntries.map(([type]) => ({
+                      key: `activity:${type}`,
+                      style: undefined,
+                      className: activityVisuals[type as ActivityTypeName]?.toneClass ?? "bg-primary"
+                    }))
+                  ];
+                  const itemCount = day.events.length + day.total;
                   return (
                     <div
                       key={day.key}
-                      className={`min-h-40 border-b border-r border-border bg-card/70 p-2 ${
-                        day.inMonth ? "" : "bg-background/50 text-muted-foreground"
+                      className={`min-w-0 border-b border-r border-border p-0.5 md:min-h-40 md:p-2 ${
+                        day.inMonth ? "bg-card/70" : "bg-background/50 text-muted-foreground"
                       } ${calendar.selected?.key === day.key ? "ring-2 ring-inset ring-primary" : ""}`}
                     >
                       <Link
                         href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key, opener: `day:${day.key}` })}
-                        className={`inline-flex h-11 min-w-11 items-center justify-center rounded-full px-2 text-sm font-black hover:bg-muted ${
-                          day.key === calendar.todayKey ? "bg-primary text-primary-foreground" : ""
-                        }`}
+                        aria-label={`${formatDateKeyLabel(day.key)}${itemCount ? `, ${itemCount} ${itemCount === 1 ? "item" : "items"}` : ""}`}
+                        className="flex min-h-14 w-full flex-col items-center justify-start gap-1 rounded-lg pt-1 hover:bg-muted md:inline-flex md:h-11 md:min-h-0 md:w-auto md:min-w-11 md:justify-center md:pt-0"
                         data-calendar-day={day.key}
                       >
-                        {day.dayNumber}
+                        <span
+                          className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1.5 text-sm font-black ${
+                            day.key === calendar.todayKey ? "bg-primary text-primary-foreground" : ""
+                          }`}
+                        >
+                          {day.dayNumber}
+                        </span>
+                        {markers.length ? (
+                          <span aria-hidden="true" className="flex max-w-full flex-wrap justify-center gap-0.5 md:hidden">
+                            {markers.slice(0, 4).map((marker) => (
+                              <span key={marker.key} className={`h-1.5 w-1.5 rounded-full ${marker.className}`} style={marker.style} />
+                            ))}
+                          </span>
+                        ) : null}
                       </Link>
 
-                      <div className="mt-2 space-y-1">
+                      <div className="mt-2 hidden space-y-1 md:block">
                         {day.events.slice(0, 4).map((event) => (
                           <Link
                             key={event.id}
@@ -128,7 +155,7 @@ export default async function CalendarPage({
                         <Link
                           href={calendarHref(calendar.baby.id, calendar.monthKey, { date: day.key, opener: `activity:${day.key}` })}
                           data-calendar-activity-day={day.key}
-                          className="mt-2 flex min-h-11 flex-wrap items-center gap-1"
+                          className="mt-2 hidden min-h-11 flex-wrap items-center gap-1 md:flex"
                           aria-label={`${day.total} items on ${day.key}`}
                         >
                           {activityEntries.slice(0, 6).map(([type, count]) => (
@@ -143,10 +170,7 @@ export default async function CalendarPage({
                     </div>
                   );
                 })}
-              </div>
-                </div>
-              }
-            />
+            </section>
           </div>
 
           {canAddEvent && !calendar.selected && searchParams.new !== "1" ? (
@@ -200,6 +224,8 @@ function CalendarDrawer({
   const selectedDate = calendar.selected?.key ?? initialDate;
   const selectedLabel = calendar.selected?.label ?? formatDateKeyLabel(selectedDate);
   const restoreFocusSelector = calendarOpenerSelector(opener, selectedDate);
+  const returnTo = calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, opener });
+  const volume = parseUnitPreferences(calendar.home.household.settings?.unitPreferences).volume;
 
   return (
     <CalendarDrawerShell
@@ -275,26 +301,15 @@ function CalendarDrawer({
 
               <section className="space-y-3">
                 <h3 className="text-base font-black">Activity</h3>
-                {calendar.selected?.activities.length ? null : <p className="text-sm text-muted-foreground">No tracked activity for this day.</p>}
-                {calendar.selected?.activities.map((activity) => {
-                  const type = activity.type as ActivityTypeName;
-                  const returnTo = calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, opener });
-                  return (
-                    <Link
-                      replace
-                      key={activity.id}
-                      prefetch={false}
-                      href={activityDetailHref(activity.id, returnTo)}
-                      className="block rounded-lg border border-border bg-background/40 p-4 hover:bg-muted"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-black">{activityLabels[type]}</p>
-                        <p className="text-xs font-bold text-muted-foreground">{formatTime(activity.occurredAt, calendar.timezone)}</p>
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{describeActivity(activity, { volume: parseUnitPreferences(calendar.home.household.settings?.unitPreferences).volume })}</p>
-                    </Link>
-                  );
-                })}
+                {calendar.selected?.activities.length ? (
+                  <div className="space-y-0.5 rounded-lg border border-border bg-background/40 p-1.5">
+                    {calendar.selected.activities.map((activity) => (
+                      <ActivityListRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={calendar.timezone} volume={volume} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No tracked activity for this day.</p>
+                )}
               </section>
             </div>
 

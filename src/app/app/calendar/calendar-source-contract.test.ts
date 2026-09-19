@@ -4,15 +4,20 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
 describe("calendar interaction contracts", () => {
-  it("keeps weekday and calendar scrolling synchronized", () => {
-    expect(source).toContain("CalendarScrollPair");
+  it("fits the month to the screen instead of scrolling it sideways", () => {
+    expect(source).not.toContain("min-w-[860px]");
+    expect(source).not.toContain("CalendarScrollPair");
+    expect(source).toContain('className="grid grid-cols-7 border-l border-border"');
   });
 
   it("provides 44px minimum month, day, and drawer-close targets", () => {
     expect(source).not.toMatch(/\bh-9 w-9\b|\bh-7 min-w-7\b|\bh-10 w-10\b/);
     expect(source.match(/h-11 w-11/g)?.length).toBeGreaterThanOrEqual(4);
+    // A phone day cell is one full-width target at least 56px tall; from md up the date is 44px.
+    expect(source).toContain('className="flex min-h-14 w-full');
+    expect(source).toContain("md:h-11 md:min-h-0 md:w-auto md:min-w-11");
     expect(source).toContain('className="block min-h-11');
-    expect(source).toContain('className="mt-2 flex min-h-11');
+    expect(source).toContain('className="mt-2 hidden min-h-11');
     expect(source).toContain('className="flex min-h-11 items-center');
   });
 

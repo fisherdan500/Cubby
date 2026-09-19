@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
+import { ActivityListRow, type ActivityListItem } from "@/components/activity-list-row";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { DayPickerHeading } from "@/components/dashboard/day-picker-heading";
@@ -18,8 +19,7 @@ import {
 import { hasPermission } from "@/domain/roles";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import type { VolumeUnit } from "@/domain/units";
-import { describeActivity, formatDateTime, formatDuration, formatTimeSince } from "@/lib/activity-format";
-import { activityDetailHref } from "@/lib/activity-navigation";
+import { formatDateTime, formatDuration, formatTimeSince } from "@/lib/activity-format";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
 
@@ -454,10 +454,8 @@ function dashboardReturnTo(babyId: string, date: string, selectedType?: DailySum
   return `/app?${params.toString()}`;
 }
 
-type TimelineActivity = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
-
-function Timeline({ activities, timeZone, returnTo, volume }: { activities: TimelineActivity[]; timeZone: string; returnTo: string; volume: VolumeUnit }) {
-  const groups = activities.reduce<Record<string, TimelineActivity[]>>((acc, activity) => {
+function Timeline({ activities, timeZone, returnTo, volume }: { activities: ActivityListItem[]; timeZone: string; returnTo: string; volume: VolumeUnit }) {
+  const groups = activities.reduce<Record<string, ActivityListItem[]>>((acc, activity) => {
     const label = periodLabel(activity.occurredAt, timeZone);
     acc[label] = acc[label] ?? [];
     acc[label].push(activity);
@@ -474,29 +472,9 @@ function Timeline({ activities, timeZone, returnTo, volume }: { activities: Time
             {label}
           </p>
           <div className="space-y-1.5">
-            {items.map((activity) => {
-              const type = activity.type as ActivityTypeName;
-              return (
-                <Link
-                  replace
-                  key={activity.id}
-                  prefetch={false}
-                  href={activityDetailHref(activity.id, returnTo)}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-muted"
-                >
-                  {/* The artwork is the row's only visual anchor - it replaces the rail dot rather
-                      than sitting beside one, so the eye scans a single column of shapes. */}
-                  <ActivityArtwork type={type} size="xs" className="shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-black leading-tight">{activityLabels[type]}</p>
-                    <p className="truncate text-xs text-muted-foreground">{describeActivity(activity, { volume })}</p>
-                  </div>
-                  <p className="shrink-0 text-right text-xs font-semibold tabular-nums text-muted-foreground">
-                    {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
-                  </p>
-                </Link>
-              );
-            })}
+            {items.map((activity) => (
+              <ActivityListRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={timeZone} volume={volume} />
+            ))}
           </div>
         </div>
       ))}
