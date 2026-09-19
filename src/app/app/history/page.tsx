@@ -1,12 +1,11 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ActivityArtwork } from "@/components/activity-artwork";
+import { ActivityListRow } from "@/components/activity-list-row";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
-import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
-import { describeActivity } from "@/lib/activity-format";
-import { activityDetailHref } from "@/lib/activity-navigation";
+import { activityLabels, activityTypes } from "@/domain/activity";
 import { env } from "@/lib/env";
 import { historyHref, historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
@@ -14,7 +13,6 @@ import { requireUserPage } from "@/server/auth/session";
 import { listActivities } from "@/server/services/activities";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
-import type { VolumeUnit } from "@/domain/units";
 
 type HistoryActivity = Awaited<ReturnType<typeof listActivities>>[number];
 
@@ -48,73 +46,72 @@ export default async function HistoryPage({
 
   return (
     <AppShell title="Full Log" userName={user.name} babySelector={babySelector}>
-      <div className="space-y-4">
-        <section className="rounded-lg border border-border bg-card/45 p-2">
-          <AutoSubmitForm className="flex max-w-full flex-wrap items-center gap-2">
-            {babySelector ? <input type="hidden" name="babyId" value={babySelector.selectedBabyId} /> : null}
-            <label htmlFor="history-type" className="sr-only">
-              Activity type
-            </label>
-            <Select id="history-type" name="type" defaultValue={searchParams.type ?? ""} className="w-36 sm:w-48">
-              <option value="">All types</option>
-              {activityTypes.map((type) => (
-                <option key={type} value={type}>
-                  {activityLabels[type]}
-                </option>
-              ))}
-            </Select>
-            <label htmlFor="history-search" className="sr-only">
-              Search activity history
-            </label>
-            <Input
-              id="history-search"
-              name="search"
-              defaultValue={searchParams.search ?? ""}
-              placeholder="Search notes, meds, milestones"
-              className="flex-1 basis-44 sm:max-w-80"
-            />
-            {hasActiveFilters ? (
-              <Link
-                href={clearHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-muted px-3 text-sm font-black text-foreground hover:bg-border"
-              >
-                Clear
-              </Link>
-            ) : null}
-          </AutoSubmitForm>
-        </section>
-
-        <div className="space-y-5">
-          {activities.length === 0 ? (
-            <Card>
-              <p className="text-sm text-muted-foreground">No matching activity yet.</p>
-            </Card>
+      <div className="mx-auto max-w-3xl space-y-5">
+        {/* Search leads, since that is what the log is opened for; the type filter sits beside it. */}
+        <AutoSubmitForm className="flex max-w-full flex-wrap items-center gap-2">
+          {babySelector ? <input type="hidden" name="babyId" value={babySelector.selectedBabyId} /> : null}
+          <label htmlFor="history-search" className="sr-only">
+            Search activity history
+          </label>
+          <div className="relative min-w-0 flex-1 basis-48">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input id="history-search" name="search" defaultValue={searchParams.search ?? ""} placeholder="Search notes, meds, milestones" className="pl-9" />
+          </div>
+          <label htmlFor="history-type" className="sr-only">
+            Activity type
+          </label>
+          <Select id="history-type" name="type" defaultValue={searchParams.type ?? ""} className="w-36 sm:w-44">
+            <option value="">All types</option>
+            {activityTypes.map((type) => (
+              <option key={type} value={type}>
+                {activityLabels[type]}
+              </option>
+            ))}
+          </Select>
+          {hasActiveFilters ? (
+            <Link href={clearHref} className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted">
+              Clear
+            </Link>
           ) : null}
-          {groups.map((group) => (
-            <section key={group.key} className="space-y-2">
-              <div className="flex items-center justify-between gap-3 px-1">
-                <h2 className="text-sm font-black">{dateGroupLabel(group.key, env.APP_TIMEZONE)}</h2>
-                <span className="text-xs font-bold text-muted-foreground">
-                  {group.activities.length} {group.activities.length === 1 ? "entry" : "entries"} on this page
-                </span>
-              </div>
-              <div className="space-y-2">
-                {group.activities.map((activity) => (
-                  <ActivityRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={env.APP_TIMEZONE} volume={unitSettings.preferences.volume} />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        </AutoSubmitForm>
+
+        {activities.length === 0 ? (
+          <Card>
+            <p className="text-sm text-muted-foreground">{hasActiveFilters ? "Nothing matches that search." : "No activity logged yet."}</p>
+          </Card>
+        ) : null}
+
+        {/* One quiet card per day, the rows inside matching the dashboard timeline, so the log reads as
+            the same list continued backwards rather than a stack of separate boxes. */}
+        {groups.map((group) => (
+          <section key={group.key} aria-label={dateGroupLabel(group.key, env.APP_TIMEZONE)} className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-3 px-1">
+              <h2 className="text-sm font-black">{dateGroupLabel(group.key, env.APP_TIMEZONE)}</h2>
+              <span className="text-xs font-semibold tabular-nums text-muted-foreground">{group.activities.length}</span>
+            </div>
+            <Card className="space-y-0.5 p-1.5">
+              {group.activities.map((activity) => (
+                <ActivityListRow
+                  key={activity.id}
+                  activity={activity}
+                  returnTo={returnTo}
+                  timeZone={env.APP_TIMEZONE}
+                  volume={unitSettings.preferences.volume}
+                  meta={actorName(activity)}
+                />
+              ))}
+            </Card>
+          </section>
+        ))}
 
         {searchParams.cursor || nextCursor ? (
-          <nav aria-label="Activity history pages" className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <nav aria-label="Activity history pages" className="flex flex-wrap items-center justify-between gap-3 pt-1">
             {searchParams.cursor ? (
               <Link
                 href={historyHref({ babyId: selectedBabyId, type: searchParams.type, search: searchParams.search })}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted"
               >
-                Newest entries
+                Back to newest
               </Link>
             ) : null}
             {nextCursor ? (
@@ -125,7 +122,7 @@ export default async function HistoryPage({
                   search: searchParams.search,
                   cursor: nextCursor
                 })}
-                className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-95"
+                className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-5 text-sm font-semibold hover:bg-muted"
               >
                 Older entries
               </Link>
@@ -137,33 +134,11 @@ export default async function HistoryPage({
   );
 }
 
-function ActivityRow({ activity, returnTo, timeZone, volume }: { activity: HistoryActivity; returnTo: string; timeZone: string; volume: VolumeUnit }) {
-  const type = activity.type as ActivityTypeName;
-  const actor = activity.actorMember.displayName ?? activity.actorMember.user.name;
-  const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
-
-  return (
-    <Card className="overflow-hidden p-0">
-      <Link replace prefetch={false} href={activityDetailHref(activity.id, returnTo)} className="block min-w-0 p-3 transition hover:bg-muted">
-        <div className="flex items-start gap-3">
-          <ActivityArtwork type={type} size="sm" />
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <p className="font-black leading-tight">{activityLabels[type]}</p>
-              <p className="text-xs font-bold text-muted-foreground">{timeLabel(activity.occurredAt, timeZone)}</p>
-            </div>
-            <p className="mt-1 text-xs font-semibold text-muted-foreground">
-              {activity.baby.name}
-              {isInactiveBaby ? " - Inactive" : ""}
-              {" - "}
-              {actor}
-            </p>
-            <p className="mt-1 line-clamp-2 text-sm">{describeActivity(activity, { volume })}</p>
-          </div>
-        </div>
-      </Link>
-    </Card>
-  );
+function actorName(activity: HistoryActivity) {
+  const name = activity.actorMember.displayName ?? activity.actorMember.user.name;
+  const inactive = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
+  // The baby is already chosen in the header; only an inactive baby's entries need to say so.
+  return inactive ? `${name} · ${activity.baby.name} (inactive)` : name;
 }
 
 function groupActivitiesByDay(activities: HistoryActivity[], timeZone: string) {
@@ -186,19 +161,12 @@ function dateGroupLabel(key: string, timeZone: string) {
   if (key === addDaysToDateKey(today, -1)) return "Yesterday";
 
   const [year, month, day] = key.split("-").map(Number);
+  const sameYear = key.slice(0, 4) === today.slice(0, 4);
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
-    year: "numeric",
+    ...(sameYear ? {} : { year: "numeric" as const }),
     timeZone: "UTC"
   }).format(new Date(Date.UTC(year, month - 1, day)));
-}
-
-function timeLabel(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone
-  }).format(date);
 }

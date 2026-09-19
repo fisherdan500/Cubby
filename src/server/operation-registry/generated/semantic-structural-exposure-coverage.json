@@ -5139,9 +5139,9 @@
     {
       "anchorBytes": "getCalendar",
       "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-      "anchorEnd": 1161,
+      "anchorEnd": 1033,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1150,
+      "anchorStart": 1022,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getCalendar",
@@ -5156,9 +5156,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 1098,
+      "anchorEnd": 970,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1077,
+      "anchorStart": 949,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5190,9 +5190,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1035,
+      "anchorEnd": 907,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1020,
+      "anchorStart": 892,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5224,9 +5224,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 949,
+      "anchorEnd": 844,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 923,
+      "anchorStart": 818,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5241,9 +5241,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 871,
+      "anchorEnd": 766,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 850,
+      "anchorStart": 745,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5258,9 +5258,9 @@
     {
       "anchorBytes": "listActivities",
       "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-      "anchorEnd": 801,
+      "anchorEnd": 696,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 787,
+      "anchorStart": 682,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivities",
@@ -5275,9 +5275,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 745,
+      "anchorEnd": 640,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 730,
+      "anchorStart": 625,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5445,9 +5445,9 @@
     {
       "anchorBytes": "getDashboardPageData",
       "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-      "anchorEnd": 1238,
+      "anchorEnd": 1245,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1218,
+      "anchorStart": 1225,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboardPageData",
@@ -5462,9 +5462,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1176,
+      "anchorEnd": 1183,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1161,
+      "anchorStart": 1168,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6469,9 +6469,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "d018f3b172e74b44d25701d1ce5c725c4dd303834e9bfbd68a95be03acaa0eab",
+  "semanticArtifactDigest": "49103281853361539440a2bf2fdcbe834cf73d0cf455b4657aa80ac4eab47f24",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "2ca1c8fcbdfb30b135dd6c9e2ee511b0ea9d89e12c5e79a75b14ec3044de7052",
+  "semanticCoverageDigest": "9902931cdf06e5ee0cf636181ffa062b8e319b22ec9165b78264b730d457797a",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "ff76b68fc041ca18a787cc6e4fb92fbf8fca1080162f32bfc91866fbca01c105"

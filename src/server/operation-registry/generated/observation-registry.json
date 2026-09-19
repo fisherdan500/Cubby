@@ -8916,18 +8916,18 @@
         },
         {
           "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-          "anchorEnd": 1161,
+          "anchorEnd": 1033,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1150,
+          "anchorStart": 1022,
           "kind": "server_value_import",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 1098,
+          "anchorEnd": 970,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1077,
+          "anchorStart": 949,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
@@ -8943,9 +8943,9 @@
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1035,
+          "anchorEnd": 907,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1020,
+          "anchorStart": 892,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -8971,36 +8971,36 @@
       "bindings": [
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 949,
+          "anchorEnd": 844,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 923,
+          "anchorStart": 818,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 871,
+          "anchorEnd": 766,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 850,
+          "anchorStart": 745,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 801,
+          "anchorEnd": 696,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 787,
+          "anchorStart": 682,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 745,
+          "anchorEnd": 640,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 730,
+          "anchorStart": 625,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9128,18 +9128,18 @@
       "bindings": [
         {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1238,
+          "anchorEnd": 1245,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1218,
+          "anchorStart": 1225,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1176,
+          "anchorEnd": 1183,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1161,
+          "anchorStart": 1168,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -12023,7 +12023,7 @@
     }
   ],
   "observationCount": 186,
-  "observationDigest": "458e9d2433a3e841dfd0dc4a5f118670829285bbecdd35cd7c1c5a795c6f99cc",
+  "observationDigest": "e091cb649ee094d2be52fefdc767139e6101c83dd4d8bd45060fc2ffee8e8790",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14154,18 +14154,18 @@
           "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
-          "anchorEnd": 1161,
+          "anchorEnd": 1033,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1150,
+          "anchorStart": 1022,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
-          "anchorEnd": 1098,
+          "anchorEnd": 970,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1077,
+          "anchorStart": 949,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getHeaderBabySelector",
@@ -14181,9 +14181,9 @@
           "target": "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
         },
         {
-          "anchorEnd": 1035,
+          "anchorEnd": 907,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1020,
+          "anchorStart": 892,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "requireUserPage",
@@ -14208,36 +14208,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 949,
+          "anchorEnd": 844,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 923,
+          "anchorStart": 818,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 871,
+          "anchorEnd": 766,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 850,
+          "anchorStart": 745,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 801,
+          "anchorEnd": 696,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 787,
+          "anchorStart": 682,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 745,
+          "anchorEnd": 640,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 730,
+          "anchorStart": 625,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "requireUserPage",
@@ -14361,18 +14361,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1238,
+          "anchorEnd": 1245,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1218,
+          "anchorStart": 1225,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1176,
+          "anchorEnd": 1183,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1161,
+          "anchorStart": 1168,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -18242,7 +18242,7 @@
   ],
   "ownerSetDigest": "13afcceed7cc59cf897ebbb251fbc1e33a1ddee0ea0fe4f39b51d3340bba5eea",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "aedd7556847a90f937e2d390cc35f41f7dce80ae3ac1b4fab48011c5aaf2e329",
+  "registryDigest": "8f9aa6c564e6eb2267bbf98cb6b706d1b7d210937a0b6a53ddf931b498f171fd",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
