@@ -11,7 +11,7 @@ const typeCases: Array<{
   { type: "feeding", detail: { feeding: { mode: "bottle" } }, expected: ["Kind", "Bottle"] },
   { type: "diaper", detail: { diaper: { kind: "wet" } }, expected: ["Kind", "Wet"] },
   { type: "sleep", detail: { sleep: { sleepType: "nap" } }, expected: ["Sleep type", "Nap"] },
-  { type: "pumping", detail: { pumping: { inventoryAction: "stored" } }, expected: ["Inventory action", "Stored"] },
+  { type: "pumping", detail: { pumping: { inventoryAction: "stored" } }, expected: ["Milk went to", "Stored"] },
   { type: "medicine", detail: { medicine: { name: "Ibuprofen" } }, expected: ["Medicine", "Ibuprofen"] },
   { type: "measurement", detail: { measurement: { measurementType: "growth" } }, expected: ["Measurement type", "Growth"] },
   { type: "milestone", detail: { milestone: { title: "First steps" } }, expected: ["Milestone", "First steps"] },

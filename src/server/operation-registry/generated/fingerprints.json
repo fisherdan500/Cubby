@@ -1644,17 +1644,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "005ec2fb2236b926e500bcfb0dd41da5e90a29a2f1132df35c28c192689ff336",
+          "digest": "c4e550ab4f943e9e2ba23ce3b1bdd4cfca0e2e93be4374e282b12d4281f1d6b0",
           "file": "src/app/app/activities/[id]/edit/page.tsx"
         }
       ],
       "declarationDigest": "8f1343ae3639493f39746966897cd3f62df100becad55c4fb7b529673d49225f",
-      "fingerprint": "d4efd482165b7ea4d9cec0990940b983ab51ac64e7ddc1dfe3dd59de48a9f382",
+      "fingerprint": "db0386e42d356bcd0d9977c00d75bf59418c2a5cd7672b40c0dd7ca2c8b35c36",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/edit/page.operation.ts",
-      "sourceDigest": "24b754b290c6b5bcd2963345815b1c8a2a4235fa57b09bbe2bdfacf9df7dc498",
+      "sourceDigest": "239c6b0311670e38c37f7d4a76dfc1f9e12f7cd54aaccbe177e77df4e464c0d3",
       "status": "declared"
     },
     {
@@ -3368,11 +3368,11 @@
   ],
   "generatorDigest": "1e758be57c547c1f99ceb8e81361ab889d6ac267667a0ed8535dc053e94dc73e",
   "generatorVersion": "r0.1",
-  "observationDigest": "10ab84d90683c5320221bfd3b4a0297e8246965f57968a5a1ea6c5ec16db9839",
+  "observationDigest": "c06a14da0f6bdc9d756a12e9d21de6e57c30116b62a6a9f02dfd3274bb899b66",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "2fd78b1eb563bff410f8162bbd99b4f252a3a53563d23791f98ddd244fd18fb7",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "819032fe868b9a9675e477d8fa22f3b5c072a816319eea273d0fbf61f132b7fe",
+  "registryDigest": "138a4fa7031e3e57083295bda0d2bf75cb0511b24fb48e9127b645f378aa23e4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

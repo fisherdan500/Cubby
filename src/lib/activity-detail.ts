@@ -60,7 +60,8 @@ function detailRows(activity: ActivityWithDetails, timeZone: string): ActivityDe
         row("Amount", quantity(activity.pumping?.amount, activity.pumping?.unit)),
         row("Left amount", quantity(activity.pumping?.leftAmount, activity.pumping?.unit)),
         row("Right amount", quantity(activity.pumping?.rightAmount, activity.pumping?.unit)),
-        row("Inventory action", label(activity.pumping?.inventoryAction))
+        // Named as the form asks it, so the saved answer reads back under the same question.
+        row("Milk went to", label(activity.pumping?.inventoryAction))
       ]);
     case "medicine":
       return compactRows([
@@ -92,7 +93,7 @@ function detailRows(activity: ActivityWithDetails, timeZone: string): ActivityDe
       return compactRows([
         row("Activity", activity.play?.activityName),
         row("Location", activity.play?.location),
-        row("Intensity", label(activity.play?.intensity))
+        row("Kind of play", label(activity.play?.intensity))
       ]);
     case "mood":
       return compactRows([
