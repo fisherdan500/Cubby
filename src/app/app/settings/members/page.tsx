@@ -10,7 +10,7 @@ export default async function MembersPage() {
   const household = await listMembersAndInvites();
 
   return (
-    <AppShell title="Members" userName={user.name}>
+    <AppShell title="Members" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-4">
           <Card>

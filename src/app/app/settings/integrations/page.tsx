@@ -19,7 +19,7 @@ export default async function IntegrationsSettingsPage() {
   ]);
 
   return (
-    <AppShell title="Integrations" userName={user.name}>
+    <AppShell title="Integrations" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="min-w-0 space-y-4">
           <Card>

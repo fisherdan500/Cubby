@@ -38,7 +38,7 @@ export default async function CalendarPage({
         <div className="space-y-0">
           {/* The month bar uses the same quiet card surface as the dashboard's day navigator, rather than
               a solid primary band, so the days - not the chrome - carry the colour. */}
-          <div className={`${calendarFullBleedClassName} sticky top-16 z-10 -mt-5 md:top-20`}>
+          <div className={`${calendarFullBleedClassName} sticky top-0 z-10 md:-mt-5 md:top-20`}>
             <section className="border-b border-border bg-card/95 backdrop-blur">
               <div className="grid grid-cols-[56px_1fr_56px] items-center px-2 py-1 md:px-6">
                 <Link

@@ -20,7 +20,7 @@ export default async function LeaveHouseholdPage({
   const preview = await getHouseholdLeavePreview(selectedHouseholdId);
 
   return (
-    <AppShell title="Leave household" userName={user.name}>
+    <AppShell title="Leave household" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="mx-auto max-w-2xl">
         {options.length > 1 ? (
           <Card className="mb-4 space-y-2">

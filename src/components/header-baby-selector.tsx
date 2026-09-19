@@ -11,7 +11,14 @@ import {
   type HeaderBabySelectorData
 } from "@/lib/baby-selector";
 
-export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
+/**
+ * "chip" is the desktop header control. "line" is the phone's replacement for the header: one line at
+ * the top of the page - name and age at a glance - that scrolls away with the content instead of
+ * holding a strip of the screen. Both can be mounted at once (the header is only hidden by CSS on a
+ * phone), so only the chip reconciles the URL with the remembered selection; the line just reads and
+ * changes it.
+ */
+export function HeaderBabySelector({ data, variant = "chip" }: { data: HeaderBabySelectorData; variant?: "chip" | "line" }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -32,6 +39,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
   }, [data.selectedBabyId]);
 
   useEffect(() => {
+    if (variant !== "chip") return;
     const urlBabyId = searchParams.get("babyId");
     if (urlBabyId && babyIds.has(urlBabyId)) {
       persistSelection(urlBabyId);
@@ -48,7 +56,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
     }
 
     persistSelection(data.selectedBabyId);
-  }, [babyIds, data.selectedBabyId, replaceBabyId, searchParams]);
+  }, [babyIds, data.selectedBabyId, replaceBabyId, searchParams, variant]);
 
   function choose(nextBabyId: string) {
     setSelectedId(nextBabyId);
@@ -57,6 +65,40 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
   }
 
   if (!selectedBaby) return null;
+
+  const options = data.babies.map((baby) => (
+    <option key={baby.id} value={baby.id}>
+      {baby.name}{baby.inactive ? " (Inactive)" : ""} - {baby.ageLabel}
+    </option>
+  ));
+
+  if (variant === "line") {
+    // With one baby there is nothing to switch to, so the line is plain text with no chevron.
+    const canSwitch = data.babies.length > 1;
+    return (
+      <div className="relative -mx-1 mb-2 flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-1 focus-within:ring-2 focus-within:ring-ring">
+        {activeTimerType ? <ActivityArtwork type={activeTimerType} size="xs" /> : null}
+        <p className="min-w-0 truncate text-sm">
+          <span className="font-black text-foreground">{selectedBaby.name}</span>
+          {selectedBaby.inactive ? <span className="font-semibold text-muted-foreground"> · Inactive</span> : null}
+          <span className="font-semibold text-muted-foreground"> · {selectedBaby.ageLabel}</span>
+        </p>
+        {canSwitch ? (
+          <>
+            <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
+            <select
+              aria-label="Select baby"
+              value={selectedId}
+              onChange={(event) => choose(event.target.value)}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            >
+              {options}
+            </select>
+          </>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-w-0 flex-1 rounded-full focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-primary sm:flex-none">
@@ -79,11 +121,7 @@ export function HeaderBabySelector({ data }: { data: HeaderBabySelectorData }) {
         onChange={(event) => choose(event.target.value)}
         className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
       >
-        {data.babies.map((baby) => (
-          <option key={baby.id} value={baby.id}>
-            {baby.name}{baby.inactive ? " (Inactive)" : ""} - {baby.ageLabel}
-          </option>
-        ))}
+        {options}
       </select>
     </div>
   );

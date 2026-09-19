@@ -18,7 +18,7 @@ export default async function BackupsSettingsPage() {
   ]);
 
   return (
-    <AppShell title="Backups" userName={user.name}>
+    <AppShell title="Backups" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <section className="min-w-0 space-y-4">
           <Card>

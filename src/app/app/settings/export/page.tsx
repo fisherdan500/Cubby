@@ -7,7 +7,7 @@ import { requireSettingsPage } from "@/server/auth/page-access";
 export default async function ExportPage() {
   const { user } = await requireSettingsPage("export.create");
   return (
-    <AppShell title="Export" userName={user.name}>
+    <AppShell title="Export" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div>
         <Card className="max-w-xl space-y-3">
           <h2 className="text-lg font-bold">Activity CSV</h2>
