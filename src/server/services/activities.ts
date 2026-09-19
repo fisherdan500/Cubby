@@ -139,7 +139,7 @@ function auditActivityPayload(activity: {
   };
 }
 
-function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft {
+export function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft {
   const occurredAt = toDate(input.occurredAt) ?? new Date();
   const startedAt = toDate(input.startedAt, occurredAt);
   const isTimer = timerCapableTypes.has(input.type as ActivityType) && input.activeTimer;
@@ -677,6 +677,33 @@ async function getEditableActivity(ctx: HouseholdContext, id: string, action: "u
   return activity;
 }
 
+/**
+ * The ActivityLog columns an edit writes, shared by the API and browser-operation update paths.
+ *
+ * Prisma treats `undefined` as "leave unchanged", and the form sends a cleared field as empty, which the
+ * schema turns into `undefined`. So a note the user deleted, or a length they removed, used to survive
+ * every edit. Cleared optional columns are written as `null`. A running or paused timer keeps its own
+ * timing, which only the timer controls may change.
+ */
+export function activityLogUpdateData(
+  babyId: string,
+  next: Pick<ActivityCreateDraft, "type" | "occurredAt" | "startedAt" | "endedAt" | "durationSeconds" | "timezone" | "notes" | "timerState">,
+  before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null; durationSeconds: number | null }
+) {
+  const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
+  return {
+    babyId,
+    type: next.type,
+    occurredAt: next.occurredAt,
+    startedAt: activeTimer ? before.startedAt : next.startedAt ?? null,
+    endedAt: activeTimer ? before.endedAt : next.endedAt ?? null,
+    durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds ?? null,
+    timezone: next.timezone,
+    notes: next.notes ?? null,
+    timerState: before.timerState === TimerState.none ? next.timerState : before.timerState
+  };
+}
+
 async function replaceSpecificLog(
   tx: Prisma.TransactionClient,
   id: string,
@@ -845,7 +872,7 @@ export async function updateActivity(id: string, raw: unknown) {
       if (input.type === "medicine" && medicineContactWasProvided && input.contactId) await requireHouseholdMedicineContact(tx, lockedCtx, input);
       const claimed = await tx.activityLog.updateMany({
         where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: expectedUpdatedAt },
-        data: { babyId: input.babyId, type: next.type, occurredAt: next.occurredAt, startedAt: activeTimer ? before.startedAt : next.startedAt, endedAt: activeTimer ? before.endedAt : next.endedAt, durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds, timezone: next.timezone, notes: next.notes, timerState: before.timerState === TimerState.none ? next.timerState : before.timerState }
+        data: activityLogUpdateData(input.babyId, next, before)
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
@@ -1503,7 +1530,7 @@ export async function submitActivityUpdateBrowserOperation(raw: unknown): Promis
       if (input.type === "medicine" && medicineContactWasProvided && input.contactId) {
         await requireHouseholdMedicineContact(tx, lockedCtx, input);
       }
-      const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: { babyId: input.babyId, type: next.type, occurredAt: next.occurredAt, startedAt: activeTimer ? before.startedAt : next.startedAt, endedAt: activeTimer ? before.endedAt : next.endedAt, durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds, timezone: next.timezone, notes: next.notes, timerState: before.timerState === TimerState.none ? next.timerState : before.timerState } });
+      const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: activityLogUpdateData(input.babyId, next, before) });
       if (claimed.count !== 1) throw new Error("stale_revision");
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });

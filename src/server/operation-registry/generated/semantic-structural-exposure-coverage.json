@@ -5071,9 +5071,9 @@
     {
       "anchorBytes": "getActivityForEdit",
       "anchorDigest": "84878e1856af36f94bb807228b977b169e48fffe0ac6f04e6afc412fd68b6ed7",
-      "anchorEnd": 776,
+      "anchorEnd": 790,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 758,
+      "anchorStart": 772,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityForEdit",
@@ -5088,9 +5088,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 916,
+      "anchorEnd": 930,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 890,
+      "anchorStart": 904,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5105,9 +5105,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 841,
+      "anchorEnd": 855,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 825,
+      "anchorStart": 839,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -5122,9 +5122,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 716,
+      "anchorEnd": 730,
       "anchorFile": "src/app/app/activities/[id]/edit/page.tsx",
-      "anchorStart": 701,
+      "anchorStart": 715,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6656,10 +6656,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "d079239a324a2e93ccd7ccd9de40faeb3c35f457c84f1bf4a04465faf483cf63",
+  "semanticArtifactDigest": "a229c66edddcf40a112acbf0e4bfad7cbb10914d5d0cf7cd245898a677f44b18",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "e5c84e13a13542aa9b818216b836f8936fe3dc7be3a6f6dace885f17b59fd854",
+  "semanticCoverageDigest": "b0f44f9164d8fd2d0b842cddbb17e7266683f4b9056c494fd8cea62114633749",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "49a4367e70215fdd847519da2b91c2daf90f386bce758ed71ee14bcea4cbb67c"
+  "semanticFingerprint": "8633f6089e157ecb92c586a250031fc0727610de363e32e130e119bb434c0efe"
 }
