@@ -93,7 +93,9 @@ export async function getDashboardPageData(
     ? buildHeaderBabySelectorData(
         activeBabies,
         dashboard.baby.id,
-        dashboard.activeTimers[0]?.type as ActivityTypeName | undefined
+        dashboard.activeTimers[0]?.type as ActivityTypeName | undefined,
+        new Date(),
+        dashboard.selectedDate.timezone
       )
     : null;
 

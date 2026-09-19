@@ -6,6 +6,8 @@ import { BackupDownloadButton } from "@/components/settings/backup-download-butt
 import { SproutRestoreForm } from "@/components/settings/sprout-restore-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { env } from "@/lib/env";
+import { formatInstant } from "@/lib/timezone";
 import { requireSettingsPage } from "@/server/auth/page-access";
 import { getAutomatedBackupStatus, getBackupRestoreTargetName, listBackupRecords } from "@/server/services/backups";
 
@@ -38,7 +40,7 @@ export default async function BackupsSettingsPage() {
             <p className="mb-3 text-sm text-muted-foreground">
               Download an existing local version below, then upload it here to preview and restore into a fresh owner household.
             </p>
-            <BackupRestoreForm targetHouseholdName={targetHouseholdName} />
+            <BackupRestoreForm targetHouseholdName={targetHouseholdName} timeZone={env.APP_TIMEZONE} />
           </Card>
           <Card>
             <h2 className="mb-3 text-lg font-black">Restore from Sprout Track</h2>
@@ -47,7 +49,7 @@ export default async function BackupsSettingsPage() {
         </section>
         <Card className="min-w-0 space-y-3">
           <h2 className="text-lg font-black">Automated local backups</h2>
-          <AutomatedBackupStatus status={automatedStatus} />
+          <AutomatedBackupStatus status={automatedStatus} timeZone={env.APP_TIMEZONE} />
         </Card>
         <Card className="min-w-0 space-y-3">
           <h2 className="text-lg font-black">Backup records</h2>
@@ -58,7 +60,7 @@ export default async function BackupsSettingsPage() {
                 {record.kind} - {record.status}
               </p>
               <p className="text-sm text-muted-foreground">
-                {record.itemCount ?? 0} items - {record.createdAt.toLocaleString()}
+                {record.itemCount ?? 0} items - {formatInstant(record.createdAt, env.APP_TIMEZONE)}
               </p>
             </div>
           ))}

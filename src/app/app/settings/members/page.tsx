@@ -2,6 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { ManualInvitationManager } from "@/components/invitations/manual-invitation-manager";
 import { MemberAccessManager } from "@/components/settings/member-access-manager";
 import { Card } from "@/components/ui/card";
+import { env } from "@/lib/env";
 import { requireSettingsPage } from "@/server/auth/page-access";
 import { listMembersAndInvites } from "@/server/services/invites";
 
@@ -28,6 +29,7 @@ export default async function MembersPage() {
                 disabledAt: member.disabledAt?.toISOString() ?? null
               }))}
               invites={[]}
+              timeZone={env.APP_TIMEZONE}
             />
           </Card>
         </section>
@@ -41,6 +43,7 @@ export default async function MembersPage() {
               role: invite.role as "admin" | "parent" | "caretaker" | "read_only",
               expiresAt: invite.expiresAt.toISOString()
             }))}
+            timeZone={env.APP_TIMEZONE}
           />
         </Card>
       </div>

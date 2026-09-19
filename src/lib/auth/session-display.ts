@@ -24,15 +24,3 @@ export function sessionDeviceLabel(userAgent: string | null | undefined) {
 
   return device ? `${browser} on ${device}` : browser;
 }
-
-export function sessionDateLabel(value: string | Date) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unknown";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(date);
-}

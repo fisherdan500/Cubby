@@ -37,16 +37,6 @@ export type ActivityWithDetails = ActivityLog & {
   actorMember?: { displayName: string | null; user: { name: string } };
 };
 
-export function formatDateTime(date: Date | string | null | undefined) {
-  if (!date) return "";
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(new Date(date));
-}
-
 export function formatDuration(seconds?: number | null) {
   if (!seconds) return "";
   const minutes = Math.round(seconds / 60);

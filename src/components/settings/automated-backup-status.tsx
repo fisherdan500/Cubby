@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { formatInstant } from "@/lib/timezone";
 
 type AutomatedBackupStatusProps = {
   status: {
@@ -42,6 +43,7 @@ type AutomatedBackupStatusProps = {
       errorCode: string;
     }>;
   };
+  timeZone: string;
 };
 
 function formatSize(size: number) {
@@ -61,7 +63,7 @@ function failureMessage(code: string | null) {
   return code ? messages[code] ?? "Check server logs for the sanitized backup failure code." : "Unknown backup failure.";
 }
 
-export function AutomatedBackupStatus({ status }: AutomatedBackupStatusProps) {
+export function AutomatedBackupStatus({ status, timeZone }: AutomatedBackupStatusProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-md bg-muted p-3">
@@ -71,11 +73,11 @@ export function AutomatedBackupStatus({ status }: AutomatedBackupStatusProps) {
         </p>
         <p className="text-sm text-muted-foreground">
           Healthy local versions: {status.healthyVersionCount}
-          {status.nextDueAt ? ` · Next due ${new Date(status.nextDueAt).toLocaleString()}` : ""}
+          {status.nextDueAt ? ` · Next due ${formatInstant(status.nextDueAt, timeZone)}` : ""}
         </p>
         {status.latestSuccess ? (
           <p className="text-sm text-muted-foreground">
-            Last success {new Date(status.latestSuccess.createdAt).toLocaleString()}
+            Last success {formatInstant(status.latestSuccess.createdAt, timeZone)}
             {status.latestSuccess.checksum ? ` · ${status.latestSuccess.checksum.slice(0, 12)}` : ""}
             {status.latestSuccess.itemCount !== null ? ` · ${status.latestSuccess.itemCount} items` : ""}
           </p>
@@ -84,7 +86,7 @@ export function AutomatedBackupStatus({ status }: AutomatedBackupStatusProps) {
         )}
         {status.latestFailure ? (
           <p role="alert" className="text-sm text-muted-foreground">
-            Latest failure: {status.latestFailure.errorCode} at {new Date(status.latestFailure.createdAt).toLocaleString()}. {failureMessage(status.latestFailure.errorCode)}
+            Latest failure: {status.latestFailure.errorCode} at {formatInstant(status.latestFailure.createdAt, timeZone)}. {failureMessage(status.latestFailure.errorCode)}
           </p>
         ) : null}
       </div>
@@ -102,7 +104,7 @@ export function AutomatedBackupStatus({ status }: AutomatedBackupStatusProps) {
               <div key={version.filename} className="rounded-md bg-muted p-3">
                 <p className="break-words font-black">{version.householdName}</p>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(version.exportedAt).toLocaleString()} · {version.itemCount} items · {version.checksum.slice(0, 12)} · {formatSize(version.size)}
+                  {formatInstant(version.exportedAt, timeZone)} · {version.itemCount} items · {version.checksum.slice(0, 12)} · {formatSize(version.size)}
                 </p>
                 <Link
                   href={`/api/backups/local/${version.filename}`}
