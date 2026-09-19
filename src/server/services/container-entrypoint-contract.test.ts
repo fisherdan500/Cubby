@@ -106,8 +106,23 @@ describe("container entrypoint contract", () => {
       "provision-fresh-auth-attestation-keys.mjs",
       "provision-email-delivery-keys.mjs",
       "provision-global-security-throttle-key.mjs",
+      "provision-platform-setup-code.mjs",
       "server.js"
     ]);
+  });
+
+  it("keeps the setup-code step's stdout for the operator but still discards its stderr", () => {
+    const source = readFileSync(entrypoint, "utf8");
+    const dockerfile = readFileSync(dockerfilePath, "utf8");
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { scripts?: Record<string, string> };
+
+    expect(source).toContain('DATABASE_URL="$MIGRATION_DATABASE_URL" node provision-platform-setup-code.mjs 2>/dev/null; then');
+    expect(source).not.toMatch(/provision-platform-setup-code\.mjs >\/dev\/null/);
+    expect(source.indexOf("provision-global-security-throttle-key.mjs")).toBeLessThan(source.indexOf("provision-platform-setup-code.mjs"));
+    expect(source.indexOf("provision-platform-setup-code.mjs")).toBeLessThan(source.indexOf("write_startup_status migration succeeded"));
+    expect(packageJson.scripts?.["build:platform-setup-code"]).toContain("scripts/provision-platform-setup-code.mjs");
+    expect(packageJson.scripts?.build).toContain("npm run build:platform-setup-code");
+    expect(dockerfile).toContain("dist/provision-platform-setup-code.mjs ./provision-platform-setup-code.mjs");
   });
 
   it("emits fixed migration success markers and execs the server", () => {
@@ -245,6 +260,7 @@ describe("container entrypoint contract", () => {
       "provision-fresh-auth-attestation-keys.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",
       "provision-email-delivery-keys.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",
       "provision-global-security-throttle-key.mjs key=present migrator= runtime= auth= delivery= operator= operator_url=",
+      "provision-platform-setup-code.mjs key= migrator= runtime= auth= delivery= operator= operator_url=",
       "server.js key=present migrator= runtime= auth= delivery= operator= operator_url="
     ]);
   });

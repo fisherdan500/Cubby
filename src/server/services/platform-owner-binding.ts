@@ -70,11 +70,47 @@ async function requireExplicitVerifiedUser(
   return user;
 }
 
+const HOST_VERIFICATION_ERROR_CODES = [
+  "platform_owner_already_bound",
+  "platform_owner_bootstrap_user_count_mismatch",
+  "platform_owner_not_bound",
+  "platform_owner_current_confirmation_mismatch",
+  "platform_owner_successor_must_differ",
+  "platform_owner_user_not_found",
+  "platform_owner_email_confirmation_mismatch",
+  "platform_owner_credential_missing",
+  "platform_owner_email_already_verified"
+] as const;
+
+/**
+ * The verified flag is guarded in the database: guard_user_email_change() rejects any change made
+ * directly by an application role, so a plain UPDATE here failed with
+ * user_email_direct_mutation_forbidden and bootstrap could never complete. The write goes through
+ * platform_host_verify_user_email, which re-checks the same preconditions under the same platform lock.
+ * A null current owner selects bootstrap; a named one selects successor attestation.
+ */
+async function verifyUserEmailOnHost(
+  tx: BindingTransaction,
+  userId: string,
+  confirmEmail: string,
+  currentOwnerUserId: string | null
+) {
+  const [verified] = await tx.$queryRaw<Array<{ id: string; emailVerified: boolean }>>`
+    SELECT "id", "emailVerified"
+    FROM public."platform_host_verify_user_email"(${userId}, ${confirmEmail}, ${currentOwnerUserId}::TEXT)
+  `;
+  if (!verified?.emailVerified) throw new Error("platform_owner_operation_failed");
+  return { id: verified.id, emailVerified: true };
+}
+
 function translateTransactionError(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
     return new Error("platform_owner_operation_retry");
   }
-  return error;
+  // A database-side precondition failure carries the same code the service checks raise.
+  const message = error instanceof Error ? error.message : "";
+  const code = HOST_VERIFICATION_ERROR_CODES.find((candidate) => message.includes(candidate));
+  return code ? new Error(code) : error;
 }
 
 export async function verifyBootstrapPlatformOwnerCandidate(raw: unknown) {
@@ -99,11 +135,7 @@ export async function verifyBootstrapPlatformOwnerCandidate(raw: unknown) {
         const user = await requireExplicitCredentialUser(tx, input.userId, input.confirmEmail);
         if (user.emailVerified) throw new Error("platform_owner_email_already_verified");
 
-        const verified = await tx.user.update({
-          where: { id: user.id },
-          data: { emailVerified: true },
-          select: { id: true, emailVerified: true }
-        });
+        const verified = await verifyUserEmailOnHost(tx, user.id, input.confirmEmail, null);
         await writePlatformAudit({
           action: "platform.owner.bootstrap_user.verify",
           entityType: "user",
@@ -155,11 +187,12 @@ export async function attestPlatformOwnerSuccessor(raw: unknown) {
           throw new Error("platform_owner_email_confirmation_mismatch");
         }
         if (successor.emailVerified) throw new Error("platform_owner_email_already_verified");
-        const verified = await tx.user.update({
-          where: { id: successor.id },
-          data: { emailVerified: true },
-          select: { id: true, emailVerified: true }
-        });
+        const verified = await verifyUserEmailOnHost(
+          tx,
+          successor.id,
+          input.confirmSuccessorEmail,
+          input.currentOwnerUserId
+        );
         await writePlatformAudit({
           action: "platform.owner.successor_user.verify",
           entityType: "user",

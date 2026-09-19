@@ -2,15 +2,10 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/settings/page.tsx",
-  ownerModule: "src/app/app/settings/page.tsx",
+  id: "server_loader:src/app/setup/page.tsx",
+  ownerModule: "src/app/setup/page.tsx",
   ownerKind: "server_loader",
   bindings: [
-    {
-      kind: "server_value_import",
-      symbol: "getEffectiveHouseholdContext",
-      target: "src/server/auth/context.ts#getEffectiveHouseholdContext"
-    },
     {
       kind: "server_value_import",
       symbol: "getAppRegistrationPolicy",

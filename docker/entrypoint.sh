@@ -76,6 +76,13 @@ if ! CUBBY_THROTTLE_KEY="$cubby_throttle_key" DATABASE_URL="$MIGRATION_DATABASE_
   write_startup_status global_security_throttle_key failed >&2
   exit 1
 fi
+# Unlike the steps above, this one's stdout is kept: while no platform owner exists it prints the
+# one-time setup code the operator needs from the container log. It writes only fixed text there;
+# stderr, where a driver error could carry connection details, is still discarded.
+if ! DATABASE_URL="$MIGRATION_DATABASE_URL" node provision-platform-setup-code.mjs 2>/dev/null; then
+  write_startup_status platform_setup_code failed >&2
+  exit 1
+fi
 write_startup_status migration succeeded
 write_startup_status server starting
 unset MIGRATION_DATABASE_URL

@@ -310,6 +310,21 @@ All operations below are host-local, require exact stable user IDs and email
 confirmation, and write platform audit events without pretending that the target
 user was the operator.
 
+The usual first-time path needs none of these commands. While no owner exists,
+`provision-platform-setup-code.mjs` runs at every container start and prints a
+one-time code to the app log; a signed-in account enters it at `/setup` and becomes
+the verified owner through `claim_platform_setup` (audited as
+`platform.owner.setup_claim`). The commands below remain for installs without log
+access, for verifying further accounts, and for recovery.
+
+`"User"."emailVerified"` is guarded by `guard_user_email_change()`, which rejects any
+direct write by an application role. `verify-bootstrap` and `attest-successor` write
+it only through the `platform_host_verify_user_email` SECURITY DEFINER function
+(migration `20260919120000_platform_owner_setup_claim`), which re-checks their
+preconditions under the platform lock. Run them as the runtime role, as the packaged
+`docker compose exec app node /app/platform-owner.mjs` does: a session that owns the
+function (the migration role) still trips the guard.
+
 Runtime password signup is currently fail-closed pending Cubby's complete
 initial-credential protocol. The commands below apply only to an already existing
 credential-backed account created through an approved future protocol or retained

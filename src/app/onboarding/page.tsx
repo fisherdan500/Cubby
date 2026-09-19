@@ -52,13 +52,25 @@ export default async function OnboardingPage() {
             Open platform settings
           </Link>
         ) : null}
+        {!policy.platformOwnerBound ? (
+          // A fresh install has no owner, so nobody can be verified or open household creation until
+          // someone claims ownership with the one-time code from the server log.
+          <Link
+            href="/setup"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Finish setup with your setup code
+          </Link>
+        ) : null}
         {canCreateHousehold ? (
           <OnboardingForm />
         ) : (
           <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-            {!user.emailVerified
-              ? "Your email address must be verified before you can create a household."
-              : "A platform owner must open household creation, or you can join through an existing household invitation."}
+            {!policy.platformOwnerBound
+              ? "Cubby isn't set up yet. The one-time setup code printed in the server log makes you the platform owner and verifies your account."
+              : !user.emailVerified
+                ? "Your email address must be verified before you can create a household."
+                : "A platform owner must open household creation, or you can join through an existing household invitation."}
           </p>
         )}
       </Card>

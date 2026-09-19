@@ -7275,6 +7275,13 @@ test("twelfth remediation closes the repository runtime invocation ledger", () =
         anchorFile: "docker/entrypoint.sh"
       },
       {
+        path: "/app/provision-platform-setup-code.mjs",
+        codeOption: null,
+        disposition: "container_invocation",
+        category: undefined,
+        anchorFile: "docker/entrypoint.sh"
+      },
+      {
         path: "/app/scripts/p1-3-standalone-bootstrap-probe.cjs",
         codeOption: "--require",
         disposition: "structural_exclusion",

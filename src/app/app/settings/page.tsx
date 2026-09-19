@@ -6,6 +6,7 @@ import { hasPermission, type Permission } from "@/domain/roles";
 import { getEffectiveHouseholdContext } from "@/server/auth/context";
 import { requireUserPage } from "@/server/auth/session";
 import { isPlatformOwner } from "@/server/services/platform-authority";
+import { getAppRegistrationPolicy } from "@/server/services/registration";
 
 const sections = [
   { href: "/app/settings/appearance", label: "Appearance", description: "Choose the household accent and visual character.", icon: Palette, permission: "household.manage" },
@@ -23,7 +24,7 @@ const sections = [
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {
   const user = await requireUserPage();
   const ctx = await getEffectiveHouseholdContext();
-  const platformOwner = await isPlatformOwner(user.id);
+  const [platformOwner, policy] = await Promise.all([isPlatformOwner(user.id), getAppRegistrationPolicy()]);
   const visibleSections = sections.filter((section) => hasPermission(ctx.role, section.permission));
   return (
     <AppShell title="Settings" userName={user.name}>
@@ -51,6 +52,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
             </p>
           </Card>
         </Link>
+        {!policy.platformOwnerBound ? (
+          <Link href="/setup" prefetch={false}>
+            <Card className="h-full transition hover:bg-muted">
+              <Shield className="mb-4 h-6 w-6 text-primary" />
+              <h2 className="font-editorial text-lg font-bold">Finish Cubby setup</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                No one is platform owner yet. Claim it with the one-time code from the server log.
+              </p>
+            </Card>
+          </Link>
+        ) : null}
         {platformOwner ? (
           <Link href="/platform/settings" prefetch={false}>
             <Card className="h-full transition hover:bg-muted">
