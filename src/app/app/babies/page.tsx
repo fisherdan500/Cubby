@@ -12,7 +12,7 @@ export default async function BabiesPage() {
   if (!home) redirect("/onboarding");
 
   return (
-    <AppShell title="Babies" userName={user.name}>
+    <AppShell title="Babies" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="grid gap-4 md:grid-cols-[1fr_360px]">
         <section className="space-y-3">
           {home.household.babies.map((baby) => {

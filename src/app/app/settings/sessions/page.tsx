@@ -6,7 +6,7 @@ import { requireUserPage } from "@/server/auth/session";
 export default async function SessionsPage() {
   const user = await requireUserPage();
   return (
-    <AppShell title="Sessions" userName={user.name}>
+    <AppShell title="Sessions" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div>
         <Card>
           <SessionManager key={`sessions:${user.id}`} accountScope={user.id} />

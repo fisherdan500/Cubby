@@ -9,7 +9,7 @@ export default async function UnitSettingsPage() {
   const settings = await getUnitPreferenceSettings();
 
   return (
-    <AppShell title="Units" userName={user.name}>
+    <AppShell title="Units" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <Card className="mx-auto max-w-3xl">
         <h2 className="font-editorial text-xl font-bold">Household unit defaults</h2>
         <p className="mt-1 text-sm text-muted-foreground">

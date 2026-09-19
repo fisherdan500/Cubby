@@ -11,7 +11,7 @@ export default async function AppearanceSettingsPage() {
   const [appearance, personal] = await Promise.all([getHouseholdAppearance(), getAccountAppearance()]);
 
   return (
-    <AppShell title="Appearance" userName={user.name}>
+    <AppShell title="Appearance" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="max-w-2xl space-y-4">
         <Card>
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Personal account</p>

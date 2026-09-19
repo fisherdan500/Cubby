@@ -4,7 +4,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { HeaderBabySelector } from "@/components/header-baby-selector";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { MobileHeaderMenu } from "@/components/mobile-header-menu";
 import { BrandLockup } from "@/components/brand";
 import { BrowserOperationRecovery } from "@/components/browser-operation-recovery";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
@@ -21,12 +20,16 @@ export function AppShell({
   children,
   title,
   userName,
-  babySelector
+  babySelector,
+  parent
 }: {
   children: React.ReactNode;
   title: string;
   userName: string;
   babySelector?: HeaderBabySelectorData | null;
+  // Where a phone's back link at the top of the page goes, for pages reached from another page
+  // (the settings sections) rather than from a bottom tab.
+  parent?: { href: string; label: string };
 }) {
   const selectedBabyId = babySelector?.selectedBabyId;
 
@@ -68,28 +71,45 @@ export function AppShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-primary/30 bg-card/95 backdrop-blur md:ml-64">
-        <div className="flex min-h-14 items-center justify-between gap-2 px-3 py-2 md:min-h-20 md:px-8 md:py-0">
+      {/* Desktop only. On a phone the header cost a pinned strip of every screen for a title the
+          highlighted bottom tab already gives, so it is gone: the baby line and the settings back link
+          below take its useful parts, scroll away with the content, and the menu lives behind More. */}
+      <header className="sticky top-0 z-20 hidden border-b border-primary/30 bg-card/95 backdrop-blur md:ml-64 md:block">
+        <div className="flex min-h-20 items-center justify-between gap-2 px-8">
           <div className="min-w-0">
-            <h1 className="truncate font-editorial text-base font-bold text-card-foreground md:text-xl">{title}</h1>
+            <h1 className="truncate font-editorial text-xl font-bold text-card-foreground">{title}</h1>
           </div>
           <div className="flex min-w-0 items-center gap-2">
             {babySelector ? (
               <HeaderBabySelector data={babySelector} />
             ) : (
-              <span className="hidden rounded-full border border-border bg-muted px-4 py-2 text-sm font-bold text-card-foreground sm:block">{userName}</span>
+              <span className="rounded-full border border-border bg-muted px-4 py-2 text-sm font-bold text-card-foreground">{userName}</span>
             )}
-            <MobileHeaderMenu userName={userName} />
           </div>
         </div>
       </header>
 
-      <main className="app-shell-content px-3 pb-24 pt-3 md:ml-64 md:px-6 md:pt-5">
+      <main className="app-shell-content px-3 pb-24 pt-[max(0.75rem,env(safe-area-inset-top))] md:ml-64 md:px-6 md:pt-5">
+        <div className="md:hidden">
+          {babySelector ? <HeaderBabySelector data={babySelector} variant="line" /> : null}
+          {parent ? (
+            <nav aria-label="Breadcrumb" className="-mx-1 mb-2 flex min-h-11 min-w-0 items-center gap-1 text-sm">
+              <Link href={parent.href} className="inline-flex min-h-11 shrink-0 items-center rounded-lg px-1 font-bold text-primary hover:bg-muted">
+                ← {parent.label}
+              </Link>
+              <span aria-hidden="true" className="text-muted-foreground">/</span>
+              <h1 className="min-w-0 truncate font-black text-foreground">{title}</h1>
+            </nav>
+          ) : (
+            // Every page still has one h1 for assistive technology, even where the phone shows no title.
+            <h1 className="sr-only">{title}</h1>
+          )}
+        </div>
         <BrowserOperationRecovery />
         {children}
       </main>
 
-      <MobileBottomNav selectedBabyId={selectedBabyId} />
+      <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>
   );
 }

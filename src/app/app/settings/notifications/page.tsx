@@ -11,7 +11,7 @@ export default async function NotificationsSettingsPage() {
   const babies = home?.household.babies.map((baby) => ({ id: baby.id, name: baby.name })) ?? [];
 
   return (
-    <AppShell title="Notifications" userName={user.name}>
+    <AppShell title="Notifications" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
         <Card>
           <h2 className="mb-3 text-lg font-black">Preference</h2>

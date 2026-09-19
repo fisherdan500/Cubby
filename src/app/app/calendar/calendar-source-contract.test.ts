@@ -22,8 +22,8 @@ describe("calendar interaction contracts", () => {
   });
 
   it("matches the mobile and desktop AppShell sticky offsets", () => {
-    expect(source).toContain("top-16");
-    expect(source).toContain("md:top-20");
+    // A phone has no AppShell header, so the month bar pins to the top edge; desktop pins below its 5rem header.
+    expect(source).toContain("sticky top-0 z-10 md:-mt-5 md:top-20");
   });
 
   it("preserves an allowlisted focus-restoration opener through drawer routes", () => {
