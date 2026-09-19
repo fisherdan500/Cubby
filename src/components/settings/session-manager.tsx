@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatInstant } from "@/lib/timezone";
 
 const operationStorageKeyPrefix = "cubby:global-session-revoke-operation";
 const absentTargetHandle = "absent_target_handle";
@@ -76,10 +77,10 @@ function readRetainedOperation(operationStorageKey: string): OperationMetadata |
   return null;
 }
 
-function dateLabel(value: string | null) {
+function dateLabel(value: string | null, timeZone: string) {
   if (!value) return "Not scheduled";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Unavailable" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "Unavailable" : formatInstant(date, timeZone);
 }
 
 async function responseData(response: Response) {
@@ -87,7 +88,7 @@ async function responseData(response: Response) {
   return { body, data: body?.data as Record<string, unknown> | undefined };
 }
 
-export function SessionManager({ accountScope }: { accountScope: string }) {
+export function SessionManager({ accountScope, timeZone }: { accountScope: string; timeZone: string }) {
   const router = useRouter();
   const operationStorageKey = `${operationStorageKeyPrefix}:${encodeURIComponent(accountScope)}`;
   const accountScopeRef = useRef(accountScope);
@@ -336,10 +337,10 @@ export function SessionManager({ accountScope }: { accountScope: string }) {
                     {session.isCurrent ? <span className="rounded-full bg-primary/14 px-2 py-0.5 text-xs font-bold text-primary">Current device</span> : null}
                   </div>
                   <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
-                    <div><dt className="inline font-semibold text-foreground">Signed in: </dt><dd className="inline">{dateLabel(session.createdAt)}</dd></div>
-                    <div><dt className="inline font-semibold text-foreground">Last active: </dt><dd className="inline">{dateLabel(session.lastQualifyingAt)}</dd></div>
-                    <div><dt className="inline font-semibold text-foreground">Expires: </dt><dd className="inline">{dateLabel(session.expiresAt)}</dd></div>
-                    {session.idleWarningAt ? <div><dt className="inline font-semibold text-foreground">Idle warning: </dt><dd className="inline">{dateLabel(session.idleWarningAt)}</dd></div> : null}
+                    <div><dt className="inline font-semibold text-foreground">Signed in: </dt><dd className="inline">{dateLabel(session.createdAt, timeZone)}</dd></div>
+                    <div><dt className="inline font-semibold text-foreground">Last active: </dt><dd className="inline">{dateLabel(session.lastQualifyingAt, timeZone)}</dd></div>
+                    <div><dt className="inline font-semibold text-foreground">Expires: </dt><dd className="inline">{dateLabel(session.expiresAt, timeZone)}</dd></div>
+                    {session.idleWarningAt ? <div><dt className="inline font-semibold text-foreground">Idle warning: </dt><dd className="inline">{dateLabel(session.idleWarningAt, timeZone)}</dd></div> : null}
                   </dl>
                   <Button className="mt-3 w-full sm:w-auto" variant="secondary" onClick={(event) => openConfirmation({ scope: session.isCurrent ? "current" : "one", targetHandle: session.handle, label: session.isCurrent ? "this device" : session.deviceLabel }, event.currentTarget)} disabled={busy}>
                     {session.isCurrent ? "Sign out this device" : "Sign out this session"}

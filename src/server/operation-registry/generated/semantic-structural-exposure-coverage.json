@@ -2793,9 +2793,9 @@
     {
       "anchorBytes": "fetch(path, { method: \"POST\", cache: \"no-store\", signal: controller.signal, headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload) })",
       "anchorDigest": "3680b21b18e90aa22669513befecfe25b37f7162c8243cc68185b41e8c682d2c",
-      "anchorEnd": 3030,
+      "anchorEnd": 3110,
       "anchorFile": "src/components/invitations/manual-invitation-manager.tsx",
-      "anchorStart": 2873,
+      "anchorStart": 2953,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3014,9 +3014,9 @@
     {
       "anchorBytes": "fetch(\"/api/backups/restore/preview\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: file\n      })",
       "anchorDigest": "c076f571a16ce4bfebff53529276f75c582e2de99fc38135e71569c1f346ec81",
-      "anchorEnd": 1322,
+      "anchorEnd": 1398,
       "anchorFile": "src/components/settings/backup-restore-form.tsx",
-      "anchorStart": 1174,
+      "anchorStart": 1250,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3031,9 +3031,9 @@
     {
       "anchorBytes": "fetch(\"/api/backups/restore\", {\n        method: \"POST\",\n        headers: {\n          \"content-type\": \"application/json\",\n          \"x-cubby-restore-confirmation\": encodeURIComponent(confirmation),\n          \"x-cubby-backup-checksum\": preview.checksum ?? \"legacy-v1\"\n        },\n        body: selectedFile\n      })",
       "anchorDigest": "fef194fa71a89c59b223a07f2dc371e860fd7f36ffaa1b7b9819aa047b9d350b",
-      "anchorEnd": 2333,
+      "anchorEnd": 2409,
       "anchorFile": "src/components/settings/backup-restore-form.tsx",
-      "anchorStart": 2021,
+      "anchorStart": 2097,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -3184,9 +3184,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 1128,
+      "anchorEnd": 1180,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 1063,
+      "anchorStart": 1115,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3201,9 +3201,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
       "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
-      "anchorEnd": 3602,
+      "anchorEnd": 3686,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 3532,
+      "anchorStart": 3616,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -3218,9 +3218,9 @@
     {
       "anchorBytes": "fetch(`${endpoint}?issue=1`, {\n          method, headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload ?? {})\n        })",
       "anchorDigest": "08064cb09f1af36aaf1f4f246cc3d133d06aecf2a41005e26d8273ea6949a208",
-      "anchorEnd": 5037,
+      "anchorEnd": 5121,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 4893,
+      "anchorStart": 4977,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -3235,9 +3235,9 @@
     {
       "anchorBytes": "fetch(endpoint, {\n        method,\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId, ...payload })\n      })",
       "anchorDigest": "31f34aaeb1ccb26601bc9f406a0445bde7f924e214b3cadf80fd407bdc74202e",
-      "anchorEnd": 5778,
+      "anchorEnd": 5862,
       "anchorFile": "src/components/settings/member-access-manager.tsx",
-      "anchorStart": 5621,
+      "anchorStart": 5705,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -3405,9 +3405,9 @@
     {
       "anchorBytes": "fetch(`/api/account/security-history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : \"\"}`, { cache: \"no-store\" })",
       "anchorDigest": "0a49ba8a97f3d2b0385e1a361b4589ac6f857c56e8d7afb5b9a4092841aaf009",
-      "anchorEnd": 2362,
+      "anchorEnd": 2464,
       "anchorFile": "src/components/settings/security-history.tsx",
-      "anchorStart": 2245,
+      "anchorStart": 2347,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3422,9 +3422,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/security-history/export\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ confirmed: true })\n      })",
       "anchorDigest": "b577cf3fed80ff6dea0bb62d3e33be7e3905c48b4ff551b193ff6e431a5fea4e",
-      "anchorEnd": 5153,
+      "anchorEnd": 5255,
       "anchorFile": "src/components/settings/security-history.tsx",
-      "anchorStart": 4966,
+      "anchorStart": 5068,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -3439,9 +3439,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/sessions\", { cache: \"no-store\" })",
       "anchorDigest": "3fdd9ef04e687048103932208e9c43c46279b7c311fae0e21f39161b74672d69",
-      "anchorEnd": 4404,
+      "anchorEnd": 4506,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 4351,
+      "anchorStart": 4453,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3456,9 +3456,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/sessions/status\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify(metadata)\n      })",
       "anchorDigest": "c3aa9033aa151f1859dce63c2839299be9e512b544bd15e768c7f3fb6ffd3e4e",
-      "anchorEnd": 6419,
+      "anchorEnd": 6521,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 6251,
+      "anchorStart": 6353,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -3473,9 +3473,9 @@
     {
       "anchorBytes": "fetch(\"/api/account/sessions/revoke\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          ...metadata,\n          scope: action.scope,\n          ...(action.targetHandle === undefined ? {} : { targetHandle: action.targetHandle }),\n          confirmed: true,\n          currentPassword\n        })\n      })",
       "anchorDigest": "41a82fc0c0e87ed1b9e165b72da4b38f2f9942186a660ea020b3f2f3261c50ad",
-      "anchorEnd": 9715,
+      "anchorEnd": 9817,
       "anchorFile": "src/components/settings/session-manager.tsx",
-      "anchorStart": 9342,
+      "anchorStart": 9444,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -5054,9 +5054,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 276,
+      "anchorEnd": 309,
       "anchorFile": "src/app/account/security/page.tsx",
-      "anchorStart": 261,
+      "anchorStart": 294,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5190,9 +5190,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 369,
+      "anchorEnd": 422,
       "anchorFile": "src/app/app/babies/page.tsx",
-      "anchorStart": 353,
+      "anchorStart": 406,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -5207,9 +5207,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 307,
+      "anchorEnd": 360,
       "anchorFile": "src/app/app/babies/page.tsx",
-      "anchorStart": 288,
+      "anchorStart": 341,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -5513,9 +5513,9 @@
     {
       "anchorBytes": "getDashboard",
       "anchorDigest": "4267b57ae68faa4b86114317e694a3bd75ae4be93a5a46453ed60858fa025201",
-      "anchorEnd": 627,
+      "anchorEnd": 619,
       "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 615,
+      "anchorStart": 607,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboard",
@@ -5530,9 +5530,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 563,
+      "anchorEnd": 555,
       "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 542,
+      "anchorStart": 534,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5547,9 +5547,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 500,
+      "anchorEnd": 492,
       "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 485,
+      "anchorStart": 477,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5564,9 +5564,9 @@
     {
       "anchorBytes": "getDashboardPageData",
       "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-      "anchorEnd": 1245,
+      "anchorEnd": 1277,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1225,
+      "anchorStart": 1257,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboardPageData",
@@ -5581,9 +5581,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1183,
+      "anchorEnd": 1215,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1168,
+      "anchorStart": 1200,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5598,9 +5598,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 674,
+      "anchorEnd": 759,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 653,
+      "anchorStart": 738,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5615,9 +5615,9 @@
     {
       "anchorBytes": "getReports",
       "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-      "anchorEnd": 736,
+      "anchorEnd": 821,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 726,
+      "anchorStart": 811,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getReports",
@@ -5632,9 +5632,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 611,
+      "anchorEnd": 696,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 596,
+      "anchorStart": 681,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5700,9 +5700,9 @@
     {
       "anchorBytes": "getAutomatedBackupStatus",
       "anchorDigest": "38a2d5541b792c94cc2c8e1a8cab41e6f3fc0c8e39fe01aa1f89e85312998c8e",
-      "anchorEnd": 603,
+      "anchorEnd": 684,
       "anchorFile": "src/app/app/settings/backups/page.tsx",
-      "anchorStart": 579,
+      "anchorStart": 660,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getAutomatedBackupStatus",
@@ -5717,9 +5717,9 @@
     {
       "anchorBytes": "getBackupRestoreTargetName",
       "anchorDigest": "e1f36e3bfe45ee489d68b4e3c617739e16a7c43bae1a939287e826a671cf6e0b",
-      "anchorEnd": 631,
+      "anchorEnd": 712,
       "anchorFile": "src/app/app/settings/backups/page.tsx",
-      "anchorStart": 605,
+      "anchorStart": 686,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getBackupRestoreTargetName",
@@ -5734,9 +5734,9 @@
     {
       "anchorBytes": "listBackupRecords",
       "anchorDigest": "5e23a4e17d2f958f47d83561d0e596974cc53dfda3390530f8320ddc267ade5c",
-      "anchorEnd": 650,
+      "anchorEnd": 731,
       "anchorFile": "src/app/app/settings/backups/page.tsx",
-      "anchorStart": 633,
+      "anchorStart": 714,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listBackupRecords",
@@ -5751,9 +5751,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 533,
+      "anchorEnd": 614,
       "anchorFile": "src/app/app/settings/backups/page.tsx",
-      "anchorStart": 514,
+      "anchorStart": 595,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -5785,9 +5785,9 @@
     {
       "anchorBytes": "listApiKeys",
       "anchorDigest": "c0e0a6283fcbed1b35236532e3b9130bb523bb6133c5098afe1b900fe243496c",
-      "anchorEnd": 293,
+      "anchorEnd": 374,
       "anchorFile": "src/app/app/settings/integrations/page.tsx",
-      "anchorStart": 282,
+      "anchorStart": 363,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listApiKeys",
@@ -5802,9 +5802,9 @@
     {
       "anchorBytes": "listWebhooks",
       "anchorDigest": "3dadc3e81a1918b0f9b02aee56b78a1ec29f249d20abf3af4a35f01a1996c8ab",
-      "anchorEnd": 307,
+      "anchorEnd": 388,
       "anchorFile": "src/app/app/settings/integrations/page.tsx",
-      "anchorStart": 295,
+      "anchorStart": 376,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listWebhooks",
@@ -5819,9 +5819,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 236,
+      "anchorEnd": 317,
       "anchorFile": "src/app/app/settings/integrations/page.tsx",
-      "anchorStart": 217,
+      "anchorStart": 298,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -5887,9 +5887,9 @@
     {
       "anchorBytes": "listMembersAndInvites",
       "anchorDigest": "af3501c25335a18230e78088970dcdcf41fb73ce9790ff93449a1653b4533fb5",
-      "anchorEnd": 368,
+      "anchorEnd": 401,
       "anchorFile": "src/app/app/settings/members/page.tsx",
-      "anchorStart": 347,
+      "anchorStart": 380,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listMembersAndInvites",
@@ -5904,9 +5904,9 @@
     {
       "anchorBytes": "requireSettingsPage",
       "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-      "anchorEnd": 301,
+      "anchorEnd": 334,
       "anchorFile": "src/app/app/settings/members/page.tsx",
-      "anchorStart": 282,
+      "anchorStart": 315,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireSettingsPage",
@@ -6040,9 +6040,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 149,
+      "anchorEnd": 182,
       "anchorFile": "src/app/app/settings/security-history/page.tsx",
-      "anchorStart": 134,
+      "anchorStart": 167,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6057,9 +6057,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 192,
+      "anchorEnd": 225,
       "anchorFile": "src/app/app/settings/sessions/page.tsx",
-      "anchorStart": 177,
+      "anchorStart": 210,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6656,10 +6656,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "a229c66edddcf40a112acbf0e4bfad7cbb10914d5d0cf7cd245898a677f44b18",
+  "semanticArtifactDigest": "5cb6929463d53b9760bacb654f586f59f56c0a542a2c57512faf987955cdcc5d",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "b0f44f9164d8fd2d0b842cddbb17e7266683f4b9056c494fd8cea62114633749",
+  "semanticCoverageDigest": "98370e10d1b448262eb6d05294772d47c18e6617256d29c2aa8771bd3b0a0860",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "8633f6089e157ecb92c586a250031fc0727610de363e32e130e119bb434c0efe"
+  "semanticFingerprint": "287c24b5318ebebbf80d8a8499deaa97fe5a37ab5c0083be599e89ea98b22eb2"
 }

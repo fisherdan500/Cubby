@@ -55,7 +55,7 @@ function mount({
   managerInvites?: Parameters<typeof MemberAccessManager>[0]["invites"];
 } = {}) {
   mocks.refs.length = 0;
-  return MemberAccessManager({ members: managerMembers, invites: managerInvites, viewerRole: "owner" });
+  return MemberAccessManager({ members: managerMembers, invites: managerInvites, viewerRole: "owner", timeZone: "UTC" });
 }
 
 function form(tree: unknown, predicate: (candidate: ElementNode) => boolean) {

@@ -5,7 +5,7 @@ import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
-import { formatDateTime } from "@/lib/activity-format";
+import { formatInstant } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getDashboard } from "@/server/services/dashboard";
@@ -59,7 +59,7 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
                 <div>
                   <p className="text-2xl font-black">{activityLabels[timer.type as ActivityTypeName]}</p>
                   <p className="text-sm font-semibold text-muted-foreground">
-                    {timer.timerState === "paused" ? "Paused" : "Started"} {formatDateTime(timer.startedAt)}
+                    {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, dashboard.selectedDate.timezone, { withYear: false })}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:flex">

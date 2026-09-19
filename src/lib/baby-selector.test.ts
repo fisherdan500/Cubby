@@ -25,6 +25,17 @@ describe("baby selector helpers", () => {
     );
   });
 
+  it("counts age against the household's calendar date, not the UTC date", () => {
+    const birth = new Date("2026-03-13T00:00:00.000Z");
+    // 01:30Z on Mar 20 is still 9:30 pm on Mar 19 in New York: six days old there, not yet a week.
+    const evening = new Date("2026-03-20T01:30:00.000Z");
+    expect(formatBabyAge(birth, evening, "America/New_York")).toBe("6 days");
+    expect(formatBabyAge(birth, evening, "UTC")).toBe("1 week");
+    // The monthly birthday also waits for the household's own day.
+    const monthEve = new Date("2026-06-13T02:00:00.000Z");
+    expect(formatBabyAge(new Date("2025-06-13T00:00:00.000Z"), monthEve, "America/New_York")).toBe("11 months");
+  });
+
   it("falls back when birth date is missing", () => {
     expect(formatBabyAge(null)).toBe("Age not set");
   });

@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { BabyLifecycleButton } from "@/components/actions/baby-lifecycle-button";
 import { BabyForm } from "@/components/forms/baby-form";
 import { Card } from "@/components/ui/card";
+import { formatCalendarDate } from "@/lib/timezone";
 import { requireSettingsPage } from "@/server/auth/page-access";
 import { getHouseholdHome } from "@/server/services/households";
 
@@ -21,7 +22,7 @@ export default async function BabiesPage() {
               <Card key={baby.id}>
               <h2 className="text-lg font-bold">{baby.name}</h2>
               <p className="text-sm text-muted-foreground">
-                {baby.birthDate ? `Born ${baby.birthDate.toLocaleDateString()}` : "Birth date not set"}
+                {baby.birthDate ? `Born ${formatCalendarDate(baby.birthDate)}` : "Birth date not set"}
               </p>
               {isInactive ? <p className="mt-1 text-sm font-bold text-muted-foreground">Inactive</p> : null}
               {baby.notes ? <p className="mt-2 text-sm">{baby.notes}</p> : null}

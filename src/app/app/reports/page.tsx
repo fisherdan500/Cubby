@@ -8,6 +8,8 @@ import { RoutineTab } from "@/components/reports/routine-tab";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
+import { env } from "@/lib/env";
+import { formatInstantDate } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getReports } from "@/server/services/reports";
@@ -126,7 +128,7 @@ function MilestonesTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof
         <div key={`${milestone.title}-${milestone.date.toISOString()}`} className="rounded-md bg-muted p-3">
           <p className="font-black">{milestone.title}</p>
           <p className="text-sm text-muted-foreground">
-            {milestone.category ?? "Milestone"} - {milestone.date.toLocaleDateString()}
+            {milestone.category ?? "Milestone"} - {formatInstantDate(milestone.date, env.APP_TIMEZONE)}
           </p>
         </div>
       ))}

@@ -1,6 +1,7 @@
 import { TimerState } from "@prisma/client";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
+import { env } from "@/lib/env";
 import {
   SELECTED_BABY_COOKIE,
   buildHeaderBabySelectorData,
@@ -36,6 +37,8 @@ export async function getHeaderBabySelector(
   return buildHeaderBabySelectorData(
     home.household.babies,
     selected.id,
-    activeTimer?.type as ActivityTypeName | undefined
+    activeTimer?.type as ActivityTypeName | undefined,
+    new Date(),
+    env.APP_TIMEZONE
   );
 }

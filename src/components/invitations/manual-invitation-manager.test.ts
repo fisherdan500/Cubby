@@ -14,7 +14,7 @@ vi.mock("@/components/invitations/invitation-browser", () => ({
 import { ManualInvitationManager } from "@/components/invitations/manual-invitation-manager";
 
 const response = (data: Record<string, unknown>) => ({ ok: true, json: async () => ({ ok: true, data }) }) as Response;
-const props = { invites: [{ id: "invite-1", email: "member@example.test", role: "parent" as const, expiresAt: "2030-01-01T00:00:00.000Z" }], canInviteAdmin: true, isOwner: true };
+const props = { invites: [{ id: "invite-1", email: "member@example.test", role: "parent" as const, expiresAt: "2030-01-01T00:00:00.000Z" }], canInviteAdmin: true, isOwner: true, timeZone: "UTC" };
 
 beforeEach(() => { sessionStorage.clear(); Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn(async () => undefined) } }); });
 afterEach(() => cleanup());

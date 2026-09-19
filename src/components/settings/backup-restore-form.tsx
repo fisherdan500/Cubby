@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatInstant } from "@/lib/timezone";
 
 type Preview = {
   legacyPartial: boolean;
@@ -17,7 +18,7 @@ type Preview = {
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
-export function BackupRestoreForm({ targetHouseholdName }: { targetHouseholdName: string }) {
+export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHouseholdName: string; timeZone: string }) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -89,7 +90,7 @@ export function BackupRestoreForm({ targetHouseholdName }: { targetHouseholdName
         <section className="space-y-3 rounded-lg border border-border bg-muted/40 p-4" aria-label="Backup preview">
           <div>
             <p className="font-black">{preview.householdName}</p>
-            <p className="text-sm text-muted-foreground">Exported {preview.exportedAt ? new Date(preview.exportedAt).toLocaleString() : "by legacy Cubby"}</p>
+            <p className="text-sm text-muted-foreground">Exported {preview.exportedAt ? formatInstant(preview.exportedAt, timeZone) : "by legacy Cubby"}</p>
           </div>
           {preview.legacyPartial ? (
             <p className="rounded-md bg-warning/15 p-3 text-sm font-bold">Legacy v1 partial backup: only its supported babies, activities, appearance, and units can be recovered.</p>

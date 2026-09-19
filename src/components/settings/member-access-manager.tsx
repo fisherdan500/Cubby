@@ -14,6 +14,7 @@ import {
 } from "@/domain/roles";
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
+import { formatInstantDate } from "@/lib/timezone";
 
 type MemberRow = {
   id: string;
@@ -49,11 +50,13 @@ const BULK_REVOKE_ACKNOWLEDGEMENT = "I_REVOKE_ALL_PENDING_INVITATIONS";
 export function MemberAccessManager({
   members,
   invites,
-  viewerRole
+  viewerRole,
+  timeZone
 }: {
   members: MemberRow[];
   invites: InviteRow[];
   viewerRole: HouseholdRoleName;
+  timeZone: string;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -283,7 +286,7 @@ export function MemberAccessManager({
               <p className="mt-2 text-xs text-muted-foreground">{householdRoleDetails[member.role].description}</p>
               {member.disabledAt ? (
                 <p className="mt-2 text-xs font-semibold text-danger">
-                  Access suspended {new Date(member.disabledAt).toLocaleDateString()}. Their role and history are preserved.
+                  Access suspended {formatInstantDate(member.disabledAt, timeZone)}. Their role and history are preserved.
                 </p>
               ) : null}
 
@@ -349,7 +352,7 @@ export function MemberAccessManager({
               <div className="min-w-0">
                 <p className="truncate font-semibold">{invite.email}</p>
                 <p className="text-sm text-muted-foreground">
-                  {householdRoleDetails[invite.role].label} - expires {new Date(invite.expiresAt).toLocaleDateString()}
+                  {householdRoleDetails[invite.role].label} - expires {formatInstantDate(invite.expiresAt, timeZone)}
                 </p>
               </div>
               {canRevoke ? (

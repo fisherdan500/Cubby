@@ -30,9 +30,12 @@ const status = {
 
 describe("AutomatedBackupStatus", () => {
   it("renders operator status, correct units, actionable failures, and local download links", () => {
-    const html = renderToStaticMarkup(createElement(AutomatedBackupStatus, { status }));
+    const html = renderToStaticMarkup(createElement(AutomatedBackupStatus, { status, timeZone: "America/New_York" }));
 
     expect(html).toContain("Healthy local versions: 1");
+    // Times render in the household zone, not the process or device zone: 20:00Z is 4:00 PM in New York (EDT).
+    expect(html).toMatch(/Next due Jul 16, 2026, 4:00\sPM/);
+    expect(html).toMatch(/Last success Jul 15, 2026, 4:00\sPM/);
     expect(html).toContain("12 items");
     expect(html).toContain("7 items");
     expect(html).toContain("2.0 MB");
@@ -45,7 +48,7 @@ describe("AutomatedBackupStatus", () => {
 
   it("keeps restore discovery separate from manual export creation", () => {
     const emptyStatus = { ...status, versions: [], healthyVersionCount: 0, warnings: [] };
-    const html = renderToStaticMarkup(createElement(AutomatedBackupStatus, { status: emptyStatus }));
+    const html = renderToStaticMarkup(createElement(AutomatedBackupStatus, { status: emptyStatus, timeZone: "UTC" }));
 
     expect(html).toContain("No discovered local automated versions yet.");
     expect(html).not.toContain("/api/backups/export");

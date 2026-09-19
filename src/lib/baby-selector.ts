@@ -1,4 +1,5 @@
 import type { ActivityTypeName } from "@/domain/activity";
+import { DEFAULT_APP_TIMEZONE, dateKeyInTimeZone } from "@/lib/timezone";
 
 export const SELECTED_BABY_COOKIE = "cubby_selected_baby_id";
 export const SELECTED_BABY_STORAGE_KEY = "cubby.selectedBabyId";
@@ -20,7 +21,8 @@ export function buildHeaderBabySelectorData<T extends { id: string; name: string
   babies: T[],
   selectedBabyId: string,
   activeTimerType?: ActivityTypeName,
-  now = new Date()
+  now = new Date(),
+  timeZone = DEFAULT_APP_TIMEZONE
 ): HeaderBabySelectorData | null {
   if (!babies.some((baby) => baby.id === selectedBabyId)) return null;
 
@@ -28,7 +30,7 @@ export function buildHeaderBabySelectorData<T extends { id: string; name: string
     babies: babies.map((baby) => ({
       id: baby.id,
       name: baby.name,
-      ageLabel: formatBabyAge(baby.birthDate, now),
+      ageLabel: formatBabyAge(baby.birthDate, now, timeZone),
       inactive: Boolean(baby.inactiveAt)
     })),
     selectedBabyId,
@@ -43,15 +45,21 @@ export function babySelectionHref(pathname: string, currentSearch: string, nextB
   return `${pathname}?${params.toString()}`;
 }
 
-export function formatBabyAge(birthDate?: Date | string | null, now = new Date()) {
+/**
+ * A birth date is a calendar date stored as midnight UTC. "Today" must be the household's calendar
+ * date, not the UTC one: comparing against UTC made the age tick over hours early every evening in a
+ * zone west of UTC (after 8 pm in New York it is already tomorrow in UTC).
+ */
+export function formatBabyAge(birthDate?: Date | string | null, now = new Date(), timeZone = DEFAULT_APP_TIMEZONE) {
   if (!birthDate) return "Age not set";
   const birth = birthDate instanceof Date ? birthDate : new Date(birthDate);
   if (Number.isNaN(birth.getTime())) return "Age not set";
 
-  const days = Math.max(0, Math.floor((utcDay(now).getTime() - utcDay(birth).getTime()) / 86_400_000));
+  const today = new Date(`${dateKeyInTimeZone(now, timeZone)}T00:00:00.000Z`);
+  const days = Math.max(0, Math.floor((today.getTime() - utcDay(birth).getTime()) / 86_400_000));
   if (days < 7) return plural(days, "day");
   if (days < 24 * 7) return plural(Math.max(1, Math.floor(days / 7)), "week");
-  return plural(Math.max(1, wholeMonths(birth, now)), "month");
+  return plural(Math.max(1, wholeMonths(birth, today)), "month");
 }
 
 export function resolveSelectedBaby<T extends { id: string }>(
