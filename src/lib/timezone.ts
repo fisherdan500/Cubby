@@ -11,6 +11,54 @@ export function normalizeTimeZone(timeZone: string | null | undefined, fallback 
   }
 }
 
+/** True when the runtime recognises `timeZone` as an IANA zone (e.g. "America/New_York"). */
+export function isValidTimeZone(timeZone: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * An instant (a real moment: a feed, a backup, a sign-in) shown in the household's zone. Formatting
+ * without a zone used the process zone on the server and the device zone in the browser, so the same
+ * time could render differently on each and disagree with the rest of the app.
+ */
+export function formatInstant(value: Date | string | null | undefined, timeZone: string, options: { withYear?: boolean } = {}) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: normalizeTimeZone(timeZone),
+    month: "short",
+    day: "numeric",
+    ...(options.withYear === false ? {} : { year: "numeric" as const }),
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
+
+/** The calendar day of an instant in the household's zone, e.g. when an invitation expires. */
+export function formatInstantDate(value: Date | string | null | undefined, timeZone: string) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { timeZone: normalizeTimeZone(timeZone), month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+/**
+ * A calendar date with no time of day (a birth date). It is stored as midnight UTC of that date, so it
+ * must be read back in UTC: shown in a zone west of UTC it would land on the previous day.
+ */
+export function formatCalendarDate(value: Date | string | null | undefined) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
 export function addDaysToDateKey(key: string, days: number) {
   const [year, month, day] = key.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day + days));

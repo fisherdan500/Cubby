@@ -1,6 +1,8 @@
 import { AppShell } from "@/components/app-shell";
 import { DeleteWebhookButton, RevokeApiKeyButton, WebhookForm } from "@/components/settings/integration-forms";
 import { Card } from "@/components/ui/card";
+import { env } from "@/lib/env";
+import { formatInstant } from "@/lib/timezone";
 import { requireSettingsPage } from "@/server/auth/page-access";
 import { listApiKeys, listWebhooks } from "@/server/services/integrations";
 
@@ -67,7 +69,7 @@ export default async function IntegrationsSettingsPage() {
                   <div className="mt-3 space-y-2">
                     {webhook.deliveries.map((delivery) => (
                       <p key={delivery.id} className="break-words text-xs text-muted-foreground">
-                        {delivery.event} - {delivery.status} - {delivery.createdAt.toLocaleString()}
+                        {delivery.event} - {delivery.status} - {formatInstant(delivery.createdAt, env.APP_TIMEZONE)}
                       </p>
                     ))}
                   </div>

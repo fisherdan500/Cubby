@@ -67,7 +67,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("SessionManager", () => {
-  const renderManager = (accountScope = "user-one") => render(createElement(SessionManager, { accountScope }));
+  const renderManager = (accountScope = "user-one") => render(createElement(SessionManager, { accountScope, timeZone: "UTC" }));
   it("loads only the safe session projection and renders responsive account-session actions", async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(response(200, { ok: true, data: { sessions } }));
 
@@ -283,7 +283,7 @@ describe("SessionManager", () => {
       .mockImplementationOnce(() => new Promise<Response>((resolve) => { resolveSecond = resolve; }));
     const view = renderManager("user-one");
 
-    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    view.rerender(createElement(SessionManager, { accountScope: "user-two", timeZone: "UTC" }));
     await act(async () => resolveSecond(response(200, { ok: true, data: { sessions: [{ ...sessions[0], deviceLabel: "User two device" }] } })));
     expect(await screen.findByText("User two device")).toBeTruthy();
 
@@ -311,7 +311,7 @@ describe("SessionManager", () => {
     await userEvent.type(screen.getByLabelText("Current password"), "old-account-password");
     await userEvent.click(screen.getByRole("button", { name: "Confirm sign out" }));
 
-    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    view.rerender(createElement(SessionManager, { accountScope: "user-two", timeZone: "UTC" }));
     await act(async () => resolveStatus(response(200, { ok: true, data: { operationId, status: "pending" } })));
 
     expect(fetchMock.mock.calls.filter(([url]) => url === "/api/account/sessions/revoke")).toHaveLength(0);
@@ -331,7 +331,7 @@ describe("SessionManager", () => {
     await userEvent.type(screen.getByLabelText("Current password"), "old-account-password");
     await userEvent.click(screen.getByRole("button", { name: "Confirm sign out" }));
 
-    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    view.rerender(createElement(SessionManager, { accountScope: "user-two", timeZone: "UTC" }));
     await act(async () => rejectRevoke(new Error("network")));
 
     expect(mocks.push).not.toHaveBeenCalled();
@@ -353,7 +353,7 @@ describe("SessionManager", () => {
     await userEvent.click(screen.getByRole("button", { name: "Confirm sign out" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
 
-    view.rerender(createElement(SessionManager, { accountScope: "user-two" }));
+    view.rerender(createElement(SessionManager, { accountScope: "user-two", timeZone: "UTC" }));
     await act(async () => rejectStatus(new Error("network")));
 
     expect(mocks.push).not.toHaveBeenCalled();

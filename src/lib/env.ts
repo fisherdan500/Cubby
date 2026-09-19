@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { readAutomatedBackupConfig } from "@/lib/automated-backup-config";
 import { readIntegrityConfig } from "@/lib/integrity-config";
-import { DEFAULT_APP_TIMEZONE, normalizeTimeZone } from "@/lib/timezone";
+import { DEFAULT_APP_TIMEZONE, isValidTimeZone } from "@/lib/timezone";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -9,7 +9,13 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   TRUSTED_ORIGINS: z.string().optional(),
   ENABLE_REGISTRATION: z.string().default("true"),
-  APP_TIMEZONE: z.string().optional().transform((value) => normalizeTimeZone(value, DEFAULT_APP_TIMEZONE)),
+  // A mistyped zone used to fall back silently to the default, so every displayed time and every "today"
+  // boundary could be hours off with nothing to show why. It now stops the app with a clear message.
+  APP_TIMEZONE: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() || DEFAULT_APP_TIMEZONE)
+    .refine(isValidTimeZone, { message: "APP_TIMEZONE must be an IANA time zone name, such as America/New_York" }),
   CUBBY_THROTTLE_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/).optional(),
   CUBBY_TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(1).default(0)
 });

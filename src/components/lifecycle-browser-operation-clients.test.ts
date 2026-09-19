@@ -31,7 +31,8 @@ describe("durable lifecycle browser-operation clients", () => {
         { id: "owner", name: "Owner", email: "owner@example.com", role: "owner", disabledAt: null },
         { id: "member", name: "Jordan", email: "jordan@example.com", role: "parent", disabledAt: null }
       ],
-      invites: [{ id: "invite", email: "invitee@example.com", role: "parent", expiresAt: "2030-01-01T00:00:00.000Z" }]
+      invites: [{ id: "invite", email: "invitee@example.com", role: "parent", expiresAt: "2030-01-01T00:00:00.000Z" }],
+      timeZone: "UTC"
     }));
 
     await userEvent.click(screen.getByRole("button", { name: "Suspend" }));

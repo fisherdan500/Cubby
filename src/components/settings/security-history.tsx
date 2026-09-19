@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatInstant } from "@/lib/timezone";
 
 type Incident = {
   windowStartedAt: string;
@@ -28,16 +29,16 @@ function label(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function dateLabel(value: string) {
+function dateLabel(value: string, timeZone: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Unavailable" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "Unavailable" : formatInstant(date, timeZone);
 }
 
 async function historyResponse(response: Response) {
   return response.json().catch(() => null) as Promise<HistoryResponse | null>;
 }
 
-export function SecurityHistory({ accountScope, headingLevel = 1 }: { accountScope: string; headingLevel?: 1 | 2 }) {
+export function SecurityHistory({ accountScope, timeZone, headingLevel = 1 }: { accountScope: string; timeZone: string; headingLevel?: 1 | 2 }) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
   const Subheading = headingLevel === 1 ? "h2" : "h3";
   const activeAccountScopeRef = useRef(accountScope);
@@ -199,7 +200,7 @@ export function SecurityHistory({ accountScope, headingLevel = 1 }: { accountSco
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <Subheading className="font-bold">{label(event.action)}</Subheading>
-                  <p className="text-sm text-muted-foreground">{label(event.outcome)} · {dateLabel(event.occurredAt)}</p>
+                  <p className="text-sm text-muted-foreground">{label(event.outcome)} · {dateLabel(event.occurredAt, timeZone)}</p>
                   {event.operationKey ? <p className="mt-1 text-xs text-muted-foreground">Operation: {label(event.operationKey)}</p> : null}
                   {event.incident ? <p className="mt-2 text-sm text-muted-foreground">Sign-in protection window: approximately {event.incident.approximateFailures} failed attempts. Consider changing your password and reviewing active sessions.</p> : null}
                 </div>

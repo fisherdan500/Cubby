@@ -726,6 +726,24 @@ Do not use browser timezone or per-baby timezone for current app grouping. Use
 `APP_TIMEZONE` and existing time helpers. Store timestamps as instants, then
 format/group for display using the app timezone.
 
+Never format a date with `toLocaleString()`, `toLocaleDateString()` or a
+zone-less `Intl.DateTimeFormat`: they use the server process zone while
+rendering and the device zone in the browser, so one time can render two ways.
+Use the helpers in `src/lib/timezone.ts`, passing the household zone into client
+components as a prop:
+
+- `formatInstant(value, zone)` for a moment in time (a feed, a backup, a sign-in).
+- `formatInstantDate(value, zone)` for that moment's calendar day (an invitation
+  expiry).
+- `formatCalendarDate(value)` for a date with no time of day, such as a birth
+  date, which is stored as midnight UTC and must be read back in UTC.
+
+`src/lib/display-time-contract.test.ts` fails if a `toLocale…String()` call is
+reintroduced. An `APP_TIMEZONE` that is not a valid IANA name (for example a
+typo such as `America/New_Yrok`) is rejected when the configuration loads,
+with the message `APP_TIMEZONE must be an IANA time zone name`, instead of
+silently falling back to a different zone.
+
 PostgreSQL itself must run in UTC. Prisma writes JavaScript `Date` values as
 UTC into `timestamp without time zone` columns, while database guards compare
 them with `clock_timestamp()` in the session time zone, so a non-UTC database

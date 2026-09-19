@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sessionDateLabel, sessionDeviceLabel } from "@/lib/auth/session-display";
+import { sessionDeviceLabel } from "@/lib/auth/session-display";
 
 describe("session display", () => {
   it("builds concise browser and device labels", () => {
@@ -10,9 +10,5 @@ describe("session display", () => {
       "Safari on iPhone or iPad"
     );
     expect(sessionDeviceLabel(null)).toBe("Unknown browser");
-  });
-
-  it("handles invalid stored dates", () => {
-    expect(sessionDateLabel("not-a-date")).toBe("Unknown");
   });
 });

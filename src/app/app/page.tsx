@@ -19,7 +19,8 @@ import {
 import { hasPermission } from "@/domain/roles";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import type { VolumeUnit } from "@/domain/units";
-import { formatDateTime, formatDuration, formatTimeSince } from "@/lib/activity-format";
+import { formatDuration, formatTimeSince } from "@/lib/activity-format";
+import { formatInstant } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
 
@@ -117,7 +118,7 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
 
       {/* Timers on non-primary types keep their controls here rather than losing them entirely. */}
       {dashboard.activeTimers.filter((timer) => !primaryQuickActionTypes.has(timer.type as ActivityTypeName)).map((timer) => (
-        <RunningTimerRow key={timer.id} timer={timer} />
+        <RunningTimerRow key={timer.id} timer={timer} timeZone={dashboard.selectedDate.timezone} />
       ))}
 
       <details className="group sm:hidden">
@@ -161,7 +162,7 @@ function RunningTimerTile({ type, timer }: { type: ActivityTypeName; timer: Acti
   );
 }
 
-function RunningTimerRow({ timer }: { timer: ActiveTimer }) {
+function RunningTimerRow({ timer, timeZone }: { timer: ActiveTimer; timeZone: string }) {
   const type = timer.type as ActivityTypeName;
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/10 p-2">
@@ -170,7 +171,7 @@ function RunningTimerRow({ timer }: { timer: ActiveTimer }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-black">{activityLabels[type]}</p>
           <p className="truncate text-xs font-semibold text-muted-foreground">
-            {timer.timerState === "paused" ? "Paused" : "Started"} {formatDateTime(timer.startedAt)}
+            {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, timeZone, { withYear: false })}
           </p>
         </div>
       </div>
