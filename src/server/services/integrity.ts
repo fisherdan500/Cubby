@@ -174,6 +174,95 @@ const DATABASE_CHECKS: ReadonlyArray<{ id: string; query: string }> = [
       LEFT JOIN "HouseholdMember" actor ON actor.id = audit."actorMemberId"
       WHERE audit."actorMemberId" IS NOT NULL
         AND (actor.id IS NULL OR actor."householdId" <> audit."householdId")`
+  },
+  {
+    // Every writer creates exactly one detail row matching the activity's own type, and no database
+    // constraint can say so: a type and its detail are separate tables. A mismatch means a restore,
+    // import or correction wrote a record the app will read as a different kind of care than it is.
+    id: "activity_detail_type_consistency",
+    query: `SELECT COUNT(*)::int AS count
+      FROM (
+        SELECT activity.id, activity.type,
+          (feeding.id IS NOT NULL)::int
+            + (diaper.id IS NOT NULL)::int
+            + (sleep.id IS NOT NULL)::int
+            + (pumping.id IS NOT NULL)::int
+            + (medicine.id IS NOT NULL)::int
+            + (measurement.id IS NOT NULL)::int
+            + (milestone.id IS NOT NULL)::int
+            + (note.id IS NOT NULL)::int
+            + (bath.id IS NOT NULL)::int
+            + (play.id IS NOT NULL)::int
+            + (mood.id IS NOT NULL)::int
+            + (supplement.id IS NOT NULL)::int
+            + (vaccine.id IS NOT NULL)::int
+            + (milk_inventory.id IS NOT NULL)::int AS detail_count,
+          CASE activity.type
+            WHEN 'feeding' THEN feeding.id
+            WHEN 'diaper' THEN diaper.id
+            WHEN 'sleep' THEN sleep.id
+            WHEN 'pumping' THEN pumping.id
+            WHEN 'medicine' THEN medicine.id
+            WHEN 'measurement' THEN measurement.id
+            WHEN 'milestone' THEN milestone.id
+            WHEN 'note' THEN note.id
+            WHEN 'bath' THEN bath.id
+            WHEN 'play' THEN play.id
+            WHEN 'mood' THEN mood.id
+            WHEN 'supplement' THEN supplement.id
+            WHEN 'vaccine' THEN vaccine.id
+            WHEN 'milk_inventory' THEN milk_inventory.id
+          END AS matching_detail_id
+        FROM "ActivityLog" activity
+        LEFT JOIN "FeedingLog" feeding ON feeding."activityId" = activity.id
+        LEFT JOIN "DiaperLog" diaper ON diaper."activityId" = activity.id
+        LEFT JOIN "SleepLog" sleep ON sleep."activityId" = activity.id
+        LEFT JOIN "PumpingLog" pumping ON pumping."activityId" = activity.id
+        LEFT JOIN "MedicineLog" medicine ON medicine."activityId" = activity.id
+        LEFT JOIN "MeasurementLog" measurement ON measurement."activityId" = activity.id
+        LEFT JOIN "MilestoneLog" milestone ON milestone."activityId" = activity.id
+        LEFT JOIN "NoteLog" note ON note."activityId" = activity.id
+        LEFT JOIN "BathLog" bath ON bath."activityId" = activity.id
+        LEFT JOIN "PlayLog" play ON play."activityId" = activity.id
+        LEFT JOIN "MoodLog" mood ON mood."activityId" = activity.id
+        LEFT JOIN "SupplementLog" supplement ON supplement."activityId" = activity.id
+        LEFT JOIN "VaccineLog" vaccine ON vaccine."activityId" = activity.id
+        LEFT JOIN "MilkInventoryLog" milk_inventory ON milk_inventory."activityId" = activity.id
+        WHERE activity."deletedAt" IS NULL
+      ) detailed
+      WHERE detailed.detail_count <> 1 OR detailed.matching_detail_id IS NULL`
+  },
+  {
+    // Calendar links carry only single-column foreign keys, so nothing at the database level stops an
+    // event in one household from pointing at another household's baby or contact.
+    id: "calendar_event_relation_consistency",
+    query: `SELECT (
+        (SELECT COUNT(*)
+          FROM "CalendarEventBaby" link
+          LEFT JOIN "CalendarEvent" event ON event.id = link."eventId"
+          LEFT JOIN "Baby" baby ON baby.id = link."babyId"
+          WHERE event.id IS NULL OR baby.id IS NULL OR baby."householdId" <> event."householdId")
+        + (SELECT COUNT(*)
+          FROM "CalendarEventContact" link
+          LEFT JOIN "CalendarEvent" event ON event.id = link."eventId"
+          LEFT JOIN "Contact" contact ON contact.id = link."contactId"
+          WHERE event.id IS NULL OR contact.id IS NULL OR contact."householdId" <> event."householdId")
+      )::int AS count`
+  },
+  {
+    // Each household's audit chain is numbered 1..N as it is written, under an advisory lock. A unique
+    // index already forbids two events sharing a number, so contiguity is what is left to verify: with
+    // no duplicates, a chain that starts at 1 and ends at its own row count has no gaps. A gap means an
+    // event was removed or inserted outside the writer, which is precisely what the chain exists to reveal.
+    id: "audit_chain_sequence_consistency",
+    query: `SELECT COUNT(*)::int AS count
+      FROM (
+        SELECT audit."householdId"
+        FROM "AuditEvent" audit
+        GROUP BY audit."householdId"
+        HAVING MIN(audit."chainOrder") <> 1
+          OR MAX(audit."chainOrder") <> COUNT(*)
+      ) broken_chains`
   }
 ];
 
