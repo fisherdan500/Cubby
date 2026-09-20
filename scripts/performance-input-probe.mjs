@@ -230,6 +230,11 @@ try {
     const killed = spawnSync("taskkill.exe", ["/PID", String(chrome.pid), "/T", "/F"], { stdio: "ignore" });
     if (killed.error || killed.status !== 0) chrome.kill();
   }
-  rmSync(profile, { recursive: true, force: true });
+  // Windows keeps the profile's handles open for a moment after the process tree dies, so removing it
+  // straight away fails with EPERM even though the run itself succeeded.
+  for (let attempt = 0; attempt < 40 && chrome.exitCode === null && chrome.signalCode === null; attempt += 1) {
+    await new Promise((wait) => setTimeout(wait, 50));
+  }
+  rmSync(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
   if (!passed) console.error("performance_input_probe_incomplete");
 }
