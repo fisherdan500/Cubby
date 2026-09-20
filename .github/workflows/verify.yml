@@ -33,6 +33,14 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm run verify:gates
+      # The operation registry's generated artifacts are byte-compared, so a mismatch says only that
+      # they differ. This shows what a regeneration here would write, which is the difference itself.
+      - name: show what the registry would regenerate
+        if: failure()
+        run: |
+          npm run operation-registry:generate || true
+          git --no-pager diff --stat -- src/server/operation-registry/generated
+          git --no-pager diff --unified=0 -- src/server/operation-registry/generated/fingerprints.json | head -c 20000
 
   disposable:
     name: disposable rehearsals
