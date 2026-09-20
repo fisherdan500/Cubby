@@ -35,6 +35,7 @@
     "verify:sprout-preview-commit": "tsx scripts/sprout-preview-commit.acceptance-rehearsal.ts",
     "verify:performance-1y": "tsx scripts/performance-budgets.acceptance-rehearsal.ts --years=1",
     "verify:performance-5y": "tsx scripts/performance-budgets.acceptance-rehearsal.ts --years=5",
+    "verify:performance-input": "tsx scripts/performance-budgets.acceptance-rehearsal.ts --years=1 --browser",
     "verify:update-preflight":"tsx scripts/update-preflight.ts",
     "verify:p1-3-migrator-bootstrap": "tsx scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
     "verify:p1-3-invitation-acceptance": "tsx scripts/p1-3-invitation.acceptance-rehearsal.ts",

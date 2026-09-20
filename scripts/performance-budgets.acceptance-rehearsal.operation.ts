@@ -15,6 +15,11 @@ export const operation = {
       kind: "package_script",
       symbol: "verify:performance-5y",
       target: "package.json#scripts.verify:performance-5y"
+    },
+    {
+      kind: "package_script",
+      symbol: "verify:performance-input",
+      target: "package.json#scripts.verify:performance-input"
     }
   ],
   disposition: "excluded",
