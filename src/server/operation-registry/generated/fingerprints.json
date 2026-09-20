@@ -3480,17 +3480,17 @@
           "file": "package.json"
         },
         {
-          "digest": "48f22f97702ae03b346632422d78549dd9b1298a1d68fda68d81215e7e76d6f6",
+          "digest": "1feaac3408d9e0897a36dfd9a4cc5ce487095308f59320ef5131eaf6823eefdf",
           "file": "scripts/verify-gates.ts"
         }
       ],
       "declarationDigest": "f1914a1780339c58be0ae46f650619f5b09e7978f31ae1a831bd0352e2625f41",
-      "fingerprint": "2abcd06877de0a258b744324e1a30b73d72407ceb7b0badd599a2df372959bd3",
+      "fingerprint": "954dec3ebfd31d3f950f3745fcc6ba124476e2e1e6b18cbea3889eb985747226",
       "id": "fingerprint:package_command:scripts/verify-gates.ts",
       "ownerId": "package_command:scripts/verify-gates.ts",
       "ownerModule": "scripts/verify-gates.ts",
       "sidecarPath": "scripts/verify-gates.operation.ts",
-      "sourceDigest": "3a99a03ad0532321190662d614caff03a02316a6201c86e556220dceec5218ec",
+      "sourceDigest": "1d823dbf18558bbe4d89f34026872e3b88fdd090a4b98808a13f53632e1b990b",
       "status": "declared"
     }
   ],
