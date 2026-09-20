@@ -229,10 +229,109 @@ describe("read-only integrity suite", () => {
       })
     ]);
     expect(executed).toEqual(["SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"]);
-    expect(queries).toHaveLength(6);
+    expect(queries).toHaveLength(9);
     expect(queries.join("\n")).toContain('"ActivityLog"');
     expect(queries.join("\n")).toContain('"AuditEvent"');
     expect(queries.join("\n")).toContain('"BackupRecord"');
+    expect(queries.join("\n")).toContain('"CalendarEventBaby"');
+  });
+
+  it("reports an activity whose detail row does not match its own type", async () => {
+    const fake = fakeIntegrityDatabase([[], []], [], [{ includes: "detailed.detail_count", count: 2 }]);
+
+    const report = await runDatabaseIntegritySuite(fake.database);
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "activity_detail_type_consistency", severity: "error", count: 2 })
+      ])
+    );
+
+    const detailQuery = fake.queries.find((query) => query.includes("detailed.detail_count"))!;
+    // Every activity type needs a branch, or an unlisted type reads as "no matching detail" forever.
+    for (const type of [
+      "feeding",
+      "diaper",
+      "sleep",
+      "pumping",
+      "medicine",
+      "measurement",
+      "milestone",
+      "note",
+      "bath",
+      "play",
+      "mood",
+      "supplement",
+      "vaccine",
+      "milk_inventory"
+    ]) {
+      expect(detailQuery).toContain(`WHEN '${type}' THEN`);
+    }
+    for (const tableName of [
+      "FeedingLog",
+      "DiaperLog",
+      "SleepLog",
+      "PumpingLog",
+      "MedicineLog",
+      "MeasurementLog",
+      "MilestoneLog",
+      "NoteLog",
+      "BathLog",
+      "PlayLog",
+      "MoodLog",
+      "SupplementLog",
+      "VaccineLog",
+      "MilkInventoryLog"
+    ]) {
+      expect(detailQuery).toContain(`"${tableName}"`);
+    }
+    // Both halves matter: a wrong-table detail row, and an activity carrying two detail rows at once.
+    expect(detailQuery).toMatch(/detailed\.detail_count\s*<>\s*1/i);
+    expect(detailQuery).toMatch(/detailed\.matching_detail_id\s+IS\s+NULL/i);
+    expect(detailQuery).toMatch(/activity\."deletedAt"\s+IS\s+NULL/i);
+    expect(detailQuery).not.toContain("activity.notes");
+  });
+
+  it("reports a calendar link that crosses households in either direction", async () => {
+    const fake = fakeIntegrityDatabase([[], []], [], [{ includes: '"CalendarEventBaby"', count: 3 }]);
+
+    const report = await runDatabaseIntegritySuite(fake.database);
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "calendar_event_relation_consistency", severity: "error", count: 3 })
+      ])
+    );
+
+    const calendarQuery = fake.queries.find((query) => query.includes('"CalendarEventBaby"'))!;
+    // Baby and contact links are counted together; only their own single-column keys are enforced by
+    // the database, so both sides need the household comparison and the missing-row case.
+    expect(calendarQuery).toMatch(/baby\."householdId"\s*<>\s*event\."householdId"/i);
+    expect(calendarQuery).toMatch(/contact\."householdId"\s*<>\s*event\."householdId"/i);
+    expect(calendarQuery).toMatch(/event\.id\s+IS\s+NULL\s+OR\s+baby\.id\s+IS\s+NULL/i);
+    expect(calendarQuery).toMatch(/event\.id\s+IS\s+NULL\s+OR\s+contact\.id\s+IS\s+NULL/i);
+    expect(calendarQuery).toContain('"CalendarEventContact"');
+    expect(calendarQuery).toMatch(/\)::int AS count/);
+  });
+
+  it("reports a household whose audit chain has a gap", async () => {
+    const fake = fakeIntegrityDatabase([[], []], [], [{ includes: "broken_chains", count: 1 }]);
+
+    const report = await runDatabaseIntegritySuite(fake.database);
+
+    expect(report.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "audit_chain_sequence_consistency", severity: "error", count: 1 })
+      ])
+    );
+
+    const chainQuery = fake.queries.find((query) => query.includes("broken_chains"))!;
+    // Chains are numbered per household, so the grouping is what makes the comparison meaningful.
+    expect(chainQuery).toMatch(/GROUP BY\s+audit\."householdId"/i);
+    expect(chainQuery).toMatch(/MIN\(audit\."chainOrder"\)\s*<>\s*1/i);
+    expect(chainQuery).toMatch(/MAX\(audit\."chainOrder"\)\s*<>\s*COUNT\(\*\)/i);
+    // The report counts affected households, never their identifiers.
+    expect(JSON.stringify(report)).not.toContain("household-");
   });
 
   it("captures clean fixed Sprout mapping-ledger evidence without exposing source identifiers", async () => {
@@ -668,14 +767,17 @@ describe("read-only integrity suite", () => {
         ]
       }
     });
-    expect(events).toHaveLength(7);
+    expect(events).toHaveLength(10);
     expect(events[0]).toBe("execute:SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
     expect(events[1]).toContain("query:SELECT pg_try_advisory_xact_lock");
     expect(events[2]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM "ActivityLog" activity');
     expect(events[3]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM "Household" household');
     expect(events[4]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM "ActivityLog" activity');
     expect(events[5]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM "AuditEvent" audit');
-    expect(events[6]).toContain('query:SELECT COUNT(*)::int AS count\n    FROM "ImportedRecord" imported');
+    expect(events[6]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM (\n        SELECT activity.id, activity.type');
+    expect(events[7]).toContain('query:SELECT (\n        (SELECT COUNT(*)\n          FROM "CalendarEventBaby" link');
+    expect(events[8]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM (\n        SELECT audit."householdId"');
+    expect(events[9]).toContain('query:SELECT COUNT(*)::int AS count\n    FROM "ImportedRecord" imported');
   });
 
   it("skips a scheduled run when another process holds the advisory lock", async () => {

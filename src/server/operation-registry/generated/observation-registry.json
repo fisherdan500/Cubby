@@ -4,12 +4,12 @@
     "api_route": 100,
     "client_binding": 33,
     "instrumentation": 1,
-    "package_command": 22,
+    "package_command": 23,
     "server_action": 1,
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "56716ccbce3ab32f44db9d2435dab7a3b15c5492f8a096ee1e3151043dedf06c",
+  "declarationDigest": "0501ebd27d6c66d180e7b427623ee4b72351a376b017a7039fc847830fbfdbc6",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -286,6 +286,40 @@
       },
       "id": "package_command:scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:integrity-suite",
+            "target": "package.json#scripts.verify:integrity-suite"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/integrity-suite.acceptance-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -6874,6 +6908,14 @@
       "rationale": "isolated test or rehearsal command; structural identity only"
     },
     {
+      "category": "rehearsal",
+      "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+      "packageScripts": [
+        "verify:integrity-suite"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
       "category": "build_tool",
       "ownerModule": "scripts/generate-brand-icons.mjs",
       "packageScripts": [
@@ -6890,7 +6932,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "5fc989bed5c95286528e71ec74b678263655068b9aa2708ce1af39ed422a297d",
+  "generatorDigest": "155b4b4f35ec5399aaca363fda64edbb4c8b14b82670d655804fd7e99d3b6cbc",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11476,9 +11518,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 4935,
+          "anchorEnd": 5020,
           "anchorFile": "package.json",
-          "anchorStart": 4926,
+          "anchorStart": 5011,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -11707,9 +11749,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5036,
+          "anchorEnd": 5121,
           "anchorFile": "package.json",
-          "anchorStart": 5018,
+          "anchorStart": 5103,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -11721,6 +11763,32 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
+          "anchorEnd": 4770,
+          "anchorFile": "package.json",
+          "anchorStart": 4746,
+          "kind": "package_script",
+          "symbol": "verify:integrity-suite",
+          "target": "package.json#scripts.verify:integrity-suite"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+        "packageScripts": [
+          "verify:integrity-suite"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/integrity-suite.acceptance-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -11969,9 +12037,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 4979,
+          "anchorEnd": 5064,
           "anchorFile": "package.json",
-          "anchorStart": 4963,
+          "anchorStart": 5048,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -12416,8 +12484,8 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "observationCount": 191,
-  "observationDigest": "dd1a242fbba10c1aaf7e4ee7eb2e38838b6697ac0d2725c810fbac796ac7c964",
+  "observationCount": 192,
+  "observationDigest": "1c18a8d9e06a88afec04751da77c0fcc3f47e24ed087bcb310806b08e1061f03",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -16834,9 +16902,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4935,
+          "anchorEnd": 5020,
           "anchorFile": "package.json",
-          "anchorStart": 4926,
+          "anchorStart": 5011,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -17023,9 +17091,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5036,
+          "anchorEnd": 5121,
           "anchorFile": "package.json",
-          "anchorStart": 5018,
+          "anchorStart": 5103,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -17037,6 +17105,24 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 4770,
+          "anchorFile": "package.json",
+          "anchorStart": 4746,
+          "kind": "package_script",
+          "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+          "symbol": "verify:integrity-suite",
+          "target": "package.json#scripts.verify:integrity-suite"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/integrity-suite.acceptance-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -17257,9 +17343,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 4979,
+          "anchorEnd": 5064,
           "anchorFile": "package.json",
-          "anchorStart": 4963,
+          "anchorStart": 5048,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -18745,6 +18831,12 @@
       "sidecarPath": "scripts/integrity-check.operation.ts"
     },
     {
+      "id": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/integrity-suite.acceptance-rehearsal.operation.ts"
+    },
+    {
       "id": "package_command:scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
@@ -18835,9 +18927,9 @@
       "sidecarPath": "scripts/update-preflight.operation.ts"
     }
   ],
-  "ownerSetDigest": "9044526d03ece627e2f2f6644b5169d2a6bb8c676d01f74f2e55809dab36b326",
+  "ownerSetDigest": "e4270fe0d248b8b8dcf43dd84c854e5e5b5699e5e4f6923d82b3ee595e1b30e9",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "de842ecfb89158cad35c7cdbaad8c51c3487a0e97fcd5ce1dad422cd365b9f94",
+  "registryDigest": "2d46bec451e9bebc5e207082897ce30258433aadf8a880c28b63182431b7e471",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

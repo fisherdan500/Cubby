@@ -2,26 +2,35 @@ import { createHash } from "node:crypto";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ActivityType, HouseholdRole, Prisma, TimerState, WebhookEvent } from "@prisma/client";
 
-const auth = vi.hoisted(() => ({
-  context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole },
-  afterInitialContext: null as null | (() => Promise<void>)
-}));
+const auth = vi.hoisted(() => {
+  const state = {
+    context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole },
+    afterInitialContext: null as null | (() => Promise<void>),
+    // Request-context capture stands in for the browser's request: these services read their context
+    // through the auth module, which needs a Next request scope and a session cookie that no rehearsal
+    // process has.
+    capturedRequestContext: async () => {
+      if (!state.context) throw new Error("activity_update_safety_context_not_set");
+      // Return the captured request context only after a test-controlled concurrent
+      // membership change has committed. The real service must reject that stale
+      // context when it locks and reauthorizes the actor inside its transaction.
+      const initialContext = state.context;
+      const afterInitialContext = state.afterInitialContext;
+      state.afterInitialContext = null;
+      if (afterInitialContext) await afterInitialContext();
+      return initialContext;
+    }
+  };
+  return state;
+});
 
+// Both entry points are replaced, because a service picks whichever suits its route.
 vi.mock("@/server/auth/context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/auth/context")>();
   return {
     ...actual,
-    getHouseholdContext: vi.fn(async () => {
-      if (!auth.context) throw new Error("activity_update_safety_context_not_set");
-      // Return the captured request context only after a test-controlled concurrent
-      // membership change has committed. The real service must reject that stale
-      // context when it locks and reauthorizes the actor inside its transaction.
-      const initialContext = auth.context;
-      const afterInitialContext = auth.afterInitialContext;
-      auth.afterInitialContext = null;
-      if (afterInitialContext) await afterInitialContext();
-      return initialContext;
-    })
+    getHouseholdContext: vi.fn(auth.capturedRequestContext),
+    getEffectiveHouseholdContext: vi.fn(auth.capturedRequestContext)
   };
 });
 

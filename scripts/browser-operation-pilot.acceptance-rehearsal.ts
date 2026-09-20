@@ -1,12 +1,21 @@
-import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { CREATE_DISPOSABLE_RUNTIME_ROLES_SQL } from "./disposable-runtime-roles";
+
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const composeFile = "scripts/browser-operation-pilot.acceptance.compose.yml";
+
+/** Counted from the migrations themselves; a hardcoded total goes stale with the next migration. */
+function migrationDirectoryCount() {
+  return readdirSync(resolve(root, "prisma/migrations"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .length;
+}
 
 function run(command: string, args: string[], env: NodeJS.ProcessEnv, capture = false, code = "browser_operation_acceptance_command_failed") {
   const result = spawnSync(command, args, {
@@ -82,10 +91,12 @@ export function runBrowserOperationPilotAcceptance() {
     const databaseUrl = `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${published}/${database}?schema=public`;
     const prismaCli = resolve(root, "node_modules/prisma/build/index.js");
     const vitestCli = resolve(root, "node_modules/vitest/vitest.mjs");
+    // The migrations grant to the production role names, so those roles have to exist before deploy.
+    sql(CREATE_DISPOSABLE_RUNTIME_ROLES_SQL);
     run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", resolve(copiedPrisma, "schema.prisma")], { ...env, DATABASE_URL: databaseUrl }, false, "browser_operation_acceptance_migrate_deploy_failed");
     run(process.execPath, [vitestCli, "run", "--config", "scripts/browser-operation-pilot.acceptance.vitest.config.ts"], { ...env, DATABASE_URL: databaseUrl }, true, "browser_operation_acceptance_dec407_service_failed");
 
-    sql('SELECT COUNT(*) FROM "_prisma_migrations"', "37");
+    sql('SELECT COUNT(*) FROM "_prisma_migrations"', String(migrationDirectoryCount()));
     sql("SELECT COUNT(*) FROM pg_constraint WHERE conname IN ('BrowserMutationOperation_terminal_outcome_check','BrowserMutationOperation_bindingId_fkey','BrowserOperationBinding_householdId_actorMemberId_fkey','BrowserOperationBinding_householdId_babyId_fkey')", "4");
     sql("INSERT INTO \"User\" (\"id\",\"name\",\"email\",\"emailVerified\",\"createdAt\",\"updatedAt\") VALUES ('u1','Synthetic User','u1@acceptance.invalid',true,NOW(),NOW()),('u2','Synthetic User Two','u2@acceptance.invalid',true,NOW(),NOW()); INSERT INTO \"Household\" (\"id\",\"name\",\"createdByUserId\",\"createdAt\",\"updatedAt\") VALUES ('h1','Synthetic Household','u1',NOW(),NOW()),('h2','Synthetic Household Two','u2',NOW(),NOW()); INSERT INTO \"HouseholdMember\" (\"id\",\"householdId\",\"userId\",\"role\",\"joinedAt\",\"createdAt\",\"updatedAt\") VALUES ('m1','h1','u1','owner',NOW(),NOW(),NOW()),('m2','h2','u2','owner',NOW(),NOW(),NOW()); INSERT INTO \"Baby\" (\"id\",\"householdId\",\"name\",\"timezone\",\"createdAt\",\"updatedAt\") VALUES ('b1','h1','Synthetic Baby','UTC',NOW(),NOW()),('b2','h2','Synthetic Baby Two','UTC',NOW(),NOW());");
     sql("INSERT INTO \"BrowserOperationBinding\" (\"id\",\"sessionId\",\"actorUserId\",\"actorMemberId\",\"householdId\",\"operationId\",\"operationKey\",\"openingFingerprint\",\"persistenceVersion\",\"targetKind\",\"babyId\",\"targetSnapshot\",\"protocolVersion\",\"state\",\"expiresAt\",\"issuedAt\",\"updatedAt\") VALUES ('bind1','session-retained','u1','m1','h1','bmo_0123456789abcdefghjkmnpqrs','calendar_event.create','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',2,'calendar','b1','{}','browser_v2','open',NOW() + INTERVAL '30 minutes',NOW(),NOW());");
