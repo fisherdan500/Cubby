@@ -102,8 +102,34 @@ describe("activity export contents", () => {
     const [header, row, ...rest] = (await activityCsv()).split("\n");
 
     expect(header).toBe('"id","baby","type","occurredAt","startedAt","endedAt","durationSeconds","timezone","actor","details","notes"');
-    expect(row).toBe('"activity-1","Avery","feeding","2026-09-19T14:30:00.000Z","","","","America/New_York","Dad","bottle - 4 oz",""');
+    expect(row).toBe('"activity-1","Avery","feeding","2026-09-19T14:30:00.000Z","","","","America/New_York","Dad","Kind: Bottle; Amount: 4 oz",""');
     expect(rest).toEqual([]);
+  });
+
+  it("carries the saved fields the dashboard summary leaves out", async () => {
+    mocks.listActivitiesForContext.mockResolvedValue([
+      exportedActivity({
+        feeding: { mode: "breast", side: "left", leftSeconds: 300, rightSeconds: 240 }
+      })
+    ]);
+
+    // Nursing per-side times were stored and shown in the app, but an export dropped them, because the
+    // details column reused the terse one-line summary a list row shows.
+    expect(await activityCsv()).toContain('"Kind: Breast; Side: Left; Left side: 5 min; Right side: 4 min"');
+  });
+
+  it("carries a vaccine's lot and due date, which an export used to lose", async () => {
+    mocks.listActivitiesForContext.mockResolvedValue([
+      exportedActivity({
+        type: "vaccine",
+        feeding: null,
+        vaccine: { name: "DTaP", dose: "1 of 5", lot: "A123", provider: "Dr. Lee", dueDate: new Date("2026-10-01T00:00:00.000Z") }
+      })
+    ]);
+
+    const csv = await activityCsv();
+    expect(csv).toContain("Lot: A123");
+    expect(csv).toContain("Due date: Oct 1, 2026");
   });
 
   it("marks an inactive baby so a restored export is not misread", async () => {

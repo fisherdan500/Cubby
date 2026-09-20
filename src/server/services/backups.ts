@@ -3,6 +3,7 @@ import { z } from "zod";
 import { automatedBackupStatusConfig } from "@/lib/automated-backup-config";
 import { prisma } from "@/lib/db/prisma";
 import { automatedBackupConfig } from "@/lib/env";
+import { activityBackupDetailKeys, activityDetailRecord } from "@/domain/activity-field-matrix";
 import { parseAccentTheme } from "@/domain/appearance";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import { activityRestoreSchema } from "@/lib/validation/activity";
@@ -304,21 +305,11 @@ export function activityToInput(activity: BackupActivity) {
     contactId: activity.medicine?.contactId ?? null
   };
 
-  if (activity.feeding) return { ...base, detail: compactDetail(activity.feeding, ["mode", "amount", "unit", "side", "bottleType", "food", "leftSeconds", "rightSeconds"]) };
-  if (activity.diaper) return { ...base, detail: compactDetail(activity.diaper, ["kind", "color", "consistency", "rashConcern", "condition", "blowout", "creamApplied"]) };
-  if (activity.sleep) return { ...base, detail: compactDetail(activity.sleep, ["sleepType", "location", "quality"]) };
-  if (activity.pumping) return { ...base, detail: compactDetail(activity.pumping, ["amount", "leftAmount", "rightAmount", "unit", "inventoryAction"]) };
-  if (activity.medicine) return { ...base, detail: compactDetail(activity.medicine, ["name", "dose", "unit"]) };
-  if (activity.measurement) return { ...base, detail: compactDetail(activity.measurement, ["weight", "weightUnit", "length", "lengthUnit", "headCircumference", "headUnit", "temperature", "temperatureUnit", "measurementType"]) };
-  if (activity.milestone) return { ...base, detail: compactDetail(activity.milestone, ["title", "category"]) };
-  if (activity.note) return { ...base, detail: compactDetail(activity.note, ["text", "category"]) };
-  if (activity.bath) return { ...base, detail: compactDetail(activity.bath, ["bathType", "products", "waterTemp"]) };
-  if (activity.play) return { ...base, detail: compactDetail(activity.play, ["activityName", "location", "intensity"]) };
-  if (activity.mood) return { ...base, detail: compactDetail(activity.mood, ["mood", "intensity", "context"]) };
-  if (activity.supplement) return { ...base, detail: compactDetail(activity.supplement, ["name", "dose", "unit"]) };
-  if (activity.vaccine) return { ...base, detail: compactDetail(activity.vaccine, ["name", "dose", "lot", "provider", "dueDate"]) };
-  if (activity.milkInventory) return { ...base, detail: compactDetail(activity.milkInventory, ["action", "amount", "unit", "storage", "label"]) };
-  return { ...base, detail: {} };
+  // Which keys a type carries is declared once, in the activity field matrix, so a newly stored field
+  // is in the backup by declaration rather than by remembering to add it here.
+  const detail = activityDetailRecord(activity as unknown as { type: string } & Record<string, unknown>);
+  if (!detail) return { ...base, detail: {} };
+  return { ...base, detail: compactDetail(detail, activityBackupDetailKeys(activity.type)) };
 }
 
 function compactDetail(source: Record<string, unknown>, keys: string[]) {

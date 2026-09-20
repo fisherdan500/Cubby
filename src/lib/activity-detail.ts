@@ -1,3 +1,9 @@
+import type { ActivityTypeName } from "@/domain/activity";
+import {
+  activityDetailFields,
+  activityDetailRecord,
+  type ActivityFieldDeclaration
+} from "@/domain/activity-field-matrix";
 import type { ActivityWithDetails } from "@/lib/activity-format";
 import { formatDuration } from "@/lib/activity-format";
 import { displayLabel } from "@/lib/display-label";
@@ -18,6 +24,17 @@ export function buildActivityDetailSections(activity: ActivityWithDetails, timeZ
   };
 }
 
+/**
+ * Every saved detail of an activity as one labelled line, for an export. The list view's summary is
+ * deliberately terse and leaves fields out; an export is the household's own copy of its records, so it
+ * carries everything the entry actually holds, under the same labels the app shows.
+ */
+export function activityDetailText(activity: ActivityWithDetails, timeZone = activity.timezone) {
+  return detailRows(activity, timeZone)
+    .map(({ label: rowLabel, value }) => `${rowLabel}: ${value}`)
+    .join("; ");
+}
+
 function timingRows(activity: ActivityWithDetails, timeZone: string): ActivityDetailRow[] {
   return compactRows([
     activity.timerState !== "none" ? row("Timer", displayLabel(activity.timerState)) : null,
@@ -27,105 +44,45 @@ function timingRows(activity: ActivityWithDetails, timeZone: string): ActivityDe
   ]);
 }
 
+/**
+ * Every field the matrix gives a label, in the order it declares them. The view no longer keeps its own
+ * copy of each type's field list, so a newly stored field cannot be missing from the entry a caregiver
+ * reads back.
+ */
 function detailRows(activity: ActivityWithDetails, timeZone: string): ActivityDetailRow[] {
-  switch (activity.type) {
-    case "feeding":
-      return compactRows([
-        row("Kind", label(activity.feeding?.mode)),
-        row("Amount", quantity(activity.feeding?.amount, activity.feeding?.unit)),
-        row("Side", label(activity.feeding?.side)),
-        row("Bottle type", activity.feeding?.bottleType),
-        row("Food", activity.feeding?.food),
-        row("Left side", duration(activity.feeding?.leftSeconds)),
-        row("Right side", duration(activity.feeding?.rightSeconds))
-      ]);
-    case "diaper":
-      return compactRows([
-        row("Kind", label(activity.diaper?.kind)),
-        row("Color", activity.diaper?.color),
-        row("Consistency", activity.diaper?.consistency),
-        row("Condition", activity.diaper?.condition),
-        trueRow("Rash concern", activity.diaper?.rashConcern),
-        trueRow("Blowout", activity.diaper?.blowout),
-        trueRow("Cream applied", activity.diaper?.creamApplied)
-      ]);
-    case "sleep":
-      return compactRows([
-        row("Sleep type", label(activity.sleep?.sleepType)),
-        row("Location", activity.sleep?.location),
-        row("Quality", label(activity.sleep?.quality))
-      ]);
-    case "pumping":
-      return compactRows([
-        row("Amount", quantity(activity.pumping?.amount, activity.pumping?.unit)),
-        row("Left amount", quantity(activity.pumping?.leftAmount, activity.pumping?.unit)),
-        row("Right amount", quantity(activity.pumping?.rightAmount, activity.pumping?.unit)),
-        // Named as the form asks it, so the saved answer reads back under the same question.
-        row("Milk went to", label(activity.pumping?.inventoryAction))
-      ]);
-    case "medicine":
-      return compactRows([
-        row("Medicine", activity.medicine?.name),
-        row("Dose", quantity(activity.medicine?.dose, activity.medicine?.unit))
-      ]);
-    case "measurement":
-      return compactRows([
-        row("Measurement type", label(activity.measurement?.measurementType)),
-        row("Weight", quantity(activity.measurement?.weight, activity.measurement?.weightUnit)),
-        row("Length", quantity(activity.measurement?.length, activity.measurement?.lengthUnit)),
-        row("Head circumference", quantity(activity.measurement?.headCircumference, activity.measurement?.headUnit)),
-        row("Temperature", quantity(activity.measurement?.temperature, activity.measurement?.temperatureUnit))
-      ]);
-    case "milestone":
-      return compactRows([
-        row("Milestone", activity.milestone?.title),
-        row("Category", label(activity.milestone?.category))
-      ]);
-    case "note":
-      return compactRows([row("Category", label(activity.note?.category)), row("Entry", activity.note?.text)]);
-    case "bath":
-      return compactRows([
-        row("Bath type", label(activity.bath?.bathType)),
-        row("Products", activity.bath?.products),
-        row("Water temperature", activity.bath?.waterTemp)
-      ]);
-    case "play":
-      return compactRows([
-        row("Activity", activity.play?.activityName),
-        row("Location", activity.play?.location),
-        row("Kind of play", label(activity.play?.intensity))
-      ]);
-    case "mood":
-      return compactRows([
-        row("Mood", label(activity.mood?.mood)),
-        row("Intensity", meaningful(activity.mood?.intensity) ? `${activity.mood?.intensity}/5` : undefined),
-        row("Context", activity.mood?.context)
-      ]);
-    case "supplement":
-      return compactRows([
-        row("Supplement", activity.supplement?.name),
-        row("Dose", quantity(activity.supplement?.dose, activity.supplement?.unit))
-      ]);
-    case "vaccine":
-      return compactRows([
-        row("Vaccine", activity.vaccine?.name),
-        row("Dose", activity.vaccine?.dose),
-        row("Lot", activity.vaccine?.lot),
-        row("Provider", activity.vaccine?.provider),
-        dateRow("Due date", activity.vaccine?.dueDate, timeZone, true),
-        row("Document", activity.vaccine?.documentUrl)
-      ]);
-    case "milk_inventory":
-      return compactRows([
-        row("Action", label(activity.milkInventory?.action)),
-        row("Amount", quantity(activity.milkInventory?.amount, activity.milkInventory?.unit)),
-        row("Storage", activity.milkInventory?.storage),
-        row("Label", activity.milkInventory?.label)
-      ]);
-    default: {
-      const exhaustive: never = activity.type;
-      return exhaustive;
-    }
+  const detail = activityDetailRecord(activity as unknown as { type: string } & Record<string, unknown>);
+  if (!detail) return [];
+  return compactRows(
+    activityDetailFields(activity.type as ActivityTypeName).map((field) =>
+      detailRow(field, detail[field.name], detail, timeZone)
+    )
+  );
+}
+
+function detailRow(
+  field: ActivityFieldDeclaration,
+  value: unknown,
+  detail: Record<string, unknown>,
+  timeZone: string
+): ActivityDetailRow | null {
+  const rowLabel = field.label!;
+  switch (field.kind) {
+    case "enum":
+      return row(rowLabel, label(value));
+    case "quantity":
+      return row(rowLabel, quantity(value, field.unitField ? detail[field.unitField] : undefined));
+    case "duration":
+      return row(rowLabel, duration(value as number | null | undefined));
+    case "scale":
+      return row(rowLabel, meaningful(value) ? `${value}/5` : undefined);
+    case "boolean":
+      return trueRow(rowLabel, value as boolean | null | undefined);
+    case "date":
+      return dateRow(rowLabel, value as Date | string | null | undefined, timeZone, true);
+    case "unit":
+      return null;
+    case "text":
+      return row(rowLabel, value);
   }
 }
 

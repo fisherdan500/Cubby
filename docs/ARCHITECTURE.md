@@ -343,6 +343,29 @@ activities or resumed timers until reactivated.
 Do not replace this with a separate-table-only model. New tracking types should
 fit the aggregate pattern unless there is a clear architectural reason not to.
 
+### Activity Field Matrix
+
+`src/domain/activity-field-matrix.ts` declares, once, what every activity type
+stores: each field's name, kind, the label it is shown under, and the reason it
+is deliberately absent from a surface. Three surfaces are driven from it — the
+detail view, the export's details column, and the backup's `detail` keys — so a
+field that is declared is carried by all three without anyone listing it again.
+
+The surfaces it cannot generate are checked against it by
+`src/domain/activity-field-matrix-conformance.test.ts`: the Prisma columns, the
+validation schema, the create mapping, and the edit form's initial values. A
+column that is stored but undeclared, or a declared field that validation drops,
+fails there.
+
+Adding a field to an activity type therefore means: the Prisma model, the
+validation schema, the create mapping, the form, and one entry in the matrix.
+Anything missed is a test failure rather than a field that silently disappears
+from an export.
+
+The dashboard's one-line summary (`describeActivity`) is deliberately not bound
+to the matrix: a list row has to stay readable on a phone, so it stays terse
+while the detail view, export, and backup stay complete.
+
 ## Timezone And Date Rules
 
 Timestamps are stored as instants in Prisma `DateTime` fields. User-facing date
