@@ -55,25 +55,34 @@ export default async function ReportsPage({
               <input name="babyId" type="hidden" value={report.baby.id} />
               <input name="tab" type="hidden" value={tab} />
               <input name="routineWindow" type="hidden" value={report.routine.window} />
-              <Input name="start" type="date" defaultValue={report.startKey} className="sm:w-48" />
-              <Input name="end" type="date" defaultValue={report.endKey} className="sm:w-48" />
+              {/* A bare date input announces only "date"; these say which end of the range they set. */}
+              <label htmlFor="report-start" className="sr-only">
+                Report start date
+              </label>
+              <Input id="report-start" name="start" type="date" defaultValue={report.startKey} className="sm:w-48" />
+              <label htmlFor="report-end" className="sr-only">
+                Report end date
+              </label>
+              <Input id="report-end" name="end" type="date" defaultValue={report.endKey} className="sm:w-48" />
             </AutoSubmitForm>
           </Card>
 
-          <div className="flex gap-2 overflow-x-auto border-b border-border pb-2">
+          {/* Which report is open was carried by colour alone; aria-current says it too. */}
+          <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2">
             {tabs.map(([value, label, Icon]) => (
               <Link
                 key={value}
                 href={reportHref({ tab: value })}
+                aria-current={tab === value ? "page" : undefined}
                 className={`inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-bold ${
                   tab === value ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon aria-hidden="true" className="h-4 w-4" />
                 {label}
               </Link>
             ))}
-          </div>
+          </nav>
 
           {tab === "stats" ? <StatsTab stats={report.stats} /> : null}
           {tab === "milestones" ? <MilestonesTab stats={report.stats} /> : null}
@@ -174,34 +183,47 @@ function ActivityTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof g
 function HeatmapTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
   if (!stats) return null;
   const max = Math.max(1, ...stats.heatmap.map((item) => item.count));
+  // A grid of coloured squares whose only text was a hover title: unreachable by keyboard and silent to
+  // a screen reader. The same picture as a real table reads out as day, hour and count.
   return (
     <Card className="overflow-x-auto">
-      <div className="grid min-w-[760px] grid-cols-[80px_repeat(24,1fr)] gap-1 text-xs">
-        <div />
-        {Array.from({ length: 24 }, (_, hour) => (
-          <div key={hour} className="text-center text-muted-foreground">
-            {hour}
-          </div>
-        ))}
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, dayIndex) => (
-          <>
-            <div key={`${day}-label`} className="font-bold">
-              {day}
-            </div>
-            {Array.from({ length: 24 }, (_, hour) => {
-              const value = stats.heatmap[dayIndex * 24 + hour].count;
-              return (
-                <div
-                  key={`${day}-${hour}`}
-                  className="h-7 rounded-sm border border-border"
-                  style={{ backgroundColor: `hsl(var(--primary) / ${0.12 + (value / max) * 0.78})` }}
-                  title={`${day} ${hour}:00 - ${value}`}
-                />
-              );
-            })}
-          </>
-        ))}
-      </div>
+      <table className="min-w-[760px] border-separate border-spacing-1 text-xs">
+        <caption className="sr-only">Activity counts by weekday and hour of day</caption>
+        <thead>
+          <tr>
+            <th scope="col" className="w-20">
+              <span className="sr-only">Weekday</span>
+            </th>
+            {Array.from({ length: 24 }, (_, hour) => (
+              <th key={hour} scope="col" className="text-center font-normal text-muted-foreground">
+                {hour}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, dayIndex) => (
+            <tr key={day}>
+              <th scope="row" className="text-left font-bold">
+                {day}
+              </th>
+              {Array.from({ length: 24 }, (_, hour) => {
+                const value = stats.heatmap[dayIndex * 24 + hour].count;
+                return (
+                  <td
+                    key={`${day}-${hour}`}
+                    className="h-7 rounded-sm border border-border p-0"
+                    style={{ backgroundColor: `hsl(var(--primary) / ${0.12 + (value / max) * 0.78})` }}
+                    title={`${day} ${hour}:00 - ${value}`}
+                  >
+                    <span className="sr-only">{value}</span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </Card>
   );
 }
@@ -262,7 +284,8 @@ function Trend({
       <h2 className="font-black">{title}</h2>
       {points.length ? (
         <>
-          <svg viewBox={`0 0 ${width} ${height}`} className="h-52 w-full rounded-md bg-muted">
+          {/* Decorative: every plotted measurement is listed as text directly below. */}
+          <svg aria-hidden="true" viewBox={`0 0 ${width} ${height}`} className="h-52 w-full rounded-md bg-muted">
             <path d={d} fill="none" stroke="hsl(var(--primary))" strokeWidth="4" />
             {points.map((point, index) => {
               const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
