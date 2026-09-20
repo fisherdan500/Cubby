@@ -1,0 +1,50 @@
+name: verify
+
+# Runs Cubby's verification gates on every pull request and on main, through the same
+# `verify:gates` runner a person runs locally, so the two cannot drift apart.
+#
+# Nothing here touches a household's data or deployment: the disposable rehearsals boot their own
+# throwaway PostgreSQL inside the runner and tear it down again.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  canonical:
+    name: canonical gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run verify:gates
+
+  disposable:
+    name: disposable rehearsals
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      # Each rehearsal starts and removes its own Compose project; the runner's Docker is enough.
+      - run: npm run verify:gates:disposable
