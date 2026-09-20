@@ -113,7 +113,9 @@ export function runVerifyGates(args: readonly string[]) {
   const groups = [...new Set(gates.map((gate) => gate.group))].join(" and ");
   const failed = outcomes.filter((outcome) => !outcome.passed);
   if (failed.length) {
-    console.error(`verify_gates_failed: ${failed.map((outcome) => outcome.id).join(", ")}`);
+    // On stdout with the rest of the summary: a separate stream interleaves, and this line read as
+    // though it came before the results it summarizes.
+    console.log(`verify_gates_failed: ${failed.map((outcome) => outcome.id).join(", ")}`);
     return 1;
   }
   // Says which gates ran, so a pass is never mistaken for a pass of every gate there is.
