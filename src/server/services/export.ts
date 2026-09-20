@@ -5,32 +5,46 @@ import { listActivitiesForContext } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite } from "@/server/services/mutation-locks";
 
-function csvValue(value: unknown) {
+const headers = [
+  "id",
+  "baby",
+  "type",
+  "occurredAt",
+  "startedAt",
+  "endedAt",
+  "durationSeconds",
+  "timezone",
+  "actor",
+  "details",
+  "notes"
+];
+
+function cellValue(value: unknown) {
   if (value === null || value === undefined) return "";
-  const stringValue = value instanceof Date ? value.toISOString() : String(value);
-  return `"${stringValue.replaceAll('"', '""')}"`;
+  return value instanceof Date ? value.toISOString() : String(value);
 }
 
-export async function activityCsv() {
+/** CSV keeps a value verbatim, including any line breaks, inside quotes. */
+function csvCell(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+/**
+ * A tab-separated row is one line with no tabs inside a value, so both are folded to single spaces.
+ * A note with a line break used to be split across rows here, shifting every later column, because
+ * the TSV was produced by re-parsing the finished CSV text line by line.
+ */
+function tabCell(value: string) {
+  return value.replace(/\s*\r?\n\s*/g, " ").replaceAll("\t", " ");
+}
+
+async function activityExportRows() {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "export.create");
   return prisma.$transaction(async (tx) => {
     const lockedCtx = await lockActorForWrite(tx, ctx);
     requirePermission(lockedCtx, "export.create");
     const activities = await listActivitiesForContext(lockedCtx, tx);
-    const headers = [
-      "id",
-      "baby",
-      "type",
-      "occurredAt",
-      "startedAt",
-      "endedAt",
-      "durationSeconds",
-      "timezone",
-      "actor",
-      "details",
-      "notes"
-    ];
     const rows = activities.map((activity) => {
       const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
       return [
@@ -45,7 +59,7 @@ export async function activityCsv() {
         activity.actorMember.displayName ?? activity.actorMember.user.name,
         describeActivity(activity),
         activity.notes
-      ].map(csvValue);
+      ].map(cellValue);
     });
 
     await writeAudit(lockedCtx, {
@@ -54,19 +68,16 @@ export async function activityCsv() {
       entityId: lockedCtx.householdId
     }, tx);
 
-    return [headers.map(csvValue).join(","), ...rows.map((row) => row.join(","))].join("\n");
+    return rows;
   });
 }
 
+export async function activityCsv() {
+  const rows = await activityExportRows();
+  return [headers.map(csvCell).join(","), ...rows.map((row) => row.map(csvCell).join(","))].join("\n");
+}
+
 export async function activitySpreadsheet() {
-  const csv = await activityCsv();
-  return csv
-    .split("\n")
-    .map((line) =>
-      line
-        .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-        .map((value) => value.replace(/^"|"$/g, "").replaceAll('""', '"'))
-        .join("\t")
-    )
-    .join("\n");
+  const rows = await activityExportRows();
+  return [headers.map(tabCell).join("\t"), ...rows.map((row) => row.map(tabCell).join("\t"))].join("\n");
 }
