@@ -75,9 +75,14 @@ export function parseDatasetYears(args: readonly string[]) {
   return Number(value) as 1 | 5;
 }
 
+/** `--browser` adds the input-acknowledgement stage, which needs a local Chrome. */
+export function parseBrowserStage(args: readonly string[]) {
+  return args.includes("--browser");
+}
+
 const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
-export function runPerformanceBudgetsRehearsal(years: 1 | 5 = 1) {
+export function runPerformanceBudgetsRehearsal(years: 1 | 5 = 1, browserStage = false) {
   const projectName = `cubby_performance_rehearsal_${randomBytes(4).toString("hex")}`;
   const composeArgs = ["compose", "--project-name", projectName, "--file", REHEARSAL_COMPOSE_FILE];
   const rehearsalPassword = randomBytes(24).toString("hex");
@@ -168,7 +173,20 @@ export function runPerformanceBudgetsRehearsal(years: 1 | 5 = 1) {
       }
     });
 
-    console.log(`PERFORMANCE_BUDGETS_ACCEPTANCE_PASS years=${years}`);
+    if (browserStage) {
+      // The remaining budget is a client paint, so it needs a real browser driving real input events.
+      run(process.execPath, [resolve(repositoryRoot, "scripts/performance-input-probe.mjs")], {
+        cwd: repositoryRoot,
+        env: {
+          ...process.env,
+          REHEARSAL_APP_BASE_URL: `http://127.0.0.1:${appPort}`,
+          REHEARSAL_HANDOFF_FILE: handoffFile,
+          REHEARSAL_APP_PASSWORD: rehearsalAppPassword
+        }
+      });
+    }
+
+    console.log(`PERFORMANCE_BUDGETS_ACCEPTANCE_PASS years=${years}${browserStage ? " browser=1" : ""}`);
     passed = true;
   } finally {
     if (!passed && composeAttempted) {
@@ -193,4 +211,6 @@ export function runPerformanceBudgetsRehearsal(years: 1 | 5 = 1) {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) runPerformanceBudgetsRehearsal(parseDatasetYears(process.argv.slice(2)));
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  runPerformanceBudgetsRehearsal(parseDatasetYears(process.argv.slice(2)), parseBrowserStage(process.argv.slice(2)));
+}
