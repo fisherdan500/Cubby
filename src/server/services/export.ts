@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
-import { describeActivity } from "@/lib/activity-format";
+import { activityDetailText } from "@/lib/activity-detail";
 import { listActivitiesForContext } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite } from "@/server/services/mutation-locks";
@@ -57,7 +57,9 @@ async function activityExportRows() {
         activity.durationSeconds,
         activity.timezone,
         activity.actorMember.displayName ?? activity.actorMember.user.name,
-        describeActivity(activity),
+        // Every declared field, not the dashboard's terse summary: an export used to lose nursing
+        // per-side times, a diaper's consistency, a measurement's type and a vaccine's lot and due date.
+        activityDetailText(activity),
         activity.notes
       ].map(cellValue);
     });

@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { activityTypes, type ActivityTypeName } from "@/domain/activity";
+import {
+  ACTIVITY_DETAIL_RELATION,
+  activityBackupDetailKeys,
+  activityFields
+} from "@/domain/activity-field-matrix";
 import { activityRestoreSchema } from "@/lib/validation/activity";
 
 vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
@@ -11,32 +16,21 @@ import { activityToInput } from "@/server/services/backups";
 import { specificCreate } from "@/server/services/activities";
 
 const schema = readFileSync(new URL("../../../prisma/schema.prisma", import.meta.url), "utf8");
-const backupsSource = readFileSync(new URL("./backups.ts", import.meta.url), "utf8");
 
 /**
- * Fields a backup deliberately leaves out, with the reason. `documentUrl` belongs to vaccine
- * attachments, which backup-format.ts excludes from the format entirely, and restore explicitly clears
- * it. `contactId` is exported once on the activity itself, because restore has to remap it to the
- * contact created in the target household.
+ * Fields a backup deliberately leaves out, and why, read from the matrix that declares them rather than
+ * restated here. `documentUrl` belongs to vaccine attachments, which backup-format.ts excludes from the
+ * format entirely; `contactId` is exported once on the activity itself, because restore has to remap it.
  */
-const deliberatelyNotInDetail: Record<string, string[]> = { VaccineLog: ["documentUrl"], MedicineLog: ["contactId"] };
+function deliberatelyNotInDetail(type: ActivityTypeName) {
+  return activityFields(type)
+    .filter((field) => field.omitted?.backup !== undefined)
+    .map((field) => field.name);
+}
 
-const detailModels: Record<ActivityTypeName, string> = {
-  feeding: "FeedingLog",
-  diaper: "DiaperLog",
-  sleep: "SleepLog",
-  pumping: "PumpingLog",
-  medicine: "MedicineLog",
-  measurement: "MeasurementLog",
-  milestone: "MilestoneLog",
-  note: "NoteLog",
-  bath: "BathLog",
-  play: "PlayLog",
-  mood: "MoodLog",
-  supplement: "SupplementLog",
-  vaccine: "VaccineLog",
-  milk_inventory: "MilkInventoryLog"
-};
+const detailModels = Object.fromEntries(
+  activityTypes.map((type) => [type, ACTIVITY_DETAIL_RELATION[type].model])
+) as Record<ActivityTypeName, string>;
 
 /** The model's own stored columns: no id, no activityId, no relation fields. */
 function storedColumns(model: string) {
@@ -52,14 +46,6 @@ function storedColumns(model: string) {
     .map(([name]) => name);
 }
 
-/** The keys backups.ts exports for that model, read from its own mapping line. */
-function exportedKeys(model: string) {
-  const relation = model.replace(/Log$/, "");
-  const property = relation === "MilkInventory" ? "milkInventory" : relation.charAt(0).toLowerCase() + relation.slice(1);
-  const line = backupsSource.split(/\r?\n/).find((candidate) => candidate.includes(`if (activity.${property})`));
-  if (!line) throw new Error(`missing export mapping for ${model}`);
-  return [...line.matchAll(/"([a-zA-Z]+)"/g)].map(([, key]) => key);
-}
 
 // One fully populated detail record per type, as the database would hold it.
 const details: Record<ActivityTypeName, Record<string, unknown>> = {
@@ -112,11 +98,11 @@ describe("backup activity round trip", () => {
   it.each([...activityTypes])("exports every stored %s column, or documents why not", (type) => {
     const model = detailModels[type];
     const missing = storedColumns(model)
-      .filter((column) => !exportedKeys(model).includes(column))
-      .filter((column) => !(deliberatelyNotInDetail[model] ?? []).includes(column));
+      .filter((column) => !activityBackupDetailKeys(type).includes(column))
+      .filter((column) => !deliberatelyNotInDetail(type).includes(column));
 
-    // A new detail column that nobody adds here is silently dropped from every backup, and lost on
-    // restore. Add it to the export list in backups.ts, or list it above with its reason.
+    // A new detail column that nobody declares is silently dropped from every backup, and lost on
+    // restore. Declare it in the activity field matrix, or give it an `omitted.backup` reason there.
     expect({ model, missing }).toEqual({ model, missing: [] });
   });
 
@@ -134,7 +120,7 @@ describe("backup activity round trip", () => {
 
     const saved = restored[relationProperty[type]]?.create ?? {};
     for (const [field, value] of Object.entries(details[type])) {
-      if ((deliberatelyNotInDetail[detailModels[type]] ?? []).includes(field)) continue;
+      if (deliberatelyNotInDetail(type).includes(field)) continue;
       const round = saved[field];
       const comparable = round instanceof Date ? round.toISOString() : round?.toString?.() ?? round;
       const original = value instanceof Date ? value.toISOString() : value?.toString?.() ?? value;
