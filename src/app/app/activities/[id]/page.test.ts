@@ -24,7 +24,8 @@ vi.mock("@/components/actions/confirmed-activity-delete", () => ({
 vi.mock("@/components/actions/activity-actions", () => ({
   PauseTimerButton: () => createElement("button", { type: "button" }, "Pause"),
   ResumeTimerButton: () => createElement("button", { type: "button" }, "Resume"),
-  StopTimerButton: () => createElement("button", { type: "button" }, "Stop timer")
+  StopTimerButton: ({ returnTo }: { returnTo?: string }) =>
+    createElement("button", { type: "button", "data-returns-to": returnTo ?? "" }, "Stop timer")
 }));
 
 import ActivityDetailPage from "@/app/app/activities/[id]/page";
@@ -92,6 +93,21 @@ describe("activity detail timer controls", () => {
 
     expect(body.textContent).not.toContain("Timer running");
     expect(body.textContent).not.toContain("Stop timer");
+  });
+
+  it("hands Stop the same destination the Back link uses", async () => {
+    mocks.getActivityView.mockResolvedValue({
+      activity: savedActivity({ timerState: "running" }),
+      canUpdate: true,
+      canDelete: true
+    });
+    document.body.innerHTML = renderToStaticMarkup(
+      await ActivityDetailPage({ params: { id: "activity-1" }, searchParams: { returnTo: "/app/history" } })
+    );
+
+    // Stopping finishes with this screen, so it leaves by itself rather than stranding you on a
+    // stopped timer with a Back press still to make.
+    expect(document.querySelector("[data-returns-to]")?.getAttribute("data-returns-to")).toBe("/app/history");
   });
 
   it("keeps its action bar clear of the shell's timer bar", async () => {

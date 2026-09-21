@@ -80,8 +80,9 @@ export default async function ActivityDetailPage({
                 />
               </p>
               <div className="flex flex-wrap gap-2">
+                {/* Pause and Resume keep you here: you are adjusting a timer, not finishing with it. */}
                 {paused ? <ResumeTimerButton id={activity.id} /> : <PauseTimerButton id={activity.id} />}
-                <StopTimerButton id={activity.id} />
+                <StopTimerButton id={activity.id} returnTo={returnTo} />
               </div>
             </div>
           </Card>

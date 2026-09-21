@@ -4,15 +4,15 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ refresh: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
+const mocks = vi.hoisted(() => ({ refresh: vi.fn(), replace: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh, replace: mocks.replace }) }));
 vi.mock("@/lib/browser-operation-tab-scope", () => ({ tabScopedBrowserOperationStorageKey: async (_partition: string, key: string) => `${key}:tab:test` }));
 import { StopTimerButton } from "@/components/actions/activity-actions";
 
 globalThis.React = React;
 const result = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body }) as Response;
 
-beforeEach(() => { sessionStorage.clear(); mocks.refresh.mockReset(); });
+beforeEach(() => { sessionStorage.clear(); mocks.refresh.mockReset(); mocks.replace.mockReset(); });
 afterEach(cleanup);
 
 describe("activity action browser-v2 handling", () => {
@@ -37,6 +37,55 @@ describe("activity action browser-v2 handling", () => {
       "/api/timers/timer-1/stop"
     ]);
     expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId });
+    // Stopping from the shell's timer bar leaves you where you are: no return destination is given.
+    expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it("returns to where the activity was opened from once its timer is stopped", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition)
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+
+    render(createElement(StopTimerButton, { id: "timer-1", returnTo: "/app?babyId=baby-1" }));
+    await userEvent.click(screen.getByRole("button", { name: "Stop timer" }));
+
+    // Stopping is the end of that activity's business, so the screen goes back by itself rather than
+    // leaving a stopped timer on display with a Back press still to make.
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/app?babyId=baby-1"));
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns only after the stop is authoritatively complete", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition)
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "pending", operationId } }));
+    globalThis.fetch = fetchMock;
+
+    render(createElement(StopTimerButton, { id: "timer-1", returnTo: "/app?babyId=baby-1" }));
+    await userEvent.click(screen.getByRole("button", { name: "Stop timer" }));
+
+    // An unknown outcome keeps you on the activity, where the error and a retry are.
+    await screen.findByRole("alert");
+    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("returns when a retried stop turns out to have completed already", async () => {
+    sessionStorage.setItem(storageKey, operationId);
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition)
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+
+    render(createElement(StopTimerButton, { id: "timer-1", returnTo: "/app/history" }));
+    await userEvent.click(screen.getByRole("button", { name: "Stop timer" }));
+
+    // The reconciliation path has to return too, or a retry after a lost response would strand you.
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/app/history"));
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
   });
 
   it("does not reuse an in-memory timer operation after the mounted household partition changes", async () => {
