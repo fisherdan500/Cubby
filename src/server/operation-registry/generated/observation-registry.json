@@ -4,12 +4,12 @@
     "api_route": 100,
     "client_binding": 33,
     "instrumentation": 1,
-    "package_command": 23,
+    "package_command": 25,
     "server_action": 1,
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "0501ebd27d6c66d180e7b427623ee4b72351a376b017a7039fc847830fbfdbc6",
+  "declarationDigest": "316b51c6cd044955b9c8560edb66b1195ecf51f711a53f36807d0f38dee46998",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -882,6 +882,40 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "package_script",
+            "symbol": "test:scripts",
+            "target": "package.json#scripts.test:scripts"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/scripts.vitest.config.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/scripts.vitest.config.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/scripts.vitest.config.ts",
+      "sidecarPath": "scripts/scripts.vitest.config.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "command_variant",
             "symbol": "aggregate",
             "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
@@ -996,6 +1030,50 @@
       },
       "id": "package_command:scripts/update-preflight.ts",
       "sidecarPath": "scripts/update-preflight.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:gates",
+            "target": "package.json#scripts.verify:gates"
+          },
+          {
+            "kind": "package_script",
+            "symbol": "verify:gates:all",
+            "target": "package.json#scripts.verify:gates:all"
+          },
+          {
+            "kind": "package_script",
+            "symbol": "verify:gates:disposable",
+            "target": "package.json#scripts.verify:gates:disposable"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/verify-gates.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/verify-gates.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/verify-gates.ts",
+      "sidecarPath": "scripts/verify-gates.operation.ts"
     },
     {
       "declaration": {
@@ -6842,6 +6920,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/scripts.vitest.config.ts",
+      "packageScripts": [
+        "test:scripts"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/backup-recovery-rehearsal.ts",
       "packageScripts": [
         "verify:backup-recovery",
@@ -6916,6 +7002,16 @@
       "rationale": "isolated test or rehearsal command; structural identity only"
     },
     {
+      "category": "rehearsal",
+      "ownerModule": "scripts/verify-gates.ts",
+      "packageScripts": [
+        "verify:gates",
+        "verify:gates:all",
+        "verify:gates:disposable"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
       "category": "build_tool",
       "ownerModule": "scripts/generate-brand-icons.mjs",
       "packageScripts": [
@@ -6932,7 +7028,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "155b4b4f35ec5399aaca363fda64edbb4c8b14b82670d655804fd7e99d3b6cbc",
+  "generatorDigest": "98dec98399f39cc8acb82f7febdd3adeec1d1f8419e435c90e28ff3a5b238c4e",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11518,9 +11614,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 5020,
+          "anchorEnd": 5283,
           "anchorFile": "package.json",
-          "anchorStart": 5011,
+          "anchorStart": 5274,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -11544,9 +11640,9 @@
       "bindings": [
         {
           "anchorDigest": "ab81dd8446575d3e8db6556bc8428d6aca7040a50fcbea81f6bd73b9466a2034",
-          "anchorEnd": 3807,
+          "anchorEnd": 3883,
           "anchorFile": "package.json",
-          "anchorStart": 3776,
+          "anchorStart": 3852,
           "kind": "package_script",
           "symbol": "verify:activity-update-safety",
           "target": "package.json#scripts.verify:activity-update-safety"
@@ -11570,18 +11666,18 @@
       "bindings": [
         {
           "anchorDigest": "356ff55c9bda28971f0b30a6141af2b700cbf4c69d2f566517d2c35be28ce45e",
-          "anchorEnd": 3651,
+          "anchorEnd": 3727,
           "anchorFile": "package.json",
-          "anchorStart": 3627,
+          "anchorStart": 3703,
           "kind": "package_script",
           "symbol": "verify:backup-recovery",
           "target": "package.json#scripts.verify:backup-recovery"
         },
         {
           "anchorDigest": "ad6ab6ca444dd0e736b38b2fb30832927d0bf9030c330047be097a31d88de645",
-          "anchorEnd": 3726,
+          "anchorEnd": 3802,
           "anchorFile": "package.json",
-          "anchorStart": 3701,
+          "anchorStart": 3777,
           "kind": "package_script",
           "symbol": "verify:update-rehearsal",
           "target": "package.json#scripts.verify:update-rehearsal"
@@ -11606,9 +11702,9 @@
       "bindings": [
         {
           "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-          "anchorEnd": 3896,
+          "anchorEnd": 3972,
           "anchorFile": "package.json",
-          "anchorStart": 3864,
+          "anchorStart": 3940,
           "kind": "package_script",
           "symbol": "verify:browser-operation-pilot",
           "target": "package.json#scripts.verify:browser-operation-pilot"
@@ -11632,9 +11728,9 @@
       "bindings": [
         {
           "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
-          "anchorEnd": 4001,
+          "anchorEnd": 4077,
           "anchorFile": "package.json",
-          "anchorStart": 3965,
+          "anchorStart": 4041,
           "kind": "package_script",
           "symbol": "verify:browser-operation-save-path",
           "target": "package.json#scripts.verify:browser-operation-save-path"
@@ -11749,9 +11845,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5121,
+          "anchorEnd": 5384,
           "anchorFile": "package.json",
-          "anchorStart": 5103,
+          "anchorStart": 5366,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -11768,9 +11864,9 @@
       "bindings": [
         {
           "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-          "anchorEnd": 4770,
+          "anchorEnd": 4846,
           "anchorFile": "package.json",
-          "anchorStart": 4746,
+          "anchorStart": 4822,
           "kind": "package_script",
           "symbol": "verify:integrity-suite",
           "target": "package.json#scripts.verify:integrity-suite"
@@ -11794,9 +11890,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 4575,
+          "anchorEnd": 4651,
           "anchorFile": "package.json",
-          "anchorStart": 4543,
+          "anchorStart": 4619,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -11820,9 +11916,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 4685,
+          "anchorEnd": 4761,
           "anchorFile": "package.json",
-          "anchorStart": 4650,
+          "anchorStart": 4726,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -11892,27 +11988,27 @@
       "bindings": [
         {
           "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-          "anchorEnd": 4194,
+          "anchorEnd": 4270,
           "anchorFile": "package.json",
-          "anchorStart": 4171,
+          "anchorStart": 4247,
           "kind": "package_script",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
           "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-          "anchorEnd": 4292,
+          "anchorEnd": 4368,
           "anchorFile": "package.json",
-          "anchorStart": 4269,
+          "anchorStart": 4345,
           "kind": "package_script",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
           "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-          "anchorEnd": 4393,
+          "anchorEnd": 4469,
           "anchorFile": "package.json",
-          "anchorStart": 4367,
+          "anchorStart": 4443,
           "kind": "package_script",
           "symbol": "verify:performance-input",
           "target": "package.json#scripts.verify:performance-input"
@@ -12037,9 +12133,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 5064,
+          "anchorEnd": 5327,
           "anchorFile": "package.json",
-          "anchorStart": 5048,
+          "anchorStart": 5311,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -12377,6 +12473,32 @@
     {
       "bindings": [
         {
+          "anchorDigest": "b1c3199ca314f1e20152766de0e0bbc91c73d193fb2aeb7c04f0bc7e05e65679",
+          "anchorEnd": 3613,
+          "anchorFile": "package.json",
+          "anchorStart": 3599,
+          "kind": "package_script",
+          "symbol": "test:scripts",
+          "target": "package.json#scripts.test:scripts"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/scripts.vitest.config.ts",
+        "packageScripts": [
+          "test:scripts"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/scripts.vitest.config.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/scripts.vitest.config.ts",
+      "sidecarPath": "scripts/scripts.vitest.config.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "67380627fc2272dc3ccef373ab277a1c9bc8cba8f0dfa18056f252a30af65cb9",
           "anchorEnd": 800,
           "anchorFile": "scripts/security-operator.ts",
@@ -12442,9 +12564,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 4104,
+          "anchorEnd": 4180,
           "anchorFile": "package.json",
-          "anchorStart": 4074,
+          "anchorStart": 4150,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -12468,9 +12590,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 4503,
+          "anchorEnd": 4579,
           "anchorFile": "package.json",
-          "anchorStart": 4478,
+          "anchorStart": 4554,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -12482,10 +12604,56 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/update-preflight.ts",
       "sidecarPath": "scripts/update-preflight.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
+          "anchorEnd": 4921,
+          "anchorFile": "package.json",
+          "anchorStart": 4907,
+          "kind": "package_script",
+          "symbol": "verify:gates",
+          "target": "package.json#scripts.verify:gates"
+        },
+        {
+          "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
+          "anchorEnd": 4976,
+          "anchorFile": "package.json",
+          "anchorStart": 4958,
+          "kind": "package_script",
+          "symbol": "verify:gates:all",
+          "target": "package.json#scripts.verify:gates:all"
+        },
+        {
+          "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
+          "anchorEnd": 5044,
+          "anchorFile": "package.json",
+          "anchorStart": 5019,
+          "kind": "package_script",
+          "symbol": "verify:gates:disposable",
+          "target": "package.json#scripts.verify:gates:disposable"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/verify-gates.ts",
+        "packageScripts": [
+          "verify:gates",
+          "verify:gates:all",
+          "verify:gates:disposable"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/verify-gates.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/verify-gates.ts",
+      "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 192,
-  "observationDigest": "1c18a8d9e06a88afec04751da77c0fcc3f47e24ed087bcb310806b08e1061f03",
+  "observationCount": 194,
+  "observationDigest": "4d4163e97c35825e4df4f4b02001add56aaaa245edf24bf6df0670010570e6b2",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -16902,9 +17070,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5020,
+          "anchorEnd": 5283,
           "anchorFile": "package.json",
-          "anchorStart": 5011,
+          "anchorStart": 5274,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -16920,9 +17088,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3807,
+          "anchorEnd": 3883,
           "anchorFile": "package.json",
-          "anchorStart": 3776,
+          "anchorStart": 3852,
           "kind": "package_script",
           "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
           "symbol": "verify:activity-update-safety",
@@ -16938,18 +17106,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3651,
+          "anchorEnd": 3727,
           "anchorFile": "package.json",
-          "anchorStart": 3627,
+          "anchorStart": 3703,
           "kind": "package_script",
           "ownerModule": "scripts/backup-recovery-rehearsal.ts",
           "symbol": "verify:backup-recovery",
           "target": "package.json#scripts.verify:backup-recovery"
         },
         {
-          "anchorEnd": 3726,
+          "anchorEnd": 3802,
           "anchorFile": "package.json",
-          "anchorStart": 3701,
+          "anchorStart": 3777,
           "kind": "package_script",
           "ownerModule": "scripts/backup-recovery-rehearsal.ts",
           "symbol": "verify:update-rehearsal",
@@ -16965,9 +17133,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3896,
+          "anchorEnd": 3972,
           "anchorFile": "package.json",
-          "anchorStart": 3864,
+          "anchorStart": 3940,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-pilot",
@@ -16983,9 +17151,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4001,
+          "anchorEnd": 4077,
           "anchorFile": "package.json",
-          "anchorStart": 3965,
+          "anchorStart": 4041,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-save-path",
@@ -17091,9 +17259,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5121,
+          "anchorEnd": 5384,
           "anchorFile": "package.json",
-          "anchorStart": 5103,
+          "anchorStart": 5366,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -17109,9 +17277,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4770,
+          "anchorEnd": 4846,
           "anchorFile": "package.json",
-          "anchorStart": 4746,
+          "anchorStart": 4822,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
           "symbol": "verify:integrity-suite",
@@ -17127,9 +17295,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4575,
+          "anchorEnd": 4651,
           "anchorFile": "package.json",
-          "anchorStart": 4543,
+          "anchorStart": 4619,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -17145,9 +17313,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4685,
+          "anchorEnd": 4761,
           "anchorFile": "package.json",
-          "anchorStart": 4650,
+          "anchorStart": 4726,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -17208,27 +17376,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4194,
+          "anchorEnd": 4270,
           "anchorFile": "package.json",
-          "anchorStart": 4171,
+          "anchorStart": 4247,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
-          "anchorEnd": 4292,
+          "anchorEnd": 4368,
           "anchorFile": "package.json",
-          "anchorStart": 4269,
+          "anchorStart": 4345,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
-          "anchorEnd": 4393,
+          "anchorEnd": 4469,
           "anchorFile": "package.json",
-          "anchorStart": 4367,
+          "anchorStart": 4443,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-input",
@@ -17343,9 +17511,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 5064,
+          "anchorEnd": 5327,
           "anchorFile": "package.json",
-          "anchorStart": 5048,
+          "anchorStart": 5311,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -17676,6 +17844,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 3613,
+          "anchorFile": "package.json",
+          "anchorStart": 3599,
+          "kind": "package_script",
+          "ownerModule": "scripts/scripts.vitest.config.ts",
+          "symbol": "test:scripts",
+          "target": "package.json#scripts.test:scripts"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/scripts.vitest.config.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/scripts.vitest.config.ts",
+      "sidecarPath": "scripts/scripts.vitest.config.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 800,
           "anchorFile": "scripts/security-operator.ts",
           "anchorStart": 775,
@@ -17739,9 +17925,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4104,
+          "anchorEnd": 4180,
           "anchorFile": "package.json",
-          "anchorStart": 4074,
+          "anchorStart": 4150,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -17757,9 +17943,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4503,
+          "anchorEnd": 4579,
           "anchorFile": "package.json",
-          "anchorStart": 4478,
+          "anchorStart": 4554,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -17771,6 +17957,42 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/update-preflight.ts",
       "sidecarPath": "scripts/update-preflight.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 4921,
+          "anchorFile": "package.json",
+          "anchorStart": 4907,
+          "kind": "package_script",
+          "ownerModule": "scripts/verify-gates.ts",
+          "symbol": "verify:gates",
+          "target": "package.json#scripts.verify:gates"
+        },
+        {
+          "anchorEnd": 4976,
+          "anchorFile": "package.json",
+          "anchorStart": 4958,
+          "kind": "package_script",
+          "ownerModule": "scripts/verify-gates.ts",
+          "symbol": "verify:gates:all",
+          "target": "package.json#scripts.verify:gates:all"
+        },
+        {
+          "anchorEnd": 5044,
+          "anchorFile": "package.json",
+          "anchorStart": 5019,
+          "kind": "package_script",
+          "ownerModule": "scripts/verify-gates.ts",
+          "symbol": "verify:gates:disposable",
+          "target": "package.json#scripts.verify:gates:disposable"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/verify-gates.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/verify-gates.ts",
+      "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
   "ownerSetCanonical": [
@@ -18909,6 +19131,12 @@
       "sidecarPath": "scripts/provision-security-runtime-role.operation.ts"
     },
     {
+      "id": "package_command:scripts/scripts.vitest.config.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/scripts.vitest.config.ts",
+      "sidecarPath": "scripts/scripts.vitest.config.operation.ts"
+    },
+    {
       "id": "package_command:scripts/security-operator.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/security-operator.ts",
@@ -18925,11 +19153,17 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/update-preflight.ts",
       "sidecarPath": "scripts/update-preflight.operation.ts"
+    },
+    {
+      "id": "package_command:scripts/verify-gates.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/verify-gates.ts",
+      "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "e4270fe0d248b8b8dcf43dd84c854e5e5b5699e5e4f6923d82b3ee595e1b30e9",
+  "ownerSetDigest": "b9da1f6642fab4d699bcec193fafa82b46dcbf2430e787218d191fe94da8afd5",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "2d46bec451e9bebc5e207082897ce30258433aadf8a880c28b63182431b7e471",
+  "registryDigest": "544d0868a0a6223aee6e1cae1d290d90791fa9a4c2ab7d69d8aaa87cac92c39e",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

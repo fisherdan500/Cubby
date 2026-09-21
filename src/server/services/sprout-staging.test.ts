@@ -32,7 +32,12 @@ describe("Sprout encrypted staging", () => {
       keyFile: "/run/secrets/cubby_sprout_staging_key",
       keyVersion: "v1"
     });
-    expect(readSproutStagingConfig({ SPROUT_STAGING_KEY_FILE: "C:\\temp\\cubby-sprout-key" }).keyFile).toBe("C:\\temp\\cubby-sprout-key");
+    // Absoluteness is what the check is about, and what counts as absolute differs by platform: a
+    // Windows path is not absolute on the Linux the app actually runs on, so the case is built for
+    // whichever platform is running the test rather than hardcoded for one of them.
+    const absoluteKeyFile = path.join(path.parse(process.cwd()).root, "secrets", "cubby-sprout-key");
+    expect(readSproutStagingConfig({ SPROUT_STAGING_KEY_FILE: absoluteKeyFile }).keyFile).toBe(absoluteKeyFile);
+    expect(() => readSproutStagingConfig({ SPROUT_STAGING_KEY_FILE: "relative/cubby-sprout-key" })).toThrow("SPROUT_STAGING_KEY_FILE");
     expect(() => readSproutStagingConfig({ SPROUT_STAGING_DIRECTORY: "../outside" })).toThrow("SPROUT_STAGING_DIRECTORY");
     expect(() => readSproutStagingConfig({ SPROUT_STAGING_KEY_FILE: "../outside" })).toThrow("SPROUT_STAGING_KEY_FILE");
     expect(() => readSproutStagingConfig({ SPROUT_STAGING_KEY_VERSION: "" })).toThrow("SPROUT_STAGING_KEY_VERSION");

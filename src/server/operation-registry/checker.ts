@@ -298,6 +298,8 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/performance-budgets.acceptance-rehearsal.operation.ts",
   "scripts/integrity-check.operation.ts",
   "scripts/integrity-suite.acceptance-rehearsal.operation.ts",
+  "scripts/verify-gates.operation.ts",
+  "scripts/scripts.vitest.config.operation.ts",
   "scripts/platform-owner.operation.ts",
   "scripts/household-deletion-readiness-guard.operation.ts",
   "scripts/provision-database-timezone.operation.ts",
@@ -5729,6 +5731,11 @@ export function discoverStructuralExclusions(
       } else if (ownerModule === "scripts/operation-registry.ts") {
         category = "registry_tooling";
         rationale = "operation-registry checker tooling; excluded from its owner inventory";
+      } else if (ownerModule === "scripts/verify-gates.ts" || ownerModule === "scripts/scripts.vitest.config.ts") {
+        // Verification tooling: the runner only spawns the repository's own npm scripts, and the
+        // config only tells vitest which files to load. Neither reaches an operation.
+        category = "rehearsal";
+        rationale = "isolated test or rehearsal command; structural identity only";
       }
       if (!pathExists(ownerModule)) {
         diagnostics.push({

@@ -461,44 +461,64 @@ approved maintenance step.
 
 ## Verification Commands
 
-Full verification set:
+### Gates
+
+One command runs the gates and reports which of them failed:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-docker compose up --build -d
+npm run verify:gates             # canonical: typecheck, lint, registry, both test suites
+npm run verify:gates:disposable  # the rehearsals that boot their own throwaway PostgreSQL
+npm run verify:gates:all         # both groups
 ```
 
-Use the full set for behavior, schema, auth, import, or Docker-sensitive changes.
-For docs-only changes, markdown review and `git status --short` are usually
-enough.
+Every gate runs even after an earlier one fails, so one pass tells you everything
+that is broken. The same runner is what continuous integration invokes
+(`.github/workflows/verify.yml`), so local and CI coverage cannot drift apart:
+CI runs the canonical group and the disposable group on every pull request.
 
-Update/migration changes also provide focused non-Docker contracts and a
-separately gated disposable Docker rehearsal:
+`scripts/verify-gates.ts` declares the gates. Every `verify:` script must appear
+there as an automated gate, in the run-by-hand list, or in the not-a-gate list
+with its reason — a test enforces this, so a new rehearsal cannot be added
+without someone deciding whether it runs.
+
+Use `npm run build` and `docker compose up --build -d` in addition for
+schema, auth, import, or Docker-sensitive changes. For docs-only changes,
+markdown review and `git status --short` are usually enough.
+
+### Run by hand
+
+The heavier rehearsals stay outside the gates because each builds the application
+image, and the input-acknowledgement stage additionally needs a local Chrome:
 
 ```bash
-npx vitest run --config scripts/update-preflight.vitest.config.ts
+npm run verify:backup-recovery
+npm run verify:browser-operation-save-path
+npm run verify:sprout-preview-commit
+npm run verify:performance-1y
+npm run verify:performance-5y
+npm run verify:performance-input
+npm run verify:p1-3-migrator-bootstrap
+npm run verify:p1-3-invitation-acceptance
+```
+
+Update/migration changes also have an operator preflight and its rehearsal:
+
+```bash
 npm run verify:update-preflight -- --backup-file /private/path/to/cubby-backup.json
 npm run verify:update-rehearsal
 ```
 
-The focused preflight test is non-Docker and covers both legacy JSON-array and
-Docker Compose 5.2 newline-delimited service output. The preflight command itself
+The preflight's own contract tests run inside `npm run test:scripts`, part of the
+canonical gates, and cover both legacy JSON-array and Docker Compose 5.2
+newline-delimited service output. The preflight command itself
 inspects the current normal stack and therefore belongs in an approved maintenance
 preflight. The rehearsal creates only a unique
 loopback-bound disposable project with generated credentials and fixed historical
 migration baseline; do not run it implicitly during ordinary unit verification.
 
-Consequential activity receipt/replay changes additionally require the separately
-gated disposable PostgreSQL contract before publication:
-
-```bash
-npm run verify:activity-update-safety
-```
-
-It runs against generated credentials in a loopback-only project and never reads
+Consequential activity receipt/replay changes are covered by
+`npm run verify:activity-update-safety`, one of the disposable gates above. It
+runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
 Query, index, schema or page-data changes on the everyday workflows additionally
