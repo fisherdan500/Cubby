@@ -238,7 +238,7 @@ model User {
   image         String?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
-  appearanceMode AppearanceMode   @default(system)
+  appearanceMode AppearanceMode   @default(dark)
   appearanceRevision Int          @default(0)
   sessions      Session[]
   accounts      Account[]

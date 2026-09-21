@@ -1,6 +1,11 @@
 import { AccountOperationKey, BrowserOperationProtocolVersion, Prisma } from "@prisma/client";
 import { z } from "zod";
-import { appearanceModeSchema, parseAppearanceMode, type AppearanceMode } from "@/domain/appearance";
+import {
+  appearanceModeSchema,
+  DEFAULT_APPEARANCE_MODE,
+  parseAppearanceMode,
+  type AppearanceMode
+} from "@/domain/appearance";
 import { prisma } from "@/lib/db/prisma";
 import { getSession } from "@/server/auth/session";
 import {
@@ -59,7 +64,7 @@ export async function getAccountAppearance() {
 
 export async function getCurrentAuthenticatedAppearanceMode(): Promise<AppearanceMode> {
   const session = await getSession();
-  if (!session?.user) return "system";
+  if (!session?.user) return DEFAULT_APPEARANCE_MODE;
   const preference = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { appearanceMode: true }

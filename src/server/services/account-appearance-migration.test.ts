@@ -14,13 +14,14 @@ function block(source: string, kind: "model" | "enum", name: string) {
 }
 
 describe("account appearance browser-operation persistence", () => {
-  it("adds a system-default monotonic User appearance preference without inferring an accent", () => {
+  it("adds a dark-default monotonic User appearance preference without inferring an accent", () => {
     const schema = readFileSync(schemaUrl, "utf8");
     const appearanceMode = block(schema, "enum", "AppearanceMode");
     const user = block(schema, "model", "User");
 
     for (const mode of ["system", "light", "dark"]) expect(appearanceMode).toMatch(new RegExp(`\\b${mode}\\b`));
-    expect(user).toMatch(/appearanceMode\s+AppearanceMode\s+@default\(system\)/);
+    // New accounts open dark. Accounts that already hold "system" keep it; see 20260921180000.
+    expect(user).toMatch(/appearanceMode\s+AppearanceMode\s+@default\(dark\)/);
     expect(user).toMatch(/appearanceRevision\s+Int\s+@default\(0\)/);
     expect(user).not.toMatch(/appearanceMode.*accent|accent.*appearanceMode/i);
   });

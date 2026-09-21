@@ -87,13 +87,26 @@ beforeEach(() => {
 });
 
 describe("account appearance", () => {
-  it("reads the current global preference without household selection and defaults signed-out surfaces to system", async () => {
+  it("reads the current global preference without household selection and defaults signed-out surfaces to dark", async () => {
     await expect(getAccountAppearance()).resolves.toEqual({ appearanceMode: "system", appearanceRevision: 4 });
     expect(mocks.requireFreshSession).not.toHaveBeenCalled();
 
     mocks.getSession.mockResolvedValue(null);
-    await expect(getCurrentAuthenticatedAppearanceMode()).resolves.toBe("system");
+    // A signed-out surface has no stored choice to honour, so it opens the way the app now opens.
+    await expect(getCurrentAuthenticatedAppearanceMode()).resolves.toBe("dark");
     expect(mocks.userFindUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("honours a stored mode rather than the new default", async () => {
+    for (const stored of ["system", "light", "dark"] as const) {
+      mocks.userFindUnique.mockResolvedValue({ appearanceMode: stored, appearanceRevision: 4 });
+      await expect(getCurrentAuthenticatedAppearanceMode()).resolves.toBe(stored);
+    }
+  });
+
+  it("opens dark for an account with no stored mode at all", async () => {
+    mocks.userFindUnique.mockResolvedValue(null);
+    await expect(getCurrentAuthenticatedAppearanceMode()).resolves.toBe("dark");
   });
 
   it("records an account reservation tombstone before deleting an authorized unsubmitted binding", async () => {

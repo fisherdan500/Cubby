@@ -9991,9 +9991,9 @@
       "bindings": [
         {
           "anchorDigest": "0d1bb8bc5cd61eff21fd5a0de71d8d94c091c040a93eb0a284d959e6294f5040",
-          "anchorEnd": 473,
+          "anchorEnd": 536,
           "anchorFile": "src/app/layout.tsx",
-          "anchorStart": 436,
+          "anchorStart": 499,
           "kind": "server_value_import",
           "symbol": "getCurrentAuthenticatedAppearanceMode",
           "target": "src/server/services/account-appearance.ts#getCurrentAuthenticatedAppearanceMode"
@@ -12751,7 +12751,7 @@
     }
   ],
   "observationCount": 196,
-  "observationDigest": "b61950d34eff52c56ae3989904d730c0cd0335f382395340f6fd52b86a3bfd66",
+  "observationDigest": "40b61b5e9b31cff705f5ef26a26c95da513d993926557c3f5df652cb9637df1e",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15530,9 +15530,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 473,
+          "anchorEnd": 536,
           "anchorFile": "src/app/layout.tsx",
-          "anchorStart": 436,
+          "anchorStart": 499,
           "kind": "server_value_import",
           "ownerModule": "src/app/layout.tsx",
           "symbol": "getCurrentAuthenticatedAppearanceMode",
@@ -19309,7 +19309,7 @@
   ],
   "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "1b4a83ea812b6c6313a9d619ac78459c163e2ed2eecc3381543098a57e893522",
+  "registryDigest": "f2c09395e7159f0b13e2a11248a07cf6a0c9a49ab2219b5e19b0aa954468ffb4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
