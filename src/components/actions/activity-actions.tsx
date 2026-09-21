@@ -54,17 +54,29 @@ function ImmediateOperationButton({
   id,
   kind,
   endpoint,
-  label
+  label,
+  completedHref
 }: {
   id: string;
   kind: string;
   endpoint: string;
   label: string;
+  /**
+   * Where to go once the operation has completed. Stopping a timer from the activity's own screen is
+   * the end of that activity's business, so it returns to wherever the screen was opened from rather
+   * than leaving a stopped timer on display with a Back press still to make.
+   */
+  completedHref?: string;
 }) {
   const router = useRouter();
   const operation = useRef<InMemoryOperation>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  function completed() {
+    if (completedHref) router.replace(completedHref);
+    router.refresh();
+  }
 
   async function submit() {
     setSubmitting(true);
@@ -87,7 +99,7 @@ function ImmediateOperationButton({
         } else if (reconciled.status === "completed") {
           clearOperationId(key);
           operation.current = undefined;
-          router.refresh();
+          completed();
           return;
         } else if (reconciled.status === "prepared") {
           operation.current = { partition, storageKey: key, target: endpoint, operationId };
@@ -129,7 +141,7 @@ function ImmediateOperationButton({
       if (result.status === "completed") {
         clearOperationId(key);
         operation.current = undefined;
-        router.refresh();
+        completed();
         return;
       }
       if (result.status === "pending") {
@@ -158,11 +170,15 @@ function ImmediateOperationButton({
   );
 }
 
-function TimerButton({ id, operation, label }: { id: string; operation: "stop" | "pause" | "resume"; label: string }) {
-  return <ImmediateOperationButton id={id} kind={`timer.${operation}`} endpoint={`/api/timers/${id}/${operation}`} label={label} />;
+function TimerButton({ id, operation, label, completedHref }: { id: string; operation: "stop" | "pause" | "resume"; label: string; completedHref?: string }) {
+  return <ImmediateOperationButton id={id} kind={`timer.${operation}`} endpoint={`/api/timers/${id}/${operation}`} label={label} completedHref={completedHref} />;
 }
 
-export function StopTimerButton({ id }: { id: string }) { return <TimerButton id={id} operation="stop" label="Stop timer" />; }
+/**
+ * `returnTo` is given only where stopping finishes with the screen you are on: the activity's own
+ * page. From the shell's timer bar there is nowhere to go - you are already where you wanted to be.
+ */
+export function StopTimerButton({ id, returnTo }: { id: string; returnTo?: string }) { return <TimerButton id={id} operation="stop" label="Stop timer" completedHref={returnTo} />; }
 export function PauseTimerButton({ id }: { id: string }) { return <TimerButton id={id} operation="pause" label="Pause" />; }
 export function ResumeTimerButton({ id }: { id: string }) { return <TimerButton id={id} operation="resume" label="Resume" />; }
 

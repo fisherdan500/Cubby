@@ -10233,27 +10233,27 @@
         },
         {
           "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
-          "anchorEnd": 2991,
+          "anchorEnd": 3434,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 2921,
+          "anchorStart": 3364,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
-          "anchorEnd": 4251,
+          "anchorEnd": 4689,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4110,
+          "anchorStart": 4548,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
-          "anchorEnd": 4958,
+          "anchorEnd": 5396,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4805,
+          "anchorStart": 5243,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -12751,7 +12751,7 @@
     }
   ],
   "observationCount": 196,
-  "observationDigest": "aa3b3fa06b7525740af6747002c432d43dca211020f674efc5f17cf6b5087b03",
+  "observationDigest": "b61950d34eff52c56ae3989904d730c0cd0335f382395340f6fd52b86a3bfd66",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15764,27 +15764,27 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2991,
+          "anchorEnd": 3434,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 2921,
+          "anchorStart": 3364,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4251,
+          "anchorEnd": 4689,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4110,
+          "anchorStart": 4548,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4958,
+          "anchorEnd": 5396,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4805,
+          "anchorStart": 5243,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[4]",
@@ -19309,7 +19309,7 @@
   ],
   "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "00f65bf409297f44055ed64e07fdbb102e8841856d808eee3be855d3ca5cbd6c",
+  "registryDigest": "1b4a83ea812b6c6313a9d619ac78459c163e2ed2eecc3381543098a57e893522",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
