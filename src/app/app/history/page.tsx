@@ -86,7 +86,7 @@ export default async function HistoryPage({
         {groups.map((group) => (
           <section key={group.key} aria-label={dateGroupLabel(group.key, env.APP_TIMEZONE)} className="space-y-1.5">
             <div className="flex items-baseline justify-between gap-3 px-1">
-              <h2 className="text-sm font-black">{dateGroupLabel(group.key, env.APP_TIMEZONE)}</h2>
+              <h2 className="text-sm font-semibold">{dateGroupLabel(group.key, env.APP_TIMEZONE)}</h2>
               <span className="text-xs font-semibold tabular-nums text-muted-foreground">{group.activities.length}</span>
             </div>
             <Card className="space-y-0.5 p-1.5">

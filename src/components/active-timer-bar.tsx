@@ -74,7 +74,7 @@ export function ActiveTimerBar() {
     <div className="fixed inset-x-0 bottom-[4.75rem] z-30 px-3 md:bottom-4 md:left-64 md:px-6">
       <section
         aria-label="Running timers"
-        className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-primary/40 bg-card/97 shadow-soft backdrop-blur"
+        className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-live/35 bg-card/97 shadow-lift backdrop-blur"
       >
         {expanded ? (
           <ul className="divide-y divide-border">
@@ -86,7 +86,7 @@ export function ActiveTimerBar() {
                   href={timerHref(timer, pathname)}
                   className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg px-1 transition hover:bg-muted"
                 >
-                  <span className="truncate text-sm font-black text-foreground">
+                  <span className="truncate text-sm font-semibold text-foreground">
                     {activityLabels[timer.type as ActivityTypeName]}
                   </span>
                   <span className="truncate text-xs font-semibold text-muted-foreground">
@@ -106,7 +106,7 @@ export function ActiveTimerBar() {
               href={timerHref(first, pathname)}
               className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-sm transition hover:bg-muted"
             >
-              <span className="truncate font-black text-foreground">{activityLabels[firstType]}</span>
+              <span className="truncate font-semibold text-foreground">{activityLabels[firstType]}</span>
               <span className="font-bold text-muted-foreground">
                 <span aria-hidden="true">{first.timerState === "paused" ? "Paused at " : ""}</span>
                 <TimerElapsed timer={first} nowMs={nowMs} />
@@ -117,7 +117,7 @@ export function ActiveTimerBar() {
                 type="button"
                 onClick={() => setExpanded(true)}
                 aria-expanded={false}
-                className="inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm font-black text-primary transition hover:bg-muted"
+                className="inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm font-semibold text-primary transition hover:bg-muted"
               >
                 +{rest.length}
                 <span className="sr-only"> more running timers, show all</span>
@@ -132,7 +132,7 @@ export function ActiveTimerBar() {
             type="button"
             onClick={() => setExpanded(false)}
             aria-expanded
-            className="flex min-h-11 w-full items-center justify-center border-t border-border text-xs font-black text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="flex min-h-11 w-full items-center justify-center border-t border-border text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             Show fewer
           </button>

@@ -352,7 +352,7 @@ function Wheel({
           onClick={() => onSelect(option.value)}
           className={cn(
             "flex h-11 cursor-pointer snap-center items-center justify-center text-xl tabular-nums transition-colors",
-            option.value === selected ? "font-black text-foreground" : "font-semibold text-muted-foreground"
+            option.value === selected ? "font-semibold text-foreground" : "font-semibold text-muted-foreground"
           )}
         >
           {option.text}

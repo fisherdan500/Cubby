@@ -87,7 +87,7 @@ export function RoutineTab({ babyId, startKey, endKey, routine }: RoutineTabProp
       <Card className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-base font-black">Typical Day</h2>
+            <h2 className="text-base font-semibold">Typical Day</h2>
             <p className="text-sm text-muted-foreground">
               {routine.windowLabel} ending {routine.endKey}
             </p>
@@ -111,8 +111,8 @@ export function RoutineTab({ babyId, startKey, endKey, routine }: RoutineTabProp
                 <div key={`${row.type}-${row.index}`} className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 rounded-lg bg-surface p-3">
                   <ActivityArtwork type={row.type} size="md" />
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-primary">{row.averageTime}</p>
-                    <p className="font-black">
+                    <p className="text-sm font-semibold text-primary">{row.averageTime}</p>
+                    <p className="font-semibold">
                       {label} around {row.averageTime}
                       {row.averageDuration ? ` for ${row.averageDuration}` : ""}
                     </p>

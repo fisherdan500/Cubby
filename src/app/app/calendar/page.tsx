@@ -49,7 +49,7 @@ export default async function CalendarPage({
                   <ChevronLeft className="h-5 w-5" />
                 </Link>
                 <div className="flex min-w-0 items-center justify-center gap-1">
-                  <h2 className="truncate text-lg font-black">{calendar.monthLabel}</h2>
+                  <h2 className="truncate text-lg font-semibold">{calendar.monthLabel}</h2>
                   {calendar.monthKey !== calendar.todayKey.slice(0, 7) ? (
                     <Link
                       href={calendarHref(calendar.baby.id, calendar.todayKey.slice(0, 7))}
@@ -74,7 +74,7 @@ export default async function CalendarPage({
               showing the date and a few dots (event colours, then activity tones); the day sheet it
               opens holds the detail. From md up there is room for the event chips themselves. */}
           <div className={calendarFullBleedClassName}>
-            <div className="grid grid-cols-7 border-b border-border bg-background py-2 text-center text-xs font-black text-muted-foreground md:text-sm">
+            <div className="grid grid-cols-7 border-b border-border bg-background py-2 text-center text-xs font-semibold text-muted-foreground md:text-sm">
               {weekdays.map((day) => (
                 <div key={day}>{day}</div>
               ))}
@@ -105,7 +105,7 @@ export default async function CalendarPage({
                         data-calendar-day={day.key}
                       >
                         <span
-                          className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1.5 text-sm font-black ${
+                          className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1.5 text-sm font-semibold ${
                             day.key === calendar.todayKey ? "bg-primary text-primary-foreground" : ""
                           }`}
                         >
@@ -130,7 +130,7 @@ export default async function CalendarPage({
                               opener: `event:${event.id}`
                             })}
                             data-calendar-event={event.id}
-                            className="block min-h-11 truncate rounded px-2 py-3 text-xs font-black shadow-sm"
+                            className="block min-h-11 truncate rounded px-2 py-3 text-xs font-semibold shadow-sm"
                             style={{
                               backgroundColor: event.color ?? "hsl(var(--primary))",
                               color: calendarEventTextColor(event.color)
@@ -177,7 +177,7 @@ export default async function CalendarPage({
             <Link
               href={calendarHref(calendar.baby.id, calendar.monthKey, { date: calendar.todayKey, new: "1", opener: "add" })}
               data-calendar-add-event
-              className="fixed bottom-24 right-6 z-20 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-soft md:bottom-6"
+              className="fixed bottom-24 right-6 z-20 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-soft md:bottom-6"
             >
               <PlusCircle className="h-5 w-5" />
               Add Event
@@ -246,7 +246,7 @@ function CalendarDrawer({
           <>
             <div className="flex items-start justify-between gap-3 border-b border-border p-5">
               <div>
-                <h2 id="calendar-drawer-title" tabIndex={-1} data-calendar-drawer-heading className="text-2xl font-black">
+                <h2 id="calendar-drawer-title" tabIndex={-1} data-calendar-drawer-heading className="text-2xl font-semibold">
                   {selectedLabel}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -260,7 +260,7 @@ function CalendarDrawer({
 
             <div className="flex-1 space-y-5 overflow-y-auto p-5">
               <section className="space-y-3">
-                <h3 className="text-base font-black">Events</h3>
+                <h3 className="text-base font-semibold">Events</h3>
                 {calendar.selected?.events.length ? null : <p className="text-sm text-muted-foreground">No events for this day.</p>}
                 {prioritizeSelectedEvent(calendar.selected?.events ?? [], calendar.selectedEvent?.id).map((event) => (
                   <div
@@ -272,7 +272,7 @@ function CalendarDrawer({
                     <div className="flex items-start gap-3">
                       <span className="mt-1 h-3 w-3 rounded-full" style={{ backgroundColor: event.color ?? "hsl(var(--primary))" }} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-lg font-black">{event.title}</p>
+                        <p className="truncate text-lg font-semibold">{event.title}</p>
                         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
                           <span className="inline-flex items-center gap-2">
                             <Clock3 className="h-4 w-4" />
@@ -300,7 +300,7 @@ function CalendarDrawer({
               </section>
 
               <section className="space-y-3">
-                <h3 className="text-base font-black">Activity</h3>
+                <h3 className="text-base font-semibold">Activity</h3>
                 {calendar.selected?.activities.length ? (
                   <div className="space-y-0.5 rounded-lg border border-border bg-background/40 p-1.5">
                     {calendar.selected.activities.map((activity) => (
@@ -323,7 +323,7 @@ function CalendarDrawer({
               {canAddEvent ? (
                 <Link
                   href={calendarHref(calendar.baby.id, calendar.monthKey, { date: selectedDate, new: "1", opener })}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-black text-primary-foreground hover:opacity-95"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-95"
                 >
                   <PlusCircle className="h-5 w-5" />
                   Add Event
@@ -361,7 +361,7 @@ function NewEventForm({
       <input type="hidden" name="opener" value={opener ?? ""} />
       <div className="flex items-start justify-between gap-3 border-b border-border p-5">
         <div>
-          <h2 id="calendar-drawer-title" tabIndex={-1} data-calendar-drawer-heading className="text-2xl font-black">
+          <h2 id="calendar-drawer-title" tabIndex={-1} data-calendar-drawer-heading className="text-2xl font-semibold">
             New Event
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{formatDateKeyLabel(selectedDate)}</p>
@@ -376,7 +376,7 @@ function NewEventForm({
         {error ? <div className="sr-only">{error}</div> : null}
 
         <section className="space-y-4">
-          <h3 className="text-lg font-black">Event Details</h3>
+          <h3 className="text-lg font-semibold">Event Details</h3>
           <label className="block space-y-2 text-sm font-bold">
             <span>Title *</span>
             <Input name="title" placeholder="Enter event title" required />

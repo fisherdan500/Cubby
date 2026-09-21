@@ -99,7 +99,7 @@ export function AppShell({
                 ← {parent.label}
               </Link>
               <span aria-hidden="true" className="text-muted-foreground">/</span>
-              <h1 className="min-w-0 truncate font-black text-foreground">{title}</h1>
+              <h1 className="min-w-0 truncate font-semibold text-foreground">{title}</h1>
             </nav>
           ) : (
             // Every page still has one h1 for assistive technology, even where the phone shows no title.

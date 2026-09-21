@@ -148,7 +148,7 @@ export function SproutRestoreForm() {
 function Stat({ label, value }: { label: string; value?: number }) {
   return (
     <div className="rounded-md bg-muted p-3">
-      <p className="text-2xl font-black">{value ?? 0}</p>
+      <p className="text-2xl font-semibold">{value ?? 0}</p>
       <p className="text-xs font-semibold text-muted-foreground">{label}</p>
     </div>
   );

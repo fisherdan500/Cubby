@@ -33,7 +33,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
     <div className="w-full sm:w-auto">
       <button
         type="button"
-        className="inline-flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 text-sm font-black hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto"
+        className="inline-flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 text-sm font-semibold hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto"
         aria-expanded={expanded}
         aria-controls="routine-activity-options"
         onClick={() => setExpanded((current) => !current)}
@@ -91,7 +91,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
             <div className="flex gap-2">
               <button
                 type="button"
-                className="min-h-11 rounded-lg px-3 text-xs font-black text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-lg px-3 text-xs font-semibold text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={allSelected}
                 onClick={() => onChange([...routineActivityTypes])}
               >
@@ -99,7 +99,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
               </button>
               <button
                 type="button"
-                className="min-h-11 rounded-lg px-3 text-xs font-black text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-lg px-3 text-xs font-semibold text-primary hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={defaultsSelected}
                 onClick={() => onChange([...defaultRoutineActivityTypes])}
               >

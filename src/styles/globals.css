@@ -2,92 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * The canvas is quiet so the accent can lead.
+ *
+ * The old palette had it the wrong way round: the page sat at 38% saturation while the brand colour
+ * sat at 15%, so the background out-coloured the thing meant to draw the eye, and nothing stood out.
+ * Almost every value below is lower in chroma than what it replaces; the accent is the one that went
+ * up, and it went deeper rather than brighter.
+ *
+ * `--live` is the single warm spark: a running timer, and nothing else. It is set per accent so it
+ * always contrasts with the chosen lead and can never collide with it - a warm lead gets a cool
+ * spark, a cool lead gets a warm one.
+ */
+
 :root {
-  --background: 42 38% 96%;
-  --foreground: 24 18% 19%;
-  --card: 42 45% 99%;
-  --card-foreground: 24 18% 19%;
-  --surface: 38 34% 93%;
-  --surface-soft: 40 40% 97%;
-  --border: 34 22% 84%;
-  --muted: 37 27% 90%;
-  --muted-foreground: 27 10% 42%;
-  --primary: 143 15% 47%;
-  --primary-foreground: 0 0% 0%;
-  --accent: 13 45% 63%;
-  --accent-foreground: 24 22% 17%;
-  --ring: 143 15% 47%;
-  --danger: 2 55% 48%;
-  --shadow: 28 20% 26%;
+  --background: 40 16% 95%;
+  --foreground: 26 10% 14%;
+  --card: 40 20% 98%;
+  --card-foreground: 26 10% 14%;
+  --surface: 38 12% 92%;
+  --surface-soft: 40 16% 96%;
+  --border: 34 10% 83%;
+  --muted: 36 10% 91%;
+  --muted-foreground: 30 7% 40%;
+  --primary: 146 24% 34%;
+  --primary-foreground: 40 20% 98%;
+  --accent: 16 42% 42%;
+  --accent-foreground: 40 20% 98%;
+  --live: 16 46% 44%;
+  --ring: 146 24% 34%;
+  --danger: 4 52% 42%;
+  --shadow: 28 18% 24%;
+
+  /* Elevation is a value step plus a lit top edge, not an outline. */
+  --shadow-card: inset 0 1px 0 hsl(40 40% 100% / 0.8), 0 1px 2px hsl(var(--shadow) / 0.05), 0 8px 24px hsl(var(--shadow) / 0.06);
+  --shadow-lift: inset 0 1px 0 hsl(40 40% 100% / 0.8), 0 2px 6px hsl(var(--shadow) / 0.07), 0 18px 44px hsl(var(--shadow) / 0.11);
 }
 
 .dark {
-  --background: 24 13% 11%;
-  --foreground: 38 28% 92%;
-  --card: 26 12% 15%;
-  --card-foreground: 38 28% 92%;
-  --surface: 28 11% 18%;
-  --surface-soft: 26 12% 13%;
-  --border: 29 10% 27%;
-  --muted: 29 10% 21%;
-  --muted-foreground: 35 12% 69%;
-  --primary: 143 19% 61%;
-  --primary-foreground: 24 18% 12%;
-  --accent: 13 50% 67%;
-  --accent-foreground: 24 18% 12%;
-  --ring: 143 19% 61%;
-  --danger: 3 61% 62%;
-  --shadow: 20 24% 4%;
+  --background: 28 9% 9%;
+  --foreground: 36 12% 93%;
+  --card: 28 8% 13%;
+  --card-foreground: 36 12% 93%;
+  --surface: 28 7% 16%;
+  --surface-soft: 28 9% 11%;
+  --border: 30 7% 24%;
+  --muted: 30 7% 19%;
+  --muted-foreground: 34 8% 66%;
+  --primary: 146 26% 58%;
+  --primary-foreground: 28 9% 10%;
+  --accent: 16 44% 62%;
+  --accent-foreground: 28 9% 10%;
+  --live: 16 52% 64%;
+  --ring: 146 26% 58%;
+  --danger: 4 58% 64%;
+  --shadow: 20 30% 2%;
+
+  /* On a near-black canvas a dark shadow does nothing, so the lit edge does the work instead. */
+  --shadow-card: inset 0 1px 0 hsl(0 0% 100% / 0.05), 0 1px 2px hsl(var(--shadow) / 0.5), 0 10px 30px hsl(var(--shadow) / 0.4);
+  --shadow-lift: inset 0 1px 0 hsl(0 0% 100% / 0.06), 0 2px 8px hsl(var(--shadow) / 0.55), 0 20px 48px hsl(var(--shadow) / 0.5);
 }
 
 [data-accent="sage"] {
-  --primary: 143 15% 47%;
-  --ring: 143 15% 47%;
+  --primary: 146 24% 34%;
+  --ring: 146 24% 34%;
+  --live: 16 46% 44%;
 }
 
 [data-accent="rose"] {
-  --primary: 354 24% 55%;
-  --ring: 354 24% 55%;
+  --primary: 353 26% 45%;
+  --ring: 353 26% 45%;
+  --live: 185 40% 30%;
 }
 
 [data-accent="powder"] {
-  --primary: 202 21% 50%;
-  --ring: 202 21% 50%;
+  --primary: 205 26% 40%;
+  --ring: 205 26% 40%;
+  --live: 18 48% 42%;
 }
 
 [data-accent="butter"] {
-  --primary: 42 44% 44%;
-  --ring: 42 44% 44%;
+  --primary: 40 38% 34%;
+  --ring: 40 38% 34%;
+  --live: 192 40% 32%;
 }
 
 [data-accent="terracotta"] {
-  --primary: 14 38% 52%;
-  --ring: 14 38% 52%;
+  --primary: 16 36% 40%;
+  --ring: 16 36% 40%;
+  --live: 186 40% 30%;
 }
 
 .dark [data-accent="sage"] {
-  --primary: 143 19% 61%;
-  --ring: 143 19% 61%;
+  --primary: 146 26% 58%;
+  --ring: 146 26% 58%;
+  --live: 16 52% 64%;
 }
 
 .dark [data-accent="rose"] {
-  --primary: 354 34% 68%;
-  --ring: 354 34% 68%;
+  --primary: 353 32% 66%;
+  --ring: 353 32% 66%;
+  --live: 185 42% 56%;
 }
 
 .dark [data-accent="powder"] {
-  --primary: 202 32% 67%;
-  --ring: 202 32% 67%;
+  --primary: 205 30% 63%;
+  --ring: 205 30% 63%;
+  --live: 18 50% 64%;
 }
 
 .dark [data-accent="butter"] {
-  --primary: 42 55% 67%;
-  --ring: 42 55% 67%;
+  --primary: 42 44% 62%;
+  --ring: 42 44% 62%;
+  --live: 192 44% 58%;
 }
 
 .dark [data-accent="terracotta"] {
-  --primary: 14 50% 67%;
-  --ring: 14 50% 67%;
+  --primary: 16 42% 62%;
+  --ring: 16 42% 62%;
+  --live: 186 44% 56%;
 }
 
 * {
@@ -102,6 +135,13 @@ body {
   letter-spacing: 0;
 }
 
+/* A barely-there lift at the top of a dark screen, so the canvas reads as depth rather than a flat
+   black field. Light mode keeps its paper instead. */
+.dark body {
+  background-image: linear-gradient(hsl(28 9% 11%), hsl(var(--background)) 460px);
+  background-attachment: fixed;
+}
+
 body::before {
   position: fixed;
   z-index: 100;
@@ -114,9 +154,10 @@ body::before {
   pointer-events: none;
 }
 
+/* Inverting a paper grain does not give dark paper, it gives a negative of grain - which reads as
+   dirt sitting over the app rather than texture under it. Dark mode goes without. */
 .dark body::before {
-  filter: invert(1);
-  opacity: 0.018;
+  display: none;
 }
 
 button,
@@ -136,40 +177,58 @@ a {
   letter-spacing: 0;
 }
 
+/* Numbers that change in place - a ticking timer, an amount, a clock time - keep their column widths
+   so the digits do not jitter. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Small, wide-tracked, and quiet: a label that names a thing without competing with it. */
+.label-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
 :focus-visible {
-  outline: 3px solid hsl(var(--ring) / 0.42);
+  outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
 
-.activity-tone-sleep { background: #dce7f1; }
-.activity-tone-feeding { background: #d8edf2; }
-.activity-tone-diaper { background: #d8eee6; }
-.activity-tone-note { background: #f4e8bd; }
-.activity-tone-bath { background: #d9edf0; }
-.activity-tone-pumping { background: #eadced; }
-.activity-tone-measurement { background: #f1ddc7; }
-.activity-tone-milestone { background: #dddff1; }
-.activity-tone-medicine { background: #d8eee3; }
-.activity-tone-play { background: #e8efb9; }
-.activity-tone-mood { background: #f2d8dc; }
-.activity-tone-supplement { background: #e8e0f1; }
-.activity-tone-vaccine { background: #f3ddd2; }
-.activity-tone-milk-inventory { background: #dbe9ef; }
+/* Fourteen activities need fourteen tones that stay apart at the size of a dashboard tile. The old
+   set had four near-identical pairs - feed/bath, sleep/milk, diaper/medicine, milestone/supplement -
+   so these are spread by hue, and where hues had to sit close they are separated by saturation. */
+.activity-tone-sleep { background: hsl(226 30% 85%); }
+.activity-tone-feeding { background: hsl(176 32% 82%); }
+.activity-tone-diaper { background: hsl(132 26% 84%); }
+.activity-tone-note { background: hsl(56 48% 83%); }
+.activity-tone-bath { background: hsl(196 38% 85%); }
+.activity-tone-pumping { background: hsl(286 24% 87%); }
+.activity-tone-measurement { background: hsl(30 36% 86%); }
+.activity-tone-milestone { background: hsl(256 28% 88%); }
+.activity-tone-medicine { background: hsl(158 26% 83%); }
+.activity-tone-play { background: hsl(82 38% 82%); }
+.activity-tone-mood { background: hsl(344 32% 88%); }
+.activity-tone-supplement { background: hsl(310 20% 88%); }
+.activity-tone-vaccine { background: hsl(10 44% 86%); }
+.activity-tone-milk-inventory { background: hsl(208 14% 89%); }
 
-.dark .activity-tone-sleep { background: #3c4855; }
-.dark .activity-tone-feeding { background: #354d52; }
-.dark .activity-tone-diaper { background: #354d44; }
-.dark .activity-tone-note { background: #514a32; }
-.dark .activity-tone-bath { background: #344b4e; }
-.dark .activity-tone-pumping { background: #4b3d4e; }
-.dark .activity-tone-measurement { background: #504235; }
-.dark .activity-tone-milestone { background: #3f4050; }
-.dark .activity-tone-medicine { background: #354b40; }
-.dark .activity-tone-play { background: #484b31; }
-.dark .activity-tone-mood { background: #503b3f; }
-.dark .activity-tone-supplement { background: #473f50; }
-.dark .activity-tone-vaccine { background: #4e3e37; }
-.dark .activity-tone-milk-inventory { background: #384950; }
+.dark .activity-tone-sleep { background: hsl(226 24% 30%); }
+.dark .activity-tone-feeding { background: hsl(176 26% 26%); }
+.dark .activity-tone-diaper { background: hsl(132 22% 26%); }
+.dark .activity-tone-note { background: hsl(56 34% 26%); }
+.dark .activity-tone-bath { background: hsl(196 30% 28%); }
+.dark .activity-tone-pumping { background: hsl(286 20% 30%); }
+.dark .activity-tone-measurement { background: hsl(30 28% 29%); }
+.dark .activity-tone-milestone { background: hsl(256 22% 31%); }
+.dark .activity-tone-medicine { background: hsl(158 22% 25%); }
+.dark .activity-tone-play { background: hsl(82 26% 25%); }
+.dark .activity-tone-mood { background: hsl(344 24% 30%); }
+.dark .activity-tone-supplement { background: hsl(310 16% 31%); }
+.dark .activity-tone-vaccine { background: hsl(10 32% 29%); }
+.dark .activity-tone-milk-inventory { background: hsl(208 12% 32%); }
 
 /* When focus scrolls a control into view on a phone, keep it clear of the fixed chrome. There is no
    header on a phone, only the calendar's pinned month bar (about 3.5rem) at the top. At the bottom sit

@@ -24,7 +24,7 @@ export default async function BackupsSettingsPage() {
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <section className="min-w-0 space-y-4">
           <Card>
-            <h2 className="mb-3 text-lg font-black">Exports</h2>
+            <h2 className="mb-3 text-lg font-semibold">Exports</h2>
             <div className="flex flex-wrap gap-3">
               <BackupDownloadButton />
               <Link href="/api/export/activities.csv">
@@ -36,27 +36,27 @@ export default async function BackupsSettingsPage() {
             </div>
           </Card>
           <Card>
-            <h2 className="mb-3 text-lg font-black">Restore</h2>
+            <h2 className="mb-3 text-lg font-semibold">Restore</h2>
             <p className="mb-3 text-sm text-muted-foreground">
               Download an existing local version below, then upload it here to preview and restore into a fresh owner household.
             </p>
             <BackupRestoreForm targetHouseholdName={targetHouseholdName} timeZone={env.APP_TIMEZONE} />
           </Card>
           <Card>
-            <h2 className="mb-3 text-lg font-black">Restore from Sprout Track</h2>
+            <h2 className="mb-3 text-lg font-semibold">Restore from Sprout Track</h2>
             <SproutRestoreForm />
           </Card>
         </section>
         <Card className="min-w-0 space-y-3">
-          <h2 className="text-lg font-black">Automated local backups</h2>
+          <h2 className="text-lg font-semibold">Automated local backups</h2>
           <AutomatedBackupStatus status={automatedStatus} timeZone={env.APP_TIMEZONE} />
         </Card>
         <Card className="min-w-0 space-y-3">
-          <h2 className="text-lg font-black">Backup records</h2>
+          <h2 className="text-lg font-semibold">Backup records</h2>
           {records.length ? null : <p className="text-sm text-muted-foreground">No backup records yet.</p>}
           {records.map((record) => (
             <div key={record.id} className="rounded-md bg-muted p-3">
-              <p className="break-words font-black">
+              <p className="break-words font-semibold">
                 {record.kind} - {record.status}
               </p>
               <p className="text-sm text-muted-foreground">

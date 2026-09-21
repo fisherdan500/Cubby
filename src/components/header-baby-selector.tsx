@@ -79,7 +79,7 @@ export function HeaderBabySelector({ data, variant = "chip" }: { data: HeaderBab
       <div className="relative -mx-1 mb-2 flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-1 focus-within:ring-2 focus-within:ring-ring">
         {activeTimerType ? <ActivityArtwork type={activeTimerType} size="xs" /> : null}
         <p className="min-w-0 truncate text-sm">
-          <span className="font-black text-foreground">{selectedBaby.name}</span>
+          <span className="font-semibold text-foreground">{selectedBaby.name}</span>
           {selectedBaby.inactive ? <span className="font-semibold text-muted-foreground"> · Inactive</span> : null}
           <span className="font-semibold text-muted-foreground"> · {selectedBaby.ageLabel}</span>
         </p>
@@ -107,7 +107,7 @@ export function HeaderBabySelector({ data, variant = "chip" }: { data: HeaderBab
         <div className="min-w-0">
           <div className="flex items-center gap-1">
             <span className="max-w-32 truncate text-sm sm:max-w-40 sm:text-base">{selectedBaby.name}</span>
-            {selectedBaby.inactive ? <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-black text-muted-foreground">Inactive</span> : null}
+            {selectedBaby.inactive ? <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Inactive</span> : null}
           </div>
           <p className="text-xs font-semibold text-muted-foreground sm:text-sm">{selectedBaby.ageLabel}</p>
         </div>

@@ -51,11 +51,11 @@ export default async function ActivityDetailPage({
           <header className="flex min-w-0 items-center gap-4">
             <ActivityArtwork type={type} size="xl" />
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-normal text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
                 {activity.baby.name}
                 {isInactiveBaby ? " - Inactive" : ""}
               </p>
-              <h2 className="font-editorial text-2xl font-black text-foreground sm:text-3xl">{activityLabels[type]}</h2>
+              <h2 className="font-editorial text-2xl font-semibold text-foreground sm:text-3xl">{activityLabels[type]}</h2>
               <p className="mt-1 text-sm font-semibold text-muted-foreground">{formatOccurredAt(activity.occurredAt)}</p>
               <p className="mt-1 text-xs text-muted-foreground">Recorded by {actorName}</p>
             </div>
@@ -65,7 +65,7 @@ export default async function ActivityDetailPage({
         {runningTimer && canUpdate ? (
           <Card className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="flex items-center gap-2 text-sm font-black text-foreground">
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <TimerDot paused={paused} />
                 <span>{paused ? "Timer paused" : "Timer running"}</span>
                 <TimerElapsed
@@ -90,7 +90,7 @@ export default async function ActivityDetailPage({
 
         {presentation.sections.map((section) => (
           <Card key={section.title} className="space-y-3">
-            <h2 className="text-sm font-black uppercase tracking-normal text-muted-foreground">{section.title}</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-muted-foreground">{section.title}</h2>
             <dl className="divide-y divide-border">
               {section.rows.map((item) => (
                 <div key={item.label} className="grid gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[11rem_1fr] sm:gap-4">
@@ -104,7 +104,7 @@ export default async function ActivityDetailPage({
 
         {presentation.notes ? (
           <Card className="space-y-2">
-            <h2 className="text-sm font-black uppercase tracking-normal text-muted-foreground">Notes</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-muted-foreground">Notes</h2>
             <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">{presentation.notes}</p>
           </Card>
         ) : null}

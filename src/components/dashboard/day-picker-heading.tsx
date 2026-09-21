@@ -31,7 +31,7 @@ export function DayPickerHeading({
   return (
     // The input is invisible, so its own focus outline is too; the heading shows the ring instead.
     <div className="relative min-w-0 flex-1 rounded-lg text-center transition hover:bg-muted has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
-      <p className="truncate text-base font-black leading-tight">{heading}</p>
+      <p className="truncate text-base font-semibold leading-tight">{heading}</p>
       {subheading ? <p className="truncate text-xs font-semibold text-muted-foreground">{subheading}</p> : null}
       <input
         ref={input}

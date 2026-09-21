@@ -203,7 +203,7 @@ export function ConfirmedActivityDelete({
             aria-label="Confirm activity deletion"
           >
             <div>
-              <h2 ref={confirmationHeading} tabIndex={-1} className="font-black text-danger">Delete this activity?</h2>
+              <h2 ref={confirmationHeading} tabIndex={-1} className="font-semibold text-danger">Delete this activity?</h2>
               <p className="mt-1 text-sm text-muted-foreground">This cannot be undone.</p>
             </div>
             {error ? <p role="alert" className="text-sm font-semibold text-danger">{error}</p> : null}
@@ -242,7 +242,7 @@ export function ConfirmedActivityDelete({
   return (
     <section className="space-y-3 rounded-lg border border-danger/40 bg-danger/5 p-4" aria-label="Confirm activity deletion">
       <div>
-        <h2 ref={confirmationHeading} tabIndex={-1} className="font-black text-danger">Delete this activity?</h2>
+        <h2 ref={confirmationHeading} tabIndex={-1} className="font-semibold text-danger">Delete this activity?</h2>
         <p className="mt-1 text-sm text-muted-foreground">This cannot be undone.</p>
       </div>
       {error ? <p role="alert" className="text-sm font-semibold text-danger">{error}</p> : null}

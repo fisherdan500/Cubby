@@ -15,7 +15,7 @@ const mobileNav = [
   { href: "/app/reports", label: "Reports", icon: LineChart }
 ];
 
-const tab = "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-xs font-black transition";
+const tab = "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold transition";
 const tabOn = "bg-primary/14 text-primary ring-1 ring-primary/20";
 const tabOff = "text-muted-foreground hover:bg-muted hover:text-foreground";
 const sheetRow =

@@ -49,11 +49,11 @@ export function RunningTimerTile({
   return (
     <Link
       href={activityHref(timer)}
-      className="flex flex-col items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-1 py-2 text-center shadow-soft transition hover:bg-primary/16"
+      className="flex flex-col items-center gap-1 rounded-lg bg-live/10 px-1 py-2 text-center shadow-soft transition hover:bg-live/16"
     >
       <ActivityArtwork type={timer.type as ActivityTypeName} size="lg" />
-      <p className="text-sm font-black leading-tight text-foreground">{label}</p>
-      <span className="flex min-h-4 items-center justify-center gap-1 text-xs font-black leading-tight text-primary">
+      <p className="text-sm font-semibold leading-tight text-foreground">{label}</p>
+      <span className="tabular flex min-h-4 items-center justify-center gap-1 text-xs font-semibold leading-tight text-live">
         <TimerDot paused={timer.timerState === "paused"} />
         <TimerElapsed timer={elapsedProps(timer)} nowMs={nowMs} />
       </span>
@@ -67,12 +67,12 @@ export function RunningTimerRow({ timer, nowMs }: { timer: RunningTimerIndicator
   return (
     <Link
       href={activityHref(timer)}
-      className="flex min-h-11 items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 p-2 transition hover:bg-primary/16"
+      className="flex min-h-11 items-center gap-2 rounded-lg bg-live/10 p-2 transition hover:bg-live/16"
     >
       <TimerDot paused={timer.timerState === "paused"} />
       <ActivityArtwork type={type} size="xs" />
-      <p className="min-w-0 flex-1 truncate text-sm font-black">{activityLabels[type]}</p>
-      <TimerElapsed timer={elapsedProps(timer)} nowMs={nowMs} className="text-sm font-black text-primary" />
+      <p className="min-w-0 flex-1 truncate text-sm font-semibold">{activityLabels[type]}</p>
+      <TimerElapsed timer={elapsedProps(timer)} nowMs={nowMs} className="tabular text-sm font-semibold text-live" />
     </Link>
   );
 }

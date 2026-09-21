@@ -14,11 +14,11 @@ export default async function NotificationsSettingsPage() {
     <AppShell title="Notifications" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
       <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
         <Card>
-          <h2 className="mb-3 text-lg font-black">Preference</h2>
+          <h2 className="mb-3 text-lg font-semibold">Preference</h2>
           <NotificationPreferenceForm babies={babies} state={preference.state} />
         </Card>
         <Card className="space-y-3">
-          <h2 className="text-lg font-black">Current document</h2>
+          <h2 className="text-lg font-semibold">Current document</h2>
           {preference.document ? <p className="text-sm text-muted-foreground">Revision {preference.document.revision}. External delivery is {preference.document.externalDeliveryEnabled ? "enabled" : "off"}.</p> : <p className="text-sm text-muted-foreground">No document is saved. External delivery is off.</p>}
         </Card>
       </div>

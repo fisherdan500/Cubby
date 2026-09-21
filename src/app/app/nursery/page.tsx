@@ -38,7 +38,7 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
             <Link
               key={href}
               href={nurseryActionHref(href, selectedBabyId)}
-              className="flex h-32 flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-base font-black text-foreground shadow-soft transition hover:border-primary/40 hover:bg-surface-soft sm:h-36"
+              className="flex h-32 flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-base font-semibold text-foreground shadow-soft transition hover:border-primary/40 hover:bg-surface-soft sm:h-36"
             >
               <ActivityArtwork type={type} size="xl" />
               {activityLabels[type]}
@@ -48,8 +48,8 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
 
         <Card className="space-y-4 bg-card/80">
           <div>
-            <p className="text-xs font-black uppercase tracking-normal text-muted-foreground">Nursery timers</p>
-            <h2 className="text-xl font-black">Running timers</h2>
+            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Nursery timers</p>
+            <h2 className="text-xl font-semibold">Running timers</h2>
           </div>
           {dashboard.activeTimers.length === 0 ? (
             <p className="text-sm text-muted-foreground">No active timers.</p>
@@ -57,7 +57,7 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
             dashboard.activeTimers.map((timer) => (
               <div key={timer.id} className="space-y-3 rounded-lg border border-border bg-muted/70 p-4">
                 <div>
-                  <p className="text-2xl font-black">{activityLabels[timer.type as ActivityTypeName]}</p>
+                  <p className="text-2xl font-semibold">{activityLabels[timer.type as ActivityTypeName]}</p>
                   <p className="text-sm font-semibold text-muted-foreground">
                     {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, dashboard.selectedDate.timezone, { withYear: false })}
                   </p>

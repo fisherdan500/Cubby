@@ -25,7 +25,7 @@ export default async function IntegrationsSettingsPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="min-w-0 space-y-4">
           <Card>
-            <h2 className="mb-3 text-lg font-black">API keys</h2>
+            <h2 className="mb-3 text-lg font-semibold">API keys</h2>
             <p className="text-sm text-muted-foreground">New API-key issuance is unavailable until the versioned credential rotation workflow is ready.</p>
           </Card>
           <Card className="space-y-3">
@@ -38,7 +38,7 @@ export default async function IntegrationsSettingsPage() {
             {(apiKeys ?? []).map((key) => (
               <div key={key.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-md bg-muted p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="break-words font-black">{key.name}</p>
+                  <p className="break-words font-semibold">{key.name}</p>
                   <p className="break-all text-sm text-muted-foreground">
                     {key.prefix} - {key.scopes.join(", ")} {key.revokedAt ? "- revoked" : ""}
                   </p>
@@ -50,7 +50,7 @@ export default async function IntegrationsSettingsPage() {
         </section>
         <section className="min-w-0 space-y-4">
           <Card>
-            <h2 className="mb-3 text-lg font-black">Webhooks</h2>
+            <h2 className="mb-3 text-lg font-semibold">Webhooks</h2>
             <WebhookForm />
           </Card>
           <Card className="space-y-3">
@@ -59,7 +59,7 @@ export default async function IntegrationsSettingsPage() {
               <div key={webhook.id} className="rounded-md bg-muted p-3">
                 <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="break-words font-black">{webhook.name}</p>
+                    <p className="break-words font-semibold">{webhook.name}</p>
                     <p className="break-all text-sm text-muted-foreground">{webhook.url}</p>
                     <p className="break-words text-xs text-muted-foreground">{webhook.events.join(", ")}</p>
                   </div>
