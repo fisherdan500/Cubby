@@ -8,6 +8,7 @@ import "@fontsource/manrope/700.css";
 import "@/styles/globals.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
+import { DEFAULT_APPEARANCE_MODE } from "@/domain/appearance";
 import { getCurrentAuthenticatedAppearanceMode } from "@/server/services/account-appearance";
 
 export const metadata: Metadata = {
@@ -29,6 +30,13 @@ export const metadata: Metadata = {
   }
 };
 
+// These are `--background` in each mode, so retuning those tokens means retuning these.
+//
+// The browser chrome still follows the device rather than the account's chosen mode, so a phone set
+// to light shows a cream status bar above a dark app. Fixing that properly means updating the meta
+// tag from the theme provider once the theme resolves on the client; doing it on the server would
+// cost every page an extra session and user read. Left for the palette work, which touches these
+// colours anyway.
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f8f6f0" },
@@ -43,7 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={appearanceMode}>
+        <ThemeProvider attribute="class" defaultTheme={DEFAULT_APPEARANCE_MODE} enableSystem forcedTheme={appearanceMode}>
           <PwaRegister />
           {children}
         </ThemeProvider>
