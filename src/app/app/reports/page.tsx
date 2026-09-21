@@ -135,7 +135,7 @@ function MilestonesTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof
       {stats.milestones.length ? null : <p className="text-sm text-muted-foreground">No milestones in this range.</p>}
       {stats.milestones.map((milestone) => (
         <div key={`${milestone.title}-${milestone.date.toISOString()}`} className="rounded-md bg-muted p-3">
-          <p className="font-black">{milestone.title}</p>
+          <p className="font-semibold">{milestone.title}</p>
           <p className="text-sm text-muted-foreground">
             {milestone.category ?? "Milestone"} - {formatInstantDate(milestone.date, env.APP_TIMEZONE)}
           </p>
@@ -173,7 +173,7 @@ function ActivityTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof g
               <div className="h-2.5 rounded-full bg-primary" style={{ width: `${(stats.byType[type] / max) * 100}%` }} />
             </div>
           </div>
-          <p className="text-right text-sm font-black">{stats.byType[type]}</p>
+          <p className="text-right text-sm font-semibold">{stats.byType[type]}</p>
         </div>
       ))}
     </Card>
@@ -260,7 +260,7 @@ function Trend({
   if (points === null) {
     return (
       <Card className="space-y-3">
-        <h2 className="font-black">{title}</h2>
+        <h2 className="font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">Unavailable because one or more saved measurements use an unsupported unit.</p>
       </Card>
     );
@@ -281,7 +281,7 @@ function Trend({
 
   return (
     <Card className="space-y-3">
-      <h2 className="font-black">{title}</h2>
+      <h2 className="font-semibold">{title}</h2>
       {points.length ? (
         <>
           {/* Decorative: every plotted measurement is listed as text directly below. */}
@@ -296,7 +296,7 @@ function Trend({
           <div className="grid gap-2 md:grid-cols-3">
             {points.map((point) => (
               <div key={`${point.date}-${point.value}`} className="rounded-md bg-muted p-3">
-                <p className="font-black">
+                <p className="font-semibold">
                   {point.value} {point.unit}
                 </p>
                 <p className="text-xs text-muted-foreground">

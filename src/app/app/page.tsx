@@ -131,7 +131,7 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
       <details className="group sm:hidden">
         {/* Still a full 44px target, but a quiet text control rather than a bordered button the
             same weight as the tiles above it. */}
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg text-sm font-black text-muted-foreground transition hover:bg-muted hover:text-foreground marker:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground marker:hidden">
           More activities
         </summary>
         <div className="mt-2 grid grid-cols-4 gap-2">
@@ -176,7 +176,7 @@ function QuickActionLink({
     >
       <div className="flex flex-col items-center gap-1">
         <ActivityArtwork type={type} size="lg" />
-        <p className={`${primary ? "text-sm" : "text-xs"} font-black leading-tight text-foreground`}>
+        <p className={`${primary ? "text-sm" : "text-xs"} font-semibold leading-tight text-foreground`}>
           {quickActionLabel(type)}
         </p>
         {/* Time since the last one, as words under the name, so it reads as "Feed, 2h ago" rather
@@ -187,7 +187,7 @@ function QuickActionLink({
           </p>
         ) : null}
         {active ? (
-          <span className="rounded-full bg-primary/16 px-2 py-0.5 text-[11px] font-black leading-none text-primary">Active</span>
+          <span className="rounded-full bg-primary/16 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">Active</span>
         ) : null}
       </div>
     </Link>
@@ -241,7 +241,7 @@ function DateNavigator({ babyId, selectedDate }: { babyId: string; selectedDate:
       {showReturnToToday ? (
         <Link
           href={`/app?babyId=${babyId}&date=${selectedDate.todayKey}`}
-          className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-xs font-black text-primary transition hover:bg-muted"
+          className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-xs font-semibold text-primary transition hover:bg-muted"
         >
           Today
         </Link>
@@ -342,7 +342,7 @@ function DailySummary({
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-black">Daily Summary</h2>
+      <h2 className="text-sm font-semibold">Daily Summary</h2>
       {items.length ? (
         // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
         // pushed the day's log below the first screen on a phone.
@@ -400,7 +400,7 @@ function SummaryItem({
     >
       <ActivityArtwork type={type} size="xs" />
       <div className="min-w-0">
-        <p className="whitespace-nowrap text-sm font-black leading-none">{value}</p>
+        <p className="whitespace-nowrap text-sm font-semibold leading-none">{value}</p>
         <p className="max-w-40 truncate text-[11px] font-semibold leading-tight text-muted-foreground">{label}</p>
       </div>
     </Link>
@@ -438,7 +438,7 @@ function Timeline({ activities, timeZone, returnTo, volume }: { activities: Acti
         <div key={label} className="space-y-1.5">
           {/* A quiet pill instead of a heading and a rail. The whitespace between groups carries the
               structure, so a busy day reads as a rhythm rather than a ledger. */}
-          <p className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-xs font-black text-muted-foreground">
+          <p className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
             {label}
           </p>
           <div className="space-y-1.5">

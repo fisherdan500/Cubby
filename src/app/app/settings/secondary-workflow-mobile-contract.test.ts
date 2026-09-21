@@ -27,7 +27,7 @@ describe("secondary workflow mobile contracts", () => {
     expect(cardSource).toContain('"min-w-0 rounded-lg');
     expect(backupsSource).toContain('<section className="min-w-0 space-y-4">');
     expect(backupsSource).toContain('<Card className="min-w-0 space-y-3">');
-    expect(backupsSource).toContain('className="break-words font-black"');
+    expect(backupsSource).toContain('className="break-words font-semibold"');
   });
 
   it("wraps integration rows and breaks opaque integration values", () => {

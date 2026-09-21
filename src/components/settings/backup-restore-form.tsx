@@ -89,7 +89,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
       {preview ? (
         <section className="space-y-3 rounded-lg border border-border bg-muted/40 p-4" aria-label="Backup preview">
           <div>
-            <p className="font-black">{preview.householdName}</p>
+            <p className="font-semibold">{preview.householdName}</p>
             <p className="text-sm text-muted-foreground">Exported {preview.exportedAt ? formatInstant(preview.exportedAt, timeZone) : "by legacy Cubby"}</p>
           </div>
           {preview.legacyPartial ? (
@@ -97,7 +97,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
           ) : <p className="text-sm">Checksum verified.</p>}
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {Object.entries(preview.counts).map(([label, count]) => (
-              <div key={label} className="rounded-md bg-card p-2"><dt className="text-xs capitalize text-muted-foreground">{label}</dt><dd className="font-black">{count}</dd></div>
+              <div key={label} className="rounded-md bg-card p-2"><dt className="text-xs capitalize text-muted-foreground">{label}</dt><dd className="font-semibold">{count}</dd></div>
             ))}
           </dl>
           <div>

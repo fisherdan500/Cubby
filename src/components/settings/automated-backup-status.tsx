@@ -67,7 +67,7 @@ export function AutomatedBackupStatus({ status, timeZone }: AutomatedBackupStatu
   return (
     <div className="space-y-4">
       <div className="rounded-md bg-muted p-3">
-        <p className="font-black">Automation {status.config.enabled ? "enabled" : "disabled"}</p>
+        <p className="font-semibold">Automation {status.config.enabled ? "enabled" : "disabled"}</p>
         <p className="text-sm text-muted-foreground">
           Every {status.config.intervalHours} hours, retry after {status.config.retryMinutes} minutes, retain {status.config.retentionCount} healthy versions.
         </p>
@@ -102,7 +102,7 @@ export function AutomatedBackupStatus({ status, timeZone }: AutomatedBackupStatu
           {status.versions.map((version) =>
             version.healthy ? (
               <div key={version.filename} className="rounded-md bg-muted p-3">
-                <p className="break-words font-black">{version.householdName}</p>
+                <p className="break-words font-semibold">{version.householdName}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatInstant(version.exportedAt, timeZone)} · {version.itemCount} items · {version.checksum.slice(0, 12)} · {formatSize(version.size)}
                 </p>
@@ -116,7 +116,7 @@ export function AutomatedBackupStatus({ status, timeZone }: AutomatedBackupStatu
               </div>
             ) : (
               <div key={version.filename} className="rounded-md bg-muted p-3">
-                <p className="break-words font-black">{version.filename}</p>
+                <p className="break-words font-semibold">{version.filename}</p>
                 <p role="alert" className="text-sm text-muted-foreground">
                   Unhealthy local backup: {version.errorCode}. {failureMessage(version.errorCode)}
                 </p>

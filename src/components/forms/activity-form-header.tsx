@@ -9,7 +9,7 @@ export function ActivityFormHeader({ type }: { type: ActivityTypeName }) {
   return (
     <header className="flex min-w-0 items-center gap-3 border-b border-border pb-4">
       <ActivityArtwork type={type} size="md" />
-      <h2 className="truncate font-editorial text-xl font-black text-foreground">{activityLabels[type]}</h2>
+      <h2 className="truncate font-editorial text-xl font-semibold text-foreground">{activityLabels[type]}</h2>
     </header>
   );
 }

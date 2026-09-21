@@ -39,7 +39,7 @@ export function ActivityListRow({
     >
       <ActivityArtwork type={type} size="xs" className="shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-black leading-tight">{activityLabels[type]}</p>
+        <p className="truncate text-sm font-semibold leading-tight">{activityLabels[type]}</p>
         <p className="truncate text-xs text-muted-foreground">{describeActivity(activity, { volume })}</p>
       </div>
       <div className="shrink-0 text-right">

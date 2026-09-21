@@ -38,8 +38,8 @@ export function TimerDot({ paused }: { paused: boolean }) {
       aria-hidden="true"
       className={
         paused
-          ? "inline-block h-2 w-2 shrink-0 rounded-full border-2 border-primary"
-          : "inline-block h-2 w-2 shrink-0 rounded-full bg-primary"
+          ? "inline-block h-2 w-2 shrink-0 rounded-full border-2 border-live"
+          : "inline-block h-2 w-2 shrink-0 rounded-full bg-live"
       }
     />
   );

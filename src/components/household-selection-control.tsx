@@ -57,7 +57,7 @@ export function HouseholdSelectionControl({ state }: { state: HouseholdSelection
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
             {state.selected ? "Current household" : "Household selection required"}
           </p>
-          <p className="truncate text-sm font-black">
+          <p className="truncate text-sm font-semibold">
             {state.selected?.householdName ?? message}
           </p>
         </div>
@@ -78,12 +78,12 @@ export function HouseholdSelectionControl({ state }: { state: HouseholdSelection
                 ))}
               </select>
             </label>
-            <button type="submit" className="min-h-11 rounded-md bg-primary px-4 text-sm font-black text-primary-foreground">
+            <button type="submit" className="min-h-11 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">
               {state.selected ? "Switch" : "Continue"}
             </button>
           </form>
         ) : (
-          <Link href="/onboarding" className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-black text-primary-foreground">
+          <Link href="/onboarding" className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">
             Continue to household setup
           </Link>
         )}

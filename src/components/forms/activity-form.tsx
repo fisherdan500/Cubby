@@ -706,7 +706,7 @@ function AmountStepper({ name, label, defaultValue, unit }: { name: string; labe
             onChange={(event) => {
               if (/^\d*\.?\d*$/.test(event.target.value)) setValue(event.target.value);
             }}
-            className="w-20 min-w-0 bg-transparent text-right text-2xl font-black tabular-nums outline-none placeholder:text-muted-foreground/50"
+            className="w-20 min-w-0 bg-transparent text-right text-2xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50"
           />
           {unit ? <span className="w-12 text-left text-base font-semibold text-muted-foreground">{unit}</span> : null}
         </div>
@@ -783,7 +783,7 @@ function ChoiceField({
               onClick={() => onChange(optional && checked ? "" : option)}
               className={cn(
                 "min-h-11 rounded-lg px-2 text-sm leading-tight transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-ring/30",
-                checked ? "bg-card font-black text-foreground shadow-sm ring-2 ring-primary" : "font-semibold text-muted-foreground hover:text-foreground"
+                checked ? "bg-card font-semibold text-foreground shadow-sm ring-2 ring-primary" : "font-semibold text-muted-foreground hover:text-foreground"
               )}
             >
               {labels?.[option] ?? displayLabel(option)}
