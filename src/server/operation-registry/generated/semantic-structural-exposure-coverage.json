@@ -2026,6 +2026,23 @@
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const babyId = new URL(request.url).searchParams.get(\"babyId\") ?? undefined;\n    return ok({ timers: await getActiveTimersForShell(babyId) });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "f84e02ec28de7833f75fb903a350f1b0963da1c8337bf3d6aae3a06d1730441c",
+      "anchorEnd": 705,
+      "anchorFile": "src/app/api/timers/active/route.ts",
+      "anchorStart": 448,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/timers/active/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/timers/active/route.ts:route_method:GET:src/app/api/timers/active/route.ts#GET",
+      "ownerId": "api_route:src/app/api/timers/active/route.ts",
+      "ownerModule": "src/app/api/timers/active/route.ts",
+      "sidecarPath": "src/app/api/timers/active/route.operation.ts"
+    },
+    {
       "anchorBytes": "fetch(\"/api/invitations/post-signin-bind\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({}), cache: \"no-store\", signal: controller.signal })",
       "anchorDigest": "151925b662fadfa06ab92fcb6acb3744dfee6d4516414a188fe59c143f236f16",
       "anchorEnd": 619,
@@ -2279,6 +2296,23 @@
       "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/timers/active\", { cache: \"no-store\" })",
+      "anchorDigest": "0885aae77e9712fd60e320dd0ae4ae42ad3f35fc66733685cdc71745928d0f9c",
+      "anchorEnd": 1889,
+      "anchorFile": "src/components/active-timer-bar.tsx",
+      "anchorStart": 1839,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/active-timer-bar.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/active-timer-bar.tsx",
+      "ownerModule": "src/components/active-timer-bar.tsx",
+      "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
       "anchorBytes": "authClient.signIn.email({ email, password, rememberMe: true, callbackURL: \"/invite/dispatch\" })",
@@ -5275,9 +5309,9 @@
     {
       "anchorBytes": "getActivityView",
       "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-      "anchorEnd": 842,
+      "anchorEnd": 1021,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 827,
+      "anchorStart": 1006,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityView",
@@ -5292,9 +5326,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 907,
+      "anchorEnd": 1086,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 891,
+      "anchorStart": 1070,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -5309,9 +5343,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 785,
+      "anchorEnd": 964,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 770,
+      "anchorStart": 949,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5700,9 +5734,9 @@
     {
       "anchorBytes": "getDashboardPageData",
       "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-      "anchorEnd": 1277,
+      "anchorEnd": 1317,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1257,
+      "anchorStart": 1297,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboardPageData",
@@ -5717,9 +5751,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1215,
+      "anchorEnd": 1255,
       "anchorFile": "src/app/app/page.tsx",
-      "anchorStart": 1200,
+      "anchorStart": 1240,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6792,10 +6826,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "e25faee842f5208ed2ca2cfd414629028158b0b840bbe7c13d2954f047514622",
+  "semanticArtifactDigest": "66e8639c13088af1eae840f5c268211f9fc5093ed3856399f8d81457eabb78ef",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "9373053b06b90e5f9a73822a18013451ac8e645a1fd3564a706c994ec80d2c6f",
+  "semanticCoverageDigest": "3dea017a91a5e269bc2e734135faa9d258d2f2bc525f30ea5df115119171c222",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "ab685fc3ee809ff548b8a4e51bf5732a9cb94282011dfb1d1be1460d5dd7cf87"
+  "semanticFingerprint": "95c04243c15cddf5f7e010ce932875c015979749161488094c5684dee2f2e866"
 }

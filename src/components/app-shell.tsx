@@ -6,6 +6,7 @@ import { HeaderBabySelector } from "@/components/header-baby-selector";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { BrandLockup } from "@/components/brand";
 import { BrowserOperationRecovery } from "@/components/browser-operation-recovery";
+import { ActiveTimerBar } from "@/components/active-timer-bar";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
@@ -89,7 +90,7 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="app-shell-content px-3 pb-24 pt-[max(0.75rem,env(safe-area-inset-top))] md:ml-64 md:px-6 md:pt-5">
+      <main className="app-shell-content px-3 pb-[calc(6rem+var(--active-timer-bar,0rem))] pt-[max(0.75rem,env(safe-area-inset-top))] md:ml-64 md:px-6 md:pt-5">
         <div className="md:hidden">
           {babySelector ? <HeaderBabySelector data={babySelector} variant="line" /> : null}
           {parent ? (
@@ -109,6 +110,8 @@ export function AppShell({
         {children}
       </main>
 
+      {/* Fetches its own running timers, so no page gains a database read for it. */}
+      <ActiveTimerBar />
       <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>
   );

@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
+import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { ConfirmedActivityDelete } from "@/components/actions/confirmed-activity-delete";
+import { TimerDot, TimerElapsed } from "@/components/timer-elapsed";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import { buildActivityDetailSections } from "@/lib/activity-detail";
@@ -35,11 +37,16 @@ export default async function ActivityDetailPage({
   const presentation = buildActivityDetailSections(activity, env.APP_TIMEZONE);
   const actorName = activity.actorMember.displayName || activity.actorMember.user.name;
   const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
+  // Pause lives here rather than on the dashboard: it is far rarer than stop, and this is the screen
+  // with room for it. Stop is here too, so the whole of a timer can be managed from one place.
+  const runningTimer = activity.timerState === "running" || activity.timerState === "paused";
+  const paused = activity.timerState === "paused";
+  const nowMs = Date.now();
 
   return (
     <AppShell title={activityLabels[type]} userName={user.name}>
       {/* Bottom padding keeps the last card clear of the fixed action bar below. */}
-      <article className="mx-auto max-w-3xl space-y-4 pb-20">
+      <article className="mx-auto max-w-3xl space-y-4 pb-[calc(5rem+var(--active-timer-bar,0rem))]">
         <Card className="space-y-5 p-5 sm:p-6">
           <header className="flex min-w-0 items-center gap-4">
             <ActivityArtwork type={type} size="xl" />
@@ -54,6 +61,31 @@ export default async function ActivityDetailPage({
             </div>
           </header>
         </Card>
+
+        {runningTimer && canUpdate ? (
+          <Card className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-sm font-black text-foreground">
+                <TimerDot paused={paused} />
+                <span>{paused ? "Timer paused" : "Timer running"}</span>
+                <TimerElapsed
+                  timer={{
+                    timerState: activity.timerState,
+                    startedAt: activity.startedAt?.toISOString() ?? null,
+                    pausedAt: activity.pausedAt?.toISOString() ?? null,
+                    pausedSeconds: activity.pausedSeconds
+                  }}
+                  nowMs={nowMs}
+                  className="text-primary"
+                />
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {paused ? <ResumeTimerButton id={activity.id} /> : <PauseTimerButton id={activity.id} />}
+                <StopTimerButton id={activity.id} />
+              </div>
+            </div>
+          </Card>
+        ) : null}
 
         {presentation.sections.map((section) => (
           <Card key={section.title} className="space-y-3">
@@ -81,7 +113,7 @@ export default async function ActivityDetailPage({
             a short one. Fixed means it is in exactly the same spot for every activity and never
             scrolls. On desktop, where there is no bottom navigation, it sits at the bottom of the
             content column clear of the sidebar. Delete is a small icon and still asks to confirm. */}
-        <div className="fixed inset-x-0 bottom-[4.75rem] z-20 px-3 md:bottom-4 md:left-64 md:px-6">
+        <div className="fixed inset-x-0 bottom-[calc(4.75rem+var(--active-timer-bar,0rem))] z-20 px-3 md:bottom-[calc(1rem+var(--active-timer-bar,0rem))] md:left-64 md:px-6">
         <nav
           aria-label="Activity actions"
           className="mx-auto flex max-w-3xl items-center gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-soft backdrop-blur"
