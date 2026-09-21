@@ -4,9 +4,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { ActivityListRow, type ActivityListItem } from "@/components/activity-list-row";
-import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { DashboardWarnings } from "@/components/dashboard/dashboard-warnings";
 import { DayPickerHeading } from "@/components/dashboard/day-picker-heading";
+import { RunningTimerRow, RunningTimerTile } from "@/components/dashboard/running-timer";
 import { ZeroActiveBabies } from "@/components/dashboard/zero-active-babies";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import { hasPermission } from "@/domain/roles";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import type { VolumeUnit } from "@/domain/units";
 import { formatDuration, formatTimeSince } from "@/lib/activity-format";
+import { timersWithoutTile } from "@/lib/dashboard-timers";
 import { formatInstant } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
@@ -101,24 +102,30 @@ export default async function DashboardPage({
 }
 
 function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
+  // One render clock for every indicator, so they all start from the same instant and the client's
+  // first render matches the server's.
+  const nowMs = Date.now();
   return (
     <section className="space-y-3 border-y border-border bg-surface/70 px-1 py-3 sm:px-2 sm:py-4">
       <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
         {primaryQuickActions.map((type) => {
           // A running timer takes over its own tile rather than opening a second card further down
-          // the screen: the thing you started and the thing you stop are the same object.
+          // the screen: the thing you started and the thing you read is the same object. The tile is
+          // an indicator only; stopping happens in the shell's timer bar or on the activity itself.
           const timer = dashboard.activeTimers.find((entry) => entry.type === type);
           return timer ? (
-            <RunningTimerTile key={type} type={type} timer={timer} />
+            <RunningTimerTile key={type} timer={timer} label={quickActionLabel(type)} nowMs={nowMs} />
           ) : (
             <QuickActionLink key={type} type={type} dashboard={dashboard} priority="primary" />
           );
         })}
       </div>
 
-      {/* Timers on non-primary types keep their controls here rather than losing them entirely. */}
-      {dashboard.activeTimers.filter((timer) => !primaryQuickActionTypes.has(timer.type as ActivityTypeName)).map((timer) => (
-        <RunningTimerRow key={timer.id} timer={timer} timeZone={dashboard.selectedDate.timezone} />
+      {/* Every other running timer: the types with no tile of their own, and any second timer of a
+          type that already has one. Without this a twin's feed, or a second nap, would be running
+          with nothing on the screen to say so. */}
+      {timersWithoutTile(dashboard.activeTimers, primaryQuickActionTypes).map((timer) => (
+        <RunningTimerRow key={timer.id} timer={timer} nowMs={nowMs} />
       ))}
 
       <details className="group sm:hidden">
@@ -144,44 +151,6 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
 }
 
 type ActiveTimer = DashboardWithBaby["activeTimers"][number];
-
-function RunningTimerTile({ type, timer }: { type: ActivityTypeName; timer: ActiveTimer }) {
-  const paused = timer.timerState === "paused";
-  return (
-    <div className="flex flex-col items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 p-2 text-center shadow-soft">
-      <span className="rounded-full bg-primary/16 px-2 py-0.5 text-xs font-black leading-none text-primary">
-        {paused ? "Paused" : "Running"}
-      </span>
-      <ActivityArtwork type={type} size="lg" />
-      <p className="text-sm font-black leading-tight text-foreground">{quickActionLabel(type)}</p>
-      <div className="flex w-full flex-wrap justify-center gap-1">
-        {paused ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
-        <StopTimerButton id={timer.id} />
-      </div>
-    </div>
-  );
-}
-
-function RunningTimerRow({ timer, timeZone }: { timer: ActiveTimer; timeZone: string }) {
-  const type = timer.type as ActivityTypeName;
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/10 p-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <ActivityArtwork type={type} size="xs" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-black">{activityLabels[type]}</p>
-          <p className="truncate text-xs font-semibold text-muted-foreground">
-            {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, timeZone, { withYear: false })}
-          </p>
-        </div>
-      </div>
-      <div className="flex shrink-0 flex-wrap justify-end gap-1">
-        {timer.timerState === "paused" ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
-        <StopTimerButton id={timer.id} />
-      </div>
-    </div>
-  );
-}
 
 function QuickActionLink({
   type,

@@ -48,20 +48,33 @@ const authenticatedHtml = await authenticatedPage.text();
 const expectedStarted = new Intl.DateTimeFormat("en", {
   month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Etc/UTC"
 }).format(new Date(handoff.startedAt));
-// The dashboard no longer groups timers under an "Active timers" card: since the calm-dashboard
-// rebuild each running or paused timer takes over its own tile or row, labelled with its state. These
-// are Play timers, which are not one of the three quick-action tiles, so they render as rows reading
-// "Paused <time>" and "Started <time>". The point of the assertion is unchanged: both restored timers
-// must be visible, in their own states, with the preserved start time.
+// A running or paused timer takes over its own dashboard tile or row. Those are now indicators: a
+// dot, the activity, and how long it has been going, with the state in the text a screen reader is
+// given. The start instant itself has moved to the activity's own page, which the indicator links to.
+// The point of the assertion is unchanged: both restored timers must be visible, in their own states,
+// with the preserved start time.
+const timerActivityIds = [...authenticatedHtml.matchAll(/\/app\/activities\/([a-z0-9]+)\?returnTo=/g)]
+  .map(([, id]) => id);
 const timerProbe = {
   pageOk: authenticatedPage.ok,
-  startedRow: authenticatedHtml.includes("Started"),
-  pausedRow: authenticatedHtml.includes("Paused"),
-  expectedStarted: authenticatedHtml.includes(expectedStarted),
+  runningRow: authenticatedHtml.includes("Running for"),
+  pausedRow: authenticatedHtml.includes("Paused at"),
+  linkedActivities: timerActivityIds.length,
   databaseTimerStates: Array.isArray(handoff.timerProbeState) ? handoff.timerProbeState : null
 };
-if (!timerProbe.pageOk || !timerProbe.startedRow || !timerProbe.pausedRow || !timerProbe.expectedStarted) {
+if (!timerProbe.pageOk || !timerProbe.runningRow || !timerProbe.pausedRow || timerProbe.linkedActivities < 2) {
   throw new Error(`rehearsal_app_timer_incoherent:${JSON.stringify(timerProbe)}`);
+}
+
+// The preserved start instant, on the page that still states it outright.
+const timerDetailPages = await Promise.all(
+  [...new Set(timerActivityIds)].map(async (id) => {
+    const page = await fetch(`${baseUrl}/app/activities/${id}`, { headers: { cookie: authenticatedCookie } });
+    return page.ok ? await page.text() : "";
+  })
+);
+if (!timerDetailPages.some((html) => html.includes(expectedStarted))) {
+  throw new Error(`rehearsal_app_timer_started_at_missing:${JSON.stringify({ expectedStarted, pages: timerDetailPages.length })}`);
 }
 
 const householdPage = await fetch(`${baseUrl}/app/settings/members`, { headers: { cookie: authenticatedCookie } });

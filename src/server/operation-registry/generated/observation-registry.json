@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 100,
-    "client_binding": 33,
+    "api_route": 101,
+    "client_binding": 34,
     "instrumentation": 1,
     "package_command": 25,
     "server_action": 1,
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "316b51c6cd044955b9c8560edb66b1195ecf51f711a53f36807d0f38dee46998",
+  "declarationDigest": "e4cce9995a048162ff3c04da0ffac2cbbf9fc216d5c32f9b9baa4453f541ca65",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4239,6 +4239,36 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/timers/active/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/timers/active/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/timers/active/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/timers/active/route.ts",
+      "sidecarPath": "src/app/api/timers/active/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "server_value_import",
             "symbol": "getActivityForEdit",
             "target": "src/server/services/activities.ts#getActivityForEdit"
@@ -5519,6 +5549,36 @@
       },
       "id": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/active-timer-bar.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/active-timer-bar.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/active-timer-bar.tsx",
+      "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
       "declaration": {
@@ -7028,7 +7088,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "98dec98399f39cc8acb82f7febdd3adeec1d1f8419e435c90e28ff3a5b238c4e",
+  "generatorDigest": "7479823036069ac77a5272865fbf5fe25b18078044f4bf6ffc1a9c8b6823f2b0",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -9105,6 +9165,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "f84e02ec28de7833f75fb903a350f1b0963da1c8337bf3d6aae3a06d1730441c",
+          "anchorEnd": 705,
+          "anchorFile": "src/app/api/timers/active/route.ts",
+          "anchorStart": 448,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/timers/active/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/timers/active/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/timers/active/route.ts",
+      "sidecarPath": "src/app/api/timers/active/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "b7301e2d4316d0ac2a64be340c58a02795360d450e531f7c4c2f66561ef54328",
           "anchorEnd": 325,
           "anchorFile": "src/app/account/appearance/page.tsx",
@@ -9199,27 +9278,27 @@
       "bindings": [
         {
           "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-          "anchorEnd": 842,
+          "anchorEnd": 1021,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 827,
+          "anchorStart": 1006,
           "kind": "server_value_import",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 907,
+          "anchorEnd": 1086,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 891,
+          "anchorStart": 1070,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 785,
+          "anchorEnd": 964,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 770,
+          "anchorStart": 949,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9494,18 +9573,18 @@
       "bindings": [
         {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1277,
+          "anchorEnd": 1317,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1257,
+          "anchorStart": 1297,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1215,
+          "anchorEnd": 1255,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1200,
+          "anchorStart": 1240,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10278,6 +10357,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "0885aae77e9712fd60e320dd0ae4ae42ad3f35fc66733685cdc71745928d0f9c",
+          "anchorEnd": 1889,
+          "anchorFile": "src/components/active-timer-bar.tsx",
+          "anchorStart": 1839,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/active-timer-bar.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/active-timer-bar.tsx",
+      "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
       "bindings": [
@@ -12652,8 +12750,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 194,
-  "observationDigest": "4d4163e97c35825e4df4f4b02001add56aaaa245edf24bf6df0670010570e6b2",
+  "observationCount": 196,
+  "observationDigest": "aa3b3fa06b7525740af6747002c432d43dca211020f674efc5f17cf6b5087b03",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14631,6 +14729,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 705,
+          "anchorFile": "src/app/api/timers/active/route.ts",
+          "anchorStart": 448,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/timers/active/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/timers/active/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/timers/active/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/timers/active/route.ts",
+      "sidecarPath": "src/app/api/timers/active/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 325,
           "anchorFile": "src/app/account/appearance/page.tsx",
           "anchorStart": 305,
@@ -14721,27 +14837,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 842,
+          "anchorEnd": 1021,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 827,
+          "anchorStart": 1006,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
-          "anchorEnd": 907,
+          "anchorEnd": 1086,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 891,
+          "anchorStart": 1070,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 785,
+          "anchorEnd": 964,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 770,
+          "anchorStart": 949,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "requireUserPage",
@@ -15009,18 +15125,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1277,
+          "anchorEnd": 1317,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1257,
+          "anchorStart": 1297,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1215,
+          "anchorEnd": 1255,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1200,
+          "anchorStart": 1240,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -15770,6 +15886,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1889,
+          "anchorFile": "src/components/active-timer-bar.tsx",
+          "anchorStart": 1839,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/active-timer-bar.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/active-timer-bar.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/active-timer-bar.tsx",
+      "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
       "bindings": [
@@ -18597,6 +18731,12 @@
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/timers/active/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/timers/active/route.ts",
+      "sidecarPath": "src/app/api/timers/active/route.operation.ts"
+    },
+    {
       "id": "server_loader:src/app/account/appearance/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/account/appearance/page.tsx",
@@ -18799,6 +18939,12 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
+    },
+    {
+      "id": "client_binding:src/components/active-timer-bar.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/active-timer-bar.tsx",
+      "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
       "id": "client_binding:src/components/auth/auth-form.tsx",
@@ -19161,9 +19307,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "b9da1f6642fab4d699bcec193fafa82b46dcbf2430e787218d191fe94da8afd5",
+  "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "544d0868a0a6223aee6e1cae1d290d90791fa9a4c2ab7d69d8aaa87cac92c39e",
+  "registryDigest": "00f65bf409297f44055ed64e07fdbb102e8841856d808eee3be855d3ca5cbd6c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
