@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { buildSync } from "esbuild";
+
 const REHEARSAL_COMPOSE_FILE = "scripts/backup-recovery-rehearsal.compose.yml";
 const REHEARSAL_DATABASE = "cubby_backup_rehearsal";
 const REHEARSAL_USER = "cubby_rehearsal";
@@ -349,17 +351,18 @@ export function runBackupRecoveryRehearsal() {
     run(process.execPath, [prismaCli, "db", "pull", "--schema", schema], { cwd: migrationCwd, env });
     run(process.execPath, [prismaCli, "generate", "--schema", schema], { cwd: migrationCwd, env: prismaGenerateEnv });
     const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
-    const esbuildCli = resolve(repositoryRoot, "node_modules/esbuild/bin/esbuild");
-    run(process.execPath, [
-      esbuildCli,
-      "scripts/platform-owner.ts",
-      "--bundle",
-      "--platform=node",
-      "--format=esm",
-      "--target=node22",
-      "--packages=external",
-      `--outfile=${packagedPlatformOwnerCli}`
-    ], { cwd: repositoryRoot, env });
+    // esbuild's own API rather than its bin. `node node_modules/esbuild/bin/esbuild` works on Windows,
+    // where that file is a JavaScript shim, and fails on Linux, where it is the native binary itself -
+    // Node reads the ELF header and reports a syntax error. The API has no platform question in it.
+    buildSync({
+      entryPoints: [resolve(repositoryRoot, "scripts/platform-owner.ts")],
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      target: "node22",
+      packages: "external",
+      outfile: packagedPlatformOwnerCli
+    });
     run(process.execPath, [vitestCli, "run", "--config", "scripts/update-baseline-fixture.vitest.config.ts"], {
       cwd: repositoryRoot,
       env: { ...testEnv, UPDATE_BASELINE_PHASE: "seed" }

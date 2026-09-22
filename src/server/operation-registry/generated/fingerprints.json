@@ -2796,17 +2796,17 @@
           "file": "package.json"
         },
         {
-          "digest": "c48eca8670a546e11860cecd578521da6ff15aee7e28f2db9962090a40548172",
+          "digest": "b6c4d1980f650d30ce8b4e4058edc84262ea0c5373bf42f3ddbc8b24abe9b079",
           "file": "scripts/backup-recovery-rehearsal.ts"
         }
       ],
       "declarationDigest": "55358c2e6713469367903e21ccd0dee474de55aeb3b390abf070d6f8211eaff8",
-      "fingerprint": "d6afcc5fe67a33c63e3ce5539a580832a83cbef872a239cc3a4cbe51961c573e",
+      "fingerprint": "c836d60b6ff5c80675a3946db22d5d95b0c06ce9733076dae9e210ec44b504e5",
       "id": "fingerprint:package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerId": "package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerModule": "scripts/backup-recovery-rehearsal.ts",
       "sidecarPath": "scripts/backup-recovery-rehearsal.operation.ts",
-      "sourceDigest": "4a6dee733af93bc58812125afae6065b926422ae82a01e55f09e28f6e7202bda",
+      "sourceDigest": "3443bdcf3f62282fc381369f24f7d30dd5316d97d12783b716d253d26930393f",
       "status": "declared"
     },
     {
@@ -3472,17 +3472,17 @@
           "file": "package.json"
         },
         {
-          "digest": "d2b427d7bbf64c727fabe50bb6c3fe61b0fb89bbae6ef10494bd90c9815b9fc3",
+          "digest": "96bf567cf3ddef36202e0da387467d3c18aa56dbe25926892ca69aa5b85c8620",
           "file": "scripts/sprout-preview-commit.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "fde5434663cc168a353f7214df1622321a45753d4dccbb6ba7e879a4c87e59d1",
-      "fingerprint": "28d8eff94e1ac3acc282e6df5ddf5ee4d78ab379c57b193be9519b8e6e832c50",
+      "fingerprint": "d483f6adb82e2f34662411697f7c86d7fc3c3edda84c2ba893b84c2bd8d5c0f4",
       "id": "fingerprint:package_command:scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "70de402b5ec19e35602848931c9ea6c228099d7e1bd3283819864a9a6edf5b27",
+      "sourceDigest": "ebd2e3d22721a7a3da27c76d76c2a05de846b5dafbc68887283b33a7ec2a96bf",
       "status": "declared"
     },
     {
