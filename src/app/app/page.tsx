@@ -267,7 +267,7 @@ function DailySummary({
     label: string;
   };
   const candidates: Array<SummaryItemData | null> = [
-    summary.sleep.count
+    summary.sleep.count || summary.sleep.seconds
       ? {
           key: "sleep",
           value: formatDuration(summary.sleep.seconds) || "0 min",
@@ -343,7 +343,7 @@ function DailySummary({
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">Daily Summary</h2>
-      {items.length ? (
+      {items.length || summary.awake.known ? (
         // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
         // pushed the day's log below the first screen on a phone.
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
@@ -357,6 +357,11 @@ function DailySummary({
               selected={selectedType === item.key}
             />
           ))}
+          {/* Awake sits beside sleep, and is not a link: it is the rest of the day rather than a kind
+              of activity, so there is nothing to filter the log down to. */}
+          {summary.awake.known ? (
+            <AwakeSummaryItem value={formatDuration(summary.awake.seconds) || "0 min"} />
+          ) : null}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">No summary activity for this date.</p>
@@ -404,6 +409,22 @@ function SummaryItem({
         <p className="max-w-40 truncate text-[11px] font-semibold leading-tight text-muted-foreground">{label}</p>
       </div>
     </Link>
+  );
+}
+
+/**
+ * The same chip as the rest of the summary, without the link or the artwork: awake time is the part
+ * of the day that is not accounted for by a sleep, so there is no activity behind it to open.
+ */
+function AwakeSummaryItem({ value }: { value: string }) {
+  return (
+    <div className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-border bg-card/60 py-1 pl-3 pr-3">
+      <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full border-2 border-muted-foreground" />
+      <div className="min-w-0">
+        <p className="tabular whitespace-nowrap text-sm font-semibold leading-none">{value}</p>
+        <p className="max-w-40 truncate text-[11px] font-semibold leading-tight text-muted-foreground">Awake</p>
+      </div>
+    </div>
   );
 }
 

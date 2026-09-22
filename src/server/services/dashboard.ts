@@ -13,6 +13,7 @@ import {
   buildHeaderBabySelectorData,
   resolveSelectedBaby
 } from "@/lib/baby-selector";
+import { dayAwakeSeconds, dayElapsedSeconds, daySleepSeconds, type DaySleepRecord } from "@/lib/day-sleep";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, normalizeTimeZone, zonedDateStart } from "@/lib/timezone";
@@ -111,7 +112,7 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
 
   const selectedDate = resolveDashboardDate(dateInput);
 
-  const [activities, activeTimers, lastFeeding, lastDiaper, lastSleep] = await Promise.all([
+  const [activities, activeTimers, lastFeeding, lastDiaper, lastSleep, overlappingSleeps] = await Promise.all([
     prisma.activityLog.findMany({
       where: {
         householdId: home.householdId,
@@ -146,6 +147,19 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
       where: { householdId: home.householdId, babyId: baby.id, deletedAt: null, type: ActivityType.sleep },
       include: activityInclude,
       orderBy: { occurredAt: "desc" }
+    }),
+    // Sleep is measured by how much of it falls inside the day, so the night before has to be in
+    // hand too: a sleep that began yesterday evening owns most of this morning. The window reaches
+    // back far enough to catch any sleep still running into the day.
+    prisma.activityLog.findMany({
+      where: {
+        householdId: home.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        type: ActivityType.sleep,
+        occurredAt: { gte: new Date(selectedDate.start.getTime() - SLEEP_LOOKBACK_MS), lt: selectedDate.end }
+      },
+      select: { occurredAt: true, startedAt: true, endedAt: true, durationSeconds: true, timerState: true, pausedAt: true }
     })
   ]);
 
@@ -174,7 +188,8 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
   const dismissed = dismissalKeySet(dismissals);
   const aggregates = buildDashboardAggregates(
     activities,
-    parseUnitPreferences(home.household.settings?.unitPreferences)
+    parseUnitPreferences(home.household.settings?.unitPreferences),
+    { window: { start: selectedDate.start, end: selectedDate.end }, sleeps: overlappingSleeps }
   );
 
   return {
@@ -188,6 +203,7 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
     selectedDate,
     warnings: warningItems.filter((warning) => !dismissed.has(dismissalKey(warning))),
     dailySummary: aggregates.dailySummary,
+    overlappingSleeps,
     summaries: aggregates.summaries
   };
 }
@@ -456,9 +472,18 @@ function formatDashboardDateLabel(key: string, timezone: string) {
 
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
+/**
+ * A sleep can only reach into a day from so far back. Two days covers any plausible overnight and
+ * keeps the lookback query small.
+ */
+export const SLEEP_LOOKBACK_MS = 2 * 24 * 60 * 60 * 1_000;
+
+export type DashboardDayWindow = { start: Date; end: Date };
+
 export function buildDashboardAggregates(
   activities: DashboardActivity[],
-  preferences: UnitPreferences = defaultUnitPreferences
+  preferences: UnitPreferences = defaultUnitPreferences,
+  day?: { window: DashboardDayWindow; sleeps: readonly DaySleepRecord[]; now?: number }
 ) {
   const summaries: Partial<Record<ActivityType, number>> = {};
   for (const activity of activities) {
@@ -466,14 +491,15 @@ export function buildDashboardAggregates(
   }
 
   return {
-    dailySummary: summarizeDay(activities, preferences),
+    dailySummary: summarizeDay(activities, preferences, day),
     summaries
   };
 }
 
 export function summarizeDay(
   activities: DashboardActivity[],
-  preferences: UnitPreferences = defaultUnitPreferences
+  preferences: UnitPreferences = defaultUnitPreferences,
+  day?: { window: DashboardDayWindow; sleeps: readonly DaySleepRecord[]; now?: number }
 ) {
   const feedingVolumes: Array<{ amount: number; unit?: string | null }> = [];
   const pumpingVolumes: Array<{ amount: number; unit?: string | null }> = [];
@@ -481,6 +507,15 @@ export function summarizeDay(
     sleep: {
       count: 0,
       seconds: 0
+    },
+    /**
+     * The part of the day that has happened, less the sleep in it. `seconds` is 0 and `known` false
+     * when the caller did not supply the day's window, so a summary built without one simply does
+     * not claim an awake figure rather than inventing one.
+     */
+    awake: {
+      seconds: 0,
+      known: false
     },
     feeding: {
       count: 0,
@@ -559,6 +594,18 @@ export function summarizeDay(
       summary.play.count += 1;
       summary.play.seconds += activity.durationSeconds ?? 0;
     }
+  }
+
+  if (day) {
+    // Sleep is re-measured as the part of each sleep that fell inside the day, so that it and awake
+    // time partition the day between them. Counting it by the day a sleep started leaves a morning
+    // claiming no sleep at all, because the night before owns the whole of it.
+    const now = day.now ?? Date.now();
+    const slept = daySleepSeconds(day.sleeps, day.window.start, day.window.end, now);
+    summary.sleep.count = slept.count;
+    summary.sleep.seconds = slept.seconds;
+    summary.awake.seconds = dayAwakeSeconds(day.window.start, day.window.end, now, slept.seconds);
+    summary.awake.known = dayElapsedSeconds(day.window.start, day.window.end, now) > 0;
   }
 
   summary.feeding.amount = sumVolume(feedingVolumes, preferences.volume).amount;

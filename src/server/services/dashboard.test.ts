@@ -118,6 +118,8 @@ beforeEach(() => {
   });
   mocks.babyFindFirst.mockResolvedValue({ id: "baby-1" });
   mocks.dismissalUpsert.mockResolvedValue({ id: "dismissal-1" });
+  // A default for any read a test does not care about, so adding a query does not break every case.
+  mocks.activityFindMany.mockResolvedValue([]);
 });
 
 describe("dashboard service data loading", () => {
@@ -137,8 +139,14 @@ describe("dashboard service data loading", () => {
 
     const dashboard = await getDashboard("user-1", { babyId: "baby-1", date: "2026-06-19" });
 
-    const selectedDayReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.occurredAt);
+    // The timeline is read once. The only other dated read is the sleep lookback, which reaches
+    // before the day so an overnight sleep can be measured into it.
+    const selectedDayReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.occurredAt && !query.where.type);
+    const sleepLookbackReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.type === ActivityType.sleep);
     expect(selectedDayReads).toHaveLength(1);
+    expect(sleepLookbackReads).toHaveLength(1);
+    expect(sleepLookbackReads[0][0].where.occurredAt.gte.getTime())
+      .toBeLessThan(selectedDayReads[0][0].where.occurredAt.gte.getTime());
     expect(mocks.activityGroupBy).not.toHaveBeenCalled();
     expect(dashboard?.activities).toBe(activities);
     expect(dashboard?.dailySummary?.feeding).toEqual({ count: 1, amount: 4.25, unit: "oz" });
@@ -497,6 +505,8 @@ describe("daily summary", () => {
 
     expect(summary).toEqual({
       sleep: { count: 0, seconds: 0 },
+      // Without a day window there is no awake figure to claim, rather than a made-up zero.
+      awake: { seconds: 0, known: false },
       feeding: { count: 0, amount: 0, unit: "oz" },
       diaper: { count: 0, wet: 0, dirty: 0, mixed: 0, dry: 0 },
       bath: { count: 0 },
@@ -529,5 +539,64 @@ describe("daily summary", () => {
     ], defaultUnitPreferences);
 
     expect(summary.feeding).toEqual({ count: 2, amount: null, unit: "oz" });
+  });
+
+  describe("sleep and awake over a day", () => {
+    const window = { start: new Date("2026-09-21T00:00:00.000Z"), end: new Date("2026-09-22T00:00:00.000Z") };
+    const nineAm = Date.parse("2026-09-21T09:00:00.000Z");
+
+    function sleepRecord(startedAt: string, endedAt: string) {
+      return {
+        occurredAt: startedAt,
+        startedAt,
+        endedAt,
+        durationSeconds: Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 1_000),
+        timerState: "stopped",
+        pausedAt: null
+      };
+    }
+
+    it("splits the day so far between sleep and awake", () => {
+      const overnight = sleepRecord("2026-09-20T19:00:00.000Z", "2026-09-21T07:00:00.000Z");
+      const summary = summarizeDay([], defaultUnitPreferences, { window, sleeps: [overnight], now: nineAm });
+
+      // Seven of the nine hours since midnight were the tail of last night's sleep.
+      expect(summary.sleep).toEqual({ count: 1, seconds: 25_200 });
+      expect(summary.awake).toEqual({ seconds: 7_200, known: true });
+      expect(summary.sleep.seconds + summary.awake.seconds).toBe(32_400);
+    });
+
+    it("counts last night's sleep that the day's own activities never mention", () => {
+      // The timeline holds nothing before 07:00, so counting sleep by the day it started would show
+      // nine hours awake at nine in the morning.
+      const overnight = sleepRecord("2026-09-20T19:00:00.000Z", "2026-09-21T07:00:00.000Z");
+      const withoutLookback = summarizeDay([], defaultUnitPreferences);
+      const withLookback = summarizeDay([], defaultUnitPreferences, { window, sleeps: [overnight], now: nineAm });
+
+      expect(withoutLookback.sleep.seconds).toBe(0);
+      expect(withLookback.sleep.seconds).toBe(25_200);
+    });
+
+    it("claims no awake figure for a day that has not begun", () => {
+      const summary = summarizeDay([], defaultUnitPreferences, {
+        window,
+        sleeps: [],
+        now: Date.parse("2026-09-20T12:00:00.000Z")
+      });
+
+      expect(summary.awake).toEqual({ seconds: 0, known: false });
+    });
+
+    it("gives a finished day its whole twenty-four hours", () => {
+      const nap = sleepRecord("2026-09-21T13:00:00.000Z", "2026-09-21T14:30:00.000Z");
+      const summary = summarizeDay([], defaultUnitPreferences, {
+        window,
+        sleeps: [nap],
+        now: Date.parse("2026-09-23T00:00:00.000Z")
+      });
+
+      expect(summary.sleep.seconds).toBe(5_400);
+      expect(summary.awake.seconds).toBe(86_400 - 5_400);
+    });
   });
 });
