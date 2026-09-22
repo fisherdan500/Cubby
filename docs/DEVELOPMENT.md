@@ -468,18 +468,28 @@ One command runs the gates and reports which of them failed:
 ```bash
 npm run verify:gates             # canonical: typecheck, lint, registry, both test suites
 npm run verify:gates:disposable  # the rehearsals that boot their own throwaway PostgreSQL
-npm run verify:gates:all         # both groups
+npm run verify:gates:image       # the rehearsals that also build the application image
+npm run verify:gates:all         # all three groups
 ```
 
 Every gate runs even after an earlier one fails, so one pass tells you everything
 that is broken. The same runner is what continuous integration invokes
 (`.github/workflows/verify.yml`), so local and CI coverage cannot drift apart:
-CI runs the canonical group and the disposable group on every pull request.
+CI runs all three groups on every pull request, one job each. The image group's
+two rehearsals share a job deliberately — both build the same context and
+Dockerfile, so the second build reuses the first's layers.
 
 `scripts/verify-gates.ts` declares the gates. Every `verify:` script must appear
 there as an automated gate, in the run-by-hand list, or in the not-a-gate list
 with its reason — a test enforces this, so a new rehearsal cannot be added
-without someone deciding whether it runs.
+without someone deciding whether it runs. A test also asserts every gate group is
+invoked by the workflow, so a new group cannot arrive without a job to run it.
+
+Being slow is not a reason to leave a rehearsal out of CI; that is what the image
+group is for. `GATES_RUN_BY_HAND` records why each remaining one cannot run on
+every pass, and a test rejects a reason that amounts to "slow". This matters: for
+six merges `verify:backup-recovery` was broken and nobody could tell whether it
+was excluded on purpose or by neglect.
 
 Use `npm run build` and `docker compose up --build -d` in addition for
 schema, auth, import, or Docker-sensitive changes. For docs-only changes,
@@ -487,19 +497,20 @@ markdown review and `git status --short` are usually enough.
 
 ### Run by hand
 
-The heavier rehearsals stay outside the gates because each builds the application
-image, and the input-acknowledgement stage additionally needs a local Chrome:
+These stay outside the gates for reasons continuous integration cannot fix — a
+wall-clock budget a shared runner cannot measure honestly, a dependency on an
+image the host already holds, or a real local Chrome:
 
 ```bash
-npm run verify:backup-recovery
-npm run verify:browser-operation-save-path
-npm run verify:sprout-preview-commit
-npm run verify:performance-1y
-npm run verify:performance-5y
-npm run verify:performance-input
-npm run verify:p1-3-migrator-bootstrap
-npm run verify:p1-3-invitation-acceptance
+npm run verify:performance-1y            # wall-clock budget
+npm run verify:performance-5y            # wall-clock budget
+npm run verify:performance-input         # wall-clock budget, drives Chrome over CDP
+npm run verify:p1-3-migrator-bootstrap   # inspects an existing local cubby-app image
+npm run verify:p1-3-invitation-acceptance # drives Chrome over CDP, wants ~12 GB free
 ```
+
+The browser-driven lifecycles are the memory-hungry ones. A rehearsal that only
+builds the image and boots PostgreSQL runs comfortably from around 9 GB free.
 
 Update/migration changes also have an operator preflight and its rehearsal:
 
@@ -854,10 +865,17 @@ Run the isolated real-PostgreSQL rehearsal only with:
 npm run verify:backup-recovery
 ```
 
+It is also in the `image` gate group, so continuous integration runs it on every
+pull request; the command above is for running it against your own checkout.
+
 The harness never loads `.env` or the normal Compose stack, uses its own
 generated temporary backup directory, and always attempts project-scoped volume
-teardown. See [Backup Recovery](BACKUP_RECOVERY.md) for prerequisites, expected
-output, complete inclusion/exclusion rules, and recovery limitations.
+teardown. That directory is a bind mount the host writes and the container reads,
+so the harness widens its permissions before the container reads it: `mkdtemp`
+creates it `0700`, and on Linux a bind mount carries that uid and mode through,
+where Docker Desktop on Windows and macOS synthesizes permissions instead. See
+[Backup Recovery](BACKUP_RECOVERY.md) for prerequisites, expected output,
+complete inclusion/exclusion rules, and recovery limitations.
 
 ### Visual Assets And Themes
 
