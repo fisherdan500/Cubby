@@ -2796,17 +2796,17 @@
           "file": "package.json"
         },
         {
-          "digest": "b6c4d1980f650d30ce8b4e4058edc84262ea0c5373bf42f3ddbc8b24abe9b079",
+          "digest": "9d5fa5e530f9237172908a7da9b723c427ee22ee963c43e3ec1631755de210f4",
           "file": "scripts/backup-recovery-rehearsal.ts"
         }
       ],
       "declarationDigest": "55358c2e6713469367903e21ccd0dee474de55aeb3b390abf070d6f8211eaff8",
-      "fingerprint": "c836d60b6ff5c80675a3946db22d5d95b0c06ce9733076dae9e210ec44b504e5",
+      "fingerprint": "cc7f7b7f6e391e88041f33c878be32ecb0f2f7be386219e6cf3279d41d5fb3ef",
       "id": "fingerprint:package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerId": "package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerModule": "scripts/backup-recovery-rehearsal.ts",
       "sidecarPath": "scripts/backup-recovery-rehearsal.operation.ts",
-      "sourceDigest": "3443bdcf3f62282fc381369f24f7d30dd5316d97d12783b716d253d26930393f",
+      "sourceDigest": "13cce9f8c6fedfa3f9238c79780bb7f7ddba541ac5f659e7a04fb4a689f59abe",
       "status": "declared"
     },
     {

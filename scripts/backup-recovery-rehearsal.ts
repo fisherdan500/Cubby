@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { cpSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -174,6 +174,24 @@ function run(command: string, args: string[], options: { cwd: string; env?: Node
   return String(result.stdout ?? "");
 }
 
+/**
+ * The backup directory is a bind mount the host writes and the container reads. On Linux a bind mount
+ * carries its real uid and mode, and `mkdtemp` makes a 0700 directory owned by whoever runs the
+ * rehearsal, so the image's `node` user cannot read a single file in it - the download returns
+ * `backup_invalid` and the rehearsal blames the application. Docker Desktop on Windows and macOS
+ * synthesizes permissions instead, which is why this only ever appeared on a Linux runner.
+ *
+ * Widening to world-readable matches a real deployment, where the app owns its backup volume. The
+ * directory holds synthetic rehearsal data for a few minutes and is removed at teardown. On Windows
+ * `chmod` is close to a no-op, which is harmless.
+ */
+function grantContainerReadAccess(directory: string) {
+  chmodSync(directory, 0o755);
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.isFile()) chmodSync(resolve(directory, entry.name), 0o644);
+  }
+}
+
 function isolatedEnvironment(databaseUrl: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of [
@@ -272,6 +290,8 @@ export function runBackupRecoveryRehearsal() {
     composeFile: REHEARSAL_COMPOSE_FILE,
     backupDirectory: mkdtempSync(resolve(tmpdir(), "cubby-backup-rehearsal-files-"))
   };
+  // Traversable before the container starts; the files it will read are widened once they exist.
+  grantContainerReadAccess(config.backupDirectory);
   let dockerEnv: ReturnType<typeof isolatedDockerEnvironment> | undefined;
   let migrationCwd: string | undefined;
   let composeAttempted = false;
@@ -388,6 +408,7 @@ export function runBackupRecoveryRehearsal() {
       [vitestCli, "run", "--config", "scripts/backup-recovery-rehearsal.vitest.config.ts"],
       { cwd: repositoryRoot, env: testEnv }
     );
+    grantContainerReadAccess(config.backupDirectory);
 
     const publishedApp = run("docker", [...composeArgs, "port", "app", "3000"], {
       cwd: repositoryRoot,
