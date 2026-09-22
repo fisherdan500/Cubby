@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createDisposableRuntimeRolesArgs } from "./disposable-runtime-roles";
+
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const composeFile = "scripts/sprout-preview-commit.acceptance.compose.yml";
 
@@ -66,6 +68,8 @@ export function runSproutPreviewCommitAcceptance() {
     const port = published.match(/^127\.0\.0\.1:(\d+)$/)?.[1];
     if (!port) throw new Error("sprout_preview_commit_acceptance_loopback_port_invalid");
     const databaseUrl = `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}?schema=public`;
+    // The migrations grant to the production role names, so those roles have to exist before deploy.
+    run("docker", [...compose, "exec", "--no-TTY", "postgres", ...createDisposableRuntimeRolesArgs(user, database)], baseEnv);
     const prismaCli = resolve(root, "node_modules/prisma/build/index.js");
     run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", resolve(copiedPrisma, "schema.prisma")], { ...baseEnv, DATABASE_URL: databaseUrl });
     const vitestCli = resolve(root, "node_modules/vitest/vitest.mjs");

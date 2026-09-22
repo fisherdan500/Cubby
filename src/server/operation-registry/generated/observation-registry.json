@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "e4cce9995a048162ff3c04da0ffac2cbbf9fc216d5c32f9b9baa4453f541ca65",
+  "declarationDigest": "14dd945c774c769ea907b06b506bcb12a46e1ba5afaff9819defe8eff32153bb",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1048,6 +1048,11 @@
             "kind": "package_script",
             "symbol": "verify:gates:disposable",
             "target": "package.json#scripts.verify:gates:disposable"
+          },
+          {
+            "kind": "package_script",
+            "symbol": "verify:gates:image",
+            "target": "package.json#scripts.verify:gates:image"
           }
         ],
         "deferredGateIds": [
@@ -7067,7 +7072,8 @@
       "packageScripts": [
         "verify:gates",
         "verify:gates:all",
-        "verify:gates:disposable"
+        "verify:gates:disposable",
+        "verify:gates:image"
       ],
       "rationale": "isolated test or rehearsal command; structural identity only"
     },
@@ -11712,9 +11718,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 5283,
+          "anchorEnd": 5348,
           "anchorFile": "package.json",
-          "anchorStart": 5274,
+          "anchorStart": 5339,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -11943,9 +11949,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5384,
+          "anchorEnd": 5449,
           "anchorFile": "package.json",
-          "anchorStart": 5366,
+          "anchorStart": 5431,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -12231,9 +12237,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 5327,
+          "anchorEnd": 5392,
           "anchorFile": "package.json",
-          "anchorStart": 5311,
+          "anchorStart": 5376,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -12731,6 +12737,15 @@
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
+        },
+        {
+          "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
+          "anchorEnd": 5114,
+          "anchorFile": "package.json",
+          "anchorStart": 5094,
+          "kind": "package_script",
+          "symbol": "verify:gates:image",
+          "target": "package.json#scripts.verify:gates:image"
         }
       ],
       "disposition": "excluded",
@@ -12740,7 +12755,8 @@
         "packageScripts": [
           "verify:gates",
           "verify:gates:all",
-          "verify:gates:disposable"
+          "verify:gates:disposable",
+          "verify:gates:image"
         ],
         "rationale": "isolated test or rehearsal command; structural identity only"
       },
@@ -12751,7 +12767,7 @@
     }
   ],
   "observationCount": 196,
-  "observationDigest": "40b61b5e9b31cff705f5ef26a26c95da513d993926557c3f5df652cb9637df1e",
+  "observationDigest": "64ddd6bfc50b2a59272f3271f03f247e98fc18d7b635509948bd410abadf63df",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -17204,9 +17220,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5283,
+          "anchorEnd": 5348,
           "anchorFile": "package.json",
-          "anchorStart": 5274,
+          "anchorStart": 5339,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -17393,9 +17409,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5384,
+          "anchorEnd": 5449,
           "anchorFile": "package.json",
-          "anchorStart": 5366,
+          "anchorStart": 5431,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -17645,9 +17661,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 5327,
+          "anchorEnd": 5392,
           "anchorFile": "package.json",
-          "anchorStart": 5311,
+          "anchorStart": 5376,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -18120,6 +18136,15 @@
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
+        },
+        {
+          "anchorEnd": 5114,
+          "anchorFile": "package.json",
+          "anchorStart": 5094,
+          "kind": "package_script",
+          "ownerModule": "scripts/verify-gates.ts",
+          "symbol": "verify:gates:image",
+          "target": "package.json#scripts.verify:gates:image"
         }
       ],
       "disposition": "excluded",
@@ -19309,7 +19334,7 @@
   ],
   "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "f2c09395e7159f0b13e2a11248a07cf6a0c9a49ab2219b5e19b0aa954468ffb4",
+  "registryDigest": "351a5aa1d42e164439d27b912e6aa0c6fafdd38aae495445397575331bf362ed",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
