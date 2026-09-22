@@ -1,9 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { cpSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { buildSync } from "esbuild";
 
 const REHEARSAL_COMPOSE_FILE = "scripts/backup-recovery-rehearsal.compose.yml";
 const REHEARSAL_DATABASE = "cubby_backup_rehearsal";
@@ -172,6 +174,24 @@ function run(command: string, args: string[], options: { cwd: string; env?: Node
   return String(result.stdout ?? "");
 }
 
+/**
+ * The backup directory is a bind mount the host writes and the container reads. On Linux a bind mount
+ * carries its real uid and mode, and `mkdtemp` makes a 0700 directory owned by whoever runs the
+ * rehearsal, so the image's `node` user cannot read a single file in it - the download returns
+ * `backup_invalid` and the rehearsal blames the application. Docker Desktop on Windows and macOS
+ * synthesizes permissions instead, which is why this only ever appeared on a Linux runner.
+ *
+ * Widening to world-readable matches a real deployment, where the app owns its backup volume. The
+ * directory holds synthetic rehearsal data for a few minutes and is removed at teardown. On Windows
+ * `chmod` is close to a no-op, which is harmless.
+ */
+function grantContainerReadAccess(directory: string) {
+  chmodSync(directory, 0o755);
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.isFile()) chmodSync(resolve(directory, entry.name), 0o644);
+  }
+}
+
 function isolatedEnvironment(databaseUrl: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of [
@@ -270,6 +290,8 @@ export function runBackupRecoveryRehearsal() {
     composeFile: REHEARSAL_COMPOSE_FILE,
     backupDirectory: mkdtempSync(resolve(tmpdir(), "cubby-backup-rehearsal-files-"))
   };
+  // Traversable before the container starts; the files it will read are widened once they exist.
+  grantContainerReadAccess(config.backupDirectory);
   let dockerEnv: ReturnType<typeof isolatedDockerEnvironment> | undefined;
   let migrationCwd: string | undefined;
   let composeAttempted = false;
@@ -349,17 +371,18 @@ export function runBackupRecoveryRehearsal() {
     run(process.execPath, [prismaCli, "db", "pull", "--schema", schema], { cwd: migrationCwd, env });
     run(process.execPath, [prismaCli, "generate", "--schema", schema], { cwd: migrationCwd, env: prismaGenerateEnv });
     const vitestCli = resolve(repositoryRoot, "node_modules/vitest/vitest.mjs");
-    const esbuildCli = resolve(repositoryRoot, "node_modules/esbuild/bin/esbuild");
-    run(process.execPath, [
-      esbuildCli,
-      "scripts/platform-owner.ts",
-      "--bundle",
-      "--platform=node",
-      "--format=esm",
-      "--target=node22",
-      "--packages=external",
-      `--outfile=${packagedPlatformOwnerCli}`
-    ], { cwd: repositoryRoot, env });
+    // esbuild's own API rather than its bin. `node node_modules/esbuild/bin/esbuild` works on Windows,
+    // where that file is a JavaScript shim, and fails on Linux, where it is the native binary itself -
+    // Node reads the ELF header and reports a syntax error. The API has no platform question in it.
+    buildSync({
+      entryPoints: [resolve(repositoryRoot, "scripts/platform-owner.ts")],
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      target: "node22",
+      packages: "external",
+      outfile: packagedPlatformOwnerCli
+    });
     run(process.execPath, [vitestCli, "run", "--config", "scripts/update-baseline-fixture.vitest.config.ts"], {
       cwd: repositoryRoot,
       env: { ...testEnv, UPDATE_BASELINE_PHASE: "seed" }
@@ -385,6 +408,7 @@ export function runBackupRecoveryRehearsal() {
       [vitestCli, "run", "--config", "scripts/backup-recovery-rehearsal.vitest.config.ts"],
       { cwd: repositoryRoot, env: testEnv }
     );
+    grantContainerReadAccess(config.backupDirectory);
 
     const publishedApp = run("docker", [...composeArgs, "port", "app", "3000"], {
       cwd: repositoryRoot,

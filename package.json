@@ -44,6 +44,7 @@
     "verify:gates": "tsx scripts/verify-gates.ts",
     "verify:gates:all": "tsx scripts/verify-gates.ts --all",
     "verify:gates:disposable": "tsx scripts/verify-gates.ts --disposable",
+    "verify:gates:image": "tsx scripts/verify-gates.ts --image",
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

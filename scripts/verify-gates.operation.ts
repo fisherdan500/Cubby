@@ -8,7 +8,8 @@ export const operation = {
   bindings: [
     { kind: "package_script", symbol: "verify:gates", target: "package.json#scripts.verify:gates" },
     { kind: "package_script", symbol: "verify:gates:all", target: "package.json#scripts.verify:gates:all" },
-    { kind: "package_script", symbol: "verify:gates:disposable", target: "package.json#scripts.verify:gates:disposable" }
+    { kind: "package_script", symbol: "verify:gates:disposable", target: "package.json#scripts.verify:gates:disposable" },
+    { kind: "package_script", symbol: "verify:gates:image", target: "package.json#scripts.verify:gates:image" }
   ],
   disposition: "excluded",
   exclusion: {

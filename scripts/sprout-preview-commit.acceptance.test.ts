@@ -14,17 +14,18 @@ const staging = vi.hoisted(() => ({
 
 vi.mock("@/server/auth/context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/auth/context")>();
-  return {
-    ...actual,
-    getHouseholdContext: vi.fn(async () => {
-      if (!auth.context) throw new Error("sprout_preview_commit_acceptance_context_not_set");
-      const initialContext = auth.context;
-      const afterInitialContext = auth.afterInitialContext;
-      auth.afterInitialContext = null;
-      if (afterInitialContext) await afterInitialContext();
-      return initialContext;
-    })
+  const context = async () => {
+    if (!auth.context) throw new Error("sprout_preview_commit_acceptance_context_not_set");
+    const initialContext = auth.context;
+    const afterInitialContext = auth.afterInitialContext;
+    auth.afterInitialContext = null;
+    if (afterInitialContext) await afterInitialContext();
+    return initialContext;
   };
+  // Both, and from one source: the services read getEffectiveHouseholdContext, which since the
+  // invitation-setup-corridor work calls headers() and so needs a request scope this harness has
+  // no way to provide. Mocking only the older name left the real one to throw outside a request.
+  return { ...actual, getHouseholdContext: vi.fn(context), getEffectiveHouseholdContext: vi.fn(context) };
 });
 
 vi.mock("@/server/services/sprout-staging", async (importOriginal) => {

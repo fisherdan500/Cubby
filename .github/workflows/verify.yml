@@ -56,3 +56,21 @@ jobs:
       - run: npx prisma generate
       # Each rehearsal starts and removes its own Compose project; the runner's Docker is enough.
       - run: npm run verify:gates:disposable
+
+  image:
+    name: image rehearsals
+    runs-on: ubuntu-latest
+    # These build the application image before they can run, so they are slower than the rehearsals
+    # above and are given their own job rather than being left out of CI for being slow. They share
+    # one job deliberately: both build the same context and Dockerfile, so the second build reuses
+    # the first one's layers instead of paying for it again.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run verify:gates:image

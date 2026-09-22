@@ -25,7 +25,7 @@ describe("verify gates", () => {
   it("classifies every verify script as automated, run by hand, or not a gate", () => {
     const classified = new Set<string>([
       ...VERIFY_GATES.map((gate) => gate.script),
-      ...GATES_RUN_BY_HAND,
+      ...Object.keys(GATES_RUN_BY_HAND),
       ...Object.keys(NON_GATE_VERIFY_SCRIPTS)
     ]);
     const unclassified = Object.keys(packageJson.scripts)
@@ -38,7 +38,7 @@ describe("verify gates", () => {
   });
 
   it("names only real scripts in the run-by-hand and not-a-gate lists", () => {
-    for (const script of [...GATES_RUN_BY_HAND, ...Object.keys(NON_GATE_VERIFY_SCRIPTS)]) {
+    for (const script of [...Object.keys(GATES_RUN_BY_HAND), ...Object.keys(NON_GATE_VERIFY_SCRIPTS)]) {
       expect({ script, exists: script in packageJson.scripts }).toEqual({ script, exists: true });
     }
     for (const [script, reason] of Object.entries(NON_GATE_VERIFY_SCRIPTS)) {
@@ -46,12 +46,24 @@ describe("verify gates", () => {
     }
   });
 
-  it("selects the canonical gates by default and adds the disposable ones on request", () => {
+  it("says why each run-by-hand rehearsal is not in CI, and never says it is merely slow", () => {
+    // Slowness is what the image group is for. Leaving a rehearsal out needs a reason CI cannot fix,
+    // otherwise it rots unnoticed the way verify:backup-recovery did across six merges.
+    for (const [script, reason] of Object.entries(GATES_RUN_BY_HAND)) {
+      expect({ script, explained: reason.length > 8 }).toEqual({ script, explained: true });
+      expect({ script, excusedAsSlow: /\bslow\b|\btoo long\b/i.test(reason) })
+        .toEqual({ script, excusedAsSlow: false });
+    }
+  });
+
+  it("selects the canonical gates by default and the heavier groups on request", () => {
     expect(selectedGates([]).every((gate) => gate.group === "canonical")).toBe(true);
     expect(selectedGates(["--disposable"]).every((gate) => gate.group === "disposable")).toBe(true);
+    expect(selectedGates(["--image"]).every((gate) => gate.group === "image")).toBe(true);
     expect(selectedGates(["--all"])).toHaveLength(VERIFY_GATES.length);
     expect(selectedGates([]).length).toBeGreaterThan(0);
     expect(selectedGates(["--disposable"]).length).toBeGreaterThan(0);
+    expect(selectedGates(["--image"]).length).toBeGreaterThan(0);
   });
 
   it("drives continuous integration through the same runner, not a second copy of the list", () => {
@@ -59,9 +71,17 @@ describe("verify gates", () => {
     // whatever was added here.
     expect(workflow).toContain("npm run verify:gates\n");
     expect(workflow).toContain("npm run verify:gates:disposable\n");
+    expect(workflow).toContain("npm run verify:gates:image\n");
     for (const gate of VERIFY_GATES) {
       expect({ id: gate.id, restated: workflow.includes(`npm run ${gate.script}`) })
         .toEqual({ id: gate.id, restated: false });
+    }
+  });
+
+  it("runs every gate group in CI, so a new group cannot arrive without a job", () => {
+    for (const group of new Set(VERIFY_GATES.map((gate) => gate.group))) {
+      const invocation = group === "canonical" ? "npm run verify:gates\n" : `npm run verify:gates:${group}\n`;
+      expect({ group, run: workflow.includes(invocation) }).toEqual({ group, run: true });
     }
   });
 
