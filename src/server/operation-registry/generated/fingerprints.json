@@ -1792,17 +1792,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "f1937dfaa90ac8e792e8826792927ab277216b5afa87dff9fedc060a5357847c",
+          "digest": "5b6a0f7424e855c15a3eb8d09b58518a00069260dc55e2ebc5422cb0a4111b24",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "426986361101962a9d9aeaeabffa4f66f2a466e2eda330a6133ba4ed73d622ca",
+      "fingerprint": "230aa5788ae12a7bf1e6a1ab62052d9eb5e986711e66f9213cb19026b1f0d205",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "3d5f4b474e54e51a9eae08860248f39e867cdb1cba1e3a30c2843b30a7ee5e3f",
+      "sourceDigest": "5af1bdc060e7f30d15d3079fbd95d7aef005f2c6a878799d5f9a061685342dd6",
       "status": "declared"
     },
     {

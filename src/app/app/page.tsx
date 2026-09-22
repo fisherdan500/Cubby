@@ -347,6 +347,13 @@ function DailySummary({
         // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
         // pushed the day's log below the first screen on a phone.
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+          {/* Awake leads, with sleep immediately after it: between them they account for the whole
+              day, so they read as a pair before the counts of individual activities. It is not a
+              link - it is the rest of the day rather than a kind of activity, so there is nothing to
+              filter the log down to. */}
+          {summary.awake.known ? (
+            <AwakeSummaryItem value={formatDuration(summary.awake.seconds) || "0 min"} />
+          ) : null}
           {items.map((item) => (
             <SummaryItem
               key={item.key}
@@ -357,11 +364,6 @@ function DailySummary({
               selected={selectedType === item.key}
             />
           ))}
-          {/* Awake sits beside sleep, and is not a link: it is the rest of the day rather than a kind
-              of activity, so there is nothing to filter the log down to. */}
-          {summary.awake.known ? (
-            <AwakeSummaryItem value={formatDuration(summary.awake.seconds) || "0 min"} />
-          ) : null}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">No summary activity for this date.</p>
@@ -422,7 +424,7 @@ function AwakeSummaryItem({ value }: { value: string }) {
       <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full border-2 border-muted-foreground" />
       <div className="min-w-0">
         <p className="tabular whitespace-nowrap text-sm font-semibold leading-none">{value}</p>
-        <p className="max-w-40 truncate text-[11px] font-semibold leading-tight text-muted-foreground">Awake</p>
+        <p className="max-w-40 truncate text-[11px] font-semibold leading-tight text-muted-foreground">Awake Time</p>
       </div>
     </div>
   );
