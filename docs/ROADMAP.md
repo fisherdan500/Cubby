@@ -46,18 +46,30 @@ implementation, merge, deployment, and cleanup approvals.
 
 ### Confirmed-Decision Delivery Program
 
-- Status: active (reconciled 2026-09-19 against PR #101).
-  - Accepted, with merged evidence: P0, P1.1, P1-2, P1-6 and P1-7.
+- Status: active (reconciled 2026-09-22 against PR #121).
+  - Accepted, with merged evidence: P0, P1.1, P1-2, P1-5, P1-6 and P1-7.
   - P1-3: Invitation Protocol v2 is merged (#64), with the accepted-state recovery guard (#65) and the recovery-code notice and cross-lineage re-invitation (#66). Ownership transfer, support access, merge and deletion remain open.
   - P1-4: every browser-operation and HTTP mutation family is covered by the disposable save-path acceptance rehearsal (#79, #83, #85–#91).
   - P1-1: host-local account verification is repaired and a one-time setup-code ownership claim was added (#100).
-  - Partial: P1-1, P1-3, P1-4 and P1-5. Blocked: P1-8.
-  - In progress, in order: P1-5 display-time correctness (household zone everywhere, invalid zones fail visibly), then a P2 activity add/edit conformance sweep across all 14 types.
+  - P1-5 is complete: every date and time renders in the household zone, and an invalid zone fails visibly (#103).
+  - P2 activity conformance is complete: the add/edit round trip clears notes and lengths across all 14 types (#104), and one declared, versioned field matrix now ties form, validation, detail view, backup and export to a single source (#112).
+  - P4 gates delivered: a performance budget harness for one- and five-year households (#105, #109), report-number coverage (#108), wider integrity checks (#111), and export correctness (#106, #110).
+  - Verification is now automated rather than remembered: one `verify:gates` runner and CI on every pull request (#113), extended to the image-building rehearsals (#121).
+  - Partial: P1-1, P1-3 and P1-4. Blocked: P1-8.
+  - In progress: the whole-app visual rework, driven directly by the User's phone review (#114–#119). Nursery is the one screen still outstanding and needs a product decision.
   - Deployment and cleanup remain separate gates.
 - Priority: high
 - Goal: Reconcile all confirmed product policy against the exact application tree, then deliver missing behavior in dependency order without mistaking decisions for implementation.
 - Acceptance: P0 assigns every `DEC-PROD-001` through `DEC-PROD-402` an evidence-backed `implemented`, `partially implemented`, `missing`, `policy-only/no build`, or `deferred by confirmed sequence` disposition and names the smallest safe first slice; P1 establishes identity, platform/household authority, authorization, data-integrity, audit, migration, and recovery foundations; P2 completes the canonical 14-type activity contract, subtype-first field matrices, drafts, date/time controls, timers, and personal dashboard editor; P3 completes daily care coordination, handoff, caregiver coverage, shared-device, and accessibility journeys; P4 passes system-of-record reliability, integrity, performance, update, backup, host-loss, and outage-continuity gates; P5 delivers reports, schedules, reminders, and care artifacts over authoritative data; P6 adds only approved optional domain depth; P7 adds narrow capability-gated integrations and quick capture; P8 leaves optional AI, offline/PWA, and broader distribution until the local deterministic core is dependable.
 - Notes: The expanded dependency model, decision anchors, exclusions, phase acceptance gates, and cross-phase definition of done are canonical in `C:\Projects\Cubby\hermes-control\contexts\implementation-roadmap.md`. P0 and P1.1 are complete in the application branch history. P1.2.1 was squash-merged through PR #23 after its bounded remediation, canonical local verification, independent review, and disposable rehearsal. A fresh post-merge exact-head review, deployment, and cutover remain separate approval gates; each later slice still requires exact-tree planning and the normal worktree/action approvals.
+
+### Nursery Night Treatment
+
+- Status: blocked on a product decision
+- Priority: medium
+- Goal: Give the Nursery screen a way to read as "night" now that the whole application is dark.
+- Acceptance: Nursery is distinguishable from the rest of the application at a glance in the dark, its controls remain usable one-handed in the dark, and the chosen direction is recorded before implementation.
+- Notes: Nursery inherited the new palette in #117 but kept the layout it had when the rest of the application was light, so the contrast that used to say "night" is gone. Three directions were put to the User and none chosen yet: dim the screen further, warm or red-shift it, or simply enlarge the controls. The shell timer bar already stands aside on Nursery because that screen carries its own full-size night controls. No other screen is blocked by this.
 
 ## Later
 
@@ -78,6 +90,22 @@ heading remains only as a historical redirect for earlier evidence links; it doe
 not contain or authorize roadmap work.
 
 ## Recently Completed
+
+### Automated Verification Gates And Continuous Integration
+
+- Status: done
+- Priority: high
+- Goal: Make every verification gate runnable from one command and run it on every pull request, so a gate cannot rot unnoticed.
+- Acceptance: One runner executes the gates a person would type; every `verify:` script is classified as automated, run by hand with a stated reason, or not a gate; continuous integration drives the same runner rather than a second copy of the list; a new gate group cannot be added without a job to run it.
+- Notes: Pull request #113 added `scripts/verify-gates.ts`, the `canonical` and `disposable` groups, and the first workflow. Pull request #121 added the `image` group for the rehearsals that build the application image (`backup-recovery`, `browser-operation-save-path`), which share one job so the second build reuses the first's layers; the whole job runs in under four minutes. `GATES_RUN_BY_HAND` now records why each remaining rehearsal cannot run on every pass, and a test rejects a reason amounting to "slow"; what stays out is three wall-clock budgets, one rehearsal that inspects an existing local `cubby-app` image, and one that drives Chrome over CDP. Automation immediately found real faults that hand-running had missed: a Windows-only assumption in `sprout-staging`, a stale generated artifact, and three broken rehearsals - two of which could never have passed on Linux at all (`node node_modules/esbuild/bin/esbuild` is a shim on Windows and the native binary on Linux, and a `mkdtemp` 0700 bind mount is unreadable by the image's `node` user where Docker Desktop synthesizes permissions).
+
+### Running Timer Indicators And Whole-App Visual Rework
+
+- Status: done for every screen except Nursery
+- Priority: medium
+- Goal: Make a running timer legible from anywhere without crowding the dashboard, and give the application a calm, mature palette that leads with its accent.
+- Acceptance: A running timer shows as an indicator rather than a control cluster; stopping is one tap from any screen and returns the caregiver where they were; the palette is tuned equally in both modes and every foreground/background pairing meets its contrast target under test.
+- Notes: Pull requests #114-#119. The User chose a minimal dot indicator plus a persistent shell timer bar, with pause reserved for the activity's own screen (#114), and stopping a timer now leaves the activity by itself (#115). Cubby opens dark by default while stored `system` choices are left alone (#116). The palette rewrite (#117) is pinned by `src/styles/theme-contrast.test.ts`, which computes WCAG ratios across both modes and all five accents and found three real faults before merge. The daily summary gained an Awake Time figure measured against the day (#118, #119), which also corrected sleep from "attributed to its start day" to "the part of each sleep overlapping the day". Nursery still wears its pre-dark layout and needs a direction from the User.
 
 ### Always-On Update And Migration Hardening
 
