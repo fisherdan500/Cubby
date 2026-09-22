@@ -45,21 +45,33 @@ const authenticatedPage = await fetch(`${baseUrl}/app?babyId=${encodeURIComponen
   headers: { cookie: authenticatedCookie }
 });
 const authenticatedHtml = await authenticatedPage.text();
-const expectedStarted = new Intl.DateTimeFormat("en", {
-  month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Etc/UTC"
-}).format(new Date(handoff.startedAt));
+// The date and the time are matched separately, in the app's own locale and configured zone
+// (APP_TIMEZONE is Etc/UTC for the rehearsal). Asserting one rendered string instead would pin the
+// exact punctuation and weekday the detail page happens to use today; what has to survive the
+// restore and the container swap is the instant, so the instant is what this reads.
+const startedFormat = (options) =>
+  new Intl.DateTimeFormat("en-US", { timeZone: "Etc/UTC", ...options }).format(new Date(handoff.startedAt));
+const expectedStartedDate = startedFormat({ month: "short", day: "numeric", year: "numeric" });
+const expectedStartedTime = startedFormat({ hour: "numeric", minute: "2-digit" });
 // A running or paused timer takes over its own dashboard tile or row. Those are now indicators: a
 // dot, the activity, and how long it has been going, with the state in the text a screen reader is
 // given. The start instant itself has moved to the activity's own page, which the indicator links to.
 // The point of the assertion is unchanged: both restored timers must be visible, in their own states,
 // with the preserved start time.
-const timerActivityIds = [...authenticatedHtml.matchAll(/\/app\/activities\/([a-z0-9]+)\?returnTo=/g)]
+// The id class has to admit every id the app actually mints or restores, not just the cuid shape:
+// this fixture's ids carry underscores, and a narrower class silently matched a prefix and found
+// nothing, reporting a missing indicator when the page had rendered both of them.
+const timerActivityIds = [...authenticatedHtml.matchAll(/\/app\/activities\/([A-Za-z0-9_-]+)\?returnTo=/g)]
   .map(([, id]) => id);
 const timerProbe = {
   pageOk: authenticatedPage.ok,
   runningRow: authenticatedHtml.includes("Running for"),
   pausedRow: authenticatedHtml.includes("Paused at"),
   linkedActivities: timerActivityIds.length,
+  // Named on failure so a mismatch says what the page held, rather than costing a whole rerun to see.
+  activityHrefsSeen: [...authenticatedHtml.matchAll(/href="([^"]*\/app\/activities\/[^"]*)"/g)]
+    .map(([, href]) => href)
+    .slice(0, 8),
   databaseTimerStates: Array.isArray(handoff.timerProbeState) ? handoff.timerProbeState : null
 };
 if (!timerProbe.pageOk || !timerProbe.runningRow || !timerProbe.pausedRow || timerProbe.linkedActivities < 2) {
@@ -73,8 +85,12 @@ const timerDetailPages = await Promise.all(
     return page.ok ? await page.text() : "";
   })
 );
-if (!timerDetailPages.some((html) => html.includes(expectedStarted))) {
-  throw new Error(`rehearsal_app_timer_started_at_missing:${JSON.stringify({ expectedStarted, pages: timerDetailPages.length })}`);
+if (!timerDetailPages.some((html) => html.includes(expectedStartedDate) && html.includes(expectedStartedTime))) {
+  throw new Error(`rehearsal_app_timer_started_at_missing:${JSON.stringify({
+    expectedStartedDate,
+    expectedStartedTime,
+    pages: timerDetailPages.length
+  })}`);
 }
 
 const householdPage = await fetch(`${baseUrl}/app/settings/members`, { headers: { cookie: authenticatedCookie } });
