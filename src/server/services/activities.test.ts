@@ -26,6 +26,9 @@ const mocks = vi.hoisted(() => ({
   auditFindFirst: vi.fn(),
   mutationReceiptFindFirst: vi.fn(),
   mutationReceiptCreate: vi.fn(),
+  pauseIntervalCreate: vi.fn(),
+  pauseIntervalCloseQuery: vi.fn(),
+  pauseIntervalCount: vi.fn(),
   apiKeyFindFirst: vi.fn(),
   writeAudit: vi.fn()
 }));
@@ -55,6 +58,7 @@ vi.mock("@/server/auth/context", () => ({
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
 import {
+  activityLogUpdateData,
   createActivityForContext,
   activityCreateFingerprint,
   activityUpdateFingerprint,
@@ -64,6 +68,7 @@ import {
   pauseTimer,
   restoreHistoricalActivityForContext,
   resumeTimer,
+  specificCreate,
   stopTimer,
   undoLastActivity,
   updateActivity
@@ -99,6 +104,9 @@ describe("activity page access", () => {
     mocks.mutationReceiptFindFirst.mockReset();
     mocks.mutationReceiptFindFirst.mockResolvedValue(null);
     mocks.mutationReceiptCreate.mockReset();
+    mocks.pauseIntervalCreate.mockResolvedValue({ id: "pause-interval-1" });
+    mocks.pauseIntervalCloseQuery.mockResolvedValue([{ closeActivityTimerPauseInterval: null }]);
+    mocks.pauseIntervalCount.mockResolvedValue(0);
     mocks.auditFindFirst.mockImplementation(({ where }) =>
       Promise.resolve(
         where.actorMemberId
@@ -188,6 +196,45 @@ describe("activity page access", () => {
         })
       })
     );
+  });
+
+  it("starts precise pause tracking at the timer's start instant", () => {
+    const draft = specificCreate({ ...feedingInput(), activeTimer: true } as unknown as Parameters<typeof specificCreate>[0]);
+
+    expect(draft).toMatchObject({
+      timerState: "running",
+      startedAt: new Date("2026-07-14T12:00:00.000Z"),
+      pauseTrackingStartedAt: new Date("2026-07-14T12:00:00.000Z")
+    });
+  });
+
+  it("starts precise pause tracking when an edit starts a timer", () => {
+    const next = specificCreate({ ...feedingInput(), activeTimer: true } as unknown as Parameters<typeof specificCreate>[0]);
+
+    expect(
+      activityLogUpdateData("baby-1", next, {
+        timerState: "none",
+        startedAt: null,
+        endedAt: null,
+        durationSeconds: null
+      })
+    ).toMatchObject({
+      timerState: "running",
+      pauseTrackingStartedAt: next.startedAt
+    });
+  });
+
+  it("does not turn a paused timer into a running timer through ordinary editing", () => {
+    const next = specificCreate({ ...feedingInput(), activeTimer: true } as unknown as Parameters<typeof specificCreate>[0]);
+
+    expect(
+      activityLogUpdateData("baby-1", next, {
+        timerState: "paused",
+        startedAt: new Date("2026-07-14T12:00:00.000Z"),
+        endedAt: null,
+        durationSeconds: null
+      })
+    ).toMatchObject({ timerState: "paused" });
   });
 
   it("returns the immutable new-ledger create snapshot without a second create", async () => {
@@ -393,7 +440,19 @@ describe("activity page access", () => {
       },
       context("owner"),
       transactionClient() as never,
-      { timerState: "stopped", durationSeconds: 2700, pausedSeconds: 900 }
+      { timerState: "stopped", durationSeconds: 2700, pausedSeconds: 900 },
+      undefined,
+      {
+        startedAt: new Date("2026-07-14T10:00:00.000Z"),
+        endedAt: new Date("2026-07-14T11:00:00.000Z"),
+        timezone: "UTC",
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
+        pauseIntervals: [{
+          startedAt: new Date("2026-07-14T10:15:00.000Z"),
+          endedAt: new Date("2026-07-14T10:30:00.000Z")
+        }]
+      }
     );
 
     expect(mocks.activityCreate).toHaveBeenCalledWith(
@@ -403,11 +462,115 @@ describe("activity page access", () => {
           durationSeconds: 2700,
           pausedAt: null,
           pausedSeconds: 900,
+          pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+          pauseTrackingBaselineSeconds: 0,
+          pauseIntervals: {
+            create: [{
+              startedAt: new Date("2026-07-14T10:15:00.000Z"),
+              endedAt: new Date("2026-07-14T10:30:00.000Z")
+            }]
+          },
           clientMutationId: undefined,
           clientMutationFingerprint: undefined
         })
       })
     );
+  });
+
+  it("rejects restored pause intervals outside the timer envelope", async () => {
+    await expect(restoreHistoricalActivityForContext(
+      {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
+        babyId: "baby-1",
+        type: "sleep",
+        occurredAt: "2026-07-14T10:00:00.000Z",
+        startedAt: "2026-07-14T10:00:00.000Z",
+        endedAt: "2026-07-14T11:00:00.000Z",
+        activeTimer: false,
+        notes: undefined,
+        sleepType: undefined,
+        location: undefined,
+        quality: undefined
+      },
+      context("owner"),
+      transactionClient() as never,
+      { timerState: "stopped", durationSeconds: 2700, pausedSeconds: 900 },
+      undefined,
+      {
+        startedAt: new Date("2026-07-14T10:00:00.000Z"),
+        endedAt: new Date("2026-07-14T11:00:00.000Z"),
+        timezone: "UTC",
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseIntervals: [{
+          startedAt: new Date("2026-07-14T09:45:00.000Z"),
+          endedAt: new Date("2026-07-14T10:00:00.000Z")
+        }]
+      }
+    )).rejects.toThrow("backup_invalid_pause_intervals");
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a restored closed pause entirely before its precise-tracking boundary", async () => {
+    await expect(restoreHistoricalActivityForContext(
+      {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
+        babyId: "baby-1",
+        type: "sleep",
+        occurredAt: "2026-07-14T10:00:00.000Z",
+        startedAt: "2026-07-14T10:00:00.000Z",
+        endedAt: "2026-07-14T11:00:00.000Z",
+        activeTimer: false,
+        notes: undefined,
+        sleepType: undefined,
+        location: undefined,
+        quality: undefined
+      },
+      context("owner"),
+      transactionClient() as never,
+      { timerState: "stopped", durationSeconds: 2700, pausedSeconds: 900 },
+      undefined,
+      {
+        startedAt: new Date("2026-07-14T10:00:00.000Z"),
+        endedAt: new Date("2026-07-14T11:00:00.000Z"),
+        timezone: "UTC",
+        pauseTrackingStartedAt: new Date("2026-07-14T10:30:00.000Z"),
+        pauseIntervals: [{
+          startedAt: new Date("2026-07-14T10:10:00.000Z"),
+          endedAt: new Date("2026-07-14T10:20:00.000Z")
+        }]
+      }
+    )).rejects.toThrow("backup_invalid_pause_intervals");
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects restored pause provenance on a non-timer activity", async () => {
+    await expect(restoreHistoricalActivityForContext(
+      {
+        clientMutationId: "018f2b6c-8f5f-7e0b-8c3f-9f42c0a64006",
+        babyId: "baby-1",
+        type: "sleep",
+        occurredAt: "2026-07-14T10:00:00.000Z",
+        startedAt: "2026-07-14T10:00:00.000Z",
+        endedAt: "2026-07-14T11:00:00.000Z",
+        activeTimer: false,
+        notes: undefined,
+        sleepType: undefined,
+        location: undefined,
+        quality: undefined
+      },
+      context("owner"),
+      transactionClient() as never,
+      undefined,
+      undefined,
+      {
+        startedAt: new Date("2026-07-14T10:00:00.000Z"),
+        endedAt: new Date("2026-07-14T11:00:00.000Z"),
+        timezone: "UTC",
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseIntervals: []
+      }
+    )).rejects.toThrow("backup_invalid_pause_intervals");
+    expect(mocks.activityCreate).not.toHaveBeenCalled();
   });
 
   it("restores historical timestamps and timezone without normal-create defaults", async () => {
@@ -816,13 +979,27 @@ describe("activity page access", () => {
     expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
   });
 
-  it("preserves stopped timer state while allowing completed time edits", async () => {
-    mockActivityRead({ ...activity("member-author"), timerState: "stopped" });
+  it("preserves stopped timer arithmetic while editing descriptive fields", async () => {
+    mockActivityRead({
+      ...activity("member-author"),
+      timerState: "stopped",
+      startedAt: new Date("2026-07-14T09:30:00.000Z"),
+      endedAt: new Date("2026-07-14T10:30:00.000Z"),
+      durationSeconds: 2700,
+      pausedSeconds: 900
+    });
 
     await updateActivity("activity-1", feedingInput());
 
     expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ timerState: "stopped" }) })
+      expect.objectContaining({
+        data: expect.objectContaining({
+          timerState: "stopped",
+          startedAt: new Date("2026-07-14T09:30:00.000Z"),
+          endedAt: new Date("2026-07-14T10:30:00.000Z"),
+          durationSeconds: 2700
+        })
+      })
     );
   });
 
@@ -1511,6 +1688,27 @@ describe("activity page access", () => {
     );
   });
 
+  it("records the exact pause start in the same transaction", async () => {
+    const pausedAt = new Date("2026-07-14T11:30:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(pausedAt);
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "running",
+      startedAt: new Date("2026-07-14T11:00:00.000Z")
+    });
+
+    try {
+      await pauseTimer("activity-1");
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(mocks.pauseIntervalCreate).toHaveBeenCalledWith({
+      data: { activityId: "activity-1", startedAt: pausedAt }
+    });
+  });
+
   it("persists a durable receipt with a timer-pause outcome before returning", async () => {
     mocks.activityFindFirst.mockResolvedValue({
       ...activity("member-author"),
@@ -1550,6 +1748,25 @@ describe("activity page access", () => {
     expect(mocks.mutationReceiptCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ operation: "timer.resume", clientMutationId: "33333333-3333-4333-8333-333333333333" }) })
     );
+  });
+
+  it("closes the open pause interval at the exact resume time", async () => {
+    const resumedAt = new Date("2026-07-14T11:45:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(resumedAt);
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "paused",
+      pausedAt: new Date("2026-07-14T11:15:00.000Z")
+    });
+
+    try {
+      await resumeTimer("activity-1");
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(mocks.pauseIntervalCloseQuery).toHaveBeenCalledTimes(1);
   });
 
   it("replays a matching timer-pause receipt without repeating its audit", async () => {
@@ -1666,6 +1883,38 @@ describe("activity page access", () => {
         })
       })
     );
+  });
+
+  it("closes the open pause interval when a paused timer is stopped", async () => {
+    const stoppedAt = new Date("2026-07-14T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(stoppedAt);
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "paused",
+      startedAt: new Date("2026-07-14T11:00:00.000Z"),
+      pausedAt: new Date("2026-07-14T11:30:00.000Z")
+    });
+
+    try {
+      await stopTimer("activity-1");
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(mocks.pauseIntervalCloseQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to stop a running timer that has an impossible open pause interval", async () => {
+    mocks.activityFindFirst.mockResolvedValue({
+      ...activity("member-author"),
+      timerState: "running",
+      startedAt: new Date("2026-07-14T11:00:00.000Z"),
+      pausedAt: null
+    });
+    mocks.pauseIntervalCount.mockResolvedValue(1);
+
+    await expect(stopTimer("activity-1")).rejects.toThrow("pause_interval_state_invalid");
   });
 
   it("replays a matching timer-stop receipt without repeating its side effects", async () => {
@@ -1865,13 +2114,19 @@ describe("activity page access", () => {
 function transactionClient() {
   const child = { deleteMany: mocks.specificDeleteMany };
   return {
-    $queryRaw: mocks.activityLock,
+    $queryRaw: (...args: unknown[]) => String(args[0]).includes("closeActivityTimerPauseInterval")
+      ? mocks.pauseIntervalCloseQuery(...args)
+      : mocks.activityLock(...args),
     activityLog: {
       findFirst: mocks.activityFindFirst,
       create: mocks.activityCreate,
       update: mocks.activityUpdate,
       updateMany: mocks.activityUpdateMany,
       findUniqueOrThrow: mocks.activityFindUniqueOrThrow
+    },
+    activityTimerPauseInterval: {
+      create: mocks.pauseIntervalCreate,
+      count: mocks.pauseIntervalCount
     },
     auditEvent: { findFirst: mocks.auditFindFirst },
     mutationReceipt: { findFirst: mocks.mutationReceiptFindFirst, create: mocks.mutationReceiptCreate },

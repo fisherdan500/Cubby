@@ -160,11 +160,88 @@ const DATABASE_CHECKS: ReadonlyArray<{ id: string; query: string }> = [
     id: "timer_state_consistency",
     query: `SELECT COUNT(*)::int AS count
       FROM "ActivityLog" activity
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*)::int AS interval_count,
+          COUNT(*) FILTER (WHERE pause."endedAt" IS NULL)::int AS open_count,
+          MAX(pause."startedAt") FILTER (WHERE pause."endedAt" IS NULL) AS open_started_at,
+          COALESCE(SUM(ROUND(EXTRACT(EPOCH FROM pause."endedAt")) - ROUND(EXTRACT(EPOCH FROM pause."startedAt")))
+            FILTER (WHERE pause."endedAt" IS NOT NULL), 0)::bigint AS closed_pause_seconds
+        FROM "ActivityTimerPauseInterval" pause
+        WHERE pause."activityId" = activity.id
+      ) pause_summary ON true
       WHERE activity."deletedAt" IS NULL
         AND (
           (activity."timerState" IN ('running', 'paused') AND activity."startedAt" IS NULL)
-          OR (activity."timerState" = 'stopped' AND (activity."startedAt" IS NULL OR activity."endedAt" IS NULL))
+          OR (activity."timerState" IN ('running', 'paused') AND (activity."endedAt" IS NOT NULL OR activity."durationSeconds" IS NOT NULL))
+          OR (activity."timerState" = 'stopped' AND (
+            activity."startedAt" IS NULL
+            OR activity."endedAt" IS NULL
+            OR activity."durationSeconds" IS NULL
+            OR activity."durationSeconds" < 0
+            OR activity."durationSeconds" + activity."pausedSeconds"
+               > GREATEST(
+                 ROUND(EXTRACT(EPOCH FROM activity."endedAt")) - ROUND(EXTRACT(EPOCH FROM activity."startedAt")),
+                 ROUND(EXTRACT(EPOCH FROM (activity."endedAt" - activity."startedAt")))
+               )
+          ))
+          OR activity."pausedSeconds" < 0
           OR (activity."timerState" = 'none' AND (activity."pausedAt" IS NOT NULL OR activity."pausedSeconds" <> 0))
+          OR (activity."timerState" = 'paused' AND activity."pausedAt" IS NULL)
+          OR (activity."timerState" = 'paused' AND pause_summary.open_started_at IS DISTINCT FROM activity."pausedAt")
+          OR (activity."timerState" <> 'paused' AND activity."pausedAt" IS NOT NULL)
+          OR (activity."timerState" = 'paused' AND pause_summary.open_count <> 1)
+          OR (activity."timerState" <> 'paused' AND pause_summary.open_count <> 0)
+          OR (activity."timerState" IN ('running', 'paused') AND (
+            activity."pauseTrackingStartedAt" IS NULL
+            OR activity."pauseTrackingBaselineSeconds" IS NULL
+          ))
+          OR (activity."timerState" = 'none' AND (
+            activity."pauseTrackingStartedAt" IS NOT NULL
+            OR activity."pauseTrackingBaselineSeconds" IS NOT NULL
+          ))
+          OR (activity."timerState" = 'stopped' AND activity."pauseTrackingStartedAt" IS NOT NULL AND (
+            activity."startedAt" IS NULL
+            OR activity."endedAt" IS NULL
+            OR activity."durationSeconds" IS NULL
+            OR activity."durationSeconds" < 0
+            OR activity."durationSeconds" + activity."pausedSeconds"
+              <> ROUND(EXTRACT(EPOCH FROM activity."endedAt")) - ROUND(EXTRACT(EPOCH FROM activity."startedAt"))
+          ))
+          OR ((activity."pauseTrackingStartedAt" IS NULL) <> (activity."pauseTrackingBaselineSeconds" IS NULL))
+          OR activity."pauseTrackingBaselineSeconds" < 0
+          OR activity."pauseTrackingBaselineSeconds" > activity."pausedSeconds"
+          OR (activity."pauseTrackingStartedAt" IS NULL AND pause_summary.interval_count <> 0)
+          OR (activity."pauseTrackingStartedAt" IS NOT NULL AND (
+            activity."startedAt" IS NULL
+            OR activity."pauseTrackingStartedAt" < activity."startedAt"
+            OR (activity."endedAt" IS NOT NULL AND activity."pauseTrackingStartedAt" > activity."endedAt")
+          ))
+          OR (activity."pauseTrackingStartedAt" IS NOT NULL
+            AND pause_summary.closed_pause_seconds
+              <> activity."pausedSeconds" - activity."pauseTrackingBaselineSeconds")
+          OR EXISTS (
+            SELECT 1
+            FROM "ActivityTimerPauseInterval" pause
+            WHERE pause."activityId" = activity.id
+              AND (
+                activity."startedAt" IS NULL
+                OR pause."startedAt" < activity."startedAt"
+                OR (pause."endedAt" IS NOT NULL AND pause."endedAt" < activity."pauseTrackingStartedAt")
+                OR (activity."endedAt" IS NOT NULL
+                  AND COALESCE(pause."endedAt", pause."startedAt") > activity."endedAt")
+              )
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM "ActivityTimerPauseInterval" left_pause
+            JOIN "ActivityTimerPauseInterval" right_pause
+              ON left_pause."activityId" = right_pause."activityId"
+             AND left_pause.id < right_pause.id
+             AND tsrange(left_pause."startedAt", COALESCE(left_pause."endedAt", TIMESTAMP 'infinity'), '[)')
+                 && tsrange(right_pause."startedAt", COALESCE(right_pause."endedAt", TIMESTAMP 'infinity'), '[)')
+            WHERE left_pause."activityId" = activity.id
+          )
         )`
   },
   {

@@ -1792,17 +1792,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "2c978af268058180801afc0ac63102e5b72c957c88b2c7caff40cfd452a1b01e",
+          "digest": "2a02dbc5c2482d75b12106c6d6073dceecfe4abdecf3d1f1d6ac4dca2fa967e6",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "ef04fb717c141202512fd108a5228840e8075cad879abaa64d38ce7d1de49eb3",
+      "fingerprint": "166d19085213b11a4bb7db6b917ba0da5b3b60707ad0331102a3590834787a6a",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "fa4c01e55c8111b77786547e5ea88e2ea2c641d4aa45c8c32ef41424187f48b9",
+      "sourceDigest": "9d8962813717f007c3306717b4cb9f181ccdb862d14727c2a2c5e8a980e4cba5",
       "status": "declared"
     },
     {
@@ -2940,17 +2940,17 @@
           "file": "package.json"
         },
         {
-          "digest": "b75283629b43b94c1d035d66f3980f37a6b9b783f3fb6a9bd9952b738addcda8",
+          "digest": "626b31cd093e94e6d5fb4457a91fcabb55529c6aaa8d85ef304a3e9780624220",
           "file": "scripts/integrity-suite.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "0aa3a1af040942757699ec57b207de2bd109cacea4e2bdd15426b5b8c1f5cd3c",
-      "fingerprint": "f650f359f2f8123e7454aa2f87a5e07564aca67b9035d993b5bb263952c9d5c8",
+      "fingerprint": "a90f811032adeb71015ad55ce0e098510ff5143879effdb711b9cffa249d41dc",
       "id": "fingerprint:package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
       "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/integrity-suite.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "d3f53001d180c8d5d0dba43eabce8ee7f0549f5a8cb6763953879c58a5cc332c",
+      "sourceDigest": "e1dd223094c346884c9f3a96f431afca71dee02377360af8727af1bb304120ea",
       "status": "declared"
     },
     {
@@ -2960,17 +2960,17 @@
           "file": "package.json"
         },
         {
-          "digest": "2418ce53505ec281fad80477657a5675ad5de5444fad29d5723cde22a548557b",
+          "digest": "2a6cc70238188ce2a10c5793197d45838da91d235b0c3006aa2812120408ab15",
           "file": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "53d4540bd90cb402d718c835b6a534c938867010a6108d3e2acea710abbd2b20",
-      "fingerprint": "c22bd36aa11d642b49dc09bc7e1214f762d1b187b23ae2bf1e59e2b85eb00eda",
+      "fingerprint": "c6277ad4061224691dd06b5f4f002f51b7cd563500c08cd4b66013143fba527e",
       "id": "fingerprint:package_command:scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
       "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "2e402dc7745c5162e86ef02476cb639b6c71c2202913a6be0127ffd38441dd5f",
+      "sourceDigest": "421f1e177fcf174d65ec556be89ca1bd669dafbb3cc1bb88a297a486ee55f1d7",
       "status": "declared"
     },
     {

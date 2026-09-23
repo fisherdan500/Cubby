@@ -3,6 +3,7 @@ import {
   canonicalJson,
   createV2Backup,
   parseBackup,
+  payloadChecksum,
   type V2BackupPayload
 } from "@/server/services/backup-format";
 
@@ -87,6 +88,27 @@ describe("backup v2 format", () => {
     });
   });
 
+  it("preserves checksums for v2 backups created before precise pause fields existed", () => {
+    const payload: V2BackupPayload = {
+      ...emptyPayload(),
+      babies: [{ id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      activities: [{
+        id: "activity-1", babyId: "baby-1", type: "note", occurredAt: exportedAt,
+        startedAt: null, endedAt: null, timezone: "UTC", notes: null, source: "manual",
+        externalActorName: null, timerState: "none", durationSeconds: null, pausedAt: null,
+        pausedSeconds: 0, detail: { text: "legacy-v2" }, contactId: null
+      }]
+    };
+
+    expect(parseBackup({
+      format: "cubby-household-backup",
+      version: 2,
+      exportedAt,
+      payload,
+      checksum: payloadChecksum(payload)
+    })).toMatchObject({ version: 2, checksumVerified: true });
+  });
+
   it("rejects reserved fields smuggled through v2 activity detail", () => {
     const payload: V2BackupPayload = {
       ...emptyPayload(),
@@ -129,5 +151,122 @@ describe("backup v2 format", () => {
       ...payload,
       activities: [{ ...payload.activities[0], durationSeconds: 3_000, pausedSeconds: 700 }]
     }, exportedAt)).toThrow("backup_invalid_timer");
+
+    expect(() => createV2Backup({
+      ...payload,
+      activities: [{
+        ...payload.activities[0],
+        durationSeconds: 3_000,
+        pausedSeconds: 600,
+        pauseTrackingStartedAt: "2026-07-15T17:00:00.000Z",
+        pauseIntervals: [{
+          startedAt: "2026-07-15T16:50:00.000Z",
+          endedAt: "2026-07-15T17:00:00.000Z"
+        }]
+      }]
+    }, exportedAt)).toThrow("backup_invalid_pause_intervals");
+
+    expect(() => createV2Backup({
+      ...payload,
+      activities: [{
+        ...payload.activities[0],
+        durationSeconds: 3_000,
+        pausedSeconds: 600,
+        pauseTrackingStartedAt: "2026-07-15T17:30:00.000Z",
+        pauseIntervals: [{
+          startedAt: "2026-07-15T17:10:00.000Z",
+          endedAt: "2026-07-15T17:20:00.000Z"
+        }]
+      }]
+    }, exportedAt)).toThrow("backup_invalid_pause_intervals");
+  });
+
+  it("binds partial precise pause intervals to their persisted legacy baseline", () => {
+    const payload: V2BackupPayload = {
+      ...emptyPayload(),
+      babies: [{ id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      activities: [{
+        id: "activity-1", babyId: "baby-1", type: "sleep", occurredAt: "2026-07-15T17:00:00.000Z",
+        startedAt: "2026-07-15T17:00:00.000Z", endedAt: exportedAt, timezone: "UTC", notes: null,
+        source: "manual", externalActorName: null, timerState: "stopped",
+        durationSeconds: 2_700, pausedAt: null, pausedSeconds: 900,
+        pauseTrackingStartedAt: "2026-07-15T17:30:00.000Z",
+        pauseTrackingBaselineSeconds: 300,
+        pauseIntervals: [{
+          startedAt: "2026-07-15T17:30:00.000Z",
+          endedAt: "2026-07-15T17:40:00.000Z"
+        }],
+        detail: {}, contactId: null
+      }]
+    };
+
+    expect(() => createV2Backup(payload, exportedAt)).not.toThrow();
+    expect(() => createV2Backup({
+      ...payload,
+      activities: [{
+        ...payload.activities[0],
+        pauseIntervals: [{
+          startedAt: "2026-07-15T17:30:00.000Z",
+          endedAt: "2026-07-15T17:35:00.000Z"
+        }]
+      }]
+    }, exportedAt)).toThrow("backup_invalid_pause_intervals");
+  });
+
+  it("preserves legacy stopped timers whose active duration cannot be placed exactly", () => {
+    const payload: V2BackupPayload = {
+      ...emptyPayload(),
+      babies: [{ id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      activities: [{
+        id: "activity-1", babyId: "baby-1", type: "sleep", occurredAt: exportedAt,
+        startedAt: "2026-07-15T17:00:00.000Z", endedAt: exportedAt, timezone: "UTC", notes: null,
+        source: "manual", externalActorName: null, timerState: "stopped",
+        durationSeconds: 3_000, pausedAt: null, pausedSeconds: 0,
+        pauseTrackingStartedAt: null, pauseIntervals: [], detail: {}, contactId: null
+      }]
+    };
+
+    const parsed = parseBackup(createV2Backup(payload, exportedAt));
+    expect(parsed.version).toBe(2);
+    if (parsed.version !== 2) throw new Error("expected v2 backup");
+    expect(parsed.backup.payload.activities[0]).toMatchObject({
+      durationSeconds: 3_000,
+      pausedSeconds: 0,
+      pauseTrackingStartedAt: null,
+      pauseIntervals: []
+    });
+  });
+
+  it("accepts the predecessor rounding result for untracked legacy timers", () => {
+    const payload: V2BackupPayload = {
+      ...emptyPayload(),
+      babies: [{ id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      activities: [{
+        id: "activity-1", babyId: "baby-1", type: "sleep", occurredAt: "1970-01-01T00:00:00.600Z",
+        startedAt: "1970-01-01T00:00:00.600Z", endedAt: "1970-01-01T00:00:10.400Z", timezone: "UTC", notes: null,
+        source: "manual", externalActorName: null, timerState: "stopped",
+        durationSeconds: 10, pausedAt: null, pausedSeconds: 0,
+        pauseTrackingStartedAt: null, pauseTrackingBaselineSeconds: null,
+        pauseIntervals: [], detail: {}, contactId: null
+      }]
+    };
+
+    expect(() => createV2Backup(payload, exportedAt)).not.toThrow();
+  });
+
+  it("rejects pause provenance on a non-timer activity", () => {
+    const payload: V2BackupPayload = {
+      ...emptyPayload(),
+      babies: [{ id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      activities: [{
+        id: "activity-1", babyId: "baby-1", type: "sleep", occurredAt: exportedAt,
+        startedAt: "2026-07-15T17:00:00.000Z", endedAt: exportedAt, timezone: "UTC", notes: null,
+        source: "manual", externalActorName: null, timerState: "none",
+        durationSeconds: 3_600, pausedAt: null, pausedSeconds: 0,
+        pauseTrackingStartedAt: "2026-07-15T17:00:00.000Z", pauseIntervals: [], detail: {}, contactId: null
+      }]
+    };
+
+    expect(() => createV2Backup(payload, exportedAt)).toThrow("backup_invalid_pause_intervals");
   });
 });

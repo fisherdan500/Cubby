@@ -139,14 +139,34 @@ describe("dashboard service data loading", () => {
 
     const dashboard = await getDashboard("user-1", { babyId: "baby-1", date: "2026-06-19" });
 
-    // The timeline is read once. The only other dated read is the sleep lookback, which reaches
-    // before the day so an overnight sleep can be measured into it.
+    // The timeline is read once. The other dated read selects every sleep interval that can overlap
+    // the day, regardless of how long ago it started.
     const selectedDayReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.occurredAt && !query.where.type);
     const sleepLookbackReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.type === ActivityType.sleep);
     expect(selectedDayReads).toHaveLength(1);
     expect(sleepLookbackReads).toHaveLength(1);
-    expect(sleepLookbackReads[0][0].where.occurredAt.gte.getTime())
-      .toBeLessThan(selectedDayReads[0][0].where.occurredAt.gte.getTime());
+    const dayStart = selectedDayReads[0][0].where.occurredAt.gte;
+    const dayEnd = selectedDayReads[0][0].where.occurredAt.lt;
+    expect(sleepLookbackReads[0][0].where.OR).toEqual([
+      { startedAt: { not: null, lt: dayEnd }, endedAt: null },
+      { startedAt: { not: null, lt: dayEnd }, endedAt: { gt: dayStart } },
+      {
+        startedAt: null,
+        occurredAt: { lt: dayEnd },
+        OR: [
+          { endedAt: { gt: dayStart } },
+          { endedAt: null, durationSeconds: { not: null } }
+        ]
+      }
+    ]);
+    expect(sleepLookbackReads[0][0].select).toMatchObject({
+      pausedSeconds: true,
+      pauseTrackingStartedAt: true,
+      pauseIntervals: {
+        select: { startedAt: true, endedAt: true },
+        orderBy: { startedAt: "asc" }
+      }
+    });
     expect(mocks.activityGroupBy).not.toHaveBeenCalled();
     expect(dashboard?.activities).toBe(activities);
     expect(dashboard?.dailySummary?.feeding).toEqual({ count: 1, amount: 4.25, unit: "oz" });
@@ -563,6 +583,9 @@ describe("daily summary", () => {
       // Seven of the nine hours since midnight were the tail of last night's sleep.
       expect(summary.sleep).toEqual({ count: 1, seconds: 25_200 });
       expect(summary.awake).toEqual({ seconds: 7_200, known: true });
+      expect(summary.sleep.seconds).not.toBeNull();
+      expect(summary.awake.seconds).not.toBeNull();
+      if (summary.sleep.seconds === null || summary.awake.seconds === null) throw new Error("expected exact day totals");
       expect(summary.sleep.seconds + summary.awake.seconds).toBe(32_400);
     });
 
@@ -575,6 +598,29 @@ describe("daily summary", () => {
 
       expect(withoutLookback.sleep.seconds).toBe(0);
       expect(withLookback.sleep.seconds).toBe(25_200);
+    });
+
+    it("marks sleep and awake unavailable when legacy pause placement cannot be reconstructed", () => {
+      const legacy = {
+        ...sleepRecord("2026-09-20T19:00:00.000Z", "2026-09-21T07:00:00.000Z"),
+        durationSeconds: 39_600,
+        pausedSeconds: 3_600,
+        pauseTrackingStartedAt: null,
+        pauseIntervals: []
+      };
+
+      const summary = summarizeDay([], defaultUnitPreferences, { window, sleeps: [legacy], now: nineAm });
+
+      expect(summary.sleep).toEqual({
+        count: 1,
+        seconds: null,
+        unavailableReason: "legacy_pause_allocation"
+      });
+      expect(summary.awake).toEqual({
+        seconds: null,
+        known: false,
+        unavailableReason: "legacy_pause_allocation"
+      });
     });
 
     it("claims no awake figure for a day that has not begun", () => {

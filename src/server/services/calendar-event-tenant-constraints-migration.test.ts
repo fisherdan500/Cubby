@@ -110,8 +110,8 @@ describe("calendar event tenant relationship migration", () => {
     const rehearsal = readFileSync(rehearsalUrl, "utf8");
 
     expect(rehearsal).toContain(`const targetMigration = "${migrationDirectory}"`);
-    expect(rehearsal).toContain("renameSync(targetMigrationPath, heldMigrationPath)");
-    expect(rehearsal).toContain("renameSync(heldMigrationPath, targetMigrationPath)");
+    expect(rehearsal).toContain("holdMigrationsFrom");
+    expect(rehearsal).toContain("restoreHeldMigration(targetMigration");
     for (const scenario of ["baby_tenant_mismatch", "contact_tenant_mismatch", "baby_orphan", "contact_orphan"]) {
       expect(rehearsal).toContain(`"${scenario}"`);
     }

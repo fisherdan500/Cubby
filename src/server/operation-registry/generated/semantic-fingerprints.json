@@ -107,15 +107,15 @@
       "id": "semantic-exposure:src/app/api/settings/units/route.ts#PATCH"
     },
     {
-      "digest": "2ed0cff21430a9a2068df272b43ee8c8a99b83986a441684d389cc41a577c26a",
+      "digest": "a4145756a202b0eea2693d85c138489920d5ab6f4569d1b7a1f01df05cbb17f4",
       "id": "semantic-exposure:src/app/api/timers/[id]/pause/route.ts#POST"
     },
     {
-      "digest": "2ea45fcd88b00ed85cb58632fc6fd85afc0588dd95484e361d496aafa7c92d95",
+      "digest": "960c59fb8496e8e69a05a9e1ba68b687c65f330968bd742f3c32ad7c40bf8205",
       "id": "semantic-exposure:src/app/api/timers/[id]/resume/route.ts#POST"
     },
     {
-      "digest": "3fcbef6cd1c8314d617087b6662966d0c326aa376e090e192c047b3983f975eb",
+      "digest": "25e5d89d4ab3272fa23cdcea6e14722df6ec11bb78e4b63b1cb98a4cd9f86e6a",
       "id": "semantic-exposure:src/app/api/timers/[id]/stop/route.ts#POST"
     },
     {
@@ -123,31 +123,31 @@
       "id": "semantic-exposure:src/app/app/calendar/actions.ts#createCalendarEventAction"
     },
     {
-      "digest": "20fc6ef938e9b749c7b61ae54b72588a2d8a8b3e6f33614e3fb4fe8fdf4ae3e9",
+      "digest": "cea120c2f2d7831438e5060c690e8444f130f17447120339ac97475772539b6b",
       "id": "semantic-service:activity.create"
     },
     {
-      "digest": "cce270711ecefc9ff35fa5e4b221e4bfe221de9837ece4168ce65aee193bd2f6",
+      "digest": "c9c5803afff661fe5ef548300800aaa6111479d061976ddd96d46a9d4bfe8ead",
       "id": "semantic-service:activity.delete"
     },
     {
-      "digest": "213dcb20e7a7207a43ced942e8b59fb36a3bf976657eaf1d1fba0353683f60cb",
+      "digest": "9d511e57e96456589779b5acb357a44e02f6c3ee1a7aee978e8a7e480e086f25",
       "id": "semantic-service:activity.timer.pause"
     },
     {
-      "digest": "6245ea5a5528ff104f95cd165cdca5167f5dc05e7919eae348dd7a4919ff5515",
+      "digest": "e57ec3d4194d2ed17799d72dbee3ae3d84cac95bb8d03bcfbca312c8b557e6fa",
       "id": "semantic-service:activity.timer.resume"
     },
     {
-      "digest": "f5871df7255108d59c74cd20e712d31a937ffe59e8bb613dc36854a68a664658",
+      "digest": "2c62b085ad310caab3d2492437addd35a319c7e17b3638e33abd7271f308f462",
       "id": "semantic-service:activity.timer.stop"
     },
     {
-      "digest": "22ed511d69d2afc34029a1f8fdd07baccfbd4729bf0b0b10859520b4f158c644",
+      "digest": "e02f43ab5ea93fe8355b91da029b2e3171ee37b6e68108025979c9702f3f9f01",
       "id": "semantic-service:activity.undo_last"
     },
     {
-      "digest": "d22cc5a2cbb89a685e97da56fec843a9f7d3bd0a92042ded08566fcd11ceae41",
+      "digest": "b75b8e69ee050b460f6349d30c2e96354375aae31a20d6e3b6395382d2313468",
       "id": "semantic-service:activity.update"
     },
     {
@@ -167,7 +167,7 @@
       "id": "semantic-service:calendar_event.create"
     },
     {
-      "digest": "a9a7518a12045e28cf354cd822fb7e78f49b5e3be1044668aa7be33f9a4a7ee0",
+      "digest": "044fda391ee874f2103d329b994b576c6f5ac95c95c26184f7034f6621dcb1e1",
       "id": "semantic-service:dashboard.warning.dismiss"
     },
     {
@@ -227,7 +227,7 @@
       "id": "semantic-service:settings.units.update"
     },
     {
-      "digest": "65e88738d96adeee52357d6409e30a5f1eaad14076d526a7d8c7dbba68602031",
+      "digest": "423a50ef73691a316b971b8990d5f392bd49434a37561e3f49a6fc34b28665b7",
       "id": "semantic:browser_household_mutations"
     },
     {
@@ -241,10 +241,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "8aa43efff4dfad5f626071617e23928411da0681f694695e05354571eb999a8f",
+  "semanticArtifactDigest": "711781cf8e0832d46bf57ad4618c6992ab63f3464af3be800944b02e89a4d898",
   "semanticArtifactVersion": "semantic-artifact.v1",
   "semanticCoverageDigest": "97ad93cf0e858b3d230c213dff11b62c4b8d59cb9078ffd49e84f23e7a506dc3",
   "semanticDeclarationCount": 56,
-  "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "2909dc1906232ae2cc382e62d9d6917f2b6b69589cccefe0335491e93d56b72e"
+  "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
+  "semanticFingerprint": "d7e930f470630509fc873fa31c632091bcb65164b48ec61dc5dee438dcd2ad93"
 }

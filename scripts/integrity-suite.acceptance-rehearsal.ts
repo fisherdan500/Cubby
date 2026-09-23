@@ -1,9 +1,9 @@
-import { cpSync, mkdtempSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 import { createDisposableRuntimeRolesArgs } from "./disposable-runtime-roles";
 
@@ -19,6 +19,7 @@ const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const composeFile = "scripts/integrity-suite.acceptance.compose.yml";
 const database = "cubby_integrity_acceptance";
 const targetMigration = "20260922194500_calendar_event_tenant_constraints";
+const pauseTargetMigration = "20260922235500_activity_timer_pause_intervals";
 
 function run(command: string, args: string[], env: NodeJS.ProcessEnv, capture = false) {
   const result = spawnSync(command, args, { cwd: root, env, encoding: "utf8", stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit" });
@@ -59,6 +60,89 @@ function runMigrationSqlExpectingFailure(compose: string[], env: NodeJS.ProcessE
   return runSqlExpectingFailure(compose, env, readFileSync(resolve(migrationPath, "migration.sql"), "utf8"));
 }
 
+function startSqlSession(compose: string[], env: NodeJS.ProcessEnv, sql: string) {
+  const child = spawn("docker", [
+    ...compose,
+    "exec", "--no-TTY", "postgres",
+    "psql", "--username", database, "--dbname", database,
+    "--set", "ON_ERROR_STOP=1", "--no-align", "--tuples-only", "--command", sql
+  ], { cwd: root, env, stdio: ["ignore", "pipe", "pipe"] });
+  let output = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk: string) => { output += chunk; });
+  child.stderr.on("data", (chunk: string) => { output += chunk; });
+  const completion = new Promise<{ status: number | null; output: string }>((resolveCompletion, rejectCompletion) => {
+    child.once("error", rejectCompletion);
+    child.once("close", (status) => resolveCompletion({ status, output }));
+  });
+  return { completion };
+}
+
+function waitForSqlSessionSleeping(
+  compose: string[],
+  env: NodeJS.ProcessEnv,
+  applicationName: string,
+  failureMarker: string
+) {
+  runSql(compose, env, `
+DO $$
+BEGIN
+  FOR attempt IN 1..50 LOOP
+    IF EXISTS (
+      SELECT 1 FROM pg_stat_activity
+      WHERE application_name = '${applicationName}'
+        AND state = 'active'
+        AND wait_event = 'PgSleep'
+    ) THEN
+      RETURN;
+    END IF;
+    PERFORM pg_sleep(0.1);
+  END LOOP;
+  RAISE EXCEPTION '${failureMarker}';
+END $$;`);
+}
+
+function assertSqlSessionBlocked(
+  compose: string[],
+  env: NodeJS.ProcessEnv,
+  applicationName: string,
+  failureMarker: string
+) {
+  runSql(compose, env, `
+DO $$
+DECLARE
+  target_pid INTEGER;
+BEGIN
+  FOR attempt IN 1..50 LOOP
+    SELECT pid INTO target_pid FROM pg_stat_activity
+    WHERE application_name = '${applicationName}'
+    ORDER BY backend_start DESC
+    LIMIT 1;
+    IF target_pid IS NOT NULL AND cardinality(pg_blocking_pids(target_pid)) > 0 THEN
+      RETURN;
+    END IF;
+    PERFORM pg_sleep(0.1);
+  END LOOP;
+  RAISE EXCEPTION '${failureMarker}';
+END $$;`);
+}
+
+function holdMigrationsFrom(migrationsPath: string, target: string, heldRoot: string) {
+  mkdirSync(heldRoot, { recursive: true });
+  const names = readdirSync(migrationsPath, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name >= target)
+    .map((entry) => entry.name)
+    .sort();
+  if (!names.includes(target)) throw new Error(`integrity_suite_target_migration_missing:${target}`);
+  for (const name of names) renameSync(resolve(migrationsPath, name), resolve(heldRoot, name));
+  return names;
+}
+
+function restoreHeldMigration(name: string, migrationsPath: string, heldRoot: string) {
+  renameSync(resolve(heldRoot, name), resolve(migrationsPath, name));
+}
+
 const calendarTenantBaselineSql = `
 INSERT INTO "Household" ("id", "name", "createdByUserId", "createdAt", "updatedAt") VALUES
   ('integrity-household-a', 'Household A', 'synthetic-user-a', NOW(), NOW()),
@@ -71,7 +155,16 @@ INSERT INTO "Contact" ("id", "householdId", "name", "createdAt", "updatedAt") VA
   ('integrity-contact-b', 'integrity-household-b', 'Contact B', NOW(), NOW());
 INSERT INTO "CalendarEvent" ("id", "householdId", "title", "startTime", "createdAt", "updatedAt") VALUES
   ('integrity-event-a', 'integrity-household-a', 'Event A', NOW(), NOW(), NOW()),
-  ('integrity-event-b', 'integrity-household-b', 'Event B', NOW(), NOW(), NOW());`;
+  ('integrity-event-b', 'integrity-household-b', 'Event B', NOW(), NOW(), NOW());
+-- The actor the synthetic activities below name. Written past the membership triggers, as the
+-- activities are, but it has to exist: the pause-interval triggers update those activities inside
+-- ordinary transactions, where the foreign key to their actor is checked again.
+SET session_replication_role = replica;
+INSERT INTO "User" ("id", "name", "email", "createdAt", "updatedAt") VALUES
+  ('synthetic-user-a', 'Synthetic Actor', 'synthetic-actor@acceptance.invalid', NOW(), NOW());
+INSERT INTO "HouseholdMember" ("id", "householdId", "userId", "role", "updatedAt") VALUES
+  ('synthetic-member', 'integrity-household-a', 'synthetic-user-a', 'owner', NOW());
+SET session_replication_role = origin;`;
 
 const calendarTenantRollbackStateSql = `
 SELECT
@@ -158,7 +251,409 @@ function runTargetMigrationRollbackCases(
   run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", schemaPath], migrationEnv);
 }
 
-export function runIntegritySuiteAcceptanceRehearsal() {
+const pauseRollbackStateSql = `
+SELECT
+  (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'ActivityLog' AND column_name = 'pauseTrackingStartedAt')
+  || '|' ||
+  (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'ActivityLog' AND column_name = 'pauseTrackingBaselineSeconds')
+  || '|' ||
+  (SELECT COUNT(*) FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'ActivityTimerPauseInterval')
+  || '|' ||
+  (SELECT COUNT(*) FROM pg_indexes
+    WHERE indexname = 'ActivityTimerPauseInterval_one_open_per_activity');`;
+
+function assertPauseIntervalMigrationRolledBack(compose: string[], env: NodeJS.ProcessEnv) {
+  const state = runSql(compose, env, pauseRollbackStateSql, true).trim();
+  if (state !== "0|0|0|0") throw new Error(`activity_timer_pause_rollback_incomplete:${state}`);
+}
+
+function runPauseIntervalPostMigrationAcceptance(compose: string[], env: NodeJS.ProcessEnv) {
+  const privileges = runSql(compose, env, `
+SELECT
+  has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'SELECT') || '|' ||
+  has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'INSERT') || '|' ||
+  has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'UPDATE') || '|' ||
+  has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'DELETE') || '|' ||
+  has_function_privilege('cubby_runtime', '"closeActivityTimerPauseInterval"(text,timestamp)', 'EXECUTE');`, true).trim();
+  // A boolean joined onto text is cast to text, which PostgreSQL spells out in full.
+  if (privileges !== "true|true|false|false|true") throw new Error(`activity_timer_pause_runtime_privileges_invalid:${privileges}`);
+
+  runSql(compose, env, `
+SET session_replication_role = replica;
+INSERT INTO "ActivityLog" (
+  "id", "householdId", "babyId", "actorMemberId", "type", "occurredAt", "timezone", "source",
+  "timerState", "startedAt", "pausedAt", "pausedSeconds", "pauseTrackingStartedAt",
+  "pauseTrackingBaselineSeconds", "createdAt", "updatedAt"
+) VALUES (
+  'integrity-pause-activity', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T00:00:00.000Z', 'UTC', 'manual', 'paused', '2026-01-01T00:00:00.000Z',
+  '2026-01-01T00:30:00.000Z', 0, '2026-01-01T00:00:00.000Z', 0, NOW(), NOW()
+);
+SET session_replication_role = origin;
+SET ROLE cubby_runtime;
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES ('integrity-open-pause-1', 'integrity-pause-activity', '2026-01-01T00:30:00.000Z', NOW());
+RESET ROLE;`);
+
+  const duplicateOpenFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES ('integrity-open-pause-2', 'integrity-pause-activity', '2026-01-01T00:45:00.000Z', NOW());`);
+  if (
+    !duplicateOpenFailure.includes("ActivityTimerPauseInterval_one_open_per_activity") &&
+    !duplicateOpenFailure.includes("ActivityTimerPauseInterval_no_overlap")
+  ) {
+    throw new Error("activity_timer_pause_open_unique_signal_missing");
+  }
+
+  const incoherentCloseFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+SELECT "closeActivityTimerPauseInterval"('integrity-pause-activity', '2026-01-01T00:40:00.000Z');`);
+  if (!incoherentCloseFailure.includes("activity_timer_pause_integrity_failed")) {
+    throw new Error("activity_timer_pause_parent_child_signal_missing");
+  }
+
+  runSql(compose, env, `
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog"
+SET "timerState" = 'running', "pausedAt" = NULL, "pausedSeconds" = 600, "updatedAt" = NOW()
+WHERE "id" = 'integrity-pause-activity';
+SELECT "closeActivityTimerPauseInterval"('integrity-pause-activity', '2026-01-01T00:40:00.000Z');
+COMMIT;
+
+BEGIN;
+UPDATE "ActivityLog"
+SET "timerState" = 'paused', "pausedAt" = '2026-01-01T00:45:00.000Z', "updatedAt" = NOW()
+WHERE "id" = 'integrity-pause-activity';
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES ('integrity-open-pause-2', 'integrity-pause-activity', '2026-01-01T00:45:00.000Z', NOW());
+COMMIT;
+RESET ROLE;`);
+
+  const incoherentDeleteFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+DELETE FROM "ActivityTimerPauseInterval" WHERE "id" = 'integrity-open-pause-2';`);
+  if (!incoherentDeleteFailure.includes("permission denied")) {
+    throw new Error("activity_timer_pause_delete_signal_missing");
+  }
+
+  runSql(compose, env, `
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog"
+SET "timerState" = 'stopped', "pausedAt" = NULL, "pausedSeconds" = 1500,
+  "endedAt" = '2026-01-01T01:00:00.000Z', "durationSeconds" = 2100, "updatedAt" = NOW()
+WHERE "id" = 'integrity-pause-activity';
+SELECT "closeActivityTimerPauseInterval"('integrity-pause-activity', '2026-01-01T01:00:00.000Z');
+COMMIT;
+RESET ROLE;`);
+
+  const invalidRangeFailure = runSqlExpectingFailure(compose, env, `
+SET session_replication_role = replica;
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "endedAt", "createdAt")
+VALUES ('integrity-invalid-pause', 'integrity-pause-activity', '2026-01-01T01:00:00.000Z', '2026-01-01T00:59:00.000Z', NOW());`);
+  if (!invalidRangeFailure.includes("ActivityTimerPauseInterval_valid_range_check")) {
+    throw new Error("activity_timer_pause_range_signal_missing");
+  }
+
+  const overlapFailure = runSqlExpectingFailure(compose, env, `
+BEGIN;
+SET session_replication_role = replica;
+UPDATE "ActivityLog"
+SET "pausedSeconds" = 1560, "durationSeconds" = 2040, "updatedAt" = NOW()
+WHERE "id" = 'integrity-pause-activity';
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "endedAt", "createdAt")
+VALUES ('integrity-overlap-pause', 'integrity-pause-activity', '2026-01-01T00:35:00.000Z', '2026-01-01T00:36:00.000Z', NOW());
+COMMIT;`);
+  if (
+    !overlapFailure.includes("ActivityTimerPauseInterval_no_overlap") &&
+    !overlapFailure.includes("activity_timer_pause_integrity_failed")
+  ) {
+    throw new Error("activity_timer_pause_overlap_signal_missing");
+  }
+
+  // A timer with no pauses yet, so a pause starting before the timer did overlaps nothing and only the
+  // envelope rule can refuse it. On the activity above, the overlap guard would answer first.
+  runSql(compose, env, `
+SET session_replication_role = replica;
+INSERT INTO "ActivityLog" (
+  "id", "householdId", "babyId", "actorMemberId", "type", "occurredAt", "timezone", "source",
+  "timerState", "startedAt", "pausedSeconds", "pauseTrackingStartedAt", "pauseTrackingBaselineSeconds",
+  "createdAt", "updatedAt"
+) VALUES (
+  'integrity-envelope-activity', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-03T00:00:00.000Z', 'UTC', 'manual', 'running', '2026-01-03T00:00:00.000Z', 0,
+  '2026-01-03T00:00:00.000Z', 0, NOW(), NOW()
+);
+SET session_replication_role = origin;`);
+  const envelopeFailure = runSqlExpectingFailure(compose, env, `
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog" SET "timerState" = 'paused', "pausedAt" = '2026-01-02T23:59:00.000Z', "updatedAt" = NOW()
+WHERE "id" = 'integrity-envelope-activity';
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES ('integrity-outside-pause', 'integrity-envelope-activity', '2026-01-02T23:59:00.000Z', NOW());
+COMMIT;`);
+  if (!envelopeFailure.includes("activity_timer_pause_integrity_failed")) {
+    throw new Error(`activity_timer_pause_envelope_signal_missing\n${envelopeFailure.slice(-1500)}`);
+  }
+  runSql(compose, env, `DELETE FROM "ActivityLog" WHERE "id" = 'integrity-envelope-activity';`);
+
+  runSql(compose, env, `DELETE FROM "ActivityLog" WHERE "id" = 'integrity-pause-activity';`);
+  const remaining = runSql(compose, env, `SELECT COUNT(*) FROM "ActivityTimerPauseInterval" WHERE "activityId" = 'integrity-pause-activity';`, true).trim();
+  if (remaining !== "0") throw new Error(`activity_timer_pause_cascade_incomplete:${remaining}`);
+}
+
+async function runPauseIntervalConcurrencyAcceptance(compose: string[], env: NodeJS.ProcessEnv) {
+  runSql(compose, env, `
+BEGIN;
+SET session_replication_role = replica;
+INSERT INTO "ActivityLog" (
+  "id", "householdId", "babyId", "actorMemberId", "type", "occurredAt", "timezone", "source",
+  "timerState", "startedAt", "pausedAt", "pausedSeconds", "pauseTrackingStartedAt",
+  "pauseTrackingBaselineSeconds", "createdAt", "updatedAt"
+) VALUES (
+  'integrity-concurrency-parent', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-02T00:00:00.000Z', 'UTC', 'manual', 'paused', '2026-01-02T00:00:00.000Z',
+  '2026-01-02T00:45:00.000Z', 900, '2026-01-02T00:20:00.000Z', 300, NOW(), NOW()
+);
+SET session_replication_role = origin;
+SET ROLE cubby_runtime;
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "endedAt", "createdAt")
+VALUES (
+  'integrity-concurrency-pause-1', 'integrity-concurrency-parent',
+  '2026-01-02T00:30:00.000Z', '2026-01-02T00:40:00.000Z', NOW()
+);
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES ('integrity-concurrency-open', 'integrity-concurrency-parent', '2026-01-02T00:45:00.000Z', NOW());
+COMMIT;
+RESET ROLE;`);
+
+  const childLockSession = startSqlSession(compose, env, `
+SET application_name = 'cubby_pause_parent_lock';
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog"
+SET "timerState" = 'running', "pausedAt" = NULL, "pausedSeconds" = 1200, "updatedAt" = NOW()
+WHERE "id" = 'integrity-concurrency-parent';
+SELECT "closeActivityTimerPauseInterval"('integrity-concurrency-parent', '2026-01-02T00:50:00.000Z');
+SELECT pg_sleep(10);
+COMMIT;`);
+  waitForSqlSessionSleeping(
+    compose, env, "cubby_pause_parent_lock", "activity_timer_pause_parent_lock_not_held"
+  );
+  const parentWriter = startSqlSession(compose, env, `
+SET application_name = 'cubby_pause_parent_writer';
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog" SET "notes" = 'serialized-parent-writer'
+WHERE "id" = 'integrity-concurrency-parent';
+COMMIT;`);
+  assertSqlSessionBlocked(
+    compose, env, "cubby_pause_parent_writer", "activity_timer_pause_concurrent_parent_write_unblocked"
+  );
+  const [childLockResult, parentWriterResult] = await Promise.all([
+    childLockSession.completion,
+    parentWriter.completion
+  ]);
+  if (childLockResult.status !== 0 || parentWriterResult.status !== 0) {
+    throw new Error(`activity_timer_pause_parent_child_concurrency_failed:${childLockResult.output}:${parentWriterResult.output}`);
+  }
+
+  const runningUpdateFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+UPDATE "ActivityTimerPauseInterval" SET "endedAt" = '2026-01-02T00:39:00.000Z'
+WHERE "id" = 'integrity-concurrency-pause-1';`);
+  if (!runningUpdateFailure.includes("permission denied")) {
+    throw new Error("activity_timer_pause_partial_running_update_not_rejected");
+  }
+  const runningDeleteFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+DELETE FROM "ActivityTimerPauseInterval" WHERE "id" = 'integrity-concurrency-pause-1';`);
+  if (!runningDeleteFailure.includes("permission denied")) {
+    throw new Error("activity_timer_pause_partial_running_delete_not_rejected");
+  }
+
+  const coherentChildWriter = startSqlSession(compose, env, `
+SET application_name = 'cubby_pause_child_lock';
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog"
+SET "timerState" = 'paused', "pausedAt" = '2026-01-02T00:55:00.000Z', "updatedAt" = NOW()
+WHERE "id" = 'integrity-concurrency-parent';
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES (
+  'integrity-concurrency-pause-2', 'integrity-concurrency-parent',
+  '2026-01-02T00:55:00.000Z', NOW()
+);
+SELECT pg_sleep(10);
+COMMIT;`);
+  waitForSqlSessionSleeping(
+    compose, env, "cubby_pause_child_lock", "activity_timer_pause_child_lock_not_held"
+  );
+  const conflictingChildWriter = startSqlSession(compose, env, `
+SET application_name = 'cubby_pause_child_writer';
+BEGIN;
+SET ROLE cubby_runtime;
+INSERT INTO "ActivityTimerPauseInterval" ("id", "activityId", "startedAt", "createdAt")
+VALUES (
+  'integrity-concurrency-pause-3', 'integrity-concurrency-parent',
+  '2026-01-02T01:00:00.000Z', NOW()
+);
+COMMIT;`);
+  assertSqlSessionBlocked(
+    compose, env, "cubby_pause_child_writer", "activity_timer_pause_concurrent_child_write_unblocked"
+  );
+  const [coherentResult, conflictingResult] = await Promise.all([
+    coherentChildWriter.completion,
+    conflictingChildWriter.completion
+  ]);
+  if (coherentResult.status !== 0) {
+    throw new Error(`activity_timer_pause_coherent_child_writer_failed:${coherentResult.output}`);
+  }
+  if (
+    conflictingResult.status === 0 ||
+    (!conflictingResult.output.includes("ActivityTimerPauseInterval_one_open_per_activity") &&
+      !conflictingResult.output.includes("ActivityTimerPauseInterval_no_overlap"))
+  ) {
+    throw new Error(`activity_timer_pause_conflicting_child_writer_not_rejected:${conflictingResult.output}`);
+  }
+
+  const finalState = runSql(compose, env, `
+SELECT activity."pausedSeconds" || '|' || activity."pauseTrackingBaselineSeconds" || '|' ||
+  COUNT(pause.id) || '|' ||
+  COALESCE(SUM(ROUND(EXTRACT(EPOCH FROM pause."endedAt")) - ROUND(EXTRACT(EPOCH FROM pause."startedAt"))), 0)
+FROM "ActivityLog" activity
+LEFT JOIN "ActivityTimerPauseInterval" pause ON pause."activityId" = activity.id
+WHERE activity.id = 'integrity-concurrency-parent'
+GROUP BY activity."pausedSeconds", activity."pauseTrackingBaselineSeconds";`, true).trim();
+  if (finalState !== "1200|300|3|900") {
+    throw new Error(`activity_timer_pause_concurrency_final_state_invalid:${finalState}`);
+  }
+
+  const pausedDeleteFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+DELETE FROM "ActivityTimerPauseInterval" WHERE "id" = 'integrity-concurrency-pause-1';`);
+  if (!pausedDeleteFailure.includes("permission denied")) {
+    throw new Error("activity_timer_pause_partial_paused_delete_not_rejected");
+  }
+
+  runSql(compose, env, `
+BEGIN;
+SET ROLE cubby_runtime;
+UPDATE "ActivityLog"
+SET "timerState" = 'stopped', "pausedAt" = NULL, "pausedSeconds" = 1800,
+  "endedAt" = '2026-01-02T02:00:00.000Z', "durationSeconds" = 5400, "updatedAt" = NOW()
+WHERE "id" = 'integrity-concurrency-parent';
+SELECT "closeActivityTimerPauseInterval"('integrity-concurrency-parent', '2026-01-02T01:05:00.000Z');
+COMMIT;`);
+  const stoppedUpdateFailure = runSqlExpectingFailure(compose, env, `
+SET ROLE cubby_runtime;
+UPDATE "ActivityTimerPauseInterval" SET "endedAt" = '2026-01-02T00:54:00.000Z'
+WHERE "id" = 'integrity-concurrency-pause-2';`);
+  if (!stoppedUpdateFailure.includes("permission denied")) {
+    throw new Error("activity_timer_pause_partial_stopped_update_not_rejected");
+  }
+  runSql(compose, env, `DELETE FROM "ActivityLog" WHERE "id" = 'integrity-concurrency-parent';`);
+}
+
+async function runPauseIntervalMigrationRollbackCase(
+  compose: string[],
+  env: NodeJS.ProcessEnv,
+  databaseUrl: string,
+  prismaCli: string,
+  targetMigrationPath: string
+) {
+  const schemaPath = resolve(targetMigrationPath, "..", "..", "schema.prisma");
+  const migrationEnv = { ...env, DATABASE_URL: databaseUrl };
+  runSql(compose, env, `
+BEGIN;
+SET session_replication_role = replica;
+INSERT INTO "ActivityLog" (
+  "id", "householdId", "babyId", "actorMemberId", "type", "occurredAt", "timezone", "source",
+  "timerState", "startedAt", "endedAt", "durationSeconds", "pausedAt", "pausedSeconds", "createdAt", "updatedAt"
+) VALUES (
+  'integrity-invalid-paused-activity', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T01:00:00.000Z', 'UTC', 'manual', 'paused', '2026-01-01T01:00:00.000Z',
+  NULL, NULL, '2026-01-01T00:59:00.000Z', 0, NOW(), NOW()
+  ), (
+  'integrity-invalid-future-running', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2099-01-01T01:00:00.000Z', 'UTC', 'manual', 'running', '2099-01-01T01:00:00.000Z',
+  NULL, NULL, NULL, 600, NOW(), NOW()
+  ), (
+  'integrity-backfill-zero', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T02:00:00.000Z', 'UTC', 'manual', 'stopped', '2026-01-01T02:00:00.000Z',
+  '2026-01-01T02:30:00.000Z', 1800, NULL, 0, NOW(), NOW()
+  ), (
+  'integrity-backfill-zero-mismatch', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T02:35:00.000Z', 'UTC', 'manual', 'stopped', '2026-01-01T02:35:00.000Z',
+  '2026-01-01T02:55:00.000Z', 900, NULL, 0, NOW(), NOW()
+  ), (
+  'integrity-backfill-predecessor-rounding', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '1970-01-01T00:00:00.600Z', 'UTC', 'manual', 'stopped', '1970-01-01T00:00:00.600Z',
+  '1970-01-01T00:00:10.400Z', 10, NULL, 0, NOW(), NOW()
+  ), (
+  'integrity-backfill-running', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T03:00:00.000Z', 'UTC', 'manual', 'running', '2026-01-01T03:00:00.000Z',
+  NULL, NULL, NULL, 600, NOW(), NOW()
+  ), (
+  'integrity-backfill-stopped', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T04:00:00.000Z', 'UTC', 'manual', 'stopped', '2026-01-01T04:00:00.000Z',
+  '2026-01-01T05:00:00.000Z', 3000, NULL, 600, NOW(), NOW()
+  ), (
+  'integrity-backfill-paused', 'integrity-household-a', 'integrity-baby-a', 'synthetic-member', 'sleep',
+  '2026-01-01T05:00:00.000Z', 'UTC', 'manual', 'paused', '2026-01-01T05:00:00.000Z',
+  NULL, NULL, '2026-01-01T05:30:00.000Z', 600, NOW(), NOW()
+);
+SET session_replication_role = origin;
+COMMIT;`);
+  try {
+    const refusal = runMigrationSqlExpectingFailure(compose, env, targetMigrationPath);
+    if (!refusal.includes("activity_timer_pause_interval_preflight_failed")) {
+      throw new Error(`activity_timer_pause_preflight_marker_missing\n${refusal.slice(-2000)}`);
+    }
+    assertPauseIntervalMigrationRolledBack(compose, env);
+    runExpectingFailure(process.execPath, [prismaCli, "migrate", "deploy", "--schema", schemaPath], migrationEnv);
+    assertPauseIntervalMigrationRolledBack(compose, env);
+  } finally {
+    runSql(compose, env, `DELETE FROM "ActivityLog"
+      WHERE "id" IN ('integrity-invalid-paused-activity', 'integrity-invalid-future-running');`);
+  }
+  run(process.execPath, [prismaCli, "migrate", "resolve", "--rolled-back", pauseTargetMigration, "--schema", schemaPath], migrationEnv);
+  run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", schemaPath], migrationEnv);
+  const backfillState = runSql(compose, env, `
+SELECT
+  (SELECT "pauseTrackingStartedAt" = "startedAt" AND "pauseTrackingBaselineSeconds" = 0
+    FROM "ActivityLog" WHERE "id" = 'integrity-backfill-zero') || '|' ||
+  (SELECT "pauseTrackingStartedAt" IS NULL AND "pauseTrackingBaselineSeconds" IS NULL
+    FROM "ActivityLog" WHERE "id" = 'integrity-backfill-zero-mismatch') || '|' ||
+  (SELECT "pauseTrackingStartedAt" IS NULL AND "pauseTrackingBaselineSeconds" IS NULL
+    FROM "ActivityLog" WHERE "id" = 'integrity-backfill-predecessor-rounding') || '|' ||
+  (SELECT "pauseTrackingStartedAt" IS NOT NULL AND "pauseTrackingStartedAt" > "startedAt"
+      AND "pauseTrackingBaselineSeconds" = 600
+    FROM "ActivityLog" WHERE "id" = 'integrity-backfill-running') || '|' ||
+  (SELECT "pauseTrackingStartedAt" IS NULL AND "pauseTrackingBaselineSeconds" IS NULL
+    FROM "ActivityLog" WHERE "id" = 'integrity-backfill-stopped') || '|' ||
+  (SELECT activity."pauseTrackingStartedAt" IS NOT NULL
+      AND activity."pauseTrackingStartedAt" > activity."startedAt"
+      AND activity."pauseTrackingBaselineSeconds" = 600
+      AND pause."startedAt" = activity."pausedAt"
+      AND pause."endedAt" IS NULL
+    FROM "ActivityLog" activity
+    JOIN "ActivityTimerPauseInterval" pause ON pause."activityId" = activity."id"
+    WHERE activity."id" = 'integrity-backfill-paused');`, true).trim();
+  if (backfillState !== "true|true|true|true|true|true") throw new Error(`activity_timer_pause_backfill_invalid:${backfillState}`);
+  runPauseIntervalPostMigrationAcceptance(compose, env);
+  await runPauseIntervalConcurrencyAcceptance(compose, env);
+  runSql(compose, env, `DELETE FROM "ActivityLog" WHERE "id" LIKE 'integrity-backfill-%';`);
+  process.stdout.write("INTEGRITY_ACTIVITY_TIMER_PAUSE_ROLLBACK_PASS\n");
+}
+
+export async function runIntegritySuiteAcceptanceRehearsal() {
   const project = `cubby_integrity_acceptance_${randomBytes(4).toString("hex")}`;
   const password = randomBytes(24).toString("hex");
   const temp = mkdtempSync(resolve(tmpdir(), "cubby-integrity-acceptance-"));
@@ -177,15 +672,30 @@ export function runIntegritySuiteAcceptanceRehearsal() {
     run("docker", [...compose, "exec", "--no-TTY", "postgres", ...createDisposableRuntimeRolesArgs(database, database)], env);
     cpSync(resolve(root, "prisma"), resolve(temp, "prisma"), { recursive: true });
     const prismaCli = resolve(root, "node_modules/prisma/build/index.js");
-    const targetMigrationPath = resolve(temp, "prisma/migrations", targetMigration);
-    const heldMigrationPath = resolve(temp, targetMigration);
-    renameSync(targetMigrationPath, heldMigrationPath);
+    const migrationsPath = resolve(temp, "prisma/migrations");
+    const heldRoot = resolve(temp, "held-migrations");
+    const heldMigrations = holdMigrationsFrom(migrationsPath, targetMigration, heldRoot);
     run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", resolve(temp, "prisma/schema.prisma")], { ...env, DATABASE_URL: databaseUrl });
-    renameSync(heldMigrationPath, targetMigrationPath);
+    restoreHeldMigration(targetMigration, migrationsPath, heldRoot);
+    const targetMigrationPath = resolve(migrationsPath, targetMigration);
     runTargetMigrationRollbackCases(compose, env, databaseUrl, prismaCli, targetMigrationPath);
-    // The migration cases' fixture households are deliberately incomplete (neither has an owner), and
-    // the checks below count globally, so they are removed before the suite measures anything.
-    runSql(compose, env, `DELETE FROM "Household" WHERE "id" IN ('integrity-household-a', 'integrity-household-b');`);
+    restoreHeldMigration(pauseTargetMigration, migrationsPath, heldRoot);
+    await runPauseIntervalMigrationRollbackCase(
+      compose,
+      env,
+      databaseUrl,
+      prismaCli,
+      resolve(migrationsPath, pauseTargetMigration)
+    );
+    for (const migration of heldMigrations.filter((name) => name > pauseTargetMigration)) {
+      restoreHeldMigration(migration, migrationsPath, heldRoot);
+    }
+    run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", resolve(temp, "prisma/schema.prisma")], { ...env, DATABASE_URL: databaseUrl });
+    // The migration cases' fixture households are deliberately incomplete (one has no owner at all),
+    // and the checks below count globally, so they are removed before the suite measures anything.
+    runSql(compose, env, `
+DELETE FROM "Household" WHERE "id" IN ('integrity-household-a', 'integrity-household-b');
+DELETE FROM "User" WHERE "id" = 'synthetic-user-a';`);
     const vitestCli = resolve(root, "node_modules/vitest/vitest.mjs");
     run(process.execPath, [vitestCli, "run", "--config", "scripts/integrity-suite.acceptance.vitest.config.ts"], { ...env, DATABASE_URL: databaseUrl });
   } finally {
@@ -194,4 +704,9 @@ export function runIntegritySuiteAcceptanceRehearsal() {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) runIntegritySuiteAcceptanceRehearsal();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  void runIntegritySuiteAcceptanceRehearsal().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}

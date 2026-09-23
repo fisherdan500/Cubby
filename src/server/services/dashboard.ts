@@ -148,18 +148,42 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
       include: activityInclude,
       orderBy: { occurredAt: "desc" }
     }),
-    // Sleep is measured by how much of it falls inside the day, so the night before has to be in
-    // hand too: a sleep that began yesterday evening owns most of this morning. The window reaches
-    // back far enough to catch any sleep still running into the day.
+    // Sleep is selected by true interval overlap, not by a fixed lookback. A long sleep can begin
+    // arbitrarily before this day and still contribute to it.
     prisma.activityLog.findMany({
       where: {
         householdId: home.householdId,
         babyId: baby.id,
         deletedAt: null,
         type: ActivityType.sleep,
-        occurredAt: { gte: new Date(selectedDate.start.getTime() - SLEEP_LOOKBACK_MS), lt: selectedDate.end }
+        OR: [
+          { startedAt: { not: null, lt: selectedDate.end }, endedAt: null },
+          { startedAt: { not: null, lt: selectedDate.end }, endedAt: { gt: selectedDate.start } },
+          {
+            startedAt: null,
+            occurredAt: { lt: selectedDate.end },
+            OR: [
+              { endedAt: { gt: selectedDate.start } },
+              { endedAt: null, durationSeconds: { not: null } }
+            ]
+          }
+        ]
       },
-      select: { occurredAt: true, startedAt: true, endedAt: true, durationSeconds: true, timerState: true, pausedAt: true }
+      select: {
+        occurredAt: true,
+        startedAt: true,
+        endedAt: true,
+        durationSeconds: true,
+        timerState: true,
+        pausedAt: true,
+        pausedSeconds: true,
+        pauseTrackingStartedAt: true,
+        pauseTrackingBaselineSeconds: true,
+        pauseIntervals: {
+          select: { startedAt: true, endedAt: true },
+          orderBy: { startedAt: "asc" }
+        }
+      }
     })
   ]);
 
@@ -472,12 +496,6 @@ function formatDashboardDateLabel(key: string, timezone: string) {
 
 type DashboardActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
-/**
- * A sleep can only reach into a day from so far back. Two days covers any plausible overnight and
- * keeps the lookback query small.
- */
-export const SLEEP_LOOKBACK_MS = 2 * 24 * 60 * 60 * 1_000;
-
 export type DashboardDayWindow = { start: Date; end: Date };
 
 export function buildDashboardAggregates(
@@ -507,7 +525,7 @@ export function summarizeDay(
     sleep: {
       count: 0,
       seconds: 0
-    },
+    } as { count: number; seconds: number | null; unavailableReason?: "legacy_pause_allocation" | "duration_position_unknown" },
     /**
      * The part of the day that has happened, less the sleep in it. `seconds` is 0 and `known` false
      * when the caller did not supply the day's window, so a summary built without one simply does
@@ -516,7 +534,7 @@ export function summarizeDay(
     awake: {
       seconds: 0,
       known: false
-    },
+    } as { seconds: number | null; known: boolean; unavailableReason?: "legacy_pause_allocation" | "duration_position_unknown" },
     feeding: {
       count: 0,
       amount: 0 as number | null,
@@ -558,7 +576,7 @@ export function summarizeDay(
   for (const activity of activities) {
     if (activity.type === ActivityType.sleep) {
       summary.sleep.count += 1;
-      summary.sleep.seconds += activity.durationSeconds ?? 0;
+      summary.sleep.seconds = (summary.sleep.seconds ?? 0) + (activity.durationSeconds ?? 0);
     }
 
     if (activity.type === ActivityType.feeding) {
@@ -604,8 +622,15 @@ export function summarizeDay(
     const slept = daySleepSeconds(day.sleeps, day.window.start, day.window.end, now);
     summary.sleep.count = slept.count;
     summary.sleep.seconds = slept.seconds;
-    summary.awake.seconds = dayAwakeSeconds(day.window.start, day.window.end, now, slept.seconds);
-    summary.awake.known = dayElapsedSeconds(day.window.start, day.window.end, now) > 0;
+    if (slept.seconds === null) {
+      summary.sleep.unavailableReason = slept.unavailableReason;
+      summary.awake.seconds = null;
+      summary.awake.known = false;
+      summary.awake.unavailableReason = slept.unavailableReason;
+    } else {
+      summary.awake.seconds = dayAwakeSeconds(day.window.start, day.window.end, now, slept.seconds);
+      summary.awake.known = dayElapsedSeconds(day.window.start, day.window.end, now) > 0;
+    }
   }
 
   summary.feeding.amount = sumVolume(feedingVolumes, preferences.volume).amount;

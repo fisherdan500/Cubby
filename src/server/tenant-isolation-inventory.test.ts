@@ -77,6 +77,7 @@ describe("tenant-isolation inventory", () => {
     expect(tenantIsolationInventory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ model: "MedicineLog", ownership: "multi_parent" }),
+        expect.objectContaining({ model: "ActivityTimerPauseInterval", ownership: "inherited", disposition: "inherited_parent" }),
         expect.objectContaining({ model: "CalendarEventBaby", ownership: "direct", disposition: "constraint_slice" }),
         expect.objectContaining({ model: "CalendarEventContact", ownership: "direct", disposition: "constraint_slice" }),
         expect.objectContaining({ model: "VaccineDocument", ownership: "inherited" }),

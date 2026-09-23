@@ -270,10 +270,10 @@ function DailySummary({
     label: string;
   };
   const candidates: Array<SummaryItemData | null> = [
-    summary.sleep.count || summary.sleep.seconds
+    summary.sleep.count || summary.sleep.seconds || summary.sleep.unavailableReason
       ? {
           key: "sleep",
-          value: formatDuration(summary.sleep.seconds) || "0 min",
+          value: summary.sleep.seconds === null ? "Unavailable" : formatDuration(summary.sleep.seconds) || "0 min",
           label: "Total Sleep"
         }
       : null,
@@ -346,7 +346,7 @@ function DailySummary({
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">Daily Summary</h2>
-      {items.length || summary.awake.known ? (
+      {items.length || summary.awake.known || summary.awake.unavailableReason ? (
         // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
         // pushed the day's log below the first screen on a phone.
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
@@ -354,8 +354,10 @@ function DailySummary({
               day, so they read as a pair before the counts of individual activities. It is not a
               link - it is the rest of the day rather than a kind of activity, so there is nothing to
               filter the log down to. */}
-          {summary.awake.known ? (
-            <AwakeSummaryItem value={formatDuration(summary.awake.seconds) || "0 min"} />
+          {summary.awake.known || summary.awake.unavailableReason ? (
+            <AwakeSummaryItem
+              value={summary.awake.seconds === null ? "Unavailable" : formatDuration(summary.awake.seconds) || "0 min"}
+            />
           ) : null}
           {items.map((item) => (
             <SummaryItem
@@ -371,6 +373,9 @@ function DailySummary({
       ) : (
         <p className="text-sm text-muted-foreground">No summary activity for this date.</p>
       )}
+      {summary.sleep.unavailableReason === "legacy_pause_allocation" ? (
+        <p className="text-xs text-muted-foreground">Older pause timing is not precise enough for this day.</p>
+      ) : null}
     </section>
   );
 }

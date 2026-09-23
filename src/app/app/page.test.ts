@@ -113,6 +113,17 @@ describe("daily summary chips", () => {
     expect(chipLabels(body)[0]).toBe("Total Sleep");
   });
 
+  it("marks legacy pause-affected sleep and awake totals unavailable instead of guessing", async () => {
+    const body = await renderDashboard({
+      sleep: { count: 1, seconds: null, unavailableReason: "legacy_pause_allocation" },
+      awake: { seconds: null, known: false, unavailableReason: "legacy_pause_allocation" }
+    });
+
+    expect(chipLabels(body).slice(0, 2)).toEqual(["Awake Time", "Total Sleep"]);
+    expect([...body.querySelectorAll("p")].filter((node) => node.textContent === "Unavailable")).toHaveLength(2);
+    expect(body.textContent).toContain("Older pause timing is not precise enough for this day");
+  });
+
   it("keeps the awake chip out of the log filters", async () => {
     const body = await renderDashboard();
     const links = [...body.querySelectorAll("a")].map((node) => node.getAttribute("href") ?? "");

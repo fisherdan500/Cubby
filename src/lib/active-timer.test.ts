@@ -33,6 +33,15 @@ describe("active timer elapsed", () => {
     expect(activeTimerElapsedSeconds(timer, now)).toBe(Math.max(0, wallSeconds - 900));
   });
 
+  it("matches canonical stop rounding at fractional absolute-second boundaries", () => {
+    expect(activeTimerElapsedSeconds({
+      timerState: "running",
+      startedAt: "1970-01-01T00:00:00.600Z",
+      pausedAt: null,
+      pausedSeconds: 0
+    }, Date.parse("1970-01-01T00:00:10.400Z"))).toBe(9);
+  });
+
   it("never reports negative time from a clock skew or an overlong pause", () => {
     expect(activeTimerElapsedSeconds({ timerState: "running", startedAt, pausedAt: null, pausedSeconds: 99_999 }, now))
       .toBe(0);

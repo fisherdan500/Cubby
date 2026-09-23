@@ -51,7 +51,7 @@ export const semantic = [
       "service_operation_linkage": {
         "current": {
           "authority": "source_reviewed",
-          "value": "Current exposure directly invokes the linked source-reviewed service operation.",
+          "value": "The route selects the direct resume service for mutation-receipt requests and the governed browser-submit timer operation for browser-operation requests.",
           "sourceReferences": [
             {
               "kind": "symbol",

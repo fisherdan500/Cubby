@@ -8,7 +8,10 @@ const mocks = vi.hoisted(() => ({
   issueHousehold: vi.fn(),
   executeBrowser: vi.fn(),
   executeHousehold: vi.fn(),
-  auditFindFirst: vi.fn()
+  auditFindFirst: vi.fn(),
+  writeAudit: vi.fn(),
+  pauseIntervalCreate: vi.fn(),
+  pauseIntervalCloseQuery: vi.fn()
 }));
 
 vi.mock("@/server/services/browser-operations", () => ({
@@ -20,13 +23,15 @@ vi.mock("@/server/services/browser-operations", () => ({
   executeHouseholdBrowserOperation: mocks.executeHousehold
 }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: { auditEvent: { findFirst: mocks.auditFindFirst } } }));
+vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
 import {
   issueActivityCreateBrowserOperation,
   issueActivityDeleteBrowserOperation,
   issueActivityTimerBrowserOperation,
   issueActivityUndoLastBrowserOperation,
-  issueActivityUpdateBrowserOperation
+  issueActivityUpdateBrowserOperation,
+  submitActivityTimerBrowserOperation
 } from "./activities";
 
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
@@ -39,6 +44,8 @@ beforeEach(() => {
   mocks.issueBrowser.mockResolvedValue({ status: "open", operationId, bindingId: "binding-1" });
   mocks.issueHousehold.mockResolvedValue({ status: "open", operationId, bindingId: "binding-1" });
   mocks.auditFindFirst.mockResolvedValue({ id: "audit-1", entityId: "activity-1" });
+  mocks.pauseIntervalCreate.mockResolvedValue({ id: "pause-1" });
+  mocks.pauseIntervalCloseQuery.mockResolvedValue([{ closeActivityTimerPauseInterval: null }]);
 });
 
 describe("activity browser-v2 opening bindings", () => {
@@ -98,3 +105,114 @@ describe("activity browser-v2 opening bindings", () => {
     expect(mocks.issueHousehold).toHaveBeenCalledWith(expect.objectContaining({ ctx, operationId, operationKey }));
   });
 });
+
+describe("activity browser-v2 timer writes", () => {
+  it("records an exact pause interval through the browser operation path", async () => {
+    const pausedAt = new Date("2026-08-17T12:30:00.000Z");
+    const before = timerActivity("running");
+    const tx = timerTransaction(before);
+    vi.useFakeTimers();
+    vi.setSystemTime(pausedAt);
+    mocks.executeHousehold.mockImplementation((contract) =>
+      contract.execute(tx, ctx, { targetSnapshot: timerSnapshot(before) })
+    );
+
+    try {
+      await submitActivityTimerBrowserOperation("pause", { operationId, activityId: "activity-1" });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(mocks.pauseIntervalCreate).toHaveBeenCalledWith({
+      data: { activityId: "activity-1", startedAt: pausedAt }
+    });
+  });
+
+  it.each(["resume", "stop"] as const)("closes the open pause interval when the browser path performs %s", async (operation) => {
+    const endedAt = new Date("2026-08-17T12:45:00.000Z");
+    const before = timerActivity("paused");
+    const tx = timerTransaction(before);
+    vi.useFakeTimers();
+    vi.setSystemTime(endedAt);
+    mocks.executeHousehold.mockImplementation((contract) =>
+      contract.execute(tx, ctx, { targetSnapshot: timerSnapshot(before) })
+    );
+
+    try {
+      await submitActivityTimerBrowserOperation(operation, { operationId, activityId: "activity-1" });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(mocks.pauseIntervalCloseQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a browser stop when a running timer has an impossible open pause interval", async () => {
+    const before = timerActivity("running");
+    const tx = timerTransaction(before, 1);
+    mocks.executeHousehold.mockImplementation((contract) =>
+      contract.execute(tx, ctx, { targetSnapshot: timerSnapshot(before) })
+    );
+
+    await expect(
+      submitActivityTimerBrowserOperation("stop", { operationId, activityId: "activity-1" })
+    ).rejects.toThrow("pause_interval_state_invalid");
+  });
+});
+
+function timerActivity(timerState: "running" | "paused") {
+  return {
+    id: "activity-1",
+    householdId: "household-1",
+    babyId: "baby-1",
+    actorMemberId: "member-1",
+    type: "sleep",
+    timerState,
+    startedAt: new Date("2026-08-17T12:00:00.000Z"),
+    endedAt: null,
+    pausedAt: timerState === "paused" ? new Date("2026-08-17T12:15:00.000Z") : null,
+    pausedSeconds: 0,
+    updatedAt: new Date("2026-08-17T12:20:00.000Z"),
+    deletedAt: null
+  };
+}
+
+function timerSnapshot(activity: ReturnType<typeof timerActivity>) {
+  return {
+    activity: {
+      id: activity.id,
+      babyId: activity.babyId,
+      updatedAt: activity.updatedAt.toISOString(),
+      deletedAt: null,
+      timerState: activity.timerState,
+      actorMemberId: activity.actorMemberId
+    },
+    babies: []
+  };
+}
+
+function timerTransaction(activity: ReturnType<typeof timerActivity>, openPauseCount = 0) {
+  return {
+    $queryRaw: (...args: unknown[]) => String(args[0]).includes("closeActivityTimerPauseInterval")
+      ? mocks.pauseIntervalCloseQuery(...args)
+      : Promise.resolve([{ id: "locked" }]),
+    activityLog: {
+      findFirst: vi.fn().mockResolvedValue(activity),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findUniqueOrThrow: vi.fn().mockResolvedValue(activity)
+    },
+    baby: {
+      findFirst: vi.fn().mockResolvedValue({
+        id: "baby-1",
+        updatedAt: new Date("2026-08-17T12:00:00.000Z"),
+        inactiveAt: null
+      })
+    },
+    activityTimerPauseInterval: {
+      create: mocks.pauseIntervalCreate,
+      count: vi.fn().mockResolvedValue(openPauseCount)
+    },
+    webhookEndpoint: { findMany: vi.fn().mockResolvedValue([]) },
+    notificationPreference: { findMany: vi.fn().mockResolvedValue([]) }
+  };
+}

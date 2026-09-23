@@ -730,6 +730,8 @@ model ActivityLog {
   timerState        TimerState      @default(none)
   pausedAt          DateTime?
   pausedSeconds     Int             @default(0)
+  pauseTrackingStartedAt DateTime?
+  pauseTrackingBaselineSeconds Int?
   clientMutationId  String?
   clientMutationFingerprint String?
   deletedAt         DateTime?
@@ -755,6 +757,7 @@ model ActivityLog {
   milkInventory     MilkInventoryLog?
   webhookDeliveries WebhookDelivery[]
   notificationLogs  NotificationLog[]
+  pauseIntervals    ActivityTimerPauseInterval[]
 
   @@index([householdId])
   @@index([babyId])
@@ -764,6 +767,17 @@ model ActivityLog {
   @@index([deletedAt])
   @@index([householdId, babyId, type, occurredAt])
   @@unique([householdId, clientMutationId])
+}
+
+model ActivityTimerPauseInterval {
+  id         String      @id @default(cuid())
+  activityId String
+  startedAt  DateTime
+  endedAt    DateTime?
+  createdAt  DateTime    @default(now())
+  activity   ActivityLog @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId, startedAt])
 }
 
 model MutationReceipt {

@@ -41,10 +41,19 @@ describe("existing-volume migrator bootstrap", () => {
       "P1_3_MIGRATOR_BOOTSTRAP_ACCEPTANCE_PASS",
       "P1_3_MIGRATOR_BOOTSTRAP_ACCEPTANCE_CLEANUP_PASS"
     ]) expect(harness).toContain(marker);
-    expect(harness).toContain("20260829210000_global_security_phase8_review_remediation");
+    expect(harness).toContain("targetMigrationNames = migrationNames.slice(firstTargetIndex)");
     expect(harness).toContain("bootstrap-existing-migrator-role.sql");
     expect(harness).toContain("PGOPTIONS");
     expect(harness).toContain("CUBBY_MIGRATOR_DB_PASSWORD");
     expect(harness).toContain('"down", "--volumes", "--remove-orphans"');
+    expect(harness).toContain("expectedMigrationCount");
+    expect(harness).toContain("expectedBaselineCount");
+    expect(harness).toContain("firstTargetMigration");
+    expect(harness).toContain("slice(firstTargetIndex)");
+    expect(harness).toContain("has_function_privilege");
+    expect(harness).toContain('has_table_privilege(\'cubby_runtime\', \'"ActivityTimerPauseInterval"\', \'UPDATE\')');
+    expect(harness).not.toContain('!== "41"');
+    expect(harness).toContain("readdirSync");
+    expect(harness).not.toContain('result !== "47|0|4|0|0|1|1|1"');
   });
 });

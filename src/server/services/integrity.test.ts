@@ -231,9 +231,25 @@ describe("read-only integrity suite", () => {
     expect(executed).toEqual(["SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"]);
     expect(queries).toHaveLength(9);
     expect(queries.join("\n")).toContain('"ActivityLog"');
+    expect(queries.join("\n")).toContain('"ActivityTimerPauseInterval"');
     expect(queries.join("\n")).toContain('"AuditEvent"');
     expect(queries.join("\n")).toContain('"BackupRecord"');
     expect(queries.join("\n")).toContain('"CalendarEventBaby"');
+  });
+
+  it("detects parent-state, envelope, overlap, and aggregate pause contradictions", async () => {
+    const fake = fakeIntegrityDatabase([[], []], [], [{ includes: '"ActivityTimerPauseInterval"', count: 4 }]);
+
+    const report = await runDatabaseIntegritySuite(fake.database);
+
+    expect(report.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "timer_state_consistency", severity: "error", count: 4 })
+    ]));
+    const timerQuery = fake.queries.find((query) => query.includes('"ActivityTimerPauseInterval"'))!;
+    expect(timerQuery).toMatch(/open_count/);
+    expect(timerQuery).toMatch(/pause\."startedAt"\s*<\s*activity\."startedAt"/i);
+    expect(timerQuery).toMatch(/tsrange\([\s\S]*?&&[\s\S]*?tsrange\(/i);
+    expect(timerQuery).toMatch(/closed_pause_seconds[\s\S]*?"pausedSeconds"/i);
   });
 
   it("reports an activity whose detail row does not match its own type", async () => {
