@@ -20,6 +20,71 @@ describe("report volume statistics", () => {
   });
 });
 
+describe("report sleep statistics", () => {
+  const hour = 60 * 60;
+
+  it("excludes a running sleep from the completed-sleep average without changing sibling counts", () => {
+    const stats = buildReportStats([
+      sleepLog("stopped", hour, "night"),
+      sleepLog("running", null, "nap")
+    ], null, timeZone, defaultUnitPreferences);
+
+    expect(stats.byType.sleep).toBe(2);
+    expect(stats.sleep).toEqual({ total: "1h", average: "1h", naps: 1, night: "1h" });
+  });
+
+  it("excludes a paused sleep from the completed-sleep average", () => {
+    const stats = buildReportStats([
+      sleepLog("stopped", 2 * hour),
+      sleepLog("paused", null)
+    ], null, timeZone, defaultUnitPreferences);
+
+    expect(stats.sleep).toMatchObject({ total: "2h", average: "2h" });
+  });
+
+  it("excludes a manual sleep with no recorded duration, which is not a running timer", () => {
+    const stats = buildReportStats([
+      sleepLog("none", hour),
+      sleepLog("none", 3 * hour),
+      sleepLog("none", null)
+    ], null, timeZone, defaultUnitPreferences);
+
+    expect(stats.byType.sleep).toBe(3);
+    expect(stats.sleep).toMatchObject({ total: "4h", average: "2h" });
+  });
+
+  it("averages several completed sleeps alongside an incomplete one", () => {
+    const stats = buildReportStats([
+      sleepLog("stopped", hour),
+      sleepLog("none", 3 * hour),
+      sleepLog("stopped", 2 * hour),
+      sleepLog("running", null)
+    ], null, timeZone, defaultUnitPreferences);
+
+    expect(stats.sleep).toMatchObject({ total: "6h", average: "2h" });
+  });
+
+  it("counts a completed zero-length sleep as a completed log", () => {
+    const stats = buildReportStats([
+      sleepLog("stopped", 0),
+      sleepLog("stopped", 2 * hour)
+    ], null, timeZone, defaultUnitPreferences);
+
+    expect(stats.sleep).toMatchObject({ total: "2h", average: "1h" });
+  });
+
+  it("reports no average when every sleep is still incomplete", () => {
+    const stats = buildReportStats([
+      sleepLog("running", null),
+      sleepLog("paused", null),
+      sleepLog("none", null)
+    ], null, timeZone, defaultUnitPreferences);
+
+    expect(stats.byType.sleep).toBe(3);
+    expect(stats.sleep).toMatchObject({ total: "0 min", average: "0 min" });
+  });
+});
+
 describe("report growth statistics", () => {
   it("normalizes mixed growth units into the household preferences", () => {
     const stats = buildReportStats(
@@ -291,6 +356,14 @@ function activity(type: ActivityType, localDateTime: string, durationSeconds: nu
     occurredAt: zonedDateTimeToDate(localDateTime, timeZone),
     durationSeconds
   };
+}
+
+function sleepLog(
+  timerState: "none" | "running" | "paused" | "stopped",
+  durationSeconds: number | null,
+  sleepType: "nap" | "night" = "nap"
+) {
+  return statsActivity(ActivityType.sleep, { timerState, durationSeconds, sleep: { sleepType } });
 }
 
 function statsActivity(
