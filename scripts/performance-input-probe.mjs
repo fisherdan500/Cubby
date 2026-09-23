@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { readFile } from "node:fs/promises";
+import { populatedDashboardPath, populatedDateKey, requirePopulatedPage } from "./performance-probe-pages.mjs";
 
 // Measures DEC-PROD-225's remaining budget: 100 ms p95 for "visible accessible input acknowledgement".
 // The server-outcome budgets are covered by performance-budgets-probe.mjs over HTTP; this one needs a
@@ -24,6 +25,7 @@ if (!existsSync(chromePath)) throw new Error("performance_input_probe_chrome_mis
 const handoff = JSON.parse(await readFile(handoffFile, "utf8"));
 const [firstBaby] = handoff.babyIds ?? [];
 if (!firstBaby) throw new Error("performance_input_probe_handoff_invalid");
+const datasetDay = populatedDateKey(handoff);
 
 const warmups = 3;
 const samples = 15;
@@ -178,11 +180,12 @@ try {
     return Math.round(sorted[index] * 10) / 10;
   }
 
-  async function measure(id, path, selector) {
+  async function measure(id, path, selector, populatedMinimum = 0) {
     const durations = [];
     for (let index = 0; index < warmups + samples; index += 1) {
       // Each sample starts from a fresh load so every press meets the same state.
       await navigate(path);
+      if (populatedMinimum) requirePopulatedPage(path, await evaluate(client, "document.documentElement.outerHTML"), populatedMinimum);
       const value = await acknowledgement(selector, id);
       if (index >= warmups) durations.push(value);
     }
@@ -206,14 +209,15 @@ try {
     await measure("activity_form_choice_chip", `/app/log/feeding?babyId=${firstBaby}`, '[role="radio"][aria-checked="false"]'),
     // The amount stepper: the number in the field changes.
     await measure("activity_form_amount_step", `/app/log/feeding?babyId=${firstBaby}`, 'button[aria-label^="Increase amount"]'),
-    // The dashboard's "More activities" disclosure opens.
-    await measure("dashboard_more_activities", `/app?babyId=${firstBaby}`, "details > summary")
+    // The dashboard's "More activities" disclosure opens, on a day that carries the seeded history.
+    await measure("dashboard_more_activities", populatedDashboardPath(firstBaby, datasetDay), "details > summary", 10)
   ];
 
   const evidence = {
     schemaVersion: 1,
     datasetYears: handoff.years,
     datasetCounts: handoff.counts,
+    datasetDay,
     measurement: "input_pointerdown_to_next_frame_after_acknowledging_change",
     viewport: "390x844 mobile, deviceScaleFactor 2",
     headless: true,

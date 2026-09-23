@@ -21,8 +21,9 @@ const marker = {
   householdName: "Performance Rehearsal Nursery"
 };
 
-// The dataset's last day is fixed, and the household zone is Etc/UTC in the rehearsal compose file, so
-// "today" on the dashboard always lands on a fully populated day.
+// The dataset's last day is fixed so timings never depend on the wall clock. It is not "today": the
+// probes read it back from the handoff and pin every dated page to it (the household zone is Etc/UTC in
+// the rehearsal compose file, so this UTC day is the household's day).
 const endDate = new Date("2026-09-19T00:00:00.000Z");
 const chunkSize = 2_000;
 
