@@ -42,16 +42,41 @@ also deferred until a concrete household use case exists.
 
 ## Docker Quick Start
 
-1. Copy `.env.example` to `.env`.
-2. Set a long random `BETTER_AUTH_SECRET`.
-3. Review `BETTER_AUTH_URL`, `TRUSTED_ORIGINS`, and `APP_PORT`. Add `APP_TIMEZONE` if you need a timezone other than the compose default.
-4. Start the stack:
+The supported server is current Ubuntu or Debian on x86_64 with Docker Engine and the
+Compose plugin installed. TLS and any reverse proxy are yours to run in front of Cubby.
+
+1. Clone this repository onto the server and change into it.
+2. Generate the configuration, giving the address people will open Cubby at:
 
 ```bash
-docker compose up --build
+sudo sh scripts/quick-start.sh --url https://cubby.example.com
 ```
 
-5. Open `http://localhost:3000`, or the port configured with `APP_PORT`.
+   It writes a complete `.env` with a fresh value for every secret, writes the
+   Sprout staging key to `docker-data/secrets/`, and creates `docker-data/backups`
+   and `docker-data/sprout-staging` owned by the container's user (uid 1000). It
+   never overwrites an existing `.env` and prints no secret. `sudo` is needed only
+   to hand those directories to uid 1000; if your own account is uid 1000 it is not
+   needed. Other options: `--port` (the host port; default the URL's own port, 80 for a plain `http://`
+   address, or 3000 behind an `https://` proxy),
+   `--timezone` (default `America/New_York`), and `--trusted-proxy-hops 1` when every
+   request arrives through one reverse proxy that sets `X-Forwarded-For`. Keep `.env`
+   and `docker-data/` private and back them up together.
+3. Start the stack:
+
+```bash
+docker compose up --build -d
+```
+
+4. Open exactly the address you gave to `--url` (sign-in accepts only that origin),
+   and finish setup at `/setup` as described below. Run the script with `sudo` from
+   your own account rather than as root: that is how it knows to leave `.env` readable
+   by the account that runs `docker compose`.
+
+To configure by hand instead, copy `.env.example` to `.env`: it lists every key
+`scripts/quick-start.sh` writes, each with the format it needs.
+`npm run verify:quick-start` rehearses this whole path on a Linux Docker host with
+empty volumes.
 
 ### First-time setup: claim platform ownership
 

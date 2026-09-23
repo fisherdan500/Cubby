@@ -12,7 +12,11 @@ and troubleshooting.
 
 ## Environment
 
-Start from `.env.example`:
+On a Linux server, `sh scripts/quick-start.sh --url <address>` writes a complete
+`.env` with every secret generated, the Sprout staging key, and data directories
+owned by the container's user; see the README's Docker Quick Start. It refuses to
+overwrite an existing `.env`. To configure by hand, start from `.env.example`, which
+lists every key it writes:
 
 ```bash
 cp .env.example .env

@@ -7,3 +7,8 @@
 # checkout with core.autocrlf=true was silently converting it to CRLF, which
 # would otherwise turn any edit into a whole-file diff.
 src/server/operation-registry/operation-registry.test.mjs text eol=lf
+
+# Shell scripts run under sh, which reads a CRLF line as a command ending in a stray carriage
+# return. A Windows checkout would otherwise break scripts/quick-start.sh, and the entrypoint only
+# survives it because the Dockerfile strips the carriage returns.
+*.sh text eol=lf
