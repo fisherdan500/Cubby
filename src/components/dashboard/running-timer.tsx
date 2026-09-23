@@ -32,23 +32,25 @@ function elapsedProps(timer: RunningTimerIndicator) {
   };
 }
 
-function activityHref(timer: RunningTimerIndicator) {
-  return `/app/activities/${timer.id}?returnTo=${encodeURIComponent("/app")}`;
+function activityHref(timer: RunningTimerIndicator, returnTo: string) {
+  return `/app/activities/${timer.id}?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 /** Replaces the quick-action tile for its type, at exactly the same height. */
 export function RunningTimerTile({
   timer,
   label,
-  nowMs
+  nowMs,
+  returnTo
 }: {
   timer: RunningTimerIndicator;
   label: string;
   nowMs: number;
+  returnTo: string;
 }) {
   return (
     <Link
-      href={activityHref(timer)}
+      href={activityHref(timer, returnTo)}
       className="flex flex-col items-center gap-1 rounded-lg bg-live/10 px-1 py-2 text-center shadow-soft transition hover:bg-live/16"
     >
       <ActivityArtwork type={timer.type as ActivityTypeName} size="lg" />
@@ -62,11 +64,11 @@ export function RunningTimerTile({
 }
 
 /** For a timer with no tile of its own: another type, or a second timer of a type that has one. */
-export function RunningTimerRow({ timer, nowMs }: { timer: RunningTimerIndicator; nowMs: number }) {
+export function RunningTimerRow({ timer, nowMs, returnTo }: { timer: RunningTimerIndicator; nowMs: number; returnTo: string }) {
   const type = timer.type as ActivityTypeName;
   return (
     <Link
-      href={activityHref(timer)}
+      href={activityHref(timer, returnTo)}
       className="flex min-h-11 items-center gap-2 rounded-lg bg-live/10 p-2 transition hover:bg-live/16"
     >
       <TimerDot paused={timer.timerState === "paused"} />

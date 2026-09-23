@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activityBackLabel,
+  canonicalTimerReturnTo,
   activityDetailHref,
   activityEditHref,
   activityFallbackHref,
@@ -88,5 +89,29 @@ describe("activityFallbackHref", () => {
         timeZone: "America/New_York"
       })
     ).toBe("/app?babyId=baby-1&date=2026-07-13");
+  });
+});
+
+describe("canonicalTimerReturnTo", () => {
+  it("preserves a non-activity application route with its query", () => {
+    expect(canonicalTimerReturnTo("/app/calendar?babyId=baby-1&date=2026-09-22"))
+      .toBe("/app/calendar?babyId=baby-1&date=2026-09-22");
+  });
+
+  it("unwraps one validated outer source from an activity or edit route", () => {
+    expect(canonicalTimerReturnTo("/app/activities/a?returnTo=%2Fapp%2Fhistory%3FbabyId%3Dbaby-1"))
+      .toBe("/app/history?babyId=baby-1");
+    expect(canonicalTimerReturnTo("/app/activities/a/edit?returnTo=%2Fapp%2Fcalendar%3FbabyId%3Dbaby-1"))
+      .toBe("/app/calendar?babyId=baby-1");
+  });
+
+  it.each([
+    "/app/activities/a",
+    "/app/activities/a?returnTo=",
+    "/app/activities/a?returnTo=%2Fapp&returnTo=%2Fapp%2Fhistory",
+    "/app/activities/a?returnTo=https%3A%2F%2Fexample.com%2Fapp",
+    "/app/activities/a?returnTo=%2Fapp%2Factivities%2Fb"
+  ])("falls back safely for an invalid activity source: %s", (href) => {
+    expect(canonicalTimerReturnTo(href)).toBe("/app");
   });
 });

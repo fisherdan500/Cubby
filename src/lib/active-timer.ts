@@ -13,6 +13,26 @@ export type ActiveTimerLike = {
   pausedSeconds: number;
 };
 
+export const ACTIVE_TIMERS_CHANGED_EVENT = "cubby:active-timers-changed";
+
+type ActiveTimerIdentity = { id: string; babyId: string; type: string };
+
+export function activeTimerActionLabel(
+  action: "Pause" | "Resume" | "Stop",
+  babyName: string,
+  typeLabel: string,
+  timer: ActiveTimerIdentity,
+  timers: ActiveTimerIdentity[]
+) {
+  const matchingTimers = timers.filter((candidate) =>
+    candidate.babyId === timer.babyId && candidate.type === timer.type
+  );
+  const base = `${action} ${babyName}'s ${typeLabel.toLowerCase()} timer`;
+  if (matchingTimers.length < 2) return base;
+  const position = matchingTimers.findIndex((candidate) => candidate.id === timer.id);
+  return position < 0 ? base : `${base} ${position + 1} of ${matchingTimers.length}`;
+}
+
 export function activeTimerElapsedSeconds(timer: ActiveTimerLike, now: number) {
   if (!timer.startedAt) return 0;
   const startedAt = Date.parse(timer.startedAt);

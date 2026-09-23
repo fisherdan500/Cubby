@@ -44,7 +44,7 @@ export default async function ActivityDetailPage({
   const nowMs = Date.now();
 
   return (
-    <AppShell title={activityLabels[type]} userName={user.name}>
+    <AppShell title={activityLabels[type]} userName={user.name} timerBabyId={activity.babyId}>
       {/* Bottom padding keeps the last card clear of the fixed action bar below. */}
       <article className="mx-auto max-w-3xl space-y-4 pb-[calc(5rem+var(--active-timer-bar,0rem))]">
         <Card className="space-y-5 p-5 sm:p-6">

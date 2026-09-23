@@ -9171,10 +9171,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f84e02ec28de7833f75fb903a350f1b0963da1c8337bf3d6aae3a06d1730441c",
-          "anchorEnd": 705,
+          "anchorDigest": "e99cea47fe265c8f9c6f196a4984405e21b1e66df390b9ce1e9edf8bae9e942a",
+          "anchorEnd": 889,
           "anchorFile": "src/app/api/timers/active/route.ts",
-          "anchorStart": 448,
+          "anchorStart": 454,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/timers/active/route.ts#GET"
@@ -9505,27 +9505,27 @@
       "bindings": [
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 573,
+          "anchorEnd": 632,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 547,
+          "anchorStart": 606,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 498,
+          "anchorEnd": 557,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 482,
+          "anchorStart": 541,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 440,
+          "anchorEnd": 499,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 425,
+          "anchorStart": 484,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9542,27 +9542,27 @@
       "bindings": [
         {
           "anchorDigest": "4267b57ae68faa4b86114317e694a3bd75ae4be93a5a46453ed60858fa025201",
-          "anchorEnd": 619,
+          "anchorEnd": 680,
           "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 607,
+          "anchorStart": 668,
           "kind": "server_value_import",
           "symbol": "getDashboard",
           "target": "src/server/services/dashboard.ts#getDashboard"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 555,
+          "anchorEnd": 616,
           "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 534,
+          "anchorStart": 595,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 492,
+          "anchorEnd": 553,
           "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 477,
+          "anchorStart": 538,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10230,36 +10230,36 @@
       "bindings": [
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 765,
+          "anchorEnd": 831,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 700,
+          "anchorStart": 766,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
-          "anchorEnd": 3434,
+          "anchorEnd": 3796,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 3364,
+          "anchorStart": 3726,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
-          "anchorEnd": 4689,
+          "anchorEnd": 5051,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4548,
+          "anchorStart": 4910,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
-          "anchorEnd": 5396,
+          "anchorEnd": 5758,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 5243,
+          "anchorStart": 5605,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -10367,10 +10367,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "0885aae77e9712fd60e320dd0ae4ae42ad3f35fc66733685cdc71745928d0f9c",
-          "anchorEnd": 1889,
+          "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
+          "anchorEnd": 2489,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 1839,
+          "anchorStart": 2451,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -12767,7 +12767,7 @@
     }
   ],
   "observationCount": 196,
-  "observationDigest": "64ddd6bfc50b2a59272f3271f03f247e98fc18d7b635509948bd410abadf63df",
+  "observationDigest": "f588822b084fed0b47a31fa70ab13c82fb89b233c9deb34e71ba1f89970d0f42",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14745,9 +14745,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 705,
+          "anchorEnd": 889,
           "anchorFile": "src/app/api/timers/active/route.ts",
-          "anchorStart": 448,
+          "anchorStart": 454,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/active/route.ts",
           "symbol": "GET",
@@ -15069,27 +15069,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 573,
+          "anchorEnd": 632,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 547,
+          "anchorStart": 606,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 498,
+          "anchorEnd": 557,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 482,
+          "anchorStart": 541,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 440,
+          "anchorEnd": 499,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 425,
+          "anchorStart": 484,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "requireUserPage",
@@ -15105,27 +15105,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 619,
+          "anchorEnd": 680,
           "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 607,
+          "anchorStart": 668,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/nursery/page.tsx",
           "symbol": "getDashboard",
           "target": "src/server/services/dashboard.ts#getDashboard"
         },
         {
-          "anchorEnd": 555,
+          "anchorEnd": 616,
           "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 534,
+          "anchorStart": 595,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/nursery/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 492,
+          "anchorEnd": 553,
           "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 477,
+          "anchorStart": 538,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/nursery/page.tsx",
           "symbol": "requireUserPage",
@@ -15771,36 +15771,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 765,
+          "anchorEnd": 831,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 700,
+          "anchorStart": 766,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3434,
+          "anchorEnd": 3796,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 3364,
+          "anchorStart": 3726,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4689,
+          "anchorEnd": 5051,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4548,
+          "anchorStart": 4910,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5396,
+          "anchorEnd": 5758,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 5243,
+          "anchorStart": 5605,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[4]",
@@ -15906,9 +15906,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1889,
+          "anchorEnd": 2489,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 1839,
+          "anchorStart": 2451,
           "kind": "global_fetch",
           "ownerModule": "src/components/active-timer-bar.tsx",
           "symbol": "fetch[1]",
@@ -19334,7 +19334,7 @@
   ],
   "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "351a5aa1d42e164439d27b912e6aa0c6fafdd38aae495445397575331bf362ed",
+  "registryDigest": "3a375dd9fdfbc5227f6d2326538181ae59fa86b53015de20323ed674f1919645",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

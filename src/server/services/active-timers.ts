@@ -28,13 +28,24 @@ export async function getActiveTimersForShell(babyId?: string): Promise<ActiveTi
     const home = await getHouseholdHome();
     if (!home) return [];
     const activeBabies = home.household.babies.filter((baby) => !baby.inactiveAt);
-    const baby = activeBabies.find((candidate) => candidate.id === babyId) ?? activeBabies[0];
-    if (!baby) return [];
+    const hasSelectedBaby = babyId !== undefined;
+    const selectedBaby = hasSelectedBaby ? activeBabies.find((candidate) => candidate.id === babyId) : undefined;
+    if (hasSelectedBaby && !selectedBaby) return [];
+    if (activeBabies.length === 0) return [];
+    const nameCounts = new Map<string, number>();
+    for (const baby of activeBabies) nameCounts.set(baby.name, (nameCounts.get(baby.name) ?? 0) + 1);
+    const namePositions = new Map<string, number>();
+    const babyNames = new Map(activeBabies.map((baby) => {
+      const count = nameCounts.get(baby.name) ?? 1;
+      const position = (namePositions.get(baby.name) ?? 0) + 1;
+      namePositions.set(baby.name, position);
+      return [baby.id, count > 1 ? `${baby.name} (baby ${position} of ${count})` : baby.name];
+    }));
 
     const timers = await prisma.activityLog.findMany({
       where: {
         householdId: home.householdId,
-        babyId: baby.id,
+        babyId: selectedBaby?.id ?? { in: activeBabies.map((baby) => baby.id) },
         deletedAt: null,
         timerState: { in: [TimerState.running, TimerState.paused] }
       },
@@ -43,16 +54,20 @@ export async function getActiveTimersForShell(babyId?: string): Promise<ActiveTi
       orderBy: [{ startedAt: "desc" }, { id: "asc" }]
     });
 
-    return timers.map((timer) => ({
-      id: timer.id,
-      type: timer.type,
-      babyId: timer.babyId,
-      babyName: baby.name,
-      timerState: timer.timerState,
-      startedAt: timer.startedAt?.toISOString() ?? null,
-      pausedAt: timer.pausedAt?.toISOString() ?? null,
-      pausedSeconds: timer.pausedSeconds
-    }));
+    return timers.flatMap((timer) => {
+      const babyName = babyNames.get(timer.babyId);
+      if (!babyName) return [];
+      return [{
+        id: timer.id,
+        type: timer.type,
+        babyId: timer.babyId,
+        babyName,
+        timerState: timer.timerState,
+        startedAt: timer.startedAt?.toISOString() ?? null,
+        pausedAt: timer.pausedAt?.toISOString() ?? null,
+        pausedSeconds: timer.pausedSeconds
+      }];
+    });
   } catch {
     return [];
   }

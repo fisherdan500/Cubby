@@ -68,7 +68,10 @@ export default async function DashboardPage({
         <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (
         <div className="space-y-5">
-          <DayStrip dashboard={currentDashboard} />
+          <DayStrip
+            dashboard={currentDashboard}
+            returnTo={dashboardReturnTo(baby.id, currentDashboard.selectedDate.key, selectedSummaryType)}
+          />
           {/* The day switcher sits with the summary and log it controls, below the actions, rather
               than above the quick-action tiles. */}
           <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
@@ -101,7 +104,7 @@ export default async function DashboardPage({
   );
 }
 
-function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
+function DayStrip({ dashboard, returnTo }: { dashboard: DashboardWithBaby; returnTo: string }) {
   // One render clock for every indicator, so they all start from the same instant and the client's
   // first render matches the server's.
   const nowMs = Date.now();
@@ -114,7 +117,7 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
           // an indicator only; stopping happens in the shell's timer bar or on the activity itself.
           const timer = dashboard.activeTimers.find((entry) => entry.type === type);
           return timer ? (
-            <RunningTimerTile key={type} timer={timer} label={quickActionLabel(type)} nowMs={nowMs} />
+            <RunningTimerTile key={type} timer={timer} label={quickActionLabel(type)} nowMs={nowMs} returnTo={returnTo} />
           ) : (
             <QuickActionLink key={type} type={type} dashboard={dashboard} priority="primary" />
           );
@@ -125,7 +128,7 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
           type that already has one. Without this a twin's feed, or a second nap, would be running
           with nothing on the screen to say so. */}
       {timersWithoutTile(dashboard.activeTimers, primaryQuickActionTypes).map((timer) => (
-        <RunningTimerRow key={timer.id} timer={timer} nowMs={nowMs} />
+        <RunningTimerRow key={timer.id} timer={timer} nowMs={nowMs} returnTo={returnTo} />
       ))}
 
       <details className="group sm:hidden">

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { StopTimerButton } from "@/components/actions/activity-actions";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { TimerDot, TimerElapsed } from "@/components/timer-elapsed";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { ACTIVE_TIMERS_CHANGED_EVENT, activeTimerActionLabel } from "@/lib/active-timer";
+import { canonicalTimerReturnTo } from "@/lib/activity-navigation";
 import type { ActiveTimerSummary } from "@/server/services/active-timers";
 
 /**
@@ -23,37 +25,48 @@ import type { ActiveTimerSummary } from "@/server/services/active-timers";
 
 const HIDDEN_ON = ["/app/nursery"];
 
-function timerHref(timer: ActiveTimerSummary, pathname: string) {
-  return `/app/activities/${timer.id}?returnTo=${encodeURIComponent(pathname)}`;
+function timerHref(timer: ActiveTimerSummary, returnTo: string) {
+  return `/app/activities/${timer.id}?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
-export function ActiveTimerBar() {
+export function ActiveTimerBar({ selectedBabyId }: { selectedBabyId?: string }) {
   const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
   const [timers, setTimers] = useState<ActiveTimerSummary[]>([]);
   const [nowMs, setNowMs] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const search = searchParams.toString();
+  const returnTo = canonicalTimerReturnTo(search ? `${pathname}?${search}` : pathname);
 
   // Asked for on arrival and on every navigation, so stopping a timer anywhere clears the bar
   // everywhere, and a timer another caregiver started shows up on the next screen you open.
   useEffect(() => {
     let current = true;
+    let loadVersion = 0;
     async function load() {
+      const currentLoad = ++loadVersion;
       try {
-        const response = await fetch("/api/timers/active", { cache: "no-store" });
-        const body = response.ok ? ((await response.json()) as { timers?: ActiveTimerSummary[] }) : { timers: [] };
-        if (!current) return;
-        setTimers(body.timers ?? []);
+        const endpoint = selectedBabyId
+          ? `/api/timers/active?babyId=${encodeURIComponent(selectedBabyId)}`
+          : "/api/timers/active";
+        const response = await fetch(endpoint, { cache: "no-store" });
+        const body = response.ok ? await response.json() : null;
+        if (!current || currentLoad !== loadVersion) return;
+        setTimers(activeTimersFromResponse(body));
         setNowMs(Date.now());
       } catch {
         // The bar is an affordance, never a gate: if it cannot be loaded, it simply is not there.
-        if (current) setTimers([]);
+        if (current && currentLoad === loadVersion) setTimers([]);
       }
     }
+    const onTimerChanged = () => { void load(); };
+    window.addEventListener(ACTIVE_TIMERS_CHANGED_EVENT, onTimerChanged);
     void load();
     return () => {
       current = false;
+      window.removeEventListener(ACTIVE_TIMERS_CHANGED_EVENT, onTimerChanged);
     };
-  }, [pathname]);
+  }, [pathname, selectedBabyId]);
 
   const visible = timers.length > 0 && !HIDDEN_ON.some((route) => pathname.startsWith(route));
 
@@ -76,68 +89,84 @@ export function ActiveTimerBar() {
         aria-label="Running timers"
         className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-live/35 bg-card/97 shadow-lift backdrop-blur"
       >
-        {expanded ? (
-          <ul className="divide-y divide-border">
-            {timers.map((timer) => (
+        <div className="flex items-center gap-2 p-2">
+          <TimerDot paused={first.timerState === "paused"} />
+          <ActivityArtwork type={firstType} size="xs" />
+          <Link
+            href={timerHref(first, returnTo)}
+            className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-sm transition hover:bg-muted"
+          >
+            <span className="truncate font-semibold text-foreground">{first.babyName} · {activityLabels[firstType]}</span>
+            <span className="font-bold text-muted-foreground">
+              <span aria-hidden="true">{first.timerState === "paused" ? "Paused at " : ""}</span>
+              <TimerElapsed timer={first} nowMs={nowMs} />
+            </span>
+          </Link>
+          {rest.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
+              aria-controls="active-timer-list"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm font-semibold text-primary transition hover:bg-muted"
+            >
+              {expanded ? "Show fewer" : (
+                <>
+                  +{rest.length}
+                  <span className="sr-only"> more running timers, show all</span>
+                </>
+              )}
+            </button>
+          ) : null}
+          <StopTimerButton
+            id={first.id}
+            accessibleLabel={activeTimerActionLabel("Stop", first.babyName, activityLabels[firstType], first, timers)}
+          />
+        </div>
+
+        {expanded && rest.length > 0 ? (
+          <ul
+            id="active-timer-list"
+            className="max-h-[calc(100dvh-10rem)] divide-y divide-border overflow-y-auto overscroll-contain border-t border-border md:max-h-[calc(100dvh-6rem)]"
+          >
+            {rest.map((timer) => (
               <li key={timer.id} className="flex items-center gap-2 p-2">
                 <TimerDot paused={timer.timerState === "paused"} />
                 <ActivityArtwork type={timer.type as ActivityTypeName} size="xs" />
                 <Link
-                  href={timerHref(timer, pathname)}
+                  href={timerHref(timer, returnTo)}
                   className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg px-1 transition hover:bg-muted"
                 >
                   <span className="truncate text-sm font-semibold text-foreground">
-                    {activityLabels[timer.type as ActivityTypeName]}
+                    {timer.babyName} · {activityLabels[timer.type as ActivityTypeName]}
                   </span>
                   <span className="truncate text-xs font-semibold text-muted-foreground">
                     <span aria-hidden="true">{timer.timerState === "paused" ? "Paused at " : ""}</span>
                     <TimerElapsed timer={timer} nowMs={nowMs} />
                   </span>
                 </Link>
-                <StopTimerButton id={timer.id} />
+                <StopTimerButton
+                  id={timer.id}
+                  accessibleLabel={activeTimerActionLabel(
+                    "Stop",
+                    timer.babyName,
+                    activityLabels[timer.type as ActivityTypeName],
+                    timer,
+                    timers
+                  )}
+                />
               </li>
             ))}
           </ul>
-        ) : (
-          <div className="flex items-center gap-2 p-2">
-            <TimerDot paused={first.timerState === "paused"} />
-            <ActivityArtwork type={firstType} size="xs" />
-            <Link
-              href={timerHref(first, pathname)}
-              className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-sm transition hover:bg-muted"
-            >
-              <span className="truncate font-semibold text-foreground">{activityLabels[firstType]}</span>
-              <span className="font-bold text-muted-foreground">
-                <span aria-hidden="true">{first.timerState === "paused" ? "Paused at " : ""}</span>
-                <TimerElapsed timer={first} nowMs={nowMs} />
-              </span>
-            </Link>
-            {rest.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setExpanded(true)}
-                aria-expanded={false}
-                className="inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 text-sm font-semibold text-primary transition hover:bg-muted"
-              >
-                +{rest.length}
-                <span className="sr-only"> more running timers, show all</span>
-              </button>
-            ) : null}
-            <StopTimerButton id={first.id} />
-          </div>
-        )}
-
-        {expanded ? (
-          <button
-            type="button"
-            onClick={() => setExpanded(false)}
-            aria-expanded
-            className="flex min-h-11 w-full items-center justify-center border-t border-border text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            Show fewer
-          </button>
         ) : null}
       </section>
     </div>
   );
+}
+
+function activeTimersFromResponse(body: unknown) {
+  if (!body || typeof body !== "object" || !("ok" in body) || body.ok !== true || !("data" in body)) return [];
+  const data = body.data;
+  if (!data || typeof data !== "object" || !("timers" in data) || !Array.isArray(data.timers)) return [];
+  return data.timers as ActiveTimerSummary[];
 }

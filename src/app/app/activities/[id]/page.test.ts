@@ -15,7 +15,8 @@ vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage
 vi.mock("@/server/services/households", () => ({ getHouseholdHome: mocks.getHouseholdHome }));
 vi.mock("@/server/services/activities", () => ({ getActivityView: mocks.getActivityView }));
 vi.mock("@/components/app-shell", () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => createElement("main", null, children)
+  AppShell: ({ children, timerBabyId }: { children: React.ReactNode; timerBabyId?: string }) =>
+    createElement("main", { "data-timer-baby-id": timerBabyId }, children)
 }));
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 vi.mock("@/components/actions/confirmed-activity-delete", () => ({
@@ -67,6 +68,12 @@ beforeEach(() => {
 });
 
 describe("activity detail timer controls", () => {
+  it("scopes the shell timer bar to the activity's baby", async () => {
+    const body = await renderDetail(savedActivity({ babyId: "baby-detail" }));
+
+    expect(body.querySelector("main")?.getAttribute("data-timer-baby-id")).toBe("baby-detail");
+  });
+
   it("offers pause and stop for a running timer, with how long it has run", async () => {
     // Pause lives only here: the dashboard tile is an indicator and the shell's bar carries stop.
     const body = await renderDetail(savedActivity({ timerState: "running" }));

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ACTIVE_TIMERS_CHANGED_EVENT } from "@/lib/active-timer";
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 
@@ -55,12 +56,14 @@ function ImmediateOperationButton({
   kind,
   endpoint,
   label,
+  accessibleLabel,
   completedHref
 }: {
   id: string;
   kind: string;
   endpoint: string;
   label: string;
+  accessibleLabel?: string;
   /**
    * Where to go once the operation has completed. Stopping a timer from the activity's own screen is
    * the end of that activity's business, so it returns to wherever the screen was opened from rather
@@ -74,6 +77,11 @@ function ImmediateOperationButton({
   const [error, setError] = useState("");
 
   function completed() {
+    if (kind === "timer.stop" || kind === "timer.pause" || kind === "timer.resume") {
+      window.dispatchEvent(new CustomEvent(ACTIVE_TIMERS_CHANGED_EVENT, {
+        detail: { timerId: id, operation: kind.slice("timer.".length) }
+      }));
+    }
     if (completedHref) router.replace(completedHref);
     router.refresh();
   }
@@ -162,7 +170,7 @@ function ImmediateOperationButton({
 
   return (
     <span className="inline-flex flex-col items-start gap-1">
-      <Button type="button" variant="secondary" disabled={submitting} onClick={() => void submit()}>
+      <Button aria-label={accessibleLabel} type="button" variant="secondary" disabled={submitting} onClick={() => void submit()}>
         {submitting ? "Saving..." : label}
       </Button>
       {error ? <span role="alert" className="text-xs font-semibold text-danger">{error}</span> : null}
@@ -170,17 +178,17 @@ function ImmediateOperationButton({
   );
 }
 
-function TimerButton({ id, operation, label, completedHref }: { id: string; operation: "stop" | "pause" | "resume"; label: string; completedHref?: string }) {
-  return <ImmediateOperationButton id={id} kind={`timer.${operation}`} endpoint={`/api/timers/${id}/${operation}`} label={label} completedHref={completedHref} />;
+function TimerButton({ id, operation, label, accessibleLabel, completedHref }: { id: string; operation: "stop" | "pause" | "resume"; label: string; accessibleLabel?: string; completedHref?: string }) {
+  return <ImmediateOperationButton id={id} kind={`timer.${operation}`} endpoint={`/api/timers/${id}/${operation}`} label={label} accessibleLabel={accessibleLabel} completedHref={completedHref} />;
 }
 
 /**
  * `returnTo` is given only where stopping finishes with the screen you are on: the activity's own
  * page. From the shell's timer bar there is nowhere to go - you are already where you wanted to be.
  */
-export function StopTimerButton({ id, returnTo }: { id: string; returnTo?: string }) { return <TimerButton id={id} operation="stop" label="Stop timer" completedHref={returnTo} />; }
-export function PauseTimerButton({ id }: { id: string }) { return <TimerButton id={id} operation="pause" label="Pause" />; }
-export function ResumeTimerButton({ id }: { id: string }) { return <TimerButton id={id} operation="resume" label="Resume" />; }
+export function StopTimerButton({ id, returnTo, accessibleLabel }: { id: string; returnTo?: string; accessibleLabel?: string }) { return <TimerButton id={id} operation="stop" label="Stop timer" accessibleLabel={accessibleLabel} completedHref={returnTo} />; }
+export function PauseTimerButton({ id, accessibleLabel }: { id: string; accessibleLabel?: string }) { return <TimerButton id={id} operation="pause" label="Pause" accessibleLabel={accessibleLabel} />; }
+export function ResumeTimerButton({ id, accessibleLabel }: { id: string; accessibleLabel?: string }) { return <TimerButton id={id} operation="resume" label="Resume" accessibleLabel={accessibleLabel} />; }
 
 export function UndoLastButton() {
   return <ImmediateOperationButton id="latest-at-open" kind="undo-last" endpoint="/api/activities/undo-last" label="Undo last" />;

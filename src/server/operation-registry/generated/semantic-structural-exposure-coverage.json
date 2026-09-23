@@ -2026,11 +2026,11 @@
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const babyId = new URL(request.url).searchParams.get(\"babyId\") ?? undefined;\n    return ok({ timers: await getActiveTimersForShell(babyId) });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "f84e02ec28de7833f75fb903a350f1b0963da1c8337bf3d6aae3a06d1730441c",
-      "anchorEnd": 705,
+      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const babyIds = new URL(request.url).searchParams.getAll(\"babyId\");\n    if (babyIds.length > 1 || (babyIds.length === 1 && babyIds[0].length === 0)) {\n      return fail(\"invalid_baby_id\", \"Select a valid baby.\", 400);\n    }\n    const babyId = babyIds[0];\n    return ok({ timers: await getActiveTimersForShell(babyId) });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "e99cea47fe265c8f9c6f196a4984405e21b1e66df390b9ce1e9edf8bae9e942a",
+      "anchorEnd": 889,
       "anchorFile": "src/app/api/timers/active/route.ts",
-      "anchorStart": 448,
+      "anchorStart": 454,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -2096,9 +2096,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 765,
+      "anchorEnd": 831,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 700,
+      "anchorStart": 766,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2113,9 +2113,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${operationId}`, { cache: \"no-store\" })",
       "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
-      "anchorEnd": 3434,
+      "anchorEnd": 3796,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 3364,
+      "anchorStart": 3726,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2130,9 +2130,9 @@
     {
       "anchorBytes": "fetch(`${endpoint}?issue=1`, {\n          method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({})\n        })",
       "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
-      "anchorEnd": 4689,
+      "anchorEnd": 5051,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 4548,
+      "anchorStart": 4910,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2147,9 +2147,9 @@
     {
       "anchorBytes": "fetch(endpoint, {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId })\n      })",
       "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
-      "anchorEnd": 5396,
+      "anchorEnd": 5758,
       "anchorFile": "src/components/actions/activity-actions.tsx",
-      "anchorStart": 5243,
+      "anchorStart": 5605,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -2298,11 +2298,11 @@
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/timers/active\", { cache: \"no-store\" })",
-      "anchorDigest": "0885aae77e9712fd60e320dd0ae4ae42ad3f35fc66733685cdc71745928d0f9c",
-      "anchorEnd": 1889,
+      "anchorBytes": "fetch(endpoint, { cache: \"no-store\" })",
+      "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
+      "anchorEnd": 2489,
       "anchorFile": "src/components/active-timer-bar.tsx",
-      "anchorStart": 1839,
+      "anchorStart": 2451,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -5649,9 +5649,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 573,
+      "anchorEnd": 632,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 547,
+      "anchorStart": 606,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5666,9 +5666,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 498,
+      "anchorEnd": 557,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 482,
+      "anchorStart": 541,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -5683,9 +5683,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 440,
+      "anchorEnd": 499,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 425,
+      "anchorStart": 484,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -5700,9 +5700,9 @@
     {
       "anchorBytes": "getDashboard",
       "anchorDigest": "4267b57ae68faa4b86114317e694a3bd75ae4be93a5a46453ed60858fa025201",
-      "anchorEnd": 619,
+      "anchorEnd": 680,
       "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 607,
+      "anchorStart": 668,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getDashboard",
@@ -5717,9 +5717,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 555,
+      "anchorEnd": 616,
       "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 534,
+      "anchorStart": 595,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5734,9 +5734,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 492,
+      "anchorEnd": 553,
       "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 477,
+      "anchorStart": 538,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6843,9 +6843,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "88cc44e517d4c952dce0478e38a7a4219727161059585889b19c7a28e03f1b4b",
+  "semanticArtifactDigest": "8aa43efff4dfad5f626071617e23928411da0681f694695e05354571eb999a8f",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "834631ca44c18cf83fcf991908a3a2177b03f6ab23d62947847018c21cb1d04b",
+  "semanticCoverageDigest": "97ad93cf0e858b3d230c213dff11b62c4b8d59cb9078ffd49e84f23e7a506dc3",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
   "semanticFingerprint": "2909dc1906232ae2cc382e62d9d6917f2b6b69589cccefe0335491e93d56b72e"

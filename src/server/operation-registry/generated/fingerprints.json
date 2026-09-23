@@ -1612,17 +1612,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "46fe9b80b07ccae310c34ec5db0bcc2ee637c91f7e2daf9b0b2ab8195ca1aa6c",
+          "digest": "40205c6f0faeb6a570cea7cc47b4a88413e5cb4bcb493b62d8877a7e6be85c27",
           "file": "src/app/api/timers/active/route.ts"
         }
       ],
       "declarationDigest": "c8543c0e6343dbd3fcbf6a9ab096c3cea66938d6fcd94cb7af041bfe47193a54",
-      "fingerprint": "18a6fdaa44a750471691c9fd1ddef924f71c64df70c29c0b301ee60de6c0ac40",
+      "fingerprint": "9a6082e857078faf452c836a23df601aaf8544cecb8ef7dd46a3bd42bfe3bd73",
       "id": "fingerprint:api_route:src/app/api/timers/active/route.ts",
       "ownerId": "api_route:src/app/api/timers/active/route.ts",
       "ownerModule": "src/app/api/timers/active/route.ts",
       "sidecarPath": "src/app/api/timers/active/route.operation.ts",
-      "sourceDigest": "43b402bca7ea02cc35d1800cbfed9c056b292e9744f2c83d4129780a3dfc631e",
+      "sourceDigest": "0973299395fa7013eed9a3692d2498906b5c38c4a630274bc25299f21f6aa785",
       "status": "declared"
     },
     {
@@ -1660,33 +1660,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "c4e550ab4f943e9e2ba23ce3b1bdd4cfca0e2e93be4374e282b12d4281f1d6b0",
+          "digest": "626c3967db0036ca603d7922c40bff4ab88cd1032ea66ad05f66744ad3fd342a",
           "file": "src/app/app/activities/[id]/edit/page.tsx"
         }
       ],
       "declarationDigest": "8f1343ae3639493f39746966897cd3f62df100becad55c4fb7b529673d49225f",
-      "fingerprint": "97a89ac0820d0f0b151fec669b4e8811d8f08a538fb41e044cf9da345ba807dc",
+      "fingerprint": "34357cced236f85823e6a2416d6e3bc7c0e93a098812c3c4676da6b5b73f9a69",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/edit/page.operation.ts",
-      "sourceDigest": "546767b09a5af2b4cff35f79d3dbe6b23c7cb5338e828878866a9a2ec7358e5a",
+      "sourceDigest": "3cc66e921b02e02087494836817853e9bce3c10d8b7b3d62ecc21936208ba8a8",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "e36f956f7fc00708c3b70fedbc9f2f45e08dbefb8a3eb980e3650e85478d48fa",
+          "digest": "dddd035f017166be37aa3885c4e2ae0fd5b2767fc498a92b90f65d85f7ed4e4f",
           "file": "src/app/app/activities/[id]/page.tsx"
         }
       ],
       "declarationDigest": "7db689af1701252bff79d689cc65d47d28b401ad8933e95b5f469603025660c1",
-      "fingerprint": "01ee3ef091dd9b192836941e8ef53188ece59781468d0065546f7de8619d7f77",
+      "fingerprint": "2e40b7c47a356964e85f05fab020b15e21fa52dfe3e6a836fcdbedce3ef2e207",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts",
-      "sourceDigest": "f431bdbfd0c17da7c8c3e3b330f2242ae07274746563899977074c4a0a3ed466",
+      "sourceDigest": "369ddfc875184fc98664fe279960408f8699eacd68ae440a878ea28088d6410d",
       "status": "declared"
     },
     {
@@ -1760,49 +1760,49 @@
     {
       "anchorFiles": [
         {
-          "digest": "59b2959ed3656a33c860c04d6f56d6ad3ed142c93363674e3b15c41ace4fa3d6",
+          "digest": "8a91c8f51898e306f043634d7b35353e6ab55965b764e88dcbcbdf2505c277f4",
           "file": "src/app/app/log/[type]/page.tsx"
         }
       ],
       "declarationDigest": "3054a9558526deb2de087383eb4c96b359eb27f63fdf9b881097110bbcafecb6",
-      "fingerprint": "7dea439f2b3202bbefebea5ea0006a48d06e5d67f8c9750d0f9e5efbc65c3711",
+      "fingerprint": "f583077e30feccf7c75eaf4c812d4998b89b926ef34d3c9fd96c7572a7e6d911",
       "id": "fingerprint:server_loader:src/app/app/log/[type]/page.tsx",
       "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts",
-      "sourceDigest": "cc792295e599191796116373a457dad9fd0c2149a534055730026977c2d5db7c",
+      "sourceDigest": "6308b4d3f18e43ac62bbcb698487eb31f0accda53826ffaa4942ea32a2775e63",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "cbf122bf551f15e3b42f651fffc2480142fadbc66aaa6150fe5d5954b8f376e7",
+          "digest": "53f7bfd7eac117308f2185b3b9f31180872e0293383cf16558c3f09d1a4d3f79",
           "file": "src/app/app/nursery/page.tsx"
         }
       ],
       "declarationDigest": "81d0a999f45c239091a825bb77e723c8c8042da04c2de539be75b857e5425360",
-      "fingerprint": "c7d9a00716b4e2320af92f97955d9fb551319fdf6f2d6ada72287aa1a3a8fcc1",
+      "fingerprint": "82fcae72eed75bf8af1b55959297c859dab5e7b472db3133689748cd509bb8fe",
       "id": "fingerprint:server_loader:src/app/app/nursery/page.tsx",
       "ownerId": "server_loader:src/app/app/nursery/page.tsx",
       "ownerModule": "src/app/app/nursery/page.tsx",
       "sidecarPath": "src/app/app/nursery/page.operation.ts",
-      "sourceDigest": "b895ac70e2fc58a928ce6b7d3a70544eee46717f7701a816c15af07ac1294c67",
+      "sourceDigest": "e3cf01320d1acf5678326a247d0836012d051937893a0c8baa89a35edc8b21c4",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "5b6a0f7424e855c15a3eb8d09b58518a00069260dc55e2ebc5422cb0a4111b24",
+          "digest": "2c978af268058180801afc0ac63102e5b72c957c88b2c7caff40cfd452a1b01e",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "230aa5788ae12a7bf1e6a1ab62052d9eb5e986711e66f9213cb19026b1f0d205",
+      "fingerprint": "ef04fb717c141202512fd108a5228840e8075cad879abaa64d38ce7d1de49eb3",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "5af1bdc060e7f30d15d3079fbd95d7aef005f2c6a878799d5f9a061685342dd6",
+      "sourceDigest": "fa4c01e55c8111b77786547e5ea88e2ea2c641d4aa45c8c32ef41424187f48b9",
       "status": "declared"
     },
     {
@@ -2128,17 +2128,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8ece861065163b767e2f2c213df016b5de3d670e3dc35608798bef8d5c2a7409",
+          "digest": "a7eb1f06ae64d4b8225f7c44f2e7b76e89e42e5fbfb57612e3ec8b7e6c6adc39",
           "file": "src/components/actions/activity-actions.tsx"
         }
       ],
       "declarationDigest": "67159b29c3ec82f53088fc604226acc52b896ce08f66e1d769b4388dbcf9093c",
-      "fingerprint": "2100d3dd881d46e7dfe4d9cf9ba4357f76e9b5b5cae67846f8a916530a56457a",
+      "fingerprint": "1771f77975927da1905a6b76c6d437146dadc2c7254d24a3d3239215bae05c10",
       "id": "fingerprint:client_binding:src/components/actions/activity-actions.tsx",
       "ownerId": "client_binding:src/components/actions/activity-actions.tsx",
       "ownerModule": "src/components/actions/activity-actions.tsx",
       "sidecarPath": "src/components/actions/activity-actions.operation.ts",
-      "sourceDigest": "17eab7f039e53bf5735b71c964a18b8a66021bca13a816cdc4adcb9cc5904f05",
+      "sourceDigest": "29306acbc99c56c69085be3f024694a7e03b83eb2b441c63cc1389f3a2a9288b",
       "status": "declared"
     },
     {
@@ -2176,17 +2176,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "df3ac2a71cc1280b2c2f204d7a2c9357164224c28b4fcee4a3e2a4f4cb67948b",
+          "digest": "a5d9b76114cb658c649d16a4be572eab5d264974d1f12e0681232bf2f5dc99ab",
           "file": "src/components/active-timer-bar.tsx"
         }
       ],
       "declarationDigest": "1161fd5a506c806d7c14d8c50fc2988e3befec80a4b0dbd7f8acac4162db5165",
-      "fingerprint": "440f79ba81bd0e1b538382264a2f09d0ccfcfc97cf7c1b2b576ed7a17b6ea18a",
+      "fingerprint": "057c8360ce93affa70694db65226f3c9b2bba035c8b5e3c3148e4f60896507cf",
       "id": "fingerprint:client_binding:src/components/active-timer-bar.tsx",
       "ownerId": "client_binding:src/components/active-timer-bar.tsx",
       "ownerModule": "src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts",
-      "sourceDigest": "29ea83ff9ca7ef0582e919dec6273b82f85bac28b77fd241c670b130c9a7aed4",
+      "sourceDigest": "a3a71516d292cc3b9aae291b3287da927cc30065c172c17d3c88e5f7c0d627ff",
       "status": "declared"
     },
     {
@@ -3528,11 +3528,11 @@
   ],
   "generatorDigest": "7479823036069ac77a5272865fbf5fe25b18078044f4bf6ffc1a9c8b6823f2b0",
   "generatorVersion": "r0.1",
-  "observationDigest": "64ddd6bfc50b2a59272f3271f03f247e98fc18d7b635509948bd410abadf63df",
+  "observationDigest": "f588822b084fed0b47a31fa70ab13c82fb89b233c9deb34e71ba1f89970d0f42",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "351a5aa1d42e164439d27b912e6aa0c6fafdd38aae495445397575331bf362ed",
+  "registryDigest": "3a375dd9fdfbc5227f6d2326538181ae59fa86b53015de20323ed674f1919645",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
