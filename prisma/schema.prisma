@@ -1825,6 +1825,7 @@ model Contact {
   calendarLinks CalendarEventContact[]
 
   @@index([householdId])
+  @@unique([householdId, id])
   @@index([deletedAt])
 }
 
@@ -1876,6 +1877,7 @@ model CalendarEvent {
   contacts              CalendarEventContact[]
 
   @@index([householdId])
+  @@unique([householdId, id])
   @@index([startTime])
   @@index([endTime])
   @@index([eventType])
@@ -1883,23 +1885,27 @@ model CalendarEvent {
 }
 
 model CalendarEventBaby {
-  babyId  String
-  eventId String
-  baby    Baby          @relation(fields: [babyId], references: [id], onDelete: Cascade)
-  event   CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  householdId String
+  babyId      String
+  eventId     String
+  baby        Baby          @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
+  event       CalendarEvent @relation(fields: [householdId, eventId], references: [householdId, id], onDelete: Cascade)
 
   @@id([babyId, eventId])
+  @@index([householdId])
   @@index([babyId])
   @@index([eventId])
 }
 
 model CalendarEventContact {
-  contactId String
-  eventId   String
-  contact   Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  event     CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  householdId String
+  contactId   String
+  eventId     String
+  contact     Contact       @relation(fields: [householdId, contactId], references: [householdId, id], onDelete: Cascade)
+  event       CalendarEvent @relation(fields: [householdId, eventId], references: [householdId, id], onDelete: Cascade)
 
   @@id([contactId, eventId])
+  @@index([householdId])
   @@index([contactId])
   @@index([eventId])
 }

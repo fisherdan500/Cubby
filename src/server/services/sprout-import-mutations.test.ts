@@ -57,9 +57,12 @@ const mocks = vi.hoisted(() => ({
   queryRaw: vi.fn(),
   babyFindMany: vi.fn(),
   babyCreate: vi.fn(),
+  contactFindFirst: vi.fn(),
+  contactCreate: vi.fn(),
   activityCreate: vi.fn(),
   eventCreate: vi.fn(),
   eventBabyUpsert: vi.fn(),
+  eventContactUpsert: vi.fn(),
   stage: vi.fn(),
   readStaged: vi.fn(),
   removeStaged: vi.fn(),
@@ -125,9 +128,12 @@ beforeEach(() => {
   mocks.backupCreate.mockResolvedValue({});
   mocks.babyFindMany.mockResolvedValue([]);
   mocks.babyCreate.mockResolvedValue({ id: "baby-1", householdId: "household-1", inactiveAt: null });
+  mocks.contactFindFirst.mockResolvedValue(null);
+  mocks.contactCreate.mockResolvedValue({ id: "contact-1" });
   mocks.activityCreate.mockResolvedValue({ id: "activity-1", vaccine: null });
   mocks.eventCreate.mockResolvedValue({ id: "event-1" });
   mocks.eventBabyUpsert.mockResolvedValue({});
+  mocks.eventContactUpsert.mockResolvedValue({});
   mocks.removeStaged.mockResolvedValue(undefined);
   mocks.stage.mockImplementation(async (bytes: Buffer, _config: unknown, requestedFilename?: string) => {
     const stagedFilename = requestedFilename ?? `sprout-stage-${mocks.stagedPayloads.size + 1}.bin`;
@@ -382,7 +388,9 @@ describe("Sprout import mutation boundaries", () => {
       Baby: [{ id: "source-baby", firstName: "Finley", birthDate: "2026-03-13T00:00:00.000Z" }],
       Note: [{ id: "note-1", babyId: "source-baby", time: "2026-07-13T12:00:00.000Z", content: "Historical" }],
       CalendarEvent: [{ id: "event-1", title: "Appointment", startTime: "2026-07-13T14:00:00.000Z" }],
-      BabyEvent: [{ id: "link-1", eventId: "event-1", babyId: "source-baby" }]
+      BabyEvent: [{ id: "link-1", eventId: "event-1", babyId: "source-baby" }],
+      Contact: [{ id: "source-contact", name: "Pediatrician" }],
+      ContactEvent: [{ id: "link-2", eventId: "event-1", contactId: "source-contact" }]
     };
     const preview = await previewSproutBackup(upload(tables));
 
@@ -409,7 +417,12 @@ describe("Sprout import mutation boundaries", () => {
     expect(mocks.eventBabyUpsert).toHaveBeenCalledWith({
       where: { babyId_eventId: { babyId: "baby-1", eventId: "event-1" } },
       update: {},
-      create: { eventId: "event-1", babyId: "baby-1" }
+      create: { householdId: "household-1", eventId: "event-1", babyId: "baby-1" }
+    });
+    expect(mocks.eventContactUpsert).toHaveBeenCalledWith({
+      where: { contactId_eventId: { contactId: "contact-1", eventId: "event-1" } },
+      update: {},
+      create: { householdId: "household-1", eventId: "event-1", contactId: "contact-1" }
     });
     expect(mocks.batchUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "complete" }) }));
   });
@@ -551,13 +564,13 @@ function transactionClient() {
     auditEvent: { create: mocks.auditCreate },
     webhookDelivery: { create: mocks.webhookDeliveryCreate },
     baby: { findMany: mocks.babyFindMany, create: mocks.babyCreate },
-    contact: { findFirst: vi.fn(), create: vi.fn() },
+    contact: { findFirst: mocks.contactFindFirst, create: mocks.contactCreate },
     medicineCatalog: { findFirst: vi.fn(), create: vi.fn() },
     householdSettings: { upsert: vi.fn(), update: vi.fn() },
     activityLog: { create: mocks.activityCreate },
     calendarEvent: { create: mocks.eventCreate },
     calendarEventBaby: { upsert: mocks.eventBabyUpsert },
-    calendarEventContact: { upsert: vi.fn() },
+    calendarEventContact: { upsert: mocks.eventContactUpsert },
     vaccineDocument: { create: vi.fn() }
   };
 }

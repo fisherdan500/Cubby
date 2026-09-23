@@ -176,8 +176,16 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
     try {
       expect(await checkResult("calendar_event_relation_consistency")).toBeNull();
 
-      // Nothing in the schema forbids this: the link table carries two independent foreign keys.
-      await prisma.calendarEventBaby.create({ data: { eventId: event.id, babyId: second.baby.id } });
+      await expect(prisma.calendarEventBaby.create({
+        data: { householdId: first.household.id, eventId: event.id, babyId: second.baby.id }
+      })).rejects.toMatchObject({ code: "P2003" });
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          INSERT INTO "CalendarEventBaby" ("householdId", "eventId", "babyId")
+          VALUES (${first.household.id}, ${event.id}, ${second.baby.id})
+        `;
+      });
 
       expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({
         id: "calendar_event_relation_consistency",
@@ -188,8 +196,18 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
       const strangerContact = await prisma.contact.create({
         data: { householdId: second.household.id, name: "Calendar Stranger Contact" }
       });
-      await prisma.calendarEventContact.create({ data: { eventId: event.id, contactId: strangerContact.id } });
+      await expect(prisma.calendarEventContact.create({
+        data: { householdId: first.household.id, eventId: event.id, contactId: strangerContact.id }
+      })).rejects.toMatchObject({ code: "P2003" });
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          INSERT INTO "CalendarEventContact" ("householdId", "eventId", "contactId")
+          VALUES (${first.household.id}, ${event.id}, ${strangerContact.id})
+        `;
+      });
 
+      // The raw inserts model storage corruption after proving that ordinary writes are rejected.
       // Baby and contact links are counted together, so the second violation raises the same count.
       expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({ count: 2 });
 
@@ -199,6 +217,55 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
       await prisma.calendarEventContact.delete({
         where: { contactId_eventId: { contactId: strangerContact.id, eventId: event.id } }
       });
+      expect(await checkResult("calendar_event_relation_consistency")).toBeNull();
+
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          UPDATE "CalendarEventBaby"
+          SET "householdId" = ${second.household.id}
+          WHERE "eventId" = ${event.id} AND "babyId" = ${first.baby.id}
+        `;
+      });
+      try {
+        expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({ count: 1 });
+      } finally {
+        await prisma.$transaction(async (tx) => {
+          await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+          await tx.$executeRaw`
+            UPDATE "CalendarEventBaby"
+            SET "householdId" = ${first.household.id}
+            WHERE "eventId" = ${event.id} AND "babyId" = ${first.baby.id}
+          `;
+        });
+      }
+
+      const ownerContact = await prisma.contact.create({
+        data: { householdId: first.household.id, name: "Calendar Owner Contact" }
+      });
+      await prisma.calendarEventContact.create({
+        data: { householdId: first.household.id, eventId: event.id, contactId: ownerContact.id }
+      });
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          UPDATE "CalendarEventContact"
+          SET "householdId" = ${second.household.id}
+          WHERE "eventId" = ${event.id} AND "contactId" = ${ownerContact.id}
+        `;
+      });
+      try {
+        expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({ count: 1 });
+      } finally {
+        await prisma.$transaction(async (tx) => {
+          await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+          await tx.$executeRaw`
+            UPDATE "CalendarEventContact"
+            SET "householdId" = ${first.household.id}
+            WHERE "eventId" = ${event.id} AND "contactId" = ${ownerContact.id}
+          `;
+        });
+      }
       expect(await checkResult("calendar_event_relation_consistency")).toBeNull();
     } finally {
       await removeHousehold(first.household.id);

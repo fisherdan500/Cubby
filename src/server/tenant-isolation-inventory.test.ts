@@ -28,6 +28,8 @@ const expectedDirectHouseholdModels = [
   "BrowserOperationBinding",
   "BrowserOperationReservationTombstone",
   "CalendarEvent",
+  "CalendarEventBaby",
+  "CalendarEventContact",
   "Contact",
   "DashboardWarningDismissal",
   "HouseholdMember",
@@ -71,12 +73,12 @@ describe("tenant-isolation inventory", () => {
     }
   });
 
-  it("keeps multi-parent and inherited rows explicitly classified", () => {
+  it("keeps constrained calendar joins and remaining multi-parent and inherited rows explicitly classified", () => {
     expect(tenantIsolationInventory).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ model: "MedicineLog", ownership: "multi_parent" }),
-        expect.objectContaining({ model: "CalendarEventBaby", ownership: "multi_parent" }),
-        expect.objectContaining({ model: "CalendarEventContact", ownership: "multi_parent" }),
+        expect.objectContaining({ model: "CalendarEventBaby", ownership: "direct", disposition: "constraint_slice" }),
+        expect.objectContaining({ model: "CalendarEventContact", ownership: "direct", disposition: "constraint_slice" }),
         expect.objectContaining({ model: "VaccineDocument", ownership: "inherited" }),
         expect.objectContaining({
           model: "DashboardWarningDismissal",

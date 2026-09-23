@@ -304,10 +304,13 @@ describe("read-only integrity suite", () => {
     );
 
     const calendarQuery = fake.queries.find((query) => query.includes('"CalendarEventBaby"'))!;
-    // Baby and contact links are counted together; only their own single-column keys are enforced by
-    // the database, so both sides need the household comparison and the missing-row case.
+    // Baby and contact links are counted together. The detector covers damaged storage by comparing
+    // the direct link household with both parents in addition to the parent-to-parent invariant.
     expect(calendarQuery).toMatch(/baby\."householdId"\s*<>\s*event\."householdId"/i);
     expect(calendarQuery).toMatch(/contact\."householdId"\s*<>\s*event\."householdId"/i);
+    expect(calendarQuery).toMatch(/link\."householdId"\s*<>\s*event\."householdId"/i);
+    expect(calendarQuery).toMatch(/link\."householdId"\s*<>\s*baby\."householdId"/i);
+    expect(calendarQuery).toMatch(/link\."householdId"\s*<>\s*contact\."householdId"/i);
     expect(calendarQuery).toMatch(/event\.id\s+IS\s+NULL\s+OR\s+baby\.id\s+IS\s+NULL/i);
     expect(calendarQuery).toMatch(/event\.id\s+IS\s+NULL\s+OR\s+contact\.id\s+IS\s+NULL/i);
     expect(calendarQuery).toContain('"CalendarEventContact"');

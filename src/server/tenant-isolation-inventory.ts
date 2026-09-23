@@ -40,8 +40,10 @@ export const tenantIsolationInventory = [
   { model: "BrowserMutationOperationTombstone", ownership: "direct", operationClasses: ["browser_mutation_tombstone"], disposition: "constraint_slice" },
   { model: "BrowserOperationBinding", ownership: "direct", operationClasses: ["browser_mutation_binding"], disposition: "constraint_slice" },
   { model: "BrowserOperationReservationTombstone", ownership: "direct", operationClasses: ["browser_mutation_reservation_tombstone"], disposition: "constraint_slice" },
-  { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "deferred_constraint" },
-  { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "deferred_constraint" },
+  { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "constraint_slice" },
+  { model: "CalendarEventBaby", ownership: "direct", operationClasses: ["calendar_join", "import"], disposition: "constraint_slice" },
+  { model: "CalendarEventContact", ownership: "direct", operationClasses: ["calendar_join", "import"], disposition: "constraint_slice" },
+  { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "constraint_slice" },
   { model: "DashboardWarningDismissal", ownership: "direct", operationClasses: ["dashboard_write"], disposition: "constraint_slice" },
   { model: "EmailChange", ownership: "global", operationClasses: ["global_security_email_change"], disposition: "excluded" },
   { model: "EmailChangeDelivery", ownership: "global", operationClasses: ["global_security_email_delivery"], disposition: "excluded" },
@@ -111,8 +113,7 @@ export const tenantIsolationInventory = [
   { model: "MoodLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "VaccineLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "MilkInventoryLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
-  { model: "CalendarEventBaby", ownership: "multi_parent", operationClasses: ["calendar_join", "import"], disposition: "deferred_constraint" },
-  { model: "CalendarEventContact", ownership: "multi_parent", operationClasses: ["calendar_join", "import"], disposition: "deferred_constraint" },
+
   { model: "VaccineDocument", ownership: "inherited", operationClasses: ["vaccine_attachment"], disposition: "inherited_parent" },
   { model: "User", ownership: "global", operationClasses: ["auth_user"], disposition: "excluded" },
   { model: "Verification", ownership: "global", operationClasses: ["auth_verification"], disposition: "excluded" }

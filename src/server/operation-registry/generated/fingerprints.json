@@ -2940,17 +2940,17 @@
           "file": "package.json"
         },
         {
-          "digest": "2ea4dc2e314c953e2e04403e921b4122e74932b45244b2093bc4ed5a7a9417ee",
+          "digest": "b75283629b43b94c1d035d66f3980f37a6b9b783f3fb6a9bd9952b738addcda8",
           "file": "scripts/integrity-suite.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "0aa3a1af040942757699ec57b207de2bd109cacea4e2bdd15426b5b8c1f5cd3c",
-      "fingerprint": "0fd5ccf70e11c0c417bd4401cce6b77f45ad2935cd017f226229f88286ba1535",
+      "fingerprint": "f650f359f2f8123e7454aa2f87a5e07564aca67b9035d993b5bb263952c9d5c8",
       "id": "fingerprint:package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/integrity-suite.acceptance-rehearsal.ts",
       "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/integrity-suite.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "a1f6344ed800e8a65fa6ece8ddfe40a1e4ad7252d9dbbcbc91059224b155e3c0",
+      "sourceDigest": "d3f53001d180c8d5d0dba43eabce8ee7f0549f5a8cb6763953879c58a5cc332c",
       "status": "declared"
     },
     {

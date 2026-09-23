@@ -91,9 +91,17 @@ async function createCalendarEventInTransaction(
       eventType: input.eventType,
       location: input.location,
       color: input.color,
-      babies: { create: { baby: { connect: { id: input.babyId } } } },
+      babies: {
+        create: {
+          baby: { connect: { householdId_id: { householdId: ctx.householdId, id: input.babyId } } }
+        }
+      },
       contacts: input.contactIds.length
-        ? { create: input.contactIds.map((contactId) => ({ contact: { connect: { id: contactId } } })) }
+        ? {
+            create: input.contactIds.map((contactId) => ({
+              contact: { connect: { householdId_id: { householdId: ctx.householdId, id: contactId } } }
+            }))
+          }
         : undefined
     },
     include: { babies: true }
@@ -328,6 +336,9 @@ export async function createCalendarEvent(raw: unknown): Promise<CalendarEventCr
     const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, input.babyId);
     requirePermission(lockedCtx, "activity.create");
     if (baby.inactiveAt) throw new Error("baby_inactive");
+    if (input.contactIds.length) {
+      await currentCalendarContacts(tx, lockedCtx.householdId, input.contactIds);
+    }
 
     const event = await tx.calendarEvent.create({
       data: {
@@ -342,11 +353,15 @@ export async function createCalendarEvent(raw: unknown): Promise<CalendarEventCr
         color: input.color,
         babies: {
           create: {
-            baby: { connect: { id: input.babyId } }
+            baby: { connect: { householdId_id: { householdId: lockedCtx.householdId, id: input.babyId } } }
           }
         },
         contacts: input.contactIds.length
-          ? { create: input.contactIds.map((contactId) => ({ contact: { connect: { id: contactId } } })) }
+          ? {
+              create: input.contactIds.map((contactId) => ({
+                contact: { connect: { householdId_id: { householdId: lockedCtx.householdId, id: contactId } } }
+              }))
+            }
           : undefined
       },
       include: { babies: true }

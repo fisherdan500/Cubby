@@ -1391,7 +1391,7 @@ async function importCalendarEvents(
         await db.calendarEventBaby.upsert({
           where: { babyId_eventId: { babyId, eventId: event.id } },
           update: {},
-          create: { eventId: event.id, babyId }
+          create: { householdId: ctx.householdId, eventId: event.id, babyId }
         });
       }
     }
@@ -1401,7 +1401,7 @@ async function importCalendarEvents(
         await db.calendarEventContact.upsert({
           where: { contactId_eventId: { contactId, eventId: event.id } },
           update: {},
-          create: { eventId: event.id, contactId }
+          create: { householdId: ctx.householdId, eventId: event.id, contactId }
         });
       }
     }

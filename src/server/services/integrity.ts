@@ -233,20 +233,28 @@ const DATABASE_CHECKS: ReadonlyArray<{ id: string; query: string }> = [
       WHERE detailed.detail_count <> 1 OR detailed.matching_detail_id IS NULL`
   },
   {
-    // Calendar links carry only single-column foreign keys, so nothing at the database level stops an
-    // event in one household from pointing at another household's baby or contact.
+    // This remains a read-only corruption detector even though composite foreign keys now reject new
+    // cross-household links. It covers damaged or pre-migration storage without weakening the write guard.
     id: "calendar_event_relation_consistency",
     query: `SELECT (
         (SELECT COUNT(*)
           FROM "CalendarEventBaby" link
           LEFT JOIN "CalendarEvent" event ON event.id = link."eventId"
           LEFT JOIN "Baby" baby ON baby.id = link."babyId"
-          WHERE event.id IS NULL OR baby.id IS NULL OR baby."householdId" <> event."householdId")
+          WHERE event.id IS NULL
+            OR baby.id IS NULL
+            OR link."householdId" <> event."householdId"
+            OR link."householdId" <> baby."householdId"
+            OR baby."householdId" <> event."householdId")
         + (SELECT COUNT(*)
           FROM "CalendarEventContact" link
           LEFT JOIN "CalendarEvent" event ON event.id = link."eventId"
           LEFT JOIN "Contact" contact ON contact.id = link."contactId"
-          WHERE event.id IS NULL OR contact.id IS NULL OR contact."householdId" <> event."householdId")
+          WHERE event.id IS NULL
+            OR contact.id IS NULL
+            OR link."householdId" <> event."householdId"
+            OR link."householdId" <> contact."householdId"
+            OR contact."householdId" <> event."householdId")
       )::int AS count`
   },
   {
