@@ -144,8 +144,14 @@ export async function checkIntegrityBackupEvidence(
     let trusted: IntegrityBackupReadResult;
     try {
       trusted = await reader(storageFilename);
-    } catch {
-      unavailable.push("reader_failed");
+    } catch (error) {
+      // A payload that no longer hashes to its own checksum was read in full: that is the corruption
+      // this check is named for, not missing evidence. Any other failure leaves the file unverified.
+      if (error instanceof Error && error.message === "backup_checksum_mismatch") {
+        fileFindings.push("file_checksum_mismatch");
+      } else {
+        unavailable.push("reader_failed");
+      }
       continue;
     }
 

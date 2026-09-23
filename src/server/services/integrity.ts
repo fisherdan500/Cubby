@@ -556,20 +556,23 @@ async function readSnapshot(
   return { checks, sproutMappingCheck, manifest };
 }
 
-const productionBackupReader: IntegrityBackupReader = async (storageFilename) => {
-  const [{ automatedBackupConfig }, { readLocalBackup }] = await Promise.all([
-    import("@/lib/env"),
-    import("@/server/services/local-backup-storage")
-  ]);
-  const file = await readLocalBackup(automatedBackupConfig.directory, storageFilename);
-  return {
-    version: 2,
-    filename: file.filename,
-    checksum: file.checksum,
-    byteSize: file.size,
-    itemCount: file.itemCount
+export function localBackupIntegrityReader(directory: () => string | Promise<string>): IntegrityBackupReader {
+  return async (storageFilename) => {
+    const { readLocalBackup } = await import("@/server/services/local-backup-storage");
+    const file = await readLocalBackup(await directory(), storageFilename);
+    return {
+      version: 2,
+      filename: file.filename,
+      checksum: file.checksum,
+      byteSize: file.size,
+      itemCount: file.itemCount
+    };
   };
-};
+}
+
+const productionBackupReader = localBackupIntegrityReader(
+  async () => (await import("@/lib/env")).automatedBackupConfig.directory
+);
 
 function unavailableBackupCheck(): IntegrityCheck {
   return { id: "backup_file_checksum_unavailable", run: async () => ({ status: "incomplete" }) };
