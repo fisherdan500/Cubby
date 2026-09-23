@@ -219,6 +219,27 @@ describe("household audit reader", () => {
     }));
   });
 
+  it("keeps a formula-capable actor snapshot as literal text in the audit CSV", async () => {
+    mocks.auditFindMany.mockResolvedValue([
+      {
+        action: "activity.create",
+        entityType: "activity",
+        entityId: "activity-1",
+        schemaVersion: 1,
+        correlationId: null,
+        actorUserSnapshot: "=cmd|' /C calc'!A0",
+        actorMemberSnapshot: " @SUM(A1)",
+        createdAt: new Date("2026-08-22T00:00:00.000Z")
+      }
+    ]);
+
+    const [, row] = (await exportHouseholdAuditCsv()).split("\n");
+
+    expect(row).toContain(`"'=cmd|' /C calc'!A0"`);
+    expect(row).toContain(`"' @SUM(A1)"`);
+    expect(row.startsWith('"activity.create"')).toBe(true);
+  });
+
   it("rechecks export authorization inside its transaction before querying or recording an export", async () => {
     mocks.lockActorForWrite.mockResolvedValue({ ...ownerContext, role: "parent" });
 

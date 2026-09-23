@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { activityDetailText } from "@/lib/activity-detail";
+import { neutralizeSpreadsheetFormula } from "@/lib/spreadsheet-cell";
 import { listActivitiesForContext } from "@/server/services/activities";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite } from "@/server/services/mutation-locks";
@@ -26,16 +27,18 @@ function cellValue(value: unknown) {
 
 /** CSV keeps a value verbatim, including any line breaks, inside quotes. */
 function csvCell(value: string) {
-  return `"${value.replaceAll('"', '""')}"`;
+  return `"${neutralizeSpreadsheetFormula(value).replaceAll('"', '""')}"`;
 }
 
 /**
  * A tab-separated row is one line with no tabs inside a value, so both are folded to single spaces.
  * A note with a line break used to be split across rows here, shifting every later column, because
- * the TSV was produced by re-parsing the finished CSV text line by line.
+ * the TSV was produced by re-parsing the finished CSV text line by line. Every character a spreadsheet
+ * may read as a row break is folded, not only a line feed: text after one would otherwise arrive as the
+ * first, un-neutralized cell of a new row.
  */
 function tabCell(value: string) {
-  return value.replace(/\s*\r?\n\s*/g, " ").replaceAll("\t", " ");
+  return neutralizeSpreadsheetFormula(value.replace(/\s*[\n\r\v\f\u{2028}\u{2029}]\s*/gu, " ").replaceAll("\t", " "));
 }
 
 async function activityExportRows() {

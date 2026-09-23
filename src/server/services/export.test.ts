@@ -178,6 +178,68 @@ describe("activity export contents", () => {
     expect(row.split("\t")[10]).toBe("before after");
   });
 
+  it("keeps formula-capable CSV values as literal text in every user-controlled column", async () => {
+    mocks.listActivitiesForContext.mockResolvedValue([
+      exportedActivity({
+        baby: { name: "@SUM(1,1)", inactiveAt: null },
+        actorMember: { displayName: "+1+1", user: { name: "Daniel" } },
+        notes: '=HYPERLINK("http://example.test","open")'
+      })
+    ]);
+    const [, row] = (await activityCsv()).split("\n");
+
+    expect(row).toContain(`"'@SUM(1,1)"`);
+    expect(row).toContain(`"'+1+1"`);
+    expect(row.endsWith(`"'=HYPERLINK(""http://example.test"",""open"")"`)).toBe(true);
+  });
+
+  it("neutralizes a CSV formula hidden behind leading whitespace or a control character", async () => {
+    mocks.listActivitiesForContext.mockResolvedValue([exportedActivity({ notes: "\r\n\t-1+1" })]);
+    const [, ...rowLines] = (await activityCsv()).split("\n");
+
+    expect(rowLines.join("\n").endsWith(`"'\r\n\t-1+1"`)).toBe(true);
+  });
+
+  it("keeps formula-capable spreadsheet values as literal text after folding line breaks and tabs", async () => {
+    mocks.listActivitiesForContext.mockResolvedValue([
+      exportedActivity({
+        baby: { name: "=1+1", inactiveAt: null },
+        notes: "\n\t@SUM(A1:A9)"
+      })
+    ]);
+    const [, row] = (await activitySpreadsheet()).split("\n");
+    const cells = row.split("\t");
+
+    expect(cells).toHaveLength(11);
+    expect(cells[1]).toBe("'=1+1");
+    expect(cells[10]).toBe("' @SUM(A1:A9)");
+  });
+
+  it.each([
+    ["a lone carriage return", "\r"],
+    ["a vertical tab", "\v"],
+    ["a form feed", "\f"],
+    ["a line separator", String.fromCharCode(0x2028)],
+    ["a paragraph separator", String.fromCharCode(0x2029)]
+  ])("folds %s so no formula can begin a new spreadsheet row mid-value", async (_label, breakChar) => {
+    // Only the first character of a cell is neutralized, so any character a spreadsheet may read as a
+    // row break has to be folded, or the text after it arrives as the start of a fresh, live cell.
+    mocks.listActivitiesForContext.mockResolvedValue([
+      exportedActivity({ notes: `x${breakChar}=HYPERLINK("http://example.test","open")` })
+    ]);
+    const lines = (await activitySpreadsheet()).split(/\r\n|[\n\r\v\f\u{2028}\u{2029}]/u);
+
+    expect(lines).toHaveLength(2);
+    expect(lines[1].split("\t")[10]).toBe('x =HYPERLINK("http://example.test","open")');
+  });
+
+  it("leaves ordinary values untouched in both exports", async () => {
+    mocks.listActivitiesForContext.mockResolvedValue([exportedActivity({ notes: "5 - 3 oz, then slept" })]);
+
+    expect(await activityCsv()).toContain('"5 - 3 oz, then slept"');
+    expect((await activitySpreadsheet()).split("\n")[1].split("\t")[10]).toBe("5 - 3 oz, then slept");
+  });
+
   it("exports only the header when the household has no activity", async () => {
     mocks.listActivitiesForContext.mockResolvedValue([]);
 
