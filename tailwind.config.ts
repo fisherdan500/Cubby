@@ -13,6 +13,8 @@ const config: Config = {
         surface: "hsl(var(--surface))",
         "surface-soft": "hsl(var(--surface-soft))",
         border: "hsl(var(--border))",
+        // A control's outline, held to 3:1; `border` is for decoration that only separates.
+        control: "hsl(var(--control-border))",
         muted: "hsl(var(--muted))",
         "muted-foreground": "hsl(var(--muted-foreground))",
         primary: "hsl(var(--primary))",

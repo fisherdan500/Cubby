@@ -20,7 +20,7 @@ import {
 const quickOffsets = [0, 5, 15, 30, 60];
 const nudges = [-5, -1, 1, 5];
 const chip =
-  "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-border bg-card px-3 text-sm font-semibold transition-colors hover:bg-muted active:bg-border";
+  "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-control bg-card px-3 text-sm font-semibold transition-colors hover:bg-muted active:bg-border";
 const chipOn = "border-primary bg-primary text-primary-foreground hover:bg-primary active:bg-primary";
 
 /** One swipeable row of chips; keeps the form a single column tall instead of wrapping into blocks. */
@@ -74,7 +74,7 @@ export function WhenField({
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-border bg-card py-1.5 pl-3 pr-1.5 text-left transition hover:bg-muted focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/20"
+        className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-control bg-card py-1.5 pl-3 pr-1.5 text-left transition hover:bg-muted focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/20"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-lg font-bold leading-tight tabular-nums">{formatClock(when.value)}</span>
@@ -217,7 +217,7 @@ function TimeSheet({
                 value={draft.date}
                 max={today}
                 onChange={(event) => event.target.value && setDraft({ ...draft, date: event.target.value })}
-                className="min-h-11 w-full rounded-lg border border-border bg-card px-2 text-base font-semibold sm:text-sm"
+                className="min-h-11 w-full rounded-lg border border-control bg-card px-2 text-base font-semibold sm:text-sm"
               />
             </label>
           </div>
@@ -268,7 +268,7 @@ function TimeSheet({
                 const [hour, minute] = event.target.value.split(":").map(Number);
                 if (Number.isInteger(hour) && Number.isInteger(minute)) setDraft({ ...draft, hour, minute });
               }}
-              className="min-h-11 rounded-lg border border-border bg-card px-3 text-base sm:text-sm"
+              className="min-h-11 rounded-lg border border-control bg-card px-3 text-base sm:text-sm"
             />
           </label>
         </div>

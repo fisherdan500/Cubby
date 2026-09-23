@@ -130,7 +130,7 @@ export default async function ActivityDetailPage({
             <Link
               replace
               href={activityEditHref(activity.id, returnTo)}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card px-5 text-sm font-semibold text-foreground transition hover:bg-muted"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold text-foreground transition hover:bg-muted"
             >
               Edit
             </Link>

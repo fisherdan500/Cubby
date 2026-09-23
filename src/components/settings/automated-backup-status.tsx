@@ -109,7 +109,7 @@ export function AutomatedBackupStatus({ status, timeZone }: AutomatedBackupStatu
                 <Link
                   href={`/api/backups/local/${version.filename}`}
                   prefetch={false}
-                  className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                  className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg border border-control bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
                 >
                   Download local version
                 </Link>

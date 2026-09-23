@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { accentThemes } from "@/domain/appearance";
 
@@ -68,6 +70,29 @@ const modes = [
   { name: "dark", palette: dark }
 ] as const;
 
+const controlSurfaces = ["background", "card", "surface", "surface-soft", "muted"] as const;
+
+/** The text of the JSX opening tag starting at `start`: up to its closing `>`, skipping any inside braces or strings. */
+function openingTag(source: string, start: number) {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      if (character === quote) quote = null;
+    } else if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+    } else if (character === "{") {
+      depth += 1;
+    } else if (character === "}") {
+      depth -= 1;
+    } else if (character === ">" && depth === 0) {
+      return source.slice(start, index + 1);
+    }
+  }
+  return source.slice(start);
+}
+
 /** Text against the surface it sits on, which is the pairing that decides whether Cubby is readable. */
 const textPairs = [
   ["foreground", "background"],
@@ -99,11 +124,21 @@ describe("theme contrast", () => {
     }
   });
 
-  it.each(modes)("keeps a $name border visible against what it separates", ({ palette }) => {
-    // A boundary is not text, so 3:1 is the bar - but it still has to be findable.
+  it.each(modes)("keeps a $name decorative border visible against what it separates", ({ palette }) => {
+    // A card outline or a divider is decoration, not a control, so it is held only to being findable.
     for (const surface of ["background", "card", "surface"] as const) {
       const ratio = contrast(palette.border!, palette[surface]!);
       expect({ surface, visible: ratio >= 1.2 }).toEqual({ surface, visible: true });
+    }
+  });
+
+  it.each(modes)("gives a $name control boundary 3:1 against every surface a control sits on", ({ palette }) => {
+    // A field, chip or stepper whose fill barely differs from the page is found by its outline, so
+    // that outline is held to the WCAG 1.4.11 non-text bar rather than the decorative border's.
+    expect(palette["control-border"]).toBeDefined();
+    for (const surface of controlSurfaces) {
+      const ratio = contrast(palette["control-border"]!, palette[surface]!);
+      expect({ surface, ratio: ratio >= 3 }).toEqual({ surface, ratio: true });
     }
   });
 
@@ -144,6 +179,41 @@ describe("theme contrast", () => {
       expect({ accent, mode, legible: contrast(palette.live!, palette.background!) >= 4.5 })
         .toEqual({ accent, mode, legible: true });
     }
+  });
+
+  it("draws every form control's boundary with the control token, not the decorative border", () => {
+    // A form element, or anything carrying a field's focus or checked styling, is a control. The token
+    // above is only worth something if controls actually use it.
+    // Judged per opening tag, read whole across however many lines it spans, and per class string:
+    // some screens keep a decorative card and the fields inside it on one line of JSX, others spread
+    // one field's attributes over ten.
+    const sourceRoot = fileURLToPath(new URL("..", import.meta.url));
+    const decorative = /\bborder-border\b/;
+    const controlTag = /<(?:input|select|textarea|button)\b/g;
+    const classString = /"[^"]*"|`[^`]*`/g;
+    const controlState = /focus:border-ring|focus-within:border-ring|has-\[:checked\]|focus-visible:ring/;
+    const offenders: string[] = [];
+    for (const entry of readdirSync(sourceRoot, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".tsx")) continue;
+      const file = path.join(entry.parentPath, entry.name);
+      const source = readFileSync(file, "utf8");
+      const where = (offset: number) => `${path.relative(sourceRoot, file)}:${source.slice(0, offset).split("\n").length}`;
+      for (const match of source.matchAll(controlTag)) {
+        if (decorative.test(openingTag(source, match.index))) offenders.push(where(match.index));
+      }
+      for (const match of source.matchAll(classString)) {
+        if (decorative.test(match[0]) && controlState.test(match[0])) offenders.push(where(match.index));
+      }
+    }
+
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+
+  it("reads a control's whole opening tag, however its attributes are laid out", () => {
+    const source = `<select\n  name="role"\n  onChange={(event) => set(event.target.value > "a")}\n  className="rounded-lg border border-border"\n>\n<option>x</option></select>`;
+
+    expect(openingTag(source, 0)).toContain("border-border");
+    expect(openingTag(source, 0)).not.toContain("<option>");
   });
 
   it("gives every activity tone its own place, in both modes", () => {

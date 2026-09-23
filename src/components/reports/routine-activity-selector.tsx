@@ -33,7 +33,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
     <div className="w-full sm:w-auto">
       <button
         type="button"
-        className="inline-flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 text-sm font-semibold hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto"
+        className="inline-flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-control bg-background px-3 text-sm font-semibold hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto"
         aria-expanded={expanded}
         aria-controls="routine-activity-options"
         onClick={() => setExpanded((current) => !current)}
@@ -65,7 +65,7 @@ export function RoutineActivitySelector({ selected, onChange }: RoutineActivityS
                       "flex min-h-16 items-center gap-2 rounded-xl border px-2 py-2 text-sm font-bold transition peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring",
                       checked
                         ? "border-primary/40 bg-primary/10 text-foreground"
-                        : "border-border bg-card text-muted-foreground hover:bg-muted"
+                        : "border-control bg-card text-muted-foreground hover:bg-muted"
                     )}
                   >
                     <span className="relative shrink-0">

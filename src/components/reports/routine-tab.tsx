@@ -61,7 +61,7 @@ export function RoutineTab({ babyId, startKey, endKey, routine }: RoutineTabProp
             <select
               name="routineWindow"
               defaultValue={routine.window}
-              className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground sm:w-44"
+              className="min-h-11 w-full rounded-lg border border-control bg-card px-3 text-sm text-foreground sm:w-44"
             >
               <option value="1w">1 week</option>
               <option value="2w">2 weeks</option>

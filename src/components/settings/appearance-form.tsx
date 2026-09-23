@@ -137,7 +137,7 @@ export function AppearanceForm({ initialTheme }: { initialTheme: AccentTheme }) 
               setSelected(nextTheme);
               event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[role="radio"][data-accent-theme="${nextTheme}"]`)?.focus();
             }}
-            className={cn("relative min-h-24 rounded-lg border bg-card p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", active ? "border-primary ring-2 ring-primary/25" : "border-border hover:bg-muted")}
+            className={cn("relative min-h-24 rounded-lg border bg-card p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", active ? "border-primary ring-2 ring-primary/25" : "border-control hover:bg-muted")}
           >
             <span className="mb-3 block h-8 w-8 rounded-full border border-black/10" style={{ backgroundColor: details.swatch }} />
             <span className="block text-sm font-bold">{details.label}</span><span className="block text-xs text-muted-foreground">{details.description}</span>

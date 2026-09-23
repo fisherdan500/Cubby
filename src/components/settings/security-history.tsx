@@ -182,7 +182,7 @@ export function SecurityHistory({ accountScope, timeZone, headingLevel = 1 }: { 
             <p className="text-sm text-muted-foreground">This downloads your account-security events as a JSON file.</p>
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button ref={cancelExportRef} type="button" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50" onClick={() => { restoreExportFocus.current = true; setConfirmingExport(false); }} disabled={exporting}>Cancel</button>
+            <button ref={cancelExportRef} type="button" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-control bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50" onClick={() => { restoreExportFocus.current = true; setConfirmingExport(false); }} disabled={exporting}>Cancel</button>
             <Button onClick={() => void exportHistory()} disabled={exporting}>{exporting ? "Preparing export..." : "Download export"}</Button>
           </div>
         </div>
