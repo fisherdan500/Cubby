@@ -13,13 +13,18 @@ export const operation = {
     },
     {
       kind: "server_value_import",
-      symbol: "isPlatformOwner",
-      target: "src/server/services/platform-authority.ts#isPlatformOwner"
+      symbol: "getSession",
+      target: "src/server/auth/session.ts#getSession"
     },
     {
       kind: "server_value_import",
-      symbol: "requireUserPage",
-      target: "src/server/auth/session.ts#requireUserPage"
+      symbol: "isFirstAccountSetupAvailable",
+      target: "src/server/services/platform-setup.ts#isFirstAccountSetupAvailable"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "isPlatformOwner",
+      target: "src/server/services/platform-authority.ts#isPlatformOwner"
     }
   ],
   disposition: "observed",

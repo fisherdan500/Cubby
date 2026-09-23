@@ -62,16 +62,20 @@ app container's log:
 docker compose logs app
 ```
 
-Look for `Cubby has no platform owner yet`. Sign in (or create the first account),
-open `/setup` and enter the code. That account becomes the verified platform owner,
-with household creation closed and public registration off, exactly as `bind` below
+Look for `Cubby has no platform owner yet` and open `/setup`. On a new install with
+no accounts, enter the code with your name, email and password: that creates the
+first account and makes it the verified platform owner in one step, then you sign in
+normally. On an install that already has accounts, sign in first and enter the code
+at `/setup` to make that account the owner. Either way the owner starts with
+household creation closed and public registration off, exactly as `bind` below
 leaves it; open household creation from `/platform/settings`. The code works once and
 expires after 24 hours; restarting Cubby issues a new one. Only its SHA-256 digest is
 stored, and no application database role can read it.
 
-The first account is never promoted automatically: whoever reaches a new install's
-registration page first could otherwise take the platform. The code proves access to
-the host's logs instead.
+The first account is never created or promoted without the code: whoever reaches a
+new install first could otherwise take the platform. The code proves access to the
+host's logs instead. General sign-up stays closed; everyone after the owner joins by
+invitation.
 
 ### Bind the platform owner
 

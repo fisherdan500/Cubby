@@ -64,6 +64,8 @@ export function handleError(error: unknown) {
     if (error.message === "platform_owner_already_bound") return fail("platform_owner_already_bound", "Cubby already has a platform owner.", 409);
     if (error.message === "platform_setup_account_ineligible") return fail("platform_setup_account_ineligible", "Sign in with an email-and-password account to claim setup.", 403);
     if (error.message === "platform_setup_retry") return fail("platform_setup_retry", "Setup was busy for a moment. Try again.", 409);
+    if (error.message === "platform_setup_install_not_empty") return fail("platform_setup_install_not_empty", "Cubby already has an account. Sign in with it to finish setup.", 409);
+    if (error.message === "platform_setup_account_invalid") return fail("platform_setup_account_invalid", "Enter your name, a valid email address, and a password of 8 to 128 characters.", 422);
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);
     if (error.message === "baby_inactive") return fail("baby_inactive", "Inactive babies cannot receive new activity or timers.", 409);
     if (error.message === "stale_revision") return fail("stale_revision", "This item changed before your request completed. Refresh and try again.", 409);

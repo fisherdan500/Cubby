@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 101,
-    "client_binding": 34,
+    "api_route": 102,
+    "client_binding": 35,
     "instrumentation": 1,
-    "package_command": 25,
+    "package_command": 26,
     "server_action": 1,
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "14dd945c774c769ea907b06b506bcb12a46e1ba5afaff9819defe8eff32153bb",
+  "declarationDigest": "7952060c8924753b966966211ecf8c65ffe3cd8b09ee07d2f97bc00fd1a06345",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -477,6 +477,40 @@
       },
       "id": "package_command:scripts/performance-budgets.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/performance-budgets.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:platform-first-account",
+            "target": "package.json#scripts.verify:platform-first-account"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/platform-first-account.acceptance-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/platform-first-account.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/platform-first-account.acceptance-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -3826,6 +3860,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/platform/setup/account/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/platform/setup/account/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/platform/setup/account/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/platform/setup/account/route.ts",
+      "sidecarPath": "src/app/api/platform/setup/account/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/platform/setup/route.ts#POST"
           }
         ],
@@ -5360,13 +5424,18 @@
           },
           {
             "kind": "server_value_import",
-            "symbol": "isPlatformOwner",
-            "target": "src/server/services/platform-authority.ts#isPlatformOwner"
+            "symbol": "getSession",
+            "target": "src/server/auth/session.ts#getSession"
           },
           {
             "kind": "server_value_import",
-            "symbol": "requireUserPage",
-            "target": "src/server/auth/session.ts#requireUserPage"
+            "symbol": "isFirstAccountSetupAvailable",
+            "target": "src/server/services/platform-setup.ts#isFirstAccountSetupAvailable"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "isPlatformOwner",
+            "target": "src/server/services/platform-authority.ts#isPlatformOwner"
           }
         ],
         "deferredGateIds": [
@@ -6084,6 +6153,41 @@
       },
       "id": "client_binding:src/components/personal-appearance-form.tsx",
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "form_action",
+            "symbol": "submit",
+            "target": "src/components/platform-first-account-form.tsx#submit"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/platform-first-account-form.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/platform-first-account-form.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/platform-first-account-form.tsx",
+      "sidecarPath": "src/components/platform-first-account-form.operation.ts"
     },
     {
       "declaration": {
@@ -7068,6 +7172,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+      "packageScripts": [
+        "verify:platform-first-account"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/verify-gates.ts",
       "packageScripts": [
         "verify:gates",
@@ -7094,7 +7206,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "7479823036069ac77a5272865fbf5fe25b18078044f4bf6ffc1a9c8b6823f2b0",
+  "generatorDigest": "f426530ea5694443010f2c4561c56712fcbe5dec84bc4d78688e5d709edec20f",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8870,6 +8982,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "2549132e02cd34aec80a86aa80b020164ff2f314e7fd7804b970043b1967df17",
+          "anchorEnd": 1018,
+          "anchorFile": "src/app/api/platform/setup/account/route.ts",
+          "anchorStart": 450,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/platform/setup/account/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/platform/setup/account/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/platform/setup/account/route.ts",
+      "sidecarPath": "src/app/api/platform/setup/account/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "c2c4ab121da5514d5a8ed75191fa9287686531a7a677903744c81ef142d111bc",
           "anchorEnd": 370,
           "anchorFile": "src/app/api/platform/setup/route.ts",
@@ -10136,30 +10267,39 @@
       "bindings": [
         {
           "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-          "anchorEnd": 412,
+          "anchorEnd": 573,
           "anchorFile": "src/app/setup/page.tsx",
-          "anchorStart": 388,
+          "anchorStart": 549,
           "kind": "server_value_import",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
         },
         {
-          "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-          "anchorEnd": 331,
+          "anchorDigest": "ade4b3a567adfbb26fd787be91ddce39dbc12e2bb5e03f298a3fa2a82e285b13",
+          "anchorEnd": 354,
           "anchorFile": "src/app/setup/page.tsx",
-          "anchorStart": 316,
+          "anchorStart": 344,
+          "kind": "server_value_import",
+          "symbol": "getSession",
+          "target": "src/server/auth/session.ts#getSession"
+        },
+        {
+          "anchorDigest": "977b0f1d1a4d3b1555eba5394a1eb2588ede2b91d765bd2ac5f435d028db3eee",
+          "anchorEnd": 496,
+          "anchorFile": "src/app/setup/page.tsx",
+          "anchorStart": 468,
+          "kind": "server_value_import",
+          "symbol": "isFirstAccountSetupAvailable",
+          "target": "src/server/services/platform-setup.ts#isFirstAccountSetupAvailable"
+        },
+        {
+          "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
+          "anchorEnd": 411,
+          "anchorFile": "src/app/setup/page.tsx",
+          "anchorStart": 396,
           "kind": "server_value_import",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
-        },
-        {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 274,
-          "anchorFile": "src/app/setup/page.tsx",
-          "anchorStart": 259,
-          "kind": "server_value_import",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -10827,6 +10967,34 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/personal-appearance-form.tsx",
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
+          "anchorEnd": 1590,
+          "anchorFile": "src/components/platform-first-account-form.tsx",
+          "anchorStart": 1575,
+          "kind": "form_action",
+          "symbol": "submit",
+          "target": "src/components/platform-first-account-form.tsx#submit"
+        },
+        {
+          "anchorDigest": "4552113cc0fb79ef1ec4fec27f9dbecebc04c121fb7099fcdd4c0896a0f89518",
+          "anchorEnd": 879,
+          "anchorFile": "src/components/platform-first-account-form.tsx",
+          "anchorStart": 492,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/platform-first-account-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/platform-first-account-form.tsx",
+      "sidecarPath": "src/components/platform-first-account-form.operation.ts"
     },
     {
       "bindings": [
@@ -11718,9 +11886,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 5348,
+          "anchorEnd": 5447,
           "anchorFile": "package.json",
-          "anchorStart": 5339,
+          "anchorStart": 5438,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -11949,9 +12117,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5449,
+          "anchorEnd": 5548,
           "anchorFile": "package.json",
-          "anchorStart": 5431,
+          "anchorStart": 5530,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -12137,6 +12305,32 @@
     {
       "bindings": [
         {
+          "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
+          "anchorEnd": 4938,
+          "anchorFile": "package.json",
+          "anchorStart": 4907,
+          "kind": "package_script",
+          "symbol": "verify:platform-first-account",
+          "target": "package.json#scripts.verify:platform-first-account"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+        "packageScripts": [
+          "verify:platform-first-account"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/platform-first-account.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/platform-first-account.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "1b23716fbaa2848e37e1ad3412a4093d749e01ac6b1c4f23f0a4ee70aff4b2be",
           "anchorEnd": 5139,
           "anchorFile": "scripts/platform-owner.ts",
@@ -12237,9 +12431,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 5392,
+          "anchorEnd": 5491,
           "anchorFile": "package.json",
-          "anchorStart": 5376,
+          "anchorStart": 5475,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -12713,36 +12907,36 @@
       "bindings": [
         {
           "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-          "anchorEnd": 4921,
+          "anchorEnd": 5020,
           "anchorFile": "package.json",
-          "anchorStart": 4907,
+          "anchorStart": 5006,
           "kind": "package_script",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
           "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-          "anchorEnd": 4976,
+          "anchorEnd": 5075,
           "anchorFile": "package.json",
-          "anchorStart": 4958,
+          "anchorStart": 5057,
           "kind": "package_script",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
           "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-          "anchorEnd": 5044,
+          "anchorEnd": 5143,
           "anchorFile": "package.json",
-          "anchorStart": 5019,
+          "anchorStart": 5118,
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
           "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-          "anchorEnd": 5114,
+          "anchorEnd": 5213,
           "anchorFile": "package.json",
-          "anchorStart": 5094,
+          "anchorStart": 5193,
           "kind": "package_script",
           "symbol": "verify:gates:image",
           "target": "package.json#scripts.verify:gates:image"
@@ -12766,8 +12960,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 196,
-  "observationDigest": "f588822b084fed0b47a31fa70ab13c82fb89b233c9deb34e71ba1f89970d0f42",
+  "observationCount": 199,
+  "observationDigest": "a911323f662e7a3a8bc995e39b69f1cc4112d48eca5aad071bc1290b5acc191d",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14457,6 +14651,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1018,
+          "anchorFile": "src/app/api/platform/setup/account/route.ts",
+          "anchorStart": 450,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/platform/setup/account/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/platform/setup/account/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/platform/setup/account/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/platform/setup/account/route.ts",
+      "sidecarPath": "src/app/api/platform/setup/account/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 370,
           "anchorFile": "src/app/api/platform/setup/route.ts",
           "anchorStart": 162,
@@ -15681,31 +15893,40 @@
     {
       "bindings": [
         {
-          "anchorEnd": 412,
+          "anchorEnd": 573,
           "anchorFile": "src/app/setup/page.tsx",
-          "anchorStart": 388,
+          "anchorStart": 549,
           "kind": "server_value_import",
           "ownerModule": "src/app/setup/page.tsx",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
         },
         {
-          "anchorEnd": 331,
+          "anchorEnd": 354,
           "anchorFile": "src/app/setup/page.tsx",
-          "anchorStart": 316,
+          "anchorStart": 344,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/setup/page.tsx",
+          "symbol": "getSession",
+          "target": "src/server/auth/session.ts#getSession"
+        },
+        {
+          "anchorEnd": 496,
+          "anchorFile": "src/app/setup/page.tsx",
+          "anchorStart": 468,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/setup/page.tsx",
+          "symbol": "isFirstAccountSetupAvailable",
+          "target": "src/server/services/platform-setup.ts#isFirstAccountSetupAvailable"
+        },
+        {
+          "anchorEnd": 411,
+          "anchorFile": "src/app/setup/page.tsx",
+          "anchorStart": 396,
           "kind": "server_value_import",
           "ownerModule": "src/app/setup/page.tsx",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
-        },
-        {
-          "anchorEnd": 274,
-          "anchorFile": "src/app/setup/page.tsx",
-          "anchorStart": 259,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/setup/page.tsx",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
         }
       ],
       "disposition": "observed",
@@ -16352,6 +16573,33 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/personal-appearance-form.tsx",
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1590,
+          "anchorFile": "src/components/platform-first-account-form.tsx",
+          "anchorStart": 1575,
+          "kind": "form_action",
+          "ownerModule": "src/components/platform-first-account-form.tsx",
+          "symbol": "submit",
+          "target": "src/components/platform-first-account-form.tsx#submit"
+        },
+        {
+          "anchorEnd": 879,
+          "anchorFile": "src/components/platform-first-account-form.tsx",
+          "anchorStart": 492,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/platform-first-account-form.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/platform-first-account-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/platform-first-account-form.tsx",
+      "sidecarPath": "src/components/platform-first-account-form.operation.ts"
     },
     {
       "bindings": [
@@ -17220,9 +17468,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5348,
+          "anchorEnd": 5447,
           "anchorFile": "package.json",
-          "anchorStart": 5339,
+          "anchorStart": 5438,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -17409,9 +17657,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5449,
+          "anchorEnd": 5548,
           "anchorFile": "package.json",
-          "anchorStart": 5431,
+          "anchorStart": 5530,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -17562,6 +17810,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 4938,
+          "anchorFile": "package.json",
+          "anchorStart": 4907,
+          "kind": "package_script",
+          "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+          "symbol": "verify:platform-first-account",
+          "target": "package.json#scripts.verify:platform-first-account"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/platform-first-account.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/platform-first-account.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 5139,
           "anchorFile": "scripts/platform-owner.ts",
           "anchorStart": 5107,
@@ -17661,9 +17927,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 5392,
+          "anchorEnd": 5491,
           "anchorFile": "package.json",
-          "anchorStart": 5376,
+          "anchorStart": 5475,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -18111,36 +18377,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4921,
+          "anchorEnd": 5020,
           "anchorFile": "package.json",
-          "anchorStart": 4907,
+          "anchorStart": 5006,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
-          "anchorEnd": 4976,
+          "anchorEnd": 5075,
           "anchorFile": "package.json",
-          "anchorStart": 4958,
+          "anchorStart": 5057,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
-          "anchorEnd": 5044,
+          "anchorEnd": 5143,
           "anchorFile": "package.json",
-          "anchorStart": 5019,
+          "anchorStart": 5118,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
-          "anchorEnd": 5114,
+          "anchorEnd": 5213,
           "anchorFile": "package.json",
-          "anchorStart": 5094,
+          "anchorStart": 5193,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:image",
@@ -18678,6 +18944,12 @@
       "sidecarPath": "src/app/api/platform/registration/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/platform/setup/account/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/platform/setup/account/route.ts",
+      "sidecarPath": "src/app/api/platform/setup/account/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/platform/setup/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/platform/setup/route.ts",
@@ -19050,6 +19322,12 @@
       "sidecarPath": "src/components/personal-appearance-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/platform-first-account-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/platform-first-account-form.tsx",
+      "sidecarPath": "src/components/platform-first-account-form.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/platform-setup-claim-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/platform-setup-claim-form.tsx",
@@ -19254,6 +19532,12 @@
       "sidecarPath": "scripts/performance-budgets.acceptance-rehearsal.operation.ts"
     },
     {
+      "id": "package_command:scripts/platform-first-account.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/platform-first-account.acceptance-rehearsal.operation.ts"
+    },
+    {
       "id": "package_command:scripts/platform-owner.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/platform-owner.ts",
@@ -19332,9 +19616,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "92d491806a2bda04d65b664ec6748ee8c6d3f41293b8f1b3dafc44f7fdb62413",
+  "ownerSetDigest": "33dfde0e450742c8cf902be05721860ec136e80057ee5df930a1674ac4cc25d6",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "3a375dd9fdfbc5227f6d2326538181ae59fa86b53015de20323ed674f1919645",
+  "registryDigest": "024b5ea14b02a0837417967ea6fba62b1f4094ecfd55c581f0b55ed349c0ec4c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
