@@ -95,6 +95,13 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
   [BrowserOperationKey.apiKeyRevoke]: z.object({
     kind: z.literal("api_key"),
     code: z.enum(["revoked", "already_revoked"])
+  }).strict(),
+  [BrowserOperationKey.plannedScheduleSave]: z.object({
+    kind: z.literal("planned_schedule"),
+    code: z.literal("ok"),
+    babyId: z.string().min(1),
+    revision: z.number().int().positive(),
+    itemCount: z.number().int().nonnegative()
   }).strict()
 };
 

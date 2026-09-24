@@ -50,6 +50,7 @@ const expectedDirectHouseholdModels = [
   "NotificationLog",
   "NotificationPreference",
   "NotificationPreferenceBaby",
+  "PlannedSchedule",
   "PushSubscription",
   "Reminder",
   "WebhookDelivery",

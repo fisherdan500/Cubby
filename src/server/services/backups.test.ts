@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
   calendarCreate: vi.fn(),
   reminderFindMany: vi.fn(),
   reminderCreate: vi.fn(),
+  plannedScheduleFindMany: vi.fn(),
+  plannedScheduleCreate: vi.fn(),
   backupCreate: vi.fn(),
   backupFindMany: vi.fn(),
   backupFindFirst: vi.fn(),
@@ -63,6 +65,7 @@ vi.mock("@/lib/db/prisma", () => ({
     medicineCatalog: { findMany: mocks.catalogFindMany, create: mocks.catalogCreate },
     calendarEvent: { findMany: mocks.calendarFindMany, create: mocks.calendarCreate },
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
+    plannedSchedule: { findMany: mocks.plannedScheduleFindMany, create: mocks.plannedScheduleCreate },
     backupRecord: {
       create: mocks.backupCreate,
       findMany: mocks.backupFindMany,
@@ -155,6 +158,7 @@ beforeEach(() => {
   mocks.catalogFindMany.mockResolvedValue([]);
   mocks.calendarFindMany.mockResolvedValue([]);
   mocks.reminderFindMany.mockResolvedValue([]);
+  mocks.plannedScheduleFindMany.mockResolvedValue([]);
   mocks.backupCreate.mockResolvedValue({ id: "backup-1" });
   mocks.backupFindMany.mockResolvedValue([]);
   mocks.settingsUpsert.mockResolvedValue({});
@@ -229,6 +233,29 @@ describe("backup unit preferences", () => {
     expect(mocks.settingsUpsert).not.toHaveBeenCalled();
     expect(mocks.backupCreate).not.toHaveBeenCalled();
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ isolationLevel: "Serializable" }));
+  });
+
+  it("carries each baby's planned schedule through export and restore", async () => {
+    const items = [{ kind: "bedtime", label: null, timing: { mode: "exact", at: "19:15" }, note: "Two books" }];
+    mocks.babyFindMany.mockResolvedValue([{
+      id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, feedingWarningMinutes: null,
+      diaperWarningMinutes: null, sleepWarningMinutes: null, preferredUnits: null, inactiveAt: null
+    }]);
+    mocks.plannedScheduleFindMany.mockResolvedValue([{ babyId: "baby-1", document: { schemaVersion: 1, items } }]);
+    const exported = await buildHouseholdV2Snapshot(
+      transactionClient() as unknown as Parameters<typeof buildHouseholdV2Snapshot>[0],
+      "household-1",
+      "2026-09-24T18:00:00.000Z"
+    );
+    expect(exported.payload.plannedSchedules).toEqual([{ babyId: "baby-1", items }]);
+
+    mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", name: "Finley", inactiveAt: null });
+    await expect(restoreBackupJson(exported, { confirmation: "Home", previewChecksum: exported.checksum })).resolves.toMatchObject({
+      counts: { babies: 1, plannedSchedules: 1 }
+    });
+    expect(mocks.plannedScheduleCreate).toHaveBeenCalledWith({
+      data: { householdId: "household-1", babyId: "saved-baby-1", document: { schemaVersion: 1, items } }
+    });
   });
 
   it("restores a complete v2 snapshot with mapped relationships and one recovery audit", async () => {
@@ -1097,6 +1124,7 @@ function transactionClient() {
     medicineCatalog: { findMany: mocks.catalogFindMany, create: mocks.catalogCreate },
     calendarEvent: { findMany: mocks.calendarFindMany, create: mocks.calendarCreate },
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
+    plannedSchedule: { findMany: mocks.plannedScheduleFindMany, create: mocks.plannedScheduleCreate },
     backupRecord: { create: mocks.backupCreate }
   };
 }

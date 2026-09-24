@@ -45,7 +45,7 @@ const householdScopedKeys = [
 ];
 
 // Issued by issueBrowserOperation, which writes the baby it locked.
-const babyScopedKeys = ["activity.create", "baby.deactivate", "baby.reactivate", "dashboard.warning.dismiss", "calendar_event.create"];
+const babyScopedKeys = ["activity.create", "baby.deactivate", "baby.reactivate", "dashboard.warning.dismiss", "calendar_event.create", "planned_schedule.save"];
 
 // Keys whose binding must record the thing they act on. notification.preference.save is here
 // because 20260824120100 re-listed every case and silently reverted its clause to IS NULL, which

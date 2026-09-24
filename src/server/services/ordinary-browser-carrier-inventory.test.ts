@@ -24,7 +24,8 @@ const carriers = [
   ["settings.units.update", "src/app/api/settings/units/route.ts", "src/components/settings/unit-preferences-form.tsx"],
   ["calendar_event.create", "src/app/app/calendar/actions.ts", "src/components/calendar-event-submission.tsx"],
   ["household.accent.update", "src/app/api/settings/appearance/route.ts", "src/components/settings/appearance-form.tsx"],
-  ["account.appearance.update", "src/app/api/account/appearance/route.ts", "src/components/personal-appearance-form.tsx"]
+  ["account.appearance.update", "src/app/api/account/appearance/route.ts", "src/components/personal-appearance-form.tsx"],
+  ["planned_schedule.save", "src/app/api/babies/[id]/schedule/route.ts", "src/components/reports/planned-schedule.tsx"]
 ] as const;
 
 const deniedLegacyInvitationRoutes = [
@@ -34,9 +35,9 @@ const deniedLegacyInvitationRoutes = [
 ] as const;
 
 describe("ordinary browser carrier closure inventory", () => {
-  it("covers exactly the closed 20-operation browser-operation registry", () => {
-    expect(carriers.map(([operation]) => operation)).toHaveLength(20);
-    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(20);
+  it("covers exactly the closed 21-operation browser-operation registry", () => {
+    expect(carriers.map(([operation]) => operation)).toHaveLength(21);
+    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(21);
   });
 
   it.each(deniedLegacyInvitationRoutes)("%s remains an explicit fail-closed legacy route", (operation, ingress) => {

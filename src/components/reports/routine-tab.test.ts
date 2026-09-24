@@ -73,9 +73,10 @@ describe("RoutineTab", () => {
     const print = vi.spyOn(window, "print").mockImplementation(() => {});
     renderTab();
 
-    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    fireEvent.click(screen.getByRole("button", { name: "Print routine" }));
 
     expect(print).toHaveBeenCalledTimes(1);
+    expect(document.documentElement.dataset.print).toBe("routine");
     expect(screen.getByText("Avery's routine")).toBeTruthy();
     expect(screen.getByText(/what happened, not a plan/)).toBeTruthy();
     print.mockRestore();

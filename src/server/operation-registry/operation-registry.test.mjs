@@ -1461,6 +1461,7 @@ test("declares the baby route family", () => {
   assertDeclarationFamily([
     "src/app/api/babies/[id]/deactivate/route.operation.ts",
     "src/app/api/babies/[id]/reactivate/route.operation.ts",
+    "src/app/api/babies/[id]/schedule/route.operation.ts",
     "src/app/api/babies/route.operation.ts"
   ]);
 });
@@ -1671,7 +1672,8 @@ test("declares the daily workflow client family", () => {
     "src/components/forms/activity-form.operation.ts",
     "src/components/forms/baby-form.operation.ts",
     "src/components/forms/invite-form.operation.ts",
-    "src/components/forms/onboarding-form.operation.ts"
+    "src/components/forms/onboarding-form.operation.ts",
+    "src/components/reports/planned-schedule.operation.ts"
   ]);
 });
 

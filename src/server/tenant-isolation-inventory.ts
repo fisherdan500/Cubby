@@ -4,7 +4,7 @@ export const prismaModelNames = [
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
   "GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityOperation", "GlobalSecurityOperationBinding", "GlobalSecurityOperationReservationTombstone", "GlobalSecurityOperationTombstone", "GlobalSecurityThrottleKey", "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "InvitationAccountSetup", "InvitationLineage", "InvitationOperationBinding", "InvitationOperationIdentity", "InvitationOperationResult", "InvitationOperationTombstone", "InvitationPresentationClaim", "InvitationRecoveryRehearsalChallenge", "InvitationSetupCorridorAttestationReceipt", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog", "PasswordChangeCredentialMutation", "RecoveryResetCredentialMutation", "InvitationProcedureTransitionBinding", "InvitationRecoveryEnrollmentBridge",
-  "NotificationPreference", "NotificationPreferenceBaby", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlatformSetupCode", "PlayLog", "PumpingLog",
+  "NotificationPreference", "NotificationPreferenceBaby", "PlannedSchedule", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlatformSetupCode", "PlayLog", "PumpingLog",
   "PushSubscription", "RecoveryCode", "RecoveryCodeSet", "RecoverySession", "Reminder", "Session", "SessionSecurityActivity", "SleepLog", "SupplementLog", "User", "VaccineDocument", "VaccineLog",
   "Verification", "WebhookDelivery", "WebhookEndpoint"
 ] as const;
@@ -81,6 +81,8 @@ export const tenantIsolationInventory = [
   { model: "NotificationLog", ownership: "direct", operationClasses: ["notification_delivery"], disposition: "deferred_constraint" },
   { model: "NotificationPreference", ownership: "direct", operationClasses: ["notification_write"], disposition: "constraint_slice" },
   { model: "NotificationPreferenceBaby", ownership: "direct", operationClasses: ["notification_preference_selection"], disposition: "constraint_slice" },
+  // The baby reference is composite (householdId, babyId), so a plan cannot point at another household's baby.
+  { model: "PlannedSchedule", ownership: "direct", operationClasses: ["planned_schedule_write", "restore"], disposition: "constraint_slice" },
   { model: "PlatformAuditEvent", ownership: "global", operationClasses: ["platform_audit"], disposition: "excluded" },
   { model: "PlatformAuthority", ownership: "global", operationClasses: ["platform_authority"], disposition: "excluded" },
   { model: "PlatformRegistrationOperation", ownership: "global", operationClasses: ["platform_registration_operation"], disposition: "excluded" },

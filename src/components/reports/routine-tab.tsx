@@ -3,9 +3,12 @@
 import { Printer } from "lucide-react";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
+import { PlannedSchedulePanel } from "@/components/reports/planned-schedule";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTINE_MIN_DAYS, type RoutineSlot } from "@/lib/observed-routine";
+import { printSection } from "@/lib/print-section";
+import type { PlannedScheduleView } from "@/server/services/planned-schedule";
 import type { RoutineTimeline } from "@/server/services/reports";
 
 type RoutineTabProps = {
@@ -14,6 +17,7 @@ type RoutineTabProps = {
   startKey: string;
   endKey: string;
   routine: RoutineTimeline;
+  schedule?: PlannedScheduleView | null;
 };
 
 /**
@@ -22,7 +26,7 @@ type RoutineTabProps = {
  * It is observed, never a plan, and says so wherever it could be mistaken for one, printed pages
  * included.
  */
-export function RoutineTab({ babyId, babyName, startKey, endKey, routine }: RoutineTabProps) {
+export function RoutineTab({ babyId, babyName, startKey, endKey, routine, schedule }: RoutineTabProps) {
   const range = `${formatDateKey(routine.startKey)} to ${formatDateKey(routine.endKey)}`;
   const { naps, feeds } = routine;
 
@@ -48,13 +52,14 @@ export function RoutineTab({ babyId, babyName, startKey, endKey, routine }: Rout
           </label>
         </AutoSubmitForm>
         {routine.enoughData ? (
-          <Button type="button" variant="secondary" onClick={() => window.print()}>
+          <Button type="button" variant="secondary" onClick={() => printSection("routine")}>
             <Printer className="h-4 w-4" aria-hidden="true" />
-            Print
+            Print routine
           </Button>
         ) : null}
       </div>
 
+      <div data-print-section="routine" className="space-y-5">
       {/* On screen the tab already says what this is; on paper, away from the app, it has to. */}
       <header className="hidden space-y-1 print:block">
         <h2 className="font-editorial text-2xl font-bold">{babyName}&apos;s routine</h2>
@@ -130,6 +135,9 @@ export function RoutineTab({ babyId, babyName, startKey, endKey, routine }: Rout
           </Card>
         </>
       )}
+      </div>
+
+      {schedule ? <PlannedSchedulePanel babyName={babyName} schedule={schedule} /> : null}
     </div>
   );
 }

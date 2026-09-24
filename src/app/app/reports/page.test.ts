@@ -6,13 +6,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireUserPage: vi.fn(),
   getHeaderBabySelector: vi.fn(),
-  getReports: vi.fn()
+  getReports: vi.fn(),
+  getPlannedSchedule: vi.fn()
 }));
 
 globalThis.React = React;
 
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
+vi.mock("@/server/services/planned-schedule", () => ({ getPlannedSchedule: mocks.getPlannedSchedule }));
 vi.mock("@/server/services/reports", async () => {
   const actual = await vi.importActual<typeof import("@/server/services/reports")>("@/server/services/reports");
   return { ...actual, getReports: mocks.getReports };

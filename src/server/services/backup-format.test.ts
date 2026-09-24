@@ -22,6 +22,29 @@ function emptyPayload() {
   };
 }
 
+describe("backup v2 planned schedules", () => {
+  const baby = { id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null };
+  const items = [{ kind: "wake" as const, label: null, timing: { mode: "exact" as const, at: "06:30" }, note: null }];
+
+  it("still reads a backup made before plans existed", () => {
+    const backup = createV2Backup(emptyPayload(), exportedAt);
+    expect(backup.payload).not.toHaveProperty("plannedSchedules");
+    expect(parseBackup(backup)).toMatchObject({ version: 2, checksumVerified: true });
+  });
+
+  it("accepts a plan for a baby in the backup, and nothing else", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), babies: [baby], plannedSchedules: [{ babyId: "baby-1", items }] }, exportedAt)).not.toThrow();
+    expect(() => createV2Backup({ ...emptyPayload(), babies: [baby], plannedSchedules: [{ babyId: "baby-2", items }] }, exportedAt)).toThrow("backup_dangling_reference");
+    expect(() => createV2Backup({
+      ...emptyPayload(), babies: [baby], plannedSchedules: [{ babyId: "baby-1", items }, { babyId: "baby-1", items }]
+    }, exportedAt)).toThrow("backup_duplicate_source_id");
+    expect(() => createV2Backup({
+      // Not a plannable kind yet (DEC-PROD-149), so the type rejects it too; the cast tests the runtime check.
+      ...emptyPayload(), babies: [baby], plannedSchedules: [{ babyId: "baby-1", items: [{ ...items[0], kind: "medicine" as never }] }]
+    }, exportedAt)).toThrow();
+  });
+});
+
 describe("backup v2 format", () => {
   it("creates the exact v2 envelope with a deterministic canonical checksum", () => {
     expect(canonicalJson({ z: 1, a: { y: 2, b: 3 } })).toBe('{"a":{"b":3,"y":2},"z":1}');
