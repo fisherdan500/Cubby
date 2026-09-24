@@ -28,25 +28,25 @@ function renderNav() {
 }
 
 describe("MobileBottomNav", () => {
-  it("keeps four tabs and moves Nursery, Settings, appearance and sign-out behind More", async () => {
+  it("keeps four tabs and moves Settings, appearance and sign-out behind More", async () => {
     const more = renderNav();
     for (const label of ["Log", "Full Log", "Calendar", "Reports"]) {
       expect(screen.getByRole("link", { name: label }).getAttribute("href")).toContain("babyId=baby-1");
     }
-    expect(screen.queryByRole("link", { name: "Nursery" })).toBeNull();
 
     await userEvent.click(more);
 
     expect(more.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByRole("link", { name: "Nursery" }).getAttribute("href")).toBe("/app/nursery?babyId=baby-1");
     expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/app/settings");
     expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+    // Nursery is retired: it duplicated Log Entry once dark became the default.
+    expect(screen.queryByRole("link", { name: "Nursery" })).toBeNull();
   });
 
   it("moves focus into the sheet on open and back to More on Escape", async () => {
     const more = renderNav();
     await userEvent.click(more);
-    expect(document.activeElement).toBe(screen.getByRole("link", { name: "Nursery" }));
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: "Settings" }));
 
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("group", { name: "More" })).toBeNull();

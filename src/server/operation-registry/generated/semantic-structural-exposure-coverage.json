@@ -2334,9 +2334,9 @@
     {
       "anchorBytes": "fetch(endpoint, { cache: \"no-store\" })",
       "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
-      "anchorEnd": 2489,
+      "anchorEnd": 2292,
       "anchorFile": "src/components/active-timer-bar.tsx",
-      "anchorStart": 2451,
+      "anchorStart": 2254,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -5817,57 +5817,6 @@
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
     },
     {
-      "anchorBytes": "getDashboard",
-      "anchorDigest": "4267b57ae68faa4b86114317e694a3bd75ae4be93a5a46453ed60858fa025201",
-      "anchorEnd": 680,
-      "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 668,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getDashboard",
-        "target": "src/server/services/dashboard.ts#getDashboard"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/app/nursery/page.tsx:server_value_import:getDashboard:src/server/services/dashboard.ts#getDashboard",
-      "ownerId": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "anchorBytes": "getHeaderBabySelector",
-      "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 616,
-      "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 595,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "getHeaderBabySelector",
-        "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/app/nursery/page.tsx:server_value_import:getHeaderBabySelector:src/server/services/baby-selector.ts#getHeaderBabySelector",
-      "ownerId": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "anchorBytes": "requireUserPage",
-      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 553,
-      "anchorFile": "src/app/app/nursery/page.tsx",
-      "anchorStart": 538,
-      "binding": {
-        "kind": "server_value_import",
-        "symbol": "requireUserPage",
-        "target": "src/server/auth/session.ts#requireUserPage"
-      },
-      "coverage": "structural_only",
-      "id": "server_loader:src/app/app/nursery/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
-      "ownerId": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
       "anchorBytes": "getDashboardPageData",
       "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
       "anchorEnd": 1317,
@@ -6979,10 +6928,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "2ba57ccfe9b2867fc3a1e4a284937b2963bf21faf20af424c6d9034846ccf207",
+  "semanticArtifactDigest": "417c9d9f60976f875ea4566318cdc0a8cf3a0f040a2f5a7f38ccf83a52226f57",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "f224f46a5fdd82ce6200030629ca8db9235d33b10064f1613ae4e19ce0454098",
+  "semanticCoverageDigest": "1d76ae8dab830e5c4d7edc4ea26cbe253acf518c403eb8cebddc03ac7eabd383",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "9abaa382d7f6936d0e83fdcb009aa8a05690225c3450777171d99a4c0a95ccb1"
+  "semanticFingerprint": "cd832f8e4d33133f211ab5af1e7e3253caf1180f719638803ff26cd37cdc3010"
 }
