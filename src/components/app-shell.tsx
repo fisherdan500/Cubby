@@ -38,7 +38,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-card/94 backdrop-blur md:flex md:flex-col">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-card/94 backdrop-blur md:flex md:flex-col print:hidden">
         <Link href="/app" className="flex h-20 items-center gap-3 border-b border-border px-5">
           <BrandLockup size="sm" tagline="Family journal" priority />
         </Link>
@@ -77,7 +77,7 @@ export function AppShell({
       {/* Desktop only. On a phone the header cost a pinned strip of every screen for a title the
           highlighted bottom tab already gives, so it is gone: the baby line and the settings back link
           below take its useful parts, scroll away with the content, and the menu lives behind More. */}
-      <header className="sticky top-0 z-20 hidden border-b border-primary/30 bg-card/95 backdrop-blur md:ml-64 md:block">
+      <header className="sticky top-0 z-20 hidden border-b border-primary/30 bg-card/95 backdrop-blur md:ml-64 md:block print:hidden">
         <div className="flex min-h-20 items-center justify-between gap-2 px-8">
           <div className="min-w-0">
             <h1 className="truncate font-editorial text-xl font-bold text-card-foreground">{title}</h1>
@@ -92,8 +92,9 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="app-shell-content px-3 pb-[calc(6rem+var(--active-timer-bar,0rem))] pt-[max(0.75rem,env(safe-area-inset-top))] md:ml-64 md:px-6 md:pt-5">
-        <div className="md:hidden">
+      {/* On paper only the page's own content is printed: no navigation, header or pinned bars. */}
+      <main className="app-shell-content px-3 pb-[calc(6rem+var(--active-timer-bar,0rem))] pt-[max(0.75rem,env(safe-area-inset-top))] md:ml-64 md:px-6 md:pt-5 print:m-0 print:p-0">
+        <div className="md:hidden print:hidden">
           {babySelector ? <HeaderBabySelector data={babySelector} variant="line" /> : null}
           {parent ? (
             <nav aria-label="Breadcrumb" className="-mx-1 mb-2 flex min-h-11 min-w-0 items-center gap-1 text-sm">

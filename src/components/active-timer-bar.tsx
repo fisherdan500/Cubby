@@ -84,7 +84,7 @@ export function ActiveTimerBar({ selectedBabyId }: { selectedBabyId?: string }) 
 
   // Directly above the phone's bottom navigation, matching the activity action bar's offset.
   return (
-    <div className="fixed inset-x-0 bottom-[4.75rem] z-30 px-3 md:bottom-4 md:left-64 md:px-6">
+    <div className="fixed inset-x-0 bottom-[4.75rem] z-30 px-3 md:bottom-4 md:left-64 md:px-6 print:hidden">
       <section
         aria-label="Running timers"
         className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-live/35 bg-card/97 shadow-lift backdrop-blur"

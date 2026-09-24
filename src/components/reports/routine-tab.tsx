@@ -1,63 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Printer } from "lucide-react";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
-import { RoutineActivitySelector } from "@/components/reports/routine-activity-selector";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { activityLabels } from "@/domain/activity";
-import { defaultRoutineActivityTypes, type RoutineActivityType } from "@/domain/routine";
-import {
-  filterRoutineRows,
-  parseRoutineActivitySelection,
-  ROUTINE_ACTIVITY_STORAGE_KEY,
-  serializeRoutineActivitySelection
-} from "@/lib/routine-preferences";
+import { ROUTINE_MIN_DAYS, type RoutineSlot } from "@/lib/observed-routine";
 import type { RoutineTimeline } from "@/server/services/reports";
 
 type RoutineTabProps = {
   babyId: string;
+  babyName: string;
   startKey: string;
   endKey: string;
   routine: RoutineTimeline;
 };
 
-export function RoutineTab({ babyId, startKey, endKey, routine }: RoutineTabProps) {
-  const [selected, setSelected] = useState<RoutineActivityType[]>([...defaultRoutineActivityTypes]);
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      setSelected(parseRoutineActivitySelection(localStorage.getItem(ROUTINE_ACTIVITY_STORAGE_KEY)));
-    } catch {
-      setSelected([...defaultRoutineActivityTypes]);
-    } finally {
-      setPreferencesLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!preferencesLoaded) return;
-    try {
-      localStorage.setItem(ROUTINE_ACTIVITY_STORAGE_KEY, serializeRoutineActivitySelection(selected));
-    } catch {
-      // Persistence is optional; the selection still works for this page session.
-    }
-  }, [preferencesLoaded, selected]);
-
-  const visibleRows = useMemo(() => filterRoutineRows(routine.rows, selected), [routine.rows, selected]);
-  const visibleSamples = selected.reduce((total, type) => total + routine.summary.samplesByType[type], 0);
+/**
+ * What the baby's day has actually looked like: the anchors first (waking, bedtime, how many naps and
+ * feeds), then the day in order - the list someone could follow if they were looking after the baby.
+ * It is observed, never a plan, and says so wherever it could be mistaken for one, printed pages
+ * included.
+ */
+export function RoutineTab({ babyId, babyName, startKey, endKey, routine }: RoutineTabProps) {
+  const range = `${formatDateKey(routine.startKey)} to ${formatDateKey(routine.endKey)}`;
+  const { naps, feeds } = routine;
 
   return (
     <div className="space-y-5">
-      <Card className="w-fit max-w-full">
+      <div className="flex flex-wrap items-end justify-between gap-3 print:hidden">
         <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
           <input name="babyId" type="hidden" value={babyId} />
           <input name="start" type="hidden" value={startKey} />
           <input name="end" type="hidden" value={endKey} />
           <input name="tab" type="hidden" value="routine" />
           <label className="grid gap-1 text-xs font-bold text-muted-foreground">
-            Routine window
+            Based on the last
             <select
               name="routineWindow"
               defaultValue={routine.window}
@@ -69,76 +47,118 @@ export function RoutineTab({ babyId, startKey, endKey, routine }: RoutineTabProp
             </select>
           </label>
         </AutoSubmitForm>
-      </Card>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {selected.includes("sleep") ? (
-          <>
-            <Metric label="Avg sleep time" value={routine.summary.averageSleepTime ?? "--"} />
-            <Metric label="Avg sleep duration" value={routine.summary.averageSleepDuration} />
-          </>
+        {routine.enoughData ? (
+          <Button type="button" variant="secondary" onClick={() => window.print()}>
+            <Printer className="h-4 w-4" aria-hidden="true" />
+            Print
+          </Button>
         ) : null}
-        {selected.includes("feeding") ? (
-          <Metric label="Avg feed time" value={routine.summary.averageFeedTime ?? "--"} />
-        ) : null}
-        <Metric label="Days with routine data" value={`${routine.daysWithData}/${routine.windowDays}`} />
       </div>
 
-      <Card className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold">Typical Day</h2>
-            <p className="text-sm text-muted-foreground">
-              {routine.windowLabel} ending {routine.endKey}
+      {/* On screen the tab already says what this is; on paper, away from the app, it has to. */}
+      <header className="hidden space-y-1 print:block">
+        <h2 className="font-editorial text-2xl font-bold">{babyName}&apos;s routine</h2>
+        <p className="text-sm">
+          Worked out from what was logged, {range}. This is what happened, not a plan: check the latest log before relying on it.
+        </p>
+      </header>
+
+      {!routine.enoughData ? (
+        <Card>
+          <p className="text-sm text-muted-foreground">
+            Not enough logged yet to see a routine. It appears once sleep or feeds have been logged on at least {ROUTINE_MIN_DAYS} days
+            {routine.daysWithData ? ` (${routine.daysWithData} of the last ${routine.windowDays} so far)` : ""}.
+          </p>
+        </Card>
+      ) : (
+        <>
+          <ul aria-label="Routine at a glance" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Fact label="Wakes up" slot={routine.wake} />
+            <Fact
+              label="Bedtime"
+              slot={routine.bedtime}
+              extra={routine.night ? `Night about ${routine.night.duration}` : undefined}
+            />
+            <li className="rounded-xl border border-border bg-card p-4 shadow-soft print:border-foreground/40 print:shadow-none">
+              <p className="text-sm font-semibold text-muted-foreground">Naps</p>
+              <p className="font-editorial text-2xl font-bold">
+                {!naps ? "Not enough data" : naps.slots.length || naps.minCount === naps.maxCount ? `${naps.usualCount} a day` : `${naps.minCount} to ${naps.maxCount} a day`}
+              </p>
+              {naps ? (
+                <p className="text-xs text-muted-foreground">
+                  {naps.slots.length ? `On ${naps.daysWithUsualCount} of ${naps.daysCounted} days` : "Varies too much to list times"}
+                </p>
+              ) : null}
+            </li>
+            <li className="rounded-xl border border-border bg-card p-4 shadow-soft print:border-foreground/40 print:shadow-none">
+              <p className="text-sm font-semibold text-muted-foreground">Feeds</p>
+              <p className="font-editorial text-2xl font-bold">{feeds ? `About ${feeds.usualCount} by day` : "Not enough data"}</p>
+              {feeds ? (
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    feeds.interval ? `Roughly every ${feeds.interval}` : null,
+                    feeds.nightFeeds ? `${formatCount(feeds.nightFeeds.perNight)} at night` : null
+                  ].filter(Boolean).join(" · ")}
+                </p>
+              ) : null}
+            </li>
+          </ul>
+
+          <Card className="space-y-3 print:border-foreground/40 print:shadow-none">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-base font-semibold">Typical day</h2>
+              <p className="text-xs font-semibold text-muted-foreground print:hidden">From {range}</p>
+            </div>
+            <ol aria-label="Typical day" className="divide-y divide-border">
+              {routine.timeline.map((entry) => (
+                <li key={entry.id} className="grid grid-cols-[4.75rem_2rem_minmax(0,1fr)_auto] items-center gap-3 py-2.5 break-inside-avoid">
+                  <span className="tabular text-sm font-bold text-primary print:text-foreground">{entry.slot.time}</span>
+                  <ActivityArtwork type={entry.activityType} size="xs" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold">{entry.label}</span>
+                    {entry.slot.duration && entry.kind !== "bedtime" && entry.kind !== "wake" ? (
+                      <span className="block text-xs text-muted-foreground">for about {entry.slot.duration}</span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{spreadText(entry.slot)}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              Times are the usual time across the days that followed the usual pattern; ± shows how much they typically moved.
             </p>
-          </div>
-          <p className="text-xs font-bold text-muted-foreground">
-            {visibleSamples} {visibleSamples === 1 ? "sample" : "samples"}
-          </p>
-        </div>
-
-        <RoutineActivitySelector selected={selected} onChange={setSelected} />
-
-        {selected.length === 0 ? (
-          <p className="rounded-lg bg-surface p-4 text-sm text-muted-foreground">
-            No activities selected. Choose activities above to build your Typical Day.
-          </p>
-        ) : visibleRows.length ? (
-          <div className="space-y-3">
-            {visibleRows.map((row) => {
-              const label = activityLabels[row.type];
-              return (
-                <div key={`${row.type}-${row.index}`} className="grid grid-cols-[48px_minmax(0,1fr)] gap-3 rounded-lg bg-surface p-3">
-                  <ActivityArtwork type={row.type} size="md" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-primary">{row.averageTime}</p>
-                    <p className="font-semibold">
-                      {label} around {row.averageTime}
-                      {row.averageDuration ? ` for ${row.averageDuration}` : ""}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {row.sampleCount} {row.sampleCount === 1 ? "sample" : "samples"}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="rounded-lg bg-surface p-4 text-sm text-muted-foreground">
-            No recurring activity pattern was found for the selected activities in this routine window.
-          </p>
-        )}
-      </Card>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Fact({ label, slot, extra }: { label: string; slot: RoutineSlot | null; extra?: string }) {
   return (
-    <Card>
-      <p className="font-editorial text-2xl font-bold">{value}</p>
+    <li className="rounded-xl border border-border bg-card p-4 shadow-soft print:border-foreground/40 print:shadow-none">
       <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-    </Card>
+      <p className="font-editorial text-2xl font-bold">{slot ? `Around ${slot.time}` : "Not enough data"}</p>
+      {slot ? (
+        <p className="text-xs text-muted-foreground">
+          {[spreadText(slot, "Varies by about"), extra].filter(Boolean).join(" · ") || `On ${slot.days} days`}
+        </p>
+      ) : null}
+    </li>
   );
+}
+
+function spreadText(slot: RoutineSlot, prefix = "±") {
+  if (slot.spreadMinutes < 5) return "";
+  return prefix === "±" ? `± ${slot.spreadMinutes} min` : `${prefix} ${slot.spreadMinutes} min`;
+}
+
+function formatCount(value: number) {
+  if (value === 0) return "None";
+  return `About ${Number.isInteger(value) ? value : value.toFixed(1)}`;
+}
+
+function formatDateKey(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, day)));
 }
