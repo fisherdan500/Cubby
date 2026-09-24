@@ -56,7 +56,8 @@ implementation, merge, deployment, and cleanup approvals.
   - P4 gates delivered: a performance budget harness for one- and five-year households (#105, #109), report-number coverage (#108), wider integrity checks (#111), and export correctness (#106, #110).
   - Verification is now automated rather than remembered: one `verify:gates` runner and CI on every pull request (#113), extended to the image-building rehearsals (#121).
   - Partial: P1-1, P1-3 and P1-4. Blocked: P1-8.
-  - In progress: the whole-app visual rework, driven directly by the User's phone review (#114–#119). Nursery is the one screen still outstanding and needs a product decision.
+  - The whole-app visual rework, driven directly by the User's phone review (#114–#119), is complete; Nursery is parked as redundant rather than redesigned (see below).
+  - An independent audit of #102–#122 was remediated in #135: calendar tenant links, timer shell, exact sleep pauses, report averages, spreadsheet formula exports, verification correctness, 3:1 control outlines, first-account setup with the setup code, and a working fresh-server quick start.
   - Deployment and cleanup remain separate gates.
 - Priority: high
 - Goal: Reconcile all confirmed product policy against the exact application tree, then deliver missing behavior in dependency order without mistaking decisions for implementation.
@@ -65,11 +66,10 @@ implementation, merge, deployment, and cleanup approvals.
 
 ### Nursery Night Treatment
 
-- Status: blocked on a product decision
-- Priority: medium
+- Status: parked (2026-09-24)
+- Priority: low
 - Goal: Give the Nursery screen a way to read as "night" now that the whole application is dark.
-- Acceptance: Nursery is distinguishable from the rest of the application at a glance in the dark, its controls remain usable one-handed in the dark, and the chosen direction is recorded before implementation.
-- Notes: Nursery inherited the new palette in #117 but kept the layout it had when the rest of the application was light, so the contrast that used to say "night" is gone. Three directions were put to the User and none chosen yet: dim the screen further, warm or red-shift it, or simply enlarge the controls. The shell timer bar already stands aside on Nursery because that screen carries its own full-size night controls. No other screen is blocked by this.
+- Notes: Nursery inherited the new palette in #117 but kept its old layout, so the contrast that used to say "night" is gone. With dark as the default it now duplicates the Log Entry dashboard (the same quick actions, and running timers the shell timer bar already covers), and the User judged it redundant. No night treatment will be built; the screen stays as it is. Retiring it - removing it from navigation and folding any needed night-use sizing into the dashboard - is the likely follow-up, not yet decided. Nothing is blocked by this.
 
 ## Later
 
@@ -97,11 +97,11 @@ not contain or authorize roadmap work.
 - Priority: high
 - Goal: Make every verification gate runnable from one command and run it on every pull request, so a gate cannot rot unnoticed.
 - Acceptance: One runner executes the gates a person would type; every `verify:` script is classified as automated, run by hand with a stated reason, or not a gate; continuous integration drives the same runner rather than a second copy of the list; a new gate group cannot be added without a job to run it.
-- Notes: Pull request #113 added `scripts/verify-gates.ts`, the `canonical` and `disposable` groups, and the first workflow. Pull request #121 added the `image` group for the rehearsals that build the application image (`backup-recovery`, `browser-operation-save-path`), which share one job so the second build reuses the first's layers; the whole job runs in under four minutes. `GATES_RUN_BY_HAND` now records why each remaining rehearsal cannot run on every pass, and a test rejects a reason amounting to "slow"; what stays out is three wall-clock budgets, one rehearsal that inspects an existing local `cubby-app` image, and one that drives Chrome over CDP. Automation immediately found real faults that hand-running had missed: a Windows-only assumption in `sprout-staging`, a stale generated artifact, and three broken rehearsals - two of which could never have passed on Linux at all (`node node_modules/esbuild/bin/esbuild` is a shim on Windows and the native binary on Linux, and a `mkdtemp` 0700 bind mount is unreadable by the image's `node` user where Docker Desktop synthesizes permissions).
+- Notes: Pull request #113 added `scripts/verify-gates.ts`, the `canonical` and `disposable` groups, and the first workflow. Pull request #121 added the `image` group for the rehearsals that build the application image (`backup-recovery`, `browser-operation-save-path`), which share one job so later builds reuse the first's layers; #135 added `quick-start` to that group and `platform-first-account` to the disposable group. `GATES_RUN_BY_HAND` now records why each remaining rehearsal cannot run on every pass, and a test rejects a reason amounting to "slow"; what stays out is three wall-clock budgets, one rehearsal that inspects an existing local `cubby-app` image, and one that drives Chrome over CDP. Automation immediately found real faults that hand-running had missed: a Windows-only assumption in `sprout-staging`, a stale generated artifact, and three broken rehearsals - two of which could never have passed on Linux at all (`node node_modules/esbuild/bin/esbuild` is a shim on Windows and the native binary on Linux, and a `mkdtemp` 0700 bind mount is unreadable by the image's `node` user where Docker Desktop synthesizes permissions).
 
 ### Running Timer Indicators And Whole-App Visual Rework
 
-- Status: done for every screen except Nursery
+- Status: done (Nursery parked; see Nursery Night Treatment)
 - Priority: medium
 - Goal: Make a running timer legible from anywhere without crowding the dashboard, and give the application a calm, mature palette that leads with its accent.
 - Acceptance: A running timer shows as an indicator rather than a control cluster; stopping is one tap from any screen and returns the caregiver where they were; the palette is tuned equally in both modes and every foreground/background pairing meets its contrast target under test.

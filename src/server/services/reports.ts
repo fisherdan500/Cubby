@@ -144,7 +144,8 @@ export function buildRoutineTimeline(activities: RoutineActivity[], endKey: stri
     const minute = minuteOfDay(activity.occurredAt, timeZone);
     if (type === "sleep") {
       sleepMinutes.push(minute);
-      if (activity.durationSeconds) sleepDurations.push(activity.durationSeconds);
+      // A completed zero-length sleep is still a completed log; only a sleep with no duration is left out.
+      if (activity.durationSeconds !== null) sleepDurations.push(activity.durationSeconds);
     } else if (type === "feeding") {
       feedMinutes.push(minute);
     }
@@ -174,7 +175,7 @@ export function buildRoutineTimeline(activities: RoutineActivity[], endKey: stri
 
       const averageMinutes = averageMinuteOfDay(matching.map((entry) => minuteOfDay(entry.occurredAt, timeZone)));
       const averageDurationSeconds = average(
-        matching.map((entry) => entry.durationSeconds ?? 0).filter((value) => value > 0)
+        matching.flatMap((entry) => (entry.durationSeconds === null ? [] : [entry.durationSeconds]))
       );
 
       rows.push({

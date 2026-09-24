@@ -202,6 +202,22 @@ describe("reports routine timeline", () => {
     ]);
   });
 
+  it("averages every sleep with a recorded duration, including a zero-length one, as the stats card does", () => {
+    const routine = buildRoutineTimeline(
+      [
+        activity(ActivityType.sleep, "2026-06-18T07:00", 0),
+        activity(ActivityType.sleep, "2026-06-19T07:30", 40 * 60),
+        activity(ActivityType.sleep, "2026-06-19T09:00", null)
+      ],
+      "2026-06-19",
+      "1w",
+      timeZone
+    );
+
+    expect(routine.summary.averageSleepDuration).toBe("20 min");
+    expect(routine.rows.find((row) => row.type === "sleep" && row.index === 0)).toMatchObject({ averageDuration: "20 min" });
+  });
+
   it("counts all feeding activity positions without mode filtering", () => {
     const routine = buildRoutineTimeline(
       [
