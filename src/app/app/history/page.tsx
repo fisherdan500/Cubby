@@ -6,11 +6,12 @@ import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { activityLabels, activityTypes } from "@/domain/activity";
+import { activityRowActions } from "@/lib/activity-row-actions";
 import { env } from "@/lib/env";
 import { historyHref, historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination";
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
-import { listActivities } from "@/server/services/activities";
+import { getActivityRowViewer, listActivities } from "@/server/services/activities";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
@@ -23,14 +24,15 @@ export default async function HistoryPage({
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
-  const [activityResults, unitSettings] = await Promise.all([
+  const [activityResults, unitSettings, viewer] = await Promise.all([
     listActivities({
       babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
       type: searchParams.type,
       search: searchParams.search,
       page: historyPageQuery(searchParams.cursor)
     }),
-    getActivityUnitPreferences()
+    getActivityUnitPreferences(),
+    getActivityRowViewer()
   ]);
   const { items: activities, nextCursor } = paginateHistoryItems(activityResults);
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
@@ -98,6 +100,7 @@ export default async function HistoryPage({
                   timeZone={env.APP_TIMEZONE}
                   volume={unitSettings.preferences.volume}
                   meta={actorName(activity)}
+                  actions={activityRowActions(viewer, activity)}
                 />
               ))}
             </Card>

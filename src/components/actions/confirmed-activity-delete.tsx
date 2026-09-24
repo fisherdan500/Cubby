@@ -58,14 +58,17 @@ async function operationResponse(response: Response) {
 export function ConfirmedActivityDelete({
   id,
   returnTo,
-  trigger = "button"
+  trigger = "button",
+  onConfirmingChange
 }: {
   id: string;
   returnTo: string;
   // "icon" is the small trash control used in the activity page's bottom action bar. It keeps the
   // same two-step confirmation - that confirmation, not the trigger's size, is what prevents an
   // accidental delete - but the question opens upward from the bar, next to the thumb that tapped it.
-  trigger?: "button" | "icon";
+  // "swipe" is the Delete revealed by swiping a list row; its question takes over the row itself.
+  trigger?: "button" | "icon" | "swipe";
+  onConfirmingChange?: (confirming: boolean) => void;
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -80,7 +83,8 @@ export function ConfirmedActivityDelete({
   useEffect(() => {
     if (confirming) confirmationHeading.current?.focus();
     else if (hasOpened.current) triggerContainer.current?.querySelector("button")?.focus();
-  }, [confirming]);
+    if (hasOpened.current) onConfirmingChange?.(confirming);
+  }, [confirming]); // eslint-disable-line react-hooks/exhaustive-deps -- reports changes of this state only
 
   function clearOperation() {
     if (storageKeyRef.current) clearRetainedOperationId(storageKeyRef.current);
@@ -217,6 +221,42 @@ export function ConfirmedActivityDelete({
             </div>
           </section>
         ) : null}
+      </div>
+    );
+  }
+
+  if (trigger === "swipe") {
+    return (
+      <div ref={triggerContainer} className="h-full">
+        {confirming ? (
+          <section className="flex h-full items-center gap-2 bg-danger/10 px-3" aria-label="Confirm activity deletion">
+            <div className="min-w-0 flex-1">
+              <h2 ref={confirmationHeading} tabIndex={-1} className="truncate text-sm font-semibold text-danger">
+                Delete this activity?
+              </h2>
+              {/* The row has room for one short line; the full message is still announced. */}
+              {error ? <p role="alert" className="line-clamp-2 text-xs font-semibold text-danger">{error}</p> : null}
+            </div>
+            <Button type="button" variant="secondary" disabled={submitting} onClick={() => setConfirming(false)}>
+              Keep
+            </Button>
+            <Button type="button" variant="danger" disabled={submitting} onClick={remove}>
+              {submitting ? "Deleting..." : "Delete"}
+            </Button>
+          </section>
+        ) : (
+          <button
+            type="button"
+            className="flex h-full w-full flex-col items-center justify-center gap-0.5 bg-danger text-xs font-semibold text-white"
+            onClick={() => {
+              hasOpened.current = true;
+              setConfirming(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Delete
+          </button>
+        )}
       </div>
     );
   }

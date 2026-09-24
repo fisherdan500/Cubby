@@ -13,6 +13,7 @@ import {
 } from "@/lib/validation/activity";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import { canMutateOwnOrAny } from "@/domain/roles";
+import type { ActivityRowViewer } from "@/lib/activity-row-actions";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockActorForWrite, lockApiKeyForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import {
@@ -712,6 +713,13 @@ export async function listActivitiesForContext(
       take: 100
     })
   });
+}
+
+/** Who is looking at a list of activities, for deciding which rows they may edit or delete. */
+export async function getActivityRowViewer(): Promise<ActivityRowViewer> {
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "activity.read");
+  return { memberId: ctx.memberId, role: ctx.role };
 }
 
 export async function getActivityView(id: string) {
