@@ -18,12 +18,7 @@ import type { ActiveTimerSummary } from "@/server/services/active-timers";
  * It lives in the shell rather than on the dashboard because the moment a feed ends is rarely the
  * moment you happen to be looking at the dashboard. Pause is deliberately not here - it is far rarer
  * than stop, and it lives on the activity's own screen, where there is room to think.
- *
- * The Nursery screen already gives every timer full-size night controls, so the bar stands aside there
- * rather than stacking a second set on top of them.
  */
-
-const HIDDEN_ON = ["/app/nursery"];
 
 function timerHref(timer: ActiveTimerSummary, returnTo: string) {
   return `/app/activities/${timer.id}?returnTo=${encodeURIComponent(returnTo)}`;
@@ -68,7 +63,7 @@ export function ActiveTimerBar({ selectedBabyId }: { selectedBabyId?: string }) 
     };
   }, [pathname, selectedBabyId]);
 
-  const visible = timers.length > 0 && !HIDDEN_ON.some((route) => pathname.startsWith(route));
+  const visible = timers.length > 0;
 
   // Anything pinned to the bottom of a screen offsets itself by this, so the bar never covers it.
   useEffect(() => {

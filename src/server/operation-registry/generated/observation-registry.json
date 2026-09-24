@@ -6,10 +6,10 @@
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
-    "server_loader": 28,
+    "server_loader": 27,
     "worker": 6
   },
-  "declarationDigest": "192122c2624fdb5c6fd1c044cb4fdd98275eae02967eedac142fd9552a426d21",
+  "declarationDigest": "f8f4627d79dd0fd8fa996d0e5a6860ec77fe6387b14a86c3443e4041bd5b90ca",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4743,46 +4743,6 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "getDashboard",
-            "target": "src/server/services/dashboard.ts#getDashboard"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getHeaderBabySelector",
-            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "requireUserPage",
-            "target": "src/server/auth/session.ts#requireUserPage"
-          }
-        ],
-        "deferredGateIds": [
-          "gate.carrier_authority_guard",
-          "gate.caller_controlled_scope",
-          "gate.service_operation_linkage",
-          "gate.permission_commit_reauthorization",
-          "gate.tenant_relationship_invariants",
-          "gate.model_and_effects",
-          "gate.variant_outcomes",
-          "gate.worker_containment",
-          "gate.browser_binding_staleness",
-          "gate.executable_evidence"
-        ],
-        "disposition": "observed",
-        "id": "server_loader:src/app/app/nursery/page.tsx",
-        "ownerKind": "server_loader",
-        "ownerModule": "src/app/app/nursery/page.tsx",
-        "schemaVersion": 1
-      },
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "declaration": {
-        "bindings": [
-          {
-            "kind": "server_value_import",
             "symbol": "getDashboardPageData",
             "target": "src/server/services/dashboard.ts#getDashboardPageData"
           },
@@ -7308,7 +7268,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "3c1dd19cb448d8d534ef68a2dfe612f61671cff7c9c78efd93420dc7dae58ed3",
+  "generatorDigest": "126458ee143349558227025d51388e8e8b4419ae4f17513b95f60f1eeb9a5b26",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -9793,43 +9753,6 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4267b57ae68faa4b86114317e694a3bd75ae4be93a5a46453ed60858fa025201",
-          "anchorEnd": 680,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 668,
-          "kind": "server_value_import",
-          "symbol": "getDashboard",
-          "target": "src/server/services/dashboard.ts#getDashboard"
-        },
-        {
-          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 616,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 595,
-          "kind": "server_value_import",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 553,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 538,
-          "kind": "server_value_import",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "exclusion": null,
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
           "anchorEnd": 1317,
           "anchorFile": "src/app/app/page.tsx",
@@ -10629,9 +10552,9 @@
       "bindings": [
         {
           "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
-          "anchorEnd": 2489,
+          "anchorEnd": 2292,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2451,
+          "anchorStart": 2254,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -13126,8 +13049,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 202,
-  "observationDigest": "1522764f7f1eda18bda71cd6053297cd9a3d4995454aee86539465e2693ff69e",
+  "observationCount": 201,
+  "observationDigest": "14e8fb92ec160c5df6852b2bf014003b98d39f196b7d0c5628743985cd361f1d",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15501,42 +15424,6 @@
     {
       "bindings": [
         {
-          "anchorEnd": 680,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 668,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/nursery/page.tsx",
-          "symbol": "getDashboard",
-          "target": "src/server/services/dashboard.ts#getDashboard"
-        },
-        {
-          "anchorEnd": 616,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 595,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/nursery/page.tsx",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorEnd": 553,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 538,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/nursery/page.tsx",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorEnd": 1317,
           "anchorFile": "src/app/app/page.tsx",
           "anchorStart": 1297,
@@ -16311,9 +16198,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2489,
+          "anchorEnd": 2292,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2451,
+          "anchorStart": 2254,
           "kind": "global_fetch",
           "ownerModule": "src/components/active-timer-bar.tsx",
           "symbol": "fetch[1]",
@@ -19314,12 +19201,6 @@
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
     },
     {
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
       "id": "server_loader:src/app/app/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/page.tsx",
@@ -19854,9 +19735,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "07b73ac4c2dbe2dd75ef1e422c0d61ba6ebe130fe9f276e90ff40adac3816768",
+  "ownerSetDigest": "80b1966168913fe24e374caa0cd17b2a58f7484593bb262aac9ad88ceb839f3a",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "4aeb556c2be85a2e350292e673738b27a7a1eff29194c1c3bed38ff740a04875",
+  "registryDigest": "91f1e4a939f626883e5cf92993b0c242062ccfbd3ac2b815da8e1c27686bf9ff",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

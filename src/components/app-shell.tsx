@@ -14,8 +14,7 @@ const primaryNav = [
   { href: "/app", label: "Log Entry", icon: PlusCircle },
   { href: "/app/history", label: "Full Log", icon: ClipboardList },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/app/reports", label: "Reports", icon: LineChart },
-  { href: "/app/nursery", label: "Nursery", icon: Moon }
+  { href: "/app/reports", label: "Reports", icon: LineChart }
 ];
 
 export function AppShell({
