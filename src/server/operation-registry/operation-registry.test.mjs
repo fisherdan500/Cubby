@@ -1569,7 +1569,6 @@ test("declares the primary authenticated loader family", () => {
     "src/app/app/history/page.operation.ts",
     "src/app/app/layout.operation.ts",
     "src/app/app/log/[type]/page.operation.ts",
-    "src/app/app/nursery/page.operation.ts",
     "src/app/app/page.operation.ts",
     "src/app/app/reports/page.operation.ts"
   ]);

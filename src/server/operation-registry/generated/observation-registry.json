@@ -6,10 +6,10 @@
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
-    "server_loader": 28,
+    "server_loader": 27,
     "worker": 6
   },
-  "declarationDigest": "192122c2624fdb5c6fd1c044cb4fdd98275eae02967eedac142fd9552a426d21",
+  "declarationDigest": "12cf90dfe38c430273c4693c8bb8acccb2cafc975791e44a860b35dfd802de00",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4618,6 +4618,11 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getActivityRowViewer",
+            "target": "src/server/services/activities.ts#getActivityRowViewer"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getActivityUnitPreferences",
             "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
           },
@@ -4737,46 +4742,6 @@
       },
       "id": "server_loader:src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
-    },
-    {
-      "declaration": {
-        "bindings": [
-          {
-            "kind": "server_value_import",
-            "symbol": "getDashboard",
-            "target": "src/server/services/dashboard.ts#getDashboard"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getHeaderBabySelector",
-            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "requireUserPage",
-            "target": "src/server/auth/session.ts#requireUserPage"
-          }
-        ],
-        "deferredGateIds": [
-          "gate.carrier_authority_guard",
-          "gate.caller_controlled_scope",
-          "gate.service_operation_linkage",
-          "gate.permission_commit_reauthorization",
-          "gate.tenant_relationship_invariants",
-          "gate.model_and_effects",
-          "gate.variant_outcomes",
-          "gate.worker_containment",
-          "gate.browser_binding_staleness",
-          "gate.executable_evidence"
-        ],
-        "disposition": "observed",
-        "id": "server_loader:src/app/app/nursery/page.tsx",
-        "ownerKind": "server_loader",
-        "ownerModule": "src/app/app/nursery/page.tsx",
-        "schemaVersion": 1
-      },
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
     },
     {
       "declaration": {
@@ -7308,7 +7273,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "3c1dd19cb448d8d534ef68a2dfe612f61671cff7c9c78efd93420dc7dae58ed3",
+  "generatorDigest": "126458ee143349558227025d51388e8e8b4419ae4f17513b95f60f1eeb9a5b26",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -9619,18 +9584,18 @@
         },
         {
           "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-          "anchorEnd": 1033,
+          "anchorEnd": 1098,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1022,
+          "anchorStart": 1087,
           "kind": "server_value_import",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 970,
+          "anchorEnd": 1035,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 949,
+          "anchorStart": 1014,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
@@ -9646,9 +9611,9 @@
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 907,
+          "anchorEnd": 972,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 892,
+          "anchorStart": 957,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9673,37 +9638,46 @@
     {
       "bindings": [
         {
-          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 844,
+          "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
+          "anchorEnd": 767,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 818,
+          "anchorStart": 747,
+          "kind": "server_value_import",
+          "symbol": "getActivityRowViewer",
+          "target": "src/server/services/activities.ts#getActivityRowViewer"
+        },
+        {
+          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
+          "anchorEnd": 931,
+          "anchorFile": "src/app/app/history/page.tsx",
+          "anchorStart": 905,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 766,
+          "anchorEnd": 853,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 745,
+          "anchorStart": 832,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 696,
+          "anchorEnd": 783,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 682,
+          "anchorStart": 769,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 640,
+          "anchorEnd": 705,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 625,
+          "anchorStart": 690,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -9793,56 +9767,19 @@
     {
       "bindings": [
         {
-          "anchorDigest": "4267b57ae68faa4b86114317e694a3bd75ae4be93a5a46453ed60858fa025201",
-          "anchorEnd": 680,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 668,
-          "kind": "server_value_import",
-          "symbol": "getDashboard",
-          "target": "src/server/services/dashboard.ts#getDashboard"
-        },
-        {
-          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 616,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 595,
-          "kind": "server_value_import",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 553,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 538,
-          "kind": "server_value_import",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "exclusion": null,
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1317,
+          "anchorEnd": 1406,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1297,
+          "anchorStart": 1386,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1255,
+          "anchorEnd": 1344,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1240,
+          "anchorStart": 1329,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10500,27 +10437,27 @@
         },
         {
           "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
-          "anchorEnd": 3796,
+          "anchorEnd": 4250,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 3726,
+          "anchorStart": 4180,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
-          "anchorEnd": 5051,
+          "anchorEnd": 5505,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4910,
+          "anchorStart": 5364,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
-          "anchorEnd": 5758,
+          "anchorDigest": "de00e8d0b9b033beda02b34fc6f92eef64d17ef1165c8779f68c33c762181576",
+          "anchorEnd": 6229,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 5605,
+          "anchorStart": 6059,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -10592,27 +10529,27 @@
         },
         {
           "anchorDigest": "502e6e619bb789d0f922219c1e8244d4097f05c081f0fbd1b2b47b97500135ff",
-          "anchorEnd": 4369,
+          "anchorEnd": 4704,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 4303,
+          "anchorStart": 4638,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "7527928970a5790d8524ff83ec97d40552755c28bf5fb2056dd27e957976fef3",
-          "anchorEnd": 5505,
+          "anchorEnd": 5840,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 5364,
+          "anchorStart": 5699,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "bc84519e43d1ba89b830fdd377b37af4d862c6e11a589fdf3e6d5a34366a2984",
-          "anchorEnd": 6184,
+          "anchorEnd": 6519,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 6022,
+          "anchorStart": 6357,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -10629,9 +10566,9 @@
       "bindings": [
         {
           "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
-          "anchorEnd": 2489,
+          "anchorEnd": 2292,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2451,
+          "anchorStart": 2254,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -10778,45 +10715,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 10068,
+          "anchorEnd": 10652,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10053,
+          "anchorStart": 10637,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 2052,
+          "anchorEnd": 2132,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 1987,
+          "anchorStart": 2067,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 5714,
+          "anchorEnd": 6180,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 5637,
+          "anchorStart": 6103,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 6993,
+          "anchorEnd": 7519,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6821,
+          "anchorStart": 7347,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 7746,
+          "anchorEnd": 8272,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7541,
+          "anchorStart": 8067,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -13126,8 +13063,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 202,
-  "observationDigest": "03b042486ed652646a67d314112eb44a4cb620ed85b160bcafccdf17a6df2495",
+  "observationCount": 201,
+  "observationDigest": "3f6f767b38ec126427ba91ac2b8e8823a1900bcdf0df054f2050dffde00f540a",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15330,18 +15267,18 @@
           "target": "src/server/services/calendar.ts#createCalendarEvent"
         },
         {
-          "anchorEnd": 1033,
+          "anchorEnd": 1098,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 1022,
+          "anchorStart": 1087,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getCalendar",
           "target": "src/server/services/calendar.ts#getCalendar"
         },
         {
-          "anchorEnd": 970,
+          "anchorEnd": 1035,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 949,
+          "anchorStart": 1014,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "getHeaderBabySelector",
@@ -15357,9 +15294,9 @@
           "target": "src/server/services/calendar.ts#issueCalendarEventBrowserOperation"
         },
         {
-          "anchorEnd": 907,
+          "anchorEnd": 972,
           "anchorFile": "src/app/app/calendar/page.tsx",
-          "anchorStart": 892,
+          "anchorStart": 957,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/calendar/page.tsx",
           "symbol": "requireUserPage",
@@ -15384,36 +15321,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 844,
+          "anchorEnd": 767,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 818,
+          "anchorStart": 747,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/history/page.tsx",
+          "symbol": "getActivityRowViewer",
+          "target": "src/server/services/activities.ts#getActivityRowViewer"
+        },
+        {
+          "anchorEnd": 931,
+          "anchorFile": "src/app/app/history/page.tsx",
+          "anchorStart": 905,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 766,
+          "anchorEnd": 853,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 745,
+          "anchorStart": 832,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 696,
+          "anchorEnd": 783,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 682,
+          "anchorStart": 769,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 640,
+          "anchorEnd": 705,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 625,
+          "anchorStart": 690,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "requireUserPage",
@@ -15501,54 +15447,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 680,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 668,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/nursery/page.tsx",
-          "symbol": "getDashboard",
-          "target": "src/server/services/dashboard.ts#getDashboard"
-        },
-        {
-          "anchorEnd": 616,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 595,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/nursery/page.tsx",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorEnd": 553,
-          "anchorFile": "src/app/app/nursery/page.tsx",
-          "anchorStart": 538,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/nursery/page.tsx",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
-          "anchorEnd": 1317,
+          "anchorEnd": 1406,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1297,
+          "anchorStart": 1386,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1255,
+          "anchorEnd": 1344,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1240,
+          "anchorStart": 1329,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -16185,27 +16095,27 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3796,
+          "anchorEnd": 4250,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 3726,
+          "anchorStart": 4180,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5051,
+          "anchorEnd": 5505,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4910,
+          "anchorStart": 5364,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5758,
+          "anchorEnd": 6229,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 5605,
+          "anchorStart": 6059,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[4]",
@@ -16275,27 +16185,27 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4369,
+          "anchorEnd": 4704,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 4303,
+          "anchorStart": 4638,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5505,
+          "anchorEnd": 5840,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 5364,
+          "anchorStart": 5699,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6184,
+          "anchorEnd": 6519,
           "anchorFile": "src/components/actions/confirmed-activity-delete.tsx",
-          "anchorStart": 6022,
+          "anchorStart": 6357,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
           "symbol": "fetch[4]",
@@ -16311,9 +16221,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2489,
+          "anchorEnd": 2292,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2451,
+          "anchorStart": 2254,
           "kind": "global_fetch",
           "ownerModule": "src/components/active-timer-bar.tsx",
           "symbol": "fetch[1]",
@@ -16455,45 +16365,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 10068,
+          "anchorEnd": 10652,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10053,
+          "anchorStart": 10637,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2052,
+          "anchorEnd": 2132,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 1987,
+          "anchorStart": 2067,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5714,
+          "anchorEnd": 6180,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 5637,
+          "anchorStart": 6103,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6993,
+          "anchorEnd": 7519,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6821,
+          "anchorStart": 7347,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7746,
+          "anchorEnd": 8272,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7541,
+          "anchorStart": 8067,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -19314,12 +19224,6 @@
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
     },
     {
-      "id": "server_loader:src/app/app/nursery/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/nursery/page.tsx",
-      "sidecarPath": "src/app/app/nursery/page.operation.ts"
-    },
-    {
       "id": "server_loader:src/app/app/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/page.tsx",
@@ -19854,9 +19758,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "07b73ac4c2dbe2dd75ef1e422c0d61ba6ebe130fe9f276e90ff40adac3816768",
+  "ownerSetDigest": "80b1966168913fe24e374caa0cd17b2a58f7484593bb262aac9ad88ceb839f3a",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "afbeb0096277bd84cb4e3e19a50f8a9fc19e5817aec21f0d1a0c6575d2806547",
+  "registryDigest": "a52b0c4df5f899d0e5bf19f6da668bd04a361ace793dda4d822f74d9ca93068c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

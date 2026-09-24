@@ -8,6 +8,11 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "getActivityRowViewer",
+      target: "src/server/services/activities.ts#getActivityRowViewer"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getActivityUnitPreferences",
       target: "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
     },

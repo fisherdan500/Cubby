@@ -7,14 +7,14 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { BrandLockup } from "@/components/brand";
 import { BrowserOperationRecovery } from "@/components/browser-operation-recovery";
 import { ActiveTimerBar } from "@/components/active-timer-bar";
+import { SavedEntryUndo } from "@/components/saved-entry-undo";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
   { href: "/app", label: "Log Entry", icon: PlusCircle },
   { href: "/app/history", label: "Full Log", icon: ClipboardList },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/app/reports", label: "Reports", icon: LineChart },
-  { href: "/app/nursery", label: "Nursery", icon: Moon }
+  { href: "/app/reports", label: "Reports", icon: LineChart }
 ];
 
 export function AppShell({
@@ -115,6 +115,7 @@ export function AppShell({
 
       {/* Fetches its own running timers, so no page gains a database read for it. */}
       <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} />
+      <SavedEntryUndo />
       <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>
   );

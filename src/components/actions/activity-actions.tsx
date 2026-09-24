@@ -57,7 +57,9 @@ function ImmediateOperationButton({
   endpoint,
   label,
   accessibleLabel,
-  completedHref
+  completedHref,
+  submitFields,
+  onCompleted
 }: {
   id: string;
   kind: string;
@@ -70,6 +72,9 @@ function ImmediateOperationButton({
    * than leaving a stopped timer on display with a Back press still to make.
    */
   completedHref?: string;
+  /** Sent with the operation id when submitting, for an operation that names its target. */
+  submitFields?: Record<string, string>;
+  onCompleted?: () => void;
 }) {
   const router = useRouter();
   const operation = useRef<InMemoryOperation>();
@@ -81,7 +86,11 @@ function ImmediateOperationButton({
       window.dispatchEvent(new CustomEvent(ACTIVE_TIMERS_CHANGED_EVENT, {
         detail: { timerId: id, operation: kind.slice("timer.".length) }
       }));
+    } else if (kind === "undo-last") {
+      // What was undone may have been a timer just started, or a deleted one brought back.
+      window.dispatchEvent(new CustomEvent(ACTIVE_TIMERS_CHANGED_EVENT, { detail: { operation: "undo" } }));
     }
+    onCompleted?.();
     if (completedHref) router.replace(completedHref);
     router.refresh();
   }
@@ -138,7 +147,7 @@ function ImmediateOperationButton({
       const result = await operationResult(await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ operationId })
+        body: JSON.stringify({ operationId, ...submitFields })
       }));
       if (isAuthorizedBrowserOperation410(result.response.status, result.body, operationId)) {
         clearOperationId(key);
@@ -190,6 +199,20 @@ export function StopTimerButton({ id, returnTo, accessibleLabel }: { id: string;
 export function PauseTimerButton({ id, accessibleLabel }: { id: string; accessibleLabel?: string }) { return <TimerButton id={id} operation="pause" label="Pause" accessibleLabel={accessibleLabel} />; }
 export function ResumeTimerButton({ id, accessibleLabel }: { id: string; accessibleLabel?: string }) { return <TimerButton id={id} operation="resume" label="Resume" accessibleLabel={accessibleLabel} />; }
 
-export function UndoLastButton() {
-  return <ImmediateOperationButton id="latest-at-open" kind="undo-last" endpoint="/api/activities/undo-last" label="Undo last" />;
+/**
+ * Without `activityId` this takes back whatever the member most recently added or deleted. With it,
+ * the server refuses unless that is still exactly the named entry, so an Undo offered for one entry
+ * can never take back a different one.
+ */
+export function UndoLastButton({ activityId, label = "Undo last", onCompleted }: { activityId?: string; label?: string; onCompleted?: () => void }) {
+  return (
+    <ImmediateOperationButton
+      id={activityId ?? "latest-at-open"}
+      kind="undo-last"
+      endpoint="/api/activities/undo-last"
+      label={label}
+      submitFields={activityId ? { activityId } : undefined}
+      onCompleted={onCompleted}
+    />
+  );
 }

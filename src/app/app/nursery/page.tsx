@@ -1,95 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { ActivityArtwork } from "@/components/activity-artwork";
-import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
-import { Card } from "@/components/ui/card";
-import { activityLabels, type ActivityTypeName } from "@/domain/activity";
-import { activeTimerActionLabel } from "@/lib/active-timer";
-import { formatInstant } from "@/lib/timezone";
-import { requireUserPage } from "@/server/auth/session";
-import { getHeaderBabySelector } from "@/server/services/baby-selector";
-import { getDashboard } from "@/server/services/dashboard";
 
-const nurseryActions: Array<[string, ActivityTypeName]> = [
-  ["/app/log/feeding", "feeding"],
-  ["/app/log/diaper", "diaper"],
-  ["/app/log/sleep", "sleep"],
-  ["/app/log/medicine", "medicine"],
-  ["/app/log/note", "note"]
-];
-
-export default async function NurseryPage({ searchParams }: { searchParams: { babyId?: string } }) {
-  const user = await requireUserPage();
-  const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId);
-  const dashboard = await getDashboard(user.id, { babyId: babySelector?.selectedBabyId ?? searchParams.babyId });
-  if (!dashboard?.home) redirect("/onboarding");
-  const selectedBabyId = dashboard.baby?.id;
-
-  return (
-    <AppShell title="Nursery" userName={user.name} babySelector={babySelector}>
-      {!dashboard.baby ? (
-        <Card>
-          <p className="text-sm text-muted-foreground">No active babies.</p>
-        </Card>
-      ) : (
-      <div className="space-y-4">
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {nurseryActions.map(([href, type]) => (
-            <Link
-              key={href}
-              href={nurseryActionHref(href, selectedBabyId)}
-              className="flex h-32 flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-base font-semibold text-foreground shadow-soft transition hover:border-primary/40 hover:bg-surface-soft sm:h-36"
-            >
-              <ActivityArtwork type={type} size="xl" />
-              {activityLabels[type]}
-            </Link>
-          ))}
-        </section>
-
-        <Card className="space-y-4 bg-card/80">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Nursery timers</p>
-            <h2 className="text-xl font-semibold">Running timers</h2>
-          </div>
-          {dashboard.activeTimers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active timers.</p>
-          ) : (
-            dashboard.activeTimers.map((timer) => {
-              const timerType = timer.type as ActivityTypeName;
-              const pauseOrResume = timer.timerState === "paused" ? "Resume" : "Pause";
-              const actionLabel = (action: "Pause" | "Resume" | "Stop") =>
-                activeTimerActionLabel(action, dashboard.baby.name, activityLabels[timerType], timer, dashboard.activeTimers);
-              return (
-                <div key={timer.id} className="space-y-3 rounded-lg border border-border bg-muted/70 p-4">
-                  <div>
-                    <p className="text-2xl font-semibold">{activityLabels[timerType]}</p>
-                    <p className="text-sm font-semibold text-muted-foreground">
-                      {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, dashboard.selectedDate.timezone, { withYear: false })}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 sm:flex">
-                    {timer.timerState === "paused" ? (
-                      <ResumeTimerButton id={timer.id} accessibleLabel={actionLabel(pauseOrResume)} />
-                    ) : (
-                      <PauseTimerButton id={timer.id} accessibleLabel={actionLabel(pauseOrResume)} />
-                    )}
-                    <StopTimerButton id={timer.id} accessibleLabel={actionLabel("Stop")} />
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </Card>
-      </div>
-      )}
-    </AppShell>
-  );
-}
-
-function nurseryActionHref(href: string, babyId: string | undefined) {
-  if (!babyId) return href;
-  const returnTo = `/app/nursery?${new URLSearchParams({ babyId }).toString()}`;
-  const params = new URLSearchParams({ babyId, returnTo });
-  return `${href}?${params.toString()}`;
+/**
+ * Nursery is retired: once dark became the default it duplicated Log Entry, with the same quick
+ * actions and timers the shell's timer bar already carries. An old link or home-screen shortcut still
+ * lands on Log Entry, for the same baby.
+ */
+export default function NurseryPage({ searchParams }: { searchParams: { babyId?: string } }) {
+  redirect(searchParams.babyId ? `/app?${new URLSearchParams({ babyId: searchParams.babyId }).toString()}` : "/app");
 }

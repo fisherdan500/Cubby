@@ -56,7 +56,7 @@ implementation, merge, deployment, and cleanup approvals.
   - P4 gates delivered: a performance budget harness for one- and five-year households (#105, #109), report-number coverage (#108), wider integrity checks (#111), and export correctness (#106, #110).
   - Verification is now automated rather than remembered: one `verify:gates` runner and CI on every pull request (#113), extended to the image-building rehearsals (#121).
   - Partial: P1-1, P1-3 and P1-4. Blocked: P1-8.
-  - The whole-app visual rework, driven directly by the User's phone review (#114–#119), is complete; Nursery is parked as redundant rather than redesigned (see below).
+  - The whole-app visual rework, driven directly by the User's phone review (#114–#119), is complete; Nursery was retired as redundant rather than redesigned (see below).
   - An independent audit of #102–#122 was remediated in #135: calendar tenant links, timer shell, exact sleep pauses, report averages, spreadsheet formula exports, verification correctness, 3:1 control outlines, first-account setup with the setup code, and a working fresh-server quick start.
   - Deployment and cleanup remain separate gates.
 - Priority: high
@@ -66,10 +66,10 @@ implementation, merge, deployment, and cleanup approvals.
 
 ### Nursery Night Treatment
 
-- Status: parked (2026-09-24)
+- Status: retired (2026-09-24)
 - Priority: low
 - Goal: Give the Nursery screen a way to read as "night" now that the whole application is dark.
-- Notes: Nursery inherited the new palette in #117 but kept its old layout, so the contrast that used to say "night" is gone. With dark as the default it now duplicates the Log Entry dashboard (the same quick actions, and running timers the shell timer bar already covers), and the User judged it redundant. No night treatment will be built; the screen stays as it is. Retiring it - removing it from navigation and folding any needed night-use sizing into the dashboard - is the likely follow-up, not yet decided. Nothing is blocked by this.
+- Notes: Nursery inherited the new palette in #117 but kept its old layout, so the contrast that used to say "night" is gone. With dark as the default it duplicated the Log Entry dashboard (the same quick actions, and running timers the shell timer bar already covers), and the User judged it redundant. No night treatment was built. The screen is retired: it is gone from the sidebar and the phone's More menu, the shell timer bar now shows on every screen, and `/app/nursery` redirects to Log Entry with the selected baby so old links and home-screen shortcuts still work. The stored `nurseryModeEnabled` setting stays in the schema and backup format so older backups still restore.
 
 ## Later
 
@@ -101,11 +101,11 @@ not contain or authorize roadmap work.
 
 ### Running Timer Indicators And Whole-App Visual Rework
 
-- Status: done (Nursery parked; see Nursery Night Treatment)
+- Status: done (Nursery retired; see Nursery Night Treatment)
 - Priority: medium
 - Goal: Make a running timer legible from anywhere without crowding the dashboard, and give the application a calm, mature palette that leads with its accent.
 - Acceptance: A running timer shows as an indicator rather than a control cluster; stopping is one tap from any screen and returns the caregiver where they were; the palette is tuned equally in both modes and every foreground/background pairing meets its contrast target under test.
-- Notes: Pull requests #114-#119. The User chose a minimal dot indicator plus a persistent shell timer bar, with pause reserved for the activity's own screen (#114), and stopping a timer now leaves the activity by itself (#115). Cubby opens dark by default while stored `system` choices are left alone (#116). The palette rewrite (#117) is pinned by `src/styles/theme-contrast.test.ts`, which computes WCAG ratios across both modes and all five accents and found three real faults before merge. The daily summary gained an Awake Time figure measured against the day (#118, #119), which also corrected sleep from "attributed to its start day" to "the part of each sleep overlapping the day". Nursery still wears its pre-dark layout and needs a direction from the User.
+- Notes: Pull requests #114-#119. The User chose a minimal dot indicator plus a persistent shell timer bar, with pause reserved for the activity's own screen (#114), and stopping a timer now leaves the activity by itself (#115). Cubby opens dark by default while stored `system` choices are left alone (#116). The palette rewrite (#117) is pinned by `src/styles/theme-contrast.test.ts`, which computes WCAG ratios across both modes and all five accents and found three real faults before merge. The daily summary gained an Awake Time figure measured against the day (#118, #119), which also corrected sleep from "attributed to its start day" to "the part of each sleep overlapping the day". Nursery was later retired rather than given a night treatment.
 
 ### Always-On Update And Migration Hardening
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, ClipboardList, LineChart, Menu, Moon, PlusCircle, Settings } from "lucide-react";
+import { CalendarDays, ClipboardList, LineChart, Menu, PlusCircle, Settings } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ const sheetRow =
 
 /**
  * On a phone there is no header: the bottom bar is the only chrome. The four places a parent moves
- * between are tabs; everything used occasionally - Nursery, Settings, light/dark, signing out - sits
+ * between are tabs; everything used occasionally - Settings, light/dark, signing out - sits
  * behind More, in a sheet that opens upward from the thumb rather than from the top corner.
  */
 export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?: string; userName: string }) {
@@ -32,7 +32,7 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const moreActive = pathname.startsWith("/app/nursery") || pathname.startsWith("/app/settings") || pathname === "/app/babies";
+  const moreActive = pathname.startsWith("/app/settings") || pathname === "/app/babies";
 
   useEffect(() => {
     setOpen(false);
@@ -80,10 +80,6 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
           className="fixed inset-x-3 bottom-[4.75rem] z-40 space-y-0.5 rounded-xl border border-border bg-card p-2 text-card-foreground shadow-xl"
         >
           <p className="truncate px-3 py-2 text-xs font-bold text-muted-foreground">Signed in as {userName}</p>
-          <Link href={withBabyId("/app/nursery", selectedBabyId)} className={sheetRow} onClick={() => setOpen(false)}>
-            <Moon className="h-5 w-5 text-primary" />
-            Nursery
-          </Link>
           <Link href="/app/settings" className={sheetRow} onClick={() => setOpen(false)}>
             <Settings className="h-5 w-5 text-primary" />
             Settings

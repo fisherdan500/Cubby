@@ -21,6 +21,7 @@ import { parseUnitPreferences } from "@/domain/unit-preferences";
 import type { VolumeUnit } from "@/domain/units";
 import { formatDuration, formatTimeSince } from "@/lib/activity-format";
 import { timersWithoutTile } from "@/lib/dashboard-timers";
+import { activityRowActions, type ActivityRowViewer } from "@/lib/activity-row-actions";
 import { formatInstant } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
@@ -85,7 +86,8 @@ export default async function DashboardPage({
 
           {/* The "Daily log" heading and the Undo last button are hidden for now at the User's request:
               the heading repeated what the screen already says, and Undo last risked more harm than
-              good in its prominent position. UndoLastButton itself is kept for a later placement. */}
+              good in its prominent position. Undo now appears only as the short-lived notice after a
+              new entry is saved (SavedEntryUndo), pinned to that entry. */}
           <section aria-label="Daily log" className="space-y-3">
             {visibleActivities.length === 0 ? (
               <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No activity for this date.</p>
@@ -95,6 +97,7 @@ export default async function DashboardPage({
                 timeZone={currentDashboard.selectedDate.timezone}
                 returnTo={dashboardReturnTo(baby.id, currentDashboard.selectedDate.key, selectedSummaryType)}
                 volume={parseUnitPreferences(currentDashboard.home.household.settings?.unitPreferences).volume}
+                viewer={{ memberId: currentDashboard.home.id, role: currentDashboard.home.role }}
               />
             )}
           </section>
@@ -455,8 +458,20 @@ function dashboardReturnTo(babyId: string, date: string, selectedType?: DailySum
   return `/app?${params.toString()}`;
 }
 
-function Timeline({ activities, timeZone, returnTo, volume }: { activities: ActivityListItem[]; timeZone: string; returnTo: string; volume: VolumeUnit }) {
-  const groups = activities.reduce<Record<string, ActivityListItem[]>>((acc, activity) => {
+function Timeline({
+  activities,
+  timeZone,
+  returnTo,
+  volume,
+  viewer
+}: {
+  activities: Array<ActivityListItem & { actorMemberId: string | null }>;
+  timeZone: string;
+  returnTo: string;
+  volume: VolumeUnit;
+  viewer: ActivityRowViewer;
+}) {
+  const groups = activities.reduce<Record<string, typeof activities>>((acc, activity) => {
     const label = periodLabel(activity.occurredAt, timeZone);
     acc[label] = acc[label] ?? [];
     acc[label].push(activity);
@@ -474,7 +489,14 @@ function Timeline({ activities, timeZone, returnTo, volume }: { activities: Acti
           </p>
           <div className="space-y-1.5">
             {items.map((activity) => (
-              <ActivityListRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={timeZone} volume={volume} />
+              <ActivityListRow
+                key={activity.id}
+                activity={activity}
+                returnTo={returnTo}
+                timeZone={timeZone}
+                volume={volume}
+                actions={activityRowActions(viewer, activity)}
+              />
             ))}
           </div>
         </div>

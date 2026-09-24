@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ActivityArtwork } from "@/components/activity-artwork";
+import { SwipeRowActions } from "@/components/swipe-row-actions";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import type { VolumeUnit } from "@/domain/units";
 import { describeActivity } from "@/lib/activity-format";
-import { activityDetailHref } from "@/lib/activity-navigation";
+import { activityDetailHref, activityEditHref } from "@/lib/activity-navigation";
+import type { ActivityRowActions } from "@/lib/activity-row-actions";
 
 export type ActivityListItem = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
 
@@ -20,7 +22,8 @@ export function ActivityListRow({
   returnTo,
   timeZone,
   volume,
-  meta
+  meta,
+  actions
 }: {
   activity: ActivityListItem;
   returnTo: string;
@@ -28,9 +31,11 @@ export function ActivityListRow({
   volume: VolumeUnit;
   // A short line under the time, such as who recorded it. Omitted where it would only repeat context.
   meta?: string;
+  // What this member may do to the entry; a row with nothing allowed stays a plain link.
+  actions?: ActivityRowActions;
 }) {
   const type = activity.type as ActivityTypeName;
-  return (
+  const row = (
     <Link
       replace
       prefetch={false}
@@ -49,5 +54,16 @@ export function ActivityListRow({
         {meta ? <p className="max-w-24 truncate text-[0.6875rem] text-muted-foreground">{meta}</p> : null}
       </div>
     </Link>
+  );
+  if (!actions?.canUpdate && !actions?.canDelete) return row;
+  return (
+    <SwipeRowActions
+      id={activity.id}
+      returnTo={returnTo}
+      editHref={actions.canUpdate ? activityEditHref(activity.id, returnTo) : undefined}
+      canDelete={actions.canDelete}
+    >
+      {row}
+    </SwipeRowActions>
   );
 }
