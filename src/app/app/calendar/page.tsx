@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { activityLabels, activityVisuals, type ActivityTypeName } from "@/domain/activity";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
+import { activityRowActions } from "@/lib/activity-row-actions";
 import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calendar-layout";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -304,7 +305,14 @@ function CalendarDrawer({
                 {calendar.selected?.activities.length ? (
                   <div className="space-y-0.5 rounded-lg border border-border bg-background/40 p-1.5">
                     {calendar.selected.activities.map((activity) => (
-                      <ActivityListRow key={activity.id} activity={activity} returnTo={returnTo} timeZone={calendar.timezone} volume={volume} />
+                      <ActivityListRow
+                        key={activity.id}
+                        activity={activity}
+                        returnTo={returnTo}
+                        timeZone={calendar.timezone}
+                        volume={volume}
+                        actions={activityRowActions({ memberId: calendar.home.id, role: calendar.home.role }, activity)}
+                      />
                     ))}
                   </div>
                 ) : (

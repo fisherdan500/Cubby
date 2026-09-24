@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "f8f4627d79dd0fd8fa996d0e5a6860ec77fe6387b14a86c3443e4041bd5b90ca",
+  "declarationDigest": "12cf90dfe38c430273c4693c8bb8acccb2cafc975791e44a860b35dfd802de00",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -1744,33 +1744,33 @@
           "file": "src/app/app/calendar/actions.ts"
         },
         {
-          "digest": "3f1fcbb3e9be4c68ec900001a52133d4abc9ee9364ea2b629b8191a28919b544",
+          "digest": "5a1cb2c5afbee89842ce41ba23f68d317954cff8090300dc22b1e42336d53f80",
           "file": "src/app/app/calendar/page.tsx"
         }
       ],
       "declarationDigest": "19c37a3926df789f72a86b7a0e445a13dc81d4e7169d26e20c35df4e5503b5cc",
-      "fingerprint": "a5aa0f0e716e426c71c2323ee7682e83201ef57ee4ccd10e2dcc8985b0bd2cd2",
+      "fingerprint": "56493688a2577a4f7afd5682d49c13bb22cde1f4f5216a99fd276e697f1d6a25",
       "id": "fingerprint:server_loader:src/app/app/calendar/page.tsx",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts",
-      "sourceDigest": "9d5b767583ba89306562b25c6ccadd1b4c6efd84db24e76175d4c2e93e2635fb",
+      "sourceDigest": "4a99f95dd14c56b719054f54445aeff01b02b17127118194bd2e136467e16eb9",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "eed8929f7c31bf7d4a09756086e99d512ab102e31d7714ed8495e710fbdfd6b1",
+          "digest": "a66eb57a4574428105efa672f9130956df56e70ec848f4f0ec07c2146dd68905",
           "file": "src/app/app/history/page.tsx"
         }
       ],
-      "declarationDigest": "708a076e44cfdccb4e362afb9a9936915ddd5b139a55d03ba8149d033bff8584",
-      "fingerprint": "1be44463b8d4dde5825cb19daadadaa5ab5bc2831b879dbccb49892831b79463",
+      "declarationDigest": "76bcf0a297f538154c916b65dfbbc162578b8add859110ace4ad198af734d3f3",
+      "fingerprint": "b33d68a0059029c981b7003488615b73aadc8c5b379739a7d26b7737c93b41cd",
       "id": "fingerprint:server_loader:src/app/app/history/page.tsx",
       "ownerId": "server_loader:src/app/app/history/page.tsx",
       "ownerModule": "src/app/app/history/page.tsx",
       "sidecarPath": "src/app/app/history/page.operation.ts",
-      "sourceDigest": "32a49590b7dc7fc14e2a51d9d31fb4f60d99e32a8fa9db5583674bbb7ec9faac",
+      "sourceDigest": "72d84a649d916f3a451c816a7bc0685af173fd0fc8e057b207290c2f9235c0f9",
       "status": "declared"
     },
     {
@@ -1808,17 +1808,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "623c13e18dc48944a3ebdf9d037bdb39b33ab9c15e8f9ee7d55fba0d204c3a28",
+          "digest": "9d4cadc7f1425fbdc3a6cf00a8ffa886d5607e546b07b6e2861e5c50bcdeb8f7",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "0f40edc4892fa6ae74225271bdba32f6f17aef2b71cc64361ddfaaf101214956",
+      "fingerprint": "994736177a6ce70db0b373b5b170c3cdc5f66eb6f03dfad0ff1113463d84b2f9",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "553bf33afd2c70326cc7ca7984b01870cde0cc27422bbf4f2dc5b60e08eecf1f",
+      "sourceDigest": "b6a81d8e238bd281e801920859683cf44cafd4f9c44ea46c8e1336119428e330",
       "status": "declared"
     },
     {
@@ -2176,17 +2176,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "c7352fd101da63af837703dbc309d1017bdab7bdb79c3809e0b1c16729afe32c",
+          "digest": "495743d8c0ddcd1713d0ff142df846539829b7c1cb4cb73722d2600995805745",
           "file": "src/components/actions/confirmed-activity-delete.tsx"
         }
       ],
       "declarationDigest": "2e0a4b59c479029f22986789a2eb74123e3623e155088bea7652c8439ba420e2",
-      "fingerprint": "c22f0bc52782a89e877d19372ed054ca5890993fc80eef1f4621d4d02b2d218e",
+      "fingerprint": "c36fc66cd7718cac92a734676325600cccd5671ec53616734d8441f69d4ae0e9",
       "id": "fingerprint:client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerId": "client_binding:src/components/actions/confirmed-activity-delete.tsx",
       "ownerModule": "src/components/actions/confirmed-activity-delete.tsx",
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts",
-      "sourceDigest": "993556b84adc28e21248606f69d0fac40132fa90980937a0499142dac7a4c44a",
+      "sourceDigest": "728f91917c9998ee71f76448a9cfdabdebab60bae7ec0a091ee64d6aca169ad5",
       "status": "declared"
     },
     {
@@ -3616,11 +3616,11 @@
   ],
   "generatorDigest": "126458ee143349558227025d51388e8e8b4419ae4f17513b95f60f1eeb9a5b26",
   "generatorVersion": "r0.1",
-  "observationDigest": "14e8fb92ec160c5df6852b2bf014003b98d39f196b7d0c5628743985cd361f1d",
+  "observationDigest": "3f6f767b38ec126427ba91ac2b8e8823a1900bcdf0df054f2050dffde00f540a",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "80b1966168913fe24e374caa0cd17b2a58f7484593bb262aac9ad88ceb839f3a",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "91f1e4a939f626883e5cf92993b0c242062ccfbd3ac2b815da8e1c27686bf9ff",
+  "registryDigest": "a52b0c4df5f899d0e5bf19f6da668bd04a361ace793dda4d822f74d9ca93068c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
