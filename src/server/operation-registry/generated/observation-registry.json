@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 102,
-    "client_binding": 35,
+    "api_route": 103,
+    "client_binding": 36,
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "f9ed25bb4cbab1966ce360e08e312f2e0bbff4c34f2dd60d108c4e7ad52b9ee2",
+  "declarationDigest": "192122c2624fdb5c6fd1c044cb4fdd98275eae02967eedac142fd9552a426d21",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -3954,6 +3954,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/platform/test-email/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/platform/test-email/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/platform/test-email/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/platform/test-email/route.ts",
+      "sidecarPath": "src/app/api/platform/test-email/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/settings/api-keys/[id]/revoke/route.ts#POST"
           }
         ],
@@ -6587,6 +6617,36 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/settings/platform-test-email.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/settings/platform-test-email.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/settings/platform-test-email.tsx",
+      "sidecarPath": "src/components/settings/platform-test-email.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "form_action",
             "symbol": "submit",
             "target": "src/components/settings/registration-settings-form.tsx#submit"
@@ -7248,7 +7308,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "799216944b8961e241241001b883c69bfe17ea2e6a94ef8ef65f7391769829cf",
+  "generatorDigest": "3c1dd19cb448d8d534ef68a2dfe612f61671cff7c9c78efd93420dc7dae58ed3",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -9062,6 +9122,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "dbc0a21a0f9398ff9c5096b3f09e29dd46f39c44cb04513e52655c4d96193cc6",
+          "anchorEnd": 311,
+          "anchorFile": "src/app/api/platform/test-email/route.ts",
+          "anchorStart": 170,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/platform/test-email/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/platform/test-email/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/platform/test-email/route.ts",
+      "sidecarPath": "src/app/api/platform/test-email/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "d811f628f6f0bafd532ee4835acbad0b29f13072ecc218983b50044f1f459a2d",
           "anchorEnd": 1582,
           "anchorFile": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
@@ -10058,36 +10137,36 @@
       "bindings": [
         {
           "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-          "anchorEnd": 555,
+          "anchorEnd": 577,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 531,
+          "anchorStart": 553,
           "kind": "server_value_import",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
         },
         {
           "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
-          "anchorEnd": 360,
+          "anchorEnd": 382,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 332,
+          "anchorStart": 354,
           "kind": "server_value_import",
           "symbol": "getEffectiveHouseholdContext",
           "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
         },
         {
           "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-          "anchorEnd": 474,
+          "anchorEnd": 496,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 459,
+          "anchorStart": 481,
           "kind": "server_value_import",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 417,
+          "anchorEnd": 439,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 402,
+          "anchorStart": 424,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10281,18 +10360,18 @@
       "bindings": [
         {
           "anchorDigest": "314f7535d548cfd553fcc9b2fec51e60d6efda321bfc293f5bc2d0a0bf8bf2e5",
-          "anchorEnd": 478,
+          "anchorEnd": 557,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 447,
+          "anchorStart": 526,
           "kind": "server_value_import",
           "symbol": "getPlatformRegistrationSettings",
           "target": "src/server/services/platform-authority.ts#getPlatformRegistrationSettings"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 405,
+          "anchorEnd": 484,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 390,
+          "anchorStart": 469,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -11370,6 +11449,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/notification-preference-form.tsx",
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "ab176f155b3da1070fa3c3470effbe597cac800f80cd81e62d6c954bac46691f",
+          "anchorEnd": 2172,
+          "anchorFile": "src/components/settings/platform-test-email.tsx",
+          "anchorStart": 2119,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/settings/platform-test-email.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/platform-test-email.tsx",
+      "sidecarPath": "src/components/settings/platform-test-email.operation.ts"
     },
     {
       "bindings": [
@@ -13028,8 +13126,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 200,
-  "observationDigest": "79ab507062234ea9a0d0e0252e8a7f9bc04bdc2a0cef6e06c868e144da33e0c4",
+  "observationCount": 202,
+  "observationDigest": "03b042486ed652646a67d314112eb44a4cb620ed85b160bcafccdf17a6df2495",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14755,6 +14853,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 311,
+          "anchorFile": "src/app/api/platform/test-email/route.ts",
+          "anchorStart": 170,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/platform/test-email/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/platform/test-email/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/platform/test-email/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/platform/test-email/route.ts",
+      "sidecarPath": "src/app/api/platform/test-email/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1582,
           "anchorFile": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
           "anchorStart": 570,
@@ -15718,36 +15834,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 555,
+          "anchorEnd": 577,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 531,
+          "anchorStart": 553,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "getAppRegistrationPolicy",
           "target": "src/server/services/registration.ts#getAppRegistrationPolicy"
         },
         {
-          "anchorEnd": 360,
+          "anchorEnd": 382,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 332,
+          "anchorStart": 354,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "getEffectiveHouseholdContext",
           "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
         },
         {
-          "anchorEnd": 474,
+          "anchorEnd": 496,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 459,
+          "anchorStart": 481,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "isPlatformOwner",
           "target": "src/server/services/platform-authority.ts#isPlatformOwner"
         },
         {
-          "anchorEnd": 417,
+          "anchorEnd": 439,
           "anchorFile": "src/app/app/settings/page.tsx",
-          "anchorStart": 402,
+          "anchorStart": 424,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/page.tsx",
           "symbol": "requireUserPage",
@@ -15934,18 +16050,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 478,
+          "anchorEnd": 557,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 447,
+          "anchorStart": 526,
           "kind": "server_value_import",
           "ownerModule": "src/app/platform/settings/page.tsx",
           "symbol": "getPlatformRegistrationSettings",
           "target": "src/server/services/platform-authority.ts#getPlatformRegistrationSettings"
         },
         {
-          "anchorEnd": 405,
+          "anchorEnd": 484,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 390,
+          "anchorStart": 469,
           "kind": "server_value_import",
           "ownerModule": "src/app/platform/settings/page.tsx",
           "symbol": "requireUserPage",
@@ -16992,6 +17108,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/notification-preference-form.tsx",
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 2172,
+          "anchorFile": "src/components/settings/platform-test-email.tsx",
+          "anchorStart": 2119,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/platform-test-email.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/settings/platform-test-email.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/platform-test-email.tsx",
+      "sidecarPath": "src/components/settings/platform-test-email.operation.ts"
     },
     {
       "bindings": [
@@ -19042,6 +19176,12 @@
       "sidecarPath": "src/app/api/platform/setup/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/platform/test-email/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/platform/test-email/route.ts",
+      "sidecarPath": "src/app/api/platform/test-email/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/settings/api-keys/[id]/revoke/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/settings/api-keys/[id]/revoke/route.ts",
@@ -19468,6 +19608,12 @@
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/settings/platform-test-email.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/platform-test-email.tsx",
+      "sidecarPath": "src/components/settings/platform-test-email.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/settings/registration-settings-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/registration-settings-form.tsx",
@@ -19708,9 +19854,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "c06cb10f8b55c589c70a84a4bd22d5c226ef40aaeb12c45ebc65f1585cd58d06",
+  "ownerSetDigest": "07b73ac4c2dbe2dd75ef1e422c0d61ba6ebe130fe9f276e90ff40adac3816768",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "e7da3253314b309c5957b1e5799d11c5fc1609bcffc2c1b0da9f0560689f32e7",
+  "registryDigest": "afbeb0096277bd84cb4e3e19a50f8a9fc19e5817aec21f0d1a0c6575d2806547",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

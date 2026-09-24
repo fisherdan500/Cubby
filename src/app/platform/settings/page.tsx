@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BrandLockup } from "@/components/brand";
+import { PlatformTestEmail } from "@/components/settings/platform-test-email";
 import { RegistrationSettingsForm } from "@/components/settings/registration-settings-form";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -47,6 +48,9 @@ export default async function PlatformSettingsPage() {
             householdCreationMode={settings.householdCreationMode}
             allowPublicRegistration={settings.allowPublicRegistration}
           />
+        </Card>
+        <Card>
+          <PlatformTestEmail />
         </Card>
       </div>
     </main>

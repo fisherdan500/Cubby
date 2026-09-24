@@ -46,7 +46,9 @@ The supported server is current Ubuntu or Debian on x86_64 with Docker Engine an
 Compose plugin installed. TLS and any reverse proxy are yours to run in front of Cubby.
 
 You also need an SMTP account Cubby can send from. It sends account-security email
-(such as email-change verification), and the server will not start without one.
+(such as email-change verification), and the server will not start without one. Once
+you are the platform owner, **Settings → Platform administration → Send test email**
+sends a message to your own address and says exactly what went wrong if it fails.
 
 1. Clone this repository onto the server and change into it.
 2. Put the SMTP password alone in a file readable only by you, for example

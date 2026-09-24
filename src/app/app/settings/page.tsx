@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Bell, DatabaseBackup, Download, KeyRound, LogOut, Palette, Ruler, Shield, UserRoundCog, Users } from "lucide-react";
+import { Baby, Bell, DatabaseBackup, Download, KeyRound, LockKeyhole, LogOut, Palette, Ruler, Shield, SunMoon, UserRoundCog, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
@@ -21,6 +21,12 @@ const sections = [
   { href: "/app/settings/sessions", label: "Sessions", description: "Review and revoke browsers signed into your account.", icon: UserRoundCog, permission: "session.manage" }
 ] satisfies Array<{ href: string; label: string; description: string; icon: typeof Shield; permission: Permission }>;
 
+// These belong to the person rather than to a household role, so every signed-in member sees them.
+const accountSections = [
+  { href: "/account/security", label: "Account security", description: "Change your password or email, set up recovery codes, and see your security history.", icon: LockKeyhole },
+  { href: "/account/appearance", label: "Personal appearance", description: "Your own light, dark or system theme, kept across your devices.", icon: SunMoon }
+] satisfies Array<{ href: string; label: string; description: string; icon: typeof Shield }>;
+
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {
   const user = await requireUserPage();
   const ctx = await getEffectiveHouseholdContext();
@@ -34,7 +40,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
         </div>
       ) : null}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {visibleSections.map((section) => (
+        {[...accountSections, ...visibleSections].map((section) => (
           <Link key={section.href} href={section.href} prefetch={false}>
             <Card className="h-full transition hover:bg-muted">
               <section.icon className="mb-4 h-6 w-6 text-primary" />
