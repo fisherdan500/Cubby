@@ -10500,27 +10500,27 @@
         },
         {
           "anchorDigest": "3b08f17631f9817e840d727aeb731dd404b3fd2d2abbd0ea7515a616a1c34601",
-          "anchorEnd": 3796,
+          "anchorEnd": 4250,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 3726,
+          "anchorStart": 4180,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "0ba18b7d586317e8d3aba827e6b6d646b490ed29eff79dd896bfeb4b5d81dd06",
-          "anchorEnd": 5051,
+          "anchorEnd": 5505,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4910,
+          "anchorStart": 5364,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "1719e19536f4684d15ef67ba34096d531e1f174356784e67e8ab93c3dc8aed74",
-          "anchorEnd": 5758,
+          "anchorDigest": "de00e8d0b9b033beda02b34fc6f92eef64d17ef1165c8779f68c33c762181576",
+          "anchorEnd": 6229,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 5605,
+          "anchorStart": 6059,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -10778,45 +10778,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 10068,
+          "anchorEnd": 10652,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10053,
+          "anchorStart": 10637,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 2052,
+          "anchorEnd": 2132,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 1987,
+          "anchorStart": 2067,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 5714,
+          "anchorEnd": 6180,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 5637,
+          "anchorStart": 6103,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 6993,
+          "anchorEnd": 7519,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6821,
+          "anchorStart": 7347,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 7746,
+          "anchorEnd": 8272,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7541,
+          "anchorStart": 8067,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -13127,7 +13127,7 @@
     }
   ],
   "observationCount": 202,
-  "observationDigest": "03b042486ed652646a67d314112eb44a4cb620ed85b160bcafccdf17a6df2495",
+  "observationDigest": "1522764f7f1eda18bda71cd6053297cd9a3d4995454aee86539465e2693ff69e",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -16185,27 +16185,27 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3796,
+          "anchorEnd": 4250,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 3726,
+          "anchorStart": 4180,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5051,
+          "anchorEnd": 5505,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 4910,
+          "anchorStart": 5364,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5758,
+          "anchorEnd": 6229,
           "anchorFile": "src/components/actions/activity-actions.tsx",
-          "anchorStart": 5605,
+          "anchorStart": 6059,
           "kind": "global_fetch",
           "ownerModule": "src/components/actions/activity-actions.tsx",
           "symbol": "fetch[4]",
@@ -16455,45 +16455,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 10068,
+          "anchorEnd": 10652,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10053,
+          "anchorStart": 10637,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2052,
+          "anchorEnd": 2132,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 1987,
+          "anchorStart": 2067,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5714,
+          "anchorEnd": 6180,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 5637,
+          "anchorStart": 6103,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6993,
+          "anchorEnd": 7519,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6821,
+          "anchorStart": 7347,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7746,
+          "anchorEnd": 8272,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7541,
+          "anchorStart": 8067,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -19856,7 +19856,7 @@
   ],
   "ownerSetDigest": "07b73ac4c2dbe2dd75ef1e422c0d61ba6ebe130fe9f276e90ff40adac3816768",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "afbeb0096277bd84cb4e3e19a50f8a9fc19e5817aec21f0d1a0c6575d2806547",
+  "registryDigest": "4aeb556c2be85a2e350292e673738b27a7a1eff29194c1c3bed38ff740a04875",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

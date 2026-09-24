@@ -21,6 +21,7 @@ import {
 import { displayLabel } from "@/lib/display-label";
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
+import { createdActivityId, rememberSavedEntry } from "@/lib/saved-entry-undo";
 import { cn } from "@/lib/utils";
 import { addMinutes, formatClock, formatMinutes, isWallTime, minutesBetween, nowWallTime } from "@/lib/wall-time";
 
@@ -49,9 +50,11 @@ async function householdPartition(): Promise<Partition> {
   return body.data;
 }
 
+type ActivityOperationData = { status?: ActivityOperationStatus; operationId?: string; outcome?: Record<string, unknown> } | undefined;
+
 async function activityOperationResponse(response: Response) {
   const result = (await response.json().catch(() => null)) as
-    | { ok: true; data?: { status?: ActivityOperationStatus; operationId?: string } }
+    | { ok: true; data?: ActivityOperationData }
     | { ok: false; error?: { message?: string } }
     | null;
   return { response, result, status: result?.ok ? result.data?.status : undefined };
@@ -114,8 +117,11 @@ export function ActivityForm({
     }
   }
 
-  function finish(storageKey: string, body: Record<string, FormDataEntryValue>) {
+  function finish(storageKey: string, body: Record<string, FormDataEntryValue>, completed: ActivityOperationData) {
     clearOperation(storageKey);
+    // The screen this returns to offers a short-lived Undo for a new entry.
+    const createdId = createdActivityId(completed);
+    if (createdId) rememberSavedEntry(sessionStorage, { activityId: createdId, label: activityLabels[type] }, Date.now());
     const destination = activityFormSuccessHref({
       successTo,
       babyId: String(body.babyId || defaultBaby),
@@ -142,7 +148,7 @@ export function ActivityForm({
           clearOperation(storageKey);
           currentOperationId = undefined;
         } else if (reconciled.status === "completed") {
-          finish(storageKey, body);
+          finish(storageKey, body, reconciled.result?.ok ? reconciled.result.data : undefined);
           return;
         } else if (reconciled.status === "pending") {
           setError("This activity request is still in progress. Reconcile it before changing it again.");
@@ -177,7 +183,7 @@ export function ActivityForm({
         return;
       }
       if (submitted.status === "completed") {
-        finish(storageKey, body);
+        finish(storageKey, body, submitted.result?.ok ? submitted.result.data : undefined);
         return;
       }
       if (submitted.status === "pending") {

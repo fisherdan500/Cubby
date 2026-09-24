@@ -31,7 +31,8 @@ import {
   issueActivityTimerBrowserOperation,
   issueActivityUndoLastBrowserOperation,
   issueActivityUpdateBrowserOperation,
-  submitActivityTimerBrowserOperation
+  submitActivityTimerBrowserOperation,
+  submitActivityUndoLastBrowserOperation
 } from "./activities";
 
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
@@ -103,6 +104,17 @@ describe("activity browser-v2 opening bindings", () => {
     const raw = _name === "undo" ? { operationId } : { operationId, activityId: "activity-1" };
     await expect(issue(raw)).resolves.toMatchObject({ status: "open" });
     expect(mocks.issueHousehold).toHaveBeenCalledWith(expect.objectContaining({ ctx, operationId, operationKey }));
+  });
+
+  it("refuses an undo pinned to one entry once the member's latest change is a different one", async () => {
+    // The Undo offered after a save names that entry. If anything else became the member's latest
+    // add or delete in between, undoing "the latest" would take back the wrong thing.
+    mocks.executeHousehold.mockImplementation((contract) =>
+      contract.validate({}, ctx, { targetSnapshot: { latest: { id: "audit-2", entityId: "activity-2", action: "activity.create" } } })
+    );
+
+    await expect(submitActivityUndoLastBrowserOperation({ operationId, activityId: "activity-9" })).rejects.toThrow("not_found");
+    expect(mocks.executeHousehold).toHaveBeenCalledWith(expect.objectContaining({ targetId: "activity-9", intent: { activityId: "activity-9" } }));
   });
 });
 
