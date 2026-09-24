@@ -88,7 +88,10 @@ function waitForSqlSessionSleeping(
   runSql(compose, env, `
 DO $$
 BEGIN
-  FOR attempt IN 1..50 LOOP
+  FOR attempt IN 1..250 LOOP
+    -- pg_stat_activity is read once per transaction and this whole loop is one; without clearing the
+    -- snapshot every pass sees the first one, and a session that was not yet there never appears.
+    PERFORM pg_stat_clear_snapshot();
     IF EXISTS (
       SELECT 1 FROM pg_stat_activity
       WHERE application_name = '${applicationName}'
@@ -109,12 +112,16 @@ function assertSqlSessionBlocked(
   applicationName: string,
   failureMarker: string
 ) {
+  // Up to 25 s: the second session is started through `docker compose exec`, which on a busy CI runner
+  // can take several seconds to connect. The session holding the lock sleeps 30 s, so
+  // the second one is still waiting on it when it arrives.
   runSql(compose, env, `
 DO $$
 DECLARE
   target_pid INTEGER;
 BEGIN
-  FOR attempt IN 1..50 LOOP
+  FOR attempt IN 1..250 LOOP
+    PERFORM pg_stat_clear_snapshot();
     SELECT pid INTO target_pid FROM pg_stat_activity
     WHERE application_name = '${applicationName}'
     ORDER BY backend_start DESC
@@ -441,7 +448,7 @@ UPDATE "ActivityLog"
 SET "timerState" = 'running', "pausedAt" = NULL, "pausedSeconds" = 1200, "updatedAt" = NOW()
 WHERE "id" = 'integrity-concurrency-parent';
 SELECT "closeActivityTimerPauseInterval"('integrity-concurrency-parent', '2026-01-02T00:50:00.000Z');
-SELECT pg_sleep(10);
+SELECT pg_sleep(30);
 COMMIT;`);
   waitForSqlSessionSleeping(
     compose, env, "cubby_pause_parent_lock", "activity_timer_pause_parent_lock_not_held"
@@ -490,7 +497,7 @@ VALUES (
   'integrity-concurrency-pause-2', 'integrity-concurrency-parent',
   '2026-01-02T00:55:00.000Z', NOW()
 );
-SELECT pg_sleep(10);
+SELECT pg_sleep(30);
 COMMIT;`);
   waitForSqlSessionSleeping(
     compose, env, "cubby_pause_child_lock", "activity_timer_pause_child_lock_not_held"
