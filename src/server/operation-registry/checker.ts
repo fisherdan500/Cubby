@@ -229,7 +229,6 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/app/history/page.operation.ts",
   "src/app/app/layout.operation.ts",
   "src/app/app/log/[type]/page.operation.ts",
-  "src/app/app/nursery/page.operation.ts",
   "src/app/app/page.operation.ts",
   "src/app/app/reports/page.operation.ts",
   "src/app/app/settings/appearance/page.operation.ts",

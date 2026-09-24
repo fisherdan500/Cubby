@@ -11,7 +11,7 @@ import { currentInvitationSetupCorridor } from "@/server/services/invitation-set
 const featureCards: Array<[string, React.ElementType, string]> = [
   ["Fast logging", Baby, "Large mobile controls for common care events."],
   ["Trusted sessions", Lock, "Stay signed in on your own phone without repeat full logins."],
-  ["Night use", Moon, "Dark mode and nursery mode for low-light care."],
+  ["Night use", Moon, "Dark by default, for low-light care."],
   ["Shared care", Users, "Invite parents, caretakers, and read-only helpers."],
   ["Exportable data", ChartNoAxesCombined, "CSV export is built into v1."]
 ];

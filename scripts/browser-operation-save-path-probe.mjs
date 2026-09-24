@@ -387,7 +387,6 @@ const renderedPages = [
   "/app/history",
   "/app/calendar",
   "/app/reports",
-  "/app/nursery",
   "/app/babies",
   "/app/settings",
   "/app/settings/appearance",
