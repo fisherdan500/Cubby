@@ -43,6 +43,7 @@ const auditActionSchema = z.enum([
   "member.self_leave",
   "member.suspend",
   "notification.preference.save",
+  "planned_schedule.save",
   "push_subscription.save",
   "settings.appearance.update",
   "settings.units.update",
@@ -124,6 +125,11 @@ const notificationPreferenceSchema = z.object({
   externalDeliveryEnabled: z.boolean(),
   babyScope: z.enum(["all", "selected"])
 }).strict();
+// A plan's labels, times and notes are private caregiver text; the audit keeps only that it changed.
+const plannedScheduleSchema = z.object({
+  revision: z.number().int().positive(),
+  itemCount: z.number().int().nonnegative()
+}).strict();
 
 type AuditWriteDb = Pick<Prisma.TransactionClient, "auditEvent"> & {
   auditIntegrityCheckpoint?: Pick<Prisma.TransactionClient["auditIntegrityCheckpoint"], "upsert">;
@@ -180,6 +186,9 @@ function minimizeAuditPayload(
   }
   if (action === "notification.preference.save") {
     return notificationPreferenceSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "planned_schedule.save") {
+    return plannedScheduleSchema.parse(payload) as Prisma.InputJsonValue;
   }
   return payload;
 }

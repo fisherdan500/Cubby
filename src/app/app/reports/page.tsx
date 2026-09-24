@@ -12,6 +12,7 @@ import { env } from "@/lib/env";
 import { formatInstantDate } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
+import { getPlannedSchedule } from "@/server/services/planned-schedule";
 import { getReports } from "@/server/services/reports";
 
 const tabs = [
@@ -34,6 +35,8 @@ export default async function ReportsPage({
   const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!report?.home) redirect("/onboarding");
   const tab = searchParams.tab && tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "routine";
+  // The plan sits beside the observed routine, so it is only read when that tab is open.
+  const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
   const reportHref = (next: { tab?: string; routineWindow?: string }) => {
     const params = new URLSearchParams();
     if (report.baby?.id) params.set("babyId", report.baby.id);
@@ -92,6 +95,7 @@ export default async function ReportsPage({
             <RoutineTab
               babyId={report.baby.id}
               babyName={report.baby.name}
+              schedule={schedule}
               startKey={report.startKey}
               endKey={report.endKey}
               routine={report.routine}

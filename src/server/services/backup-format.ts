@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { plannedScheduleItemsSchema } from "@/domain/planned-schedule";
 
 export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 export const BACKUP_EXCLUSIONS = [
@@ -142,6 +143,12 @@ const reminderSchema = z
   })
   .strict();
 
+// A caregiver's plan for one baby (DEC-PROD-148). Optional, so backups made before plans existed
+// still restore unchanged.
+const plannedScheduleSchema = z
+  .object({ babyId: id, items: plannedScheduleItemsSchema })
+  .strict();
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
@@ -151,7 +158,8 @@ const v2PayloadSchema = z
     catalogs: z.array(catalogSchema).max(10_000),
     activities: z.array(activitySchema).max(1_000_000),
     calendarEvents: z.array(calendarEventSchema).max(100_000),
-    reminders: z.array(reminderSchema).max(100_000)
+    reminders: z.array(reminderSchema).max(100_000),
+    plannedSchedules: z.array(plannedScheduleSchema).max(10_000).optional()
   })
   .strict()
   .superRefine((payload, ctx) => {
@@ -161,12 +169,17 @@ const v2PayloadSchema = z
         ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
       }
     }
+    const plannedSchedules = payload.plannedSchedules ?? [];
+    if (new Set(plannedSchedules.map((item) => item.babyId)).size !== plannedSchedules.length) {
+      ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
+    }
     const babies = new Set(payload.babies.map((item) => item.id));
     const contacts = new Set(payload.contacts.map((item) => item.id));
     const dangling =
       payload.activities.some((item) => !babies.has(item.babyId) || (item.contactId !== null && !contacts.has(item.contactId))) ||
       payload.calendarEvents.some((item) => item.babyIds.some((value) => !babies.has(value)) || item.contactIds.some((value) => !contacts.has(value))) ||
-      payload.reminders.some((item) => !babies.has(item.babyId));
+      payload.reminders.some((item) => !babies.has(item.babyId)) ||
+      plannedSchedules.some((item) => !babies.has(item.babyId));
     if (dangling) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const activity of payload.activities) {
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {
@@ -351,7 +364,8 @@ export function backupSummary(parsed: ParsedBackup) {
       catalogs: payload.catalogs.length,
       activities: payload.activities.length,
       calendarEvents: payload.calendarEvents.length,
-      reminders: payload.reminders.length
+      reminders: payload.reminders.length,
+      plannedSchedules: payload.plannedSchedules?.length ?? 0
     },
     exclusions: [...BACKUP_EXCLUSIONS]
   };

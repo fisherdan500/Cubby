@@ -194,6 +194,7 @@ enum BrowserOperationKey {
   calendarEventCreate        @map("calendar_event.create")
   householdAccentUpdate      @map("household.accent.update")
   apiKeyRevoke               @map("api_key.revoke")
+  plannedScheduleSave        @map("planned_schedule.save")
 }
 
 enum BrowserOperationTargetKind {
@@ -459,6 +460,7 @@ model Household {
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
+  plannedSchedules PlannedSchedule[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -705,6 +707,7 @@ model Baby {
   auditEvents               AuditEvent[]
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
+  plannedSchedule          PlannedSchedule?
 
   @@index([householdId])
   @@unique([householdId, id])
@@ -968,6 +971,24 @@ model HouseholdSettings {
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
   household                Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+}
+
+// A caregiver-written plan for one baby's day (DEC-PROD-148, DEC-PROD-420). Kept apart from logged
+// activity: nothing here is observed care. `document` is the versioned item list; `revision` is what
+// every save is checked against, so two caregivers editing at once cannot overwrite each other.
+model PlannedSchedule {
+  id          String    @id @default(cuid())
+  householdId String
+  babyId      String
+  revision    Int       @default(1)
+  document    Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby        Baby      @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
+
+  @@unique([babyId])
+  @@unique([householdId, babyId])
 }
 
 model DashboardWarningDismissal {

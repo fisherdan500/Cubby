@@ -462,6 +462,40 @@
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function GET(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    return ok(await getPlannedSchedule(params.id));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "2d9308d93aec341e59f8d7abf70a4ccbaad9720c355c35f81885b9f3a83bfafd",
+      "anchorEnd": 536,
+      "anchorFile": "src/app/api/babies/[id]/schedule/route.ts",
+      "anchorStart": 333,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/babies/[id]/schedule/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/babies/[id]/schedule/route.ts:route_method:GET:src/app/api/babies/[id]/schedule/route.ts#GET",
+      "ownerId": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+      "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/schedule/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PUT(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { ...raw, babyId: params.id };\n    const issued = await issuePlannedScheduleBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitPlannedScheduleBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "47a4a9d2955c29577df9cedd829ef8666e5b57f24ca896ffdd09194ef117ada5",
+      "anchorEnd": 1512,
+      "anchorFile": "src/app/api/babies/[id]/schedule/route.ts",
+      "anchorStart": 538,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PUT",
+        "target": "src/app/api/babies/[id]/schedule/route.ts#PUT"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/babies/[id]/schedule/route.ts:route_method:PUT:src/app/api/babies/[id]/schedule/route.ts#PUT",
+      "ownerId": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+      "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/schedule/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueCreateBabyBrowserOperation(await request.json() as Record<string, unknown>);\n    const status = result.status === \"open\" ? 201 : result.status === \"pending\" || result.status === \"prepared\" ? 202 : result.status === \"expired\" ? 410 : 200;\n    return ok(result, { status });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "9d065c4f4384a56de0394ff45f2274d32cb24bde35565b9ffeada4716daf454c",
       "anchorEnd": 585,
@@ -3010,6 +3044,74 @@
       "ownerId": "client_binding:src/components/platform-setup-claim-form.tsx",
       "ownerModule": "src/components/platform-setup-claim-form.tsx",
       "sidecarPath": "src/components/platform-setup-claim-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 1469,
+      "anchorFile": "src/components/reports/planned-schedule.tsx",
+      "anchorStart": 1404,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/reports/planned-schedule.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule`, {\n      method: \"PUT\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId, expectedRevision: revision, items: planned })\n    })",
+      "anchorDigest": "a087a003de178c9c316a5e0c28cf632ab06056046e6d1dd1b8c81d45f193c1dc",
+      "anchorEnd": 4919,
+      "anchorFile": "src/components/reports/planned-schedule.tsx",
+      "anchorStart": 4687,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/reports/planned-schedule.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
+      "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+      "anchorEnd": 6557,
+      "anchorFile": "src/components/reports/planned-schedule.tsx",
+      "anchorStart": 6490,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/reports/planned-schedule.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule?issue=1`, {\n        method: \"PUT\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ expectedRevision: revision })\n      })",
+      "anchorDigest": "d7277aee7984b9d484069307b15dd651e16e4951b06778bf8927c17929ee4f36",
+      "anchorEnd": 7536,
+      "anchorFile": "src/components/reports/planned-schedule.tsx",
+      "anchorStart": 7317,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/reports/planned-schedule.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
     },
     {
       "anchorBytes": "fetch(\"/api/account/session-activity\", {\n    method: \"POST\",\n    headers: { \"content-type\": \"application/json\" },\n    body: JSON.stringify({ requestClass: \"foreground_document_navigation\" }),\n    keepalive: true\n  })",
@@ -5885,11 +5987,28 @@
       "sidecarPath": "src/app/app/reports/page.operation.ts"
     },
     {
-      "anchorBytes": "getReports",
-      "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-      "anchorEnd": 821,
+      "anchorBytes": "getPlannedSchedule",
+      "anchorDigest": "b1f5d69b1bdda67ed827a0cb9e64ce027893b4a6484c0ed60d2f4be9799646d2",
+      "anchorEnd": 829,
       "anchorFile": "src/app/app/reports/page.tsx",
       "anchorStart": 811,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getPlannedSchedule",
+        "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/reports/page.tsx:server_value_import:getPlannedSchedule:src/server/services/planned-schedule.ts#getPlannedSchedule",
+      "ownerId": "server_loader:src/app/app/reports/page.tsx",
+      "ownerModule": "src/app/app/reports/page.tsx",
+      "sidecarPath": "src/app/app/reports/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getReports",
+      "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
+      "anchorEnd": 894,
+      "anchorFile": "src/app/app/reports/page.tsx",
+      "anchorStart": 884,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getReports",
@@ -6945,10 +7064,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "1313d28f27dc93db9b73434c83ac0a1805dab16289b3a4da4ef7cdb8237c0651",
+  "semanticArtifactDigest": "69e99874e0e64898bf4c43f8bd9503a29dc34cdc47bb5d184f741a2646bf95a7",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "fecb71d33d47c850b1a0ba0b95dc3c86dec01faf212ad4efc1bd9cb38d05ca65",
+  "semanticCoverageDigest": "456fda6831f3007d44ec49cd72553b440ada3d3715290aac6e49d06d1c606c7f",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "60be50a3f8769f6ffc1c9a003feffdb3bbe1aa6ab7386546d58930e37602e029"
+  "semanticFingerprint": "b6bff5c7c5b8cf4e2af682f8c4293b32af604715448ad95d749507d3a20a9725"
 }

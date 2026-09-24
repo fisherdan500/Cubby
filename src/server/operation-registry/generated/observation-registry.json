@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 103,
-    "client_binding": 36,
+    "api_route": 104,
+    "client_binding": 37,
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
     "server_loader": 27,
     "worker": 6
   },
-  "declarationDigest": "12cf90dfe38c430273c4693c8bb8acccb2cafc975791e44a860b35dfd802de00",
+  "declarationDigest": "c9808a594862abef27d9d19effab7a0339fae45cdd878001a6063ace9fc8d3fa",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1897,6 +1897,41 @@
       },
       "id": "api_route:src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/babies/[id]/schedule/route.ts#GET"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "PUT",
+            "target": "src/app/api/babies/[id]/schedule/route.ts#PUT"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/schedule/route.operation.ts"
     },
     {
       "declaration": {
@@ -4788,6 +4823,11 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "getPlannedSchedule",
+            "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getReports",
             "target": "src/server/services/reports.ts#getReports"
           },
@@ -6260,6 +6300,51 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/reports/planned-schedule.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/reports/planned-schedule.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -7273,7 +7358,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "126458ee143349558227025d51388e8e8b4419ae4f17513b95f60f1eeb9a5b26",
+  "generatorDigest": "c860bb0de604c6d1ea47f97d64f3b66828fa85fa36ac3540e7504029552df82a",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -7738,6 +7823,34 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "2d9308d93aec341e59f8d7abf70a4ccbaad9720c355c35f81885b9f3a83bfafd",
+          "anchorEnd": 536,
+          "anchorFile": "src/app/api/babies/[id]/schedule/route.ts",
+          "anchorStart": 333,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/babies/[id]/schedule/route.ts#GET"
+        },
+        {
+          "anchorDigest": "47a4a9d2955c29577df9cedd829ef8666e5b57f24ca896ffdd09194ef117ada5",
+          "anchorEnd": 1512,
+          "anchorFile": "src/app/api/babies/[id]/schedule/route.ts",
+          "anchorStart": 538,
+          "kind": "route_method",
+          "symbol": "PUT",
+          "target": "src/app/api/babies/[id]/schedule/route.ts#PUT"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/schedule/route.operation.ts"
     },
     {
       "bindings": [
@@ -9804,10 +9917,19 @@
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-          "anchorEnd": 821,
+          "anchorDigest": "b1f5d69b1bdda67ed827a0cb9e64ce027893b4a6484c0ed60d2f4be9799646d2",
+          "anchorEnd": 829,
           "anchorFile": "src/app/app/reports/page.tsx",
           "anchorStart": 811,
+          "kind": "server_value_import",
+          "symbol": "getPlannedSchedule",
+          "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
+        },
+        {
+          "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
+          "anchorEnd": 894,
+          "anchorFile": "src/app/app/reports/page.tsx",
+          "anchorStart": 884,
           "kind": "server_value_import",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
@@ -11081,6 +11203,52 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/platform-setup-claim-form.tsx",
       "sidecarPath": "src/components/platform-setup-claim-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 1469,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 1404,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "a087a003de178c9c316a5e0c28cf632ab06056046e6d1dd1b8c81d45f193c1dc",
+          "anchorEnd": 4919,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 4687,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+          "anchorEnd": 6557,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 6490,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "d7277aee7984b9d484069307b15dd651e16e4951b06778bf8927c17929ee4f36",
+          "anchorEnd": 7536,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 7317,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
     },
     {
       "bindings": [
@@ -13063,8 +13231,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 201,
-  "observationDigest": "3f6f767b38ec126427ba91ac2b8e8823a1900bcdf0df054f2050dffde00f540a",
+  "observationCount": 203,
+  "observationDigest": "1186c3b8a9b2cb4c210ff1c6edda424001e0a072e750486a6550049fc9df46f9",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -13508,6 +13676,33 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 536,
+          "anchorFile": "src/app/api/babies/[id]/schedule/route.ts",
+          "anchorStart": 333,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/babies/[id]/schedule/route.ts#GET"
+        },
+        {
+          "anchorEnd": 1512,
+          "anchorFile": "src/app/api/babies/[id]/schedule/route.ts",
+          "anchorStart": 538,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+          "symbol": "PUT",
+          "target": "src/app/api/babies/[id]/schedule/route.ts#PUT"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/schedule/route.operation.ts"
     },
     {
       "bindings": [
@@ -15483,9 +15678,18 @@
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 821,
+          "anchorEnd": 829,
           "anchorFile": "src/app/app/reports/page.tsx",
           "anchorStart": 811,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/reports/page.tsx",
+          "symbol": "getPlannedSchedule",
+          "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
+        },
+        {
+          "anchorEnd": 894,
+          "anchorFile": "src/app/app/reports/page.tsx",
+          "anchorStart": 884,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getReports",
@@ -16721,6 +16925,51 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/platform-setup-claim-form.tsx",
       "sidecarPath": "src/components/platform-setup-claim-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1469,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 1404,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/reports/planned-schedule.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 4919,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 4687,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/reports/planned-schedule.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 6557,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 6490,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/reports/planned-schedule.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 7536,
+          "anchorFile": "src/components/reports/planned-schedule.tsx",
+          "anchorStart": 7317,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/reports/planned-schedule.tsx",
+          "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
     },
     {
       "bindings": [
@@ -18684,6 +18933,12 @@
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/babies/[id]/schedule/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/schedule/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/schedule/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/babies/issue/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/issue/route.ts",
@@ -19464,6 +19719,12 @@
       "sidecarPath": "src/components/platform-setup-claim-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/reports/planned-schedule.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/reports/planned-schedule.tsx",
+      "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/session-activity-reporter.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/session-activity-reporter.tsx",
@@ -19758,9 +20019,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "80b1966168913fe24e374caa0cd17b2a58f7484593bb262aac9ad88ceb839f3a",
+  "ownerSetDigest": "b5dfbdb36021b6e07cc5dc5d8be96f916c0c4c6c4fd07f1b110d39fb1ca65b63",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a52b0c4df5f899d0e5bf19f6da668bd04a361ace793dda4d822f74d9ca93068c",
+  "registryDigest": "cfdd859e3fa32fb3ed577d1d6cc9f2bdd0d482e1cd63602ca8b33720e9f489d5",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

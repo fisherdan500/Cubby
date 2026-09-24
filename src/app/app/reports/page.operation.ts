@@ -13,6 +13,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "getPlannedSchedule",
+      target: "src/server/services/planned-schedule.ts#getPlannedSchedule"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getReports",
       target: "src/server/services/reports.ts#getReports"
     },

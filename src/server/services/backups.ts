@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { automatedBackupConfig } from "@/lib/env";
 import { activityBackupDetailKeys, activityDetailRecord } from "@/domain/activity-field-matrix";
 import { parseAccentTheme } from "@/domain/appearance";
+import { PLANNED_SCHEDULE_SCHEMA_VERSION, plannedScheduleDocumentSchema } from "@/domain/planned-schedule";
 import { parseUnitPreferences } from "@/domain/unit-preferences";
 import { activityRestoreSchema } from "@/lib/validation/activity";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
@@ -43,7 +44,7 @@ const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"])
 type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
-  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder"
+  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule"
 >;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
@@ -196,7 +197,7 @@ export async function buildHouseholdV2Snapshot(
   householdId: string,
   exportedAt = new Date().toISOString()
 ) {
-  const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders] = await Promise.all([
+  const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
@@ -208,7 +209,12 @@ export async function buildHouseholdV2Snapshot(
       include: { babies: { select: { babyId: true } }, contacts: { select: { contactId: true } } },
       orderBy: { startTime: "asc" }
     }),
-    tx.reminder.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } })
+    tx.reminder.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
+    tx.plannedSchedule.findMany({
+      where: { householdId, baby: { deletedAt: null } },
+      select: { babyId: true, document: true },
+      orderBy: { createdAt: "asc" }
+    })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
     throw new Error("backup_active_timer");
@@ -275,6 +281,10 @@ export async function buildHouseholdV2Snapshot(
       cadenceMinutes: reminder.cadenceMinutes,
       dueAt: reminder.dueAt?.toISOString() ?? null,
       enabled: reminder.enabled
+    })),
+    plannedSchedules: plannedSchedules.map((schedule) => ({
+      babyId: schedule.babyId,
+      items: plannedScheduleDocumentSchema.parse(schedule.document).items
     }))
   }, exportedAt);
 }
@@ -556,6 +566,15 @@ async function restoreV2InTransaction(
       }
     });
   }
+  for (const schedule of payload.plannedSchedules ?? []) {
+    await tx.plannedSchedule.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        babyId: babyMap.get(schedule.babyId)!,
+        document: { schemaVersion: PLANNED_SCHEDULE_SCHEMA_VERSION, items: schedule.items } as Prisma.InputJsonValue
+      }
+    });
+  }
   for (const baby of payload.babies) {
     if (!baby.inactiveAt) continue;
     const babyId = babyMap.get(baby.id)!;
@@ -569,9 +588,10 @@ async function restoreV2InTransaction(
     catalogs: payload.catalogs.length,
     activities: payload.activities.length,
     calendarEvents: payload.calendarEvents.length,
-    reminders: payload.reminders.length
+    reminders: payload.reminders.length,
+    plannedSchedules: payload.plannedSchedules?.length ?? 0
   };
-  const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders;
+  const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders + counts.plannedSchedules;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
   return { restored, counts, legacyPartial: false };
 }
