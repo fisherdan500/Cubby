@@ -3464,17 +3464,17 @@
           "file": "package.json"
         },
         {
-          "digest": "7a42839f24150aa0b39fdfb73281a03ae193f3d9ce76f1244511a78b645a2305",
+          "digest": "d16b9ba78c32452ba252c89a3377430d26476057d608dc39b0a31b18ec225db6",
           "file": "scripts/quick-start.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "742411e4ed667e750db185a68c225c114a5b31efbf1c81095526f8125b42f0bd",
-      "fingerprint": "baf38ffe661c3187f0467bf4934914594f4cff1970631b76964d24666da7de28",
+      "fingerprint": "cb9d0cd01918a7f7da131e9cddf3e4646ed0a7143a4e6a226b4b464d19e8b87b",
       "id": "fingerprint:package_command:scripts/quick-start.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/quick-start.acceptance-rehearsal.ts",
       "ownerModule": "scripts/quick-start.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/quick-start.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "0a7e6fcce6b4cd96889c853676267b44e1bb4de9e652f4179e404253b3ffae28",
+      "sourceDigest": "f39a0a4a87e0bb2a7fe572ff54b06e1413d99be1ce02c461b1e77ebda2569e1a",
       "status": "declared"
     },
     {

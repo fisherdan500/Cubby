@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
@@ -42,7 +42,7 @@ function secretValues(checkout: string) {
     .split("\n")
     .map((line) => /^([A-Z0-9_]+)=(.+)$/.exec(line))
     .filter((match): match is RegExpExecArray => Boolean(match) && /(SECRET|PASSWORD|_KEY|KEYRING)$/.test(match![1]!))
-    .flatMap((match) => match[2]!.trim().split(/[:,]/).filter((part) => part.length >= 16));
+    .flatMap((match) => match[2]!.trim().replace(/^'(.*)'$/, "$1").split(/[:,]/).filter((part) => part.length >= 16));
 }
 
 export async function runQuickStartAcceptanceRehearsal() {
@@ -57,15 +57,28 @@ export async function runQuickStartAcceptanceRehearsal() {
   const compose = ["compose", "--project-name", project];
   let composeStarted = false;
   try {
+    // A mail server the stack is configured for but never reaches: nothing is sent during the rehearsal,
+    // and the email worker's startup check only validates the configuration.
+    writeFileSync(resolve(checkout, "smtp-password"), `${randomBytes(18).toString("hex")}\n`, { mode: 0o600 });
     // As `sudo sh scripts/quick-start.sh` would, from the operator's account.
     run("docker", [
       "run", "--rm", "--volume", `${checkout}:/cubby`, "--workdir", "/cubby",
       "--env", `SUDO_UID=${process.getuid()}`, "--env", `SUDO_GID=${process.getgid()}`,
-      "debian:bookworm-slim", "sh", "scripts/quick-start.sh", "--url", origin, "--port", String(port)
+      "debian:bookworm-slim", "sh", "scripts/quick-start.sh", "--url", origin, "--port", String(port),
+      "--smtp-host", "smtp.quick-start.invalid", "--smtp-user", "cubby@quick-start.invalid",
+      "--email-from", "Cubby <cubby@quick-start.invalid>", "--smtp-password-file", "smtp-password"
     ], checkout);
 
     composeStarted = true;
-    run("docker", [...compose, "up", "--build", "--detach", "--wait"], checkout);
+    try {
+      run("docker", [...compose, "up", "--build", "--detach", "--wait"], checkout);
+    } catch (error) {
+      // The app's own account of why it never became healthy, captured before teardown removes it.
+      // The entrypoint writes no secret to the log, which the check at the end of a passing run proves.
+      const appLog = spawnSync("docker", [...compose, "logs", "--no-color", "--tail", "80", "app"], { cwd: checkout, encoding: "utf8" });
+      console.error(`--- app log (last 80 lines) ---\n${appLog.stdout ?? ""}${appLog.stderr ?? ""}--- end app log ---`);
+      throw error;
+    }
 
     const health = await fetch(`${origin}/api/health`, { cache: "no-store" });
     if (!health.ok) throw new Error(`quick_start_health_invalid:${health.status}`);

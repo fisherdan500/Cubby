@@ -19,15 +19,27 @@ const appRequired = [
   "CUBBY_FRESH_AUTH_ATTESTATION_KEYRING",
   "CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION",
   "CUBBY_EMAIL_DELIVERY_KEYRING",
-  "CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION"
+  "CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION",
+  // The email worker's first tick runs at startup and stops the server when these are missing.
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASSWORD",
+  "EMAIL_FROM"
 ];
+
+const smtpPassword = "p@ss $HOME w0rd";
 
 function keys(text: string) {
   return new Set([...text.matchAll(/^([A-Z0-9_]+)=/gm)].map(([, name]) => name!));
 }
 
+/** Reads a dotenv file as Compose does for these values: single quotes are literal, with no interpolation. */
 function parseEnv(text: string) {
-  return Object.fromEntries([...text.matchAll(/^([A-Z0-9_]+)=(.*)$/gm)].map(([, name, value]) => [name!, value!.trim()]));
+  return Object.fromEntries([...text.matchAll(/^([A-Z0-9_]+)=(.*)$/gm)].map(([, name, value]) => {
+    const trimmed = value!.trim();
+    return [name!, /^'.*'$/.test(trimmed) ? trimmed.slice(1, -1) : trimmed];
+  }));
 }
 
 const checkouts: string[] = [];
@@ -49,8 +61,20 @@ function currentOwner() {
   return id.stdout;
 }
 
-function runQuickStart(directory: string, args: string[]) {
-  return spawnSync("sh", ["scripts/quick-start.sh", ...args], { cwd: directory, encoding: "utf8" });
+function smtpArgs(directory: string, password = smtpPassword) {
+  const passwordFile = path.join(directory, "smtp-password");
+  writeFileSync(passwordFile, `${password}\n`);
+  return [
+    "--smtp-host", "smtp.example.test",
+    "--smtp-user", "cubby@example.test",
+    "--email-from", "Cubby <cubby@example.test>",
+    "--smtp-password-file", passwordFile
+  ];
+}
+
+/** Runs the quick start with a complete mail configuration unless the case supplies its own. */
+function runQuickStart(directory: string, args: string[], withSmtp = true) {
+  return spawnSync("sh", ["scripts/quick-start.sh", ...(withSmtp ? smtpArgs(directory) : []), ...args], { cwd: directory, encoding: "utf8" });
 }
 
 describe("fresh-server environment template", () => {
@@ -145,6 +169,48 @@ describe("scripts/quick-start.sh", () => {
     const directory = checkout();
     expect(runQuickStart(directory, ["--data-owner", currentOwner()]).status).toBe(0);
     expect(readdirSync(directory).filter((name) => name.includes(".tmp"))).toEqual([]);
+  });
+
+  it("writes the mail settings the server needs to start, quoted so Compose takes them literally", () => {
+    const directory = checkout();
+
+    const result = runQuickStart(directory, ["--data-owner", currentOwner()]);
+
+    expect(result.status, result.stderr).toBe(0);
+    const text = readFileSync(path.join(directory, ".env"), "utf8");
+    const generated = parseEnv(text);
+    expect(generated).toMatchObject({
+      SMTP_HOST: "smtp.example.test",
+      SMTP_PORT: "587",
+      SMTP_USER: "cubby@example.test",
+      SMTP_PASSWORD: smtpPassword,
+      EMAIL_FROM: "Cubby <cubby@example.test>"
+    });
+    // A $ in a password must not be read as a variable by Compose.
+    expect(text).toContain(`SMTP_PASSWORD='${smtpPassword}'`);
+    expect(`${result.stdout}${result.stderr}`).not.toContain(smtpPassword);
+  });
+
+  it("refuses to write a configuration the server cannot start with when no mail server is given", () => {
+    const directory = checkout();
+
+    const result = runQuickStart(directory, ["--data-owner", currentOwner()], false);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("smtp_required");
+    expect(existsSync(path.join(directory, ".env"))).toBe(false);
+  });
+
+  it.each([
+    ["a quote", "it's-secret"],
+    ["an empty password", ""]
+  ])("refuses a mail password containing %s before writing anything", (_label, password) => {
+    const directory = checkout();
+
+    const result = spawnSync("sh", ["scripts/quick-start.sh", ...smtpArgs(directory, password), "--data-owner", currentOwner()], { cwd: directory, encoding: "utf8" });
+
+    expect(result.status).not.toBe(0);
+    expect(existsSync(path.join(directory, ".env"))).toBe(false);
   });
 
   it("never overwrites an existing install's secrets", () => {

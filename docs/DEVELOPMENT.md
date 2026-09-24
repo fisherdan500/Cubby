@@ -12,7 +12,8 @@ and troubleshooting.
 
 ## Environment
 
-On a Linux server, `sh scripts/quick-start.sh --url <address>` writes a complete
+On a Linux server, `sh scripts/quick-start.sh --url <address>` with the required
+`--smtp-*` and `--email-from` options writes a complete
 `.env` with every secret generated, the Sprout staging key, and data directories
 owned by the container's user; see the README's Docker Quick Start. It refuses to
 overwrite an existing `.env`. To configure by hand, start from `.env.example`, which

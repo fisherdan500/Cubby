@@ -45,11 +45,19 @@ also deferred until a concrete household use case exists.
 The supported server is current Ubuntu or Debian on x86_64 with Docker Engine and the
 Compose plugin installed. TLS and any reverse proxy are yours to run in front of Cubby.
 
+You also need an SMTP account Cubby can send from. It sends account-security email
+(such as email-change verification), and the server will not start without one.
+
 1. Clone this repository onto the server and change into it.
-2. Generate the configuration, giving the address people will open Cubby at:
+2. Put the SMTP password alone in a file readable only by you, for example
+   `umask 077; printf '%s\n' 'your-smtp-password' > smtp-password`.
+3. Generate the configuration, giving the address people will open Cubby at and the
+   mail server:
 
 ```bash
-sudo sh scripts/quick-start.sh --url https://cubby.example.com
+sudo sh scripts/quick-start.sh --url https://cubby.example.com \
+  --smtp-host smtp.example.com --smtp-user cubby@example.com \
+  --email-from 'Cubby <cubby@example.com>' --smtp-password-file smtp-password
 ```
 
    It writes a complete `.env` with a fresh value for every secret, writes the
@@ -60,15 +68,17 @@ sudo sh scripts/quick-start.sh --url https://cubby.example.com
    needed. Other options: `--port` (the host port; default the URL's own port, 80 for a plain `http://`
    address, or 3000 behind an `https://` proxy),
    `--timezone` (default `America/New_York`), and `--trusted-proxy-hops 1` when every
-   request arrives through one reverse proxy that sets `X-Forwarded-For`. Keep `.env`
-   and `docker-data/` private and back them up together.
-3. Start the stack:
+   request arrives through one reverse proxy that sets `X-Forwarded-For`, and
+   `--smtp-port` (default 587 with STARTTLS; 465 for implicit TLS). Keep `.env` and
+   `docker-data/` private and back them up together, and delete the `smtp-password`
+   file once `.env` exists.
+4. Start the stack:
 
 ```bash
 docker compose up --build -d
 ```
 
-4. Open exactly the address you gave to `--url` (sign-in accepts only that origin),
+5. Open exactly the address you gave to `--url` (sign-in accepts only that origin),
    and finish setup at `/setup` as described below. Run the script with `sudo` from
    your own account rather than as root: that is how it knows to leave `.env` readable
    by the account that runs `docker compose`.

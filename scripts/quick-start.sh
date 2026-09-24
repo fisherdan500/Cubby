@@ -6,7 +6,13 @@
 # It never overwrites an existing .env or key, validates every option before writing anything, and
 # prints no secret. Run it once, from the checkout, before the first `docker compose up --build -d`:
 #
-#   sudo sh scripts/quick-start.sh --url https://cubby.example.com
+#   sudo sh scripts/quick-start.sh --url https://cubby.example.com \
+#     --smtp-host smtp.example.com --smtp-user cubby@example.com \
+#     --email-from 'Cubby <cubby@example.com>' --smtp-password-file ./smtp-password
+#
+# The mail server is required: Cubby sends its account-security email through it, and the server
+# will not start without one. The password is read from a file so it never appears in the command
+# line or shell history.
 #
 # sudo is needed only to hand the data directories to the container's user (uid 1000); run as that
 # user, or pass --data-owner for a different container user, it needs no privileges.
@@ -31,6 +37,13 @@ Usage: sh scripts/quick-start.sh [options]
   --trusted-proxy-hops 0|1    1 only when every request reaches Cubby through one reverse proxy
                               that sets X-Forwarded-For (default 0).
   --data-owner UID:GID        Owner of the data directories, the container's user (default 1000:1000).
+
+Required mail server (Cubby will not start without one):
+  --smtp-host HOST            SMTP server name.
+  --smtp-port PORT            SMTP port (default 587, STARTTLS; 465 means implicit TLS).
+  --smtp-user USER            SMTP login.
+  --smtp-password-file FILE   File whose first line is the SMTP password.
+  --email-from ADDRESS        Sender, such as 'Cubby <cubby@example.com>'.
 USAGE
 }
 
@@ -39,6 +52,11 @@ port=""
 timezone="America/New_York"
 proxy_hops="0"
 data_owner="1000:1000"
+smtp_host=""
+smtp_port="587"
+smtp_user=""
+smtp_password_file=""
+email_from=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -47,6 +65,11 @@ while [ "$#" -gt 0 ]; do
     --timezone) [ "$#" -ge 2 ] || fail missing_value "--timezone needs a value"; timezone="$2"; shift 2 ;;
     --trusted-proxy-hops) [ "$#" -ge 2 ] || fail missing_value "--trusted-proxy-hops needs a value"; proxy_hops="$2"; shift 2 ;;
     --data-owner) [ "$#" -ge 2 ] || fail missing_value "--data-owner needs a value"; data_owner="$2"; shift 2 ;;
+    --smtp-host) [ "$#" -ge 2 ] || fail missing_value "--smtp-host needs a value"; smtp_host="$2"; shift 2 ;;
+    --smtp-port) [ "$#" -ge 2 ] || fail missing_value "--smtp-port needs a value"; smtp_port="$2"; shift 2 ;;
+    --smtp-user) [ "$#" -ge 2 ] || fail missing_value "--smtp-user needs a value"; smtp_user="$2"; shift 2 ;;
+    --smtp-password-file) [ "$#" -ge 2 ] || fail missing_value "--smtp-password-file needs a value"; smtp_password_file="$2"; shift 2 ;;
+    --email-from) [ "$#" -ge 2 ] || fail missing_value "--email-from needs a value"; email_from="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; fail unknown_option "Unknown option: $1" ;;
   esac
@@ -71,6 +94,24 @@ printf '%s' "$port" | grep -Eq '^[0-9]{1,5}$' && [ "$port" -ge 1 ] && [ "$port" 
 printf '%s' "$timezone" | grep -Eq '^[A-Za-z0-9_+/-]{1,64}$' || fail invalid_timezone "--timezone must be an IANA name, such as Europe/London"
 case "$proxy_hops" in 0|1) ;; *) fail invalid_proxy_hops "--trusted-proxy-hops must be 0 or 1" ;; esac
 printf '%s' "$data_owner" | grep -Eq '^[0-9]+:[0-9]+$' || fail invalid_data_owner "--data-owner must be numeric UID:GID, such as 1000:1000"
+
+if [ -z "$smtp_host" ] || [ -z "$smtp_user" ] || [ -z "$smtp_password_file" ] || [ -z "$email_from" ]; then
+  fail smtp_required "Cubby needs a mail server to start: give --smtp-host, --smtp-user, --smtp-password-file and --email-from."
+fi
+printf '%s' "$smtp_host" | grep -Eq '^[A-Za-z0-9.-]+$' || fail invalid_smtp_host "--smtp-host must be a host name"
+printf '%s' "$smtp_port" | grep -Eq '^[0-9]{1,5}$' && [ "$smtp_port" -ge 1 ] && [ "$smtp_port" -le 65535 ] \
+  || fail invalid_smtp_port "--smtp-port must be a number from 1 to 65535"
+[ -r "$smtp_password_file" ] || fail smtp_password_unreadable "Cannot read --smtp-password-file $smtp_password_file"
+smtp_password=$(head -n 1 "$smtp_password_file" | tr -d '\r')
+# Every mail value is written single-quoted, where Compose substitutes nothing, so a quote is the one
+# character that cannot be carried; a line break would end the value.
+for value in "$smtp_user" "$smtp_password" "$email_from"; do
+  case "$value" in
+    ""|*"'"*|*"
+"*) fail invalid_smtp_value "Mail settings must be non-empty and contain no single quote or line break." ;;
+  esac
+done
+case "$email_from" in *@*) ;; *) fail invalid_email_from "--email-from must contain an email address" ;; esac
 
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 env_file="$root/.env"
@@ -143,6 +184,11 @@ fi
   printf 'SPROUT_STAGING_KEY_VERSION=v1\n'
   printf 'AUTOMATED_BACKUPS_ENABLED=false\n'
   printf 'AUTOMATED_BACKUP_DIRECTORY=/var/lib/cubby/backups\n'
+  printf 'SMTP_HOST=%s\n' "$smtp_host"
+  printf 'SMTP_PORT=%s\n' "$smtp_port"
+  printf "SMTP_USER='%s'\n" "$smtp_user"
+  printf "SMTP_PASSWORD='%s'\n" "$smtp_password"
+  printf "EMAIL_FROM='%s'\n" "$email_from"
 } > "$env_tmp"
 chmod 600 "$env_tmp"
 if [ -n "${SUDO_UID:-}" ] && [ -n "${SUDO_GID:-}" ]; then chown "$SUDO_UID:$SUDO_GID" "$env_tmp"; fi
