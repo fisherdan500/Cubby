@@ -256,11 +256,13 @@ describe("ActiveTimerBar", () => {
     expect(screen.getAllByRole("button", { name: /^Stop .* timer/ })).toHaveLength(12);
   });
 
-  it("stands aside on Nursery, which already gives every timer full night controls", async () => {
-    navigation.pathname = "/app/nursery";
-    await renderBar([timer()]);
-
-    expect(screen.queryByRole("region", { name: "Running timers" })).toBeNull();
+  it("shows on every app screen now that no screen carries its own timer controls", async () => {
+    for (const pathname of ["/app", "/app/history", "/app/reports", "/app/settings"]) {
+      navigation.pathname = pathname;
+      await renderBar([timer()]);
+      expect({ pathname, shown: screen.queryByRole("region", { name: "Running timers" }) !== null }).toEqual({ pathname, shown: true });
+      cleanup();
+    }
   });
 
   it("speaks the duration in words rather than announcing every passing second", async () => {

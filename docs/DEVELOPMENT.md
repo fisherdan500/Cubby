@@ -779,9 +779,9 @@ the transaction. Suspension writes `member.suspend`, restoration writes
 
 ### Baby Selection
 
-Log Entry, Full Log, Calendar, Reports, and Nursery use the shared header baby
-selector behavior. Active tracking surfaces such as Log Entry, Dashboard, and
-Nursery should offer active babies only and render an intentional `No active
+Log Entry, Full Log, Calendar, and Reports use the shared header baby
+selector behavior. Active tracking surfaces such as Log Entry and Dashboard
+should offer active babies only and render an intentional `No active
 babies` state when none remain. Historical surfaces such as Full Log, Calendar,
 Reports, activity detail, and edit should retain inactive babies and label them
 explicitly. Pages should preserve `babyId` in links and search params where the

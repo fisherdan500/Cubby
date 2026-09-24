@@ -50,6 +50,28 @@ describe("durable immediate activity browser operations", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId });
   });
 
+  it("pins an undo to the entry it names, so it can never take back anything else", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    const onCompleted = vi.fn();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    const timersChanged = vi.fn();
+    window.addEventListener("cubby:active-timers-changed", timersChanged);
+    render(createElement(UndoLastButton, { activityId: "activity-9", label: "Undo", onCompleted }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+
+    await waitFor(() => expect(onCompleted).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId, activityId: "activity-9" });
+    // Undoing a timer that was just started must clear it from the shell's timer bar too.
+    expect(timersChanged).toHaveBeenCalledTimes(1);
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+    window.removeEventListener("cubby:active-timers-changed", timersChanged);
+  });
+
   it("mounts deletion and enters its named confirmation state", async () => {
     render(createElement(ConfirmedActivityDelete, { id: "activity-1", returnTo: "/app" }));
     await userEvent.click(screen.getByRole("button", { name: "Delete activity" }));
