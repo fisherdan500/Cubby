@@ -1808,17 +1808,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "2a02dbc5c2482d75b12106c6d6073dceecfe4abdecf3d1f1d6ac4dca2fa967e6",
+          "digest": "623c13e18dc48944a3ebdf9d037bdb39b33ab9c15e8f9ee7d55fba0d204c3a28",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "f5dd0d16c8c5ec921d9718a3c294ac1e0f1bee5311e42b4eebebefc4a951e72c",
+      "fingerprint": "0f40edc4892fa6ae74225271bdba32f6f17aef2b71cc64361ddfaaf101214956",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "bd9d319d56a2470ec8486b579761b5be6cda9ba2dcd5c2a9494a97ed8aa056c9",
+      "sourceDigest": "553bf33afd2c70326cc7ca7984b01870cde0cc27422bbf4f2dc5b60e08eecf1f",
       "status": "declared"
     },
     {
@@ -2144,17 +2144,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "a7eb1f06ae64d4b8225f7c44f2e7b76e89e42e5fbfb57612e3ec8b7e6c6adc39",
+          "digest": "68a2e9775a28e146409cafa003b32299c0470854af640453f0d33a4866482c09",
           "file": "src/components/actions/activity-actions.tsx"
         }
       ],
       "declarationDigest": "67159b29c3ec82f53088fc604226acc52b896ce08f66e1d769b4388dbcf9093c",
-      "fingerprint": "f4047ab6bbce7eb24dd8cb72da20784a92d16f74b0998141a9dee2a821c6b0bc",
+      "fingerprint": "6f3ed74f7c276efd33e562020bbd13b28655b5fb4d027c0ef0ce145cba269690",
       "id": "fingerprint:client_binding:src/components/actions/activity-actions.tsx",
       "ownerId": "client_binding:src/components/actions/activity-actions.tsx",
       "ownerModule": "src/components/actions/activity-actions.tsx",
       "sidecarPath": "src/components/actions/activity-actions.operation.ts",
-      "sourceDigest": "5976b0ee83d256e6b2fb86eafc3ba2903eaed30c15949ceb18764a646122e87b",
+      "sourceDigest": "1d31b828971ad354856a5d8a844e00d6ccb8f927fdfd41c1d336310f43e00ccf",
       "status": "declared"
     },
     {
@@ -2272,17 +2272,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "c347670be9b5b2dd3bee1a0eb5175b3f088706b5da062d65f8c9246ea0613bc1",
+          "digest": "e35d90d39260d0400d748dff5120a1c48c031b5fa9c368a7ec46611bb327630c",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "3779b34d26d512b301229aa487b0c86dbbe610bf0c711fccd0c6847874c0817e",
+      "fingerprint": "cb54bfbde40ff00dcaaccf32bcecfb87b4015d4a414bfda5d36ce8007dc662ae",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "4d73209b792ce6a73569b9d859e1fbf0650e62aed2b06fe1331f5306b9168548",
+      "sourceDigest": "c0829fa3e7753bcf4cfadd69030ecbef0680f6725ff869b89c539280741b5f8a",
       "status": "declared"
     },
     {
@@ -3616,11 +3616,11 @@
   ],
   "generatorDigest": "126458ee143349558227025d51388e8e8b4419ae4f17513b95f60f1eeb9a5b26",
   "generatorVersion": "r0.1",
-  "observationDigest": "20ed10be62be94ca521c45f5a67da09098016065699606ff777d1ebe4f070783",
+  "observationDigest": "14e8fb92ec160c5df6852b2bf014003b98d39f196b7d0c5628743985cd361f1d",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "80b1966168913fe24e374caa0cd17b2a58f7484593bb262aac9ad88ceb839f3a",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "6b66ebc33370bdeb36a06d9006e1ff39f82246da4d7bebe1b9858c2c51cd3221",
+  "registryDigest": "91f1e4a939f626883e5cf92993b0c242062ccfbd3ac2b815da8e1c27686bf9ff",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

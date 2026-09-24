@@ -82,6 +82,23 @@ describe("ActivityForm browser-v2 handling", () => {
   });
 
   it.each([
+    { label: "a new entry leaves", activityId: undefined, action: "create", expected: { activityId: "activity-9", label: "Note" } },
+    { label: "an edit leaves no", activityId: "activity-9", action: "update", expected: null }
+  ])("$label short-lived Undo for the screen it returns to", async ({ activityId, action, expected }) => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { kind: "activity", code: "ok", activityId: "activity-9", action } } }));
+    renderActivity(activityId);
+    await submitMountedActivity(activityId);
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+
+    const saved = sessionStorage.getItem("cubby:saved-entry-undo");
+    expect(saved ? JSON.parse(saved) : null).toEqual(expected ? expect.objectContaining(expected) : null);
+  });
+
+  it.each([
     { label: "create", activityId: undefined, endpoint: "/api/activities" },
     { label: "update", activityId: "activity-1", endpoint: "/api/activities/activity-1" }
   ])("resumes a retained prepared $label reservation with the same ID", async ({ activityId, endpoint }) => {

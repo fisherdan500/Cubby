@@ -85,7 +85,8 @@ export default async function DashboardPage({
 
           {/* The "Daily log" heading and the Undo last button are hidden for now at the User's request:
               the heading repeated what the screen already says, and Undo last risked more harm than
-              good in its prominent position. UndoLastButton itself is kept for a later placement. */}
+              good in its prominent position. Undo now appears only as the short-lived notice after a
+              new entry is saved (SavedEntryUndo), pinned to that entry. */}
           <section aria-label="Daily log" className="space-y-3">
             {visibleActivities.length === 0 ? (
               <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">No activity for this date.</p>
