@@ -63,6 +63,18 @@ describe("email-change encrypted delivery payloads", () => {
     expect(createTransport).toHaveBeenCalledWith(expect.objectContaining({ requireTLS: true, tls: { rejectUnauthorized: true, ca: "synthetic-ca" } }));
   });
 
+  it("applies connection timeouts only when a caller asks for them", () => {
+    const createTransport = vi.fn(() => ({ sendMail: vi.fn() })) as never;
+    const environment = { SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "password", EMAIL_FROM: "Cubby <noreply@example.invalid>" };
+
+    createSmtpEmailDeliveryAdapter(environment, { createTransport });
+    createSmtpEmailDeliveryAdapter(environment, { createTransport }, { connectionTimeout: 15_000, greetingTimeout: 15_000, socketTimeout: 20_000 });
+
+    const calls = (createTransport as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls;
+    expect(calls[0]![0]).not.toHaveProperty("connectionTimeout");
+    expect(calls[1]![0]).toMatchObject({ connectionTimeout: 15_000, greetingTimeout: 15_000, socketTimeout: 20_000 });
+  });
+
   it("classifies an exact-recipient SMTP rejection as permanent rather than a connection retry", async () => {
     const sendMail = vi.fn().mockResolvedValue({ response: "550 5.1.1 rejected", messageId: "<delivery-1@cubby.local>", accepted: [], rejected: ["new@example.invalid"] });
     const adapter = createSmtpEmailDeliveryAdapter({ SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "465", SMTP_USER: "user", SMTP_PASSWORD: "password", EMAIL_FROM: "Cubby <noreply@example.invalid>" }, { createTransport: vi.fn(() => ({ sendMail })) as never });

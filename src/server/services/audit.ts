@@ -53,6 +53,7 @@ const auditActionSchema = z.enum([
 const platformAuditActionSchema = z.enum([
   "platform.backup_recovery.authorize",
   "platform.backup_recovery.target.provision",
+  "platform.email.test",
   "platform.owner.bootstrap",
   "platform.owner.bootstrap_user.verify",
   "platform.owner.recover",
