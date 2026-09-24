@@ -50,7 +50,7 @@ export default async function ReportsPage({
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
-          <Card className="w-fit max-w-full">
+          <Card className="w-fit max-w-full print:hidden">
             <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
               <input name="babyId" type="hidden" value={report.baby.id} />
               <input name="tab" type="hidden" value={tab} />
@@ -68,7 +68,7 @@ export default async function ReportsPage({
           </Card>
 
           {/* Which report is open was carried by colour alone; aria-current says it too. */}
-          <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2">
+          <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2 print:hidden">
             {tabs.map(([value, label, Icon]) => (
               <Link
                 key={value}
@@ -91,6 +91,7 @@ export default async function ReportsPage({
           {tab === "routine" ? (
             <RoutineTab
               babyId={report.baby.id}
+              babyName={report.baby.name}
               startKey={report.startKey}
               endKey={report.endKey}
               routine={report.routine}

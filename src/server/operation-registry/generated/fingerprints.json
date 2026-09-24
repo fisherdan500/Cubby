@@ -1824,17 +1824,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "943c92d321a03c7667bbbbb117500d05843dcac612a765d713fdcb160553bd84",
+          "digest": "b2258d5cb5848c29c0bb1a1bdaae34ed36727311469e9aba0064fb9a0bff8b7b",
           "file": "src/app/app/reports/page.tsx"
         }
       ],
       "declarationDigest": "0b4aa76d23d2e1e0cfcb726d04c91d37d7368b7080d303d9d030b77704431883",
-      "fingerprint": "c949a8e9c4d6ad13b4a3e404c481505ee336642a5a6112daffccb0d43d9bf989",
+      "fingerprint": "33b0e7438575d6a11a59c8e3ce2346c70677545276a377ce7fe1106f78109c17",
       "id": "fingerprint:server_loader:src/app/app/reports/page.tsx",
       "ownerId": "server_loader:src/app/app/reports/page.tsx",
       "ownerModule": "src/app/app/reports/page.tsx",
       "sidecarPath": "src/app/app/reports/page.operation.ts",
-      "sourceDigest": "84a99995aeed8f4d131be32d1718e64dceea4839b34613ef5b25fd180babf33a",
+      "sourceDigest": "f5ccf81bec9a25a4958d9209e42ff59fdbad381f7f0780a3adaa8153d5373f05",
       "status": "declared"
     },
     {
@@ -2192,17 +2192,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "4074d21b0c65073f1062ec151f829d7ebdc2c3ab4b3b5c18bf1f74ac8a82f6e1",
+          "digest": "9e8cd3cfdde17b6a9c05edb8e34de8636fb58e0a3641971166e4593932a3f5d4",
           "file": "src/components/active-timer-bar.tsx"
         }
       ],
       "declarationDigest": "1161fd5a506c806d7c14d8c50fc2988e3befec80a4b0dbd7f8acac4162db5165",
-      "fingerprint": "6573f5c8ef5682427bd361d2d1d4633321f0c9c2119f7ca576c23676e8f5638d",
+      "fingerprint": "d0fadd4be19ae4e7e2ae7be28d08eade117bfefbeee4ca136519491240bfc345",
       "id": "fingerprint:client_binding:src/components/active-timer-bar.tsx",
       "ownerId": "client_binding:src/components/active-timer-bar.tsx",
       "ownerModule": "src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts",
-      "sourceDigest": "1e7e75c71cf7237a28091ca405d27effa4344329c6539240acd9f264a9ca5302",
+      "sourceDigest": "b899dc96ecd01593d915865fd56a49f2420dc581c915c66602a3ba92ba64055b",
       "status": "declared"
     },
     {

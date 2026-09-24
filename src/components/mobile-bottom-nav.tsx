@@ -65,7 +65,7 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
   return (
     <div
       ref={rootRef}
-      className="md:hidden"
+      className="md:hidden print:hidden"
       onBlur={(event) => {
         // Tabbing out of the sheet closes it, so it never lingers over the page behind focus.
         if (open && !rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);

@@ -245,6 +245,31 @@ a {
   }
 }
 
+/* Paper is white and printers skip backgrounds, so a dark theme would print pale text on nothing.
+   Whatever the screen shows, a printed page is dark ink on white. */
+@media print {
+  :root,
+  .dark {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 8%;
+    --surface: 0 0% 100%;
+    --border: 0 0% 70%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 28%;
+    --primary: 0 0% 8%;
+  }
+
+  .dark body {
+    background-image: none;
+  }
+
+  body::before {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

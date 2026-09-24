@@ -23,7 +23,7 @@ vi.mock("@/components/app-shell", () => ({
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 vi.mock("@/components/reports/routine-tab", () => ({ RoutineTab: () => createElement("div", null, "routine") }));
 
-import { buildReportStats, buildRoutineTimeline } from "@/server/services/reports";
+import { buildReportStats, buildRoutine } from "@/server/services/reports";
 import ReportsPage from "@/app/app/reports/page";
 
 const endKey = "2026-09-19";
@@ -43,7 +43,7 @@ beforeEach(() => {
     baby: { id: "baby-1", name: "Avery", birthDate: null },
     startKey: "2026-09-13",
     endKey,
-    routine: buildRoutineTimeline([], endKey, "1w", "Etc/UTC"),
+    routine: buildRoutine([], endKey, "1w", "Etc/UTC"),
     stats: buildReportStats([], null, "Etc/UTC")
   });
 });

@@ -54,7 +54,7 @@ export function SavedEntryUndo() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.75rem+var(--active-timer-bar,0rem))] z-30 px-3 md:bottom-[calc(1rem+var(--active-timer-bar,0rem))] md:left-64 md:px-6">
+    <div className="fixed inset-x-0 bottom-[calc(4.75rem+var(--active-timer-bar,0rem))] z-30 px-3 md:bottom-[calc(1rem+var(--active-timer-bar,0rem))] md:left-64 md:px-6 print:hidden">
       <div
         role="status"
         onPointerDown={engage}
