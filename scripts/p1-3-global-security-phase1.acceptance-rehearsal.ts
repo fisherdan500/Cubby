@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createServer as createTlsServer } from "node:tls";
 import { createServer as createHttpServer } from "node:http";
 import { PrismaClient } from "@prisma/client";
+import { buildSync } from "esbuild";
 import { env as runtimeEnv } from "../src/lib/env";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -795,7 +796,21 @@ export async function runP13GlobalSecurityPhase1Acceptance() {
       console.log("PHASE8_SIGN_IN_SESSION_EVENT_ATOMICITY_PASS");
       console.log("PHASE8_SIGN_IN_FAILURE_INCIDENT_EVENT_ATOMICITY_PASS");
 
-      run(process.execPath, [resolve(root, "node_modules/esbuild/bin/esbuild"), "scripts/security-operator.ts", "--bundle", "--platform=node", "--format=esm", "--target=node22", "--packages=external", "--outfile=dist/security-operator.mjs"], env, true, "phase8_operator_package_build_failed", root);
+      // esbuild's own API rather than its bin, as in backup-recovery-rehearsal.ts: on Linux that bin is
+      // the native binary, which `node` cannot run, so the bin form worked only on Windows.
+      try {
+        buildSync({
+          entryPoints: [resolve(root, "scripts/security-operator.ts")],
+          bundle: true,
+          platform: "node",
+          format: "esm",
+          target: "node22",
+          packages: "external",
+          outfile: resolve(root, "dist/security-operator.mjs")
+        });
+      } catch {
+        throw new Error("phase8_operator_package_build_failed");
+      }
       const operatorFrom = sql(`SELECT current_date::text`);
       const operatorTo = new Date(`${operatorFrom}T00:00:00.000Z`);
       operatorTo.setUTCDate(operatorTo.getUTCDate() + 1);
