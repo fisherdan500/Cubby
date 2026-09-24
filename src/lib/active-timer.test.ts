@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeTimerElapsedSeconds, formatTimerElapsed, timerElapsedSpoken } from "@/lib/active-timer";
+import { activeTimerActionLabel, activeTimerElapsedSeconds, formatTimerElapsed, timerElapsedSpoken } from "@/lib/active-timer";
 
 const startedAt = "2026-09-21T10:00:00.000Z";
 const now = Date.parse("2026-09-21T11:12:04.000Z");
@@ -31,6 +31,15 @@ describe("active timer elapsed", () => {
     const wallSeconds = Math.round((now - Date.parse(startedAt)) / 1_000);
 
     expect(activeTimerElapsedSeconds(timer, now)).toBe(Math.max(0, wallSeconds - 900));
+  });
+
+  it("matches canonical stop rounding at fractional absolute-second boundaries", () => {
+    expect(activeTimerElapsedSeconds({
+      timerState: "running",
+      startedAt: "1970-01-01T00:00:00.600Z",
+      pausedAt: null,
+      pausedSeconds: 0
+    }, Date.parse("1970-01-01T00:00:10.400Z"))).toBe(9);
   });
 
   it("never reports negative time from a clock skew or an overlong pause", () => {
@@ -70,5 +79,23 @@ describe("timer elapsed display", () => {
     expect(timerElapsedSpoken(7_320)).toBe("2 hours 2 minutes");
     expect(timerElapsedSpoken(60)).toBe("1 minute");
     expect(timerElapsedSpoken(42)).toBe("0 minutes");
+  });
+});
+
+describe("active timer action labels", () => {
+  it("numbers only duplicate timer types for the same baby", () => {
+    const timers = [
+      { id: "a-1", babyId: "baby-a", type: "feeding" },
+      { id: "b-1", babyId: "baby-b", type: "feeding" },
+      { id: "a-2", babyId: "baby-a", type: "feeding" },
+      { id: "a-sleep", babyId: "baby-a", type: "sleep" }
+    ];
+
+    expect(activeTimerActionLabel("Stop", "Avery", "Feeding", timers[0], timers))
+      .toBe("Stop Avery's feeding timer 1 of 2");
+    expect(activeTimerActionLabel("Stop", "Blake", "Feeding", timers[1], timers))
+      .toBe("Stop Blake's feeding timer");
+    expect(activeTimerActionLabel("Pause", "Avery", "Feeding", timers[2], timers))
+      .toBe("Pause Avery's feeding timer 2 of 2");
   });
 });

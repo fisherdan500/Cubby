@@ -316,7 +316,7 @@ function CalendarDrawer({
             <div className="flex justify-end gap-3 border-t border-border p-4">
               <Link
                 href={closeHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-5 text-sm font-bold hover:bg-muted"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-control px-5 text-sm font-bold hover:bg-muted"
               >
                 Close
               </Link>
@@ -394,7 +394,7 @@ function NewEventForm({
           </label>
 
           <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
-            <input name="allDay" type="checkbox" className="h-5 w-5 rounded border-border bg-card" />
+            <input name="allDay" type="checkbox" className="h-5 w-5 rounded border-control bg-card" />
             All day event
           </label>
 
@@ -430,7 +430,7 @@ function NewEventForm({
           <label className="block space-y-2 text-sm font-bold">
             <span>Color</span>
             <div className="flex items-center gap-3">
-              <input name="color" type="color" defaultValue="#14b8a6" className="h-11 w-14 rounded-lg border border-border bg-card p-1" />
+              <input name="color" type="color" defaultValue="#14b8a6" className="h-11 w-14 rounded-lg border border-control bg-card p-1" />
               <span className="text-sm text-muted-foreground">Custom color for this event</span>
             </div>
           </label>
@@ -440,7 +440,7 @@ function NewEventForm({
       <div className="flex justify-end gap-3 border-t border-border p-4">
         <Link
           href={closeHref}
-          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-5 text-sm font-bold hover:bg-muted"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-control px-5 text-sm font-bold hover:bg-muted"
         >
           Cancel
         </Link>

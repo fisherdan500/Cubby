@@ -119,7 +119,64 @@ type HistoricalActivityFields = {
   startedAt: Date | null;
   endedAt: Date | null;
   timezone: string;
+  pauseTrackingStartedAt?: Date | null;
+  pauseTrackingBaselineSeconds?: number | null;
+  pauseIntervals?: Array<{ startedAt: Date; endedAt: Date }>;
 };
+
+function requireValidHistoricalPauseIntervals(
+  historicalTimer: HistoricalTimerMetadata | undefined,
+  historicalFields: HistoricalActivityFields | undefined
+) {
+  const pauseIntervals = historicalFields?.pauseIntervals ?? [];
+  const trackingBoundary = historicalFields?.pauseTrackingStartedAt ?? null;
+  const trackingBaselineSeconds = historicalFields?.pauseTrackingBaselineSeconds ?? null;
+  if (historicalTimer?.timerState !== TimerState.stopped) {
+    if (trackingBoundary !== null || trackingBaselineSeconds !== null || pauseIntervals.length > 0) {
+      throw new Error("backup_invalid_pause_intervals");
+    }
+    return;
+  }
+  const activityStart = historicalFields?.startedAt?.getTime();
+  const activityEnd = historicalFields?.endedAt?.getTime();
+  const trackingStart = trackingBoundary?.getTime();
+  if (trackingStart === undefined) {
+    if (trackingBaselineSeconds !== null || pauseIntervals.length > 0) {
+      throw new Error("backup_invalid_pause_intervals");
+    }
+    return;
+  }
+  if (
+    activityStart === undefined ||
+    activityEnd === undefined ||
+    trackingBaselineSeconds === null ||
+    trackingBaselineSeconds < 0 ||
+    trackingBaselineSeconds > historicalTimer.pausedSeconds
+  ) {
+    throw new Error("backup_invalid_pause_intervals");
+  }
+  if (trackingStart < activityStart || trackingStart > activityEnd) throw new Error("backup_invalid_pause_intervals");
+  let previousEnd = activityStart;
+  let closedPauseSeconds = 0;
+  for (const pause of pauseIntervals) {
+    const pauseStart = pause.startedAt.getTime();
+    const pauseEnd = pause.endedAt.getTime();
+    if (
+      pauseStart < activityStart ||
+      pauseEnd > activityEnd ||
+      pauseEnd < pauseStart ||
+      pauseEnd < trackingStart ||
+      pauseStart < previousEnd
+    ) {
+      throw new Error("backup_invalid_pause_intervals");
+    }
+    closedPauseSeconds += durationSeconds(pause.startedAt, pause.endedAt);
+    previousEnd = pauseEnd;
+  }
+  if (closedPauseSeconds !== historicalTimer.pausedSeconds - trackingBaselineSeconds) {
+    throw new Error("backup_invalid_pause_intervals");
+  }
+}
 
 function auditActivityPayload(activity: {
   type: string;
@@ -155,7 +212,9 @@ export function specificCreate(input: ActivityRestoreInput): ActivityCreateDraft
     durationSeconds: duration,
     timezone: env.APP_TIMEZONE,
     notes: input.notes,
-    timerState
+    timerState,
+    pauseTrackingStartedAt: isTimer ? startedAt : undefined,
+    pauseTrackingBaselineSeconds: isTimer ? 0 : undefined
   };
 
   switch (input.type) {
@@ -546,7 +605,18 @@ async function createActivityInTransaction(
           }
         : {}),
       ...(historicalAttribution ?? {}),
-      ...(historicalFields ?? {}),
+      ...(historicalFields ? {
+        startedAt: historicalFields.startedAt,
+        endedAt: historicalFields.endedAt,
+        timezone: historicalFields.timezone,
+        pauseTrackingStartedAt: historicalFields.pauseTrackingStartedAt,
+        pauseTrackingBaselineSeconds: historicalFields.pauseTrackingBaselineSeconds,
+        ...(historicalFields.pauseIntervals?.length ? {
+          pauseIntervals: {
+            create: historicalFields.pauseIntervals
+          }
+        } : {})
+      } : {}),
       clientMutationId: input.clientMutationId,
       clientMutationFingerprint,
       household: { connect: { id: ctx.householdId } },
@@ -581,6 +651,7 @@ export async function restoreHistoricalActivityForContext(
   requirePermission(lockedCtx, "backup.manage");
   if (input.activeTimer) throw new Error("backup_active_timer");
   if (historicalTimer && !timerCapableTypes.has(input.type as ActivityType)) throw new Error("backup_invalid_timer");
+  requireValidHistoricalPauseIntervals(historicalTimer, historicalFields);
   return createActivityInTransaction(
     { ...input, clientMutationId: undefined },
     lockedCtx,
@@ -682,25 +753,30 @@ async function getEditableActivity(ctx: HouseholdContext, id: string, action: "u
  *
  * Prisma treats `undefined` as "leave unchanged", and the form sends a cleared field as empty, which the
  * schema turns into `undefined`. So a note the user deleted, or a length they removed, used to survive
- * every edit. Cleared optional columns are written as `null`. A running or paused timer keeps its own
- * timing, which only the timer controls may change.
+ * every edit. Cleared optional columns are written as `null`. A timer-backed activity keeps its own
+ * timing, which only the timer controls may change; recomputing a stopped timer from its wall envelope
+ * would add its paused time back into the active duration.
  */
 export function activityLogUpdateData(
   babyId: string,
   next: Pick<ActivityCreateDraft, "type" | "occurredAt" | "startedAt" | "endedAt" | "durationSeconds" | "timezone" | "notes" | "timerState">,
   before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null; durationSeconds: number | null }
 ) {
-  const activeTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
+  const timerBacked = before.timerState !== TimerState.none;
   return {
     babyId,
     type: next.type,
     occurredAt: next.occurredAt,
-    startedAt: activeTimer ? before.startedAt : next.startedAt ?? null,
-    endedAt: activeTimer ? before.endedAt : next.endedAt ?? null,
-    durationSeconds: activeTimer ? before.durationSeconds : next.durationSeconds ?? null,
+    startedAt: timerBacked ? before.startedAt : next.startedAt ?? null,
+    endedAt: timerBacked ? before.endedAt : next.endedAt ?? null,
+    durationSeconds: timerBacked ? before.durationSeconds : next.durationSeconds ?? null,
     timezone: next.timezone,
     notes: next.notes ?? null,
-    timerState: before.timerState === TimerState.none ? next.timerState : before.timerState
+    timerState: before.timerState === TimerState.none ? next.timerState : before.timerState,
+    pauseTrackingStartedAt:
+      before.timerState === TimerState.none && next.timerState === TimerState.running ? next.startedAt : undefined,
+    pauseTrackingBaselineSeconds:
+      before.timerState === TimerState.none && next.timerState === TimerState.running ? 0 : undefined
   };
 }
 
@@ -1042,6 +1118,16 @@ async function findTimerReplay(
   });
 }
 
+async function closeActivityTimerPauseInterval(
+  tx: Prisma.TransactionClient,
+  activityId: string,
+  endedAt: Date
+) {
+  await tx.$queryRaw`
+    SELECT "closeActivityTimerPauseInterval"(${activityId}::TEXT, ${endedAt}::TIMESTAMP)
+  `;
+}
+
 export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace = false) {
   const mutation = timerMutationInput(raw);
   const replay = await findTimerReplay(id, mutation, "timer.stop");
@@ -1059,11 +1145,18 @@ export async function stopTimer(id: string, raw?: unknown, recoveringReceiptRace
     return await prisma.$transaction(async (tx) => {
     const { ctx: lockedCtx } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
     if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+    if (!activity.pausedAt) {
+      const openPauseCount = await tx.activityTimerPauseInterval.count({
+        where: { activityId: activity.id, endedAt: null }
+      });
+      if (openPauseCount !== 0) throw new Error("pause_interval_state_invalid");
+    }
     const claimed = await tx.activityLog.updateMany({
       where: { id: activity.id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: activity.updatedAt },
       data: { endedAt, occurredAt: activity.startedAt!, durationSeconds: totalSeconds, timerState: TimerState.stopped, pausedAt: null, pausedSeconds }
     });
     if (claimed.count !== 1) throw new Error("stale_revision");
+    if (activity.pausedAt) await closeActivityTimerPauseInterval(tx, activity.id, endedAt);
     const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
     await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
     await tx.mutationReceipt.create({
@@ -1103,11 +1196,13 @@ export async function pauseTimer(id: string, raw?: unknown, recoveringReceiptRac
     return await prisma.$transaction(async (tx) => {
       const { ctx: lockedCtx } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
       if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
+      const pausedAt = new Date();
       const claimed = await tx.activityLog.updateMany({
         where: { id: activity.id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: activity.updatedAt, timerState: TimerState.running },
-        data: { timerState: TimerState.paused, pausedAt: new Date() }
+        data: { timerState: TimerState.paused, pausedAt }
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
+      await tx.activityTimerPauseInterval.create({ data: { activityId: activity.id, startedAt: pausedAt } });
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
       await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
       await tx.mutationReceipt.create({
@@ -1147,11 +1242,13 @@ export async function resumeTimer(id: string, raw?: unknown, recoveringReceiptRa
       const { ctx: lockedCtx, baby } = await lockActorAndBabyForWrite(tx, ctx, activity.babyId);
       if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
       if (baby.inactiveAt) throw new Error("baby_inactive");
+      const resumedAt = new Date();
       const claimed = await tx.activityLog.updateMany({
         where: { id: activity.id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: activity.updatedAt, timerState: TimerState.paused },
-        data: { timerState: TimerState.running, pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt!, new Date()), pausedAt: null }
+        data: { timerState: TimerState.running, pausedSeconds: activity.pausedSeconds + durationSeconds(activity.pausedAt!, resumedAt), pausedAt: null }
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
+      await closeActivityTimerPauseInterval(tx, activity.id, resumedAt);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id: activity.id }, include: activityInclude });
       await rejectLegacyActivityCreateReservation(tx, lockedCtx.householdId, mutation.clientMutationId);
       await tx.mutationReceipt.create({
@@ -1574,6 +1671,12 @@ export async function submitActivityTimerBrowserOperation(operation: "pause" | "
       if (!canMutateOwnOrAny(lockedCtx.role, "update", before.actorMemberId === lockedCtx.memberId)) throw new Error("forbidden");
       if (!before.startedAt || (operation === "pause" && before.timerState !== TimerState.running) || (operation === "resume" && (before.timerState !== TimerState.paused || !before.pausedAt)) || (operation === "stop" && before.timerState !== TimerState.running && before.timerState !== TimerState.paused)) throw new Error("state_conflict");
       const now = new Date();
+      if (operation === "stop" && !before.pausedAt) {
+        const openPauseCount = await tx.activityTimerPauseInterval.count({
+          where: { activityId: id, endedAt: null }
+        });
+        if (openPauseCount !== 0) throw new Error("pause_interval_state_invalid");
+      }
       const data = operation === "pause"
         ? { timerState: TimerState.paused, pausedAt: now }
         : operation === "resume"
@@ -1581,6 +1684,11 @@ export async function submitActivityTimerBrowserOperation(operation: "pause" | "
           : { timerState: TimerState.stopped, endedAt: now, occurredAt: before.startedAt, pausedAt: null, pausedSeconds: before.pausedSeconds + (before.pausedAt ? durationSeconds(before.pausedAt, now) : 0), durationSeconds: Math.max(0, durationSeconds(before.startedAt, now) - before.pausedSeconds - (before.pausedAt ? durationSeconds(before.pausedAt, now) : 0)) };
       const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt, ...(operation === "pause" ? { timerState: TimerState.running } : operation === "resume" ? { timerState: TimerState.paused } : { timerState: { in: [TimerState.running, TimerState.paused] } }) }, data });
       if (claimed.count !== 1) throw new Error("stale_revision");
+      if (operation === "pause") {
+        await tx.activityTimerPauseInterval.create({ data: { activityId: id, startedAt: now } });
+      } else if (before.pausedAt) {
+        await closeActivityTimerPauseInterval(tx, id, now);
+      }
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await writeAudit(lockedCtx, { action: `activity.timer.${operation}`, entityType: "activity", entityId: id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);
       if (operation === "stop") await queueActivitySideEffects(lockedCtx, updated, WebhookEvent.timer_stopped, tx);

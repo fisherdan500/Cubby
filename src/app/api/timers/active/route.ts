@@ -1,5 +1,5 @@
 import { getActiveTimersForShell } from "@/server/services/active-timers";
-import { handleError, ok } from "@/server/http";
+import { fail, handleError, ok } from "@/server/http";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,11 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: Request) {
   try {
-    const babyId = new URL(request.url).searchParams.get("babyId") ?? undefined;
+    const babyIds = new URL(request.url).searchParams.getAll("babyId");
+    if (babyIds.length > 1 || (babyIds.length === 1 && babyIds[0].length === 0)) {
+      return fail("invalid_baby_id", "Select a valid baby.", 400);
+    }
+    const babyId = babyIds[0];
     return ok({ timers: await getActiveTimersForShell(babyId) });
   } catch (error) {
     return handleError(error);

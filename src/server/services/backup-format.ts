@@ -89,6 +89,19 @@ const activitySchema = z
     durationSeconds: nullableInt,
     pausedAt: z.null(),
     pausedSeconds: z.number().int().nonnegative(),
+    pauseTrackingStartedAt: nullableDate.optional(),
+    pauseTrackingBaselineSeconds: nullableInt.optional(),
+    pauseIntervals: z
+      .array(
+        z
+          .object({
+            startedAt: isoDateTime,
+            endedAt: isoDateTime
+          })
+          .strict()
+      )
+      .max(100_000)
+      .optional(),
     contactId: id.nullable(),
     detail: z.record(z.string().max(200), z.unknown())
   })
@@ -159,19 +172,85 @@ const v2PayloadSchema = z
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {
         ctx.addIssue({ code: "custom", message: "backup_reserved_activity_detail" });
       }
-      if (activity.timerState !== "stopped") continue;
+      const intervals = activity.pauseIntervals ?? [];
+      if (activity.timerState !== "stopped") {
+        if (
+          activity.timerState !== "none" ||
+          activity.pausedAt !== null ||
+          activity.pausedSeconds !== 0
+        ) {
+          ctx.addIssue({ code: "custom", message: "backup_invalid_timer" });
+        }
+        if (
+          activity.pauseTrackingStartedAt != null ||
+          activity.pauseTrackingBaselineSeconds != null ||
+          intervals.length > 0
+        ) {
+          ctx.addIssue({ code: "custom", message: "backup_invalid_pause_intervals" });
+        }
+        continue;
+      }
       const wallSeconds = activity.startedAt && activity.endedAt
-        ? Math.max(0, Math.round((new Date(activity.endedAt).getTime() - new Date(activity.startedAt).getTime()) / 1_000))
+        ? Math.max(0,
+          Math.round(new Date(activity.endedAt).getTime() / 1_000)
+            - Math.round(new Date(activity.startedAt).getTime() / 1_000))
         : null;
+      const predecessorWallSeconds = activity.startedAt && activity.endedAt
+        ? Math.max(0, Math.round(
+          (new Date(activity.endedAt).getTime() - new Date(activity.startedAt).getTime()) / 1_000
+        ))
+        : null;
+      const compatibleWallSeconds = wallSeconds === null || predecessorWallSeconds === null
+        ? null
+        : Math.max(wallSeconds, predecessorWallSeconds);
       if (
         !timerCapableTypes.has(activity.type) ||
         wallSeconds === null ||
+        compatibleWallSeconds === null ||
         activity.durationSeconds === null ||
         activity.durationSeconds < 0 ||
-        activity.durationSeconds + activity.pausedSeconds !== wallSeconds
+        activity.durationSeconds > compatibleWallSeconds ||
+        activity.pausedSeconds > compatibleWallSeconds ||
+        activity.durationSeconds + activity.pausedSeconds > compatibleWallSeconds ||
+        (activity.pauseTrackingStartedAt != null && activity.durationSeconds + activity.pausedSeconds !== wallSeconds)
       ) {
         ctx.addIssue({ code: "custom", message: "backup_invalid_timer" });
       }
+      const activityStart = activity.startedAt ? new Date(activity.startedAt).getTime() : Number.NaN;
+      const activityEnd = activity.endedAt ? new Date(activity.endedAt).getTime() : Number.NaN;
+      const trackingStart = activity.pauseTrackingStartedAt
+        ? new Date(activity.pauseTrackingStartedAt).getTime()
+        : null;
+      const trackingBaselineSeconds = activity.pauseTrackingBaselineSeconds ?? null;
+      let previousEnd = activityStart;
+      let intervalSeconds = 0;
+      let invalidIntervals =
+        (trackingStart === null) !== (trackingBaselineSeconds === null) ||
+        (trackingBaselineSeconds !== null && (
+          trackingBaselineSeconds < 0 ||
+          trackingBaselineSeconds > activity.pausedSeconds
+        )) ||
+        (intervals.length > 0 && trackingStart === null);
+      if (trackingStart !== null && (trackingStart < activityStart || trackingStart > activityEnd)) invalidIntervals = true;
+      for (const interval of intervals) {
+        const intervalStart = new Date(interval.startedAt).getTime();
+        const intervalEnd = new Date(interval.endedAt).getTime();
+        if (
+          intervalStart < activityStart ||
+          intervalEnd > activityEnd ||
+          intervalEnd < intervalStart ||
+          (trackingStart !== null && intervalEnd < trackingStart) ||
+          intervalStart < previousEnd
+        ) invalidIntervals = true;
+        previousEnd = intervalEnd;
+        intervalSeconds += Math.max(0,
+          Math.round(intervalEnd / 1_000) - Math.round(intervalStart / 1_000));
+      }
+      if (
+        trackingBaselineSeconds !== null &&
+        intervalSeconds !== activity.pausedSeconds - trackingBaselineSeconds
+      ) invalidIntervals = true;
+      if (invalidIntervals) ctx.addIssue({ code: "custom", message: "backup_invalid_pause_intervals" });
     }
   });
 

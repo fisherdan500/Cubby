@@ -70,7 +70,7 @@ export function HouseholdSelectionControl({ state }: { state: HouseholdSelection
                 name="memberId"
                 defaultValue={state.selected?.memberId ?? ""}
                 required
-                className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground"
+                className="mt-1 min-h-11 w-full rounded-md border border-control bg-background px-3 text-sm text-foreground"
               >
                 {!state.selected ? <option value="" disabled>Select a household</option> : null}
                 {state.options.map((option) => (

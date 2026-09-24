@@ -32,7 +32,7 @@ export default async function EditActivityPage({ params, searchParams }: { param
   const detailHref = activityDetailHref(activity.id, sourceReturnTo);
 
   return (
-    <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name}>
+    <AppShell title={`Edit ${activityLabels[type]}`} userName={user.name} timerBabyId={activity.babyId}>
       {/* Bottom padding keeps the last field clear of the form's fixed Cancel / Save bar. */}
       <div className="mx-auto max-w-lg space-y-4 pb-20">
         <Card className="space-y-4">

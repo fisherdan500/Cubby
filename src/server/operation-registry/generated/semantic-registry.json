@@ -4020,7 +4020,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "Current exposure directly invokes the linked source-reviewed service operation."
+            "value": "The route selects the direct pause service for mutation-receipt requests and the governed browser-submit timer operation for browser-operation requests."
           },
           "target": {
             "authority": "deferred",
@@ -4170,7 +4170,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "Current exposure directly invokes the linked source-reviewed service operation."
+            "value": "The route selects the direct resume service for mutation-receipt requests and the governed browser-submit timer operation for browser-operation requests."
           },
           "target": {
             "authority": "deferred",
@@ -4320,7 +4320,7 @@
                 "kind": "symbol"
               }
             ],
-            "value": "Current exposure directly invokes the linked source-reviewed service operation."
+            "value": "The route selects the direct stop service for mutation-receipt requests and the governed browser-submit timer operation for browser-operation requests."
           },
           "target": {
             "authority": "deferred",
@@ -4926,9 +4926,14 @@
                 "exportName": "pauseTimer",
                 "file": "src/server/services/activities.ts",
                 "kind": "symbol"
+              },
+              {
+                "exportName": "submitActivityTimerBrowserOperation",
+                "file": "src/server/services/activities.ts",
+                "kind": "symbol"
               }
             ],
-            "value": "the source changes a running ActivityLog timer to paused and records a timer.pause receipt and activity.timer.pause audit"
+            "value": "the direct and browser-operation paths change a running ActivityLog timer to paused, create its open ActivityTimerPauseInterval, and record the corresponding receipt and audit"
           },
           "target": {
             "authority": "deferred",
@@ -5090,9 +5095,14 @@
                 "exportName": "resumeTimer",
                 "file": "src/server/services/activities.ts",
                 "kind": "symbol"
+              },
+              {
+                "exportName": "submitActivityTimerBrowserOperation",
+                "file": "src/server/services/activities.ts",
+                "kind": "symbol"
               }
             ],
-            "value": "the source changes a paused ActivityLog timer to running and records a timer.resume receipt and activity.timer.resume audit"
+            "value": "the direct and browser-operation paths change a paused ActivityLog timer to running, close exactly one ActivityTimerPauseInterval through the database function, and record the corresponding receipt and audit"
           },
           "target": {
             "authority": "deferred",
@@ -5254,9 +5264,14 @@
                 "exportName": "stopTimer",
                 "file": "src/server/services/activities.ts",
                 "kind": "symbol"
+              },
+              {
+                "exportName": "submitActivityTimerBrowserOperation",
+                "file": "src/server/services/activities.ts",
+                "kind": "symbol"
               }
             ],
-            "value": "the source changes a running or paused ActivityLog timer to stopped and records a timer.stop receipt, audit, and queued side effects"
+            "value": "the direct and browser-operation paths change a running or paused ActivityLog timer to stopped, validate or close its ActivityTimerPauseInterval state, and record the corresponding receipt, audit, and queued side effects"
           },
           "target": {
             "authority": "deferred",
@@ -8805,12 +8820,12 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "2c52d09ceffecf03db28254e46152a6ccc2dc481fcd6fbfe33b0cd9d514b1c85",
+  "semanticArtifactDigest": "06e04db8a75f4702399a63de0b70023df26eeadb0bdc25c31ada5769919fb714",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "834631ca44c18cf83fcf991908a3a2177b03f6ab23d62947847018c21cb1d04b",
+  "semanticCoverageDigest": "501e1206ed206065a2632aceff843f9b4ce17c6a0f2987433a2ef1c7f1d785a7",
   "semanticDeclarationCount": 56,
-  "semanticDeclarationDigest": "83e4d660ae70137aede013b20543ceeb244cb49ef4eefa76c29e2c194f38312d",
-  "semanticFingerprint": "990595f8cca54c92119ba3b671bde6fe5c7e71c6cebc289096a219efea50f8ad",
+  "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
+  "semanticFingerprint": "99790743b2aac40f8d55fe59f39af8401ab5c87f46091c83b916e9354874323b",
   "semanticSidecars": [
     "src/app/api/activities/[id]/route.semantic.ts",
     "src/app/api/activities/route.semantic.ts",

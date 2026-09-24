@@ -41,6 +41,8 @@
     "verify:p1-3-migrator-bootstrap": "tsx scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
     "verify:p1-3-invitation-acceptance": "tsx scripts/p1-3-invitation.acceptance-rehearsal.ts",
     "verify:integrity-suite": "tsx scripts/integrity-suite.acceptance-rehearsal.ts",
+    "verify:platform-first-account": "tsx scripts/platform-first-account.acceptance-rehearsal.ts",
+    "verify:quick-start": "tsx scripts/quick-start.acceptance-rehearsal.ts",
     "verify:gates": "tsx scripts/verify-gates.ts",
     "verify:gates:all": "tsx scripts/verify-gates.ts --all",
     "verify:gates:disposable": "tsx scripts/verify-gates.ts --disposable",

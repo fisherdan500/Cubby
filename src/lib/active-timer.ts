@@ -6,12 +6,34 @@
  * the stop path uses to write `durationSeconds`, so what a caregiver watches tick is what gets saved.
  */
 
+import { durationSeconds } from "@/lib/dates";
+
 export type ActiveTimerLike = {
   timerState: string;
   startedAt: string | null;
   pausedAt: string | null;
   pausedSeconds: number;
 };
+
+export const ACTIVE_TIMERS_CHANGED_EVENT = "cubby:active-timers-changed";
+
+type ActiveTimerIdentity = { id: string; babyId: string; type: string };
+
+export function activeTimerActionLabel(
+  action: "Pause" | "Resume" | "Stop",
+  babyName: string,
+  typeLabel: string,
+  timer: ActiveTimerIdentity,
+  timers: ActiveTimerIdentity[]
+) {
+  const matchingTimers = timers.filter((candidate) =>
+    candidate.babyId === timer.babyId && candidate.type === timer.type
+  );
+  const base = `${action} ${babyName}'s ${typeLabel.toLowerCase()} timer`;
+  if (matchingTimers.length < 2) return base;
+  const position = matchingTimers.findIndex((candidate) => candidate.id === timer.id);
+  return position < 0 ? base : `${base} ${position + 1} of ${matchingTimers.length}`;
+}
 
 export function activeTimerElapsedSeconds(timer: ActiveTimerLike, now: number) {
   if (!timer.startedAt) return 0;
@@ -20,7 +42,7 @@ export function activeTimerElapsedSeconds(timer: ActiveTimerLike, now: number) {
   const pausedAt = timer.pausedAt ? Date.parse(timer.pausedAt) : Number.NaN;
   // A paused timer is frozen at the moment it was paused, so the number stops moving on screen.
   const measuredTo = timer.timerState === "paused" && !Number.isNaN(pausedAt) ? pausedAt : now;
-  return Math.max(0, Math.round((measuredTo - startedAt) / 1_000) - timer.pausedSeconds);
+  return Math.max(0, durationSeconds(new Date(startedAt), new Date(measuredTo)) - timer.pausedSeconds);
 }
 
 /** `0:42`, `12:04`, `1:12:04` - seconds matter while you are watching a feed. */

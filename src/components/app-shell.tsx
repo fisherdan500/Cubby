@@ -22,12 +22,14 @@ export function AppShell({
   title,
   userName,
   babySelector,
+  timerBabyId,
   parent
 }: {
   children: React.ReactNode;
   title: string;
   userName: string;
   babySelector?: HeaderBabySelectorData | null;
+  timerBabyId?: string;
   // Where a phone's back link at the top of the page goes, for pages reached from another page
   // (the settings sections) rather than from a bottom tab.
   parent?: { href: string; label: string };
@@ -111,7 +113,7 @@ export function AppShell({
       </main>
 
       {/* Fetches its own running timers, so no page gains a database read for it. */}
-      <ActiveTimerBar />
+      <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} />
       <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>
   );

@@ -227,6 +227,14 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
         externalActorName: "Grandma Jo",
         timerState: TimerState.stopped,
         pausedSeconds: 120,
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
+        pauseIntervals: {
+          create: {
+            startedAt: new Date("2026-07-14T10:04:00.000Z"),
+            endedAt: new Date("2026-07-14T10:06:00.000Z")
+          }
+        },
         play: { create: { activityName: "Tummy time", location: "Nursery", intensity: "gentle" } }
       }
     });
@@ -767,13 +775,28 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     expect(await prisma.baby.count({ where: { householdId: target.household.id, inactiveAt: { not: null } } })).toBe(1);
     expect(await prisma.activityLog.findFirstOrThrow({
       where: { householdId: target.household.id, type: ActivityType.play },
-      select: { timerState: true, durationSeconds: true, pausedSeconds: true, source: true, externalActorName: true }
+      select: {
+        timerState: true,
+        durationSeconds: true,
+        pausedSeconds: true,
+        source: true,
+        externalActorName: true,
+        pauseTrackingStartedAt: true,
+        pauseTrackingBaselineSeconds: true,
+        pauseIntervals: { orderBy: { startedAt: "asc" }, select: { startedAt: true, endedAt: true } }
+      }
     })).toEqual({
       timerState: TimerState.stopped,
       durationSeconds: 480,
       pausedSeconds: 120,
       source: "sprout",
-      externalActorName: "Grandma Jo"
+      externalActorName: "Grandma Jo",
+      pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+      pauseTrackingBaselineSeconds: 0,
+      pauseIntervals: [{
+        startedAt: new Date("2026-07-14T10:04:00.000Z"),
+        endedAt: new Date("2026-07-14T10:06:00.000Z")
+      }]
     });
     expect(await prisma.calendarEventBaby.count({ where: { event: { householdId: target.household.id } } })).toBe(2);
     expect(await prisma.calendarEventContact.count({ where: { event: { householdId: target.household.id } } })).toBe(1);
@@ -814,6 +837,8 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
         type: ActivityType.play,
         occurredAt: new Date("2026-07-16T09:00:00.000Z"),
         startedAt: new Date("2026-07-16T09:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-16T09:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         endedAt: null,
         durationSeconds: null,
         timezone: "America/New_York",

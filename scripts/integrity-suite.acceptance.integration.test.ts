@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
+import { ActivityType, HouseholdRole, TimerState, type Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { runDatabaseIntegritySuite } from "@/server/services/integrity";
@@ -39,10 +39,21 @@ async function removeHousehold(householdId: string) {
 
 // Backup file evidence would read the runtime's storage directory, which this disposable database has
 // no business touching. With no completed backup records seeded the reader is never called, and this
-// one says so out loud rather than quietly returning a fabricated file.
+// one says so out loud rather than quietly returning a fabricated file. That check is proven against
+// real damaged backup files in src/server/services/integrity-backup-files.test.ts instead.
 const unusedBackupReader = async () => {
   throw new Error("integrity_acceptance_backup_reader_unused");
 };
+
+// Storage damage arrives past the foreign keys and triggers that refuse an ordinary write, so each
+// fixture below writes its corruption with them switched off for one transaction, and restores the row
+// the same way before the household is torn down.
+async function writeBypassingGuards(write: (tx: Prisma.TransactionClient) => Promise<unknown>) {
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+    await write(tx);
+  });
+}
 
 async function checkResult(id: string) {
   const report = await runDatabaseIntegritySuite(prisma, { backupReader: unusedBackupReader });
@@ -176,8 +187,16 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
     try {
       expect(await checkResult("calendar_event_relation_consistency")).toBeNull();
 
-      // Nothing in the schema forbids this: the link table carries two independent foreign keys.
-      await prisma.calendarEventBaby.create({ data: { eventId: event.id, babyId: second.baby.id } });
+      await expect(prisma.calendarEventBaby.create({
+        data: { householdId: first.household.id, eventId: event.id, babyId: second.baby.id }
+      })).rejects.toMatchObject({ code: "P2003" });
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          INSERT INTO "CalendarEventBaby" ("householdId", "eventId", "babyId")
+          VALUES (${first.household.id}, ${event.id}, ${second.baby.id})
+        `;
+      });
 
       expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({
         id: "calendar_event_relation_consistency",
@@ -188,8 +207,18 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
       const strangerContact = await prisma.contact.create({
         data: { householdId: second.household.id, name: "Calendar Stranger Contact" }
       });
-      await prisma.calendarEventContact.create({ data: { eventId: event.id, contactId: strangerContact.id } });
+      await expect(prisma.calendarEventContact.create({
+        data: { householdId: first.household.id, eventId: event.id, contactId: strangerContact.id }
+      })).rejects.toMatchObject({ code: "P2003" });
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          INSERT INTO "CalendarEventContact" ("householdId", "eventId", "contactId")
+          VALUES (${first.household.id}, ${event.id}, ${strangerContact.id})
+        `;
+      });
 
+      // The raw inserts model storage corruption after proving that ordinary writes are rejected.
       // Baby and contact links are counted together, so the second violation raises the same count.
       expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({ count: 2 });
 
@@ -199,6 +228,55 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
       await prisma.calendarEventContact.delete({
         where: { contactId_eventId: { contactId: strangerContact.id, eventId: event.id } }
       });
+      expect(await checkResult("calendar_event_relation_consistency")).toBeNull();
+
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          UPDATE "CalendarEventBaby"
+          SET "householdId" = ${second.household.id}
+          WHERE "eventId" = ${event.id} AND "babyId" = ${first.baby.id}
+        `;
+      });
+      try {
+        expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({ count: 1 });
+      } finally {
+        await prisma.$transaction(async (tx) => {
+          await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+          await tx.$executeRaw`
+            UPDATE "CalendarEventBaby"
+            SET "householdId" = ${first.household.id}
+            WHERE "eventId" = ${event.id} AND "babyId" = ${first.baby.id}
+          `;
+        });
+      }
+
+      const ownerContact = await prisma.contact.create({
+        data: { householdId: first.household.id, name: "Calendar Owner Contact" }
+      });
+      await prisma.calendarEventContact.create({
+        data: { householdId: first.household.id, eventId: event.id, contactId: ownerContact.id }
+      });
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+        await tx.$executeRaw`
+          UPDATE "CalendarEventContact"
+          SET "householdId" = ${second.household.id}
+          WHERE "eventId" = ${event.id} AND "contactId" = ${ownerContact.id}
+        `;
+      });
+      try {
+        expect(await checkResult("calendar_event_relation_consistency")).toMatchObject({ count: 1 });
+      } finally {
+        await prisma.$transaction(async (tx) => {
+          await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+          await tx.$executeRaw`
+            UPDATE "CalendarEventContact"
+            SET "householdId" = ${first.household.id}
+            WHERE "eventId" = ${event.id} AND "contactId" = ${ownerContact.id}
+          `;
+        });
+      }
       expect(await checkResult("calendar_event_relation_consistency")).toBeNull();
     } finally {
       await removeHousehold(first.household.id);
@@ -244,6 +322,190 @@ describe("integrity suite disposable PostgreSQL acceptance", () => {
       expect(await checkResult("audit_chain_sequence_consistency")).toBeNull();
     } finally {
       await removeHousehold(household.id);
+    }
+  });
+
+  it("reports an activity attached to another household's baby or member", async () => {
+    const first = await seedHousehold("Relation Owner");
+    const second = await seedHousehold("Relation Stranger");
+    const activity = await prisma.activityLog.create({
+      data: {
+        householdId: first.household.id,
+        babyId: first.baby.id,
+        actorMemberId: first.member.id,
+        type: ActivityType.bath,
+        occurredAt: new Date("2026-09-06T09:00:00.000Z"),
+        timezone: "UTC",
+        bath: { create: {} }
+      }
+    });
+
+    try {
+      expect(await checkResult("household_relation_consistency")).toBeNull();
+
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "ActivityLog" SET "babyId" = ${second.baby.id} WHERE id = ${activity.id}
+      `);
+      expect(await checkResult("household_relation_consistency")).toMatchObject({
+        id: "household_relation_consistency",
+        severity: "error",
+        count: 1
+      });
+
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "ActivityLog" SET "babyId" = ${first.baby.id}, "actorMemberId" = ${second.member.id} WHERE id = ${activity.id}
+      `);
+      expect(await checkResult("household_relation_consistency")).toMatchObject({ count: 1 });
+    } finally {
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "ActivityLog" SET "babyId" = ${first.baby.id}, "actorMemberId" = ${first.member.id} WHERE id = ${activity.id}
+      `);
+      await removeHousehold(first.household.id);
+      await removeHousehold(second.household.id);
+    }
+  });
+
+  it("reports a live household left without an active owner", async () => {
+    const { household, member } = await seedHousehold("Ownerless");
+
+    try {
+      expect(await checkResult("active_owner_membership_consistency")).toBeNull();
+
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "HouseholdMember" SET "disabledAt" = CURRENT_TIMESTAMP WHERE id = ${member.id}
+      `);
+      expect(await checkResult("active_owner_membership_consistency")).toMatchObject({
+        id: "active_owner_membership_consistency",
+        severity: "error",
+        count: 1
+      });
+
+      // A deleted owner is no more an owner than a disabled one.
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "HouseholdMember" SET "disabledAt" = NULL, "deletedAt" = CURRENT_TIMESTAMP WHERE id = ${member.id}
+      `);
+      expect(await checkResult("active_owner_membership_consistency")).toMatchObject({ count: 1 });
+    } finally {
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "HouseholdMember" SET "disabledAt" = NULL, "deletedAt" = NULL WHERE id = ${member.id}
+      `);
+      await removeHousehold(household.id);
+    }
+  });
+
+  it("reports a timer whose state contradicts its own end and duration", async () => {
+    const { household, member, baby } = await seedHousehold("Timer State");
+    const activity = await prisma.activityLog.create({
+      data: {
+        householdId: household.id,
+        babyId: baby.id,
+        actorMemberId: member.id,
+        type: ActivityType.sleep,
+        occurredAt: new Date("2026-09-07T09:00:00.000Z"),
+        startedAt: new Date("2026-09-07T09:00:00.000Z"),
+        endedAt: new Date("2026-09-07T10:00:00.000Z"),
+        durationSeconds: 3600,
+        timezone: "UTC",
+        timerState: TimerState.stopped,
+        sleep: { create: { sleepType: "nap" } }
+      }
+    });
+
+    try {
+      expect(await checkResult("timer_state_consistency")).toBeNull();
+
+      // A stop that half-applied: the row still says running while carrying an end and a duration.
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "ActivityLog" SET "timerState" = 'running' WHERE id = ${activity.id}
+      `);
+      expect(await checkResult("timer_state_consistency")).toMatchObject({
+        id: "timer_state_consistency",
+        severity: "error",
+        count: 1
+      });
+    } finally {
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "ActivityLog" SET "timerState" = 'stopped' WHERE id = ${activity.id}
+      `);
+      await removeHousehold(household.id);
+    }
+  });
+
+  it("reports an audit event naming another household's member as its actor", async () => {
+    const first = await seedHousehold("Audit Reference Owner");
+    const second = await seedHousehold("Audit Reference Stranger");
+    const event = await prisma.auditEvent.create({
+      data: {
+        householdId: first.household.id,
+        actorUserId: first.user.id,
+        actorMemberId: first.member.id,
+        action: "activity.create",
+        entityType: "activity",
+        entityId: "audit-reference-entity-1",
+        schemaVersion: 3,
+        chainOrder: 1
+      }
+    });
+
+    try {
+      expect(await checkResult("audit_reference_consistency")).toBeNull();
+
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "AuditEvent" SET "actorMemberId" = ${second.member.id} WHERE id = ${event.id}
+      `);
+      expect(await checkResult("audit_reference_consistency")).toMatchObject({
+        id: "audit_reference_consistency",
+        severity: "error",
+        count: 1
+      });
+    } finally {
+      // Restored before teardown: the stranger's member cannot be removed while an event names it.
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "AuditEvent" SET "actorMemberId" = ${first.member.id} WHERE id = ${event.id}
+      `);
+      await removeHousehold(first.household.id);
+      await removeHousehold(second.household.id);
+    }
+  });
+
+  it("reports a Sprout import mapping that points into another household", async () => {
+    const first = await seedHousehold("Import Owner");
+    const second = await seedHousehold("Import Stranger");
+    const batch = await prisma.importBatch.create({
+      data: {
+        householdId: first.household.id,
+        actorUserId: first.user.id,
+        sourceSystem: "sprout-track",
+        sourceFormat: "sqlite",
+        status: "complete"
+      }
+    });
+    const record = await prisma.importedRecord.create({
+      data: {
+        householdId: first.household.id,
+        importBatchId: batch.id,
+        sourceSystem: "sprout-track",
+        sourceTable: "Baby",
+        sourceId: "sprout-baby-1",
+        targetType: "baby",
+        targetId: first.baby.id
+      }
+    });
+
+    try {
+      expect(await checkResult("sprout_import_mapping_consistency")).toBeNull();
+
+      await writeBypassingGuards((tx) => tx.$executeRaw`
+        UPDATE "ImportedRecord" SET "targetId" = ${second.baby.id} WHERE id = ${record.id}
+      `);
+      expect(await checkResult("sprout_import_mapping_consistency")).toMatchObject({
+        id: "sprout_import_mapping_consistency",
+        severity: "error",
+        count: 1
+      });
+    } finally {
+      await removeHousehold(first.household.id);
+      await removeHousehold(second.household.id);
     }
   });
 

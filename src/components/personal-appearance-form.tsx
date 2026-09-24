@@ -154,7 +154,7 @@ export function PersonalAppearanceForm({
               setSelected(nextMode);
               event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[role="radio"][data-appearance-mode="${nextMode}"]`)?.focus();
             }}
-            className="min-h-24 rounded-lg border border-border bg-card p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-24 rounded-lg border border-control bg-card p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="block text-sm font-bold">{mode.label}</span>
             <span className="mt-1 block text-xs text-muted-foreground">{mode.description}</span>

@@ -1,6 +1,6 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
-  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "AccountSecurityState", "ActivityLog", "ApiKey", "AuditEvent", "AuditIntegrityCheckpoint", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
+  "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "AccountSecurityState", "ActivityLog", "ActivityTimerPauseInterval", "ApiKey", "AuditEvent", "AuditIntegrityCheckpoint", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
   "GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityOperation", "GlobalSecurityOperationBinding", "GlobalSecurityOperationReservationTombstone", "GlobalSecurityOperationTombstone", "GlobalSecurityThrottleKey", "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "InvitationAccountSetup", "InvitationLineage", "InvitationOperationBinding", "InvitationOperationIdentity", "InvitationOperationResult", "InvitationOperationTombstone", "InvitationPresentationClaim", "InvitationRecoveryRehearsalChallenge", "InvitationSetupCorridorAttestationReceipt", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog", "PasswordChangeCredentialMutation", "RecoveryResetCredentialMutation", "InvitationProcedureTransitionBinding", "InvitationRecoveryEnrollmentBridge",
@@ -31,6 +31,7 @@ export const tenantIsolationInventory = [
   { model: "AccountOperationReservationTombstone", ownership: "global", operationClasses: ["account_browser_operation_reservation_tombstone"], disposition: "excluded" },
   { model: "AccountSecurityState", ownership: "global", operationClasses: ["global_security_state"], disposition: "excluded" },
   { model: "ActivityLog", ownership: "direct", operationClasses: ["activity_write", "import", "restore"], disposition: "constraint_slice" },
+  { model: "ActivityTimerPauseInterval", ownership: "inherited", operationClasses: ["activity_timer_pause"], disposition: "inherited_parent" },
   { model: "ApiKey", ownership: "direct", operationClasses: ["integration_write", "api_auth"], disposition: "deferred_constraint" },
   { model: "AuditEvent", ownership: "direct", operationClasses: ["audit_write"], disposition: "deferred_constraint" },
   { model: "AuditIntegrityCheckpoint", ownership: "global", operationClasses: ["audit_integrity_checkpoint"], disposition: "excluded" },
@@ -40,8 +41,10 @@ export const tenantIsolationInventory = [
   { model: "BrowserMutationOperationTombstone", ownership: "direct", operationClasses: ["browser_mutation_tombstone"], disposition: "constraint_slice" },
   { model: "BrowserOperationBinding", ownership: "direct", operationClasses: ["browser_mutation_binding"], disposition: "constraint_slice" },
   { model: "BrowserOperationReservationTombstone", ownership: "direct", operationClasses: ["browser_mutation_reservation_tombstone"], disposition: "constraint_slice" },
-  { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "deferred_constraint" },
-  { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "deferred_constraint" },
+  { model: "CalendarEvent", ownership: "direct", operationClasses: ["calendar_write", "import"], disposition: "constraint_slice" },
+  { model: "CalendarEventBaby", ownership: "direct", operationClasses: ["calendar_join", "import"], disposition: "constraint_slice" },
+  { model: "CalendarEventContact", ownership: "direct", operationClasses: ["calendar_join", "import"], disposition: "constraint_slice" },
+  { model: "Contact", ownership: "direct", operationClasses: ["contact_write", "activity_parent"], disposition: "constraint_slice" },
   { model: "DashboardWarningDismissal", ownership: "direct", operationClasses: ["dashboard_write"], disposition: "constraint_slice" },
   { model: "EmailChange", ownership: "global", operationClasses: ["global_security_email_change"], disposition: "excluded" },
   { model: "EmailChangeDelivery", ownership: "global", operationClasses: ["global_security_email_delivery"], disposition: "excluded" },
@@ -111,8 +114,7 @@ export const tenantIsolationInventory = [
   { model: "MoodLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "VaccineLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "MilkInventoryLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
-  { model: "CalendarEventBaby", ownership: "multi_parent", operationClasses: ["calendar_join", "import"], disposition: "deferred_constraint" },
-  { model: "CalendarEventContact", ownership: "multi_parent", operationClasses: ["calendar_join", "import"], disposition: "deferred_constraint" },
+
   { model: "VaccineDocument", ownership: "inherited", operationClasses: ["vaccine_attachment"], disposition: "inherited_parent" },
   { model: "User", ownership: "global", operationClasses: ["auth_user"], disposition: "excluded" },
   { model: "Verification", ownership: "global", operationClasses: ["auth_verification"], disposition: "excluded" }

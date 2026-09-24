@@ -21,6 +21,13 @@ import {
 } from "@/server/services/local-backup-storage";
 
 const backupDateTime = z.string().datetime({ offset: true });
+const backupActivityInclude = {
+  ...activityInclude,
+  pauseIntervals: {
+    select: { startedAt: true, endedAt: true },
+    orderBy: { startedAt: "asc" as const }
+  }
+} satisfies Prisma.ActivityLogInclude;
 const backupTimerMetadata = z
   .object({
     timerState: z.enum(["none", "running", "paused", "stopped"]).optional(),
@@ -195,7 +202,7 @@ export async function buildHouseholdV2Snapshot(
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.contact.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.medicineCatalog.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
-    tx.activityLog.findMany({ where: { householdId, deletedAt: null }, include: activityInclude, orderBy: { occurredAt: "asc" } }),
+    tx.activityLog.findMany({ where: { householdId, deletedAt: null }, include: backupActivityInclude, orderBy: { occurredAt: "asc" } }),
     tx.calendarEvent.findMany({
       where: { householdId, deletedAt: null },
       include: { babies: { select: { babyId: true } }, contacts: { select: { contactId: true } } },
@@ -284,9 +291,12 @@ function decimalValue(value: unknown) {
   return value == null ? undefined : String(value);
 }
 
-type BackupActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
+type BackupActivity = Prisma.ActivityLogGetPayload<{ include: typeof backupActivityInclude }>;
 
 export function activityToInput(activity: BackupActivity) {
+  if (activity.pauseIntervals?.some((pause) => pause.endedAt === null)) {
+    throw new Error("backup_invalid_pause_intervals");
+  }
   const base = {
     id: activity.id,
     babyId: activity.babyId,
@@ -302,6 +312,12 @@ export function activityToInput(activity: BackupActivity) {
     durationSeconds: activity.durationSeconds ?? null,
     pausedAt: null,
     pausedSeconds: activity.pausedSeconds ?? 0,
+    pauseTrackingStartedAt: activity.pauseTrackingStartedAt?.toISOString() ?? null,
+    pauseTrackingBaselineSeconds: activity.pauseTrackingBaselineSeconds ?? null,
+    pauseIntervals: (activity.pauseIntervals ?? []).map((pause) => ({
+      startedAt: pause.startedAt.toISOString(),
+      endedAt: pause.endedAt!.toISOString()
+    })),
     contactId: activity.medicine?.contactId ?? null
   };
 
@@ -493,7 +509,13 @@ async function restoreV2InTransaction(
     }, {
       startedAt: activity.startedAt ? new Date(activity.startedAt) : null,
       endedAt: activity.endedAt ? new Date(activity.endedAt) : null,
-      timezone: activity.timezone
+      timezone: activity.timezone,
+      pauseTrackingStartedAt: activity.pauseTrackingStartedAt ? new Date(activity.pauseTrackingStartedAt) : null,
+      pauseTrackingBaselineSeconds: activity.pauseTrackingBaselineSeconds ?? null,
+      pauseIntervals: (activity.pauseIntervals ?? []).map((pause) => ({
+        startedAt: new Date(pause.startedAt),
+        endedAt: new Date(pause.endedAt)
+      }))
     });
   }
 

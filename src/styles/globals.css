@@ -23,6 +23,9 @@
   --surface: 38 12% 92%;
   --surface-soft: 40 16% 96%;
   --border: 34 10% 83%;
+  /* The outline of a field, chip or stepper: the thing that shows it is there, so held to 3:1 on every
+     surface a control sits on. --border stays quiet because it only separates. */
+  --control-border: 34 8% 50%;
   --muted: 36 10% 91%;
   --muted-foreground: 30 7% 40%;
   --primary: 146 24% 34%;
@@ -47,6 +50,7 @@
   --surface: 28 7% 16%;
   --surface-soft: 28 9% 11%;
   --border: 30 7% 24%;
+  --control-border: 30 7% 50%;
   --muted: 30 7% 19%;
   --muted-foreground: 34 8% 66%;
   --primary: 146 26% 58%;

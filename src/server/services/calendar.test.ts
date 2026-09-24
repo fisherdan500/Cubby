@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   babyFindFirst: vi.fn(),
   memberFindUnique: vi.fn(),
   rowLock: vi.fn(),
+  contactFindMany: vi.fn(),
   calendarCreate: vi.fn(),
   transaction: vi.fn(),
   writeAudit: vi.fn()
@@ -68,6 +69,7 @@ beforeEach(() => {
       $queryRaw: mocks.rowLock,
       householdMember: { findUnique: mocks.memberFindUnique },
       baby: { findFirst: mocks.babyFindFirst },
+      contact: { findMany: mocks.contactFindMany },
       calendarEvent: { create: mocks.calendarCreate }
     })
   );
@@ -84,6 +86,32 @@ describe("calendar event lifecycle gates", () => {
       })
     ).rejects.toThrow("baby_inactive");
 
+    expect(mocks.calendarCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a contact that does not belong to the locked household before creating an event", async () => {
+    mocks.babyFindFirst.mockResolvedValue({ id: "baby-1", inactiveAt: null });
+    mocks.contactFindMany.mockResolvedValue([]);
+
+    await expect(
+      createCalendarEvent({
+        babyId: "baby-1",
+        contactIds: ["foreign-contact"],
+        title: "Appointment",
+        startDate: "2026-07-15",
+        startTime: "09:00"
+      })
+    ).rejects.toThrow("not_found");
+
+    expect(mocks.contactFindMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["foreign-contact"] },
+        householdId: "household-1",
+        deletedAt: null
+      },
+      select: { id: true, updatedAt: true },
+      orderBy: { id: "asc" }
+    });
     expect(mocks.calendarCreate).not.toHaveBeenCalled();
   });
 });

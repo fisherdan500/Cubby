@@ -1,5 +1,5 @@
 export function durationSeconds(start: Date, end: Date) {
-  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
+  return Math.max(0, Math.round(end.getTime() / 1_000) - Math.round(start.getTime() / 1_000));
 }
 
 export function parseDateInput(value: string | Date) {

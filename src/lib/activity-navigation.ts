@@ -32,6 +32,16 @@ export function safeInternalAppHref(value: unknown) {
   return `${pathname}${search}${url.hash}`;
 }
 
+export function canonicalTimerReturnTo(currentHref: string) {
+  const safeCurrent = safeInternalAppHref(currentHref) ?? "/app";
+  const url = new URL(safeCurrent, "https://cubby.invalid");
+  if (!url.pathname.startsWith("/app/activities/")) return safeCurrent;
+
+  const outerReturnTo = url.searchParams.getAll("returnTo");
+  if (outerReturnTo.length !== 1) return "/app";
+  return safeActivityReturnTo(outerReturnTo[0]) ?? "/app";
+}
+
 export function activityDetailHref(activityId: string, returnTo?: string) {
   return activityRouteHref(`/app/activities/${encodeURIComponent(activityId)}`, returnTo);
 }

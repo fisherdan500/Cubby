@@ -10,3 +10,5 @@ coverage
 tsconfig.tsbuildinfo
 .DS_Store
 docker-data
+# The SMTP password file the README's quick start has the operator create in the checkout.
+smtp-password

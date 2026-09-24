@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { neutralizeSpreadsheetFormula } from "@/lib/spreadsheet-cell";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorForWrite } from "@/server/services/mutation-locks";
@@ -49,7 +50,7 @@ function serializeCursor(event: { id: string; createdAt: Date }) {
 
 function csvValue(value: unknown) {
   if (value === null || value === undefined) return "";
-  return `"${(value instanceof Date ? value.toISOString() : String(value)).replaceAll('"', '""')}"`;
+  return `"${neutralizeSpreadsheetFormula(value instanceof Date ? value.toISOString() : String(value)).replaceAll('"', '""')}"`;
 }
 
 export async function listHouseholdAuditEvents(options: number | AuditPageOptions = 50) {

@@ -224,6 +224,7 @@ export function buildReportStats(
 ) {
   const byType = Object.fromEntries(activityTypes.map((type) => [type, 0])) as Record<ActivityTypeName, number>;
   let sleepSeconds = 0;
+  let completedSleepCount = 0;
   let napCount = 0;
   let nightSleepSeconds = 0;
   const bottleVolumes: Array<{ amount: number; unit?: string | null }> = [];
@@ -256,6 +257,7 @@ export function buildReportStats(
     if (activity.type === ActivityType.sleep) {
       const seconds = activity.durationSeconds ?? 0;
       sleepSeconds += seconds;
+      if (activity.durationSeconds !== null) completedSleepCount += 1;
       if (activity.sleep?.sleepType === "nap") napCount += 1;
       if (activity.sleep?.sleepType === "night") nightSleepSeconds += seconds;
     }
@@ -319,7 +321,7 @@ export function buildReportStats(
     byType,
     sleep: {
       total: formatDuration(sleepSeconds) || "0 min",
-      average: formatDuration(activities.length ? sleepSeconds / Math.max(1, byType.sleep) : 0) || "0 min",
+      average: formatDuration(completedSleepCount ? sleepSeconds / completedSleepCount : 0) || "0 min",
       naps: napCount,
       night: formatDuration(nightSleepSeconds) || "0 min"
     },

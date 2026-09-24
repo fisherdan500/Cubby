@@ -36,8 +36,10 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "activity-update-safety", group: "disposable", script: "verify:activity-update-safety", what: "activity update reauthorization and replay against real PostgreSQL" },
   { id: "browser-operation-pilot", group: "disposable", script: "verify:browser-operation-pilot", what: "browser-operation constraints against real PostgreSQL" },
   { id: "sprout-preview-commit", group: "disposable", script: "verify:sprout-preview-commit", what: "Sprout preview and commit against real PostgreSQL" },
+  { id: "platform-first-account", group: "disposable", script: "verify:platform-first-account", what: "first-account setup with the setup code against real PostgreSQL" },
   { id: "backup-recovery", group: "image", script: "verify:backup-recovery", what: "backup, restore, and container replacement against a built application image" },
-  { id: "browser-operation-save-path", group: "image", script: "verify:browser-operation-save-path", what: "the end-to-end save path against a built application image" }
+  { id: "browser-operation-save-path", group: "image", script: "verify:browser-operation-save-path", what: "the end-to-end save path against a built application image" },
+  { id: "quick-start", group: "image", script: "verify:quick-start", what: "the documented fresh-server quick start, from an empty checkout to a signed-in owner" }
 ];
 
 export type VerifyGateOutcome = { id: string; group: VerifyGateGroup; passed: boolean; seconds: number };

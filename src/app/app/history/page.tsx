@@ -122,7 +122,7 @@ export default async function HistoryPage({
                   search: searchParams.search,
                   cursor: nextCursor
                 })}
-                className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-5 text-sm font-semibold hover:bg-muted"
+                className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold hover:bg-muted"
               >
                 Older entries
               </Link>

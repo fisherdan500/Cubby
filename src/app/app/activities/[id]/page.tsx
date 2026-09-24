@@ -44,7 +44,7 @@ export default async function ActivityDetailPage({
   const nowMs = Date.now();
 
   return (
-    <AppShell title={activityLabels[type]} userName={user.name}>
+    <AppShell title={activityLabels[type]} userName={user.name} timerBabyId={activity.babyId}>
       {/* Bottom padding keeps the last card clear of the fixed action bar below. */}
       <article className="mx-auto max-w-3xl space-y-4 pb-[calc(5rem+var(--active-timer-bar,0rem))]">
         <Card className="space-y-5 p-5 sm:p-6">
@@ -130,7 +130,7 @@ export default async function ActivityDetailPage({
             <Link
               replace
               href={activityEditHref(activity.id, returnTo)}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card px-5 text-sm font-semibold text-foreground transition hover:bg-muted"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold text-foreground transition hover:bg-muted"
             >
               Edit
             </Link>

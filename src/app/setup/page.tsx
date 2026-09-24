@@ -1,18 +1,24 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandLockup } from "@/components/brand";
+import { PlatformFirstAccountForm } from "@/components/platform-first-account-form";
 import { PlatformSetupClaimForm } from "@/components/platform-setup-claim-form";
 import { Card } from "@/components/ui/card";
-import { requireUserPage } from "@/server/auth/session";
+import { getSession } from "@/server/auth/session";
 import { isPlatformOwner } from "@/server/services/platform-authority";
+import { isFirstAccountSetupAvailable } from "@/server/services/platform-setup";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 
 export default async function PlatformSetupPage() {
-  const user = await requireUserPage();
+  const user = (await getSession())?.user ?? null;
   const policy = await getAppRegistrationPolicy();
   if (policy.platformOwnerBound) {
+    if (!user) redirect("/login");
     redirect((await isPlatformOwner(user.id)) ? "/platform/settings" : "/app");
   }
+  // Signed out, setup can only create the very first account; once any account exists it is finished
+  // by signing in with it.
+  if (!user && !(await isFirstAccountSetupAvailable())) redirect("/login");
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
@@ -21,7 +27,9 @@ export default async function PlatformSetupPage() {
           <BrandLockup orientation="vertical" size="lg" className="mb-3" priority />
           <h1 className="font-editorial text-3xl font-bold">Finish setting up Cubby</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Cubby has no platform owner yet. The owner decides who can create accounts and households.
+            {user
+              ? "Cubby has no platform owner yet. The owner decides who can create accounts and households."
+              : "Cubby has no accounts yet. Create the first one; it becomes the platform owner, who decides who can create accounts and households."}
           </p>
         </div>
         <div className="space-y-2 rounded-lg bg-muted p-3 text-sm">
@@ -32,13 +40,19 @@ export default async function PlatformSetupPage() {
             restarting Cubby prints a new one. Only someone who can read the server&apos;s log can claim it.
           </p>
         </div>
-        <PlatformSetupClaimForm />
-        <p className="text-center text-xs text-muted-foreground">
-          Signed in as {user.email}.{" "}
-          <Link href="/app" className="font-semibold text-primary">
-            Not now
-          </Link>
-        </p>
+        {user ? (
+          <>
+            <PlatformSetupClaimForm />
+            <p className="text-center text-xs text-muted-foreground">
+              Signed in as {user.email}.{" "}
+              <Link href="/app" className="font-semibold text-primary">
+                Not now
+              </Link>
+            </p>
+          </>
+        ) : (
+          <PlatformFirstAccountForm />
+        )}
       </Card>
     </main>
   );

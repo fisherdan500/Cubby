@@ -4,6 +4,7 @@ import { ActivityForm } from "@/components/forms/activity-form";
 import { ActivityFormHeader } from "@/components/forms/activity-form-header";
 import { Card } from "@/components/ui/card";
 import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
+import { resolveSelectedBaby } from "@/lib/baby-selector";
 import { env } from "@/lib/env";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdHome } from "@/server/services/households";
@@ -26,9 +27,10 @@ export default async function LogActivityPage({
     id: baby.id,
     name: baby.name
   }));
+  const selectedBaby = resolveSelectedBaby(babies, searchParams.babyId);
 
   return (
-    <AppShell title={`Log ${activityLabels[type]}`} userName={user.name}>
+    <AppShell title={`Log ${activityLabels[type]}`} userName={user.name} timerBabyId={selectedBaby?.id}>
       {/* Bottom padding keeps the last field clear of the form's fixed Cancel / Log bar. */}
       <div className="pb-20">
         <Card className="mx-auto max-w-lg space-y-4">
@@ -37,7 +39,7 @@ export default async function LogActivityPage({
             <ActivityForm
               babies={babies}
               type={type}
-              selectedBabyId={searchParams.babyId}
+              selectedBabyId={selectedBaby?.id}
               returnDate={searchParams.date}
               returnTo={searchParams.returnTo}
               appTimeZone={env.APP_TIMEZONE}

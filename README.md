@@ -42,16 +42,51 @@ also deferred until a concrete household use case exists.
 
 ## Docker Quick Start
 
-1. Copy `.env.example` to `.env`.
-2. Set a long random `BETTER_AUTH_SECRET`.
-3. Review `BETTER_AUTH_URL`, `TRUSTED_ORIGINS`, and `APP_PORT`. Add `APP_TIMEZONE` if you need a timezone other than the compose default.
+The supported server is current Ubuntu or Debian on x86_64 with Docker Engine and the
+Compose plugin installed. TLS and any reverse proxy are yours to run in front of Cubby.
+
+You also need an SMTP account Cubby can send from. It sends account-security email
+(such as email-change verification), and the server will not start without one.
+
+1. Clone this repository onto the server and change into it.
+2. Put the SMTP password alone in a file readable only by you, for example
+   `umask 077; printf '%s\n' 'your-smtp-password' > smtp-password`.
+3. Generate the configuration, giving the address people will open Cubby at and the
+   mail server:
+
+```bash
+sudo sh scripts/quick-start.sh --url https://cubby.example.com \
+  --smtp-host smtp.example.com --smtp-user cubby@example.com \
+  --email-from 'Cubby <cubby@example.com>' --smtp-password-file smtp-password
+```
+
+   It writes a complete `.env` with a fresh value for every secret, writes the
+   Sprout staging key to `docker-data/secrets/`, and creates `docker-data/backups`
+   and `docker-data/sprout-staging` owned by the container's user (uid 1000). It
+   never overwrites an existing `.env` and prints no secret. `sudo` is needed only
+   to hand those directories to uid 1000; if your own account is uid 1000 it is not
+   needed. Other options: `--port` (the host port; default the URL's own port, 80 for a plain `http://`
+   address, or 3000 behind an `https://` proxy),
+   `--timezone` (default `America/New_York`), and `--trusted-proxy-hops 1` when every
+   request arrives through one reverse proxy that sets `X-Forwarded-For`, and
+   `--smtp-port` (default 587 with STARTTLS; 465 for implicit TLS). Keep `.env` and
+   `docker-data/` private and back them up together, and delete the `smtp-password`
+   file once `.env` exists.
 4. Start the stack:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-5. Open `http://localhost:3000`, or the port configured with `APP_PORT`.
+5. Open exactly the address you gave to `--url` (sign-in accepts only that origin),
+   and finish setup at `/setup` as described below. Run the script with `sudo` from
+   your own account rather than as root: that is how it knows to leave `.env` readable
+   by the account that runs `docker compose`.
+
+To configure by hand instead, copy `.env.example` to `.env`: it lists every key
+`scripts/quick-start.sh` writes, each with the format it needs.
+`npm run verify:quick-start` rehearses this whole path on a Linux Docker host with
+empty volumes.
 
 ### First-time setup: claim platform ownership
 
@@ -62,16 +97,20 @@ app container's log:
 docker compose logs app
 ```
 
-Look for `Cubby has no platform owner yet`. Sign in (or create the first account),
-open `/setup` and enter the code. That account becomes the verified platform owner,
-with household creation closed and public registration off, exactly as `bind` below
+Look for `Cubby has no platform owner yet` and open `/setup`. On a new install with
+no accounts, enter the code with your name, email and password: that creates the
+first account and makes it the verified platform owner in one step, then you sign in
+normally. On an install that already has accounts, sign in first and enter the code
+at `/setup` to make that account the owner. Either way the owner starts with
+household creation closed and public registration off, exactly as `bind` below
 leaves it; open household creation from `/platform/settings`. The code works once and
 expires after 24 hours; restarting Cubby issues a new one. Only its SHA-256 digest is
 stored, and no application database role can read it.
 
-The first account is never promoted automatically: whoever reaches a new install's
-registration page first could otherwise take the platform. The code proves access to
-the host's logs instead.
+The first account is never created or promoted without the code: whoever reaches a
+new install first could otherwise take the platform. The code proves access to the
+host's logs instead. General sign-up stays closed; everyone after the owner joins by
+invitation.
 
 ### Bind the platform owner
 

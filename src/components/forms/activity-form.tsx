@@ -611,7 +611,7 @@ function BabyField({ babies, defaultBaby }: { babies: BabyOption[]; defaultBaby:
 const lengthPresets = [5, 10, 15, 20, 30, 45, 60];
 const pill = "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors";
 const pillOn = "border-primary bg-primary text-primary-foreground";
-const pillOff = "border-border bg-card hover:bg-muted";
+const pillOff = "border-control bg-card hover:bg-muted";
 
 function LengthField({ minutes, onChange, start }: { minutes: number | null; onChange: (minutes: number | null) => void; start: string }) {
   const custom = minutes !== null && !lengthPresets.includes(minutes);
@@ -691,11 +691,11 @@ function AmountStepper({ name, label, defaultValue, unit }: { name: string; labe
           aria-label={`Decrease ${label.toLowerCase()} by ${step}`}
           disabled={!Number.isFinite(current) || current <= 0}
           onClick={() => bump(-1)}
-          className="grid min-h-12 place-items-center rounded-lg border border-border bg-muted transition-colors hover:bg-border disabled:opacity-40"
+          className="grid min-h-12 place-items-center rounded-lg border border-control bg-muted transition-colors hover:bg-border disabled:opacity-40"
         >
           <Minus aria-hidden="true" className="h-5 w-5" />
         </button>
-        <div className="flex min-h-12 items-center justify-center gap-1 rounded-lg border border-border bg-card px-2 focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/20">
+        <div className="flex min-h-12 items-center justify-center gap-1 rounded-lg border border-control bg-card px-2 focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/20">
           <input
             id={id}
             name={name}
@@ -714,7 +714,7 @@ function AmountStepper({ name, label, defaultValue, unit }: { name: string; labe
           type="button"
           aria-label={`Increase ${label.toLowerCase()} by ${step}`}
           onClick={() => bump(1)}
-          className="grid min-h-12 place-items-center rounded-lg border border-border bg-muted transition-colors hover:bg-border"
+          className="grid min-h-12 place-items-center rounded-lg border border-control bg-muted transition-colors hover:bg-border"
         >
           <Plus aria-hidden="true" className="h-5 w-5" />
         </button>
@@ -803,7 +803,7 @@ function ChoiceInput({ defaultValue, ...props }: Omit<Parameters<typeof ChoiceFi
 
 function ToggleChip({ name, label, defaultChecked }: { name: string; label: string; defaultChecked?: boolean }) {
   return (
-    <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-border bg-card px-4 text-sm font-semibold transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/30">
+    <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-control bg-card px-4 text-sm font-semibold transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/30">
       <input name={name} type="checkbox" defaultChecked={defaultChecked} className="sr-only" />
       {label}
     </label>

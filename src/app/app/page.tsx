@@ -68,7 +68,10 @@ export default async function DashboardPage({
         <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (
         <div className="space-y-5">
-          <DayStrip dashboard={currentDashboard} />
+          <DayStrip
+            dashboard={currentDashboard}
+            returnTo={dashboardReturnTo(baby.id, currentDashboard.selectedDate.key, selectedSummaryType)}
+          />
           {/* The day switcher sits with the summary and log it controls, below the actions, rather
               than above the quick-action tiles. */}
           <DateNavigator babyId={baby.id} selectedDate={currentDashboard.selectedDate} />
@@ -101,7 +104,7 @@ export default async function DashboardPage({
   );
 }
 
-function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
+function DayStrip({ dashboard, returnTo }: { dashboard: DashboardWithBaby; returnTo: string }) {
   // One render clock for every indicator, so they all start from the same instant and the client's
   // first render matches the server's.
   const nowMs = Date.now();
@@ -114,7 +117,7 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
           // an indicator only; stopping happens in the shell's timer bar or on the activity itself.
           const timer = dashboard.activeTimers.find((entry) => entry.type === type);
           return timer ? (
-            <RunningTimerTile key={type} timer={timer} label={quickActionLabel(type)} nowMs={nowMs} />
+            <RunningTimerTile key={type} timer={timer} label={quickActionLabel(type)} nowMs={nowMs} returnTo={returnTo} />
           ) : (
             <QuickActionLink key={type} type={type} dashboard={dashboard} priority="primary" />
           );
@@ -125,7 +128,7 @@ function DayStrip({ dashboard }: { dashboard: DashboardWithBaby }) {
           type that already has one. Without this a twin's feed, or a second nap, would be running
           with nothing on the screen to say so. */}
       {timersWithoutTile(dashboard.activeTimers, primaryQuickActionTypes).map((timer) => (
-        <RunningTimerRow key={timer.id} timer={timer} nowMs={nowMs} />
+        <RunningTimerRow key={timer.id} timer={timer} nowMs={nowMs} returnTo={returnTo} />
       ))}
 
       <details className="group sm:hidden">
@@ -267,10 +270,10 @@ function DailySummary({
     label: string;
   };
   const candidates: Array<SummaryItemData | null> = [
-    summary.sleep.count || summary.sleep.seconds
+    summary.sleep.count || summary.sleep.seconds || summary.sleep.unavailableReason
       ? {
           key: "sleep",
-          value: formatDuration(summary.sleep.seconds) || "0 min",
+          value: summary.sleep.seconds === null ? "Unavailable" : formatDuration(summary.sleep.seconds) || "0 min",
           label: "Total Sleep"
         }
       : null,
@@ -343,7 +346,7 @@ function DailySummary({
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">Daily Summary</h2>
-      {items.length || summary.awake.known ? (
+      {items.length || summary.awake.known || summary.awake.unavailableReason ? (
         // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
         // pushed the day's log below the first screen on a phone.
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
@@ -351,8 +354,10 @@ function DailySummary({
               day, so they read as a pair before the counts of individual activities. It is not a
               link - it is the rest of the day rather than a kind of activity, so there is nothing to
               filter the log down to. */}
-          {summary.awake.known ? (
-            <AwakeSummaryItem value={formatDuration(summary.awake.seconds) || "0 min"} />
+          {summary.awake.known || summary.awake.unavailableReason ? (
+            <AwakeSummaryItem
+              value={summary.awake.seconds === null ? "Unavailable" : formatDuration(summary.awake.seconds) || "0 min"}
+            />
           ) : null}
           {items.map((item) => (
             <SummaryItem
@@ -368,6 +373,9 @@ function DailySummary({
       ) : (
         <p className="text-sm text-muted-foreground">No summary activity for this date.</p>
       )}
+      {summary.sleep.unavailableReason === "legacy_pause_allocation" ? (
+        <p className="text-xs text-muted-foreground">Older pause timing is not precise enough for this day.</p>
+      ) : null}
     </section>
   );
 }

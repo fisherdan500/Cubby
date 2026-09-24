@@ -245,11 +245,14 @@ describe("backup unit preferences", () => {
       contacts: [{ id: "source-contact-1", name: "Doctor", kind: "pediatrician", phone: null, email: null, address: null, notes: null }],
       catalogs: [{ id: "source-catalog-1", name: "Vitamin D", typicalDoseSize: "1.5", unit: "drops", doseMinTime: null, notes: null, active: true, isSupplement: true }],
       activities: [{
-        id: "source-activity-1", babyId: "source-baby-1", type: "medicine",
-        occurredAt: "2026-07-14T10:00:00.000Z", startedAt: null, endedAt: null,
+        id: "source-activity-1", babyId: "source-baby-1", type: "sleep",
+        occurredAt: "2026-07-14T10:00:00.000Z", startedAt: "2026-07-14T10:00:00.000Z", endedAt: "2026-07-14T11:00:00.000Z",
         timezone: "UTC", notes: "History", source: "sprout", externalActorName: "Grandma",
-        timerState: "none", durationSeconds: null, pausedAt: null, pausedSeconds: 0,
-        contactId: "source-contact-1", detail: { name: "Vitamin D", dose: "1.5", unit: "drops" }
+        timerState: "stopped", durationSeconds: 2700, pausedAt: null, pausedSeconds: 900,
+        pauseTrackingStartedAt: "2026-07-14T10:00:00.000Z",
+        pauseTrackingBaselineSeconds: 0,
+        pauseIntervals: [{ startedAt: "2026-07-14T10:15:00.000Z", endedAt: "2026-07-14T10:30:00.000Z" }],
+        contactId: null, detail: { location: "crib" }
       }],
       calendarEvents: [{
         id: "source-event-1", title: "Visit", description: null, startTime: "2026-07-15T18:00:00.000Z",
@@ -268,12 +271,24 @@ describe("backup unit preferences", () => {
 
     expect(mocks.householdUpdate).toHaveBeenCalledWith({ where: { id: "household-1" }, data: { name: "Recovered Home" } });
     expect(mocks.restoreActivity).toHaveBeenCalledWith(
-      expect.objectContaining({ babyId: "saved-baby-1", contactId: "saved-contact-1", type: "medicine" }),
+      expect.objectContaining({ babyId: "saved-baby-1", type: "sleep" }),
       ctx,
       expect.anything(),
-      undefined,
+      { timerState: "stopped", durationSeconds: 2700, pausedSeconds: 900 },
       { source: "sprout", externalActorName: "Grandma" },
-      { startedAt: null, endedAt: null, timezone: "UTC" }
+      {
+        startedAt: new Date("2026-07-14T10:00:00.000Z"),
+        endedAt: new Date("2026-07-14T11:00:00.000Z"),
+        timezone: "UTC",
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
+        pauseIntervals: [
+          {
+            startedAt: new Date("2026-07-14T10:15:00.000Z"),
+            endedAt: new Date("2026-07-14T10:30:00.000Z")
+          }
+        ]
+      }
     );
     expect(mocks.calendarCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
@@ -757,6 +772,14 @@ describe("backup unit preferences", () => {
         timerState: "stopped",
         pausedAt: null,
         pausedSeconds: 900,
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
+        pauseIntervals: [
+          {
+            startedAt: new Date("2026-07-14T10:15:00.000Z"),
+            endedAt: new Date("2026-07-14T10:30:00.000Z")
+          }
+        ],
         sleep: { sleepType: null, location: null, quality: null }
       }
     ]);
@@ -768,9 +791,42 @@ describe("backup unit preferences", () => {
         timerState: "stopped",
         durationSeconds: 2700,
         pausedAt: null,
-        pausedSeconds: 900
+        pausedSeconds: 900,
+        pauseTrackingStartedAt: "2026-07-14T10:00:00.000Z",
+        pauseTrackingBaselineSeconds: 0,
+        pauseIntervals: [
+          {
+            startedAt: "2026-07-14T10:15:00.000Z",
+            endedAt: "2026-07-14T10:30:00.000Z"
+          }
+        ]
       })
     );
+  });
+
+  it("rejects a stopped timer with an open precise pause instead of rewriting it", async () => {
+    mocks.activityFindMany.mockResolvedValue([
+      {
+        id: "activity-incoherent",
+        babyId: "baby-1",
+        type: "sleep",
+        occurredAt: new Date("2026-07-14T10:00:00.000Z"),
+        startedAt: new Date("2026-07-14T10:00:00.000Z"),
+        endedAt: new Date("2026-07-14T11:00:00.000Z"),
+        durationSeconds: 2700,
+        timezone: "UTC",
+        notes: null,
+        timerState: "stopped",
+        pausedAt: null,
+        pausedSeconds: 900,
+        pauseTrackingStartedAt: new Date("2026-07-14T10:00:00.000Z"),
+        pauseIntervals: [{ startedAt: new Date("2026-07-14T10:15:00.000Z"), endedAt: null }],
+        sleep: { sleepType: null, location: null, quality: null }
+      }
+    ]);
+
+    await expect(exportBackupJson()).rejects.toThrow("backup_invalid_pause_intervals");
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
   });
 
   it.each(["running", "paused"])("rejects an exported %s timer without recording success", async (timerState) => {

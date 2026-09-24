@@ -22,7 +22,7 @@ vi.mock("@/components/activity-list-row", () => ({ ActivityListRow: () => null }
 
 import DashboardPage from "@/app/app/page";
 
-function dashboard(summary: Record<string, unknown>) {
+function dashboard(summary: Record<string, unknown>, activeTimers: Array<Record<string, unknown>> = []) {
   return {
     dashboard: {
       home: { role: "owner", householdId: "household-1", household: { settings: { unitPreferences: null } } },
@@ -41,7 +41,7 @@ function dashboard(summary: Record<string, unknown>) {
         timezone: "Etc/UTC"
       },
       activities: [],
-      activeTimers: [],
+      activeTimers,
       warnings: [],
       summaries: {},
       dailySummary: {
@@ -63,9 +63,13 @@ function dashboard(summary: Record<string, unknown>) {
   };
 }
 
-async function renderDashboard(summary: Record<string, unknown> = {}) {
-  mocks.getDashboardPageData.mockResolvedValue(dashboard(summary));
-  document.body.innerHTML = renderToStaticMarkup(await DashboardPage({ searchParams: {} }));
+async function renderDashboard(
+  summary: Record<string, unknown> = {},
+  searchParams: { babyId?: string; date?: string; summaryType?: string } = {},
+  activeTimers: Array<Record<string, unknown>> = []
+) {
+  mocks.getDashboardPageData.mockResolvedValue(dashboard(summary, activeTimers));
+  document.body.innerHTML = renderToStaticMarkup(await DashboardPage({ searchParams }));
   return document.body;
 }
 
@@ -109,6 +113,17 @@ describe("daily summary chips", () => {
     expect(chipLabels(body)[0]).toBe("Total Sleep");
   });
 
+  it("marks legacy pause-affected sleep and awake totals unavailable instead of guessing", async () => {
+    const body = await renderDashboard({
+      sleep: { count: 1, seconds: null, unavailableReason: "legacy_pause_allocation" },
+      awake: { seconds: null, known: false, unavailableReason: "legacy_pause_allocation" }
+    });
+
+    expect(chipLabels(body).slice(0, 2)).toEqual(["Awake Time", "Total Sleep"]);
+    expect([...body.querySelectorAll("p")].filter((node) => node.textContent === "Unavailable")).toHaveLength(2);
+    expect(body.textContent).toContain("Older pause timing is not precise enough for this day");
+  });
+
   it("keeps the awake chip out of the log filters", async () => {
     const body = await renderDashboard();
     const links = [...body.querySelectorAll("a")].map((node) => node.getAttribute("href") ?? "");
@@ -116,5 +131,26 @@ describe("daily summary chips", () => {
     // Every filter chip is a link; awake is not one, because no activity accounts for it.
     expect(links.some((href) => href.includes("summaryType=sleep"))).toBe(true);
     expect(links.some((href) => href.includes("summaryType=awake"))).toBe(false);
+  });
+});
+
+describe("dashboard timer navigation", () => {
+  it("preserves the selected baby, date, and summary filter in the timer return route", async () => {
+    const body = await renderDashboard(
+      {},
+      { babyId: "baby-1", date: "2026-09-22", summaryType: "sleep" },
+      [{
+        id: "timer-1",
+        type: "sleep",
+        timerState: "running",
+        startedAt: new Date("2026-09-22T10:00:00.000Z"),
+        pausedAt: null,
+        pausedSeconds: 0
+      }]
+    );
+
+    expect(body.querySelector('a[href^="/app/activities/timer-1"]')?.getAttribute("href")).toBe(
+      "/app/activities/timer-1?returnTo=%2Fapp%3FbabyId%3Dbaby-1%26date%3D2026-09-22%26summaryType%3Dsleep"
+    );
   });
 });

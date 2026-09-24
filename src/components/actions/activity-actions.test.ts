@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ refresh: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh, replace: mocks.replace }) }));
 vi.mock("@/lib/browser-operation-tab-scope", () => ({ tabScopedBrowserOperationStorageKey: async (_partition: string, key: string) => `${key}:tab:test` }));
-import { StopTimerButton } from "@/components/actions/activity-actions";
+import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 
 globalThis.React = React;
 const result = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body }) as Response;
@@ -39,6 +39,88 @@ describe("activity action browser-v2 handling", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId });
     // Stopping from the shell's timer bar leaves you where you are: no return destination is given.
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it("announces an authoritative timer change so shell chrome can refetch immediately", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition)
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    const changes = vi.fn();
+    window.addEventListener("cubby:active-timers-changed", changes);
+
+    try {
+      render(createElement(StopTimerButton, { id: "timer-1" }));
+      await userEvent.click(screen.getByRole("button", { name: "Stop timer" }));
+      await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+
+      expect(changes).toHaveBeenCalledTimes(1);
+      expect((changes.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ timerId: "timer-1", operation: "stop" });
+    } finally {
+      window.removeEventListener("cubby:active-timers-changed", changes);
+    }
+  });
+
+  it.each([
+    ["stop", StopTimerButton, "Stop timer"],
+    ["pause", PauseTimerButton, "Pause"],
+    ["resume", ResumeTimerButton, "Resume"]
+  ] as const)("announces an authoritative %s completion", async (operation, Component, label) => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition)
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    const changes = vi.fn();
+    window.addEventListener("cubby:active-timers-changed", changes);
+
+    try {
+      render(createElement(Component, { id: "timer-1" }));
+      await userEvent.click(screen.getByRole("button", { name: label }));
+      await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+
+      expect(changes).toHaveBeenCalledTimes(1);
+      expect((changes.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ timerId: "timer-1", operation });
+      expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+        "/api/browser-operations/partition",
+        `/api/timers/timer-1/${operation}?issue=1`,
+        `/api/timers/timer-1/${operation}`
+      ]);
+    } finally {
+      window.removeEventListener("cubby:active-timers-changed", changes);
+    }
+  });
+
+  it.each([
+    ["stop", StopTimerButton, "Stop timer"],
+    ["pause", PauseTimerButton, "Pause"],
+    ["resume", ResumeTimerButton, "Resume"]
+  ] as const)("announces a reconciled %s completion", async (operation, Component, label) => {
+    const retainedKey = `cubby:activity-operation:household-a:timer.${operation}:timer-1:tab:test`;
+    sessionStorage.setItem(retainedKey, operationId);
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition)
+      .mockResolvedValueOnce(result(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    const changes = vi.fn();
+    window.addEventListener("cubby:active-timers-changed", changes);
+
+    try {
+      render(createElement(Component, { id: "timer-1" }));
+      await userEvent.click(screen.getByRole("button", { name: label }));
+      await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+
+      expect(changes).toHaveBeenCalledTimes(1);
+      expect((changes.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ timerId: "timer-1", operation });
+      expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+        "/api/browser-operations/partition",
+        `/api/browser-operations/${operationId}`
+      ]);
+      expect(sessionStorage.getItem(retainedKey)).toBeNull();
+    } finally {
+      window.removeEventListener("cubby:active-timers-changed", changes);
+    }
   });
 
   it("returns to where the activity was opened from once its timer is stopped", async () => {

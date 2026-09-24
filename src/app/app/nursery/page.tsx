@@ -5,6 +5,7 @@ import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { activeTimerActionLabel } from "@/lib/active-timer";
 import { formatInstant } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -54,20 +55,30 @@ export default async function NurseryPage({ searchParams }: { searchParams: { ba
           {dashboard.activeTimers.length === 0 ? (
             <p className="text-sm text-muted-foreground">No active timers.</p>
           ) : (
-            dashboard.activeTimers.map((timer) => (
-              <div key={timer.id} className="space-y-3 rounded-lg border border-border bg-muted/70 p-4">
-                <div>
-                  <p className="text-2xl font-semibold">{activityLabels[timer.type as ActivityTypeName]}</p>
-                  <p className="text-sm font-semibold text-muted-foreground">
-                    {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, dashboard.selectedDate.timezone, { withYear: false })}
-                  </p>
+            dashboard.activeTimers.map((timer) => {
+              const timerType = timer.type as ActivityTypeName;
+              const pauseOrResume = timer.timerState === "paused" ? "Resume" : "Pause";
+              const actionLabel = (action: "Pause" | "Resume" | "Stop") =>
+                activeTimerActionLabel(action, dashboard.baby.name, activityLabels[timerType], timer, dashboard.activeTimers);
+              return (
+                <div key={timer.id} className="space-y-3 rounded-lg border border-border bg-muted/70 p-4">
+                  <div>
+                    <p className="text-2xl font-semibold">{activityLabels[timerType]}</p>
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      {timer.timerState === "paused" ? "Paused" : "Started"} {formatInstant(timer.startedAt, dashboard.selectedDate.timezone, { withYear: false })}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:flex">
+                    {timer.timerState === "paused" ? (
+                      <ResumeTimerButton id={timer.id} accessibleLabel={actionLabel(pauseOrResume)} />
+                    ) : (
+                      <PauseTimerButton id={timer.id} accessibleLabel={actionLabel(pauseOrResume)} />
+                    )}
+                    <StopTimerButton id={timer.id} accessibleLabel={actionLabel("Stop")} />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:flex">
-                  {timer.timerState === "paused" ? <ResumeTimerButton id={timer.id} /> : <PauseTimerButton id={timer.id} />}
-                  <StopTimerButton id={timer.id} />
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </Card>
       </div>

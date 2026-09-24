@@ -5,14 +5,17 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const workerRuntime = resolve(root, "..", "..", "..", "worker-runtime");
-const targetMigrations = new Set([
-  "20260824140000_global_security_foundation",
-  "20260829120000_global_security_throttle_core",
-  "20260829170000_global_security_phase8_carriers",
-  "20260829190000_global_security_private_history_reader",
-  "20260829200000_global_security_operator_aggregate",
-  "20260829210000_global_security_phase8_review_remediation"
-]);
+const migrationNames = readdirSync(resolve(root, "prisma", "migrations"), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && existsSync(resolve(root, "prisma", "migrations", entry.name, "migration.sql")))
+  .map((entry) => entry.name)
+  .sort();
+const expectedMigrationCount = migrationNames.length;
+const firstTargetMigration = "20260824140000_global_security_foundation";
+const firstTargetIndex = migrationNames.indexOf(firstTargetMigration);
+if (firstTargetIndex < 0) throw new Error("p1_3_migrator_bootstrap_target_missing");
+const targetMigrationNames = migrationNames.slice(firstTargetIndex);
+const targetMigrations = new Set(targetMigrationNames);
+const expectedBaselineCount = firstTargetIndex;
 const suffix = randomBytes(6).toString("hex");
 const project = `cubby-p13-migrator-${suffix}`;
 const temporaryRoot = mkdtempSync(resolve(workerRuntime, "cubby-p13-migrator-"));
@@ -90,7 +93,7 @@ function copyBaseline() {
 }
 
 function addTargetMigrations() {
-  for (const name of targetMigrations) cpSync(resolve(root, "prisma", "migrations", name), resolve(prismaRoot, "migrations", name), { recursive: true });
+  for (const name of targetMigrationNames) cpSync(resolve(root, "prisma", "migrations", name), resolve(prismaRoot, "migrations", name), { recursive: true });
 }
 
 try {
@@ -111,7 +114,7 @@ try {
 
   phase = "baseline";
   runner(["node_modules/prisma/build/index.js", "migrate", "deploy", "--schema", "/work/prisma/schema.prisma"], { DATABASE_URL: databaseUrl("cubby", legacyPassword) }, 600_000);
-  if (psql("cubby", `SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL;`) !== "41") throw new Error("p1_3_migrator_bootstrap_baseline_count_invalid");
+  if (psql("cubby", `SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL;`) !== String(expectedBaselineCount)) throw new Error("p1_3_migrator_bootstrap_baseline_count_invalid");
   console.log("P1_3_MIGRATOR_BOOTSTRAP_BASELINE_PASS");
 
   phase = "merged_environment_recreation";
@@ -162,8 +165,8 @@ try {
   runner(["provision-global-security-throttle-key.mjs"], { ...owner, CUBBY_THROTTLE_KEY: throttleKey });
 
   phase = "verification";
-  const result = psql("cubby_migrator", `SELECT (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL) || '|' || (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NULL OR "rolled_back_at" IS NOT NULL) || '|' || (SELECT COUNT(*) FROM pg_roles WHERE rolname IN ('cubby_runtime','cubby_auth','cubby_email_delivery','cubby_security_operator') AND rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolinherit AND NOT rolreplication AND NOT rolbypassrls) || '|' || (SELECT COUNT(*) FROM pg_auth_members membership JOIN pg_roles member ON member.oid=membership.member WHERE member.rolname IN ('cubby_runtime','cubby_auth','cubby_email_delivery','cubby_security_operator')) || '|' || (SELECT COUNT(*) FROM pg_class WHERE relowner IN ('cubby_runtime'::regrole,'cubby_auth'::regrole,'cubby_email_delivery'::regrole,'cubby_security_operator'::regrole)) || '|' || (SELECT COUNT(*) FROM "FreshAuthAttestationKey") || '|' || (SELECT COUNT(*) FROM "EmailDeliveryEncryptionKey") || '|' || (SELECT COUNT(*) FROM "GlobalSecurityThrottleKey");`);
-  if (result !== "47|0|4|0|0|1|1|1") throw new Error("p1_3_migrator_bootstrap_final_verification_invalid");
+  const result = psql("cubby_migrator", `SELECT (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL AND "rolled_back_at" IS NULL) || '|' || (SELECT COUNT(*) FROM "_prisma_migrations" WHERE "finished_at" IS NULL OR "rolled_back_at" IS NOT NULL) || '|' || (SELECT COUNT(*) FROM pg_roles WHERE rolname IN ('cubby_runtime','cubby_auth','cubby_email_delivery','cubby_security_operator') AND rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolinherit AND NOT rolreplication AND NOT rolbypassrls) || '|' || (SELECT COUNT(*) FROM pg_auth_members membership JOIN pg_roles member ON member.oid=membership.member WHERE member.rolname IN ('cubby_runtime','cubby_auth','cubby_email_delivery','cubby_security_operator')) || '|' || (SELECT COUNT(*) FROM pg_class WHERE relowner IN ('cubby_runtime'::regrole,'cubby_auth'::regrole,'cubby_email_delivery'::regrole,'cubby_security_operator'::regrole)) || '|' || (SELECT COUNT(*) FROM "FreshAuthAttestationKey") || '|' || (SELECT COUNT(*) FROM "EmailDeliveryEncryptionKey") || '|' || (SELECT COUNT(*) FROM "GlobalSecurityThrottleKey") || '|' || has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'SELECT') || '|' || has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'INSERT') || '|' || has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'UPDATE') || '|' || has_table_privilege('cubby_runtime', '"ActivityTimerPauseInterval"', 'DELETE') || '|' || has_function_privilege('cubby_runtime', '"closeActivityTimerPauseInterval"(text,timestamp without time zone)', 'EXECUTE');`);
+  if (result !== `${expectedMigrationCount}|0|4|0|0|1|1|1|t|t|f|f|t`) throw new Error("p1_3_migrator_bootstrap_final_verification_invalid");
   console.log("P1_3_MIGRATOR_BOOTSTRAP_MIGRATIONS_KEYS_PASS");
   console.log("P1_3_MIGRATOR_BOOTSTRAP_ACCEPTANCE_PASS");
 } finally {

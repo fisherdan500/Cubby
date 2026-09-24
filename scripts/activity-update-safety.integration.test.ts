@@ -82,6 +82,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T09:00:00.000Z"),
         startedAt: new Date("2026-07-31T09:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T09:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }
@@ -155,6 +157,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T15:00:00.000Z"),
         startedAt: new Date("2026-07-31T15:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T15:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }
@@ -266,6 +270,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T10:00:00.000Z"),
         startedAt: new Date("2026-07-31T10:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T10:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }
@@ -352,6 +358,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T13:00:00.000Z"),
         startedAt: new Date("2026-07-31T13:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T13:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }
@@ -444,6 +452,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T14:00:00.000Z"),
         startedAt: new Date("2026-07-31T14:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T14:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }
@@ -534,6 +544,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T12:00:00.000Z"),
         startedAt: new Date("2026-07-31T12:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T12:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }
@@ -608,6 +620,8 @@ describe("activity update safety disposable PostgreSQL acceptance", () => {
         type: ActivityType.sleep,
         occurredAt: new Date("2026-07-31T11:00:00.000Z"),
         startedAt: new Date("2026-07-31T11:00:00.000Z"),
+        pauseTrackingStartedAt: new Date("2026-07-31T11:00:00.000Z"),
+        pauseTrackingBaselineSeconds: 0,
         timezone: "UTC",
         timerState: TimerState.running,
         sleep: { create: { sleepType: "nap", location: "Crib" } }

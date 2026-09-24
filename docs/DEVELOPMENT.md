@@ -12,7 +12,12 @@ and troubleshooting.
 
 ## Environment
 
-Start from `.env.example`:
+On a Linux server, `sh scripts/quick-start.sh --url <address>` with the required
+`--smtp-*` and `--email-from` options writes a complete
+`.env` with every secret generated, the Sprout staging key, and data directories
+owned by the container's user; see the README's Docker Quick Start. It refuses to
+overwrite an existing `.env`. To configure by hand, start from `.env.example`, which
+lists every key it writes:
 
 ```bash
 cp .env.example .env
@@ -312,10 +317,17 @@ user was the operator.
 
 The usual first-time path needs none of these commands. While no owner exists,
 `provision-platform-setup-code.mjs` runs at every container start and prints a
-one-time code to the app log; a signed-in account enters it at `/setup` and becomes
-the verified owner through `claim_platform_setup` (audited as
-`platform.owner.setup_claim`). The commands below remain for installs without log
-access, for verifying further accounts, and for recovery.
+one-time code to the app log. On an install with no accounts, a signed-out visitor
+enters it at `/setup` with a name, email and password, and
+`create_platform_owner_account` (migration
+`20260923120000_platform_first_account_setup`) creates the credential and binds it as
+the verified owner in one transaction, under the global-security transition lock and
+then the platform lock; it refuses once any account exists. On an install that already
+has accounts, a signed-in account enters the code instead and becomes the owner
+through `claim_platform_setup`. Both are audited as `platform.owner.setup_claim`, with
+source `setup_code_first_account` or `setup_code`. `npm run verify:platform-first-account`
+proves the first-account function against real PostgreSQL. The commands below remain
+for installs without log access, for verifying further accounts, and for recovery.
 
 `"User"."emailVerified"` is guarded by `guard_user_email_change()`, which rejects any
 direct write by an application role. `verify-bootstrap` and `attest-successor` write

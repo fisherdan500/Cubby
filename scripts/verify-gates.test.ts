@@ -11,6 +11,15 @@ const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.me
   scripts: Record<string, string>;
 };
 const workflow = readFileSync(new URL("../.github/workflows/verify.yml", import.meta.url), "utf8");
+// A Windows checkout carries CRLF line endings, so step commands are compared as whole lines rather
+// than as text followed by "\n", which only ever matched an LF checkout.
+function runCommands(text: string) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => /^\s*(?:-\s+)?run:\s*(.*?)\s*$/.exec(line)?.[1])
+    .filter((command): command is string => Boolean(command));
+}
+const workflowRunCommands = runCommands(workflow);
 
 describe("verify gates", () => {
   it("runs a gate that actually exists as its own npm script", () => {
@@ -69,19 +78,29 @@ describe("verify gates", () => {
   it("drives continuous integration through the same runner, not a second copy of the list", () => {
     // If CI listed the gates itself, the two lists would drift and CI would quietly stop covering
     // whatever was added here.
-    expect(workflow).toContain("npm run verify:gates\n");
-    expect(workflow).toContain("npm run verify:gates:disposable\n");
-    expect(workflow).toContain("npm run verify:gates:image\n");
+    expect(workflowRunCommands).toContain("npm run verify:gates");
+    expect(workflowRunCommands).toContain("npm run verify:gates:disposable");
+    expect(workflowRunCommands).toContain("npm run verify:gates:image");
     for (const gate of VERIFY_GATES) {
       expect({ id: gate.id, restated: workflow.includes(`npm run ${gate.script}`) })
         .toEqual({ id: gate.id, restated: false });
     }
   });
 
+  it("reads the same workflow steps from an LF and a CRLF checkout", () => {
+    const lf = workflow.replace(/\r\n/g, "\n");
+    const crlf = lf.replace(/\n/g, "\r\n");
+
+    expect(runCommands(lf)).toContain("npm run verify:gates");
+    expect(runCommands(crlf)).toEqual(runCommands(lf));
+    expect(crlf).toMatch(/permissions:\s*\n\s*contents: read/);
+    expect(crlf).toMatch(/^on:\s*$/m);
+  });
+
   it("runs every gate group in CI, so a new group cannot arrive without a job", () => {
     for (const group of new Set(VERIFY_GATES.map((gate) => gate.group))) {
-      const invocation = group === "canonical" ? "npm run verify:gates\n" : `npm run verify:gates:${group}\n`;
-      expect({ group, run: workflow.includes(invocation) }).toEqual({ group, run: true });
+      const invocation = group === "canonical" ? "npm run verify:gates" : `npm run verify:gates:${group}`;
+      expect({ group, run: workflowRunCommands.includes(invocation) }).toEqual({ group, run: true });
     }
   });
 

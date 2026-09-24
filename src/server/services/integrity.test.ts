@@ -231,9 +231,25 @@ describe("read-only integrity suite", () => {
     expect(executed).toEqual(["SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"]);
     expect(queries).toHaveLength(9);
     expect(queries.join("\n")).toContain('"ActivityLog"');
+    expect(queries.join("\n")).toContain('"ActivityTimerPauseInterval"');
     expect(queries.join("\n")).toContain('"AuditEvent"');
     expect(queries.join("\n")).toContain('"BackupRecord"');
     expect(queries.join("\n")).toContain('"CalendarEventBaby"');
+  });
+
+  it("detects parent-state, envelope, overlap, and aggregate pause contradictions", async () => {
+    const fake = fakeIntegrityDatabase([[], []], [], [{ includes: '"ActivityTimerPauseInterval"', count: 4 }]);
+
+    const report = await runDatabaseIntegritySuite(fake.database);
+
+    expect(report.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "timer_state_consistency", severity: "error", count: 4 })
+    ]));
+    const timerQuery = fake.queries.find((query) => query.includes('"ActivityTimerPauseInterval"'))!;
+    expect(timerQuery).toMatch(/open_count/);
+    expect(timerQuery).toMatch(/pause\."startedAt"\s*<\s*activity\."startedAt"/i);
+    expect(timerQuery).toMatch(/tsrange\([\s\S]*?&&[\s\S]*?tsrange\(/i);
+    expect(timerQuery).toMatch(/closed_pause_seconds[\s\S]*?"pausedSeconds"/i);
   });
 
   it("reports an activity whose detail row does not match its own type", async () => {
@@ -304,10 +320,13 @@ describe("read-only integrity suite", () => {
     );
 
     const calendarQuery = fake.queries.find((query) => query.includes('"CalendarEventBaby"'))!;
-    // Baby and contact links are counted together; only their own single-column keys are enforced by
-    // the database, so both sides need the household comparison and the missing-row case.
+    // Baby and contact links are counted together. The detector covers damaged storage by comparing
+    // the direct link household with both parents in addition to the parent-to-parent invariant.
     expect(calendarQuery).toMatch(/baby\."householdId"\s*<>\s*event\."householdId"/i);
     expect(calendarQuery).toMatch(/contact\."householdId"\s*<>\s*event\."householdId"/i);
+    expect(calendarQuery).toMatch(/link\."householdId"\s*<>\s*event\."householdId"/i);
+    expect(calendarQuery).toMatch(/link\."householdId"\s*<>\s*baby\."householdId"/i);
+    expect(calendarQuery).toMatch(/link\."householdId"\s*<>\s*contact\."householdId"/i);
     expect(calendarQuery).toMatch(/event\.id\s+IS\s+NULL\s+OR\s+baby\.id\s+IS\s+NULL/i);
     expect(calendarQuery).toMatch(/event\.id\s+IS\s+NULL\s+OR\s+contact\.id\s+IS\s+NULL/i);
     expect(calendarQuery).toContain('"CalendarEventContact"');

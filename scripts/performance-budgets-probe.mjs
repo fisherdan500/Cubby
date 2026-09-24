@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
+import { populatedDashboardPath, populatedDateKey, requirePopulatedPage } from "./performance-probe-pages.mjs";
 
 // Measures the DEC-PROD-225 workflows against a real signed-in app holding the deterministic
 // DEC-PROD-226 dataset, and fails when a p95 exceeds its budget.
@@ -18,6 +19,10 @@ if (!baseUrl || !handoffFile || !password) throw new Error("performance_budgets_
 const handoff = JSON.parse(await readFile(handoffFile, "utf8"));
 const [firstBaby, secondBaby] = handoff.babyIds ?? [];
 if (!firstBaby || !secondBaby) throw new Error("performance_budgets_probe_handoff_invalid");
+const datasetDay = populatedDateKey(handoff);
+// A dataset day holds eighteen activities per baby and a history page twenty-five rows, so fewer than
+// this means the page did not render the seeded history it is supposed to be timing.
+const populatedMinimum = 10;
 
 const warmups = 3;
 const samples = 15;
@@ -40,12 +45,16 @@ const sessionCookie = (signIn.headers.get("set-cookie") ?? "").match(/(?:^|,\s*)
 if (!sessionCookie) throw new Error("performance_budgets_probe_session_cookie_missing");
 const cookie = `${sessionCookie}; cubby_household_member=${encodeURIComponent(handoff.memberId)}`;
 
-/** A page is only "useful content" once the whole authenticated HTML has arrived, so the body is read. */
+/**
+ * A page is only "useful content" once the whole authenticated HTML has arrived, so the body is read,
+ * and only a measurement of the seeded history once that history is actually on it.
+ */
 async function page(path) {
   const response = await fetch(`${baseUrl}${path}`, { headers: { cookie }, cache: "no-store" });
   const body = await response.text();
   if (!response.ok) throw new Error(`performance_budgets_probe_page_failed:${path}:${response.status}`);
   if (!body.includes("</html>")) throw new Error(`performance_budgets_probe_page_incomplete:${path}`);
+  requirePopulatedPage(path, body, populatedMinimum);
   return body;
 }
 
@@ -137,9 +146,9 @@ async function measure(id, budgetMs, run) {
 
 const timerIds = [];
 const results = [
-  await measure("dashboard_useful_content", 2_000, () => page(`/app?babyId=${firstBaby}`)),
+  await measure("dashboard_useful_content", 2_000, () => page(populatedDashboardPath(firstBaby, datasetDay))),
   await measure("recent_history_useful_content", 2_000, () => page("/app/history")),
-  await measure("baby_switch_navigation", 1_000, () => page(`/app?babyId=${secondBaby}`)),
+  await measure("baby_switch_navigation", 1_000, () => page(populatedDashboardPath(secondBaby, datasetDay))),
   await measure("minimum_entry_authoritative_outcome", 2_000, () => saveMinimumEntry()),
   await measure("timer_start_authoritative_outcome", 2_000, async () => timerIds.push(await startTimer()))
 ];
@@ -154,6 +163,7 @@ const evidence = {
   schemaVersion: 1,
   datasetYears: handoff.years,
   datasetCounts: handoff.counts,
+  datasetDay,
   measurement: "server_outcome_over_loopback",
   mode: "warm",
   notMeasured: ["visible_accessible_input_acknowledgement_100ms_client_paint"],

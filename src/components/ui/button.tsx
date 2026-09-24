@@ -5,7 +5,7 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const variants: Record<ButtonVariant, string> = {
   primary: "bg-primary text-primary-foreground shadow-sm hover:brightness-95",
-  secondary: "border border-border bg-card text-foreground hover:bg-muted",
+  secondary: "border border-control bg-card text-foreground hover:bg-muted",
   ghost: "bg-transparent text-foreground hover:bg-muted",
   danger: "bg-danger text-white hover:opacity-95"
 };
