@@ -1,6 +1,5 @@
 import { ActivityType, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { activityTypes, type ActivityTypeName } from "@/domain/activity";
 import {
   defaultUnitPreferences,
   parseUnitPreferences,
@@ -10,7 +9,7 @@ import { convertLength, convertWeight, sumVolume } from "@/domain/units";
 import { formatDuration } from "@/lib/activity-format";
 import { env } from "@/lib/env";
 import { buildObservedRoutine, otherRoutineTypes, type RoutineEvent } from "@/lib/observed-routine";
-import { addDaysToDateKey, dateKeyInTimeZone, dateTimePartsInTimeZone, zonedDateStart } from "@/lib/timezone";
+import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart } from "@/lib/timezone";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
 import { activityInclude } from "@/server/services/activities";
@@ -34,7 +33,10 @@ const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
   "1m": { label: "1 month", days: 30 }
 };
 
-export async function getReports(userId: string, input?: { babyId?: string; start?: string; end?: string; routineWindow?: string }) {
+export async function getReports(
+  userId: string,
+  input?: { babyId?: string; start?: string; end?: string; routineWindow?: string; compare?: boolean }
+) {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
   const home = await getHouseholdHome({ includeInactive: true });
@@ -46,6 +48,9 @@ export async function getReports(userId: string, input?: { babyId?: string; star
   const start = zonedDateStart(startKey, env.APP_TIMEZONE);
   const end = zonedDateStart(endKey, env.APP_TIMEZONE);
   const endExclusive = zonedDateStart(addDaysToDateKey(endKey, 1), env.APP_TIMEZONE);
+  // The period just before this one, the same number of days long, for "compared with before".
+  const periodDays = dateKeySpan(startKey, endKey);
+  const previousStartKey = addDaysToDateKey(startKey, -periodDays);
   const routineWindow = resolveRoutineWindow(input?.routineWindow);
   const routineRange = routineWindowRange(endKey, routineWindow, env.APP_TIMEZONE);
   if (!baby) {
@@ -56,14 +61,16 @@ export async function getReports(userId: string, input?: { babyId?: string; star
       end,
       startKey,
       endKey,
+      todayKey,
       timezone: env.APP_TIMEZONE,
       activities: [],
       routine: buildRoutine([], endKey, routineWindow, env.APP_TIMEZONE),
-      stats: null
+      stats: null,
+      previous: null
     };
   }
 
-  const [activities, routineActivities] = await Promise.all([
+  const [activities, routineActivities, previousActivities] = await Promise.all([
     prisma.activityLog.findMany({
       where: {
         householdId: ctx.householdId,
@@ -85,8 +92,21 @@ export async function getReports(userId: string, input?: { babyId?: string; star
       },
       select: { type: true, occurredAt: true, startedAt: true, endedAt: true, durationSeconds: true },
       orderBy: { occurredAt: "asc" }
-    })
+    }),
+    input?.compare
+      ? prisma.activityLog.findMany({
+          where: {
+            householdId: ctx.householdId,
+            babyId: baby.id,
+            deletedAt: null,
+            occurredAt: { gte: zonedDateStart(previousStartKey, env.APP_TIMEZONE), lt: start }
+          },
+          include: activityInclude,
+          orderBy: { occurredAt: "asc" }
+        })
+      : Promise.resolve(null)
   ]);
+  const preferences = parseUnitPreferences(home.household.settings?.unitPreferences);
 
   return {
     home,
@@ -95,16 +115,28 @@ export async function getReports(userId: string, input?: { babyId?: string; star
     end,
     startKey,
     endKey,
+    todayKey,
     timezone: env.APP_TIMEZONE,
     activities,
     routine: buildRoutine(routineActivities, endKey, routineWindow, env.APP_TIMEZONE),
-    stats: buildReportStats(
-      activities,
-      baby.birthDate,
-      env.APP_TIMEZONE,
-      parseUnitPreferences(home.household.settings?.unitPreferences)
-    )
+    stats: buildReportStats(activities, baby.birthDate, env.APP_TIMEZONE, preferences),
+    previous: previousActivities
+      ? {
+          startKey: previousStartKey,
+          endKey: addDaysToDateKey(startKey, -1),
+          stats: buildReportStats(previousActivities, baby.birthDate, env.APP_TIMEZONE, preferences)
+        }
+      : null
   };
+}
+
+/** Days from one date key to another, both included. */
+function dateKeySpan(startKey: string, endKey: string) {
+  const [start, end] = [startKey, endKey].map((key) => {
+    const [year, month, day] = key.split("-").map(Number);
+    return Date.UTC(year, month - 1, day);
+  });
+  return Math.max(1, Math.round((end - start) / 86_400_000) + 1);
 }
 
 export function resolveRoutineWindow(value: string | undefined): RoutineWindow {
@@ -155,22 +187,22 @@ export function buildReportStats(
   timeZone = env.APP_TIMEZONE,
   preferences: UnitPreferences = defaultUnitPreferences
 ) {
-  const byType = Object.fromEntries(activityTypes.map((type) => [type, 0])) as Record<ActivityTypeName, number>;
   let sleepSeconds = 0;
   let completedSleepCount = 0;
   let napCount = 0;
   let nightSleepSeconds = 0;
   const bottleVolumes: Array<{ amount: number; unit?: string | null }> = [];
+  let feedCount = 0;
   let bottleCount = 0;
   let breastCount = 0;
   let solidsCount = 0;
+  let diaperCount = 0;
   let wet = 0;
   let dirty = 0;
   const pumpingVolumes: Array<{ amount: number; unit?: string | null }> = [];
-
-  const heatmap = Array.from({ length: 7 }, (_, day) =>
-    Array.from({ length: 24 }, (_, hour) => ({ day, hour, count: 0 }))
-  ).flat();
+  // The household days that have any entry at all: the fair denominator for "per day", since a day
+  // nobody logged says nothing about how much the baby slept or fed.
+  const daysWithEntries = new Set<string>();
 
   const growth: Record<"weight" | "length" | "head", GrowthPoint[] | null> = {
     weight: [],
@@ -181,11 +213,7 @@ export function buildReportStats(
   const milestones: Array<{ date: Date; title: string; category?: string | null }> = [];
 
   for (const activity of activities) {
-    byType[activity.type as ActivityTypeName] += 1;
-    const localKey = dateKeyInTimeZone(activity.occurredAt, timeZone);
-    const day = dayIndexFromDateKey(localKey);
-    const hour = dateTimePartsInTimeZone(activity.occurredAt, timeZone).hour;
-    heatmap[day * 24 + hour].count += 1;
+    daysWithEntries.add(dateKeyInTimeZone(activity.occurredAt, timeZone));
 
     if (activity.type === ActivityType.sleep) {
       const seconds = activity.durationSeconds ?? 0;
@@ -195,6 +223,7 @@ export function buildReportStats(
       if (activity.sleep?.sleepType === "night") nightSleepSeconds += seconds;
     }
     if (activity.feeding) {
+      feedCount += 1;
       if (activity.feeding.mode === "bottle" || activity.feeding.mode === "formula") {
         bottleCount += 1;
         if (activity.feeding.amount !== null && activity.feeding.amount !== undefined) {
@@ -204,6 +233,7 @@ export function buildReportStats(
       if (activity.feeding.mode === "breast") breastCount += 1;
       if (activity.feeding.mode === "solids") solidsCount += 1;
     }
+    if (activity.diaper) diaperCount += 1;
     if (activity.diaper?.kind === "wet" || activity.diaper?.kind === "mixed") wet += 1;
     if (activity.diaper?.kind === "dirty" || activity.diaper?.kind === "mixed") dirty += 1;
     if (activity.pumping?.amount !== null && activity.pumping?.amount !== undefined) {
@@ -251,27 +281,31 @@ export function buildReportStats(
   const pumped = sumVolume(pumpingVolumes, preferences.volume).amount;
 
   return {
-    byType,
+    daysWithEntries: daysWithEntries.size,
     sleep: {
       total: formatDuration(sleepSeconds) || "0 min",
+      totalSeconds: sleepSeconds,
       average: formatDuration(completedSleepCount ? sleepSeconds / completedSleepCount : 0) || "0 min",
       naps: napCount,
       night: formatDuration(nightSleepSeconds) || "0 min"
     },
     feeding: {
+      count: feedCount,
       bottleCount,
+      bottleTotal: bottleTotal === null ? null : Number(bottleTotal.toFixed(2)),
       bottleAverage: bottleCount && bottleTotal !== null ? Number((bottleTotal / bottleCount).toFixed(2)) : bottleCount ? null : 0,
       unit: preferences.volume,
       breastCount,
       solidsCount
     },
-    diaper: { wet, dirty },
+    diaper: { count: diaperCount, wet, dirty },
     pumping: { total: pumped === null ? null : Number(pumped.toFixed(2)), unit: preferences.volume },
     growth,
-    milestones,
-    heatmap
+    milestones
   };
 }
+
+export type ReportStats = ReturnType<typeof buildReportStats>;
 
 type GrowthPoint = { date: string; ageMonths: number; value: number; unit: string };
 
@@ -293,8 +327,4 @@ function isValidDateKey(value: string | undefined): value is string {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
-function dayIndexFromDateKey(key: string) {
-  const [year, month, day] = key.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-}
 

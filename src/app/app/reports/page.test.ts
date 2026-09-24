@@ -45,8 +45,10 @@ beforeEach(() => {
     baby: { id: "baby-1", name: "Avery", birthDate: null },
     startKey: "2026-09-13",
     endKey,
+    todayKey: endKey,
     routine: buildRoutine([], endKey, "1w", "Etc/UTC"),
-    stats: buildReportStats([], null, "Etc/UTC")
+    stats: buildReportStats([], null, "Etc/UTC"),
+    previous: null
   });
 });
 
@@ -69,21 +71,50 @@ describe("ReportsPage accessibility", () => {
 
     expect(views).toBeTruthy();
     expect(current).toHaveLength(1);
-    expect(current[0].textContent).toContain("Growth");
+    expect(current[0].textContent).toBe("Growth");
     // Icons beside each label are decorative, so they are not announced twice.
     expect(views?.querySelectorAll("svg:not([aria-hidden='true'])")).toHaveLength(0);
   });
 
-  it("reads the heatmap as a table of weekdays, hours and counts", async () => {
-    const body = await renderReports("heatmaps");
-    const table = body.querySelector("table");
+  it("offers Routine, Stats, Growth and Milestones, and opens Routine for an old Activity or Heatmaps link", async () => {
+    for (const oldTab of ["activity", "heatmaps"]) {
+      const body = await renderReports(oldTab);
+      const views = [...body.querySelectorAll('nav[aria-label="Report views"] a')].map((link) => link.textContent);
+      expect(views).toEqual(["Routine", "Stats", "Growth", "Milestones"]);
+      expect(body.querySelector('nav[aria-label="Report views"] a[aria-current="page"]')?.textContent).toBe("Routine");
+      expect(body.textContent).toContain("routine");
+    }
+  });
 
-    expect(table?.querySelector("caption")?.textContent).toBe("Activity counts by weekday and hour of day");
-    expect(table?.querySelectorAll('thead th[scope="col"]')).toHaveLength(25);
-    expect(table?.querySelectorAll('tbody th[scope="row"]')).toHaveLength(7);
-    expect(table?.querySelectorAll("tbody td")).toHaveLength(7 * 24);
-    // The count was previously only in a hover title, which never reaches a screen reader or keyboard.
-    expect(table?.querySelector("tbody td .sr-only")?.textContent).toBe("0");
+  it("offers quick periods ending today, marking the one in use", async () => {
+    const body = await renderReports("stats");
+    const periods = [...body.querySelectorAll('nav[aria-label="Report period"] a')];
+
+    expect(periods.map((link) => link.textContent)).toEqual(["7 days", "14 days", "30 days"]);
+    expect(periods[0].getAttribute("aria-current")).toBe("true");
+    expect(periods[1].getAttribute("href")).toContain("start=2026-09-06&end=2026-09-19");
+    expect(periods[1].getAttribute("href")).toContain("tab=stats");
+  });
+
+  it("reads the previous period only for Stats, and shows each figure per day with its change", async () => {
+    await renderReports("routine");
+    expect(mocks.getReports).toHaveBeenLastCalledWith("user-1", expect.objectContaining({ compare: false }));
+
+    const diapers = (count: number, day: string) => Array.from({ length: count }, (_, index) => ({
+      type: "diaper", occurredAt: new Date(`${day}T${String(8 + index).padStart(2, "0")}:00:00.000Z`), durationSeconds: null, diaper: { kind: "wet" }
+    }));
+    mocks.getReports.mockResolvedValue({
+      ...(await mocks.getReports.mock.results.at(-1)?.value),
+      stats: buildReportStats(diapers(6, "2026-09-18") as never, null, "Etc/UTC"),
+      previous: { startKey: "2026-09-06", endKey: "2026-09-12", stats: buildReportStats(diapers(5, "2026-09-10") as never, null, "Etc/UTC") }
+    });
+    const body = await renderReports("stats");
+
+    expect(mocks.getReports).toHaveBeenLastCalledWith("user-1", expect.objectContaining({ compare: true }));
+    expect(body.textContent).toContain("Per day, over the 1 day with entries");
+    expect(body.textContent).toContain("compared with Sep 6 to Sep 12");
+    const row = [...body.querySelectorAll("li")].find((item) => item.textContent?.startsWith("Diapers per day"));
+    expect(row?.textContent).toBe("Diapers per day6+1");
   });
 
   it("treats the growth chart as decorative because its points are listed as text", async () => {

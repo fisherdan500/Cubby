@@ -29,8 +29,7 @@ describe("report sleep statistics", () => {
       sleepLog("running", null, "nap")
     ], null, timeZone, defaultUnitPreferences);
 
-    expect(stats.byType.sleep).toBe(2);
-    expect(stats.sleep).toEqual({ total: "1h", average: "1h", naps: 1, night: "1h" });
+    expect(stats.sleep).toEqual({ total: "1h", totalSeconds: hour, average: "1h", naps: 1, night: "1h" });
   });
 
   it("excludes a paused sleep from the completed-sleep average", () => {
@@ -49,7 +48,6 @@ describe("report sleep statistics", () => {
       sleepLog("none", null)
     ], null, timeZone, defaultUnitPreferences);
 
-    expect(stats.byType.sleep).toBe(3);
     expect(stats.sleep).toMatchObject({ total: "4h", average: "2h" });
   });
 
@@ -80,7 +78,6 @@ describe("report sleep statistics", () => {
       sleepLog("none", null)
     ], null, timeZone, defaultUnitPreferences);
 
-    expect(stats.byType.sleep).toBe(3);
     expect(stats.sleep).toMatchObject({ total: "0 min", average: "0 min" });
   });
 });
