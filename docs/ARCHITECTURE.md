@@ -445,8 +445,12 @@ display.
 ### Reports
 
 `src/server/services/reports.ts` computes report windows, statistics, growth
-trends, activity summaries, heatmaps, and the Routine tab. Routine windows are
-trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date.
+trends, and the Routine tab. Stats reads the period just before the chosen one,
+the same number of days long, and `src/lib/stats-summary.ts` turns both into
+per-day figures averaged over the days with entries. Routine windows are
+trailing `1w`, `2w`, or `1m` windows anchored to the Reports end date;
+`src/lib/observed-routine.ts` reads them, and the per-baby planned schedule
+(`src/server/services/planned-schedule.ts`) sits beside them.
 
 ### Backups And Sprout Import
 

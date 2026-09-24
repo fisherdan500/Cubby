@@ -15,7 +15,7 @@ calendar planning, backups, and integrations.
 - Mobile-first system/light/dark app shell with a durable personal account preference, plus Log Entry, Full Log, Calendar, Reports, and Settings areas.
 - Original illustrated activity artwork and a household-selectable sage, rose, powder, butter, or terracotta accent.
 - Dashboard quick actions, elapsed badges, daily summary, warning dismissal, active timers, and selected-day timeline.
-- Calendar month view with events, Reports tabs including stats, milestones, growth trends, activity, heatmaps, and routine rhythm.
+- Calendar month view with events, Reports with the observed routine and a printable planned schedule, per-day stats compared with the previous period, growth trends, and milestones.
 - CSV/TSV activity exports, checksummed JSON recovery into a fresh household, opt-in automated local versioned backups with explicit host-local recovery authorization, and Sprout Track backup import into the current household.
 - API-key hook endpoints, webhook configuration, and browser notification preferences.
 

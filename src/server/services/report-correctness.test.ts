@@ -29,40 +29,48 @@ function stats(activities: unknown[], birthDate: Date | null = null) {
   return buildReportStats(activities as never, birthDate, zone, defaultUnitPreferences);
 }
 
-function heatmapCell(result: ReturnType<typeof stats>, day: number, hour: number) {
-  return result.heatmap[day * 24 + hour].count;
-}
+describe("report days with entries", () => {
+  // "Per day" figures divide by these days, so they have to be the household's days, not UTC's.
+  it("places an activity on the household's day, not UTC's", () => {
+    // 01:30Z on Monday is still 9:30 pm Sunday in New York, the same day as Sunday afternoon.
+    const sameDay = stats([
+      activity("diaper", "2026-09-20T18:00:00.000Z", { diaper: { kind: "wet" } }),
+      activity("diaper", "2026-09-21T01:30:00.000Z", { diaper: { kind: "wet" } })
+    ]);
+    const nextDay = stats([
+      activity("diaper", "2026-09-20T18:00:00.000Z", { diaper: { kind: "wet" } }),
+      activity("diaper", "2026-09-21T14:00:00.000Z", { diaper: { kind: "wet" } })
+    ]);
 
-describe("report statistics buckets", () => {
-  it("places an activity on the household's day and hour, not UTC's", () => {
-    // 01:30Z on Monday is still 9:30 pm Sunday in New York.
-    const result = stats([activity("diaper", "2026-09-21T01:30:00.000Z", { diaper: { kind: "wet" } })]);
-
-    expect(heatmapCell(result, 0, 21)).toBe(1);
-    expect(heatmapCell(result, 1, 1)).toBe(0);
+    expect(sameDay.daysWithEntries).toBe(1);
+    expect(nextDay.daysWithEntries).toBe(2);
   });
 
-  it("keeps local hours correct across both daylight-saving transitions", () => {
+  it("keeps household days whole across both daylight-saving transitions", () => {
     // 2026-03-08 the clocks jump 2am EST to 3am EDT; 2026-11-01 1am-2am happens twice.
-    const spring = stats([activity("note", "2026-03-08T07:30:00.000Z", { note: { text: "after the jump" } })]);
-    const autumnFirst = stats([activity("note", "2026-11-01T05:30:00.000Z", { note: { text: "first 1:30" } })]);
-    const autumnSecond = stats([activity("note", "2026-11-01T06:30:00.000Z", { note: { text: "second 1:30" } })]);
+    const spring = stats([
+      activity("note", "2026-03-08T06:30:00.000Z", { note: { text: "before the jump" } }),
+      activity("note", "2026-03-08T07:30:00.000Z", { note: { text: "after the jump" } })
+    ]);
+    const autumn = stats([
+      activity("note", "2026-11-01T05:30:00.000Z", { note: { text: "first 1:30" } }),
+      activity("note", "2026-11-01T06:30:00.000Z", { note: { text: "second 1:30" } })
+    ]);
 
-    expect(heatmapCell(spring, 0, 3)).toBe(1);
-    expect(heatmapCell(autumnFirst, 0, 1)).toBe(1);
-    expect(heatmapCell(autumnSecond, 0, 1)).toBe(1);
+    expect(spring.daysWithEntries).toBe(1);
+    expect(autumn.daysWithEntries).toBe(1);
   });
 
-  it("counts every activity once under its own type", () => {
+  it("counts every feed and every diaper once", () => {
     const result = stats([
       activity("feeding", "2026-09-19T14:00:00.000Z", { feeding: { mode: "bottle", amount: 4, unit: "oz" } }),
       activity("feeding", "2026-09-19T17:00:00.000Z", { feeding: { mode: "breast" } }),
       activity("sleep", "2026-09-19T18:00:00.000Z", { durationSeconds: 3600, sleep: { sleepType: "nap" } })
     ]);
 
-    expect(result.byType.feeding).toBe(2);
-    expect(result.byType.sleep).toBe(1);
-    expect(result.byType.diaper).toBe(0);
+    expect(result.feeding.count).toBe(2);
+    expect(result.diaper.count).toBe(0);
+    expect(result.sleep.totalSeconds).toBe(3600);
   });
 });
 
@@ -120,7 +128,7 @@ describe("feeding and diaper statistics", () => {
       activity("diaper", "2026-09-19T17:00:00.000Z", { diaper: { kind: "dry" } })
     ]);
 
-    expect(result.diaper).toEqual({ wet: 2, dirty: 2 });
+    expect(result.diaper).toEqual({ count: 4, wet: 2, dirty: 2 });
   });
 
   it("totals pumped volume, and reports it unavailable when a unit is unsupported", () => {
@@ -188,6 +196,22 @@ describe("report range", () => {
     // 1 November starts at 04:00Z (EDT) and the next day starts at 05:00Z (EST): a 25-hour day.
     expect(where.occurredAt.gte).toEqual(new Date("2026-11-01T04:00:00.000Z"));
     expect(where.occurredAt.lt).toEqual(new Date("2026-11-02T05:00:00.000Z"));
+  });
+
+  it("compares with the whole household days just before, the same number of them, only when asked", async () => {
+    await getReports("user-1", { babyId: "baby-1", start: "2026-09-13", end: "2026-09-19" });
+    expect(mocks.findMany).toHaveBeenCalledTimes(2);
+
+    mocks.findMany.mockClear();
+    const report = await getReports("user-1", { babyId: "baby-1", start: "2026-09-13", end: "2026-09-19", compare: true });
+    const previous = mocks.findMany.mock.calls[2]?.[0].where;
+
+    // 6 to 12 September: seven days ending the day before the period starts.
+    expect(previous.occurredAt.gte).toEqual(new Date("2026-09-06T04:00:00.000Z"));
+    expect(previous.occurredAt.lt).toEqual(new Date("2026-09-13T04:00:00.000Z"));
+    expect(previous.babyId).toBe("baby-1");
+    expect(previous.householdId).toBe("household-1");
+    expect(report?.previous).toMatchObject({ startKey: "2026-09-06", endKey: "2026-09-12" });
   });
 
   it("falls back to the last seven days when the range is missing or malformed", async () => {

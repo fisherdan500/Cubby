@@ -1,28 +1,30 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Activity, BarChart3, Clock3, Grid3X3, LineChart, Trophy } from "lucide-react";
+import { BarChart3, Clock3, LineChart, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { ActivityArtwork } from "@/components/activity-artwork";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { RoutineTab } from "@/components/reports/routine-tab";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/activity";
 import { env } from "@/lib/env";
-import { formatInstantDate } from "@/lib/timezone";
+import { buildStatsSummary } from "@/lib/stats-summary";
+import { addDaysToDateKey, formatInstantDate } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getPlannedSchedule } from "@/server/services/planned-schedule";
 import { getReports } from "@/server/services/reports";
 
+// Activity (how often each type was logged) and Heatmaps were retired: the first described the
+// logging more than the baby, and Routine now shows when things happen far more readably. An old
+// link to either opens Routine.
 const tabs = [
   ["routine", "Routine", Clock3],
   ["stats", "Stats", BarChart3],
-  ["milestones", "Milestones", Trophy],
-  ["growth", "Growth Trends", LineChart],
-  ["activity", "Activity", Activity],
-  ["heatmaps", "Heatmaps", Grid3X3]
+  ["growth", "Growth", LineChart],
+  ["milestones", "Milestones", Trophy]
 ] as const;
+
+const quickPeriods = [7, 14, 30] as const;
 
 export default async function ReportsPage({
   searchParams
@@ -32,16 +34,17 @@ export default async function ReportsPage({
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
-  const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId });
-  if (!report?.home) redirect("/onboarding");
   const tab = searchParams.tab && tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "routine";
+  // Only Stats compares with the period before, so only Stats pays for reading it.
+  const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId, compare: tab === "stats" });
+  if (!report?.home) redirect("/onboarding");
   // The plan sits beside the observed routine, so it is only read when that tab is open.
   const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
-  const reportHref = (next: { tab?: string; routineWindow?: string }) => {
+  const reportHref = (next: { tab?: string; routineWindow?: string; start?: string; end?: string }) => {
     const params = new URLSearchParams();
     if (report.baby?.id) params.set("babyId", report.baby.id);
-    params.set("start", report.startKey);
-    params.set("end", report.endKey);
+    params.set("start", next.start ?? report.startKey);
+    params.set("end", next.end ?? report.endKey);
     params.set("tab", next.tab ?? tab);
     params.set("routineWindow", next.routineWindow ?? report.routine.window);
     return `/app/reports?${params.toString()}`;
@@ -53,6 +56,25 @@ export default async function ReportsPage({
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
+          <nav aria-label="Report period" className="flex flex-wrap gap-2 print:hidden">
+            {quickPeriods.map((days) => {
+              const start = addDaysToDateKey(report.todayKey, -(days - 1));
+              const current = report.startKey === start && report.endKey === report.todayKey;
+              return (
+                <Link
+                  key={days}
+                  href={reportHref({ start, end: report.todayKey })}
+                  aria-current={current ? "true" : undefined}
+                  className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold ${
+                    current ? "bg-primary text-primary-foreground" : "border border-control bg-card text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {days} days
+                </Link>
+              );
+            })}
+          </nav>
+
           <Card className="w-fit max-w-full print:hidden">
             <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
               <input name="babyId" type="hidden" value={report.baby.id} />
@@ -87,10 +109,9 @@ export default async function ReportsPage({
             ))}
           </nav>
 
-          {tab === "stats" ? <StatsTab stats={report.stats} /> : null}
+          {tab === "stats" ? <StatsTab stats={report.stats} previous={report.previous} /> : null}
           {tab === "milestones" ? <MilestonesTab stats={report.stats} /> : null}
           {tab === "growth" ? <GrowthTab stats={report.stats} /> : null}
-          {tab === "activity" ? <ActivityTab stats={report.stats} /> : null}
           {tab === "routine" ? (
             <RoutineTab
               babyId={report.baby.id}
@@ -101,36 +122,55 @@ export default async function ReportsPage({
               routine={report.routine}
             />
           ) : null}
-          {tab === "heatmaps" ? <HeatmapTab stats={report.stats} /> : null}
         </div>
       )}
     </AppShell>
   );
 }
 
-function StatsTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
+type ReportData = NonNullable<Awaited<ReturnType<typeof getReports>>>;
+
+/**
+ * Each area as per-day figures with how they moved against the period just before - the question a
+ * parent brings here ("is she sleeping more than last week?") rather than raw totals to divide.
+ */
+function StatsTab({ stats, previous }: { stats: ReportData["stats"]; previous: ReportData["previous"] }) {
   if (!stats) return null;
+  const summary = buildStatsSummary(stats, previous?.stats ?? null);
+  if (!summary.sections.length) {
+    return <Card><p className="text-sm text-muted-foreground">Nothing logged in this period yet.</p></Card>;
+  }
+  const comparing = Boolean(previous && previous.stats.daysWithEntries > 0);
+
   return (
-    <div className="space-y-6">
-      <ReportSection title="Sleep Statistics">
-        <Metric label="Total sleep" value={stats.sleep.total} />
-        <Metric label="Average sleep log" value={stats.sleep.average} />
-        <Metric label="Naps" value={String(stats.sleep.naps)} />
-        <Metric label="Night sleep" value={stats.sleep.night} />
-      </ReportSection>
-      <ReportSection title="Feeding Statistics">
-        <Metric label="Bottle feeds" value={String(stats.feeding.bottleCount)} />
-        <Metric label="Bottle average" value={stats.feeding.bottleAverage === null ? "Unavailable" : `${stats.feeding.bottleAverage} ${stats.feeding.unit}`} />
-        <Metric label="Breast feeds" value={String(stats.feeding.breastCount)} />
-        <Metric label="Solids" value={String(stats.feeding.solidsCount)} />
-      </ReportSection>
-      <ReportSection title="Care Statistics">
-        <Metric label="Wet diapers" value={String(stats.diaper.wet)} />
-        <Metric label="Dirty diapers" value={String(stats.diaper.dirty)} />
-        <Metric label="Pumped" value={stats.pumping.total === null ? "Unavailable" : `${stats.pumping.total} ${stats.pumping.unit}`} />
-      </ReportSection>
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Per day, over the {summary.daysWithEntries} {summary.daysWithEntries === 1 ? "day" : "days"} with entries
+        {comparing && previous ? `, compared with ${formatDateKey(previous.startKey)} to ${formatDateKey(previous.endKey)}` : ""}.
+      </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        {summary.sections.map((section) => (
+          <Card key={section.title} className="space-y-2">
+            <h2 className="text-base font-semibold">{section.title}</h2>
+            <ul className="divide-y divide-border">
+              {section.rows.map((row) => (
+                <li key={row.label} className="grid grid-cols-[minmax(0,1fr)_auto_4.5rem] items-baseline gap-3 py-2.5">
+                  <span className="text-sm font-semibold text-muted-foreground">{row.label}</span>
+                  <span className="tabular font-editorial text-xl font-bold">{row.value}</span>
+                  <span className="tabular text-right text-xs font-semibold text-muted-foreground">{row.change ?? ""}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ))}
+      </div>
     </div>
   );
+}
+
+function formatDateKey(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function MilestonesTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
@@ -161,97 +201,6 @@ function GrowthTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof get
         Percentiles are not shown until a household imports original CDC/WHO reference data.
       </p>
     </div>
-  );
-}
-
-function ActivityTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
-  if (!stats) return null;
-  const max = Math.max(1, ...Object.values(stats.byType));
-  return (
-    <Card className="space-y-3">
-      {activityTypes.map((type) => (
-        <div key={type} className="grid grid-cols-[40px_minmax(0,1fr)_32px] items-center gap-3">
-          <ActivityArtwork type={type} size="sm" />
-          <div className="min-w-0">
-            <p className="mb-1 truncate text-sm font-bold">{activityLabels[type]}</p>
-            <div className="h-2.5 rounded-full bg-muted">
-              <div className="h-2.5 rounded-full bg-primary" style={{ width: `${(stats.byType[type] / max) * 100}%` }} />
-            </div>
-          </div>
-          <p className="text-right text-sm font-semibold">{stats.byType[type]}</p>
-        </div>
-      ))}
-    </Card>
-  );
-}
-
-function HeatmapTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
-  if (!stats) return null;
-  const max = Math.max(1, ...stats.heatmap.map((item) => item.count));
-  // A grid of coloured squares whose only text was a hover title: unreachable by keyboard and silent to
-  // a screen reader. The same picture as a real table reads out as day, hour and count.
-  return (
-    <Card className="overflow-x-auto">
-      <table className="min-w-[760px] border-separate border-spacing-1 text-xs">
-        <caption className="sr-only">Activity counts by weekday and hour of day</caption>
-        <thead>
-          <tr>
-            <th scope="col" className="w-20">
-              <span className="sr-only">Weekday</span>
-            </th>
-            {Array.from({ length: 24 }, (_, hour) => (
-              <th key={hour} scope="col" className="text-center font-normal text-muted-foreground">
-                {hour}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, dayIndex) => (
-            <tr key={day}>
-              <th scope="row" className="text-left font-bold">
-                {day}
-              </th>
-              {Array.from({ length: 24 }, (_, hour) => {
-                const value = stats.heatmap[dayIndex * 24 + hour].count;
-                return (
-                  <td
-                    key={`${day}-${hour}`}
-                    className="h-7 rounded-sm border border-border p-0"
-                    style={{ backgroundColor: `hsl(var(--primary) / ${0.12 + (value / max) * 0.78})` }}
-                    title={`${day} ${hour}:00 - ${value}`}
-                  >
-                    <span className="sr-only">{value}</span>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
-  );
-}
-
-function ReportSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <h2 className="font-editorial text-lg font-bold">{title}</h2>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-      <div className="grid gap-3 md:grid-cols-4">{children}</div>
-    </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <p className="font-editorial text-2xl font-bold">{value}</p>
-      <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-    </Card>
   );
 }
 
