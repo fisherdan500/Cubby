@@ -94,7 +94,13 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
    - the audit is content-free, and the integrity check covers photo bytes and records.
 
    There is no user-facing change yet.
-2. Photo posts: up to 10 photos per post, captions optional with photos, and removal and restore. Off by default.
+2. Photo posts, off by default:
+   - the composer picks up to 10 JPEG, PNG or WebP photos, uploading each as it is chosen;
+   - a post may be photos alone, and its photos appear with it or not at all;
+   - cards show photos in a grid from the private address;
+   - removing a post removes its photos too;
+   - a "Recently removed" page brings a post and its intact photos back within 30 days;
+   - a scheduled job purges expired removals and unclaimed uploads.
 3. Backup and restore carry the photos (the household backup becomes an archive). The storage volume and install steps come with this step, and then photos are switched on.
 
 ### Routine And Planned Schedule

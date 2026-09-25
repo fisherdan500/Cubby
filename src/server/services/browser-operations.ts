@@ -106,6 +106,11 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     code: z.literal("deleted"),
     postId: z.string().min(1)
   }).strict(),
+  [BrowserOperationKey.feedPostRestore]: z.object({
+    kind: z.literal("feed_post"),
+    code: z.literal("restored"),
+    postId: z.string().min(1)
+  }).strict(),
   [BrowserOperationKey.feedPostUpdate]: z.object({
     kind: z.literal("feed_post"),
     code: z.literal("updated"),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FEED_POST_MAX_LENGTH, canRemoveFeedPost, feedPostTags, parseFeedPostInput } from "@/domain/feed-post";
+import { FEED_POST_MAX_LENGTH, canRemoveFeedPost, feedPostRestorable, feedPostTags, parseFeedPostInput } from "@/domain/feed-post";
 import { hasPermission } from "@/domain/roles";
 
 describe("feed post text", () => {
@@ -15,8 +15,17 @@ describe("feed post text", () => {
   });
 
   it("accepts a caption about one baby or the whole family, trimmed", () => {
-    expect(parseFeedPostInput({ body: "  Rolled over today!  ", babyId: "baby-1" })).toEqual({ body: "Rolled over today!", babyId: "baby-1", tags: [] });
-    expect(parseFeedPostInput({ body: "Family walk #weekend", babyId: null })).toEqual({ body: "Family walk #weekend", babyId: null, tags: ["weekend"] });
+    expect(parseFeedPostInput({ body: "  Rolled over today!  ", babyId: "baby-1" })).toEqual({ body: "Rolled over today!", babyId: "baby-1", tags: [], attachmentIds: [] });
+    expect(parseFeedPostInput({ body: "Family walk #weekend", babyId: null })).toEqual({ body: "Family walk #weekend", babyId: null, tags: ["weekend"], attachmentIds: [] });
+  });
+
+  it("lets photos stand on their own, with or without words, up to ten of them", () => {
+    expect(parseFeedPostInput({ body: "  ", babyId: null, attachmentIds: ["att-1", "att-2"] }))
+      .toEqual({ body: "", babyId: null, tags: [], attachmentIds: ["att-1", "att-2"] });
+    expect(parseFeedPostInput({ body: "Beach day #summer", babyId: "baby-1", attachmentIds: ["att-1"] }).tags).toEqual(["summer"]);
+    expect(() => parseFeedPostInput({ body: "", babyId: null, attachmentIds: [] })).toThrow();
+    expect(() => parseFeedPostInput({ body: "", babyId: null, attachmentIds: ["a", "a"] })).toThrow();
+    expect(() => parseFeedPostInput({ body: "", babyId: null, attachmentIds: Array.from({ length: 11 }, (_, index) => `att-${index}`) })).toThrow();
   });
 
   it("refuses an empty, overlong or control-character caption", () => {
@@ -24,6 +33,14 @@ describe("feed post text", () => {
     expect(() => parseFeedPostInput({ body: "x".repeat(FEED_POST_MAX_LENGTH + 1), babyId: null })).toThrow();
     expect(() => parseFeedPostInput({ body: "hello\u0007", babyId: null })).toThrow();
     expect(parseFeedPostInput({ body: "line one\nline two", babyId: null }).body).toBe("line one\nline two");
+  });
+});
+
+describe("bringing a removed post back", () => {
+  it("is possible for thirty days after it was removed, and not after", () => {
+    const removedAt = new Date("2026-09-01T12:00:00Z");
+    expect(feedPostRestorable(removedAt, new Date("2026-10-01T11:59:59Z"))).toBe(true);
+    expect(feedPostRestorable(removedAt, new Date("2026-10-01T12:00:00Z"))).toBe(false);
   });
 });
 

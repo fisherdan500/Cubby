@@ -5,6 +5,7 @@ import { FeedPostComposer } from "@/components/feed/feed-post-actions";
 import { FeedPostCard } from "@/components/feed/feed-post-card";
 import { FeedResponses } from "@/components/feed/feed-responses";
 import { Card } from "@/components/ui/card";
+import { attachmentTypeEnabled } from "@/domain/attachments";
 import { hasPermission } from "@/domain/roles";
 import { env } from "@/lib/env";
 import { feedFilters, feedHref, groupFeedByDay, resolveFeedFilter } from "@/lib/feed";
@@ -111,7 +112,9 @@ export default async function FeedPage({
           </div>
         ) : null}
 
-        {canPost && babyId && babyName && !searchParams.cursor ? <FeedPostComposer babyId={babyId} babyName={babyName} /> : null}
+        {canPost && babyId && babyName && !searchParams.cursor ? (
+          <FeedPostComposer babyId={babyId} babyName={babyName} photosEnabled={attachmentTypeEnabled("feed_photo")} />
+        ) : null}
 
         {groups.length === 0 ? (
           <Card>
@@ -171,6 +174,17 @@ export default async function FeedPage({
               </Link>
             ) : null}
           </nav>
+        ) : null}
+
+        {canPost ? (
+          <p className="text-center">
+            <Link
+              href={`/app/feed/removed${babyId ? `?babyId=${encodeURIComponent(babyId)}` : ""}`}
+              className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Recently removed
+            </Link>
+          </p>
         ) : null}
       </div>
     </AppShell>

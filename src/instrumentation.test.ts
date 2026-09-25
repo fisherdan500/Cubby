@@ -9,7 +9,12 @@ const mocks = vi.hoisted(() => ({
   startBrowserOperationRetention: vi.fn(),
   startEmailDelivery: vi.fn(),
   startEmailChangeLifecycle: vi.fn(),
+  startAttachmentRetention: vi.fn(),
   writeFileSync: vi.fn()
+}));
+
+vi.mock("@/server/attachment-retention-scheduler", () => ({
+  startAttachmentRetentionScheduler: mocks.startAttachmentRetention
 }));
 
 
@@ -64,6 +69,7 @@ describe("instrumentation", () => {
     expect(mocks.startBrowserOperationRetention).toHaveBeenCalledOnce();
     expect(mocks.startEmailDelivery).toHaveBeenCalledOnce();
     expect(mocks.startEmailChangeLifecycle).toHaveBeenCalledOnce();
+    expect(mocks.startAttachmentRetention).toHaveBeenCalledOnce();
   });
 
   it("advances only the fixed acceptance instrumentation stages", async () => {

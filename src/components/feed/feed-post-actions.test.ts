@@ -7,15 +7,111 @@ const mocks = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
 vi.mock("@/lib/browser-operation-tab-scope", () => ({ tabScopedBrowserOperationStorageKey: async (_partition: string, key: string) => `${key}:tab:test` }));
 
-import { FeedPostBody, FeedPostComposer, FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
+import { FeedPostBody, FeedPostComposer, FeedPostRemoveButton, FeedPostRestoreButton } from "@/components/feed/feed-post-actions";
 
 globalThis.React = React;
 const response = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body }) as Response;
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
 const partition = () => response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } });
 
-beforeEach(() => { sessionStorage.clear(); mocks.refresh.mockReset(); });
+beforeEach(() => {
+  sessionStorage.clear();
+  mocks.refresh.mockReset();
+  // jsdom has no object URLs; the composer only needs a stable string to preview with.
+  URL.createObjectURL = vi.fn((file: Blob) => `blob:${(file as File).name}`);
+  URL.revokeObjectURL = vi.fn();
+});
 afterEach(cleanup);
+
+const photo = (name: string, type = "image/jpeg") => new File([new Uint8Array([1, 2, 3])], name, { type });
+const uploaded = (attachmentId: string) => response(201, { ok: true, data: { attachmentId, width: 800, height: 600 } });
+
+describe("FeedPostComposer photos", () => {
+  it("offers photos only once they are switched on", () => {
+    render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share a moment" }));
+    expect(screen.queryByLabelText("Add photos")).toBeNull();
+  });
+
+  it("uploads chosen photos straight away, then shares them - with or without words", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(uploaded("att-1"))
+      .mockResolvedValueOnce(uploaded("att-2"))
+      .mockResolvedValueOnce(partition())
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery", photosEnabled: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Share a moment" }));
+
+    const picker = screen.getByLabelText("Add photos") as HTMLInputElement;
+    expect(picker.accept).toBe("image/jpeg,image/png,image/webp");
+    fireEvent.change(picker, { target: { files: [photo("a.jpg"), photo("b.png", "image/png")] } });
+
+    await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
+    expect(fetchMock.mock.calls.slice(0, 2).map(([url, init]) => [url, init?.method, (init?.headers as Record<string, string>)["content-type"]])).toEqual([
+      ["/api/attachments/feed-photos", "POST", "image/jpeg"],
+      ["/api/attachments/feed-photos", "POST", "image/png"]
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Post" }));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(String(fetchMock.mock.calls[4][1]?.body))).toEqual({ operationId, body: "", babyId: "baby-1", attachmentIds: ["att-1", "att-2"] });
+  });
+
+  it("lets a chosen photo be taken out again before posting", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(uploaded("att-1")).mockResolvedValueOnce(uploaded("att-2"));
+    render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery", photosEnabled: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Share a moment" }));
+    fireEvent.change(screen.getByLabelText("Add photos"), { target: { files: [photo("a.jpg"), photo("b.jpg")] } });
+    await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+  });
+
+  it("says why a photo could not be added, and keeps the rest", async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce(uploaded("att-1"))
+      .mockResolvedValueOnce(response(415, { ok: false, error: { code: "attachment_unsupported_format", message: "Choose a JPEG, PNG or WebP photo." } }));
+    render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery", photosEnabled: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Share a moment" }));
+    fireEvent.change(screen.getByLabelText("Add photos"), { target: { files: [photo("a.jpg"), photo("b.jpg")] } });
+
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/JPEG, PNG or WebP/));
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+  });
+
+  it("stops at ten photos", async () => {
+    globalThis.fetch = vi.fn(async () => uploaded(`att-${Math.random()}`));
+    render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery", photosEnabled: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Share a moment" }));
+    fireEvent.change(screen.getByLabelText("Add photos"), { target: { files: Array.from({ length: 12 }, (_, index) => photo(`${index}.jpg`)) } });
+
+    await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(10));
+    expect(globalThis.fetch).toHaveBeenCalledTimes(10);
+    expect(screen.getByRole("alert").textContent).toMatch(/up to 10 photos/);
+    expect(screen.queryByLabelText("Add photos")).toBeNull();
+  });
+});
+
+describe("FeedPostRestoreButton", () => {
+  it("brings a removed post back through an operation bound to it", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition())
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    render(createElement(FeedPostRestoreButton, { postId: "post-1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls.slice(1).map(([url, init]) => [url, init?.method])).toEqual([
+      ["/api/feed/posts/post-1/restore?issue=1", "POST"],
+      ["/api/feed/posts/post-1/restore", "POST"]
+    ]);
+  });
+});
 
 describe("FeedPostComposer", () => {
   it("starts as a quiet prompt and opens to write", () => {

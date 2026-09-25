@@ -24,7 +24,8 @@ vi.mock("@/server/services/feed-interactions", () => ({
   feedInteractionKey: (kind: string, id: string) => `${kind}:${id}`
 }));
 vi.mock("@/components/feed/feed-post-actions", () => ({
-  FeedPostComposer: ({ babyName }: { babyName: string }) => createElement("div", { "data-composer": babyName }),
+  FeedPostComposer: ({ babyName, photosEnabled }: { babyName: string; photosEnabled?: boolean }) =>
+    createElement("div", { "data-composer": babyName, "data-photos": String(Boolean(photosEnabled)) }),
   FeedPostRemoveButton: ({ postId }: { postId: string }) => createElement("button", { type: "button", "data-remove": postId }, "Remove post"),
   FeedPostBody: ({ canEdit, edited, children }: { canEdit: boolean; edited: boolean; children: React.ReactNode }) =>
     createElement("p", { "data-can-edit": String(canEdit), "data-edited": String(edited) }, children)
@@ -197,6 +198,35 @@ describe("Feed page", () => {
     expect(cards[0].querySelector("a [data-responses]")).toBeNull();
     expect(cards[1].querySelector("[data-can-edit]")?.getAttribute("data-can-edit")).toBe("true");
     expect(cards[1].querySelector("[data-edited]")?.getAttribute("data-edited")).toBe("true");
+  });
+
+  it("shows a post's photos from the private photo address, in order, sized as stored", async () => {
+    mocks.listFeedPosts.mockResolvedValue([{
+      id: "post-1", babyId: null, body: "", tags: [], occurredAt: new Date("2026-09-25T12:00:00Z"),
+      authorName: "Sam", canRemove: false, canEdit: false, edited: false,
+      photos: [{ id: "photo-a", width: 2560, height: 1920 }, { id: "photo-b", width: 1440, height: 2560 }]
+    }]);
+    const body = await renderFeed({ babyId: "baby-1" });
+    const post = [...body.querySelectorAll("article")].find((card) => card.getAttribute("aria-label") === "Post")!;
+    const images = [...post.querySelectorAll("img")];
+
+    expect(images.map((image) => [image.getAttribute("src"), image.getAttribute("width"), image.getAttribute("height"), image.getAttribute("alt")])).toEqual([
+      ["/api/attachments/photo-a", "2560", "1920", "Photo 1 of 2"],
+      ["/api/attachments/photo-b", "1440", "2560", "Photo 2 of 2"]
+    ]);
+    expect(images.every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
+    expect(images[0].closest("a")?.getAttribute("href")).toBe("/api/attachments/photo-a");
+  });
+
+  it("keeps photos off the composer until they are switched on, and links to recently removed posts", async () => {
+    const body = await renderFeed({ babyId: "baby-1" });
+    expect(body.querySelector("[data-composer]")?.getAttribute("data-photos")).toBe("false");
+    const removed = [...body.querySelectorAll("a")].find((link) => link.textContent === "Recently removed");
+    expect(removed?.getAttribute("href")).toBe("/app/feed/removed?babyId=baby-1");
+
+    mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-9", role: "read_only" });
+    const readOnly = await renderFeed({ babyId: "baby-1" });
+    expect([...readOnly.querySelectorAll("a")].some((link) => link.textContent === "Recently removed")).toBe(false);
   });
 
   it("says so kindly when there is nothing yet", async () => {

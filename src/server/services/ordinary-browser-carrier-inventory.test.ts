@@ -33,7 +33,8 @@ const carriers = [
   ["feed_comment.create", "src/app/api/feed/comments/route.ts", "src/components/feed/feed-post-actions.tsx"],
   ["feed_comment.update", "src/app/api/feed/comments/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"],
   ["feed_comment.delete", "src/app/api/feed/comments/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"],
-  ["feed_reaction.set", "src/app/api/feed/reactions/route.ts", "src/components/feed/feed-post-actions.tsx"]
+  ["feed_reaction.set", "src/app/api/feed/reactions/route.ts", "src/components/feed/feed-post-actions.tsx"],
+  ["feed_post.restore", "src/app/api/feed/posts/[id]/restore/route.ts", "src/components/feed/feed-post-actions.tsx"]
 ] as const;
 
 const deniedLegacyInvitationRoutes = [
@@ -43,9 +44,9 @@ const deniedLegacyInvitationRoutes = [
 ] as const;
 
 describe("ordinary browser carrier closure inventory", () => {
-  it("covers exactly the closed 28-operation browser-operation registry", () => {
-    expect(carriers.map(([operation]) => operation)).toHaveLength(28);
-    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(28);
+  it("covers exactly the closed 29-operation browser-operation registry", () => {
+    expect(carriers.map(([operation]) => operation)).toHaveLength(29);
+    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(29);
   });
 
   it.each(deniedLegacyInvitationRoutes)("%s remains an explicit fail-closed legacy route", (operation, ingress) => {

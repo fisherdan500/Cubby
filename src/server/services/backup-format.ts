@@ -154,7 +154,8 @@ const feedPostSchema = z
   .object({
     id,
     babyId: id.nullable(),
-    body: z.string().trim().min(1).max(2_000),
+    // A photo post may have no caption (DEC-PROD-422).
+    body: z.string().trim().max(2_000),
     tags: z.array(z.string().min(1).max(40)).max(20),
     occurredAt: isoDateTime,
     authorName: shortString
