@@ -2,14 +2,14 @@
   "authority": "observation_only",
   "categoryCounts": {
     "api_route": 112,
-    "client_binding": 38,
+    "client_binding": 39,
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
     "server_loader": 29,
     "worker": 7
   },
-  "declarationDigest": "c2178f5acb91bf60cf2613014c9792e453ec52e8b4174269d132ea9b29a72354",
+  "declarationDigest": "994176a9bea3fd308356fa6b21e3f9d763dbd038791bac8174f1626c285fe0b4",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -6235,6 +6235,36 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/feed/feed-photo-gallery.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/feed/feed-photo-gallery.tsx",
+      "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
             "kind": "global_fetch",
@@ -7813,7 +7843,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "a1c495c380dcd26123fb251e90bbc61f716424d060b3ad3e30a8c958bb59c7a1",
+  "generatorDigest": "f3f0107ed0d3e647606fbe39b737ac44ead2fa89bceca8c036dd72bf4d443fd5",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11580,6 +11610,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "3f4a1102387a73f479c415697bae20b8960e55e13ad5da5b52e031dfdd91925b",
+          "anchorEnd": 613,
+          "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
+          "anchorStart": 559,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/feed/feed-photo-gallery.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
+      "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
           "anchorEnd": 914,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
@@ -14085,8 +14134,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 215,
-  "observationDigest": "ae032b7f57a00ab2b471d46f5ab73e6e6380060d7f4a9e64968db49d208b42c8",
+  "observationCount": 216,
+  "observationDigest": "115fc58607e0895097e3f7467613f83f6efaa8786b99e7a38cab16b81e2197bd",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -17702,6 +17751,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 613,
+          "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
+          "anchorStart": 559,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/feed/feed-photo-gallery.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
+      "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 914,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
           "anchorStart": 849,
@@ -20954,6 +21021,12 @@
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
     },
     {
+      "id": "client_binding:src/components/feed/feed-photo-gallery.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
+      "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/feed/feed-post-actions.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/feed/feed-post-actions.tsx",
@@ -21332,9 +21405,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "c1e614c8da750a8bfc3d0b9e03d55ae7b31ff13b95b69c0cbe81edf68e7936d5",
+  "ownerSetDigest": "334d267a60d5e6293708629b00ce2c8ab547f8ce162db76e07b40a9c1e2baf67",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "4a490952ad38d89bd5e01fd6f9b378a33921b547c4c69d36a7f38e193d85fad2",
+  "registryDigest": "49c7deca30752ea37e825c3b6ae330af2ed29e45e3d2b6e795dd85064b1a1e65",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

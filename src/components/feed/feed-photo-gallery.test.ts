@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React, { createElement } from "react";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
 
@@ -11,6 +11,9 @@ const photos = [
   { id: "photo-b", width: 1440, height: 2560 }
 ];
 
+// The photo as the private photo address serves it.
+const jpeg = () => new Response("jpeg-bytes", { status: 200, headers: { "Content-Type": "image/jpeg" } });
+
 beforeEach(() => {
   vi.spyOn(window.history, "pushState");
   vi.spyOn(window.history, "back").mockImplementation(() => {
@@ -20,6 +23,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  delete (URL as { createObjectURL?: unknown }).createObjectURL;
+  delete (URL as { revokeObjectURL?: unknown }).revokeObjectURL;
+  delete (navigator as { share?: unknown }).share;
+  delete (navigator as { canShare?: unknown }).canShare;
 });
 
 describe("FeedPhotoGallery", () => {
@@ -75,6 +83,60 @@ describe("FeedPhotoGallery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
     fireEvent.click(screen.getByTestId("photo-viewer-backdrop"));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("saves the open photo to the device from the private photo address", async () => {
+    const fetchPhoto = vi.fn(async () => jpeg());
+    vi.stubGlobal("fetch", fetchPhoto);
+    const objectUrl = vi.fn(() => "blob:cubby/photo-b");
+    const revoke = vi.fn();
+    // jsdom has no object URLs; afterEach removes these.
+    Object.assign(URL, { createObjectURL: objectUrl, revokeObjectURL: revoke });
+    const clicked: Array<{ href: string; download: string }> = [];
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push({ href: this.getAttribute("href") ?? "", download: this.download });
+    });
+
+    render(createElement(FeedPhotoGallery, { photos }));
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 2 of 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save photo" }));
+
+    await waitFor(() => expect(clicked).toEqual([{ href: "blob:cubby/photo-b", download: "cubby-photo-b.jpg" }]));
+    expect(fetchPhoto).toHaveBeenCalledWith("/api/attachments/photo-b", { credentials: "same-origin" });
+    // The temporary address is let go once the download has started.
+    await waitFor(() => expect(revoke).toHaveBeenCalledWith("blob:cubby/photo-b"), { timeout: 2000 });
+    // Saving leaves the viewer open.
+    expect(screen.getByRole("dialog", { name: "Photo 2 of 2" })).toBeTruthy();
+  });
+
+  it("says so when the photo could not be saved", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 404 })));
+    render(createElement(FeedPhotoGallery, { photos }));
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save photo" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe("Couldn't get the photo. Try again.");
+  });
+
+  it("shares the photo where the phone can, which is how an iPhone saves it to Photos", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jpeg()));
+    const share = vi.fn(async (_data: { files: File[] }) => undefined);
+    Object.assign(navigator, { share, canShare: () => true });
+
+    render(createElement(FeedPhotoGallery, { photos }));
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share photo" }));
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    const [file] = share.mock.calls[0][0].files;
+    expect([file.name, file.type]).toEqual(["cubby-photo-a.jpg", "image/jpeg"]);
+  });
+
+  it("offers Share only where the phone can share files", () => {
+    render(createElement(FeedPhotoGallery, { photos }));
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+    expect(screen.queryByRole("button", { name: "Share photo" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Save photo" })).toBeTruthy();
   });
 
   it("offers no stepping for a single photo", () => {

@@ -269,6 +269,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/browser-operation-recovery.operation.ts",
   "src/components/calendar-event-submission.operation.ts",
   "src/components/dashboard/dashboard-warnings.operation.ts",
+  "src/components/feed/feed-photo-gallery.operation.ts",
   "src/components/feed/feed-post-actions.operation.ts",
   "src/components/forms/activity-form.operation.ts",
   "src/components/forms/baby-form.operation.ts",
