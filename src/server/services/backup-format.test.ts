@@ -45,6 +45,17 @@ describe("backup v2 planned schedules", () => {
   });
 });
 
+describe("backup v2 feed posts", () => {
+  const baby = { id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null };
+  const post = (babyId: string | null) => ({ id: `post-${babyId}`, babyId, body: "Hello", tags: [], occurredAt: exportedAt, authorName: "Sam" });
+
+  it("accepts posts about a baby in the backup or the whole family, and nothing else", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), babies: [baby], feedPosts: [post("baby-1"), post(null)] }, exportedAt)).not.toThrow();
+    expect(() => createV2Backup({ ...emptyPayload(), babies: [baby], feedPosts: [post("baby-2")] }, exportedAt)).toThrow("backup_dangling_reference");
+    expect(() => createV2Backup({ ...emptyPayload(), feedPosts: [post(null), post(null)] }, exportedAt)).toThrow("backup_duplicate_source_id");
+  });
+});
+
 describe("backup v2 format", () => {
   it("creates the exact v2 envelope with a deterministic canonical checksum", () => {
     expect(canonicalJson({ z: 1, a: { y: 2, b: 3 } })).toBe('{"a":{"b":3,"y":2},"z":1}');

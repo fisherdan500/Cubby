@@ -1484,6 +1484,14 @@ test("declares the dashboard warning route family", () => {
   ]);
 });
 
+test("declares the family feed post route and client family", () => {
+  assertDeclarationFamily([
+    "src/app/api/feed/posts/[id]/route.operation.ts",
+    "src/app/api/feed/posts/route.operation.ts",
+    "src/components/feed/feed-post-actions.operation.ts"
+  ]);
+});
+
 test("declares the activity export route family", () => {
   assertDeclarationFamily([
     "src/app/api/export/activities.csv/route.operation.ts",

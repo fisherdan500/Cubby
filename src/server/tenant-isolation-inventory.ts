@@ -1,7 +1,7 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
   "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "AccountSecurityState", "ActivityLog", "ActivityTimerPauseInterval", "ApiKey", "AuditEvent", "AuditIntegrityCheckpoint", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
-  "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
+  "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedPost", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
   "GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityOperation", "GlobalSecurityOperationBinding", "GlobalSecurityOperationReservationTombstone", "GlobalSecurityOperationTombstone", "GlobalSecurityThrottleKey", "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "InvitationAccountSetup", "InvitationLineage", "InvitationOperationBinding", "InvitationOperationIdentity", "InvitationOperationResult", "InvitationOperationTombstone", "InvitationPresentationClaim", "InvitationRecoveryRehearsalChallenge", "InvitationSetupCorridorAttestationReceipt", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog", "PasswordChangeCredentialMutation", "RecoveryResetCredentialMutation", "InvitationProcedureTransitionBinding", "InvitationRecoveryEnrollmentBridge",
   "NotificationPreference", "NotificationPreferenceBaby", "PlannedSchedule", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlatformSetupCode", "PlayLog", "PumpingLog",
@@ -81,6 +81,8 @@ export const tenantIsolationInventory = [
   { model: "NotificationLog", ownership: "direct", operationClasses: ["notification_delivery"], disposition: "deferred_constraint" },
   { model: "NotificationPreference", ownership: "direct", operationClasses: ["notification_write"], disposition: "constraint_slice" },
   { model: "NotificationPreferenceBaby", ownership: "direct", operationClasses: ["notification_preference_selection"], disposition: "constraint_slice" },
+  // Both references are composite (householdId, babyId / authorMemberId), so a post cannot cross households.
+  { model: "FeedPost", ownership: "direct", operationClasses: ["feed_post_write", "restore"], disposition: "constraint_slice" },
   // The baby reference is composite (householdId, babyId), so a plan cannot point at another household's baby.
   { model: "PlannedSchedule", ownership: "direct", operationClasses: ["planned_schedule_write", "restore"], disposition: "constraint_slice" },
   { model: "PlatformAuditEvent", ownership: "global", operationClasses: ["platform_audit"], disposition: "excluded" },

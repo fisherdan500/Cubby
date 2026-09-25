@@ -41,7 +41,10 @@ const householdScopedKeys = [
   "activity.undo_last",
   "activity.timer.pause",
   "activity.timer.resume",
-  "activity.timer.stop"
+  "activity.timer.stop",
+  // Feed posts are household-scoped: a whole-family post has no baby.
+  "feed_post.create",
+  "feed_post.delete"
 ];
 
 // Issued by issueBrowserOperation, which writes the baby it locked.
@@ -59,7 +62,8 @@ const targetedKeys = [
   "member.role.update",
   "member.suspend",
   "invite.revoke",
-  "api_key.revoke"
+  "api_key.revoke",
+  "feed_post.delete"
 ];
 
 describe("browser operation binding target shape", () => {

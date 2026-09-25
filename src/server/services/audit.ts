@@ -27,6 +27,8 @@ const auditActionSchema = z.enum([
   "household.create",
   "calendar_event.create",
   "export.csv",
+  "feed_post.create",
+  "feed_post.delete",
   "invite.accept",
   "invite.conflict",
   "invite.create",
@@ -126,6 +128,8 @@ const notificationPreferenceSchema = z.object({
   babyScope: z.enum(["all", "selected"])
 }).strict();
 // A plan's labels, times and notes are private caregiver text; the audit keeps only that it changed.
+// A post's caption and tags are private family text; the audit keeps only how many tags it had.
+const feedPostCreateSchema = z.object({ tagCount: z.number().int().nonnegative() }).strict();
 const plannedScheduleSchema = z.object({
   revision: z.number().int().positive(),
   itemCount: z.number().int().nonnegative()
@@ -189,6 +193,12 @@ function minimizeAuditPayload(
   }
   if (action === "planned_schedule.save") {
     return plannedScheduleSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "feed_post.create") {
+    return feedPostCreateSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "feed_post.delete") {
+    return emptyAuditPayloadSchema.parse(payload) as Prisma.InputJsonValue;
   }
   return payload;
 }

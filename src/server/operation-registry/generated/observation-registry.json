@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 104,
-    "client_binding": 37,
+    "api_route": 106,
+    "client_binding": 38,
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "e91aac882bdc9bd34e5f88bf933e99d9c0a2c4c309daa30dab8081efee6fba8c",
+  "declarationDigest": "7add4ac3841063a1a992e2dfe1290d9a6074b70f7f9c7b90071b51a9d68f497e",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -2403,6 +2403,66 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "DELETE",
+            "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/feed/posts/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/feed/posts/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/feed/posts/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/feed/posts/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "GET",
             "target": "src/app/api/health/route.ts#GET"
           }
@@ -4653,6 +4713,11 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getActivityRowViewer",
+            "target": "src/server/services/activities.ts#getActivityRowViewer"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getActivityUnitPreferences",
             "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
           },
@@ -4665,6 +4730,11 @@
             "kind": "server_value_import",
             "symbol": "listActivities",
             "target": "src/server/services/activities.ts#listActivities"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listFeedPosts",
+            "target": "src/server/services/feed-posts.ts#listFeedPosts"
           },
           {
             "kind": "server_value_import",
@@ -5917,6 +5987,51 @@
       },
       "id": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[3]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[4]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/feed/feed-post-actions.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/feed/feed-post-actions.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
     },
     {
       "declaration": {
@@ -7403,7 +7518,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "2d893a265def34932d037a1b4b950e7a5a64816a610a94a94a1a8df919c74d7d",
+  "generatorDigest": "eae00deb1f1c7bd71a6ff1a31bf5ab7d565748d310dfb7da92e35881af74ac55",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8208,6 +8323,44 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/export/activities.tsv/route.ts",
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "9adfc7310cb6c348ece09691bfbea0ca9bfd9618b14c6672e8943718834a8397",
+          "anchorEnd": 1279,
+          "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
+          "anchorStart": 299,
+          "kind": "route_method",
+          "symbol": "DELETE",
+          "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "a0ad7bfd91367317fa70c452170c7ed28280a4b963f8b9e1604c8fdc55d14160",
+          "anchorEnd": 1179,
+          "anchorFile": "src/app/api/feed/posts/route.ts",
+          "anchorStart": 299,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/feed/posts/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/feed/posts/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
     },
     {
       "bindings": [
@@ -9796,37 +9949,55 @@
     {
       "bindings": [
         {
-          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 630,
+          "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
+          "anchorEnd": 673,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 604,
+          "anchorStart": 653,
+          "kind": "server_value_import",
+          "symbol": "getActivityRowViewer",
+          "target": "src/server/services/activities.ts#getActivityRowViewer"
+        },
+        {
+          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
+          "anchorEnd": 918,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 892,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 552,
+          "anchorEnd": 759,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 531,
+          "anchorStart": 738,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 482,
+          "anchorEnd": 689,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 468,
+          "anchorStart": 675,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 426,
+          "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
+          "anchorEnd": 824,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 411,
+          "anchorStart": 811,
+          "kind": "server_value_import",
+          "symbol": "listFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listFeedPosts"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 611,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 596,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10923,6 +11094,52 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+          "anchorEnd": 854,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 789,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
+          "anchorEnd": 2252,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 2101,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+          "anchorEnd": 3229,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 3162,
+          "kind": "global_fetch",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "c77e773b3deb1ba450ae38aef595edad224dd27ee7e1b10472a52f78efcb2e73",
+          "anchorEnd": 3849,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 3717,
+          "kind": "global_fetch",
+          "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
     },
     {
       "bindings": [
@@ -13322,8 +13539,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 204,
-  "observationDigest": "b6b6a970e90db4cd1163bfa58561b6ba409f02bea450185442a503940d804db4",
+  "observationCount": 207,
+  "observationDigest": "cbb5840e7a1969b71a7884068b01c84c187d7be2c7bbe956c209f35590f79ef6",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14091,6 +14308,42 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/export/activities.tsv/route.ts",
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1279,
+          "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
+          "anchorStart": 299,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+          "symbol": "DELETE",
+          "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1179,
+          "anchorFile": "src/app/api/feed/posts/route.ts",
+          "anchorStart": 299,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/posts/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/feed/posts/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/feed/posts/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
     },
     {
       "bindings": [
@@ -15607,36 +15860,54 @@
     {
       "bindings": [
         {
-          "anchorEnd": 630,
+          "anchorEnd": 673,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 604,
+          "anchorStart": 653,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "getActivityRowViewer",
+          "target": "src/server/services/activities.ts#getActivityRowViewer"
+        },
+        {
+          "anchorEnd": 918,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 892,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 552,
+          "anchorEnd": 759,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 531,
+          "anchorStart": 738,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 482,
+          "anchorEnd": 689,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 468,
+          "anchorStart": 675,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 426,
+          "anchorEnd": 824,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 411,
+          "anchorStart": 811,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "listFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listFeedPosts"
+        },
+        {
+          "anchorEnd": 611,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 596,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "requireUserPage",
@@ -16701,6 +16972,51 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 854,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 789,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/feed/feed-post-actions.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 2252,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 2101,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/feed/feed-post-actions.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3229,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 3162,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/feed/feed-post-actions.tsx",
+          "symbol": "fetch[3]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 3849,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 3717,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/feed/feed-post-actions.tsx",
+          "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
     },
     {
       "bindings": [
@@ -19165,6 +19481,18 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/feed/posts/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/health/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/health/route.ts",
@@ -19795,6 +20123,12 @@
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
     },
     {
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/forms/activity-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/activity-form.tsx",
@@ -20161,9 +20495,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "4c758b629b75fcbcdb2fc5ebe98536a0633e4bbbb5d9606ee1150ec1d456cf02",
+  "ownerSetDigest": "0d7deae76cec1f6eaa5ef9f8b56e19a1ae4ed912774e5b21bf567843042ad8e2",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "4c15e90f3c1d789e0fdae24bb1c2a7e8e897aca739dedb885d9879dad7e93e52",
+  "registryDigest": "771664e42f379215ecbcb4f5f9ed7e45396e0b458f8184b2ae92d32f880afc87",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

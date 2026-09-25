@@ -44,7 +44,7 @@ const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"])
 type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
-  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule"
+  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
 >;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
@@ -197,7 +197,7 @@ export async function buildHouseholdV2Snapshot(
   householdId: string,
   exportedAt = new Date().toISOString()
 ) {
-  const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules] = await Promise.all([
+  const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
@@ -214,6 +214,14 @@ export async function buildHouseholdV2Snapshot(
       where: { householdId, baby: { deletedAt: null } },
       select: { babyId: true, document: true },
       orderBy: { createdAt: "asc" }
+    }),
+    tx.feedPost.findMany({
+      where: { householdId, deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] },
+      select: {
+        id: true, babyId: true, body: true, tags: true, occurredAt: true, externalAuthorName: true,
+        author: { select: { displayName: true, user: { select: { name: true } } } }
+      },
+      orderBy: { occurredAt: "asc" }
     })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
@@ -285,6 +293,14 @@ export async function buildHouseholdV2Snapshot(
     plannedSchedules: plannedSchedules.map((schedule) => ({
       babyId: schedule.babyId,
       items: plannedScheduleDocumentSchema.parse(schedule.document).items
+    })),
+    feedPosts: feedPosts.map((post) => ({
+      id: post.id,
+      babyId: post.babyId,
+      body: post.body,
+      tags: post.tags,
+      occurredAt: post.occurredAt.toISOString(),
+      authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone"
     }))
   }, exportedAt);
 }
@@ -575,6 +591,18 @@ async function restoreV2InTransaction(
       }
     });
   }
+  for (const post of payload.feedPosts ?? []) {
+    await tx.feedPost.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        babyId: post.babyId === null ? null : babyMap.get(post.babyId)!,
+        externalAuthorName: post.authorName,
+        body: post.body,
+        tags: post.tags,
+        occurredAt: new Date(post.occurredAt)
+      }
+    });
+  }
   for (const baby of payload.babies) {
     if (!baby.inactiveAt) continue;
     const babyId = babyMap.get(baby.id)!;
@@ -589,9 +617,11 @@ async function restoreV2InTransaction(
     activities: payload.activities.length,
     calendarEvents: payload.calendarEvents.length,
     reminders: payload.reminders.length,
-    plannedSchedules: payload.plannedSchedules?.length ?? 0
+    plannedSchedules: payload.plannedSchedules?.length ?? 0,
+    feedPosts: payload.feedPosts?.length ?? 0
   };
-  const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders + counts.plannedSchedules;
+  const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders
+    + counts.plannedSchedules + counts.feedPosts;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
   return { restored, counts, legacyPartial: false };
 }

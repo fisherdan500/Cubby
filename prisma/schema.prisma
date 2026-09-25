@@ -195,6 +195,8 @@ enum BrowserOperationKey {
   householdAccentUpdate      @map("household.accent.update")
   apiKeyRevoke               @map("api_key.revoke")
   plannedScheduleSave        @map("planned_schedule.save")
+  feedPostCreate             @map("feed_post.create")
+  feedPostDelete             @map("feed_post.delete")
 }
 
 enum BrowserOperationTargetKind {
@@ -208,6 +210,7 @@ enum BrowserOperationTargetKind {
   settings
   calendar
   apiKey @map("api_key")
+  post
 }
 
 enum BrowserOperationProtocolVersion {
@@ -461,6 +464,7 @@ model Household {
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
   plannedSchedules PlannedSchedule[]
+  feedPosts       FeedPost[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -490,6 +494,7 @@ model HouseholdMember {
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
+  feedPosts   FeedPost[]
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -708,6 +713,7 @@ model Baby {
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
   plannedSchedule          PlannedSchedule?
+  feedPosts                FeedPost[]
 
   @@index([householdId])
   @@unique([householdId, id])
@@ -989,6 +995,32 @@ model PlannedSchedule {
 
   @@unique([babyId])
   @@unique([householdId, babyId])
+}
+
+// A text post in the private family feed (DEC-PROD-421): about one baby, or the whole family when
+// babyId is null. Both references carry the household, so a post can never point at another
+// household's baby or member. A restored post whose author is not a member of the restoring household
+// keeps the author's name in externalAuthorName instead.
+model FeedPost {
+  id                 String           @id @default(cuid())
+  householdId        String
+  babyId             String?
+  authorMemberId     String?
+  externalAuthorName String?
+  body               String
+  tags               String[]         @default([])
+  occurredAt         DateTime         @default(now())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
+  deletedByMemberId  String?
+  household          Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  baby               Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
+  author             HouseholdMember? @relation(fields: [householdId, authorMemberId], references: [householdId, id], onDelete: Restrict)
+
+  @@unique([householdId, id])
+  @@index([householdId, babyId, occurredAt])
+  @@index([householdId, occurredAt])
 }
 
 model DashboardWarningDismissal {
