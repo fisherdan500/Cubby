@@ -10,9 +10,9 @@ describe("feed filters", () => {
   });
 
   it("links to a tag, and to the next page with the time it continues from", () => {
-    expect(feedHref({ babyId: "baby-1", filter: "posts", tag: "firsts" })).toBe("/app/feed?babyId=baby-1&filter=posts&tag=firsts");
+    expect(feedHref({ babyId: "baby-1", filter: "posts", tag: "firsts" })).toBe("/app/moments?babyId=baby-1&filter=posts&tag=firsts");
     expect(feedHref({ babyId: "baby-1", cursor: "a24", before: "2026-09-24T10:00:00.000Z" }))
-      .toBe("/app/feed?babyId=baby-1&cursor=a24&before=2026-09-24T10%3A00%3A00.000Z");
+      .toBe("/app/moments?babyId=baby-1&cursor=a24&before=2026-09-24T10%3A00%3A00.000Z");
   });
 
   it("treats a missing or unknown filter as everything", () => {
@@ -22,9 +22,9 @@ describe("feed filters", () => {
   });
 
   it("links to a filter and page for the selected baby, leaving out what is default", () => {
-    expect(feedHref({})).toBe("/app/feed");
-    expect(feedHref({ babyId: "baby 1", filter: "all" })).toBe("/app/feed?babyId=baby+1");
-    expect(feedHref({ babyId: "baby-1", filter: "sleep", cursor: "activity-9" })).toBe("/app/feed?babyId=baby-1&filter=sleep&cursor=activity-9");
+    expect(feedHref({})).toBe("/app/moments");
+    expect(feedHref({ babyId: "baby 1", filter: "all" })).toBe("/app/moments?babyId=baby+1");
+    expect(feedHref({ babyId: "baby-1", filter: "sleep", cursor: "activity-9" })).toBe("/app/moments?babyId=baby-1&filter=sleep&cursor=activity-9");
   });
 });
 

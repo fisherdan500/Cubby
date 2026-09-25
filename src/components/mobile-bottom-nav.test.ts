@@ -28,9 +28,9 @@ function renderNav() {
 }
 
 describe("MobileBottomNav", () => {
-  it("keeps four tabs, with the Feed in place of Full Log, and moves the rest behind More", async () => {
+  it("keeps four tabs, with Moments in place of Full Log, and moves the rest behind More", async () => {
     const more = renderNav();
-    for (const label of ["Log", "Feed", "Calendar", "Reports"]) {
+    for (const label of ["Log", "Moments", "Calendar", "Reports"]) {
       expect(screen.getByRole("link", { name: label }).getAttribute("href")).toContain("babyId=baby-1");
     }
     expect(screen.queryByRole("link", { name: "Full Log" })).toBeNull();
@@ -78,9 +78,12 @@ describe("MobileBottomNav", () => {
     }
   });
 
-  it("marks the Feed tab current on the feed", () => {
-    navigation.pathname = "/app/feed";
+  it("marks the Moments tab current on Moments", () => {
+    navigation.pathname = "/app/moments";
     renderNav();
-    expect(screen.getByRole("link", { name: "Feed" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "Moments" }).getAttribute("href")).toBe("/app/moments?babyId=baby-1");
+    expect(screen.getByRole("link", { name: "Moments" }).getAttribute("aria-current")).toBe("page");
+    // "Feed" means feeding the baby; no tab uses it for anything else.
+    expect(screen.queryByRole("link", { name: "Feed" })).toBeNull();
   });
 });

@@ -3,7 +3,7 @@ import { dateKeyInTimeZone } from "@/lib/timezone";
 export function activityBackLabel(source: string) {
   const pathname = source.split(/[?#]/, 1)[0];
   if (pathname === "/app/history") return "Back to Full Log";
-  if (pathname === "/app/feed") return "Back to Feed";
+  if (pathname === "/app/moments" || pathname === "/app/feed") return "Back to Moments";
   if (pathname === "/app/calendar") return "Back to Calendar";
   return "Back to Dashboard";
 }

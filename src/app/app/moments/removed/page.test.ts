@@ -22,7 +22,7 @@ vi.mock("@/components/app-shell", () => ({
   AppShell: ({ title, children }: { title: string; children: React.ReactNode }) => createElement("main", { "data-title": title }, children)
 }));
 
-import RemovedFeedPostsPage from "@/app/app/feed/removed/page";
+import RemovedFeedPostsPage from "@/app/app/moments/removed/page";
 
 async function renderPage(searchParams: Record<string, string> = {}) {
   document.body.innerHTML = renderToStaticMarkup(await RemovedFeedPostsPage({ searchParams }));
@@ -63,7 +63,7 @@ describe("Recently removed posts", () => {
     expect(posts[1].textContent).toContain("1 photo");
     expect(posts[1].textContent).toContain("Less than a day left");
     expect(posts.map((post) => post.querySelector("[data-restore]")?.getAttribute("data-restore"))).toEqual(["post-1", "post-2"]);
-    expect([...body.querySelectorAll("a")].find((link) => link.textContent === "Back to Feed")?.getAttribute("href")).toBe("/app/feed?babyId=baby-1");
+    expect([...body.querySelectorAll("a")].find((link) => link.textContent === "Back to Moments")?.getAttribute("href")).toBe("/app/moments?babyId=baby-1");
   });
 
   it("explains the thirty days when there is nothing to bring back", async () => {

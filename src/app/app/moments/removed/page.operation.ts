@@ -2,8 +2,8 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/feed/removed/page.tsx",
-  ownerModule: "src/app/app/feed/removed/page.tsx",
+  id: "server_loader:src/app/app/moments/removed/page.tsx",
+  ownerModule: "src/app/app/moments/removed/page.tsx",
   ownerKind: "server_loader",
   bindings: [
     {

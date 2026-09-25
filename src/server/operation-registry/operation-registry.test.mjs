@@ -1502,7 +1502,7 @@ test("declares the attachment upload and delivery route family", () => {
 test("declares the feed post restore family and the attachment retention worker", () => {
   assertDeclarationFamily([
     "src/app/api/feed/posts/[id]/restore/route.operation.ts",
-    "src/app/app/feed/removed/page.operation.ts",
+    "src/app/app/moments/removed/page.operation.ts",
     "src/server/attachment-retention-scheduler.operation.ts"
   ]);
 });
@@ -1598,10 +1598,10 @@ test("declares the activity detail loader family", () => {
 test("declares the primary authenticated loader family", () => {
   assertDeclarationFamily([
     "src/app/app/babies/page.operation.ts",
-    "src/app/app/feed/page.operation.ts",
     "src/app/app/history/page.operation.ts",
     "src/app/app/layout.operation.ts",
     "src/app/app/log/[type]/page.operation.ts",
+    "src/app/app/moments/page.operation.ts",
     "src/app/app/page.operation.ts",
     "src/app/app/reports/page.operation.ts"
   ]);

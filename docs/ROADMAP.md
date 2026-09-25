@@ -71,6 +71,8 @@ implementation, merge, deployment, and cleanup approvals.
 - Goal: A private family journal: everything logged for the baby as a scrollable feed, then text posts with #tags, then comments and emoji reactions, and later photos.
 - Notes: Private to the household. No public sharing, followers, like counts, ranking, streaks or engagement notifications. Step 1 adds a Feed tab: every logged activity as its own card for the selected baby, newest first under household days, with header filters, opening the entry and returning to the same feed. On phones it takes the Full Log's tab, and the Full Log moves behind More, with the aim that the feed replaces it.
 
+People see the feed as **Moments**, at `/app/moments`, because "Feed" already means feeding the baby. The tab, page title and Back links say Moments, and `/app/feed` forwards there with a temporary redirect that keeps the query string. Code, API routes and stored data keep the feed name.
+
 Step 2 adds text posts:
 - a caption about the selected baby or the whole family, with #tags taken from the text; whole-family posts appear for every baby;
 - anyone but read-only members may post; authors remove their own posts, and owners, admins and parents any;

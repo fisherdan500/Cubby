@@ -12,7 +12,9 @@ describe("activityBackLabel", () => {
   it.each([
     ["/app?babyId=baby-1", "Back to Dashboard"],
     ["/app/history?babyId=baby-1", "Back to Full Log"],
-    ["/app/feed?babyId=baby-1&filter=milestone", "Back to Feed"],
+    ["/app/moments?babyId=baby-1&filter=milestone", "Back to Moments"],
+    // A link saved before the rename still returns to Moments, which /app/feed forwards to.
+    ["/app/feed?babyId=baby-1", "Back to Moments"],
     ["/app/calendar?babyId=baby-1", "Back to Calendar"]
   ])("labels source %s", (source, label) => {
     expect(activityBackLabel(source)).toBe(label);
