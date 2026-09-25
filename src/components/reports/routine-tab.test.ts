@@ -31,19 +31,39 @@ function week(days = 7, nightBefore = true) {
   return buildRoutine(records, addDaysToDateKey("2026-09-14", days - 1), "1w", timeZone);
 }
 
+const periods = [
+  { label: "7 days", href: "/app/reports?tab=routine&routineWindow=1w", current: true },
+  { label: "14 days", href: "/app/reports?tab=routine&routineWindow=2w", current: false },
+  { label: "30 days", href: "/app/reports?tab=routine&routineWindow=1m", current: false }
+];
+
 function renderTab(routine = week()) {
-  render(createElement(RoutineTab, { babyId: "baby-1", babyName: "Avery", startKey: "2026-09-14", endKey: "2026-09-20", routine }));
+  render(createElement(RoutineTab, { babyName: "Avery", routine, periods }));
 }
 
 describe("RoutineTab", () => {
-  it("leads with the day's anchors: wake, bedtime, naps and feeds", () => {
+  it("offers one choice of period, marking the one in use", () => {
     renderTab();
-    const facts = screen.getByRole("list", { name: "Routine at a glance" });
+    const links = within(screen.getByRole("navigation", { name: "Routine period" })).getAllByRole("link");
 
-    expect(within(facts).getByText("Wakes up").parentElement?.textContent).toContain("6:30 AM");
-    expect(within(facts).getByText("Bedtime").parentElement?.textContent).toContain("7:15 PM");
-    expect(within(facts).getByText("Naps").parentElement?.textContent).toContain("2 a day");
-    expect(within(facts).getByText("Feeds").parentElement?.textContent).toContain("every 3h");
+    expect(links.map((link) => [link.textContent, link.getAttribute("href"), link.getAttribute("aria-current")])).toEqual([
+      ["7 days", periods[0].href, "true"],
+      ["14 days", periods[1].href, null],
+      ["30 days", periods[2].href, null]
+    ]);
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("sums the day up in a line above the list, with only what the list does not show", () => {
+    renderTab();
+    const summary = screen.getByText(/naps a day/);
+
+    expect(summary.textContent).toMatch(/^Night about \d/);
+    expect(summary.textContent).toContain("2 naps a day on 7 of 7 days");
+    expect(summary.textContent).toContain("about 5 feeds by day, roughly every 3h");
+    // The four big cards repeated the list's own times; they are gone.
+    expect(screen.queryByRole("list", { name: "Routine at a glance" })).toBeNull();
+    expect(screen.getByRole("list", { name: "Typical day" }).closest("section")?.contains(summary)).toBe(true);
   });
 
   it("lists the typical day in order, as something a caregiver could follow", () => {
@@ -72,7 +92,7 @@ describe("RoutineTab", () => {
   it("suggests a plan from this very routine, starting with each of its steady times", () => {
     const routine = week();
     render(createElement(RoutineTab, {
-      babyId: "baby-1", babyName: "Avery", startKey: "2026-09-14", endKey: "2026-09-20", routine,
+      babyName: "Avery", routine, periods,
       schedule: { babyId: "baby-1", revision: 0, canEdit: true, items: [] }
     }));
 

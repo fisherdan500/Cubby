@@ -237,6 +237,20 @@ describe("report range", () => {
     expect(report?.history?.milestones.map((milestone) => milestone.title)).toEqual(["First smile"]);
   });
 
+  it("works the routine out from the days up to today, whatever range Stats is looking at", async () => {
+    vi.setSystemTime(new Date("2026-09-19T15:00:00.000Z"));
+    const report = await getReports("user-1", { babyId: "baby-1", start: "2026-08-01", end: "2026-08-07", routineWindow: "1w" });
+    const routineQuery = mocks.findMany.mock.calls[1]?.[0].where;
+
+    // The seven days to today, 13 to 19 September, read from the night before the first morning.
+    expect(routineQuery.occurredAt.gte).toEqual(new Date("2026-09-12T04:00:00.000Z"));
+    expect(routineQuery.occurredAt.lt).toEqual(new Date("2026-09-20T04:00:00.000Z"));
+    expect(report?.routine).toMatchObject({ startKey: "2026-09-13", endKey: "2026-09-19" });
+    // Stats keeps its own range.
+    expect(report).toMatchObject({ startKey: "2026-08-01", endKey: "2026-08-07" });
+    vi.useRealTimers();
+  });
+
   it("falls back to the last seven days when the range is missing or malformed", async () => {
     vi.setSystemTime(new Date("2026-09-19T15:00:00.000Z"));
     const report = await getReports("user-1", { babyId: "baby-1", start: "not-a-date", end: "2026-13-45" });
