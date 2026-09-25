@@ -1,7 +1,7 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 109,
+    "api_route": 111,
     "client_binding": 38,
     "instrumentation": 1,
     "package_command": 27,
@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "df4c622f1b9f9d66154e35cbb2b02713b7399c1146c429f1aac124a9a0165116",
+  "declarationDigest": "aa64425acb4e04cf235c775b32f619fe1942f428dd018ec032e116ea21a46c41",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1772,6 +1772,66 @@
       },
       "id": "api_route:src/app/api/activities/undo-last/route.ts",
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/attachments/[id]/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/attachments/[id]/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/attachments/[id]/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/attachments/[id]/route.ts",
+      "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/attachments/feed-photos/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/attachments/feed-photos/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/attachments/feed-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/feed-photos/route.operation.ts"
     },
     {
       "declaration": {
@@ -7628,7 +7688,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "53af7be236a30de84870d7090230b1bcddd31bc28e8c380f495d735c2d085ede",
+  "generatorDigest": "814618c903a80899ec16f64963f6f447ffc37f6105fea335f0ce109809b6936c",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8008,6 +8068,44 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/activities/undo-last/route.ts",
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "698b8190db5cf37a9836143133b628fbd79478b1878d60915dc447c0a1bee918",
+          "anchorEnd": 1340,
+          "anchorFile": "src/app/api/attachments/[id]/route.ts",
+          "anchorStart": 762,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/attachments/[id]/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/attachments/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/[id]/route.ts",
+      "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "6ea6b72a09dcc75254f0c6e661ad9c368e88b609bd7b293a679b1d5944e80560",
+          "anchorEnd": 788,
+          "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
+          "anchorStart": 427,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/attachments/feed-photos/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/attachments/feed-photos/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/feed-photos/route.operation.ts"
     },
     {
       "bindings": [
@@ -13742,8 +13840,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 210,
-  "observationDigest": "15671b209c8ba09850a93020b86d31c4ee3756ed5ab0d0d1c4e4e1fd76dae749",
+  "observationCount": 212,
+  "observationDigest": "c77cf52e63456e30528a7d4d2904c3637cac717a90dc6266d8bdb9ed339441df",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14106,6 +14204,42 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/activities/undo-last/route.ts",
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1340,
+          "anchorFile": "src/app/api/attachments/[id]/route.ts",
+          "anchorStart": 762,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/attachments/[id]/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/attachments/[id]/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/attachments/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/[id]/route.ts",
+      "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 788,
+          "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
+          "anchorStart": 427,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/attachments/feed-photos/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/attachments/feed-photos/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/feed-photos/route.operation.ts"
     },
     {
       "bindings": [
@@ -19654,6 +19788,18 @@
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/attachments/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/[id]/route.ts",
+      "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/attachments/feed-photos/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/feed-photos/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/audit/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/audit/route.ts",
@@ -20806,9 +20952,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "b6a185871f48367394aecdd0623a68a53f18dcb3c0f662b93b3f9d1aa886b851",
+  "ownerSetDigest": "99e4b11e9502571db3d25d05ae8a77ca12e9172b4ba192f5a8aaf93226573cb1",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5db83a8336212a683a2aa323bf1fd4fa141829552ec168e9900e2f9b5e0691dc",
+  "registryDigest": "dec13e1f5d98ccd89fd3ddc447f1595bc67d67083a9061ee3a817132ec88ea02",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

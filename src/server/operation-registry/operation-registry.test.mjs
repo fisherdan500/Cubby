@@ -1492,6 +1492,13 @@ test("declares the family feed post route and client family", () => {
   ]);
 });
 
+test("declares the attachment upload and delivery route family", () => {
+  assertDeclarationFamily([
+    "src/app/api/attachments/[id]/route.operation.ts",
+    "src/app/api/attachments/feed-photos/route.operation.ts"
+  ]);
+});
+
 test("declares the family feed comment and reaction route family", () => {
   assertDeclarationFamily([
     "src/app/api/feed/comments/[id]/route.operation.ts",

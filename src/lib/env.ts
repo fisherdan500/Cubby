@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readAttachmentConfig } from "@/lib/attachment-config";
 import { readAutomatedBackupConfig } from "@/lib/automated-backup-config";
 import { readIntegrityConfig } from "@/lib/integrity-config";
 import { DEFAULT_APP_TIMEZONE, isValidTimeZone } from "@/lib/timezone";
@@ -43,6 +44,8 @@ export const automatedBackupConfig = readAutomatedBackupConfig({
   AUTOMATED_BACKUP_POLL_MINUTES: process.env.AUTOMATED_BACKUP_POLL_MINUTES,
   AUTOMATED_BACKUP_RETRY_MINUTES: process.env.AUTOMATED_BACKUP_RETRY_MINUTES
 });
+
+export const attachmentConfig = readAttachmentConfig({ ATTACHMENT_DIRECTORY: process.env.ATTACHMENT_DIRECTORY });
 
 export const integrityConfig = readIntegrityConfig({
   INTEGRITY_CHECKS_ENABLED: process.env.INTEGRITY_CHECKS_ENABLED,

@@ -229,7 +229,8 @@ describe("read-only integrity suite", () => {
       })
     ]);
     expect(executed).toEqual(["SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"]);
-    expect(queries).toHaveLength(9);
+    expect(queries).toHaveLength(10);
+    expect(queries.join("\n")).toContain('"Attachment"');
     expect(queries.join("\n")).toContain('"ActivityLog"');
     expect(queries.join("\n")).toContain('"ActivityTimerPauseInterval"');
     expect(queries.join("\n")).toContain('"AuditEvent"');
@@ -351,6 +352,50 @@ describe("read-only integrity suite", () => {
     expect(chainQuery).toMatch(/MAX\(audit\."chainOrder"\)\s*<>\s*COUNT\(\*\)/i);
     // The report counts affected households, never their identifiers.
     expect(JSON.stringify(report)).not.toContain("household-");
+  });
+
+  it("reports photos on missing or removed posts, and uploads the purge should long since have cleared", async () => {
+    const fake = fakeIntegrityDatabase([[], []], [], [{ includes: 'FROM "Attachment" attachment', count: 2 }]);
+
+    const report = await runDatabaseIntegritySuite(fake.database);
+
+    expect(report.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "attachment_lifecycle_consistency", severity: "error", count: 2 })
+    ]));
+    const query = fake.queries.find((candidate) => candidate.includes('FROM "Attachment" attachment'))!;
+    expect(query).toMatch(/post\."householdId"\s*<>\s*attachment\."householdId"/);
+    expect(query).toMatch(/attachment\.state = 'available' AND post\."deletedAt" IS NOT NULL/);
+    expect(query).toMatch(/attachment\.state = 'staging'/);
+  });
+
+  it("checks stored photo bytes against their records when given the store", async () => {
+    const key = "1".repeat(32);
+    const inventory = [{ storageKey: key, byteSize: 4, sha256: "a".repeat(64), state: "available" }];
+    const fake = fakeIntegrityDatabase([[], [], []]);
+    const database = {
+      $transaction: async <T>(callback: Parameters<typeof fake.database.$transaction>[0]) =>
+        fake.database.$transaction(async (client) => callback({
+          ...client,
+          $queryRawUnsafe: async (query: string) => query.includes('"storageKey"') ? inventory : client.$queryRawUnsafe(query)
+        })) as Promise<T>
+    };
+    const read = vi.fn().mockRejectedValue(new Error("attachment_bytes_mismatch"));
+
+    const report = await runDatabaseIntegritySuite(database, {
+      attachmentStore: { listKeys: async () => [key, "2".repeat(32)], read }
+    });
+
+    expect(read).toHaveBeenCalledWith(key, { byteSize: 4, sha256: "a".repeat(64) });
+    expect(report.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "attachment_byte_consistency", severity: "error", count: 2 })
+    ]));
+    expect(JSON.stringify(report)).not.toContain(key);
+
+    const unreadable = await runDatabaseIntegritySuite(database, {
+      attachmentStore: { listKeys: async () => { throw new Error("attachment_store_unavailable"); }, read }
+    });
+    expect(unreadable.status).toBe("incomplete");
+    expect(unreadable.findings).toEqual(expect.arrayContaining([expect.objectContaining({ id: "attachment_byte_consistency" })]));
   });
 
   it("captures clean fixed Sprout mapping-ledger evidence without exposing source identifiers", async () => {
@@ -786,7 +831,7 @@ describe("read-only integrity suite", () => {
         ]
       }
     });
-    expect(events).toHaveLength(10);
+    expect(events).toHaveLength(11);
     expect(events[0]).toBe("execute:SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
     expect(events[1]).toContain("query:SELECT pg_try_advisory_xact_lock");
     expect(events[2]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM "ActivityLog" activity');
@@ -796,7 +841,8 @@ describe("read-only integrity suite", () => {
     expect(events[6]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM (\n        SELECT activity.id, activity.type');
     expect(events[7]).toContain('query:SELECT (\n        (SELECT COUNT(*)\n          FROM "CalendarEventBaby" link');
     expect(events[8]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM (\n        SELECT audit."householdId"');
-    expect(events[9]).toContain('query:SELECT COUNT(*)::int AS count\n    FROM "ImportedRecord" imported');
+    expect(events[9]).toContain('query:SELECT COUNT(*)::int AS count\n      FROM "Attachment" attachment');
+    expect(events[10]).toContain('query:SELECT COUNT(*)::int AS count\n    FROM "ImportedRecord" imported');
   });
 
   it("skips a scheduled run when another process holds the advisory lock", async () => {

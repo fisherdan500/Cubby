@@ -108,6 +108,21 @@ describe("household audit contract", () => {
     expect(mocks.auditEventCreate).toHaveBeenCalledTimes(1);
   });
 
+  it("never stores an attachment's name, path, checksum or bytes", async () => {
+    for (const after of [
+      { type: "feed_photo", filename: "IMG_0001.jpg" },
+      { type: "feed_photo", sha256: "a".repeat(64) },
+      { type: "feed_photo", reason: "the file said: hello" },
+      { type: "vaccine_document" }
+    ]) {
+      await expect(writeAudit(context, { action: "attachment.stage", entityType: "attachment", entityId: "att-1", after })).rejects.toThrow();
+    }
+    expect(mocks.auditEventCreate).not.toHaveBeenCalled();
+
+    await writeAudit(context, { action: "attachment.reject", entityType: "attachment", entityId: "upload", after: { type: "feed_photo", reason: "too_large" } });
+    expect(mocks.auditEventCreate).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects undeclared integration token material for every classified action", async () => {
     await expect(
       writeAudit(context, {
