@@ -2448,17 +2448,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "c21598da3a8c4c0213f04703f8e2e7378d9eb94e1b87477052456e3f333a8ca9",
+          "digest": "02d4fad3e923f5f1d2b62ec96d37df05566e3db6807a0f1d95431730fe6cb864",
           "file": "src/components/feed/feed-photo-gallery.tsx"
         }
       ],
       "declarationDigest": "3e3bef8ff066b181f3171fea8442f2b992219c675f6bdc6fbcb727e5fd1d159d",
-      "fingerprint": "aa103fa000d91b634be88d16e1dd2bfeb9c9ff15afdd96bb700fcc024e4913aa",
+      "fingerprint": "b22ebf255d952d4ec8964cb87335d88f3a8f7cfdeab0bb3b8792deb674b43f65",
       "id": "fingerprint:client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerId": "client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
       "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts",
-      "sourceDigest": "04b7df7bf962f9c070f76d40a6e65bd9a964a69ff45d9e4ebec1c7c66567f742",
+      "sourceDigest": "bca204b493d8f23784732f5b987436fc47f4ac943334f12c7af6a1e61fb3b49e",
       "status": "declared"
     },
     {
@@ -3856,11 +3856,11 @@
   ],
   "generatorDigest": "f3f0107ed0d3e647606fbe39b737ac44ead2fa89bceca8c036dd72bf4d443fd5",
   "generatorVersion": "r0.1",
-  "observationDigest": "115fc58607e0895097e3f7467613f83f6efaa8786b99e7a38cab16b81e2197bd",
+  "observationDigest": "864a1644a4f7d3f38dc9eaea6e7e69ea8818c7559912dee4f92f1c40aa9e596e",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "334d267a60d5e6293708629b00ce2c8ab547f8ce162db76e07b40a9c1e2baf67",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "49c7deca30752ea37e825c3b6ae330af2ed29e45e3d2b6e795dd85064b1a1e65",
+  "registryDigest": "aca182d8bdd3f1af48009e52d99ad828f4855fd259b88fc28f4fcaa2a399aad6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
