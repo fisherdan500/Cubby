@@ -69,6 +69,19 @@ describe("RoutineTab", () => {
     expect(screen.queryByRole("list", { name: "Typical day" })).toBeNull();
   });
 
+  it("suggests a plan from this very routine, starting with each of its steady times", () => {
+    const routine = week();
+    render(createElement(RoutineTab, {
+      babyId: "baby-1", babyName: "Avery", startKey: "2026-09-14", endKey: "2026-09-20", routine,
+      schedule: { babyId: "baby-1", revision: 0, canEdit: true, items: [] }
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
+    const suggested = screen.getAllByRole("group").map((group) => group.getAttribute("aria-label"));
+    expect(suggested).toEqual(["Wake up", "Feed", "Nap 1", "Feed", "Feed", "Nap 2", "Feed", "Feed", "Bedtime"]);
+    expect(screen.getByRole("group", { name: "Wake up" }).textContent).toMatch(/6:30 AM/);
+  });
+
   it("prints with a heading that says this is what happened, not a plan", () => {
     const print = vi.spyOn(window, "print").mockImplementation(() => {});
     renderTab();
