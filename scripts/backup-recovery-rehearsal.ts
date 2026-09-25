@@ -306,6 +306,9 @@ export function runBackupRecoveryRehearsal() {
     symlinkSync(resolve(repositoryRoot, "node_modules"), resolve(migrationCwd, "node_modules"), "junction");
     const isolatedPrismaDir = resolve(migrationCwd, "prisma");
     const handoffFile = resolve(migrationCwd, "app-probe-handoff.json");
+    // A private photo store for the Moments round trip, removed with the rest of this directory.
+    const attachmentDirectory = resolve(migrationCwd, "attachments");
+    mkdirSync(attachmentDirectory, { mode: 0o700 });
 
     console.log(`Starting isolated disposable project ${config.projectName}.`);
     console.log("The rehearsal does not load .env, use the normal Compose file, or attach to the normal database volume.");
@@ -327,6 +330,7 @@ export function runBackupRecoveryRehearsal() {
       AUTOMATED_BACKUPS_ENABLED: "true",
       AUTOMATED_BACKUP_DIRECTORY: config.backupDirectory,
       AUTOMATED_BACKUP_RETENTION_COUNT: "2",
+      ATTACHMENT_DIRECTORY: attachmentDirectory,
       REHEARSAL_HANDOFF_FILE: handoffFile,
       REHEARSAL_APP_PASSWORD: rehearsalAppPassword
     };

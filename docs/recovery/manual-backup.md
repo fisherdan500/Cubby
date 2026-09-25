@@ -63,6 +63,22 @@ oldest-first retention while preserving an unassociated valid file; preservation
 of prior versions after a failed publication; and full disposable teardown of
 both the database project and generated temporary backup directory.
 
+A second case covers Moments and plans through a backup archive. It seeds:
+
+- a baby's planned schedule;
+- captioned, caption-less and whole-family posts;
+- member and named comments (one edited) on a post and on a logged entry;
+- member and named reactions;
+- three stored photos.
+
+It then exports the household's `.zip` and checks that `backup.json` alone is refused. Finally it
+restores into a fresh household and proves that:
+
+- the Moments and plan re-export identically once ids are set aside;
+- each photo is stored afresh under a new name with its exact original bytes;
+- authors and reactors return as names, not accounts;
+- a second restore is refused before any photo is stored.
+
 ## What Version 2 Includes
 
 - Household name and non-security household settings, including appearance and
