@@ -2,34 +2,24 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "client_binding:src/components/feed/feed-post-actions.tsx",
-  ownerModule: "src/components/feed/feed-post-actions.tsx",
-  ownerKind: "client_binding",
+  id: "server_loader:src/app/app/feed/removed/page.tsx",
+  ownerModule: "src/app/app/feed/removed/page.tsx",
+  ownerKind: "server_loader",
   bindings: [
     {
-      kind: "global_fetch",
-      symbol: "fetch[1]",
-      target: "globalThis.fetch"
+      kind: "server_value_import",
+      symbol: "getHeaderBabySelector",
+      target: "src/server/services/baby-selector.ts#getHeaderBabySelector"
     },
     {
-      kind: "global_fetch",
-      symbol: "fetch[2]",
-      target: "globalThis.fetch"
+      kind: "server_value_import",
+      symbol: "listRemovedFeedPosts",
+      target: "src/server/services/feed-posts.ts#listRemovedFeedPosts"
     },
     {
-      kind: "global_fetch",
-      symbol: "fetch[3]",
-      target: "globalThis.fetch"
-    },
-    {
-      kind: "global_fetch",
-      symbol: "fetch[4]",
-      target: "globalThis.fetch"
-    },
-    {
-      kind: "global_fetch",
-      symbol: "fetch[5]",
-      target: "globalThis.fetch"
+      kind: "server_value_import",
+      symbol: "requireUserPage",
+      target: "src/server/auth/session.ts#requireUserPage"
     }
   ],
   disposition: "observed",

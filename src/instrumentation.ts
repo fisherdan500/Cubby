@@ -66,5 +66,8 @@ export async function register() {
       Promise.resolve(startEmailDeliveryScheduler()).then(() => markCompleted(4)),
       Promise.resolve(startEmailChangeLifecycleScheduler()).then(() => markCompleted(5))
     ]);
+    // Started after the fixed acceptance stages, so their sequence is unchanged.
+    const { startAttachmentRetentionScheduler } = await import("@/server/attachment-retention-scheduler");
+    await startAttachmentRetentionScheduler();
   }
 }

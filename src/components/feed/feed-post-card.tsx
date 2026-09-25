@@ -12,7 +12,38 @@ type FeedPost = {
   canRemove: boolean;
   canEdit?: boolean;
   edited?: boolean;
+  photos?: Array<{ id: string; width: number; height: number }>;
 };
+
+/**
+ * A post's photos, served only through Cubby's private photo address. One photo shows at its own
+ * shape; several share a grid of squares. Each opens full size.
+ */
+function FeedPhotoGrid({ photos }: { photos: Array<{ id: string; width: number; height: number }> }) {
+  if (photos.length === 0) return null;
+  const single = photos.length === 1;
+  const columns = single ? "" : photos.length === 2 || photos.length === 4 ? "grid-cols-2" : "grid-cols-3";
+  return (
+    <ul aria-label="Photos" className={single ? "" : `grid gap-1 ${columns}`}>
+      {photos.map((photo, index) => (
+        <li key={photo.id}>
+          <a href={`/api/attachments/${photo.id}`} target="_blank" rel="noopener" className="block overflow-hidden rounded-lg bg-muted">
+            {/* Served by Cubby's own checked endpoint; the image optimizer could not carry the viewer's session. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/attachments/${photo.id}`}
+              width={photo.width}
+              height={photo.height}
+              loading="lazy"
+              alt={`Photo ${index + 1} of ${photos.length}`}
+              className={single ? "h-auto max-h-[32rem] w-full object-contain" : "aspect-square h-full w-full object-cover"}
+            />
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 // The same rule that takes tags from a caption: a tag starts a word.
 const TAG_IN_TEXT = /(^|\s)#([\p{L}\p{N}_]{1,40})/gu;
@@ -53,6 +84,7 @@ export function FeedPostCard({
         </div>
         {post.canRemove ? <FeedPostRemoveButton postId={post.id} /> : null}
       </header>
+      <FeedPhotoGrid photos={post.photos ?? []} />
       <FeedPostBody postId={post.id} body={post.body} edited={post.edited ?? false} canEdit={post.canEdit ?? false}>
         {linkTags(post.body, babyId)}
       </FeedPostBody>

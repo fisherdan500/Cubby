@@ -1499,6 +1499,14 @@ test("declares the attachment upload and delivery route family", () => {
   ]);
 });
 
+test("declares the feed post restore family and the attachment retention worker", () => {
+  assertDeclarationFamily([
+    "src/app/api/feed/posts/[id]/restore/route.operation.ts",
+    "src/app/app/feed/removed/page.operation.ts",
+    "src/server/attachment-retention-scheduler.operation.ts"
+  ]);
+});
+
 test("declares the family feed comment and reaction route family", () => {
   assertDeclarationFamily([
     "src/app/api/feed/comments/[id]/route.operation.ts",

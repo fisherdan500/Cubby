@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 111,
+    "api_route": 112,
     "client_binding": 38,
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
-    "server_loader": 28,
-    "worker": 6
+    "server_loader": 29,
+    "worker": 7
   },
-  "declarationDigest": "aa64425acb4e04cf235c775b32f619fe1942f428dd018ec032e116ea21a46c41",
+  "declarationDigest": "45bcf4ab1d15f73c881ffd2ca7d2d30c0593d612f1da179c9d581b8a127b1f0f",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -2528,6 +2528,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/feed/posts/[id]/restore/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/feed/posts/[id]/restore/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/feed/posts/[id]/restore/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/feed/posts/[id]/restore/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/restore/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "DELETE",
             "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
           },
@@ -4938,6 +4968,46 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getHeaderBabySelector",
+            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listRemovedFeedPosts",
+            "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/app/feed/removed/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/app/feed/removed/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/app/feed/removed/page.tsx",
+      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
             "symbol": "getActivityRowViewer",
             "target": "src/server/services/activities.ts#getActivityRowViewer"
           },
@@ -6180,6 +6250,11 @@
             "kind": "global_fetch",
             "symbol": "fetch[4]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[5]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -7257,6 +7332,11 @@
             "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
           },
           {
+            "kind": "worker_dynamic_import",
+            "symbol": "startAttachmentRetentionScheduler",
+            "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+          },
+          {
             "kind": "worker_start_call",
             "symbol": "startAutomatedBackupScheduler",
             "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -7285,6 +7365,11 @@
             "kind": "worker_start_call",
             "symbol": "startEmailChangeLifecycleScheduler",
             "target": "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startAttachmentRetentionScheduler",
+            "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
           }
         ],
         "deferredGateIds": [
@@ -7307,6 +7392,46 @@
       },
       "id": "instrumentation:src/instrumentation.ts",
       "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "worker_schedule",
+            "symbol": "tick",
+            "target": "src/server/attachment-retention-scheduler.ts#tick"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startAttachmentRetentionScheduler",
+            "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+          },
+          {
+            "kind": "worker_tick",
+            "symbol": "tick",
+            "target": "src/server/services/attachments.ts#purgeDueAttachments"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "worker:src/server/attachment-retention-scheduler.ts",
+        "ownerKind": "worker",
+        "ownerModule": "src/server/attachment-retention-scheduler.ts",
+        "schemaVersion": 1
+      },
+      "id": "worker:src/server/attachment-retention-scheduler.ts",
+      "sidecarPath": "src/server/attachment-retention-scheduler.operation.ts"
     },
     {
       "declaration": {
@@ -7688,7 +7813,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "814618c903a80899ec16f64963f6f447ffc37f6105fea335f0ce109809b6936c",
+  "generatorDigest": "9cfcaabb3df67fc3c92ece352af32140f9b9becb73ca359d71461733d0e1ea0b",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8578,6 +8703,25 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/comments/route.ts",
       "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "1d6f6edd4ac2e01c7a024c07f1fce257a82a5f0fd1e3de965a691ac9c02961a8",
+          "anchorEnd": 1356,
+          "anchorFile": "src/app/api/feed/posts/[id]/restore/route.ts",
+          "anchorStart": 376,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/feed/posts/[id]/restore/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/feed/posts/[id]/restore/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/[id]/restore/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/restore/route.operation.ts"
     },
     {
       "bindings": [
@@ -10233,72 +10377,72 @@
       "bindings": [
         {
           "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-          "anchorEnd": 895,
+          "anchorEnd": 957,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 877,
+          "anchorStart": 939,
           "kind": "server_value_import",
           "symbol": "feedInteractionKey",
           "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
         },
         {
           "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-          "anchorEnd": 739,
+          "anchorEnd": 801,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 719,
+          "anchorStart": 781,
           "kind": "server_value_import",
           "symbol": "getActivityRowViewer",
           "target": "src/server/services/activities.ts#getActivityRowViewer"
         },
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 1080,
+          "anchorEnd": 1142,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 1054,
+          "anchorStart": 1116,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 825,
+          "anchorEnd": 887,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 804,
+          "anchorStart": 866,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 755,
+          "anchorEnd": 817,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 741,
+          "anchorStart": 803,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
           "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-          "anchorEnd": 917,
+          "anchorEnd": 979,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 897,
+          "anchorStart": 959,
           "kind": "server_value_import",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
         },
         {
           "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
-          "anchorEnd": 986,
+          "anchorEnd": 1048,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 973,
+          "anchorStart": 1035,
           "kind": "server_value_import",
           "symbol": "listFeedPosts",
           "target": "src/server/services/feed-posts.ts#listFeedPosts"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 677,
+          "anchorEnd": 739,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 662,
+          "anchorStart": 724,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -10310,6 +10454,43 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/feed/page.tsx",
       "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
+          "anchorEnd": 422,
+          "anchorFile": "src/app/app/feed/removed/page.tsx",
+          "anchorStart": 401,
+          "kind": "server_value_import",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorDigest": "4033c2369f031d9e3c4a655f4ce81e828048c1006917e2d3f9ea3b581175abb1",
+          "anchorEnd": 494,
+          "anchorFile": "src/app/app/feed/removed/page.tsx",
+          "anchorStart": 474,
+          "kind": "server_value_import",
+          "symbol": "listRemovedFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 359,
+          "anchorFile": "src/app/app/feed/removed/page.tsx",
+          "anchorStart": 344,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/app/feed/removed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/feed/removed/page.tsx",
+      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
     },
     {
       "bindings": [
@@ -11400,38 +11581,47 @@
       "bindings": [
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 878,
+          "anchorEnd": 914,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 813,
+          "anchorStart": 849,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
-          "anchorEnd": 2462,
+          "anchorEnd": 2498,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 2311,
+          "anchorStart": 2347,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-          "anchorEnd": 3439,
+          "anchorEnd": 3475,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3372,
+          "anchorStart": 3408,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "edc76dd7036d85384f82f92c0e7f791657304dbaab834082a04c6c4aa34cd56d",
-          "anchorEnd": 4068,
+          "anchorEnd": 4104,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3927,
+          "anchorStart": 3963,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "f61364fa4b4b384c209c3aa010a47f600162d032721875b65ccc59496d7cbea3",
+          "anchorEnd": 5020,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 4859,
+          "kind": "global_fetch",
+          "symbol": "fetch[5]",
           "target": "globalThis.fetch"
         }
       ],
@@ -12399,6 +12589,15 @@
     {
       "bindings": [
         {
+          "anchorDigest": "66429dc406c9f891aaef5e8f58272582bd30cc61e67479c2afb654d20e52eba5",
+          "anchorEnd": 3309,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3276,
+          "kind": "worker_dynamic_import",
+          "symbol": "startAttachmentRetentionScheduler",
+          "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+        },
+        {
           "anchorDigest": "f1c4d682bbc4d40fcbdeda2e11b76dc78b52ef556523385fc564eadc56fecf7e",
           "anchorEnd": 1559,
           "anchorFile": "src/instrumentation.ts",
@@ -12451,6 +12650,15 @@
           "kind": "worker_dynamic_import",
           "symbol": "startSproutSourceRetentionScheduler",
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
+        },
+        {
+          "anchorDigest": "10db3a2d33874cd156a939e4833b8cb98a6bd3dabc0ab2edf11ecf64f5b27e8d",
+          "anchorEnd": 3416,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3381,
+          "kind": "worker_start_call",
+          "symbol": "startAttachmentRetentionScheduler",
+          "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
         },
         {
           "anchorDigest": "dc8311cdf780c235c7d03ba930086b7f7608a07f36a4d426cf85fc0da8a74ca8",
@@ -12513,6 +12721,43 @@
       "ownerKind": "instrumentation",
       "ownerModule": "src/instrumentation.ts",
       "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "0f7acc38d03d54b47d71e38cf34eb42bd65f583ad464f5b3af709dee4cc49258",
+          "anchorEnd": 1283,
+          "anchorFile": "src/server/attachment-retention-scheduler.ts",
+          "anchorStart": 1233,
+          "kind": "worker_schedule",
+          "symbol": "tick",
+          "target": "src/server/attachment-retention-scheduler.ts#tick"
+        },
+        {
+          "anchorDigest": "a88fb93aff95ffe7e4be542d310e2e47f04dd0af3081551d9bad9f2ff9608960",
+          "anchorEnd": 1327,
+          "anchorFile": "src/server/attachment-retention-scheduler.ts",
+          "anchorStart": 763,
+          "kind": "worker_start_call",
+          "symbol": "startAttachmentRetentionScheduler",
+          "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+        },
+        {
+          "anchorDigest": "bdcae8c7ba694c4c1026562a2d7dfaef7d8a94e3665a727f1e33d394566e6f3c",
+          "anchorEnd": 1040,
+          "anchorFile": "src/server/attachment-retention-scheduler.ts",
+          "anchorStart": 1019,
+          "kind": "worker_tick",
+          "symbol": "tick",
+          "target": "src/server/services/attachments.ts#purgeDueAttachments"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "worker:src/server/attachment-retention-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/attachment-retention-scheduler.ts",
+      "sidecarPath": "src/server/attachment-retention-scheduler.operation.ts"
     },
     {
       "bindings": [
@@ -13840,8 +14085,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 212,
-  "observationDigest": "c77cf52e63456e30528a7d4d2904c3637cac717a90dc6266d8bdb9ed339441df",
+  "observationCount": 215,
+  "observationDigest": "a31cbf44d6e617086d9f5f5d4dc28fed39f85fdce87f626f98eb0383c7e41afe",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14690,6 +14935,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/comments/route.ts",
       "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1356,
+          "anchorFile": "src/app/api/feed/posts/[id]/restore/route.ts",
+          "anchorStart": 376,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/posts/[id]/restore/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/feed/posts/[id]/restore/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/feed/posts/[id]/restore/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/[id]/restore/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/restore/route.operation.ts"
     },
     {
       "bindings": [
@@ -16269,72 +16532,72 @@
     {
       "bindings": [
         {
-          "anchorEnd": 895,
+          "anchorEnd": 957,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 877,
+          "anchorStart": 939,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "feedInteractionKey",
           "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
         },
         {
-          "anchorEnd": 739,
+          "anchorEnd": 801,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 719,
+          "anchorStart": 781,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getActivityRowViewer",
           "target": "src/server/services/activities.ts#getActivityRowViewer"
         },
         {
-          "anchorEnd": 1080,
+          "anchorEnd": 1142,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 1054,
+          "anchorStart": 1116,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 825,
+          "anchorEnd": 887,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 804,
+          "anchorStart": 866,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 755,
+          "anchorEnd": 817,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 741,
+          "anchorStart": 803,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 917,
+          "anchorEnd": 979,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 897,
+          "anchorStart": 959,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
         },
         {
-          "anchorEnd": 986,
+          "anchorEnd": 1048,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 973,
+          "anchorStart": 1035,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "listFeedPosts",
           "target": "src/server/services/feed-posts.ts#listFeedPosts"
         },
         {
-          "anchorEnd": 677,
+          "anchorEnd": 739,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 662,
+          "anchorStart": 724,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "requireUserPage",
@@ -16346,6 +16609,42 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/feed/page.tsx",
       "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 422,
+          "anchorFile": "src/app/app/feed/removed/page.tsx",
+          "anchorStart": 401,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/removed/page.tsx",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorEnd": 494,
+          "anchorFile": "src/app/app/feed/removed/page.tsx",
+          "anchorStart": 474,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/removed/page.tsx",
+          "symbol": "listRemovedFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
+        },
+        {
+          "anchorEnd": 359,
+          "anchorFile": "src/app/app/feed/removed/page.tsx",
+          "anchorStart": 344,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/removed/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/app/feed/removed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/feed/removed/page.tsx",
+      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
     },
     {
       "bindings": [
@@ -17403,39 +17702,48 @@
     {
       "bindings": [
         {
-          "anchorEnd": 878,
+          "anchorEnd": 914,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 813,
+          "anchorStart": 849,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2462,
+          "anchorEnd": 2498,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 2311,
+          "anchorStart": 2347,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3439,
+          "anchorEnd": 3475,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3372,
+          "anchorStart": 3408,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4068,
+          "anchorEnd": 4104,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3927,
+          "anchorStart": 3963,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[4]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 5020,
+          "anchorFile": "src/components/feed/feed-post-actions.tsx",
+          "anchorStart": 4859,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/feed/feed-post-actions.tsx",
+          "symbol": "fetch[5]",
           "target": "globalThis.fetch"
         }
       ],
@@ -18375,6 +18683,15 @@
     {
       "bindings": [
         {
+          "anchorEnd": 3309,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3276,
+          "kind": "worker_dynamic_import",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startAttachmentRetentionScheduler",
+          "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+        },
+        {
           "anchorEnd": 1559,
           "anchorFile": "src/instrumentation.ts",
           "anchorStart": 1530,
@@ -18427,6 +18744,15 @@
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startSproutSourceRetentionScheduler",
           "target": "src/server/sprout-source-retention-scheduler.ts#startSproutSourceRetentionScheduler"
+        },
+        {
+          "anchorEnd": 3416,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3381,
+          "kind": "worker_start_call",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startAttachmentRetentionScheduler",
+          "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
         },
         {
           "anchorEnd": 2705,
@@ -18488,6 +18814,42 @@
       "ownerKind": "instrumentation",
       "ownerModule": "src/instrumentation.ts",
       "sidecarPath": "src/instrumentation.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1283,
+          "anchorFile": "src/server/attachment-retention-scheduler.ts",
+          "anchorStart": 1233,
+          "kind": "worker_schedule",
+          "ownerModule": "src/server/attachment-retention-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/attachment-retention-scheduler.ts#tick"
+        },
+        {
+          "anchorEnd": 1327,
+          "anchorFile": "src/server/attachment-retention-scheduler.ts",
+          "anchorStart": 763,
+          "kind": "worker_start_call",
+          "ownerModule": "src/server/attachment-retention-scheduler.ts",
+          "symbol": "startAttachmentRetentionScheduler",
+          "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+        },
+        {
+          "anchorEnd": 1040,
+          "anchorFile": "src/server/attachment-retention-scheduler.ts",
+          "anchorStart": 1019,
+          "kind": "worker_tick",
+          "ownerModule": "src/server/attachment-retention-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/services/attachments.ts#purgeDueAttachments"
+        }
+      ],
+      "disposition": "observed",
+      "id": "worker:src/server/attachment-retention-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/attachment-retention-scheduler.ts",
+      "sidecarPath": "src/server/attachment-retention-scheduler.operation.ts"
     },
     {
       "bindings": [
@@ -19932,6 +20294,12 @@
       "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/feed/posts/[id]/restore/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/posts/[id]/restore/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/restore/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
@@ -20388,6 +20756,12 @@
       "sidecarPath": "src/app/app/feed/page.operation.ts"
     },
     {
+      "id": "server_loader:src/app/app/feed/removed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/feed/removed/page.tsx",
+      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
+    },
+    {
       "id": "server_loader:src/app/app/history/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/history/page.tsx",
@@ -20754,6 +21128,12 @@
       "sidecarPath": "src/instrumentation.operation.ts"
     },
     {
+      "id": "worker:src/server/attachment-retention-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/attachment-retention-scheduler.ts",
+      "sidecarPath": "src/server/attachment-retention-scheduler.operation.ts"
+    },
+    {
       "id": "worker:src/server/automated-backup-scheduler.ts",
       "ownerKind": "worker",
       "ownerModule": "src/server/automated-backup-scheduler.ts",
@@ -20952,9 +21332,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "99e4b11e9502571db3d25d05ae8a77ca12e9172b4ba192f5a8aaf93226573cb1",
+  "ownerSetDigest": "510e8d788264e19c2a7ae961dfa3dbc1f94b7b2dcff9b93318b313909e0a131b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "dec13e1f5d98ccd89fd3ddc447f1595bc67d67083a9061ee3a817132ec88ea02",
+  "registryDigest": "5a05fe06a4c03226caa08e8a652b1c9d4f2d136ee9b0c227c1caced7c87e49a4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

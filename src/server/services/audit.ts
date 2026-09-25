@@ -40,6 +40,7 @@ const auditActionSchema = z.enum([
   "feed_comment.update",
   "feed_post.create",
   "feed_post.delete",
+  "feed_post.restore",
   "feed_post.update",
   "feed_reaction.set",
   "invite.accept",
@@ -142,7 +143,10 @@ const notificationPreferenceSchema = z.object({
 }).strict();
 // A plan's labels, times and notes are private caregiver text; the audit keeps only that it changed.
 // A post's caption and tags are private family text; the audit keeps only how many tags it had.
-const feedPostCreateSchema = z.object({ tagCount: z.number().int().nonnegative() }).strict();
+const feedPostCreateSchema = z.object({
+  tagCount: z.number().int().nonnegative(),
+  photoCount: z.number().int().positive().max(10).optional()
+}).strict();
 // Attachment events (DEC-PROD-147) carry the type, safe counts and a fixed reason - never a filename,
 // path, checksum, size, bytes or anything the uploader supplied.
 const attachmentAuditSchema = z.object({
@@ -233,7 +237,7 @@ function minimizeAuditPayload(
   if (action === "feed_reaction.set") {
     return feedReactionSetSchema.parse(payload) as Prisma.InputJsonValue;
   }
-  if (action === "feed_post.delete" || action === "feed_comment.update" || action === "feed_comment.delete") {
+  if (action === "feed_post.delete" || action === "feed_post.restore" || action === "feed_comment.update" || action === "feed_comment.delete") {
     return emptyAuditPayloadSchema.parse(payload) as Prisma.InputJsonValue;
   }
   return payload;

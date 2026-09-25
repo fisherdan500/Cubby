@@ -37,6 +37,11 @@ export const operation = {
       target: "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
     },
     {
+      kind: "worker_dynamic_import",
+      symbol: "startAttachmentRetentionScheduler",
+      target: "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+    },
+    {
       kind: "worker_start_call",
       symbol: "startAutomatedBackupScheduler",
       target: "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -65,6 +70,11 @@ export const operation = {
       kind: "worker_start_call",
       symbol: "startEmailChangeLifecycleScheduler",
       target: "src/server/email-change-lifecycle-scheduler.ts#startEmailChangeLifecycleScheduler"
+    },
+    {
+      kind: "worker_start_call",
+      symbol: "startAttachmentRetentionScheduler",
+      target: "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
     }
   ],
   disposition: "observed",

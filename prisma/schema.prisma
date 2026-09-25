@@ -202,6 +202,7 @@ enum BrowserOperationKey {
   feedCommentUpdate          @map("feed_comment.update")
   feedCommentDelete          @map("feed_comment.delete")
   feedReactionSet            @map("feed_reaction.set")
+  feedPostRestore            @map("feed_post.restore")
 }
 
 enum BrowserOperationTargetKind {

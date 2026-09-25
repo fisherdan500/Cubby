@@ -45,17 +45,18 @@ const householdOperationKeys = [
   "feed_comment.create",
   "feed_comment.update",
   "feed_comment.delete",
-  "feed_reaction.set"
+  "feed_reaction.set",
+  "feed_post.restore"
 ] as const;
 
 describe("generalized household browser-operation foundation migration", () => {
-  it("declares exactly the 31 household keys and a closed target discriminator without account scope", () => {
+  it("declares exactly the 32 household keys and a closed target discriminator without account scope", () => {
     const schema = readFileSync(schemaUrl, "utf8");
     const operationKeys = block(schema, "enum", "BrowserOperationKey");
     const targetKinds = block(schema, "enum", "BrowserOperationTargetKind");
 
     for (const key of householdOperationKeys) expect(operationKeys).toContain(`@map("${key}")`);
-    expect(operationKeys.match(/@map\("[^"]+"\)/g)).toHaveLength(31);
+    expect(operationKeys.match(/@map\("[^"]+"\)/g)).toHaveLength(32);
     expect(operationKeys).not.toContain("account.appearance.update");
     for (const kind of ["household", "activity", "baby", "warning", "invite", "member", "preference", "settings", "calendar", "apiKey", "post", "comment"]) {
       expect(targetKinds).toMatch(new RegExp(`\\b${kind}\\b`));

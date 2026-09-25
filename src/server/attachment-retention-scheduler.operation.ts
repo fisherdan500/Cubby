@@ -2,34 +2,24 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "client_binding:src/components/feed/feed-post-actions.tsx",
-  ownerModule: "src/components/feed/feed-post-actions.tsx",
-  ownerKind: "client_binding",
+  id: "worker:src/server/attachment-retention-scheduler.ts",
+  ownerModule: "src/server/attachment-retention-scheduler.ts",
+  ownerKind: "worker",
   bindings: [
     {
-      kind: "global_fetch",
-      symbol: "fetch[1]",
-      target: "globalThis.fetch"
+      kind: "worker_schedule",
+      symbol: "tick",
+      target: "src/server/attachment-retention-scheduler.ts#tick"
     },
     {
-      kind: "global_fetch",
-      symbol: "fetch[2]",
-      target: "globalThis.fetch"
+      kind: "worker_start_call",
+      symbol: "startAttachmentRetentionScheduler",
+      target: "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
     },
     {
-      kind: "global_fetch",
-      symbol: "fetch[3]",
-      target: "globalThis.fetch"
-    },
-    {
-      kind: "global_fetch",
-      symbol: "fetch[4]",
-      target: "globalThis.fetch"
-    },
-    {
-      kind: "global_fetch",
-      symbol: "fetch[5]",
-      target: "globalThis.fetch"
+      kind: "worker_tick",
+      symbol: "tick",
+      target: "src/server/services/attachments.ts#purgeDueAttachments"
     }
   ],
   disposition: "observed",

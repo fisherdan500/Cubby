@@ -50,7 +50,8 @@ const householdScopedKeys = [
   "feed_comment.create",
   "feed_comment.update",
   "feed_comment.delete",
-  "feed_reaction.set"
+  "feed_reaction.set",
+  "feed_post.restore"
 ];
 
 // Issued by issueBrowserOperation, which writes the baby it locked.
@@ -74,7 +75,8 @@ const targetedKeys = [
   "feed_comment.create",
   "feed_comment.update",
   "feed_comment.delete",
-  "feed_reaction.set"
+  "feed_reaction.set",
+  "feed_post.restore"
 ];
 
 describe("browser operation binding target shape", () => {
