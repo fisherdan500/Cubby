@@ -215,7 +215,9 @@ describe("Feed page", () => {
       ["/api/attachments/photo-b", "1440", "2560", "Photo 2 of 2"]
     ]);
     expect(images.every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
-    expect(images[0].closest("a")?.getAttribute("href")).toBe("/api/attachments/photo-a");
+    // A photo opens in a viewer inside the feed; a link away stranded the installed app on the raw image.
+    expect(images[0].closest("a")).toBeNull();
+    expect(images[0].closest("button")?.getAttribute("aria-label")).toBe("Open photo 1 of 2");
   });
 
   it("offers photos in the composer now they are switched on, and links to recently removed posts", async () => {
