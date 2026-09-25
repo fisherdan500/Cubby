@@ -59,7 +59,8 @@ const viewerButton =
  * close, well clear of the bottom edge a phone keeps for switching apps; tap the middle to show or
  * hide the buttons, which fade on their own. Close, Escape and the back gesture close it too.
  */
-export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
+// "post" fits a post's own few photos to their number; "grid" is the Photos gallery's even squares.
+export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[]; layout?: "post" | "grid" }) {
   const [open, setOpen] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -199,8 +200,10 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
   }
 
   if (photos.length === 0) return null;
-  const single = photos.length === 1;
-  const columns = single ? "" : photos.length === 2 || photos.length === 4 ? "grid-cols-2" : "grid-cols-3";
+  const single = layout === "post" && photos.length === 1;
+  const columns = layout === "grid"
+    ? "grid-cols-3 sm:grid-cols-4"
+    : single ? "" : photos.length === 2 || photos.length === 4 ? "grid-cols-2" : "grid-cols-3";
 
   function openAt(index: number) {
     if (!pushedHistory.current) {

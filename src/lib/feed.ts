@@ -10,16 +10,18 @@ import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
  * Cubby. The code keeps the feed name; only what people read changed. /app/feed forwards here.
  */
 
-// `posts` says whether a filter shows posts mixed with entries, posts alone, or entries alone.
+// `posts` says whether a filter shows posts mixed with entries, posts alone, entries alone, or just the
+// photos from every post, gathered into one gallery.
 export const feedFilters = [
   { key: "all", label: "Everything", type: undefined, posts: "mixed" },
   { key: "posts", label: "Posts", type: undefined, posts: "only" },
+  { key: "photos", label: "Photos", type: undefined, posts: "photos" },
   { key: "feeding", label: "Feeds", type: "feeding", posts: "none" },
   { key: "sleep", label: "Sleep", type: "sleep", posts: "none" },
   { key: "diaper", label: "Diapers", type: "diaper", posts: "none" },
   { key: "milestone", label: "Milestones", type: "milestone", posts: "none" },
   { key: "note", label: "Notes", type: "note", posts: "none" }
-] as const satisfies ReadonlyArray<{ key: string; label: string; type: ActivityTypeName | undefined; posts: "mixed" | "only" | "none" }>;
+] as const satisfies ReadonlyArray<{ key: string; label: string; type: ActivityTypeName | undefined; posts: "mixed" | "only" | "photos" | "none" }>;
 
 export type FeedFilter = (typeof feedFilters)[number];
 
