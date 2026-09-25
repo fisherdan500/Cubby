@@ -251,6 +251,17 @@ describe("report range", () => {
     vi.useRealTimers();
   });
 
+  it("works the routine out from the last 30 days unless another period is chosen", async () => {
+    vi.setSystemTime(new Date("2026-09-19T15:00:00.000Z"));
+    for (const routineWindow of [undefined, "not-a-window"]) {
+      const report = await getReports("user-1", { babyId: "baby-1", routineWindow });
+      expect(report?.routine).toMatchObject({ window: "1m", startKey: "2026-08-21", endKey: "2026-09-19" });
+    }
+    const week = await getReports("user-1", { babyId: "baby-1", routineWindow: "1w" });
+    expect(week?.routine).toMatchObject({ window: "1w", startKey: "2026-09-13" });
+    vi.useRealTimers();
+  });
+
   it("falls back to the last seven days when the range is missing or malformed", async () => {
     vi.setSystemTime(new Date("2026-09-19T15:00:00.000Z"));
     const report = await getReports("user-1", { babyId: "baby-1", start: "not-a-date", end: "2026-13-45" });

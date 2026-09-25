@@ -157,8 +157,9 @@ function dateKeySpan(startKey: string, endKey: string) {
   return Math.max(1, Math.round((end - start) / 86_400_000) + 1);
 }
 
+// 30 days unless a shorter period is chosen: a month shows the steady pattern, and one off day barely moves it.
 export function resolveRoutineWindow(value: string | undefined): RoutineWindow {
-  return value === "2w" || value === "1m" ? value : "1w";
+  return value === "1w" || value === "2w" ? value : "1m";
 }
 
 export function routineWindowRange(endKey: string, window: RoutineWindow, timeZone = env.APP_TIMEZONE) {
