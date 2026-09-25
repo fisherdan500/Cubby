@@ -42,6 +42,10 @@ also deferred until a concrete household use case exists.
 
 ## Docker Quick Start
 
+**Setting Cubby up for real use? Follow [Installing And Running Cubby](docs/INSTALL.md)**: install,
+first setup, backups, a practice restore and updates, in order, with a checklist. This section is
+the reference for the quick start itself.
+
 The supported server is current Ubuntu or Debian on x86_64 with Docker Engine and the
 Compose plugin installed. TLS and any reverse proxy are yours to run in front of Cubby.
 
