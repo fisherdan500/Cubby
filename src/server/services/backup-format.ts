@@ -182,6 +182,7 @@ const feedReactionSchema = z
   .object({
     postId: id.nullable(),
     activityId: id.nullable(),
+    // Every reaction ever stored, retired "well_done" included, so an older backup still restores.
     reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
     name: shortString
   })

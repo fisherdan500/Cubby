@@ -109,7 +109,7 @@ export function FeedResponses({
             <button
               type="button"
               onClick={() => setComposing(true)}
-              className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
               Comment

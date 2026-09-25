@@ -134,6 +134,7 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
   [BrowserOperationKey.feedReactionSet]: z.object({
     kind: z.literal("feed_reaction"),
     code: z.literal("set"),
+    // Retired "well_done" stays, so an operation finished while it was offered still replays.
     reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
     on: z.boolean()
   }).strict(),

@@ -16,8 +16,10 @@ export const feedReactions = [
   // Smiling face with hearts (Emoji 11, 2018): the first choice, face holding back tears (Emoji 14,
   // 2021), showed as an empty box on phones without it. Stored reactions keep the key, not the face.
   { key: "aww", emoji: "🥰", label: "aww" },
-  { key: "celebrate", emoji: "🎉", label: "celebrate" },
-  { key: "well_done", emoji: "👏", label: "well done" }
+  { key: "celebrate", emoji: "🎉", label: "celebrate" }
+  // "well_done" (👏) is retired: four fit beside the Comment button on a phone, and 🎉 covers the same
+  // moments. Stored ones are kept but no longer shown; backups, audit history and finished browser
+  // operations still accept the key, so older records read as before.
 ] as const;
 
 export type FeedReactionKey = (typeof feedReactions)[number]["key"];

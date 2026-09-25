@@ -47,15 +47,16 @@ beforeEach(() => { sessionStorage.clear(); mocks.refresh.mockReset(); });
 afterEach(cleanup);
 
 describe("FeedResponses reactions", () => {
-  it("shows who reacted by name, never a number, and offers all five reactions", () => {
+  it("shows who reacted by name, never a number, and offers all four reactions", () => {
     renderResponses();
     const chosen = screen.getByRole("list", { name: "Reactions" });
     expect(chosen.textContent).toContain("You and Alex");
     expect(chosen.textContent).not.toMatch(/\d/);
 
     const buttons = within(screen.getByRole("group", { name: "React" })).getAllByRole("button");
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["love", "funny", "aww", "celebrate", "well done"]);
-    expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["true", "false", "false", "false", "false"]);
+    // Four, so the Comment button fits on the same row on a phone.
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["love", "funny", "aww", "celebrate"]);
+    expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["true", "false", "false", "false"]);
   });
 
   it("turns a reaction on through an operation bound to the post", async () => {

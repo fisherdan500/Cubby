@@ -14,15 +14,24 @@ import { canEditFeedPost } from "@/domain/feed-post";
 import { hasPermission } from "@/domain/roles";
 
 describe("feed reactions", () => {
-  it("offers five reactions, in a fixed order, each with a name to read aloud", () => {
+  it("offers four reactions, in a fixed order, each with a name to read aloud", () => {
     expect(feedReactions.map((reaction) => [reaction.key, reaction.emoji, reaction.label])).toEqual([
       ["love", "❤️", "love"],
       ["funny", "😂", "funny"],
       // 🥰 rather than 🥹: the newer face showed as an empty box on some phones.
       ["aww", "🥰", "aww"],
-      ["celebrate", "🎉", "celebrate"],
-      ["well_done", "👏", "well done"]
+      ["celebrate", "🎉", "celebrate"]
     ]);
+  });
+
+  it("no longer shows or accepts the retired well done reaction, though stored ones are kept", () => {
+    const summary = summarizeFeedReactions([
+      { reaction: "well_done", memberId: "member-2", name: "Alex" },
+      { reaction: "celebrate", memberId: "member-2", name: "Alex" }
+    ], "member-1");
+
+    expect(summary.map((reaction) => reaction.key)).toEqual(["celebrate"]);
+    expect(() => parseFeedReactionInput({ parentKind: "post", parentId: "post-1", reaction: "well_done", on: true })).toThrow();
   });
 
   it("shows who reacted by name - the viewer as You, first - and never a count", () => {
@@ -49,7 +58,7 @@ describe("feed reactions", () => {
   it("accepts only the offered reactions, turned on or off, on a post or a logged entry", () => {
     expect(parseFeedReactionInput({ parentKind: "post", parentId: "post-1", reaction: "aww", on: true }))
       .toEqual({ parentKind: "post", parentId: "post-1", reaction: "aww", on: true });
-    expect(parseFeedReactionInput({ parentKind: "activity", parentId: "activity-1", reaction: "well_done", on: false }).on).toBe(false);
+    expect(parseFeedReactionInput({ parentKind: "activity", parentId: "activity-1", reaction: "celebrate", on: false }).on).toBe(false);
     expect(() => parseFeedReactionInput({ parentKind: "post", parentId: "post-1", reaction: "thumbs_down", on: true })).toThrow();
     expect(() => parseFeedReactionInput({ parentKind: "post", parentId: "post-1", reaction: "love" })).toThrow();
     expect(() => parseFeedParent({ parentKind: "baby", parentId: "baby-1" })).toThrow();
