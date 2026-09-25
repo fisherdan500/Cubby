@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { access, mkdir, mkdtemp, readdir, rename, symlink, utimes, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, mkdir, mkdtemp, readdir, readFile, rename, symlink, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createV2Backup, MAX_BACKUP_BYTES } from "@/server/services/backup-format";
 import {
   formatBackupFilename,
+  isLocalBackupFilename,
   publishLocalBackup,
+  publishLocalBackupArchive,
   readLocalBackup,
   reconcileLocalBackupTemps,
   removeLocalBackup,
@@ -325,5 +328,81 @@ describe("local backup storage", () => {
     })).rejects.toThrow("backup_directory_unavailable");
     await expect(access(path.join(backupRoot, tempName))).resolves.toBeUndefined();
     await expect(access(path.join(movedRoot, tempName))).resolves.toBeUndefined();
+  });
+});
+
+describe("local backup archives with photos", () => {
+  const bytesA = Buffer.from("first photo");
+  const bytesB = Buffer.from("second photo!");
+  const digest = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
+  const photoBytes: Record<string, Buffer> = { "ph-a": bytesA, "ph-b": bytesB };
+
+  function photoBackup() {
+    return createV2Backup({
+      household: { name: "Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+      feedPosts: [{ id: "post-1", babyId: null, body: "", tags: [], occurredAt: "2026-09-29T10:00:00.000Z", authorName: "Sam" }],
+      feedPhotos: [
+        { id: "ph-a", postId: "post-1", position: 0, width: 800, height: 600, byteSize: bytesA.length, sha256: digest(bytesA) },
+        { id: "ph-b", postId: "post-1", position: 1, width: 800, height: 600, byteSize: bytesB.length, sha256: digest(bytesB) }
+      ]
+    }, "2026-09-30T10:00:00.000Z");
+  }
+
+  async function root() {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "cubby-backup-archive-storage-"));
+    tempRoots.push(dir);
+    return dir;
+  }
+
+  it("publishes an archive under the same naming as JSON versions, and reads and scans it like them", async () => {
+    const dir = await root();
+    const snapshot = photoBackup();
+    const stored = await publishLocalBackupArchive(dir, snapshot, async (photoId) => photoBytes[photoId]!, { filenameDiscriminator: "c".repeat(32) });
+
+    expect(stored.filename).toBe(`cubby-backup-v2-20260930T100000Z-${snapshot.checksum.slice(0, 12)}-${"c".repeat(32)}.zip`);
+    expect(isLocalBackupFilename(stored.filename)).toBe(true);
+    expect(stored).toMatchObject({ checksum: snapshot.checksum, householdName: "Home" });
+    expect(stored.itemCount).toBeGreaterThanOrEqual(3);
+    expect(await scanLocalBackups(dir)).toEqual([expect.objectContaining({ healthy: true, filename: stored.filename })]);
+    // No temporary file is left beside it.
+    expect(await readdir(dir)).toEqual([stored.filename]);
+  });
+
+  it("checks every photo when asked, and notices one that changed", async () => {
+    const dir = await root();
+    const stored = await publishLocalBackupArchive(dir, photoBackup(), async (photoId) => photoBytes[photoId]!);
+    await expect(readLocalBackup(dir, stored.filename, { verifyPhotos: true })).resolves.toMatchObject({ checksum: stored.checksum });
+
+    const filePath = path.join(dir, stored.filename);
+    const bytes = await readFile(filePath);
+    const at = bytes.indexOf(bytesB);
+    bytes[at] ^= 0xff;
+    await writeFile(filePath, bytes);
+    // A quick read still sees an intact backup.json; a full read finds the damaged photo.
+    await expect(readLocalBackup(dir, stored.filename)).resolves.toMatchObject({ checksum: stored.checksum });
+    await expect(readLocalBackup(dir, stored.filename, { verifyPhotos: true })).rejects.toThrow("backup_photo_mismatch");
+  });
+
+  it("publishes nothing when a photo cannot be read", async () => {
+    const dir = await root();
+    await expect(publishLocalBackupArchive(dir, photoBackup(), async (photoId) => {
+      if (photoId === "ph-b") throw new Error("attachment_bytes_missing");
+      return photoBytes[photoId]!;
+    })).rejects.toThrow();
+    expect(await readdir(dir)).toEqual([]);
+  });
+
+  it("removes an archive version, and clears a stale temporary one", async () => {
+    const dir = await root();
+    const stored = await publishLocalBackupArchive(dir, photoBackup(), async (photoId) => photoBytes[photoId]!);
+    await removeLocalBackup(dir, stored.filename);
+    expect(await readdir(dir)).toEqual([]);
+
+    const temp = `.${stored.filename}.abcdef.tmp`;
+    await writeFile(path.join(dir, temp), "partial");
+    const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await utimes(path.join(dir, temp), old, old);
+    await reconcileLocalBackupTemps(dir);
+    expect(await readdir(dir)).toEqual([]);
   });
 });

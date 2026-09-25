@@ -140,9 +140,10 @@ describe("scripts/quick-start.sh", () => {
     const result = runQuickStart(directory, ["--data-owner", currentOwner()]);
 
     expect(result.status, result.stderr).toBe(0);
-    for (const name of ["backups", "sprout-staging", "secrets"]) {
+    for (const name of ["backups", "sprout-staging", "attachments", "secrets"]) {
       expect(statSync(path.join(directory, "docker-data", name)).isDirectory()).toBe(true);
     }
+    expect(parseEnv(readFileSync(path.join(directory, ".env"), "utf8")).CUBBY_ATTACHMENT_HOST_DIR).toBe("./docker-data/attachments");
   });
 
   it("uses the URL's own port for a direct address and keeps 3000 behind a proxy", () => {

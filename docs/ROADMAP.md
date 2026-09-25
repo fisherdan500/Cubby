@@ -103,7 +103,7 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
    - a scheduled job purges expired removals and unclaimed uploads.
 3. Backup and restore carry the photos, in three parts:
    - 3a: a household with photos downloads one uncompressed `.zip` (`backup.json` with a checksummed photo list, plus `photos/<id>.jpg`), and restore accepts it with every photo verified. Households without photos keep the same `.json`.
-   - 3b: automated backups written as archives, and the storage volume and install steps.
+   - 3b: automated backups written as `.zip` versions (written, synced and fully read back before they count), verified photo by photo by the integrity check, streamed on download, and accepted by the update preflight; plus the `docker-data/attachments` volume, `quick-start.sh` and install notes.
    - 3c: photos switched on.
 
 ### Routine And Planned Schedule

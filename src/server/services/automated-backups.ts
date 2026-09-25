@@ -2,10 +2,12 @@ import type { Prisma } from "@prisma/client";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/db/prisma";
 import type { AutomatedBackupConfig } from "@/lib/automated-backup-config";
-import { automatedBackupConfig } from "@/lib/env";
+import { attachmentConfig, automatedBackupConfig } from "@/lib/env";
+import { readAttachmentObject } from "@/server/services/attachment-store";
 import { buildHouseholdV2Snapshot, summarizeBackupItemCount } from "@/server/services/backups";
 import {
   publishLocalBackup,
+  publishLocalBackupArchive,
   readLocalBackup,
   reconcileLocalBackupTemps,
   removeLocalBackup,
@@ -35,7 +37,7 @@ export function sanitizeAutomatedBackupError(error: unknown) {
     "backup_already_exists",
     "backup_directory_unavailable",
     "backup_invalid",
-    "backup_photos_require_archive",
+    "backup_photo_unavailable",
     "backup_retention_failed",
     "backup_too_large",
     "backup_write_failed"
@@ -167,6 +169,30 @@ export async function reconcileAutomatedBackupStorage(config: AutomatedBackupCon
   }
 }
 
+/** Reads each listed photo's verified bytes from the private store, by the storage name it has now. */
+async function photoReader(
+  tx: Prisma.TransactionClient,
+  householdId: string,
+  photos: Array<{ id: string; byteSize: number; sha256: string }>
+) {
+  const stored = await tx.attachment.findMany({
+    where: { householdId, id: { in: photos.map((photo) => photo.id) } },
+    select: { id: true, storageKey: true }
+  });
+  const keys = new Map(stored.map((row) => [row.id, row.storageKey]));
+  const listed = new Map(photos.map((photo) => [photo.id, photo]));
+  return async (photoId: string) => {
+    const key = keys.get(photoId);
+    const photo = listed.get(photoId);
+    if (!key || !photo) throw new Error("backup_photo_unavailable");
+    try {
+      return await readAttachmentObject(attachmentConfig.directory, key, { byteSize: photo.byteSize, sha256: photo.sha256 });
+    } catch {
+      throw new Error("backup_photo_unavailable");
+    }
+  };
+}
+
 export async function runAutomatedBackupIfDue(
   householdId: string,
   now = new Date(),
@@ -202,15 +228,16 @@ export async function runAutomatedBackupIfDue(
       if (!(await householdHasRecoverableData(tx, householdId))) return { skipped: "empty" as const };
 
       const snapshot = await buildHouseholdV2Snapshot(tx, householdId, now.toISOString());
-      // A JSON file cannot carry photos; until automated backups are written as archives, a household
-      // with photos records a failure rather than a backup that would look complete and is not.
-      if ((snapshot.payload.feedPhotos?.length ?? 0) > 0) throw new Error("backup_photos_require_archive");
       const filenameDiscriminator = createHash("sha256").update(householdId).digest("hex").slice(0, 32);
-      const file = await (dependencies.publish ?? publishLocalBackup)(
-        config.directory,
-        JSON.stringify(snapshot, null, 2),
-        { filenameDiscriminator }
-      );
+      const photos = snapshot.payload.feedPhotos ?? [];
+      // A household with photos is kept as one archive of its backup and every photo (DEC-PROD-422).
+      const file = photos.length > 0
+        ? await publishLocalBackupArchive(config.directory, snapshot, await photoReader(tx, householdId, photos), { filenameDiscriminator })
+        : await (dependencies.publish ?? publishLocalBackup)(
+          config.directory,
+          JSON.stringify(snapshot, null, 2),
+          { filenameDiscriminator }
+        );
       const itemCount = summarizeBackupItemCount(snapshot);
       publication.file = { filename: file.filename, checksum: file.checksum, itemCount };
 
@@ -228,7 +255,8 @@ export async function runAutomatedBackupIfDue(
       });
 
       return { completed: true as const };
-      }, { isolationLevel: "RepeatableRead" });
+      // Writing and reading back an archive of photos can take minutes; the snapshot stays consistent.
+      }, { isolationLevel: "RepeatableRead", maxWait: 10_000, timeout: 30 * 60_000 });
     } catch (error) {
       if (publication.file?.filename) {
         await removeLocalBackup(config.directory, publication.file.filename).catch(() => undefined);

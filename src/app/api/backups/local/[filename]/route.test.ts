@@ -35,6 +35,31 @@ describe("/api/backups/local/[filename]", () => {
     expect(mocks.downloadLocalBackupFile).toHaveBeenCalledWith("cubby-backup-v2-20260715T215013Z-aaaaaaaaaaaa.json");
   });
 
+  it("streams an archive version from its file, as a zip", async () => {
+    const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const dir = await mkdtemp(path.join(os.tmpdir(), "cubby-local-download-"));
+    try {
+      const archivePath = path.join(dir, "backup.zip");
+      await writeFile(archivePath, "PK-archive-bytes");
+      mocks.downloadLocalBackupFile.mockResolvedValue({ filename: "cubby-backup-v2-20260930T100000Z-aaaaaaaaaaaa.zip", archivePath, size: 16 });
+
+      const response = await GET(new Request("http://localhost/api/backups/local/file"), {
+        params: { filename: "cubby-backup-v2-20260930T100000Z-aaaaaaaaaaaa.zip" }
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBe("application/zip");
+      expect(response.headers.get("content-length")).toBe("16");
+      expect(response.headers.get("content-disposition")).toBe('attachment; filename="cubby-backup-v2-20260930T100000Z-aaaaaaaaaaaa.zip"');
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(await response.text()).toBe("PK-archive-bytes");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("normalizes malformed, foreign, unassociated, and missing candidates to not found", async () => {
     mocks.downloadLocalBackupFile.mockRejectedValue(new Error("not_found"));
 

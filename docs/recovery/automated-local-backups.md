@@ -5,6 +5,17 @@ snapshots used by manual export into a dedicated local directory on the home
 server. This feature is intentionally local-only: no remote provider, no cloud
 credentials, and no application-level encryption or key rotation are included.
 
+A household with feed photos is backed up as a `.zip` version instead, named like
+the `.json` versions. It holds `backup.json` and every photo (see
+[Manual Backup Recovery](manual-backup.md#backups-with-photos)). Each archive is
+written to a temporary file, synced, and fully read back, backup.json and every
+photo, before it replaces nothing and becomes a version. The Backups page checks
+each version's layout and backup.json. The integrity check reads every photo in
+every archived version, and reports a changed photo like a changed backup.
+Downloading a version streams it from disk. Allow for archive sizes when choosing
+the backup directory's capacity and `AUTOMATED_BACKUP_RETENTION_COUNT`: each
+retained version holds a full copy of the photos.
+
 ## Defaults And Enablement
 
 - `AUTOMATED_BACKUPS_ENABLED=false` by default.

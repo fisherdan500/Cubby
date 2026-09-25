@@ -1094,7 +1094,11 @@ export async function getAutomatedBackupStatus() {
   };
 }
 
-export async function downloadLocalBackupFile(filename: string) {
+export type LocalBackupDownload =
+  | { filename: string; body: Buffer }
+  | { filename: string; archivePath: string; size: number };
+
+export async function downloadLocalBackupFile(filename: string): Promise<LocalBackupDownload> {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   if (!isLocalBackupFilename(filename)) throw new Error("not_found");
@@ -1111,5 +1115,7 @@ export async function downloadLocalBackupFile(filename: string) {
   const document = await readLocalBackupDocument(automatedBackupConfig.directory, linkedRecord.storageFilename);
   const file = document.file;
   if (file.checksum !== linkedRecord.checksum) throw new Error("backup_checksum_mismatch");
+  // An archive with photos can be large, so it is streamed from its file rather than held in memory.
+  if (document.body === null) return { filename: file.filename, archivePath: file.absolutePath, size: file.size };
   return { filename: file.filename, body: document.body };
 }

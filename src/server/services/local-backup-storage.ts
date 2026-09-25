@@ -2,12 +2,16 @@ import { constants as fsConstants } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { link, lstat, mkdir, open, opendir, rm, unlink } from "node:fs/promises";
 import path from "node:path";
-import { backupSummary, MAX_BACKUP_BYTES, parseBackup } from "@/server/services/backup-format";
+import { backupArchiveStream, openBackupArchive } from "@/server/services/backup-archive";
+import { backupSummary, MAX_BACKUP_BYTES, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
 
 const MAX_SCAN_CANDIDATES = 500;
 const STALE_TEMP_MS = 24 * 60 * 60 * 1000;
-const BACKUP_FILE_PATTERN = /^cubby-backup-v2-(\d{8}T\d{6}Z)-([a-f0-9]{12})(?:-([a-f0-9]{32}))?\.json$/;
-const BACKUP_TEMP_PATTERN = /^\.cubby-backup-v2-\d{8}T\d{6}Z-[a-f0-9]{12}(?:-[a-f0-9]{32})?\.json\.[A-Za-z0-9_-]+\.tmp$/;
+// A version is a .json backup, or - for a household with photos - a .zip archive of it and its
+// photos (DEC-PROD-422). Both share one naming scheme.
+const BACKUP_FILE_PATTERN = /^cubby-backup-v2-(\d{8}T\d{6}Z)-([a-f0-9]{12})(?:-([a-f0-9]{32}))?\.(json|zip)$/;
+const BACKUP_TEMP_PATTERN = /^\.cubby-backup-v2-\d{8}T\d{6}Z-[a-f0-9]{12}(?:-[a-f0-9]{32})?\.(?:json|zip)\.[A-Za-z0-9_-]+\.tmp$/;
+const MAX_ARCHIVE_FILE_BYTES = 0xffffffff;
 
 export function isLocalBackupFilename(filename: string) {
   return BACKUP_FILE_PATTERN.test(filename);
@@ -50,7 +54,7 @@ export type ScannedBackupFile =
   | ({ healthy: true } & StoredBackupFile)
   | { healthy: false; filename: string; errorCode: string };
 
-export function formatBackupFilename(exportedAt: string, checksum: string, discriminator?: string) {
+export function formatBackupFilename(exportedAt: string, checksum: string, discriminator?: string, extension: "json" | "zip" = "json") {
   const stamp = exportedAt.replace(/[-:]/g, "").replace(".000", "").replace(/\.\d{3}Z$/, "Z");
   if (
     !/^\d{8}T\d{6}Z$/.test(stamp) ||
@@ -59,7 +63,7 @@ export function formatBackupFilename(exportedAt: string, checksum: string, discr
   ) {
     throw new Error("backup_invalid");
   }
-  return `cubby-backup-v2-${stamp}-${checksum.slice(0, 12)}${discriminator ? `-${discriminator}` : ""}.json`;
+  return `cubby-backup-v2-${stamp}-${checksum.slice(0, 12)}${discriminator ? `-${discriminator}` : ""}.${extension}`;
 }
 
 export function resolveBackupRoot(root: string) {
@@ -201,24 +205,38 @@ export async function publishLocalBackup(root: string, json: string, options: Pu
   }
 }
 
-export async function readLocalBackup(root: string, filename: string): Promise<StoredBackupFile> {
-  return (await readLocalBackupDocument(root, filename)).file;
+type ReadOptions = {
+  /**
+   * For an archive, also check every photo against its listed digest. Status scans read only its
+   * layout and backup.json; the integrity check reads everything.
+   */
+  verifyPhotos?: boolean;
+};
+
+export async function readLocalBackup(root: string, filename: string, options: ReadOptions = {}): Promise<StoredBackupFile> {
+  return (await readLocalBackupDocument(root, filename, options)).file;
 }
 
-export async function readLocalBackupDocument(root: string, filename: string) {
+/** A stored version: its details, and - for a .json version - its bytes. An archive is streamed from its path. */
+export async function readLocalBackupDocument(root: string, filename: string, options: ReadOptions = {}) {
   try {
     const trustedRoot = await assertTrustedBackupRoot(root, false);
-    return await readLocalBackupDocumentFromTrustedRoot(trustedRoot, filename);
+    return await readLocalBackupDocumentFromTrustedRoot(trustedRoot, filename, options);
   } catch (error) {
     throw new Error(sanitizeReadError(error));
   }
 }
 
-async function readLocalBackupDocumentFromTrustedRoot(trustedRoot: TrustedBackupRoot, filename: string) {
+async function readLocalBackupDocumentFromTrustedRoot(
+  trustedRoot: TrustedBackupRoot,
+  filename: string,
+  options: ReadOptions = {}
+): Promise<{ file: StoredBackupFile; body: Buffer | null }> {
   let handle;
   try {
     const filenameMatch = BACKUP_FILE_PATTERN.exec(filename);
     if (!filenameMatch) throw new Error("backup_invalid");
+    if (filenameMatch[4] === "zip") return await readLocalBackupArchiveFromTrustedRoot(trustedRoot, filename, filenameMatch[3], options);
     const { resolvedRoot } = trustedRoot;
     const resolved = path.resolve(resolvedRoot, filename);
     if (!resolved.startsWith(resolvedRoot + path.sep)) throw new Error("backup_invalid");
@@ -260,6 +278,108 @@ async function readLocalBackupDocumentFromTrustedRoot(trustedRoot: TrustedBackup
     };
   } finally {
     await handle?.close().catch(() => undefined);
+  }
+}
+
+function backupFileDetails(filename: string, absolutePath: string, size: number, parsed: Extract<ParsedBackup, { version: 2 }>): StoredBackupFile {
+  return {
+    filename,
+    absolutePath,
+    size,
+    checksum: parsed.backup.checksum,
+    exportedAt: parsed.backup.exportedAt,
+    householdName: parsed.backup.payload.household.name,
+    itemCount: Object.values(backupSummary(parsed).counts as Record<string, number>).reduce((total, count) => total + count, 0)
+  };
+}
+
+async function readLocalBackupArchiveFromTrustedRoot(
+  trustedRoot: TrustedBackupRoot,
+  filename: string,
+  discriminator: string | undefined,
+  options: ReadOptions
+): Promise<{ file: StoredBackupFile; body: null }> {
+  const { resolvedRoot } = trustedRoot;
+  const resolved = path.resolve(resolvedRoot, filename);
+  if (!resolved.startsWith(resolvedRoot + path.sep)) throw new Error("backup_invalid");
+  await assertTrustedBackupRootIdentity(trustedRoot);
+  const before = await lstat(resolved);
+  if (!before.isFile() || before.isSymbolicLink()) throw new Error("backup_invalid");
+  if (before.size > MAX_ARCHIVE_FILE_BYTES) throw new Error("backup_too_large");
+  const archive = await openBackupArchive(resolved);
+  try {
+    if (options.verifyPhotos) await archive.verifyPhotos();
+    const after = await lstat(resolved);
+    if (!after.isFile() || after.isSymbolicLink() || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size) {
+      throw new Error("backup_invalid");
+    }
+    const parsed = archive.parsed;
+    if (formatBackupFilename(parsed.backup.exportedAt, parsed.backup.checksum, discriminator, "zip") !== filename) {
+      throw new Error("backup_invalid");
+    }
+    await assertTrustedBackupRootIdentity(trustedRoot);
+    return { file: backupFileDetails(filename, resolved, before.size, parsed), body: null };
+  } finally {
+    await archive.close();
+  }
+}
+
+/**
+ * Publish a household backup with photos as a .zip version (DEC-PROD-422): written to a temporary
+ * file, synced, then fully read back - backup.json and every photo - before it is linked into place
+ * without overwriting. A version either exists whole and verified, or not at all.
+ */
+export async function publishLocalBackupArchive(
+  root: string,
+  snapshot: Extract<ParsedBackup, { version: 2 }>["backup"],
+  readPhoto: (photoId: string) => Promise<Buffer>,
+  options: Pick<PublishLocalBackupOptions, "filenameDiscriminator"> = {}
+) {
+  const trustedRoot = await assertTrustedBackupRoot(root, true);
+  const { resolvedRoot } = trustedRoot;
+  const filename = formatBackupFilename(snapshot.exportedAt, snapshot.checksum, options.filenameDiscriminator, "zip");
+  const finalPath = path.join(resolvedRoot, filename);
+  const tempPath = path.join(resolvedRoot, `.${filename}.${randomBytes(8).toString("hex")}.tmp`);
+
+  let file;
+  let linked = false;
+  try {
+    await assertTrustedBackupRootIdentity(trustedRoot);
+    file = await open(tempPath, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
+    const reader = backupArchiveStream(snapshot, (photoId) => readPhoto(photoId)).getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      await file.write(value);
+    }
+    await file.sync();
+    await file.close();
+    file = undefined;
+
+    const written = await openBackupArchive(tempPath);
+    try {
+      if (written.parsed.backup.checksum !== snapshot.checksum) throw new Error("backup_invalid");
+      await written.verifyPhotos();
+    } finally {
+      await written.close();
+    }
+
+    await assertTrustedBackupRootIdentity(trustedRoot);
+    await link(tempPath, finalPath);
+    linked = true;
+    await syncBackupRoot(resolvedRoot);
+    await unlink(tempPath);
+    await syncBackupRoot(resolvedRoot);
+    await assertTrustedBackupRootIdentity(trustedRoot);
+    return (await readLocalBackupArchiveFromTrustedRoot(trustedRoot, filename, options.filenameDiscriminator, {})).file;
+  } catch (error) {
+    if (file) await file.close().catch(() => undefined);
+    const rootIsTrusted = await assertTrustedBackupRootIdentity(trustedRoot).then(() => true, () => false);
+    if (rootIsTrusted) {
+      await unlink(tempPath).catch(() => undefined);
+      if (linked) await unlink(finalPath).catch(() => undefined);
+    }
+    throw new Error(sanitizeStorageError(error));
   }
 }
 

@@ -456,17 +456,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "0fc6946b4ce755758f79115d2996dcdf4ffa68ca4f4e28f1022876835777020d",
+          "digest": "a105fddc3c124f74b6fa9c6bbdabcf663c2cf442eafbbb1c22269d6d58acc7ef",
           "file": "src/app/api/backups/local/[filename]/route.ts"
         }
       ],
       "declarationDigest": "ed70c684f4b6e3e30595a7ccae888ec27464a44506c531e63bff607a34eb3503",
-      "fingerprint": "a4de09ff49cd5fc7fc57f17aa94ef17a570ad7dacfcf23139f730e18e21d3b24",
+      "fingerprint": "ea86c88550d1a9be50304ab735c8c917dd92c2af99267f736a74cfcd80b78088",
       "id": "fingerprint:api_route:src/app/api/backups/local/[filename]/route.ts",
       "ownerId": "api_route:src/app/api/backups/local/[filename]/route.ts",
       "ownerModule": "src/app/api/backups/local/[filename]/route.ts",
       "sidecarPath": "src/app/api/backups/local/[filename]/route.operation.ts",
-      "sourceDigest": "b1b3621955841f4b12df16cf53b0674aebb344d3b1757478442776ac06152720",
+      "sourceDigest": "32ae159cf27c2e3fb3a60f59b4f9b8f47210bc88955971a9ba9ac0de33f81e42",
       "status": "declared"
     },
     {
@@ -3128,7 +3128,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3157,12 +3157,12 @@
         }
       ],
       "declarationDigest": "cfc9e48a4f21a149ddcc6ee22a1787f0ec42dd6d49b156495f544aed3fd5e222",
-      "fingerprint": "2a2df92782b490f0eee2ce516e7f5ffaa5e085ad2ed45580bd5852f3d2049238",
+      "fingerprint": "6a882fce8fef5c71e5c27aac8405be486938c31847a8f38a2eaad8097e2faa9c",
       "id": "fingerprint:package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerModule": "scripts/household-deletion-readiness-guard.ts",
       "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts",
-      "sourceDigest": "81d2b56cc8cd7499df9d5b568bf9ee71c301c930700125a9b5b84e3514a0f8a9",
+      "sourceDigest": "ad96334f996a4ae163cdcfc603fbe5771fc1a4ebf94aa6de59ed25555e8ade99",
       "status": "declared"
     },
     {
@@ -3172,7 +3172,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3197,12 +3197,12 @@
         }
       ],
       "declarationDigest": "c653663765b8b9c3e8e21f3903713c66fa1a8ee927409604794b4302728c15a1",
-      "fingerprint": "5ccb74fbdb569a04fa262f0cf18441d2d188fa1f73f6c7a84cd804ef22eb5cf8",
+      "fingerprint": "e09320bdee0a77788bd4beb7b6e5cd78b7a23ed547fc3a007e4b8a283144ea78",
       "id": "fingerprint:package_command:scripts/integrity-check.ts",
       "ownerId": "package_command:scripts/integrity-check.ts",
       "ownerModule": "scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts",
-      "sourceDigest": "027ea80eabff3476dbff68bc424a8b8397fa677981efb8a34a8e37647279d4d5",
+      "sourceDigest": "2bd336ec1a83a649206fb9d8e23002eec7548976f343987b8cf89c8378b2d4cb",
       "status": "declared"
     },
     {
@@ -3272,7 +3272,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3301,12 +3301,12 @@
         }
       ],
       "declarationDigest": "1562497e78e2dd043661a15cff76be29362091a45e2c1d757532854b6f75fc10",
-      "fingerprint": "a815fd75804b0a01610f1b32d72858b306c16bfd3e8091d8ffae9e4971f2e702",
+      "fingerprint": "6d90cc5d59605032a908ce580914f21df34f8bdfbed7fb16aa0e3030b0a7ec5b",
       "id": "fingerprint:package_command:scripts/p1-3-node-builtin-probe.mjs",
       "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
       "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
       "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts",
-      "sourceDigest": "27db313de87837bcf6efe692fd23bd3700ae50e1cf45e96c8adc49ed5baf26b8",
+      "sourceDigest": "5ea5db840b0470f8d2b6e97fcd3b54ff0693e148c5d45d05190a1341bfe18988",
       "status": "declared"
     },
     {
@@ -3356,7 +3356,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3381,12 +3381,12 @@
         }
       ],
       "declarationDigest": "3246f88ee86d13812b057916cb440a2a626faf92c3fdf8fa60bc959d2712f9c2",
-      "fingerprint": "0934b2ee2a2395759ea91a1b45d26e0b2738f08fda96299e543a59c53c54e0f4",
+      "fingerprint": "59d40af52f782d0b17b2ff2f64657198afa22fd304bc0a6e6b2c5d656cc4d96f",
       "id": "fingerprint:package_command:scripts/platform-owner.ts",
       "ownerId": "package_command:scripts/platform-owner.ts",
       "ownerModule": "scripts/platform-owner.ts",
       "sidecarPath": "scripts/platform-owner.operation.ts",
-      "sourceDigest": "b6aedecb35d8b70530730fe412e04ecf876f0f3d3974faf7f42c5efe54493761",
+      "sourceDigest": "9d8db8746a308205befb88de55ea705b71de2a30cf5fb5dd978d0e7116acf244",
       "status": "declared"
     },
     {
@@ -3396,7 +3396,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3425,12 +3425,12 @@
         }
       ],
       "declarationDigest": "b955075c076d41c34cde29144ddbe77893af4324035949a0e3b49701fd0aedaf",
-      "fingerprint": "474ceab223af2a046553abbabd91e4eae3e558d62143e339e20050a6e29e15b9",
+      "fingerprint": "59ac69e9220e0b4655bfc32d6b80ae99c1d9e3def3b0dacb35aecac5d77c2b4f",
       "id": "fingerprint:package_command:scripts/provision-database-timezone.mjs",
       "ownerId": "package_command:scripts/provision-database-timezone.mjs",
       "ownerModule": "scripts/provision-database-timezone.mjs",
       "sidecarPath": "scripts/provision-database-timezone.operation.ts",
-      "sourceDigest": "1784b4302f612e099686c0b7c70c06fa405d7334ae72e5db499e036ef3a2e7d3",
+      "sourceDigest": "1f19d428b08f0154b9217ffa7f4757a7f919fadf1a4812b8315af67cf8159631",
       "status": "declared"
     },
     {
@@ -3440,7 +3440,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3469,12 +3469,12 @@
         }
       ],
       "declarationDigest": "3ec0a70c2151c092806abb5fdb0e3a4e9778e9ba1eff50f220322ae849b25f89",
-      "fingerprint": "46eab8970cf914855aee3121f9c762f5bf964417385dfaed695bc18b533ebd4d",
+      "fingerprint": "e1cfbef61061f5043661880b9f4139b37e03acfb57215b4b636f5b090a85afcf",
       "id": "fingerprint:package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerModule": "scripts/provision-email-delivery-keys.mjs",
       "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts",
-      "sourceDigest": "5f7ff116862b69f3cdfba80db81d3a68c87b28aaf9e2096a1f752fca3f07053c",
+      "sourceDigest": "6a2dbdc34a68b0b3faad45308d881e2aa7989fb0fee746884219da89507becfc",
       "status": "declared"
     },
     {
@@ -3484,7 +3484,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3513,12 +3513,12 @@
         }
       ],
       "declarationDigest": "f08aa3cb50e2250ca24f5bd928a7ba51ee1a982abc73714f6e84e5f527c9bd3d",
-      "fingerprint": "390af397a78e14bc62b1428385a1ef7f550471a1c7efa03a9bd4265315390746",
+      "fingerprint": "74679a0eea9d656bc4dea536f7f9c87efda4761b7d9c5722a9234aa90d423cad",
       "id": "fingerprint:package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
       "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
       "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
       "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts",
-      "sourceDigest": "d17dbedcca1fb4a43c30d43f8f3f14dac70c241f31e0cacd01e19ff542392449",
+      "sourceDigest": "89950f78cca3def05e1fc34ca8fb6971a2e3bf5c44eb1940017aa75f071abbb4",
       "status": "declared"
     },
     {
@@ -3528,7 +3528,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3557,12 +3557,12 @@
         }
       ],
       "declarationDigest": "aaabe40de6ef27d59c1228e7565317489f805861274300b1166b27f5533abee4",
-      "fingerprint": "26341c026d04dabfd603eb685ad19ffcdbe106c1755bd37b90b7d72f9081665f",
+      "fingerprint": "790403aff37a136da30927315b4286277ad41147a79893c5bbfec8f58a44a4fd",
       "id": "fingerprint:package_command:scripts/provision-global-security-throttle-key.mjs",
       "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
       "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
       "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts",
-      "sourceDigest": "7ad26c807464e80e42f5eb0d8d3631e736ca2db1a206d8047f8588d623aa77f0",
+      "sourceDigest": "6e4ececb43d240067681e1c1d2092ee6b98299f571c058d815b7d0016193309e",
       "status": "declared"
     },
     {
@@ -3572,7 +3572,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3601,12 +3601,12 @@
         }
       ],
       "declarationDigest": "7ce38019bcbd51bb1cec16a6430bfdb6f547936df292131645910ad144e9cc02",
-      "fingerprint": "f9d2bc0bd21b636b17f66027372d91d8a9301034ae837506acfe8a068bf58899",
+      "fingerprint": "1ebb13a377ae563c193d629deee3491715def3a7b9f79417397c5d9c87568467",
       "id": "fingerprint:package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
       "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts",
-      "sourceDigest": "570b70c92dc0dd82ade7b047f09e082613398a0a0d431ca8cf1bf8404f9dec4d",
+      "sourceDigest": "95ba9785439d875e4187ec69f30a01d574951430329334a8e1ecf2aac4bf9377",
       "status": "declared"
     },
     {
@@ -3616,7 +3616,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3645,12 +3645,12 @@
         }
       ],
       "declarationDigest": "a61dda018952d15438808805513aa3e9384fa70be68f348547874d16f3e8debc",
-      "fingerprint": "d9161d0ec61127be700eb624cab6543b498471e79d743103d6ab5c6844279c0d",
+      "fingerprint": "a6f02fb7c80850404d3f3b7043beca4bfdce1f908fd6eb796b1d8dd3e760148b",
       "id": "fingerprint:package_command:scripts/provision-platform-setup-code.mjs",
       "ownerId": "package_command:scripts/provision-platform-setup-code.mjs",
       "ownerModule": "scripts/provision-platform-setup-code.mjs",
       "sidecarPath": "scripts/provision-platform-setup-code.operation.ts",
-      "sourceDigest": "8a85e1b7a2dcacd682798b93b69350ca3df9bf021ce22f0bde5cfc0da72d1e9b",
+      "sourceDigest": "345b96d4dccacf47a2da11099d0e2554171c725f18dbdc4e90ae34d96ba8ab20",
       "status": "declared"
     },
     {
@@ -3660,7 +3660,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3689,12 +3689,12 @@
         }
       ],
       "declarationDigest": "875b0cb9cbc0ed831f536ef3b3803eac8e55dc67ed20616103c71b0ef2eb3113",
-      "fingerprint": "044aedc8b416169bd74dfadd8b5e199eb36958966b7a1a39bc8d5de5b58b3cc4",
+      "fingerprint": "bdde1aaf7575f2ecd8358c6f2fad41f5265e548469e7e4485f34f3e807d16f6e",
       "id": "fingerprint:package_command:scripts/provision-security-runtime-role.mjs",
       "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
       "ownerModule": "scripts/provision-security-runtime-role.mjs",
       "sidecarPath": "scripts/provision-security-runtime-role.operation.ts",
-      "sourceDigest": "1657f468b82e5fdaa06b62a0596e80945ccda5043243cf7f0168917c47476044",
+      "sourceDigest": "bc7fcf948e946417846ce31c7b528d48922393c768b6a1320ceb6b4f06696711",
       "status": "declared"
     },
     {
@@ -3744,7 +3744,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "8aa3c136fea7f1697cc5fef8442165cde639b0e9cf9cd36631b52ddb732b437b",
+          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
           "file": "docker-compose.yml"
         },
         {
@@ -3769,12 +3769,12 @@
         }
       ],
       "declarationDigest": "f96c68b2729a122fcbaabe348a0e1febca5b8fddc254edcc963e7292333b5311",
-      "fingerprint": "a5d5d81a3084e5bb9d68305502fbafda35e10b9e43b38189aa64c70b23b4187f",
+      "fingerprint": "410f0612b7bde96e0e52ab0c4d6f08348bf23b76e515f3fa0e190286cf6321f1",
       "id": "fingerprint:package_command:scripts/security-operator.ts",
       "ownerId": "package_command:scripts/security-operator.ts",
       "ownerModule": "scripts/security-operator.ts",
       "sidecarPath": "scripts/security-operator.operation.ts",
-      "sourceDigest": "433eaaa50c5a757200011ad78478aa8c12194cade2af2377c5cb98a5bed0846c",
+      "sourceDigest": "c511cb2a62404ac673142b3e05418c531e32c97d3b0f2967b020b09f909458e0",
       "status": "declared"
     },
     {
@@ -3804,17 +3804,17 @@
           "file": "package.json"
         },
         {
-          "digest": "b16141794190e04b6d0f1659ec3dfd8faa5a3c2b7311c18e42617c235b700e21",
+          "digest": "89f96de9e07534d7039412b7a6b2cbae0ded47662db47cdd194e0dfcd90aeba0",
           "file": "scripts/update-preflight.ts"
         }
       ],
       "declarationDigest": "ce687e710780dbd9212d143f5ddd706f1fba8cf1de69a13a68c6ddcef1b7c427",
-      "fingerprint": "7792494fb88d51c9aa72659e3804528ca8f265684888563ffc025a4cef58eb56",
+      "fingerprint": "5710b60eb9ca033c697285059e32b77f2f1ffcf3f85c9ae0d3b58ba8d6a497bd",
       "id": "fingerprint:package_command:scripts/update-preflight.ts",
       "ownerId": "package_command:scripts/update-preflight.ts",
       "ownerModule": "scripts/update-preflight.ts",
       "sidecarPath": "scripts/update-preflight.operation.ts",
-      "sourceDigest": "0c1db0576b14bbdb76081052caaa39a26538d26d769ffc7a40a147de3a877670",
+      "sourceDigest": "b362371ee564156c5642d5818deb2ce12dbaafe5b260e9ca3c1f15eeca36db6a",
       "status": "declared"
     },
     {
@@ -3840,11 +3840,11 @@
   ],
   "generatorDigest": "9cfcaabb3df67fc3c92ece352af32140f9b9becb73ca359d71461733d0e1ea0b",
   "generatorVersion": "r0.1",
-  "observationDigest": "76351ea0ed7053f85f2f43b62e0f83262b07c10e47fd4b7f925edf4a0a7cc0f7",
+  "observationDigest": "c0d7c0c73a5ea671f796adf002dd22f116bce142e3895106874bd350d375b37a",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "510e8d788264e19c2a7ae961dfa3dbc1f94b7b2dcff9b93318b313909e0a131b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5bcbc4b1a3e773273a389c95dcc1c7f1123e55688403c1d70debbd949b89501c",
+  "registryDigest": "4bb42690a905701bf7605235970fd27e2bc7169be3eaacbf2199e1b76fc68492",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

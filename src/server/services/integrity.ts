@@ -578,7 +578,15 @@ async function readSnapshot(
 export function localBackupIntegrityReader(directory: () => string | Promise<string>): IntegrityBackupReader {
   return async (storageFilename) => {
     const { readLocalBackup } = await import("@/server/services/local-backup-storage");
-    const file = await readLocalBackup(await directory(), storageFilename);
+    let file;
+    try {
+      // An archived backup is read in full, every photo included (DEC-PROD-145).
+      file = await readLocalBackup(await directory(), storageFilename, { verifyPhotos: true });
+    } catch (error) {
+      // A photo no longer matching the digest its backup lists is the same corruption as a changed body.
+      if (error instanceof Error && error.message === "backup_photo_mismatch") throw new Error("backup_checksum_mismatch");
+      throw error;
+    }
     return {
       version: 2,
       filename: file.filename,

@@ -492,6 +492,8 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
 
     auth.context = source.ctx;
     const automatedDownload = await downloadLocalBackupFile(localFilesAfterFirstRun[0]!.filename);
+    // This fixture has no photos, so its version is JSON rather than an archive.
+    if (!("body" in automatedDownload)) throw new Error("expected a JSON backup version");
     const sourceBackup = JSON.parse(automatedDownload.body.toString("utf8")) as V2Envelope;
     expect(parseBackup(sourceBackup)).toMatchObject({ version: 2, checksumVerified: true });
     const unassociatedBackup = structuredClone(sourceBackup);
@@ -740,6 +742,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       versions: [expect.objectContaining({ filename: automatedDownload.filename })]
     });
     const recoveryDownload = await downloadLocalBackupFile(automatedDownload.filename);
+    if (!("body" in recoveryDownload)) throw new Error("expected a JSON backup version");
     const recoveryBackup = JSON.parse(recoveryDownload.body.toString("utf8")) as V2Envelope;
     expect(recoveryBackup).toEqual(sourceBackup);
     await prisma.household.updateMany({
