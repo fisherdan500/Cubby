@@ -13,7 +13,9 @@ export const FEED_COMMENT_MAX_LENGTH = 1000;
 export const feedReactions = [
   { key: "love", emoji: "❤️", label: "love" },
   { key: "funny", emoji: "😂", label: "funny" },
-  { key: "aww", emoji: "🥹", label: "aww" },
+  // Smiling face with hearts (Emoji 11, 2018): the first choice, face holding back tears (Emoji 14,
+  // 2021), showed as an empty box on phones without it. Stored reactions keep the key, not the face.
+  { key: "aww", emoji: "🥰", label: "aww" },
   { key: "celebrate", emoji: "🎉", label: "celebrate" },
   { key: "well_done", emoji: "👏", label: "well done" }
 ] as const;

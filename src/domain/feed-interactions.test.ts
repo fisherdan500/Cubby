@@ -18,7 +18,8 @@ describe("feed reactions", () => {
     expect(feedReactions.map((reaction) => [reaction.key, reaction.emoji, reaction.label])).toEqual([
       ["love", "❤️", "love"],
       ["funny", "😂", "funny"],
-      ["aww", "🥹", "aww"],
+      // 🥰 rather than 🥹: the newer face showed as an empty box on some phones.
+      ["aww", "🥰", "aww"],
       ["celebrate", "🎉", "celebrate"],
       ["well_done", "👏", "well done"]
     ]);
