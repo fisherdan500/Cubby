@@ -52,7 +52,8 @@ export async function getReports(
   const periodDays = dateKeySpan(startKey, endKey);
   const previousStartKey = addDaysToDateKey(startKey, -periodDays);
   const routineWindow = resolveRoutineWindow(input?.routineWindow);
-  const routineRange = routineWindowRange(endKey, routineWindow, env.APP_TIMEZONE);
+  // The routine is always the baby's recent days, up to today; the date range belongs to Stats.
+  const routineRange = routineWindowRange(todayKey, routineWindow, env.APP_TIMEZONE);
   if (!baby) {
     return {
       home,
@@ -64,7 +65,7 @@ export async function getReports(
       todayKey,
       timezone: env.APP_TIMEZONE,
       activities: [],
-      routine: buildRoutine([], endKey, routineWindow, env.APP_TIMEZONE),
+      routine: buildRoutine([], todayKey, routineWindow, env.APP_TIMEZONE),
       stats: null,
       previous: null,
       history: null
@@ -132,7 +133,7 @@ export async function getReports(
     todayKey,
     timezone: env.APP_TIMEZONE,
     activities,
-    routine: buildRoutine(routineActivities, endKey, routineWindow, env.APP_TIMEZONE),
+    routine: buildRoutine(routineActivities, todayKey, routineWindow, env.APP_TIMEZONE),
     stats: buildReportStats(activities, baby.birthDate, env.APP_TIMEZONE, preferences),
     previous: previousActivities
       ? {

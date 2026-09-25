@@ -125,6 +125,10 @@ Step 3 suggests a plan from the Routine (DEC-PROD-152–154), from the selected 
 - Nearby plan items of the same kind are shown as changes beside their current time.
 - Every item starts undecided, and a preview of the whole resulting plan comes before the ordinary revision-checked save.
 
+Tidy-up after use:
+- Each Reports tab now shows only the period control it uses. Routine offers 7, 14 or 30 days, always ending today. Stats offers 7, 14 or 30 days, or Custom, which reveals the date boxes. Growth and Milestones have none.
+- The four "at a glance" cards became one summary line in Typical day, holding only what the list cannot show: night length, nap steadiness, feed spacing and night feeds.
+
 Later: named templates, elapsed and sequence timing, reminders, pinned or suggestible entries, and the fuller caregiver handoff (DEC-PROD-148–151).
 
 ### Nursery Night Treatment

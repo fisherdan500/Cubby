@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   requireUserPage: vi.fn(),
   getHeaderBabySelector: vi.fn(),
   getReports: vi.fn(),
-  getPlannedSchedule: vi.fn()
+  getPlannedSchedule: vi.fn(),
+  routineTab: vi.fn()
 }));
 
 globalThis.React = React;
@@ -23,7 +24,12 @@ vi.mock("@/components/app-shell", () => ({
   AppShell: ({ children }: { children: React.ReactNode }) => createElement("main", null, children)
 }));
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
-vi.mock("@/components/reports/routine-tab", () => ({ RoutineTab: () => createElement("div", null, "routine") }));
+vi.mock("@/components/reports/routine-tab", () => ({
+  RoutineTab: (props: unknown) => {
+    mocks.routineTab(props);
+    return createElement("div", null, "routine");
+  }
+}));
 
 import { defaultUnitPreferences } from "@/domain/unit-preferences";
 import { buildReportStats, buildRoutine } from "@/server/services/reports";
@@ -31,8 +37,8 @@ import ReportsPage from "@/app/app/reports/page";
 
 const endKey = "2026-09-19";
 
-async function renderReports(tab?: string) {
-  const markup = renderToStaticMarkup(await ReportsPage({ searchParams: { babyId: "baby-1", ...(tab ? { tab } : {}) } }));
+async function renderReports(tab?: string, params: Record<string, string> = {}) {
+  const markup = renderToStaticMarkup(await ReportsPage({ searchParams: { babyId: "baby-1", ...(tab ? { tab } : {}), ...params } }));
   document.body.innerHTML = markup;
   return document.body;
 }
@@ -59,15 +65,34 @@ beforeEach(() => {
 });
 
 describe("ReportsPage accessibility", () => {
-  it("names both ends of the date range", async () => {
-    const body = await renderReports();
-    const start = body.querySelector<HTMLInputElement>("#report-start");
-    const end = body.querySelector<HTMLInputElement>("#report-end");
+  it("shows Stats' date boxes only for a custom range, naming both ends", async () => {
+    expect((await renderReports("stats")).querySelector("#report-start")).toBeNull();
 
-    expect(start?.getAttribute("name")).toBe("start");
-    expect(end?.getAttribute("name")).toBe("end");
-    expect(body.querySelector('label[for="report-start"]')?.textContent).toBe("Report start date");
-    expect(body.querySelector('label[for="report-end"]')?.textContent).toBe("Report end date");
+    const customs: Array<Record<string, string>> = [{ custom: "1" }, { start: "2026-09-01", end: "2026-09-10" }];
+    for (const params of customs) {
+      mocks.getReports.mockResolvedValue({ ...baseReport(), ...(params.start ? { startKey: params.start, endKey: params.end } : {}) });
+      const body = await renderReports("stats", params);
+      const start = body.querySelector<HTMLInputElement>("#report-start");
+      const end = body.querySelector<HTMLInputElement>("#report-end");
+
+      expect(start?.getAttribute("name")).toBe("start");
+      expect(end?.getAttribute("name")).toBe("end");
+      expect(body.querySelector('label[for="report-start"]')?.textContent).toBe("Report start date");
+      expect(body.querySelector('label[for="report-end"]')?.textContent).toBe("Report end date");
+      expect(body.querySelector('nav[aria-label="Report period"] a[aria-current="true"]')?.textContent).toBe("Custom");
+    }
+  });
+
+  it("gives Routine one period choice, ending today, and none of Stats' range", async () => {
+    const body = await renderReports("routine");
+
+    expect(body.querySelector('nav[aria-label="Report period"]')).toBeNull();
+    expect(body.querySelector("#report-start")).toBeNull();
+    const { periods } = mocks.routineTab.mock.calls[0][0] as { periods: Array<{ label: string; href: string; current: boolean }> };
+    expect(periods.map((period) => [period.label, period.current])).toEqual([["7 days", true], ["14 days", false], ["30 days", false]]);
+    expect(periods[1].href).toContain("routineWindow=2w");
+    expect(periods[2].href).toContain("routineWindow=1m");
+    expect(periods[1].href).toContain("tab=routine");
   });
 
   it("marks the open report, and only that one, as the current page", async () => {
@@ -96,10 +121,13 @@ describe("ReportsPage accessibility", () => {
     const body = await renderReports("stats");
     const periods = [...body.querySelectorAll('nav[aria-label="Report period"] a')];
 
-    expect(periods.map((link) => link.textContent)).toEqual(["7 days", "14 days", "30 days"]);
+    expect(periods.map((link) => link.textContent)).toEqual(["7 days", "14 days", "30 days", "Custom"]);
     expect(periods[0].getAttribute("aria-current")).toBe("true");
     expect(periods[1].getAttribute("href")).toContain("start=2026-09-06&end=2026-09-19");
     expect(periods[1].getAttribute("href")).toContain("tab=stats");
+    // Custom keeps the range in use and opens the date boxes.
+    expect(periods[3].getAttribute("href")).toContain("start=2026-09-13&end=2026-09-19");
+    expect(periods[3].getAttribute("href")).toContain("custom=1");
   });
 
   it("reads the previous period only for Stats, and shows each figure per day with its change", async () => {

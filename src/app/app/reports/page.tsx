@@ -25,12 +25,21 @@ const tabs = [
   ["milestones", "Milestones", Trophy]
 ] as const;
 
+// Each tab has only the period control it uses. Stats: 7, 14 or 30 days to today, or a custom range
+// whose date boxes appear only when asked for. Routine: 7, 14 or 30 days to today. Growth and
+// Milestones: the whole history, so none.
 const quickPeriods = [7, 14, 30] as const;
+const routinePeriods = [["1w", "7 days"], ["2w", "14 days"], ["1m", "30 days"]] as const;
+
+const periodChip = (current: boolean) =>
+  `inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold ${
+    current ? "bg-primary text-primary-foreground" : "border border-control bg-card text-foreground hover:bg-muted"
+  }`;
 
 export default async function ReportsPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; start?: string; end?: string; tab?: string; routineWindow?: string };
+  searchParams: { babyId?: string; start?: string; end?: string; tab?: string; routineWindow?: string; custom?: string };
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
@@ -43,15 +52,25 @@ export default async function ReportsPage({
   if (!report?.home) redirect("/onboarding");
   // The plan sits beside the observed routine, so it is only read when that tab is open.
   const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
-  const reportHref = (next: { tab?: string; routineWindow?: string; start?: string; end?: string }) => {
+  const reportHref = (next: { tab?: string; routineWindow?: string; start?: string; end?: string; custom?: boolean }) => {
     const params = new URLSearchParams();
     if (report.baby?.id) params.set("babyId", report.baby.id);
     params.set("start", next.start ?? report.startKey);
     params.set("end", next.end ?? report.endKey);
     params.set("tab", next.tab ?? tab);
     params.set("routineWindow", next.routineWindow ?? report.routine.window);
+    if (next.custom) params.set("custom", "1");
     return `/app/reports?${params.toString()}`;
   };
+  const quickStart = (days: number) => addDaysToDateKey(report.todayKey, -(days - 1));
+  const onQuickPeriod = report.endKey === report.todayKey && quickPeriods.some((days) => report.startKey === quickStart(days));
+  // Custom when asked for, or when the range in use is not one of the quick ones.
+  const custom = searchParams.custom === "1" || !onQuickPeriod;
+  const routinePeriodLinks = routinePeriods.map(([window, label]) => ({
+    label,
+    href: reportHref({ routineWindow: window }),
+    current: report.routine.window === window
+  }));
 
   return (
     <AppShell title="Reports" userName={user.name} babySelector={babySelector}>
@@ -59,45 +78,44 @@ export default async function ReportsPage({
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
-          {historyTab ? null : (
+          {tab === "stats" ? (
           <>
           <nav aria-label="Report period" className="flex flex-wrap gap-2 print:hidden">
             {quickPeriods.map((days) => {
-              const start = addDaysToDateKey(report.todayKey, -(days - 1));
-              const current = report.startKey === start && report.endKey === report.todayKey;
+              const start = quickStart(days);
+              const current = !custom && report.startKey === start && report.endKey === report.todayKey;
               return (
-                <Link
-                  key={days}
-                  href={reportHref({ start, end: report.todayKey })}
-                  aria-current={current ? "true" : undefined}
-                  className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold ${
-                    current ? "bg-primary text-primary-foreground" : "border border-control bg-card text-foreground hover:bg-muted"
-                  }`}
-                >
+                <Link key={days} href={reportHref({ start, end: report.todayKey })} aria-current={current ? "true" : undefined} className={periodChip(current)}>
                   {days} days
                 </Link>
               );
             })}
+            <Link href={reportHref({ custom: true })} aria-current={custom ? "true" : undefined} className={periodChip(custom)}>
+              Custom
+            </Link>
           </nav>
 
-          <Card className="w-fit max-w-full print:hidden">
-            <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
-              <input name="babyId" type="hidden" value={report.baby.id} />
-              <input name="tab" type="hidden" value={tab} />
-              <input name="routineWindow" type="hidden" value={report.routine.window} />
-              {/* A bare date input announces only "date"; these say which end of the range they set. */}
-              <label htmlFor="report-start" className="sr-only">
-                Report start date
-              </label>
-              <Input id="report-start" name="start" type="date" defaultValue={report.startKey} className="sm:w-48" />
-              <label htmlFor="report-end" className="sr-only">
-                Report end date
-              </label>
-              <Input id="report-end" name="end" type="date" defaultValue={report.endKey} className="sm:w-48" />
-            </AutoSubmitForm>
-          </Card>
+          {custom ? (
+            <Card className="w-fit max-w-full print:hidden">
+              <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
+                <input name="babyId" type="hidden" value={report.baby.id} />
+                <input name="tab" type="hidden" value={tab} />
+                <input name="routineWindow" type="hidden" value={report.routine.window} />
+                <input name="custom" type="hidden" value="1" />
+                {/* A bare date input announces only "date"; these say which end of the range they set. */}
+                <label htmlFor="report-start" className="sr-only">
+                  Report start date
+                </label>
+                <Input id="report-start" name="start" type="date" defaultValue={report.startKey} className="sm:w-48" />
+                <label htmlFor="report-end" className="sr-only">
+                  Report end date
+                </label>
+                <Input id="report-end" name="end" type="date" defaultValue={report.endKey} className="sm:w-48" />
+              </AutoSubmitForm>
+            </Card>
+          ) : null}
           </>
-          )}
+          ) : null}
 
           {/* Which report is open was carried by colour alone; aria-current says it too. */}
           <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2 print:hidden">
@@ -121,12 +139,10 @@ export default async function ReportsPage({
           {tab === "growth" && report.history ? <GrowthTab history={report.history} babyName={report.baby.name} /> : null}
           {tab === "routine" ? (
             <RoutineTab
-              babyId={report.baby.id}
               babyName={report.baby.name}
               schedule={schedule}
-              startKey={report.startKey}
-              endKey={report.endKey}
               routine={report.routine}
+              periods={routinePeriodLinks}
             />
           ) : null}
         </div>
