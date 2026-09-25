@@ -9,7 +9,7 @@
     "server_loader": 29,
     "worker": 7
   },
-  "declarationDigest": "7c830f17750b6e378a0f5784e7830edbf0301d031a2e57a466fed00d022d84a7",
+  "declarationDigest": "c2178f5acb91bf60cf2613014c9792e453ec52e8b4174269d132ea9b29a72354",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4903,111 +4903,6 @@
         "bindings": [
           {
             "kind": "server_value_import",
-            "symbol": "feedInteractionKey",
-            "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getActivityRowViewer",
-            "target": "src/server/services/activities.ts#getActivityRowViewer"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getActivityUnitPreferences",
-            "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "getHeaderBabySelector",
-            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "listActivities",
-            "target": "src/server/services/activities.ts#listActivities"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "listFeedInteractions",
-            "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "listFeedPosts",
-            "target": "src/server/services/feed-posts.ts#listFeedPosts"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "requireUserPage",
-            "target": "src/server/auth/session.ts#requireUserPage"
-          }
-        ],
-        "deferredGateIds": [
-          "gate.carrier_authority_guard",
-          "gate.caller_controlled_scope",
-          "gate.service_operation_linkage",
-          "gate.permission_commit_reauthorization",
-          "gate.tenant_relationship_invariants",
-          "gate.model_and_effects",
-          "gate.variant_outcomes",
-          "gate.worker_containment",
-          "gate.browser_binding_staleness",
-          "gate.executable_evidence"
-        ],
-        "disposition": "observed",
-        "id": "server_loader:src/app/app/feed/page.tsx",
-        "ownerKind": "server_loader",
-        "ownerModule": "src/app/app/feed/page.tsx",
-        "schemaVersion": 1
-      },
-      "id": "server_loader:src/app/app/feed/page.tsx",
-      "sidecarPath": "src/app/app/feed/page.operation.ts"
-    },
-    {
-      "declaration": {
-        "bindings": [
-          {
-            "kind": "server_value_import",
-            "symbol": "getHeaderBabySelector",
-            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "listRemovedFeedPosts",
-            "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
-          },
-          {
-            "kind": "server_value_import",
-            "symbol": "requireUserPage",
-            "target": "src/server/auth/session.ts#requireUserPage"
-          }
-        ],
-        "deferredGateIds": [
-          "gate.carrier_authority_guard",
-          "gate.caller_controlled_scope",
-          "gate.service_operation_linkage",
-          "gate.permission_commit_reauthorization",
-          "gate.tenant_relationship_invariants",
-          "gate.model_and_effects",
-          "gate.variant_outcomes",
-          "gate.worker_containment",
-          "gate.browser_binding_staleness",
-          "gate.executable_evidence"
-        ],
-        "disposition": "observed",
-        "id": "server_loader:src/app/app/feed/removed/page.tsx",
-        "ownerKind": "server_loader",
-        "ownerModule": "src/app/app/feed/removed/page.tsx",
-        "schemaVersion": 1
-      },
-      "id": "server_loader:src/app/app/feed/removed/page.tsx",
-      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
-    },
-    {
-      "declaration": {
-        "bindings": [
-          {
-            "kind": "server_value_import",
             "symbol": "getActivityRowViewer",
             "target": "src/server/services/activities.ts#getActivityRowViewer"
           },
@@ -5132,6 +5027,111 @@
       },
       "id": "server_loader:src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
+            "symbol": "feedInteractionKey",
+            "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getActivityRowViewer",
+            "target": "src/server/services/activities.ts#getActivityRowViewer"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getActivityUnitPreferences",
+            "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getHeaderBabySelector",
+            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listActivities",
+            "target": "src/server/services/activities.ts#listActivities"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listFeedInteractions",
+            "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listFeedPosts",
+            "target": "src/server/services/feed-posts.ts#listFeedPosts"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/app/moments/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/app/moments/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/app/moments/page.tsx",
+      "sidecarPath": "src/app/app/moments/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
+            "symbol": "getHeaderBabySelector",
+            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listRemovedFeedPosts",
+            "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/app/moments/removed/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/app/moments/removed/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/app/moments/removed/page.tsx",
+      "sidecarPath": "src/app/app/moments/removed/page.operation.ts"
     },
     {
       "declaration": {
@@ -7813,7 +7813,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "9cfcaabb3df67fc3c92ece352af32140f9b9becb73ca359d71461733d0e1ea0b",
+  "generatorDigest": "a1c495c380dcd26123fb251e90bbc61f716424d060b3ad3e30a8c958bb59c7a1",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -10376,125 +10376,6 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-          "anchorEnd": 957,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 939,
-          "kind": "server_value_import",
-          "symbol": "feedInteractionKey",
-          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
-        },
-        {
-          "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-          "anchorEnd": 801,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 781,
-          "kind": "server_value_import",
-          "symbol": "getActivityRowViewer",
-          "target": "src/server/services/activities.ts#getActivityRowViewer"
-        },
-        {
-          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 1142,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 1116,
-          "kind": "server_value_import",
-          "symbol": "getActivityUnitPreferences",
-          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
-        },
-        {
-          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 887,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 866,
-          "kind": "server_value_import",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 817,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 803,
-          "kind": "server_value_import",
-          "symbol": "listActivities",
-          "target": "src/server/services/activities.ts#listActivities"
-        },
-        {
-          "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-          "anchorEnd": 979,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 959,
-          "kind": "server_value_import",
-          "symbol": "listFeedInteractions",
-          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
-        },
-        {
-          "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
-          "anchorEnd": 1048,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 1035,
-          "kind": "server_value_import",
-          "symbol": "listFeedPosts",
-          "target": "src/server/services/feed-posts.ts#listFeedPosts"
-        },
-        {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 739,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 724,
-          "kind": "server_value_import",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "exclusion": null,
-      "id": "server_loader:src/app/app/feed/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/feed/page.tsx",
-      "sidecarPath": "src/app/app/feed/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
-          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 422,
-          "anchorFile": "src/app/app/feed/removed/page.tsx",
-          "anchorStart": 401,
-          "kind": "server_value_import",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorDigest": "4033c2369f031d9e3c4a655f4ce81e828048c1006917e2d3f9ea3b581175abb1",
-          "anchorEnd": 494,
-          "anchorFile": "src/app/app/feed/removed/page.tsx",
-          "anchorStart": 474,
-          "kind": "server_value_import",
-          "symbol": "listRemovedFeedPosts",
-          "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
-        },
-        {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 359,
-          "anchorFile": "src/app/app/feed/removed/page.tsx",
-          "anchorStart": 344,
-          "kind": "server_value_import",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "exclusion": null,
-      "id": "server_loader:src/app/app/feed/removed/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/feed/removed/page.tsx",
-      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
           "anchorEnd": 767,
           "anchorFile": "src/app/app/history/page.tsx",
@@ -10620,6 +10501,125 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
+          "anchorEnd": 957,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 939,
+          "kind": "server_value_import",
+          "symbol": "feedInteractionKey",
+          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+        },
+        {
+          "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
+          "anchorEnd": 801,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 781,
+          "kind": "server_value_import",
+          "symbol": "getActivityRowViewer",
+          "target": "src/server/services/activities.ts#getActivityRowViewer"
+        },
+        {
+          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
+          "anchorEnd": 1142,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1116,
+          "kind": "server_value_import",
+          "symbol": "getActivityUnitPreferences",
+          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+        },
+        {
+          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
+          "anchorEnd": 887,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 866,
+          "kind": "server_value_import",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
+          "anchorEnd": 817,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 803,
+          "kind": "server_value_import",
+          "symbol": "listActivities",
+          "target": "src/server/services/activities.ts#listActivities"
+        },
+        {
+          "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
+          "anchorEnd": 979,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 959,
+          "kind": "server_value_import",
+          "symbol": "listFeedInteractions",
+          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
+          "anchorEnd": 1048,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1035,
+          "kind": "server_value_import",
+          "symbol": "listFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listFeedPosts"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 739,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 724,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/app/moments/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/moments/page.tsx",
+      "sidecarPath": "src/app/app/moments/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
+          "anchorEnd": 422,
+          "anchorFile": "src/app/app/moments/removed/page.tsx",
+          "anchorStart": 401,
+          "kind": "server_value_import",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorDigest": "4033c2369f031d9e3c4a655f4ce81e828048c1006917e2d3f9ea3b581175abb1",
+          "anchorEnd": 494,
+          "anchorFile": "src/app/app/moments/removed/page.tsx",
+          "anchorStart": 474,
+          "kind": "server_value_import",
+          "symbol": "listRemovedFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 359,
+          "anchorFile": "src/app/app/moments/removed/page.tsx",
+          "anchorStart": 344,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/app/moments/removed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/moments/removed/page.tsx",
+      "sidecarPath": "src/app/app/moments/removed/page.operation.ts"
     },
     {
       "bindings": [
@@ -14086,7 +14086,7 @@
     }
   ],
   "observationCount": 215,
-  "observationDigest": "69f799606787d958da7a793b45c8e4664d2b1706bfa3eb560387967e6d841b98",
+  "observationDigest": "ae032b7f57a00ab2b471d46f5ab73e6e6380060d7f4a9e64968db49d208b42c8",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -16532,123 +16532,6 @@
     {
       "bindings": [
         {
-          "anchorEnd": 957,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 939,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "feedInteractionKey",
-          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
-        },
-        {
-          "anchorEnd": 801,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 781,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "getActivityRowViewer",
-          "target": "src/server/services/activities.ts#getActivityRowViewer"
-        },
-        {
-          "anchorEnd": 1142,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 1116,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "getActivityUnitPreferences",
-          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
-        },
-        {
-          "anchorEnd": 887,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 866,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorEnd": 817,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 803,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "listActivities",
-          "target": "src/server/services/activities.ts#listActivities"
-        },
-        {
-          "anchorEnd": 979,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 959,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "listFeedInteractions",
-          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
-        },
-        {
-          "anchorEnd": 1048,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 1035,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "listFeedPosts",
-          "target": "src/server/services/feed-posts.ts#listFeedPosts"
-        },
-        {
-          "anchorEnd": 739,
-          "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 724,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/page.tsx",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "id": "server_loader:src/app/app/feed/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/feed/page.tsx",
-      "sidecarPath": "src/app/app/feed/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
-          "anchorEnd": 422,
-          "anchorFile": "src/app/app/feed/removed/page.tsx",
-          "anchorStart": 401,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/removed/page.tsx",
-          "symbol": "getHeaderBabySelector",
-          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
-        },
-        {
-          "anchorEnd": 494,
-          "anchorFile": "src/app/app/feed/removed/page.tsx",
-          "anchorStart": 474,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/removed/page.tsx",
-          "symbol": "listRemovedFeedPosts",
-          "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
-        },
-        {
-          "anchorEnd": 359,
-          "anchorFile": "src/app/app/feed/removed/page.tsx",
-          "anchorStart": 344,
-          "kind": "server_value_import",
-          "ownerModule": "src/app/app/feed/removed/page.tsx",
-          "symbol": "requireUserPage",
-          "target": "src/server/auth/session.ts#requireUserPage"
-        }
-      ],
-      "disposition": "observed",
-      "id": "server_loader:src/app/app/feed/removed/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/feed/removed/page.tsx",
-      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
-    },
-    {
-      "bindings": [
-        {
           "anchorEnd": 767,
           "anchorFile": "src/app/app/history/page.tsx",
           "anchorStart": 747,
@@ -16771,6 +16654,123 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 957,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 939,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "feedInteractionKey",
+          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+        },
+        {
+          "anchorEnd": 801,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 781,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "getActivityRowViewer",
+          "target": "src/server/services/activities.ts#getActivityRowViewer"
+        },
+        {
+          "anchorEnd": 1142,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1116,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "getActivityUnitPreferences",
+          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+        },
+        {
+          "anchorEnd": 887,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 866,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorEnd": 817,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 803,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "listActivities",
+          "target": "src/server/services/activities.ts#listActivities"
+        },
+        {
+          "anchorEnd": 979,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 959,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "listFeedInteractions",
+          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorEnd": 1048,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1035,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "listFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listFeedPosts"
+        },
+        {
+          "anchorEnd": 739,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 724,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/app/moments/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/moments/page.tsx",
+      "sidecarPath": "src/app/app/moments/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 422,
+          "anchorFile": "src/app/app/moments/removed/page.tsx",
+          "anchorStart": 401,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/removed/page.tsx",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorEnd": 494,
+          "anchorFile": "src/app/app/moments/removed/page.tsx",
+          "anchorStart": 474,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/removed/page.tsx",
+          "symbol": "listRemovedFeedPosts",
+          "target": "src/server/services/feed-posts.ts#listRemovedFeedPosts"
+        },
+        {
+          "anchorEnd": 359,
+          "anchorFile": "src/app/app/moments/removed/page.tsx",
+          "anchorStart": 344,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/removed/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/app/moments/removed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/moments/removed/page.tsx",
+      "sidecarPath": "src/app/app/moments/removed/page.operation.ts"
     },
     {
       "bindings": [
@@ -20750,18 +20750,6 @@
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
     },
     {
-      "id": "server_loader:src/app/app/feed/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/feed/page.tsx",
-      "sidecarPath": "src/app/app/feed/page.operation.ts"
-    },
-    {
-      "id": "server_loader:src/app/app/feed/removed/page.tsx",
-      "ownerKind": "server_loader",
-      "ownerModule": "src/app/app/feed/removed/page.tsx",
-      "sidecarPath": "src/app/app/feed/removed/page.operation.ts"
-    },
-    {
       "id": "server_loader:src/app/app/history/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/history/page.tsx",
@@ -20778,6 +20766,18 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
+    },
+    {
+      "id": "server_loader:src/app/app/moments/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/moments/page.tsx",
+      "sidecarPath": "src/app/app/moments/page.operation.ts"
+    },
+    {
+      "id": "server_loader:src/app/app/moments/removed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/moments/removed/page.tsx",
+      "sidecarPath": "src/app/app/moments/removed/page.operation.ts"
     },
     {
       "id": "server_loader:src/app/app/page.tsx",
@@ -21332,9 +21332,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "510e8d788264e19c2a7ae961dfa3dbc1f94b7b2dcff9b93318b313909e0a131b",
+  "ownerSetDigest": "c1e614c8da750a8bfc3d0b9e03d55ae7b31ff13b95b69c0cbe81edf68e7936d5",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "730ded9106fdf7781bab90a1125a24cfa48d6f363b5db158b5fda845ad55cf45",
+  "registryDigest": "4a490952ad38d89bd5e01fd6f9b378a33921b547c4c69d36a7f38e193d85fad2",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

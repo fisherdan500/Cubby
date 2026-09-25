@@ -47,7 +47,7 @@ vi.mock("@/components/app-shell", () => ({
 }));
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 
-import FeedPage from "@/app/app/feed/page";
+import FeedPage from "@/app/app/moments/page";
 
 function entry(id: string, occurredAt: string, type: string, detail: Record<string, unknown> = {}) {
   return {
@@ -88,7 +88,8 @@ describe("Feed page", () => {
   it("is a titled screen of cards for the selected baby, newest first, under their days", async () => {
     const body = await renderFeed({ babyId: "baby-1" });
 
-    expect(body.querySelector("main")?.getAttribute("data-title")).toBe("Feed");
+    // Called Moments, not Feed: "Feed" means feeding the baby everywhere else in Cubby.
+    expect(body.querySelector("main")?.getAttribute("data-title")).toBe("Moments");
     expect(mocks.listActivities).toHaveBeenCalledWith(expect.objectContaining({ babyId: "baby-1", type: undefined }));
     expect([...body.querySelectorAll("h2")].map((heading) => heading.textContent)).toEqual(["Today", "Yesterday"]);
     expect([...body.querySelectorAll("article")].map((card) => card.getAttribute("aria-label"))).toEqual(["Milestone", "Diaper", "Note"]);
@@ -109,19 +110,19 @@ describe("Feed page", () => {
     const href = body.querySelector("article a")?.getAttribute("href") ?? "";
 
     expect(href).toMatch(/^\/app\/activities\/a1\?/);
-    expect(new URL(href, "https://cubby.invalid").searchParams.get("returnTo")).toBe("/app/feed?babyId=baby-1&filter=milestone");
+    expect(new URL(href, "https://cubby.invalid").searchParams.get("returnTo")).toBe("/app/moments?babyId=baby-1&filter=milestone");
   });
 
   it("filters from the header, marking the filter in use", async () => {
     const body = await renderFeed({ babyId: "baby-1", filter: "milestone" });
-    const filters = [...body.querySelectorAll('nav[aria-label="Feed filters"] a')];
+    const filters = [...body.querySelectorAll('nav[aria-label="Moments filters"] a')];
 
     expect(mocks.listActivities).toHaveBeenCalledWith(expect.objectContaining({ type: "milestone" }));
     expect(filters.map((link) => link.textContent)).toEqual(["Everything", "Posts", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
     // A kind-of-entry filter shows entries alone.
     expect(mocks.listFeedPosts).not.toHaveBeenCalled();
     expect(filters.find((link) => link.getAttribute("aria-current") === "true")?.textContent).toBe("Milestones");
-    expect(filters[0].getAttribute("href")).toBe("/app/feed?babyId=baby-1");
+    expect(filters[0].getAttribute("href")).toBe("/app/moments?babyId=baby-1");
   });
 
   it("pages back through older entries", async () => {
@@ -134,7 +135,7 @@ describe("Feed page", () => {
     const older = [...body.querySelectorAll("a")].find((link) => link.textContent === "Older entries");
     // The next page continues from the last entry shown, so posts are neither skipped nor repeated.
     // The 25th entry shown (a24) is 24 hours before the first: 15:00 on the 24th.
-    expect(older?.getAttribute("href")).toBe("/app/feed?babyId=baby-1&cursor=a24&before=2026-09-24T15%3A00%3A00.000Z");
+    expect(older?.getAttribute("href")).toBe("/app/moments?babyId=baby-1&cursor=a24&before=2026-09-24T15%3A00%3A00.000Z");
     expect(mocks.listFeedPosts).toHaveBeenCalledWith(expect.objectContaining({ from: new Date("2026-09-24T15:00:00Z"), to: undefined }));
   });
 
@@ -149,7 +150,7 @@ describe("Feed page", () => {
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual(["Milestone", "Post", "Diaper", "Note"]);
     expect(cards[1].textContent).toContain("Sam");
     expect(cards[1].textContent).toContain("The whole family");
-    expect(cards[1].querySelector("a")?.getAttribute("href")).toBe("/app/feed?babyId=baby-1&filter=posts&tag=weekend");
+    expect(cards[1].querySelector("a")?.getAttribute("href")).toBe("/app/moments?babyId=baby-1&filter=posts&tag=weekend");
     expect(cards[1].querySelector("[data-remove]")?.getAttribute("data-remove")).toBe("post-1");
   });
 
@@ -224,7 +225,7 @@ describe("Feed page", () => {
     const body = await renderFeed({ babyId: "baby-1" });
     expect(body.querySelector("[data-composer]")?.getAttribute("data-photos")).toBe("true");
     const removed = [...body.querySelectorAll("a")].find((link) => link.textContent === "Recently removed");
-    expect(removed?.getAttribute("href")).toBe("/app/feed/removed?babyId=baby-1");
+    expect(removed?.getAttribute("href")).toBe("/app/moments/removed?babyId=baby-1");
 
     mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-9", role: "read_only" });
     const readOnly = await renderFeed({ babyId: "baby-1" });

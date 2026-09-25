@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, ClipboardList, LineChart, Menu, Newspaper, PlusCircle, Settings } from "lucide-react";
+import { CalendarDays, ClipboardList, LineChart, Menu, PlusCircle, Settings, Sparkles } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
-// The Feed holds the tab the Full Log had: it is meant to replace it in time (DEC-PROD-421), and until
-// then the Full Log is one tap further, behind More.
+// Moments (the family feed) holds the tab the Full Log had: it is meant to replace it in time
+// (DEC-PROD-421), and until then the Full Log is one tap further, behind More.
 const mobileNav = [
   { href: "/app", label: "Log", icon: PlusCircle },
-  { href: "/app/feed", label: "Feed", icon: Newspaper },
+  { href: "/app/moments", label: "Moments", icon: Sparkles },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/app/reports", label: "Reports", icon: LineChart }
 ];

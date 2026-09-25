@@ -21,7 +21,7 @@ type ActivityItem = Awaited<ReturnType<typeof listActivities>>[number];
 type FeedItem = { kind: "activity"; at: Date; activity: ActivityItem } | { kind: "post"; at: Date; post: FeedPostView };
 
 /**
- * The family feed (DEC-PROD-421): everything logged for the selected baby and the family's posts,
+ * Moments, the family feed (DEC-PROD-421): everything logged for the selected baby and the family's posts,
  * newest first, as a scrollable run of cards - a private family journal. Whole-family posts appear
  * whichever baby is selected. It is only ever the household's own entries, in time order: no ranking,
  * counts or anything designed to keep someone scrolling.
@@ -83,9 +83,9 @@ export default async function FeedPage({
   };
 
   return (
-    <AppShell title="Feed" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Moments" userName={user.name} babySelector={babySelector}>
       <div className="mx-auto max-w-2xl space-y-5">
-        <nav aria-label="Feed filters" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <nav aria-label="Moments filters" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {feedFilters.map((option) => {
             const current = option.key === filter.key;
             return (
@@ -156,7 +156,7 @@ export default async function FeedPage({
         ))}
 
         {searchParams.cursor || nextCursor ? (
-          <nav aria-label="Feed pages" className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <nav aria-label="Moments pages" className="flex flex-wrap items-center justify-between gap-3 pt-1">
             {searchParams.cursor ? (
               <Link
                 href={feedHref({ babyId, filter: filter.key, tag })}
@@ -179,7 +179,7 @@ export default async function FeedPage({
         {canPost ? (
           <p className="text-center">
             <Link
-              href={`/app/feed/removed${babyId ? `?babyId=${encodeURIComponent(babyId)}` : ""}`}
+              href={`/app/moments/removed${babyId ? `?babyId=${encodeURIComponent(babyId)}` : ""}`}
               className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               Recently removed

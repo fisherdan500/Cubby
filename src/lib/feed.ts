@@ -5,6 +5,9 @@ import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
  * The family feed (DEC-PROD-421): the household's own entries, newest first, one card each, for the
  * baby chosen at the top. The header filters narrow it to the kinds of entry people come looking for;
  * posts will join them when they exist.
+ *
+ * People see it as Moments, at /app/moments: "Feed" already means feeding the baby everywhere else in
+ * Cubby. The code keeps the feed name; only what people read changed. /app/feed forwards here.
  */
 
 // `posts` says whether a filter shows posts mixed with entries, posts alone, or entries alone.
@@ -36,7 +39,7 @@ export function feedHref({ babyId, filter, tag, cursor, before }: { babyId?: str
   if (cursor) params.set("cursor", cursor);
   if (before) params.set("before", before);
   const query = params.toString();
-  return query ? `/app/feed?${query}` : "/app/feed";
+  return query ? `/app/moments?${query}` : "/app/moments";
 }
 
 /** Entries grouped under the household's own days, labelled the way people talk about them. */

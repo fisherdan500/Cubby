@@ -33,7 +33,7 @@ export default async function RemovedFeedPostsPage({ searchParams }: { searchPar
     <AppShell title="Recently removed" userName={user.name} babySelector={babySelector}>
       <div className="mx-auto max-w-2xl space-y-4">
         <Link href={feedHref({ babyId })} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted">
-          Back to Feed
+          Back to Moments
         </Link>
         <p className="text-sm text-muted-foreground">Removed posts and their photos can be brought back for 30 days. After that they are gone for good.</p>
 
