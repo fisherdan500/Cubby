@@ -25,6 +25,7 @@ vi.mock("@/components/app-shell", () => ({
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 vi.mock("@/components/reports/routine-tab", () => ({ RoutineTab: () => createElement("div", null, "routine") }));
 
+import { defaultUnitPreferences } from "@/domain/unit-preferences";
 import { buildReportStats, buildRoutine } from "@/server/services/reports";
 import ReportsPage from "@/app/app/reports/page";
 
@@ -36,11 +37,8 @@ async function renderReports(tab?: string) {
   return document.body;
 }
 
-beforeEach(() => {
-  vi.resetAllMocks();
-  mocks.requireUserPage.mockResolvedValue({ id: "user-1", name: "Parent", email: "parent@example.test" });
-  mocks.getHeaderBabySelector.mockResolvedValue(null);
-  mocks.getReports.mockResolvedValue({
+function baseReport() {
+  return {
     home: { householdId: "household-1" },
     baby: { id: "baby-1", name: "Avery", birthDate: null },
     startKey: "2026-09-13",
@@ -48,8 +46,16 @@ beforeEach(() => {
     todayKey: endKey,
     routine: buildRoutine([], endKey, "1w", "Etc/UTC"),
     stats: buildReportStats([], null, "Etc/UTC"),
-    previous: null
-  });
+    previous: null,
+    history: buildReportStats([], null, "Etc/UTC")
+  };
+}
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  mocks.requireUserPage.mockResolvedValue({ id: "user-1", name: "Parent", email: "parent@example.test" });
+  mocks.getHeaderBabySelector.mockResolvedValue(null);
+  mocks.getReports.mockResolvedValue(baseReport());
 });
 
 describe("ReportsPage accessibility", () => {
@@ -104,7 +110,7 @@ describe("ReportsPage accessibility", () => {
       type: "diaper", occurredAt: new Date(`${day}T${String(8 + index).padStart(2, "0")}:00:00.000Z`), durationSeconds: null, diaper: { kind: "wet" }
     }));
     mocks.getReports.mockResolvedValue({
-      ...(await mocks.getReports.mock.results.at(-1)?.value),
+      ...baseReport(),
       stats: buildReportStats(diapers(6, "2026-09-18") as never, null, "Etc/UTC"),
       previous: { startKey: "2026-09-06", endKey: "2026-09-12", stats: buildReportStats(diapers(5, "2026-09-10") as never, null, "Etc/UTC") }
     });
@@ -115,6 +121,56 @@ describe("ReportsPage accessibility", () => {
     expect(body.textContent).toContain("compared with Sep 6 to Sep 12");
     const row = [...body.querySelectorAll("li")].find((item) => item.textContent?.startsWith("Diapers per day"));
     expect(row?.textContent).toBe("Diapers per day6+1");
+  });
+
+  it("reads the whole history for Growth and Milestones, where the date range does not apply", async () => {
+    for (const tab of ["growth", "milestones"]) {
+      const body = await renderReports(tab);
+      expect(mocks.getReports).toHaveBeenLastCalledWith("user-1", expect.objectContaining({ history: true }));
+      expect(body.querySelector("#report-start")).toBeNull();
+      expect(body.querySelector('nav[aria-label="Report period"]')).toBeNull();
+    }
+    await renderReports("stats");
+    expect(mocks.getReports).toHaveBeenLastCalledWith("user-1", expect.objectContaining({ history: false }));
+  });
+
+  it("leads each growth measure with the latest value and its change, then the history newest first", async () => {
+    const measurement = (occurredAt: string, weight: string) => ({
+      type: "measurement", occurredAt: new Date(occurredAt), durationSeconds: null, measurement: { weight, weightUnit: "kg" }
+    });
+    mocks.getReports.mockResolvedValue({
+      ...baseReport(),
+      // A household that weighs in kilograms; the default preference would convert to pounds.
+      history: buildReportStats(
+        [measurement("2026-08-12T12:00:00Z", "7.9"), measurement("2026-09-15T12:00:00Z", "8.2")] as never,
+        new Date("2026-03-15T00:00:00Z"),
+        "Etc/UTC",
+        { ...defaultUnitPreferences, weight: "kg" }
+      )
+    });
+    const body = await renderReports("growth");
+    const weight = [...body.querySelectorAll("section")].find((section) => section.querySelector("h2")?.textContent === "Weight");
+
+    expect(weight?.textContent).toContain("8.2 kg");
+    expect(weight?.textContent).toContain("+0.3 kg since Aug 12");
+    expect([...(weight?.querySelectorAll("li") ?? [])].map((item) => item.textContent)).toEqual([
+      "Sep 15, 20266 months8.2 kg+0.3 kg",
+      "Aug 12, 20264 months7.9 kg"
+    ]);
+  });
+
+  it("groups milestones by month, newest first, with the baby's age at each", async () => {
+    const milestone = (occurredAt: string, title: string) => ({
+      type: "milestone", occurredAt: new Date(occurredAt), durationSeconds: null, milestone: { title, category: "Motor" }
+    });
+    mocks.getReports.mockResolvedValue({
+      ...baseReport(),
+      history: buildReportStats([milestone("2026-08-02T12:00:00Z", "Rolled over"), milestone("2026-09-19T12:00:00Z", "Sat up")] as never, new Date("2026-03-15T00:00:00Z"), "Etc/UTC")
+    });
+    const body = await renderReports("milestones");
+
+    expect([...body.querySelectorAll("h2")].map((heading) => heading.textContent)).toEqual(["September 2026", "August 2026"]);
+    expect(body.querySelector("li")?.textContent).toBe("Sat upMotor · Sep 19 · 6 months");
   });
 
   it("treats the growth chart as decorative because its points are listed as text", async () => {

@@ -156,14 +156,15 @@ describe("growth and milestones", () => {
     expect(result.growth.length).toEqual([]);
   });
 
-  it("keeps milestones with their moment, title and category", () => {
-    const result = stats([
-      activity("milestone", "2026-09-19T14:00:00.000Z", { milestone: { title: "First steps", category: "Motor" } })
-    ]);
+  it("keeps milestones with their moment, title, category and the baby's age", () => {
+    const milestone = activity("milestone", "2026-09-19T14:00:00.000Z", { milestone: { title: "First steps", category: "Motor" } });
 
-    expect(result.milestones).toEqual([
-      { date: new Date("2026-09-19T14:00:00.000Z"), title: "First steps", category: "Motor" }
+    expect(stats([milestone], new Date("2026-03-19T00:00:00.000Z")).milestones).toEqual([
+      // 184.6 days after the birth date: 6.1 average months, as the growth points count it.
+      { date: new Date("2026-09-19T14:00:00.000Z"), title: "First steps", category: "Motor", ageMonths: 6.1 }
     ]);
+    // Without a birth date there is no age, rather than an age of zero.
+    expect(stats([milestone]).milestones[0].ageMonths).toBeNull();
   });
 });
 
@@ -212,6 +213,28 @@ describe("report range", () => {
     expect(previous.babyId).toBe("baby-1");
     expect(previous.householdId).toBe("household-1");
     expect(report?.previous).toMatchObject({ startKey: "2026-09-06", endKey: "2026-09-12" });
+  });
+
+  it("reads the baby's whole measurement and milestone history, whatever the range, only when asked", async () => {
+    await getReports("user-1", { babyId: "baby-1", start: "2026-09-13", end: "2026-09-19" });
+    expect(mocks.findMany).toHaveBeenCalledTimes(2);
+
+    mocks.findMany.mockClear();
+    // Every other query is bounded by a date range; the history is the one that is not.
+    mocks.findMany.mockImplementation(async ({ where }) =>
+      where.occurredAt ? [] : [activity("milestone", "2026-01-05T15:00:00.000Z", { milestone: { title: "First smile", category: null } })]
+    );
+    const report = await getReports("user-1", { babyId: "baby-1", start: "2026-09-13", end: "2026-09-19", history: true });
+    const historyQuery = mocks.findMany.mock.calls.find(([query]) => !query.where.occurredAt)?.[0].where;
+
+    expect(historyQuery).toEqual({
+      householdId: "household-1",
+      babyId: "baby-1",
+      deletedAt: null,
+      type: { in: ["measurement", "milestone"] }
+    });
+    // January is far outside the September range, and still part of the history.
+    expect(report?.history?.milestones.map((milestone) => milestone.title)).toEqual(["First smile"]);
   });
 
   it("falls back to the last seven days when the range is missing or malformed", async () => {

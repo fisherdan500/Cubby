@@ -7,8 +7,9 @@ import { RoutineTab } from "@/components/reports/routine-tab";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { env } from "@/lib/env";
+import { growthSeries, milestoneTimeline } from "@/lib/growth-history";
 import { buildStatsSummary } from "@/lib/stats-summary";
-import { addDaysToDateKey, formatInstantDate } from "@/lib/timezone";
+import { addDaysToDateKey } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getPlannedSchedule } from "@/server/services/planned-schedule";
@@ -36,7 +37,9 @@ export default async function ReportsPage({
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const tab = searchParams.tab && tabs.some(([value]) => value === searchParams.tab) ? searchParams.tab : "routine";
   // Only Stats compares with the period before, so only Stats pays for reading it.
-  const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId, compare: tab === "stats" });
+  // Growth and Milestones read the whole history instead; the date range does not apply to them.
+  const historyTab = tab === "growth" || tab === "milestones";
+  const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId, compare: tab === "stats", history: historyTab });
   if (!report?.home) redirect("/onboarding");
   // The plan sits beside the observed routine, so it is only read when that tab is open.
   const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
@@ -56,6 +59,8 @@ export default async function ReportsPage({
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
+          {historyTab ? null : (
+          <>
           <nav aria-label="Report period" className="flex flex-wrap gap-2 print:hidden">
             {quickPeriods.map((days) => {
               const start = addDaysToDateKey(report.todayKey, -(days - 1));
@@ -91,6 +96,8 @@ export default async function ReportsPage({
               <Input id="report-end" name="end" type="date" defaultValue={report.endKey} className="sm:w-48" />
             </AutoSubmitForm>
           </Card>
+          </>
+          )}
 
           {/* Which report is open was carried by colour alone; aria-current says it too. */}
           <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2 print:hidden">
@@ -110,8 +117,8 @@ export default async function ReportsPage({
           </nav>
 
           {tab === "stats" ? <StatsTab stats={report.stats} previous={report.previous} /> : null}
-          {tab === "milestones" ? <MilestonesTab stats={report.stats} /> : null}
-          {tab === "growth" ? <GrowthTab stats={report.stats} /> : null}
+          {tab === "milestones" && report.history ? <MilestonesTab history={report.history} babyName={report.baby.name} /> : null}
+          {tab === "growth" && report.history ? <GrowthTab history={report.history} babyName={report.baby.name} /> : null}
           {tab === "routine" ? (
             <RoutineTab
               babyId={report.baby.id}
@@ -173,30 +180,43 @@ function formatDateKey(key: string) {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function MilestonesTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
-  if (!stats) return null;
+type History = NonNullable<ReportData["history"]>;
+type GrowthPoints = History["growth"]["weight"];
+
+/** Every milestone, newest first, by month - a record kept for good, not a window onto one. */
+function MilestonesTab({ history, babyName }: { history: History; babyName: string }) {
+  const groups = milestoneTimeline(history.milestones, env.APP_TIMEZONE);
+  if (!groups.length) {
+    return <Card><p className="text-sm text-muted-foreground">No milestones logged for {babyName} yet.</p></Card>;
+  }
   return (
-    <Card className="space-y-3">
-      {stats.milestones.length ? null : <p className="text-sm text-muted-foreground">No milestones in this range.</p>}
-      {stats.milestones.map((milestone) => (
-        <div key={`${milestone.title}-${milestone.date.toISOString()}`} className="rounded-md bg-muted p-3">
-          <p className="font-semibold">{milestone.title}</p>
-          <p className="text-sm text-muted-foreground">
-            {milestone.category ?? "Milestone"} - {formatInstantDate(milestone.date, env.APP_TIMEZONE)}
-          </p>
-        </div>
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">Every milestone logged for {babyName}, newest first.</p>
+      {groups.map((group) => (
+        <Card key={group.month} className="space-y-2">
+          <h2 className="text-base font-semibold">{group.month}</h2>
+          <ul className="divide-y divide-border">
+            {group.items.map((item, index) => (
+              <li key={`${item.title}-${index}`} className="py-2.5">
+                <p className="font-semibold">{item.title}</p>
+                <p className="text-xs text-muted-foreground">{[item.category, item.date, item.age].filter(Boolean).join(" · ")}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
       ))}
-    </Card>
+    </div>
   );
 }
 
-function GrowthTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof getReports>>>["stats"] }) {
-  if (!stats) return null;
+/** Each measure leads with its latest value and how it changed; babies are measured weeks apart. */
+function GrowthTab({ history, babyName }: { history: History; babyName: string }) {
   return (
     <div className="space-y-4">
-      <Trend title="Weight" points={stats.growth.weight} />
-      <Trend title="Length/Height" points={stats.growth.length} />
-      <Trend title="Head Circumference" points={stats.growth.head} />
+      <p className="text-sm text-muted-foreground">Every measurement logged for {babyName}.</p>
+      <Measure title="Weight" points={history.growth.weight} />
+      <Measure title="Length/Height" points={history.growth.length} />
+      <Measure title="Head Circumference" points={history.growth.head} />
       <p className="text-center text-xs text-muted-foreground">
         Percentiles are not shown until a household imports original CDC/WHO reference data.
       </p>
@@ -204,65 +224,69 @@ function GrowthTab({ stats }: { stats: NonNullable<Awaited<ReturnType<typeof get
   );
 }
 
-function Trend({
-  title,
-  points
-}: {
-  title: string;
-  points: Array<{ date: string; ageMonths: number; value: number; unit: string }> | null;
-}) {
-  if (points === null) {
+function Measure({ title, points }: { title: string; points: GrowthPoints }) {
+  const series = growthSeries(points);
+  if (series === null) {
     return (
-      <Card className="space-y-3">
-        <h2 className="font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">Unavailable because one or more saved measurements use an unsupported unit.</p>
-      </Card>
+      <section>
+        <Card className="space-y-3">
+          <h2 className="font-semibold">{title}</h2>
+          <p className="text-sm text-muted-foreground">Unavailable because one or more saved measurements use an unsupported unit.</p>
+        </Card>
+      </section>
     );
   }
+  return (
+    <section>
+      <Card className="space-y-3">
+        <h2 className="font-semibold">{title}</h2>
+        {series.latest ? (
+          <>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="tabular font-editorial text-3xl font-bold">{series.latest.value}</p>
+              <p className="text-sm text-muted-foreground">
+                {[series.latest.date, series.latest.age].filter(Boolean).join(" · ")}
+                {series.sinceLast ? ` · ${series.sinceLast.change} since ${series.sinceLast.since}` : ""}
+              </p>
+            </div>
+            {points && points.length > 1 ? <GrowthChart points={points} /> : null}
+            <ul className="divide-y divide-border">
+              {series.entries.map((entry, index) => (
+                <li key={`${entry.date}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto_4.5rem] items-baseline gap-3 py-2 text-sm">
+                  <span className="text-muted-foreground">{entry.date}</span>
+                  <span className="text-xs text-muted-foreground">{entry.age ?? ""}</span>
+                  <span className="tabular font-semibold">{entry.value}</span>
+                  <span className="tabular text-right text-xs text-muted-foreground">{entry.change ?? ""}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">No measurements logged yet.</p>
+        )}
+      </Card>
+    </section>
+  );
+}
+
+/** Spaced by date, so a long gap between measurements looks like one. Every point is listed as text. */
+function GrowthChart({ points }: { points: NonNullable<GrowthPoints> }) {
   const width = 720;
   const height = 180;
-  const values = points.map((point) => point.value);
-  const min = values.length ? Math.min(...values) : 0;
-  const max = values.length ? Math.max(...values) : 1;
-  const span = Math.max(1, max - min);
-  const d = points
-    .map((point, index) => {
-      const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
-      const y = height - ((point.value - min) / span) * (height - 20) - 10;
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(" ");
-
+  const ordered = [...points].sort((left, right) => left.date.localeCompare(right.date));
+  const times = ordered.map((point) => Date.parse(`${point.date}T00:00:00Z`));
+  const values = ordered.map((point) => point.value);
+  const [first, last] = [Math.min(...times), Math.max(...times)];
+  const [min, max] = [Math.min(...values), Math.max(...values)];
+  const x = (time: number) => (last === first ? width / 2 : 20 + ((time - first) / (last - first)) * (width - 40));
+  const y = (value: number) => height - ((value - min) / Math.max(max - min, 0.0001)) * (height - 40) - 20;
+  const d = ordered.map((point, index) => `${index === 0 ? "M" : "L"} ${x(times[index]).toFixed(1)} ${y(point.value).toFixed(1)}`).join(" ");
   return (
-    <Card className="space-y-3">
-      <h2 className="font-semibold">{title}</h2>
-      {points.length ? (
-        <>
-          {/* Decorative: every plotted measurement is listed as text directly below. */}
-          <svg aria-hidden="true" viewBox={`0 0 ${width} ${height}`} className="h-52 w-full rounded-md bg-muted">
-            <path d={d} fill="none" stroke="hsl(var(--primary))" strokeWidth="4" />
-            {points.map((point, index) => {
-              const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
-              const y = height - ((point.value - min) / span) * (height - 20) - 10;
-              return <circle key={`${point.date}-${index}`} cx={x} cy={y} r="5" fill="hsl(var(--accent))" />;
-            })}
-          </svg>
-          <div className="grid gap-2 md:grid-cols-3">
-            {points.map((point) => (
-              <div key={`${point.date}-${point.value}`} className="rounded-md bg-muted p-3">
-                <p className="font-semibold">
-                  {point.value} {point.unit}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {point.ageMonths} months - {point.date}
-                </p>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">No measurements in this range.</p>
-      )}
-    </Card>
+    <svg aria-hidden="true" viewBox={`0 0 ${width} ${height}`} className="h-44 w-full rounded-md bg-muted">
+      <path d={d} fill="none" stroke="hsl(var(--primary))" strokeWidth="4" />
+      {ordered.map((point, index) => (
+        <circle key={`${point.date}-${index}`} cx={x(times[index])} cy={y(point.value)} r="5" fill="hsl(var(--accent))" />
+      ))}
+    </svg>
   );
 }
