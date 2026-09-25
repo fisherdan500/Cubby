@@ -107,6 +107,10 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
    - 3a: a household with photos downloads one uncompressed `.zip` (`backup.json` with a checksummed photo list, plus `photos/<id>.jpg`), and restore accepts it with every photo verified. Households without photos keep the same `.json`.
    - 3b: automated backups written as `.zip` versions (written, synced and fully read back before they count), verified photo by photo by the integrity check, streamed on download, and accepted by the update preflight; plus the `docker-data/attachments` volume, `quick-start.sh` and install notes.
    - 3c: photos switched on. An existing install needs `docker-data/attachments` owned by uid 1000 first (see the README); `enabledTypes.feed_photo` in `src/domain/attachments.ts` switches them off again if ever needed.
+4. Using the photos:
+   - a full-screen viewer inside Moments: swipe or tap either side to move between photos, stopping at the ends; swipe down to close; buttons that fade after two seconds;
+   - Save (on a phone, through the share sheet, so an iPhone puts it in Photos) and, on a computer, Share;
+   - a Photos filter gathering every post's photos into one grid, newest post first, 25 posts a page.
 
 ### Routine And Planned Schedule
 

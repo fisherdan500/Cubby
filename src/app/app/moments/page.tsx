@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { FeedActivityCard } from "@/components/feed/feed-activity-card";
+import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
 import { FeedPostComposer } from "@/components/feed/feed-post-actions";
 import { FeedPostCard } from "@/components/feed/feed-post-card";
 import { FeedResponses } from "@/components/feed/feed-responses";
@@ -40,10 +41,16 @@ export default async function FeedPage({
   const before = parseInstant(searchParams.before);
   const [unitSettings, viewer] = await Promise.all([getActivityUnitPreferences(), getActivityRowViewer()]);
 
-  let items: FeedItem[];
+  let items: FeedItem[] = [];
   let nextCursor: string | undefined;
   let nextBefore: string | undefined;
-  if (filter.posts === "only") {
+  // Under Photos: every post's shown photos in one gallery, a page of posts at a time, newest first.
+  let gallery: FeedPostView["photos"] | undefined;
+  if (filter.posts === "photos") {
+    const page = paginateHistoryItems(await listFeedPosts({ babyId, withPhotos: true, page: historyPageQuery(searchParams.cursor) }));
+    gallery = page.items.flatMap((post) => post.photos);
+    nextCursor = page.nextCursor;
+  } else if (filter.posts === "only") {
     const page = paginateHistoryItems(await listFeedPosts({ babyId, tag, page: historyPageQuery(searchParams.cursor) }));
     items = page.items.map((post) => ({ kind: "post", at: post.occurredAt, post }));
     nextCursor = page.nextCursor;
@@ -64,7 +71,8 @@ export default async function FeedPage({
   const returnTo = feedHref({ babyId, filter: filter.key, tag, cursor: searchParams.cursor, before: searchParams.before });
   const groups = groupFeedByDay(items.map((item) => ({ ...item, occurredAt: item.at })), env.APP_TIMEZONE);
   const canPost = hasPermission(viewer.role, "feed.post");
-  const interactions = await listFeedInteractions({
+  // The gallery shows photos alone, so there is nothing to react to or comment on there.
+  const interactions = gallery ? undefined : await listFeedInteractions({
     postIds: items.flatMap((item) => item.kind === "post" ? [item.post.id] : []),
     activityIds: items.flatMap((item) => item.kind === "activity" ? [item.activity.id] : [])
   });
@@ -74,9 +82,9 @@ export default async function FeedPage({
       <FeedResponses
         parentKind={parentKind}
         parentId={parentId}
-        reactions={interactions.reactions[key] ?? []}
-        comments={interactions.comments[key] ?? []}
-        canRespond={interactions.canRespond}
+        reactions={interactions?.reactions[key] ?? []}
+        comments={interactions?.comments[key] ?? []}
+        canRespond={interactions?.canRespond ?? false}
         timeZone={env.APP_TIMEZONE}
       />
     );
@@ -116,7 +124,15 @@ export default async function FeedPage({
           <FeedPostComposer babyId={babyId} babyName={babyName} photosEnabled={attachmentTypeEnabled("feed_photo")} />
         ) : null}
 
-        {groups.length === 0 ? (
+        {gallery ? (
+          gallery.length ? (
+            <FeedPhotoGallery photos={gallery} layout="grid" />
+          ) : (
+            <Card>
+              <p className="text-sm text-muted-foreground">No photos yet. Photos shared in posts will gather here.</p>
+            </Card>
+          )
+        ) : groups.length === 0 ? (
           <Card>
             <p className="text-sm text-muted-foreground">
               Nothing here yet.{filter.key === "all" ? " Everything logged and shared will appear here as it happens." : " Try Everything to see all entries."}
@@ -170,7 +186,7 @@ export default async function FeedPage({
                 href={feedHref({ babyId, filter: filter.key, tag, cursor: nextCursor, before: nextBefore })}
                 className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold hover:bg-muted"
               >
-                Older entries
+                {gallery ? "Older photos" : "Older entries"}
               </Link>
             ) : null}
           </nav>

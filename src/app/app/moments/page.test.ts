@@ -118,7 +118,7 @@ describe("Feed page", () => {
     const filters = [...body.querySelectorAll('nav[aria-label="Moments filters"] a')];
 
     expect(mocks.listActivities).toHaveBeenCalledWith(expect.objectContaining({ type: "milestone" }));
-    expect(filters.map((link) => link.textContent)).toEqual(["Everything", "Posts", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
+    expect(filters.map((link) => link.textContent)).toEqual(["Everything", "Posts", "Photos", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
     // A kind-of-entry filter shows entries alone.
     expect(mocks.listFeedPosts).not.toHaveBeenCalled();
     expect(filters.find((link) => link.getAttribute("aria-current") === "true")?.textContent).toBe("Milestones");
@@ -230,6 +230,48 @@ describe("Feed page", () => {
     mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-9", role: "read_only" });
     const readOnly = await renderFeed({ babyId: "baby-1" });
     expect([...readOnly.querySelectorAll("a")].some((link) => link.textContent === "Recently removed")).toBe(false);
+  });
+
+  describe("Photos", () => {
+    const post = (id: string, photoIds: string[]) => ({
+      id, babyId: null, body: "", tags: [], occurredAt: new Date("2026-09-25T12:00:00Z"),
+      authorName: "Sam", canRemove: false, canEdit: false, edited: false,
+      photos: photoIds.map((photoId) => ({ id: photoId, width: 1200, height: 900 }))
+    });
+
+    it("gathers every post's photos into one grid, newest post first, each opening in the viewer", async () => {
+      mocks.listFeedPosts.mockResolvedValue([post("post-2", ["photo-c"]), post("post-1", ["photo-a", "photo-b"])]);
+      const body = await renderFeed({ babyId: "baby-1", filter: "photos" });
+
+      expect(mocks.listFeedPosts).toHaveBeenCalledWith(expect.objectContaining({ babyId: "baby-1", withPhotos: true }));
+      expect(mocks.listActivities).not.toHaveBeenCalled();
+      expect(mocks.listFeedInteractions).not.toHaveBeenCalled();
+      const grid = body.querySelector('ul[aria-label="Photos"]')!;
+      expect([...grid.querySelectorAll("img")].map((image) => image.getAttribute("src"))).toEqual([
+        "/api/attachments/photo-c",
+        "/api/attachments/photo-a",
+        "/api/attachments/photo-b"
+      ]);
+      expect([...grid.querySelectorAll("button")].map((button) => button.getAttribute("aria-label")))
+        .toEqual(["Open photo 1 of 3", "Open photo 2 of 3", "Open photo 3 of 3"]);
+      // A gallery, not the posts again.
+      expect(body.querySelectorAll("article")).toHaveLength(0);
+      expect(body.querySelector('nav[aria-label="Moments filters"] a[aria-current="true"]')?.textContent).toBe("Photos");
+    });
+
+    it("pages back through older posts' photos", async () => {
+      mocks.listFeedPosts.mockResolvedValue(Array.from({ length: 26 }, (_, index) => post(`post-${index}`, [`photo-${index}`])));
+      const body = await renderFeed({ babyId: "baby-1", filter: "photos" });
+
+      expect(body.querySelectorAll('ul[aria-label="Photos"] img')).toHaveLength(25);
+      const older = [...body.querySelectorAll("a")].find((link) => link.textContent === "Older photos");
+      expect(older?.getAttribute("href")).toBe("/app/moments?babyId=baby-1&filter=photos&cursor=post-24");
+    });
+
+    it("says where photos come from when there are none yet", async () => {
+      const body = await renderFeed({ babyId: "baby-1", filter: "photos" });
+      expect(body.textContent).toContain("No photos yet. Photos shared in posts will gather here.");
+    });
   });
 
   it("says so kindly when there is nothing yet", async () => {

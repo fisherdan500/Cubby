@@ -59,6 +59,8 @@ export async function listFeedPosts(params: {
   from?: Date;
   to?: Date;
   tag?: string;
+  // Only posts with a photo still shown: the Photos gallery, gathered from every post.
+  withPhotos?: boolean;
   page?: { take: number; orderBy: Prisma.FeedPostOrderByWithRelationInput[]; cursor?: { id: string }; skip?: number };
 }) {
   const ctx = await getEffectiveHouseholdContext();
@@ -69,7 +71,8 @@ export async function listFeedPosts(params: {
       deletedAt: null,
       ...(params.babyId ? { OR: [{ babyId: params.babyId }, { babyId: null }] } : {}),
       ...(params.from || params.to ? { occurredAt: { ...(params.from ? { gte: params.from } : {}), ...(params.to ? { lt: params.to } : {}) } } : {}),
-      ...(params.tag ? { tags: { has: params.tag.toLowerCase() } } : {})
+      ...(params.tag ? { tags: { has: params.tag.toLowerCase() } } : {}),
+      ...(params.withPhotos ? { photos: { some: { state: "available" as const } } } : {})
     },
     include: { author: { select: { displayName: true, user: { select: { name: true } } } }, photos: shownPhotos },
     ...(params.page ?? { orderBy: [{ occurredAt: "desc" as const }, { id: "desc" as const }], take: 200 })

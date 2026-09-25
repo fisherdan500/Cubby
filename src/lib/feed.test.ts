@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { feedFilters, feedHref, groupFeedByDay, resolveFeedFilter } from "@/lib/feed";
 
 describe("feed filters", () => {
-  it("offers everything first, then posts, then the kinds of entry people look for", () => {
-    expect(feedFilters.map((filter) => filter.label)).toEqual(["Everything", "Posts", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
+  it("offers everything first, then posts and their photos, then the kinds of entry people look for", () => {
+    expect(feedFilters.map((filter) => filter.label)).toEqual(["Everything", "Posts", "Photos", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
     expect(resolveFeedFilter("posts")).toMatchObject({ key: "posts", type: undefined, posts: "only" });
+    expect(resolveFeedFilter("photos")).toMatchObject({ key: "photos", type: undefined, posts: "photos" });
     expect(resolveFeedFilter("all")).toMatchObject({ posts: "mixed" });
     expect(resolveFeedFilter("sleep")).toMatchObject({ posts: "none" });
   });

@@ -281,6 +281,13 @@ describe("FeedPhotoGallery", () => {
     expect(screen.getByRole("button", { name: "Save photo" })).toBeTruthy();
   });
 
+  it("lays a gallery out as an even grid of squares, however many photos there are", () => {
+    render(createElement(FeedPhotoGallery, { photos, layout: "grid" }));
+    const grid = screen.getByRole("list", { name: "Photos" });
+    expect(grid.className).toContain("grid-cols-3");
+    expect(within(grid).getAllByRole("img").every((image) => image.className.includes("aspect-square"))).toBe(true);
+  });
+
   it("offers no stepping for a single photo", () => {
     render(createElement(FeedPhotoGallery, { photos: [photos[0]] }));
     fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 1" }));

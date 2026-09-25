@@ -230,6 +230,17 @@ describe("photo posts", () => {
       orderBy: { position: "asc" },
       select: { id: true, width: true, height: true }
     });
+    expect(mocks.findMany.mock.calls[0][0].where).not.toHaveProperty("photos");
+  });
+
+  it("lists only posts with a photo still shown, for the Photos gallery, within the same household and baby", async () => {
+    await listFeedPosts({ babyId: "baby-1", withPhotos: true });
+    expect(mocks.findMany.mock.calls[0][0].where).toMatchObject({
+      householdId: "household-1",
+      deletedAt: null,
+      OR: [{ babyId: "baby-1" }, { babyId: null }],
+      photos: { some: { state: "available" } }
+    });
   });
 });
 
