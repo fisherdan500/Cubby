@@ -96,6 +96,16 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     kind: z.literal("api_key"),
     code: z.enum(["revoked", "already_revoked"])
   }).strict(),
+  [BrowserOperationKey.feedPostCreate]: z.object({
+    kind: z.literal("feed_post"),
+    code: z.literal("created"),
+    postId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.feedPostDelete]: z.object({
+    kind: z.literal("feed_post"),
+    code: z.literal("deleted"),
+    postId: z.string().min(1)
+  }).strict(),
   [BrowserOperationKey.plannedScheduleSave]: z.object({
     kind: z.literal("planned_schedule"),
     code: z.literal("ok"),

@@ -2,8 +2,17 @@ import { describe, expect, it } from "vitest";
 import { feedFilters, feedHref, groupFeedByDay, resolveFeedFilter } from "@/lib/feed";
 
 describe("feed filters", () => {
-  it("offers everything first, then the kinds of entry people look for", () => {
-    expect(feedFilters.map((filter) => filter.label)).toEqual(["Everything", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
+  it("offers everything first, then posts, then the kinds of entry people look for", () => {
+    expect(feedFilters.map((filter) => filter.label)).toEqual(["Everything", "Posts", "Feeds", "Sleep", "Diapers", "Milestones", "Notes"]);
+    expect(resolveFeedFilter("posts")).toMatchObject({ key: "posts", type: undefined, posts: "only" });
+    expect(resolveFeedFilter("all")).toMatchObject({ posts: "mixed" });
+    expect(resolveFeedFilter("sleep")).toMatchObject({ posts: "none" });
+  });
+
+  it("links to a tag, and to the next page with the time it continues from", () => {
+    expect(feedHref({ babyId: "baby-1", filter: "posts", tag: "firsts" })).toBe("/app/feed?babyId=baby-1&filter=posts&tag=firsts");
+    expect(feedHref({ babyId: "baby-1", cursor: "a24", before: "2026-09-24T10:00:00.000Z" }))
+      .toBe("/app/feed?babyId=baby-1&cursor=a24&before=2026-09-24T10%3A00%3A00.000Z");
   });
 
   it("treats a missing or unknown filter as everything", () => {

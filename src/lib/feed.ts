@@ -7,14 +7,16 @@ import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
  * posts will join them when they exist.
  */
 
+// `posts` says whether a filter shows posts mixed with entries, posts alone, or entries alone.
 export const feedFilters = [
-  { key: "all", label: "Everything", type: undefined },
-  { key: "feeding", label: "Feeds", type: "feeding" },
-  { key: "sleep", label: "Sleep", type: "sleep" },
-  { key: "diaper", label: "Diapers", type: "diaper" },
-  { key: "milestone", label: "Milestones", type: "milestone" },
-  { key: "note", label: "Notes", type: "note" }
-] as const satisfies ReadonlyArray<{ key: string; label: string; type: ActivityTypeName | undefined }>;
+  { key: "all", label: "Everything", type: undefined, posts: "mixed" },
+  { key: "posts", label: "Posts", type: undefined, posts: "only" },
+  { key: "feeding", label: "Feeds", type: "feeding", posts: "none" },
+  { key: "sleep", label: "Sleep", type: "sleep", posts: "none" },
+  { key: "diaper", label: "Diapers", type: "diaper", posts: "none" },
+  { key: "milestone", label: "Milestones", type: "milestone", posts: "none" },
+  { key: "note", label: "Notes", type: "note", posts: "none" }
+] as const satisfies ReadonlyArray<{ key: string; label: string; type: ActivityTypeName | undefined; posts: "mixed" | "only" | "none" }>;
 
 export type FeedFilter = (typeof feedFilters)[number];
 
@@ -22,11 +24,17 @@ export function resolveFeedFilter(value: string | undefined): FeedFilter {
   return feedFilters.find((filter) => filter.key === value) ?? feedFilters[0];
 }
 
-export function feedHref({ babyId, filter, cursor }: { babyId?: string; filter?: string; cursor?: string }) {
+/**
+ * `before` is the moment the next page continues from, so the posts shown alongside a page of entries
+ * are exactly those from the same stretch of time - none skipped between pages, none shown twice.
+ */
+export function feedHref({ babyId, filter, tag, cursor, before }: { babyId?: string; filter?: string; tag?: string; cursor?: string; before?: string }) {
   const params = new URLSearchParams();
   if (babyId) params.set("babyId", babyId);
   if (filter && filter !== "all") params.set("filter", filter);
+  if (tag) params.set("tag", tag);
   if (cursor) params.set("cursor", cursor);
+  if (before) params.set("before", before);
   const query = params.toString();
   return query ? `/app/feed?${query}` : "/app/feed";
 }

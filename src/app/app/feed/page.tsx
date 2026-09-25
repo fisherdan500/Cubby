@@ -1,37 +1,66 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { FeedActivityCard } from "@/components/feed/feed-activity-card";
+import { FeedPostComposer } from "@/components/feed/feed-post-actions";
+import { FeedPostCard } from "@/components/feed/feed-post-card";
 import { Card } from "@/components/ui/card";
+import { hasPermission } from "@/domain/roles";
 import { env } from "@/lib/env";
 import { feedFilters, feedHref, groupFeedByDay, resolveFeedFilter } from "@/lib/feed";
 import { historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination";
 import { requireUserPage } from "@/server/auth/session";
-import { listActivities } from "@/server/services/activities";
+import { getActivityRowViewer, listActivities } from "@/server/services/activities";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
+import { listFeedPosts, type FeedPostView } from "@/server/services/feed-posts";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
+type ActivityItem = Awaited<ReturnType<typeof listActivities>>[number];
+type FeedItem = { kind: "activity"; at: Date; activity: ActivityItem } | { kind: "post"; at: Date; post: FeedPostView };
+
 /**
- * The family feed (DEC-PROD-421): everything logged for the selected baby, newest first, as a
- * scrollable run of cards - the start of a private family journal. Posts, comments and reactions join
- * it in later steps. It is only ever the household's own entries, in time order: no ranking, counts or
- * anything designed to keep someone scrolling.
+ * The family feed (DEC-PROD-421): everything logged for the selected baby and the family's posts,
+ * newest first, as a scrollable run of cards - a private family journal. Whole-family posts appear
+ * whichever baby is selected. It is only ever the household's own entries, in time order: no ranking,
+ * counts or anything designed to keep someone scrolling.
  */
 export default async function FeedPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; filter?: string; cursor?: string };
+  searchParams: { babyId?: string; filter?: string; tag?: string; cursor?: string; before?: string };
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const babyId = babySelector?.selectedBabyId ?? searchParams.babyId;
+  const babyName = babySelector?.babies.find((baby) => baby.id === babyId)?.name;
   const filter = resolveFeedFilter(searchParams.filter);
-  const [results, unitSettings] = await Promise.all([
-    listActivities({ babyId, type: filter.type, page: historyPageQuery(searchParams.cursor) }),
-    getActivityUnitPreferences()
-  ]);
-  const { items, nextCursor } = paginateHistoryItems(results);
-  const returnTo = feedHref({ babyId, filter: filter.key, cursor: searchParams.cursor });
-  const groups = groupFeedByDay(items, env.APP_TIMEZONE);
+  const tag = filter.posts === "only" && searchParams.tag ? searchParams.tag.toLowerCase() : undefined;
+  const before = parseInstant(searchParams.before);
+  const [unitSettings, viewer] = await Promise.all([getActivityUnitPreferences(), getActivityRowViewer()]);
+
+  let items: FeedItem[];
+  let nextCursor: string | undefined;
+  let nextBefore: string | undefined;
+  if (filter.posts === "only") {
+    const page = paginateHistoryItems(await listFeedPosts({ babyId, tag, page: historyPageQuery(searchParams.cursor) }));
+    items = page.items.map((post) => ({ kind: "post", at: post.occurredAt, post }));
+    nextCursor = page.nextCursor;
+  } else {
+    const page = paginateHistoryItems(await listActivities({ babyId, type: filter.type, page: historyPageQuery(searchParams.cursor) }));
+    const oldestShown = page.nextCursor ? page.items.at(-1)?.occurredAt : undefined;
+    // Posts from the same stretch of time as this page of entries: from the oldest entry shown (when
+    // there are older ones to come) up to where the previous page stopped.
+    const posts = filter.posts === "mixed" ? await listFeedPosts({ babyId, from: oldestShown, to: before }) : [];
+    items = [
+      ...page.items.map((activity): FeedItem => ({ kind: "activity", at: activity.occurredAt, activity })),
+      ...posts.map((post): FeedItem => ({ kind: "post", at: post.occurredAt, post }))
+    ].sort((left, right) => right.at.getTime() - left.at.getTime());
+    nextCursor = page.nextCursor;
+    nextBefore = oldestShown?.toISOString();
+  }
+
+  const returnTo = feedHref({ babyId, filter: filter.key, tag, cursor: searchParams.cursor, before: searchParams.before });
+  const groups = groupFeedByDay(items.map((item) => ({ ...item, occurredAt: item.at })), env.APP_TIMEZONE);
+  const canPost = hasPermission(viewer.role, "feed.post");
 
   return (
     <AppShell title="Feed" userName={user.name} babySelector={babySelector}>
@@ -54,10 +83,21 @@ export default async function FeedPage({
           })}
         </nav>
 
+        {tag ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold">Posts tagged #{tag}</p>
+            <Link href={feedHref({ babyId, filter: "posts" })} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted">
+              Clear
+            </Link>
+          </div>
+        ) : null}
+
+        {canPost && babyId && babyName && !searchParams.cursor ? <FeedPostComposer babyId={babyId} babyName={babyName} /> : null}
+
         {groups.length === 0 ? (
           <Card>
             <p className="text-sm text-muted-foreground">
-              Nothing here yet.{filter.key === "all" ? " Everything logged will appear here as it happens." : " Try Everything to see all entries."}
+              Nothing here yet.{filter.key === "all" ? " Everything logged and shared will appear here as it happens." : " Try Everything to see all entries."}
             </p>
           </Card>
         ) : null}
@@ -68,14 +108,18 @@ export default async function FeedPage({
               {group.label}
             </h2>
             <ul className="space-y-2">
-              {group.items.map((activity) => (
-                <li key={activity.id}>
-                  <FeedActivityCard
-                    activity={activity}
-                    returnTo={returnTo}
-                    timeZone={env.APP_TIMEZONE}
-                    volume={unitSettings.preferences.volume}
-                  />
+              {group.items.map((item) => (
+                <li key={item.kind === "post" ? `post-${item.post.id}` : item.activity.id}>
+                  {item.kind === "post" ? (
+                    <FeedPostCard post={item.post} babyId={babyId} babyName={babyName} timeZone={env.APP_TIMEZONE} />
+                  ) : (
+                    <FeedActivityCard
+                      activity={item.activity}
+                      returnTo={returnTo}
+                      timeZone={env.APP_TIMEZONE}
+                      volume={unitSettings.preferences.volume}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
@@ -86,7 +130,7 @@ export default async function FeedPage({
           <nav aria-label="Feed pages" className="flex flex-wrap items-center justify-between gap-3 pt-1">
             {searchParams.cursor ? (
               <Link
-                href={feedHref({ babyId, filter: filter.key })}
+                href={feedHref({ babyId, filter: filter.key, tag })}
                 className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted"
               >
                 Back to newest
@@ -94,7 +138,7 @@ export default async function FeedPage({
             ) : null}
             {nextCursor ? (
               <Link
-                href={feedHref({ babyId, filter: filter.key, cursor: nextCursor })}
+                href={feedHref({ babyId, filter: filter.key, tag, cursor: nextCursor, before: nextBefore })}
                 className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold hover:bg-muted"
               >
                 Older entries
@@ -105,4 +149,10 @@ export default async function FeedPage({
       </div>
     </AppShell>
   );
+}
+
+function parseInstant(value: string | undefined) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
 }

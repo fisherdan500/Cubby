@@ -32,6 +32,7 @@ const expectedDirectHouseholdModels = [
   "CalendarEventContact",
   "Contact",
   "DashboardWarningDismissal",
+  "FeedPost",
   "HouseholdMember",
   "HouseholdSettings",
   "ImportBatch",

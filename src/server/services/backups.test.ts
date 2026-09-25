@@ -24,6 +24,8 @@ const mocks = vi.hoisted(() => ({
   reminderCreate: vi.fn(),
   plannedScheduleFindMany: vi.fn(),
   plannedScheduleCreate: vi.fn(),
+  feedPostFindMany: vi.fn(),
+  feedPostCreate: vi.fn(),
   backupCreate: vi.fn(),
   backupFindMany: vi.fn(),
   backupFindFirst: vi.fn(),
@@ -66,6 +68,7 @@ vi.mock("@/lib/db/prisma", () => ({
     calendarEvent: { findMany: mocks.calendarFindMany, create: mocks.calendarCreate },
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
     plannedSchedule: { findMany: mocks.plannedScheduleFindMany, create: mocks.plannedScheduleCreate },
+    feedPost: { findMany: mocks.feedPostFindMany, create: mocks.feedPostCreate },
     backupRecord: {
       create: mocks.backupCreate,
       findMany: mocks.backupFindMany,
@@ -159,6 +162,7 @@ beforeEach(() => {
   mocks.calendarFindMany.mockResolvedValue([]);
   mocks.reminderFindMany.mockResolvedValue([]);
   mocks.plannedScheduleFindMany.mockResolvedValue([]);
+  mocks.feedPostFindMany.mockResolvedValue([]);
   mocks.backupCreate.mockResolvedValue({ id: "backup-1" });
   mocks.backupFindMany.mockResolvedValue([]);
   mocks.settingsUpsert.mockResolvedValue({});
@@ -256,6 +260,31 @@ describe("backup unit preferences", () => {
     expect(mocks.plannedScheduleCreate).toHaveBeenCalledWith({
       data: { householdId: "household-1", babyId: "saved-baby-1", document: { schemaVersion: 1, items } }
     });
+  });
+
+  it("carries family feed posts through export and restore, keeping the author's name", async () => {
+    mocks.babyFindMany.mockResolvedValue([{
+      id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, feedingWarningMinutes: null,
+      diaperWarningMinutes: null, sleepWarningMinutes: null, preferredUnits: null, inactiveAt: null
+    }]);
+    mocks.feedPostFindMany.mockResolvedValue([
+      { id: "post-1", babyId: "baby-1", body: "First bath #firsts", tags: ["firsts"], occurredAt: new Date("2026-09-20T10:00:00Z"), externalAuthorName: null, author: { displayName: "Sam", user: { name: "Sam P" } } },
+      { id: "post-2", babyId: null, body: "Family walk", tags: [], occurredAt: new Date("2026-09-21T10:00:00Z"), externalAuthorName: null, author: { displayName: null, user: { name: "Alex" } } }
+    ]);
+    const exported = await buildHouseholdV2Snapshot(
+      transactionClient() as unknown as Parameters<typeof buildHouseholdV2Snapshot>[0],
+      "household-1",
+      "2026-09-24T18:00:00.000Z"
+    );
+    expect(exported.payload.feedPosts?.map((post) => [post.id, post.babyId, post.authorName])).toEqual([["post-1", "baby-1", "Sam"], ["post-2", null, "Alex"]]);
+
+    mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", name: "Finley", inactiveAt: null });
+    await expect(restoreBackupJson(exported, { confirmation: "Home", previewChecksum: exported.checksum })).resolves.toMatchObject({
+      counts: { feedPosts: 2 }
+    });
+    // Memberships are not restored, so the post keeps who wrote it by name.
+    expect(mocks.feedPostCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ babyId: "saved-baby-1", externalAuthorName: "Sam", tags: ["firsts"] }) });
+    expect(mocks.feedPostCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ babyId: null, externalAuthorName: "Alex" }) });
   });
 
   it("restores a complete v2 snapshot with mapped relationships and one recovery audit", async () => {
@@ -1125,6 +1154,7 @@ function transactionClient() {
     calendarEvent: { findMany: mocks.calendarFindMany, create: mocks.calendarCreate },
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
     plannedSchedule: { findMany: mocks.plannedScheduleFindMany, create: mocks.plannedScheduleCreate },
+    feedPost: { findMany: mocks.feedPostFindMany, create: mocks.feedPostCreate },
     backupRecord: { create: mocks.backupCreate }
   };
 }

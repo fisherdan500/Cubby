@@ -28,7 +28,10 @@ export type Permission =
   | "session.manage"
   | "integration.manage"
   | "backup.manage"
-  | "notification.manage";
+  | "notification.manage"
+  // The family feed (DEC-PROD-421): posting, and removing anyone's post.
+  | "feed.post"
+  | "feed.moderate";
 
 const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
   owner: [
@@ -45,7 +48,9 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "session.manage",
     "integration.manage",
     "backup.manage",
-    "notification.manage"
+    "notification.manage",
+    "feed.post",
+    "feed.moderate"
   ],
   admin: [
     "household.manage",
@@ -60,7 +65,9 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "session.manage",
     "integration.manage",
     "backup.manage",
-    "notification.manage"
+    "notification.manage",
+    "feed.post",
+    "feed.moderate"
   ],
   parent: [
     "baby.manage",
@@ -70,14 +77,17 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "activity.delete.any",
     "export.create",
     "session.manage",
-    "notification.manage"
+    "notification.manage",
+    "feed.post",
+    "feed.moderate"
   ],
   caretaker: [
     "activity.read",
     "activity.create",
     "activity.update.own",
     "activity.delete.own",
-    "session.manage"
+    "session.manage",
+    "feed.post"
   ],
   read_only: ["activity.read", "session.manage"]
 };

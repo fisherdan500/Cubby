@@ -149,6 +149,18 @@ const plannedScheduleSchema = z
   .object({ babyId: id, items: plannedScheduleItemsSchema })
   .strict();
 
+// A family feed post (DEC-PROD-421). Memberships are not in backups, so the author travels as a name.
+const feedPostSchema = z
+  .object({
+    id,
+    babyId: id.nullable(),
+    body: z.string().trim().min(1).max(2_000),
+    tags: z.array(z.string().min(1).max(40)).max(20),
+    occurredAt: isoDateTime,
+    authorName: shortString
+  })
+  .strict();
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
@@ -159,11 +171,12 @@ const v2PayloadSchema = z
     activities: z.array(activitySchema).max(1_000_000),
     calendarEvents: z.array(calendarEventSchema).max(100_000),
     reminders: z.array(reminderSchema).max(100_000),
-    plannedSchedules: z.array(plannedScheduleSchema).max(10_000).optional()
+    plannedSchedules: z.array(plannedScheduleSchema).max(10_000).optional(),
+    feedPosts: z.array(feedPostSchema).max(1_000_000).optional()
   })
   .strict()
   .superRefine((payload, ctx) => {
-    const groups = [payload.babies, payload.contacts, payload.catalogs, payload.activities, payload.calendarEvents, payload.reminders];
+    const groups = [payload.babies, payload.contacts, payload.catalogs, payload.activities, payload.calendarEvents, payload.reminders, payload.feedPosts ?? []];
     for (const group of groups) {
       if (new Set(group.map((item) => item.id)).size !== group.length) {
         ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
@@ -179,7 +192,8 @@ const v2PayloadSchema = z
       payload.activities.some((item) => !babies.has(item.babyId) || (item.contactId !== null && !contacts.has(item.contactId))) ||
       payload.calendarEvents.some((item) => item.babyIds.some((value) => !babies.has(value)) || item.contactIds.some((value) => !contacts.has(value))) ||
       payload.reminders.some((item) => !babies.has(item.babyId)) ||
-      plannedSchedules.some((item) => !babies.has(item.babyId));
+      plannedSchedules.some((item) => !babies.has(item.babyId)) ||
+      (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId));
     if (dangling) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const activity of payload.activities) {
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {
@@ -365,7 +379,8 @@ export function backupSummary(parsed: ParsedBackup) {
       activities: payload.activities.length,
       calendarEvents: payload.calendarEvents.length,
       reminders: payload.reminders.length,
-      plannedSchedules: payload.plannedSchedules?.length ?? 0
+      plannedSchedules: payload.plannedSchedules?.length ?? 0,
+      feedPosts: payload.feedPosts?.length ?? 0
     },
     exclusions: [...BACKUP_EXCLUSIONS]
   };

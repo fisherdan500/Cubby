@@ -802,6 +802,40 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, postId: params.id };\n    const issued = await issueFeedPostDeleteBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostDeleteBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "9adfc7310cb6c348ece09691bfbea0ca9bfd9618b14c6672e8943718834a8397",
+      "anchorEnd": 1279,
+      "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
+      "anchorStart": 299,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "DELETE",
+        "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/posts/[id]/route.ts:route_method:DELETE:src/app/api/feed/posts/[id]/route.ts#DELETE",
+      "ownerId": "api_route:src/app/api/feed/posts/[id]/route.ts",
+      "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueFeedPostCreateBrowserOperation(raw);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostCreateBrowserOperation(raw) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "a0ad7bfd91367317fa70c452170c7ed28280a4b963f8b9e1604c8fdc55d14160",
+      "anchorEnd": 1179,
+      "anchorFile": "src/app/api/feed/posts/route.ts",
+      "anchorStart": 299,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/feed/posts/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/posts/route.ts:route_method:POST:src/app/api/feed/posts/route.ts#POST",
+      "ownerId": "api_route:src/app/api/feed/posts/route.ts",
+      "ownerModule": "src/app/api/feed/posts/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET() {\n  if (process.env.CUBBY_P13_ACCEPTANCE_HEALTH_SENTINEL === \"1\") {\n    return new Response(null, { status: 204 });\n  }\n  try {\n    const { verifyBrowserOperationInfrastructure } = await import(\"@/server/services/browser-operation-integrity\");\n    await verifyBrowserOperationInfrastructure();\n    return Response.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return Response.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
       "anchorDigest": "959d009cb2dbf2f58a7a60583b2b580ef111515d90594af053432c0964444f54",
       "anchorEnd": 613,
@@ -2551,6 +2585,74 @@
       "ownerId": "client_binding:src/components/dashboard/dashboard-warnings.tsx",
       "ownerModule": "src/components/dashboard/dashboard-warnings.tsx",
       "sidecarPath": "src/components/dashboard/dashboard-warnings.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
+      "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
+      "anchorEnd": 854,
+      "anchorFile": "src/components/feed/feed-post-actions.tsx",
+      "anchorStart": 789,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(url, {\n        method,\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId, ...fields })\n      })",
+      "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
+      "anchorEnd": 2252,
+      "anchorFile": "src/components/feed/feed-post-actions.tsx",
+      "anchorStart": 2101,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
+      "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
+      "anchorEnd": 3229,
+      "anchorFile": "src/components/feed/feed-post-actions.tsx",
+      "anchorStart": 3162,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx:global_fetch:fetch[3]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(`${url}?issue=1`, {\n      method,\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({})\n    })",
+      "anchorDigest": "c77e773b3deb1ba450ae38aef595edad224dd27ee7e1b10472a52f78efcb2e73",
+      "anchorEnd": 3849,
+      "anchorFile": "src/components/feed/feed-post-actions.tsx",
+      "anchorStart": 3717,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[4]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/feed/feed-post-actions.tsx:global_fetch:fetch[4]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/feed/feed-post-actions.tsx",
+      "ownerModule": "src/components/feed/feed-post-actions.tsx",
+      "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
     },
     {
       "anchorBytes": "action={submit}",
@@ -5749,11 +5851,28 @@
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
     },
     {
+      "anchorBytes": "getActivityRowViewer",
+      "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
+      "anchorEnd": 673,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 653,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getActivityRowViewer",
+        "target": "src/server/services/activities.ts#getActivityRowViewer"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:getActivityRowViewer:src/server/services/activities.ts#getActivityRowViewer",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 630,
+      "anchorEnd": 918,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 604,
+      "anchorStart": 892,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5768,9 +5887,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 552,
+      "anchorEnd": 759,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 531,
+      "anchorStart": 738,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5785,9 +5904,9 @@
     {
       "anchorBytes": "listActivities",
       "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-      "anchorEnd": 482,
+      "anchorEnd": 689,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 468,
+      "anchorStart": 675,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivities",
@@ -5800,11 +5919,28 @@
       "sidecarPath": "src/app/app/feed/page.operation.ts"
     },
     {
+      "anchorBytes": "listFeedPosts",
+      "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
+      "anchorEnd": 824,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 811,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listFeedPosts",
+        "target": "src/server/services/feed-posts.ts#listFeedPosts"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:listFeedPosts:src/server/services/feed-posts.ts#listFeedPosts",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 426,
+      "anchorEnd": 611,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 411,
+      "anchorStart": 596,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7132,10 +7268,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "48e971de298df5286c7457f6dcd9b0f36d50ae70d90b509d7ac58e7a20db595c",
+  "semanticArtifactDigest": "d5d2534cc11cffaf4d40607a226437cbff365722767abf3b587c4bc612611beb",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "7e37e092b34c9910214928b54837a87b805234060e47388c317565e7b8be96f1",
+  "semanticCoverageDigest": "3d034cc8fd43874247c66c4b3ce4dd80463f2c6c1777d3512cb4d5fb94296cc1",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "9ace4bf2fef6dcbda47a5b7ac0a56d3b2e88db1b1c53c600d6effa7e7b4edd26"
+  "semanticFingerprint": "fba31418da6d6934cd559e649215dd38f3b87926d852001656e858adf7a05db4"
 }
