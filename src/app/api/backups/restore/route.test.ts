@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ restoreBackupJson: vi.fn() }));
-vi.mock("@/server/services/backups", () => ({ restoreBackupJson: mocks.restoreBackupJson }));
+const mocks = vi.hoisted(() => ({ restoreBackupJson: vi.fn(), restoreBackupArchive: vi.fn(), withUpload: vi.fn() }));
+vi.mock("@/server/services/backups", () => ({ restoreBackupJson: mocks.restoreBackupJson, restoreBackupArchive: mocks.restoreBackupArchive }));
+vi.mock("@/server/services/backup-upload", () => ({ withUploadedBackupArchive: mocks.withUpload }));
 
 import { POST } from "@/app/api/backups/restore/route";
 
@@ -30,6 +31,18 @@ describe("POST /api/backups/restore", () => {
       { version: 1, babies: [], activities: [] },
       { confirmation: "家族 🍼", previewChecksum: "legacy-v1" }
     );
+  });
+
+  it("restores an uploaded archive from its staged copy, with the same confirmation", async () => {
+    mocks.withUpload.mockImplementation(async (_request, work) => work("/staging/upload.zip"));
+    mocks.restoreBackupArchive.mockResolvedValue({ restored: 3 });
+
+    for (const contentType of ["application/zip", "application/x-zip-compressed"]) {
+      const response = await POST(request("Fresh Home", contentType, "PK"));
+      expect(response.status).toBe(200);
+    }
+    expect(mocks.restoreBackupArchive).toHaveBeenCalledWith("/staging/upload.zip", { confirmation: "Fresh Home", previewChecksum: "legacy-v1" });
+    expect(mocks.restoreBackupJson).not.toHaveBeenCalled();
   });
 
   it("requires confirmation headers before reading or restoring", async () => {
@@ -69,14 +82,14 @@ describe("POST /api/backups/restore", () => {
   });
 });
 
-function request(confirmation = "Fresh Home") {
+function request(confirmation = "Fresh Home", contentType = "application/json", body = JSON.stringify({ version: 1, babies: [], activities: [] })) {
   return new Request("http://localhost/api/backups/restore", {
     method: "POST",
     headers: {
-      "content-type": "application/json",
+      "content-type": contentType,
       "x-cubby-restore-confirmation": encodeURIComponent(confirmation),
       "x-cubby-backup-checksum": "legacy-v1"
     },
-    body: JSON.stringify({ version: 1, babies: [], activities: [] })
+    body
   });
 }

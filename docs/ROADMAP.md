@@ -101,7 +101,10 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
    - removing a post removes its photos too;
    - a "Recently removed" page brings a post and its intact photos back within 30 days;
    - a scheduled job purges expired removals and unclaimed uploads.
-3. Backup and restore carry the photos (the household backup becomes an archive). The storage volume and install steps come with this step, and then photos are switched on.
+3. Backup and restore carry the photos, in three parts:
+   - 3a: a household with photos downloads one uncompressed `.zip` (`backup.json` with a checksummed photo list, plus `photos/<id>.jpg`), and restore accepts it with every photo verified. Households without photos keep the same `.json`.
+   - 3b: automated backups written as archives, and the storage volume and install steps.
+   - 3c: photos switched on.
 
 ### Routine And Planned Schedule
 

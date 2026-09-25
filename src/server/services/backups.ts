@@ -14,6 +14,10 @@ import { writeAudit } from "@/server/services/audit";
 import { readHouseholdAuditIntegrity } from "@/server/services/audit-checkpoints";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import { backupSummary, createV2Backup, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
+import { newAttachmentStorageKey } from "@/domain/attachments";
+import { attachmentConfig } from "@/lib/env";
+import { readAttachmentObject, removeAttachmentObject, writeAttachmentObject } from "@/server/services/attachment-store";
+import { backupArchiveStream, openBackupArchive } from "@/server/services/backup-archive";
 import {
   isLocalBackupFilename,
   readLocalBackup,
@@ -45,7 +49,7 @@ type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
   "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
-  | "feedComment" | "feedReaction"
+  | "feedComment" | "feedReaction" | "attachment"
 >;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
@@ -149,16 +153,75 @@ async function assertFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">
   if (!(await isFreshTarget(db, ctx))) throw new Error("backup_target_not_empty");
 }
 
+/** A backup whose JSON lists photos cannot be complete without them; only its archive can restore it. */
+function refusePhotosWithoutArchive(parsed: ParsedBackup) {
+  if (parsed.version === 2 && (parsed.backup.payload.feedPhotos?.length ?? 0) > 0) throw new Error("backup_photos_missing");
+}
+
 export async function previewBackupJson(raw: unknown) {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const parsed = parseRecoveryBackup(raw);
+  refusePhotosWithoutArchive(parsed);
   if (parsed.version === 1) prepareLegacyRecovery(parsed);
   await assertFreshTarget(prisma, ctx);
   return backupSummary(parsed);
 }
 
+/** Preview an uploaded backup archive, only after every photo in it has been checked. */
+export async function previewBackupArchive(filePath: string) {
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "backup.manage");
+  const archive = await openBackupArchive(filePath);
+  try {
+    await archive.verifyPhotos();
+    await assertFreshTarget(prisma, ctx);
+    return backupSummary(archive.parsed);
+  } finally {
+    await archive.close();
+  }
+}
+
 export async function exportBackupJson() {
+  const { snapshot } = await recordHouseholdExport();
+  refusePhotosWithoutArchive({ version: 2, legacyPartial: false, checksumVerified: true, backup: snapshot });
+  return JSON.stringify(snapshot, null, 2);
+}
+
+export type BackupDownload =
+  | { kind: "json"; filename: string; body: string }
+  | { kind: "archive"; filename: string; stream: ReadableStream<Uint8Array> };
+
+/**
+ * The household's backup to download: the same JSON file as always, or - once it has photos - one
+ * archive of that JSON and every photo (DEC-PROD-422). Every photo is checked before any of the
+ * archive is sent, so a download never ends half-written.
+ */
+export async function exportBackupForDownload(): Promise<BackupDownload> {
+  const { snapshot, householdId } = await recordHouseholdExport();
+  const date = new Date().toISOString().slice(0, 10);
+  const photos = snapshot.payload.feedPhotos ?? [];
+  if (photos.length === 0) return { kind: "json", filename: `cubby-backup-${date}.json`, body: JSON.stringify(snapshot, null, 2) };
+
+  const stored = await prisma.attachment.findMany({
+    where: { householdId, id: { in: photos.map((photo) => photo.id) } },
+    select: { id: true, storageKey: true }
+  });
+  const keys = new Map(stored.map((row) => [row.id, row.storageKey]));
+  const read = async (photo: (typeof photos)[number]) => {
+    const key = keys.get(photo.id);
+    if (!key) throw new Error("backup_photo_unavailable");
+    try {
+      return await readAttachmentObject(attachmentConfig.directory, key, { byteSize: photo.byteSize, sha256: photo.sha256 });
+    } catch {
+      throw new Error("backup_photo_unavailable");
+    }
+  };
+  for (const photo of photos) await read(photo);
+  return { kind: "archive", filename: `cubby-backup-${date}.zip`, stream: backupArchiveStream(snapshot, (_id, photo) => read(photo)) };
+}
+
+async function recordHouseholdExport() {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "backup.manage");
   const snapshot = await prisma.$transaction(
@@ -183,7 +246,7 @@ export async function exportBackupJson() {
     },
     { isolationLevel: "RepeatableRead" }
   );
-  return JSON.stringify(snapshot, null, 2);
+  return { snapshot, householdId: ctx.householdId };
 }
 
 export async function exportHouseholdBackupJson(householdId: string, exportedAt = new Date().toISOString()) {
@@ -206,7 +269,8 @@ export async function buildHouseholdV2Snapshot(
     ]
   };
   const [
-    household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments, feedReactions
+    household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments, feedReactions,
+    feedPhotos
   ] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
@@ -248,6 +312,17 @@ export async function buildHouseholdV2Snapshot(
         member: { select: { displayName: true, user: { select: { name: true } } } }
       },
       orderBy: { createdAt: "asc" }
+    }),
+    // Photos shown on the posts this backup carries (DEC-PROD-422). Their bytes travel beside it.
+    tx.attachment.findMany({
+      where: {
+        householdId,
+        type: "feed_photo",
+        state: "available",
+        post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
+      },
+      select: { id: true, postId: true, position: true, width: true, height: true, byteSize: true, sha256: true },
+      orderBy: [{ postId: "asc" }, { position: "asc" }]
     })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
@@ -342,7 +417,21 @@ export async function buildHouseholdV2Snapshot(
       activityId: reaction.activityId,
       reaction: reaction.reaction,
       name: reaction.member?.displayName ?? reaction.member?.user.name ?? reaction.externalReactorName ?? "Someone"
-    }))
+    })),
+    // Left out entirely when there are none, so a household without photos backs up exactly as before.
+    ...(feedPhotos.length
+      ? {
+          feedPhotos: feedPhotos.map((photo) => ({
+            id: photo.id,
+            postId: photo.postId!,
+            position: photo.position!,
+            width: photo.width,
+            height: photo.height,
+            byteSize: photo.byteSize,
+            sha256: photo.sha256
+          }))
+        }
+      : {})
   }, exportedAt);
 }
 
@@ -409,15 +498,15 @@ function compactDetail(source: Record<string, unknown>, keys: string[]) {
 
 type RestoreConfirmation = { confirmation?: string; previewChecksum?: string };
 
-export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfirmation = {}) {
-  const ctx = await getEffectiveHouseholdContext();
-  requirePermission(ctx, "backup.manage");
-  const parsed = parseRecoveryBackup(raw);
-  const legacy = parsed.version === 1 ? prepareLegacyRecovery(parsed) : null;
-  if (parsed.version === 2 && confirmation.previewChecksum !== parsed.backup.checksum) {
-    throw new Error("backup_preview_mismatch");
-  }
+type RecoveryContext = Awaited<ReturnType<typeof getEffectiveHouseholdContext>>;
+type LockedRecoveryContext = Awaited<ReturnType<typeof lockActorForWrite>>;
 
+/** The one serializable transaction every restore runs in, with its confirmation and target checks. */
+async function runRestoreTransaction<T>(
+  ctx: RecoveryContext,
+  confirmation: RestoreConfirmation,
+  work: (lockedCtx: LockedRecoveryContext, tx: Prisma.TransactionClient) => Promise<T>
+) {
   try {
     return await prisma.$transaction(
       async (tx) => {
@@ -430,9 +519,7 @@ export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfi
         const auditIntegrity = await readHouseholdAuditIntegrity(lockedCtx.householdId, tx);
         if (auditIntegrity.status !== "valid") throw new Error("backup_audit_integrity_unavailable");
         await assertFreshTarget(tx, lockedCtx);
-        return parsed.version === 2
-          ? restoreV2InTransaction(parsed, lockedCtx, tx)
-          : restoreLegacyInTransaction(parsed, legacy!, lockedCtx, tx);
+        return work(lockedCtx, tx);
       },
       { isolationLevel: "Serializable", maxWait: 10_000, timeout: 120_000 }
     );
@@ -441,6 +528,55 @@ export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfi
       throw new Error("backup_restore_retry");
     }
     throw error;
+  }
+}
+
+export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfirmation = {}) {
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "backup.manage");
+  const parsed = parseRecoveryBackup(raw);
+  refusePhotosWithoutArchive(parsed);
+  const legacy = parsed.version === 1 ? prepareLegacyRecovery(parsed) : null;
+  if (parsed.version === 2 && confirmation.previewChecksum !== parsed.backup.checksum) {
+    throw new Error("backup_preview_mismatch");
+  }
+  return runRestoreTransaction(ctx, confirmation, (lockedCtx, tx) =>
+    parsed.version === 2
+      ? restoreV2InTransaction(parsed, lockedCtx, tx)
+      : restoreLegacyInTransaction(parsed, legacy!, lockedCtx, tx)
+  );
+}
+
+/**
+ * Restore an uploaded backup archive (DEC-PROD-145): each photo is checked against its listed digest
+ * and stored under a new random name before the restore transaction, which then makes the data and
+ * its photos visible together. If anything fails, the photos stored for it are removed again.
+ */
+export async function restoreBackupArchive(filePath: string, confirmation: RestoreConfirmation = {}) {
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "backup.manage");
+  const archive = await openBackupArchive(filePath);
+  try {
+    if (confirmation.previewChecksum !== archive.parsed.backup.checksum) throw new Error("backup_preview_mismatch");
+    // Checked again inside the transaction; this spares storing photos for a restore that cannot happen.
+    await assertFreshTarget(prisma, ctx);
+    const storedKeys = new Map<string, string>();
+    try {
+      for (const photo of archive.photos) {
+        const bytes = await archive.readPhoto(photo.id);
+        const storageKey = newAttachmentStorageKey();
+        await writeAttachmentObject(attachmentConfig.directory, storageKey, bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
+        storedKeys.set(photo.id, storageKey);
+      }
+      return await runRestoreTransaction(ctx, confirmation, (lockedCtx, tx) => restoreV2InTransaction(archive.parsed, lockedCtx, tx, storedKeys));
+    } catch (error) {
+      for (const storageKey of storedKeys.values()) {
+        await removeAttachmentObject(attachmentConfig.directory, storageKey).catch(() => undefined);
+      }
+      throw error;
+    }
+  } finally {
+    await archive.close();
   }
 }
 
@@ -484,7 +620,9 @@ function prepareLegacyRestore(parsed: Extract<ParsedBackup, { version: 1 }>) {
 async function restoreV2InTransaction(
   parsed: Extract<ParsedBackup, { version: 2 }>,
   lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
-  tx: Prisma.TransactionClient
+  tx: Prisma.TransactionClient,
+  // The new storage name of each photo already stored from the archive, by its id in the backup.
+  photoStorageKeys: ReadonlyMap<string, string> = new Map()
 ) {
   const payload = parsed.backup.payload;
   const settings = {
@@ -671,6 +809,27 @@ async function restoreV2InTransaction(
       data: { householdId: lockedCtx.householdId, ...feedParent(reaction), externalReactorName: reaction.name, reaction: reaction.reaction }
     });
   }
+  const activatedAt = new Date();
+  for (const photo of payload.feedPhotos ?? []) {
+    const storageKey = photoStorageKeys.get(photo.id);
+    if (!storageKey) throw new Error("backup_photos_missing");
+    await tx.attachment.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        type: "feed_photo",
+        state: "available",
+        storageKey,
+        byteSize: photo.byteSize,
+        sha256: photo.sha256,
+        mimeType: "image/jpeg",
+        width: photo.width,
+        height: photo.height,
+        postId: postMap.get(photo.postId)!,
+        position: photo.position,
+        activatedAt
+      }
+    });
+  }
   for (const baby of payload.babies) {
     if (!baby.inactiveAt) continue;
     const babyId = babyMap.get(baby.id)!;
@@ -688,10 +847,11 @@ async function restoreV2InTransaction(
     plannedSchedules: payload.plannedSchedules?.length ?? 0,
     feedPosts: payload.feedPosts?.length ?? 0,
     feedComments: payload.feedComments?.length ?? 0,
-    feedReactions: payload.feedReactions?.length ?? 0
+    feedReactions: payload.feedReactions?.length ?? 0,
+    feedPhotos: payload.feedPhotos?.length ?? 0
   };
   const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders
-    + counts.plannedSchedules + counts.feedPosts + counts.feedComments + counts.feedReactions;
+    + counts.plannedSchedules + counts.feedPosts + counts.feedComments + counts.feedReactions + counts.feedPhotos;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
   return { restored, counts, legacyPartial: false };
 }

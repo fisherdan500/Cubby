@@ -56,6 +56,30 @@ describe("backup v2 feed posts", () => {
   });
 });
 
+describe("backup v2 feed photos", () => {
+  const post = (id: string) => ({ id, babyId: null, body: "", tags: [], occurredAt: exportedAt, authorName: "Sam" });
+  const photo = (id: string, postId: string, position: number) => ({
+    id, postId, position, width: 2560, height: 1920, byteSize: 1234, sha256: "a".repeat(64)
+  });
+  const withPhotos = (feedPhotos: ReturnType<typeof photo>[]) => ({ ...emptyPayload(), feedPosts: [post("post-1"), post("post-2")], feedPhotos });
+
+  it("lists each photo with the post it belongs to, its place, shape and digest, bound into the checksum", () => {
+    const backup = createV2Backup(withPhotos([photo("ph-1", "post-1", 0), photo("ph-2", "post-1", 1)]), exportedAt);
+    expect(parseBackup(backup)).toMatchObject({ version: 2, checksumVerified: true });
+    const changed = { ...backup, payload: { ...backup.payload, feedPhotos: [photo("ph-1", "post-1", 0), { ...photo("ph-2", "post-1", 1), sha256: "b".repeat(64) }] } };
+    expect(() => parseBackup(changed)).toThrow("backup_checksum_mismatch");
+  });
+
+  it("refuses photos that do not fit their posts", () => {
+    expect(() => createV2Backup(withPhotos([photo("ph-1", "post-9", 0)]), exportedAt)).toThrow("backup_dangling_reference");
+    expect(() => createV2Backup(withPhotos([photo("ph-1", "post-1", 0), photo("ph-1", "post-2", 0)]), exportedAt)).toThrow("backup_duplicate_source_id");
+    expect(() => createV2Backup(withPhotos([photo("ph-1", "post-1", 0), photo("ph-2", "post-1", 0)]), exportedAt)).toThrow("backup_duplicate_source_id");
+    expect(() => createV2Backup(withPhotos([photo("ph-1", "post-1", 10)]), exportedAt)).toThrow();
+    expect(() => createV2Backup(withPhotos([{ ...photo("ph-1", "post-1", 0), sha256: "not-a-digest" }]), exportedAt)).toThrow();
+    expect(() => createV2Backup(withPhotos([{ ...photo("ph-1", "post-1", 0), id: "../escape" }]), exportedAt)).toThrow();
+  });
+});
+
 describe("backup v2 format", () => {
   it("creates the exact v2 envelope with a deterministic canonical checksum", () => {
     expect(canonicalJson({ z: 1, a: { y: 2, b: 3 } })).toBe('{"a":{"b":3,"y":2},"z":1}');

@@ -1,5 +1,6 @@
-import { ok, handleError, readBoundedJson } from "@/server/http";
-import { restoreBackupJson } from "@/server/services/backups";
+import { ok, handleError, isBackupArchiveUpload, readBoundedJson } from "@/server/http";
+import { restoreBackupArchive, restoreBackupJson } from "@/server/services/backups";
+import { withUploadedBackupArchive } from "@/server/services/backup-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
       confirmation = decodeURIComponent(encodedConfirmation);
     } catch {
       throw new Error("backup_confirmation_mismatch");
+    }
+    if (isBackupArchiveUpload(request)) {
+      return ok(await withUploadedBackupArchive(request, (filePath) => restoreBackupArchive(filePath, { confirmation, previewChecksum })));
     }
     return ok(await restoreBackupJson(await readBoundedJson(request), { confirmation, previewChecksum }));
   } catch (error) {

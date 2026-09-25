@@ -39,7 +39,7 @@ export function BackupDownloadButton() {
   return (
     <div className="space-y-2">
       <Button type="button" onClick={download} disabled={pending}>
-        {pending ? "Creating backup…" : "JSON backup"}
+        {pending ? "Creating backup…" : "Household backup"}
       </Button>
       {message ? <p aria-live="polite" className="text-sm text-muted-foreground">{message}</p> : null}
     </div>

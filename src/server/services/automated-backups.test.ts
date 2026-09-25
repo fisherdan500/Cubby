@@ -197,6 +197,16 @@ describe("automated backups", () => {
     }));
   });
 
+  it("records a failure, not a backup missing its photos, for a household with photos", async () => {
+    const snapshot = await mocks.buildSnapshot();
+    mocks.buildSnapshot.mockResolvedValue({ ...snapshot, payload: { ...snapshot.payload, feedPhotos: [{ id: "ph-1" }] } });
+
+    const result = await runAutomatedBackupIfDue("household-1", new Date("2026-07-15T22:00:00.000Z"), config);
+
+    expect(result).toEqual({ failed: true, error: "backup_photos_require_archive" });
+    expect(mocks.publish).not.toHaveBeenCalled();
+  });
+
   it("retries an hour after a failure newer than a recent success", async () => {
     mocks.backupFindMany.mockResolvedValue([
       {

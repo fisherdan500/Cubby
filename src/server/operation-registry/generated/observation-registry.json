@@ -9,7 +9,7 @@
     "server_loader": 29,
     "worker": 7
   },
-  "declarationDigest": "45bcf4ab1d15f73c881ffd2ca7d2d30c0593d612f1da179c9d581b8a127b1f0f",
+  "declarationDigest": "7c830f17750b6e378a0f5784e7830edbf0301d031a2e57a466fed00d022d84a7",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -7409,7 +7409,7 @@
           {
             "kind": "worker_tick",
             "symbol": "tick",
-            "target": "src/server/services/attachments.ts#purgeDueAttachments"
+            "target": "src/server/services/attachment-retention.ts#runAttachmentRetention"
           }
         ],
         "deferredGateIds": [
@@ -8396,18 +8396,18 @@
       "bindings": [
         {
           "anchorDigest": "5987c686c28e51de081dd08269f3da57c0c4195f1af1f345513fe5b1ac43ad12",
-          "anchorEnd": 715,
+          "anchorEnd": 1020,
           "anchorFile": "src/app/api/backups/export/route.ts",
-          "anchorStart": 565,
+          "anchorStart": 870,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/backups/export/route.ts#GET"
         },
         {
-          "anchorDigest": "d68ee772aea7f43a087fb17b95e8b7c56a4741769c9a063824247245d4399ede",
-          "anchorEnd": 563,
+          "anchorDigest": "dacb33cb55f8fe5ab4f1240f8bfc695ba2e6945388ed2f2f5099c134969a7890",
+          "anchorEnd": 868,
           "anchorFile": "src/app/api/backups/export/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 264,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/export/route.ts#POST"
@@ -8442,10 +8442,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "7938376109e3625b5ad32120c328ee1807a778d9e762fd068530e2e9b7f505d8",
-          "anchorEnd": 354,
+          "anchorDigest": "66af7a6dbb67806412056d574212d589bc36ed7b5e002425316fb2272b752da6",
+          "anchorEnd": 669,
           "anchorFile": "src/app/api/backups/restore/preview/route.ts",
-          "anchorStart": 171,
+          "anchorStart": 371,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/restore/preview/route.ts#POST"
@@ -8461,10 +8461,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ddd397b2aa8ac4ab87b06445ab87b3e44bbf75cb98a13a3130962cbda3b5df44",
-          "anchorEnd": 902,
+          "anchorDigest": "43fc535c0d5398b34752aee2fbb5d0d3f1e4a2bb206be4b4325642671c9532e3",
+          "anchorEnd": 1212,
           "anchorFile": "src/app/api/backups/restore/route.ts",
-          "anchorStart": 171,
+          "anchorStart": 293,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/restore/route.ts#POST"
@@ -12136,19 +12136,19 @@
     {
       "bindings": [
         {
-          "anchorDigest": "c076f571a16ce4bfebff53529276f75c582e2de99fc38135e71569c1f346ec81",
-          "anchorEnd": 1398,
+          "anchorDigest": "9b8f89cdaa8b37d623244de2520772f4575e47a18c77672a721cb292c13859a8",
+          "anchorEnd": 1639,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 1250,
+          "anchorStart": 1486,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "fef194fa71a89c59b223a07f2dc371e860fd7f36ffaa1b7b9819aa047b9d350b",
-          "anchorEnd": 2409,
+          "anchorDigest": "11df17ab5502539712dd945a6f274796bac9d7175ae8e2cee3062d7bbb9f236e",
+          "anchorEnd": 2663,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 2097,
+          "anchorStart": 2338,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
@@ -12726,30 +12726,30 @@
       "bindings": [
         {
           "anchorDigest": "0f7acc38d03d54b47d71e38cf34eb42bd65f583ad464f5b3af709dee4cc49258",
-          "anchorEnd": 1283,
+          "anchorEnd": 1352,
           "anchorFile": "src/server/attachment-retention-scheduler.ts",
-          "anchorStart": 1233,
+          "anchorStart": 1302,
           "kind": "worker_schedule",
           "symbol": "tick",
           "target": "src/server/attachment-retention-scheduler.ts#tick"
         },
         {
-          "anchorDigest": "a88fb93aff95ffe7e4be542d310e2e47f04dd0af3081551d9bad9f2ff9608960",
-          "anchorEnd": 1327,
+          "anchorDigest": "320bea9eaa1e971ddfec2a983d6c5b8057dc2eaabe99affdd79ff8ab03bb03e4",
+          "anchorEnd": 1396,
           "anchorFile": "src/server/attachment-retention-scheduler.ts",
-          "anchorStart": 763,
+          "anchorStart": 829,
           "kind": "worker_start_call",
           "symbol": "startAttachmentRetentionScheduler",
           "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
         },
         {
-          "anchorDigest": "bdcae8c7ba694c4c1026562a2d7dfaef7d8a94e3665a727f1e33d394566e6f3c",
-          "anchorEnd": 1040,
+          "anchorDigest": "d7c4e5b9b5b2955257df978c7b3b708b72e7d0cc520966b92670a47248e2db81",
+          "anchorEnd": 1109,
           "anchorFile": "src/server/attachment-retention-scheduler.ts",
-          "anchorStart": 1019,
+          "anchorStart": 1085,
           "kind": "worker_tick",
           "symbol": "tick",
-          "target": "src/server/services/attachments.ts#purgeDueAttachments"
+          "target": "src/server/services/attachment-retention.ts#runAttachmentRetention"
         }
       ],
       "disposition": "observed",
@@ -14086,7 +14086,7 @@
     }
   ],
   "observationCount": 215,
-  "observationDigest": "a31cbf44d6e617086d9f5f5d4dc28fed39f85fdce87f626f98eb0383c7e41afe",
+  "observationDigest": "76351ea0ed7053f85f2f43b62e0f83262b07c10e47fd4b7f925edf4a0a7cc0f7",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14642,18 +14642,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 715,
+          "anchorEnd": 1020,
           "anchorFile": "src/app/api/backups/export/route.ts",
-          "anchorStart": 565,
+          "anchorStart": 870,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/export/route.ts",
           "symbol": "GET",
           "target": "src/app/api/backups/export/route.ts#GET"
         },
         {
-          "anchorEnd": 563,
+          "anchorEnd": 868,
           "anchorFile": "src/app/api/backups/export/route.ts",
-          "anchorStart": 149,
+          "anchorStart": 264,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/export/route.ts",
           "symbol": "POST",
@@ -14687,9 +14687,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 354,
+          "anchorEnd": 669,
           "anchorFile": "src/app/api/backups/restore/preview/route.ts",
-          "anchorStart": 171,
+          "anchorStart": 371,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/restore/preview/route.ts",
           "symbol": "POST",
@@ -14705,9 +14705,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 902,
+          "anchorEnd": 1212,
           "anchorFile": "src/app/api/backups/restore/route.ts",
-          "anchorStart": 171,
+          "anchorStart": 293,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/restore/route.ts",
           "symbol": "POST",
@@ -18242,18 +18242,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1398,
+          "anchorEnd": 1639,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 1250,
+          "anchorStart": 1486,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/backup-restore-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2409,
+          "anchorEnd": 2663,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 2097,
+          "anchorStart": 2338,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/backup-restore-form.tsx",
           "symbol": "fetch[2]",
@@ -18818,31 +18818,31 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1283,
+          "anchorEnd": 1352,
           "anchorFile": "src/server/attachment-retention-scheduler.ts",
-          "anchorStart": 1233,
+          "anchorStart": 1302,
           "kind": "worker_schedule",
           "ownerModule": "src/server/attachment-retention-scheduler.ts",
           "symbol": "tick",
           "target": "src/server/attachment-retention-scheduler.ts#tick"
         },
         {
-          "anchorEnd": 1327,
+          "anchorEnd": 1396,
           "anchorFile": "src/server/attachment-retention-scheduler.ts",
-          "anchorStart": 763,
+          "anchorStart": 829,
           "kind": "worker_start_call",
           "ownerModule": "src/server/attachment-retention-scheduler.ts",
           "symbol": "startAttachmentRetentionScheduler",
           "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
         },
         {
-          "anchorEnd": 1040,
+          "anchorEnd": 1109,
           "anchorFile": "src/server/attachment-retention-scheduler.ts",
-          "anchorStart": 1019,
+          "anchorStart": 1085,
           "kind": "worker_tick",
           "ownerModule": "src/server/attachment-retention-scheduler.ts",
           "symbol": "tick",
-          "target": "src/server/services/attachments.ts#purgeDueAttachments"
+          "target": "src/server/services/attachment-retention.ts#runAttachmentRetention"
         }
       ],
       "disposition": "observed",
@@ -21334,7 +21334,7 @@
   ],
   "ownerSetDigest": "510e8d788264e19c2a7ae961dfa3dbc1f94b7b2dcff9b93318b313909e0a131b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5a05fe06a4c03226caa08e8a652b1c9d4f2d136ee9b0c227c1caced7c87e49a4",
+  "registryDigest": "5bcbc4b1a3e773273a389c95dcc1c7f1123e55688403c1d70debbd949b89501c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

@@ -18,7 +18,7 @@ const MINUTE_MS = 60 * 1000;
 type AutomationDb = Pick<
   Prisma.TransactionClient,
   "household" | "backupRecord" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
-  | "feedComment" | "feedReaction"
+  | "feedComment" | "feedReaction" | "attachment"
 >;
 
 type BackupRecordRow = {
@@ -35,6 +35,7 @@ export function sanitizeAutomatedBackupError(error: unknown) {
     "backup_already_exists",
     "backup_directory_unavailable",
     "backup_invalid",
+    "backup_photos_require_archive",
     "backup_retention_failed",
     "backup_too_large",
     "backup_write_failed"
@@ -201,6 +202,9 @@ export async function runAutomatedBackupIfDue(
       if (!(await householdHasRecoverableData(tx, householdId))) return { skipped: "empty" as const };
 
       const snapshot = await buildHouseholdV2Snapshot(tx, householdId, now.toISOString());
+      // A JSON file cannot carry photos; until automated backups are written as archives, a household
+      // with photos records a failure rather than a backup that would look complete and is not.
+      if ((snapshot.payload.feedPhotos?.length ?? 0) > 0) throw new Error("backup_photos_require_archive");
       const filenameDiscriminator = createHash("sha256").update(householdId).digest("hex").slice(0, 32);
       const file = await (dependencies.publish ?? publishLocalBackup)(
         config.directory,

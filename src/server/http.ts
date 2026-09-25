@@ -42,6 +42,13 @@ export async function readBoundedJson(request: Request, maxBytes = MAX_BACKUP_BY
   }
 }
 
+/** Whether an upload is a backup archive (a .zip with photos) rather than a JSON backup. */
+export function isBackupArchiveUpload(request: Request) {
+  const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  // Windows browsers label .zip files application/x-zip-compressed.
+  return contentType === "application/zip" || contentType === "application/x-zip-compressed";
+}
+
 /** A raw request body, refused as soon as it passes `maxBytes` rather than after reading it all. */
 export async function readBoundedBytes(request: Request, maxBytes: number, tooLargeCode: string) {
   const declaredLength = Number(request.headers.get("content-length"));
@@ -114,6 +121,10 @@ export function handleError(error: unknown) {
     if (error.message === "file_too_large") return fail("file_too_large", "Backup files must be 100 MB or smaller.", 413);
     if (error.message === "invalid_sqlite_backup") return fail("invalid_sqlite_backup", "That file is not a valid SQLite backup.", 422);
     if (error.message === "sprout_sqlite_unavailable") return fail("sprout_sqlite_unavailable", "Cubby could not start the Sprout SQLite reader. Rebuild and restart the app, then try the import again.", 500);
+    if (error.message === "backup_photos_missing") return fail("backup_photos_missing", "This backup lists photos that are not in the file. Choose the .zip backup, which includes them.", 422);
+    if (error.message === "backup_photo_mismatch") return fail("backup_photo_mismatch", "A photo in this backup does not match what the backup lists, so the file is damaged. Try another backup.", 422);
+    if (error.message === "backup_photo_unavailable") return fail("backup_photo_unavailable", "A photo could not be read, so the backup was not made. Run the integrity check, then try again.", 409);
+    if (error.message === "archive_too_large") return fail("archive_too_large", "Cubby backup archives must be 2 GiB or smaller.", 413);
     if (error.message === "attachment_type_unavailable") return fail("not_found", "Not found.", 404);
     if (error.message === "attachment_too_large") return fail("attachment_too_large", "Photos must be 25 MB or smaller.", 413);
     if (error.message === "attachment_unsupported_format") return fail("attachment_unsupported_format", "Choose a JPEG, PNG or WebP photo.", 415);

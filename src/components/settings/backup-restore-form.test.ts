@@ -6,7 +6,9 @@ const source = readFileSync(new URL("./backup-restore-form.tsx", import.meta.url
 describe("BackupRestoreForm", () => {
   it("uploads the selected file unchanged through preview then confirmed restore", () => {
     expect(source).toContain('type="file"');
-    expect(source).toContain('accept="application/json,.json"');
+    expect(source).toContain('accept="application/json,.json,application/zip,.zip"');
+    // A .zip - a backup with photos - is sent as an archive, anything else as JSON.
+    expect(source).toContain('endsWith(".zip") ? "application/zip" : "application/json"');
     expect(source).toContain('body: selectedFile');
     expect(source).toContain('"/api/backups/restore/preview"');
     expect(source).toContain('"x-cubby-restore-confirmation"');

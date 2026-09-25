@@ -30,6 +30,12 @@ const mocks = vi.hoisted(() => ({
   feedCommentCreate: vi.fn(),
   feedReactionFindMany: vi.fn(),
   feedReactionCreate: vi.fn(),
+  attachmentFindMany: vi.fn(),
+  attachmentCreate: vi.fn(),
+  writeObject: vi.fn(),
+  readObject: vi.fn(),
+  removeObject: vi.fn(),
+  openBackupArchive: vi.fn(),
   backupCreate: vi.fn(),
   backupFindMany: vi.fn(),
   backupFindFirst: vi.fn(),
@@ -75,6 +81,7 @@ vi.mock("@/lib/db/prisma", () => ({
     feedPost: { findMany: mocks.feedPostFindMany, create: mocks.feedPostCreate },
     feedComment: { findMany: mocks.feedCommentFindMany, create: mocks.feedCommentCreate },
     feedReaction: { findMany: mocks.feedReactionFindMany, create: mocks.feedReactionCreate },
+    attachment: { findMany: mocks.attachmentFindMany, create: mocks.attachmentCreate },
     backupRecord: {
       create: mocks.backupCreate,
       findMany: mocks.backupFindMany,
@@ -109,6 +116,15 @@ vi.mock("@/server/services/mutation-locks", () => ({
 }));
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/attachment-store", () => ({
+  writeAttachmentObject: mocks.writeObject,
+  readAttachmentObject: mocks.readObject,
+  removeAttachmentObject: mocks.removeObject
+}));
+vi.mock("@/server/services/backup-archive", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/server/services/backup-archive")>(),
+  openBackupArchive: mocks.openBackupArchive
+}));
 vi.mock("@/server/services/audit-checkpoints", () => ({ readHouseholdAuditIntegrity: mocks.readHouseholdAuditIntegrity }));
 vi.mock("@/server/services/local-backup-storage", () => ({
   isLocalBackupFilename: mocks.isLocalBackupFilename,
@@ -120,12 +136,16 @@ vi.mock("@/server/services/local-backup-storage", () => ({
 import {
   buildHouseholdV2Snapshot,
   downloadLocalBackupFile,
+  exportBackupForDownload,
   exportBackupJson,
   exportHouseholdBackupJson,
   getAutomatedBackupStatus,
+  previewBackupArchive,
   previewBackupJson,
+  restoreBackupArchive,
   restoreBackupJson
 } from "@/server/services/backups";
+import { openZipStore } from "@/server/services/zip-store";
 import { createV2Backup } from "@/server/services/backup-format";
 
 const ctx = {
@@ -172,6 +192,9 @@ beforeEach(() => {
   mocks.feedPostCreate.mockImplementation(async ({ data }) => ({ id: `saved-${data.body.slice(0, 5)}` }));
   mocks.feedCommentFindMany.mockResolvedValue([]);
   mocks.feedReactionFindMany.mockResolvedValue([]);
+  mocks.attachmentFindMany.mockResolvedValue([]);
+  mocks.writeObject.mockResolvedValue(undefined);
+  mocks.removeObject.mockResolvedValue(undefined);
   mocks.backupCreate.mockResolvedValue({ id: "backup-1" });
   mocks.backupFindMany.mockResolvedValue([]);
   mocks.settingsUpsert.mockResolvedValue({});
@@ -1260,6 +1283,141 @@ function transactionClient() {
     feedPost: { findMany: mocks.feedPostFindMany, create: mocks.feedPostCreate },
     feedComment: { findMany: mocks.feedCommentFindMany, create: mocks.feedCommentCreate },
     feedReaction: { findMany: mocks.feedReactionFindMany, create: mocks.feedReactionCreate },
+    attachment: { findMany: mocks.attachmentFindMany, create: mocks.attachmentCreate },
     backupRecord: { create: mocks.backupCreate }
   };
 }
+
+describe("backups with photos", () => {
+  const sha = "a".repeat(64);
+  const postRow = {
+    id: "post-1", babyId: null, body: "", tags: [], occurredAt: new Date("2026-09-29T10:00:00Z"), externalAuthorName: null,
+    author: { displayName: "Sam", user: { name: "Sam P" } }
+  };
+  const photoRow = { id: "ph-1", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
+  const listed = { id: "ph-1", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha };
+
+  function photoBackup() {
+    return createV2Backup({
+      household: { name: "Recovered Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+      feedPosts: [{ id: "post-1", babyId: null, body: "", tags: [], occurredAt: "2026-09-29T10:00:00.000Z", authorName: "Sam" }],
+      feedPhotos: [listed]
+    }, "2026-09-30T10:00:00.000Z");
+  }
+
+  function fakeArchive(backup = photoBackup()) {
+    return {
+      parsed: { version: 2, legacyPartial: false, checksumVerified: true, backup },
+      photos: backup.payload.feedPhotos,
+      readPhoto: vi.fn(async () => Buffer.from("jpeg")),
+      verifyPhotos: vi.fn(async () => 1),
+      close: vi.fn(async () => undefined)
+    };
+  }
+
+  it("lists the shown photos of carried posts, and leaves the list out when there are none", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([postRow]);
+    mocks.attachmentFindMany.mockResolvedValue([photoRow]);
+    const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1", "2026-09-30T10:00:00.000Z");
+
+    expect(mocks.attachmentFindMany.mock.calls[0][0].where).toEqual({
+      householdId: "household-1", type: "feed_photo", state: "available",
+      post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
+    });
+    expect(snapshot.payload.feedPhotos).toEqual([listed]);
+
+    mocks.attachmentFindMany.mockResolvedValue([]);
+    const plain = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1", "2026-09-30T10:00:00.000Z");
+    // Unchanged for a household without photos, down to its checksum.
+    expect(plain.payload).not.toHaveProperty("feedPhotos");
+  });
+
+  it("downloads a household without photos as the same JSON file as before", async () => {
+    const download = await exportBackupForDownload();
+    expect(download.kind).toBe("json");
+    expect(download.filename).toMatch(/^cubby-backup-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(JSON.parse((download as { body: string }).body)).toMatchObject({ format: "cubby-household-backup", version: 2 });
+  });
+
+  it("downloads a household with photos as one archive of the backup and each verified photo", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([postRow]);
+    mocks.attachmentFindMany.mockResolvedValue([photoRow]);
+    mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
+
+    const download = await exportBackupForDownload();
+    expect(download.kind).toBe("archive");
+    expect(download.filename).toMatch(/^cubby-backup-\d{4}-\d{2}-\d{2}\.zip$/);
+    const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const dir = await mkdtemp(path.join(os.tmpdir(), "cubby-export-"));
+    try {
+      const file = path.join(dir, "export.zip");
+      await writeFile(file, Buffer.from(await new Response((download as { stream: ReadableStream<Uint8Array> }).stream).arrayBuffer()));
+      const zip = await openZipStore(file);
+      expect(zip.names()).toEqual(["backup.json", "photos/ph-1.jpg"]);
+      expect((await zip.read("photos/ph-1.jpg", 10)).toString()).toBe("jpeg");
+      await zip.close();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+    expect(mocks.readObject).toHaveBeenCalledWith(expect.any(String), "1".repeat(32), { byteSize: 4, sha256: sha });
+  });
+
+  it("refuses to restore a backup that lists photos from its JSON alone", async () => {
+    const backup = photoBackup();
+    await expect(previewBackupJson(backup)).rejects.toThrow("backup_photos_missing");
+    await expect(restoreBackupJson(backup, { confirmation: "Home", previewChecksum: backup.checksum })).rejects.toThrow("backup_photos_missing");
+  });
+
+  it("previews an archive only after checking every photo in it", async () => {
+    const archive = fakeArchive();
+    mocks.openBackupArchive.mockResolvedValue(archive);
+    await expect(previewBackupArchive("/staging/upload.zip")).resolves.toMatchObject({ counts: { feedPosts: 1, feedPhotos: 1 } });
+    expect(archive.verifyPhotos).toHaveBeenCalled();
+    expect(archive.close).toHaveBeenCalled();
+  });
+
+  it("restores an archive, storing each verified photo under a new name on its restored post", async () => {
+    const archive = fakeArchive();
+    mocks.openBackupArchive.mockResolvedValue(archive);
+
+    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: archive.parsed.backup.checksum }))
+      .resolves.toMatchObject({ counts: { feedPosts: 1, feedPhotos: 1 } });
+
+    const [, storageKey, bytes, expected] = mocks.writeObject.mock.calls[0];
+    expect(storageKey).toMatch(/^[a-f0-9]{32}$/);
+    expect(storageKey).not.toBe(photoRow.storageKey);
+    expect([bytes.toString(), expected]).toEqual(["jpeg", { byteSize: 4, sha256: sha }]);
+    expect(mocks.attachmentCreate).toHaveBeenCalledWith({
+      data: {
+        householdId: "household-1", type: "feed_photo", state: "available", storageKey, byteSize: 4, sha256: sha,
+        mimeType: "image/jpeg", width: 800, height: 600, postId: "saved-", position: 0, activatedAt: expect.any(Date)
+      }
+    });
+    expect(archive.close).toHaveBeenCalled();
+    expect(mocks.removeObject).not.toHaveBeenCalled();
+  });
+
+  it("removes the photos it stored when the restore does not commit, and refuses a stale preview first", async () => {
+    const archive = fakeArchive();
+    mocks.openBackupArchive.mockResolvedValue(archive);
+    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: "0".repeat(64) })).rejects.toThrow("backup_preview_mismatch");
+    expect(mocks.writeObject).not.toHaveBeenCalled();
+
+    // A household that is not empty is refused before any photo is stored.
+    mocks.freshState.mockResolvedValueOnce([{ actorIsSoleOwner: true, operationalCount: 1n }]);
+    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: archive.parsed.backup.checksum }))
+      .rejects.toThrow("backup_target_not_empty");
+    expect(mocks.writeObject).not.toHaveBeenCalled();
+
+    // A failure inside the restore transaction leaves no stored photo behind.
+    mocks.attachmentCreate.mockRejectedValueOnce(new Error("database went away"));
+    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: archive.parsed.backup.checksum }))
+      .rejects.toThrow("database went away");
+    const storageKey = mocks.writeObject.mock.calls[0]?.[1];
+    expect(storageKey).toMatch(/^[a-f0-9]{32}$/);
+    expect(mocks.removeObject).toHaveBeenCalledWith(expect.any(String), storageKey);
+    expect(archive.close).toHaveBeenCalledTimes(3);
+  });
+});

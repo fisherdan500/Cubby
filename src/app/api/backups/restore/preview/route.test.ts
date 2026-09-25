@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MAX_BACKUP_BYTES } from "@/server/services/backup-format";
 
-const mocks = vi.hoisted(() => ({ previewBackupJson: vi.fn() }));
-vi.mock("@/server/services/backups", () => ({ previewBackupJson: mocks.previewBackupJson }));
+const mocks = vi.hoisted(() => ({ previewBackupJson: vi.fn(), previewBackupArchive: vi.fn(), withUpload: vi.fn() }));
+vi.mock("@/server/services/backups", () => ({ previewBackupJson: mocks.previewBackupJson, previewBackupArchive: mocks.previewBackupArchive }));
+vi.mock("@/server/services/backup-upload", () => ({ withUploadedBackupArchive: mocks.withUpload }));
 
 import { POST } from "@/app/api/backups/restore/preview/route";
 
@@ -16,6 +17,23 @@ describe("POST /api/backups/restore/preview", () => {
     const response = await POST(request('{"version":1,"babies":[],"activities":[]}'));
     expect(response.status).toBe(200);
     expect(mocks.previewBackupJson).toHaveBeenCalledWith({ version: 1, babies: [], activities: [] });
+  });
+
+  it("previews an uploaded archive from its staged copy", async () => {
+    mocks.withUpload.mockImplementation(async (_request, work) => work("/staging/upload.zip"));
+    mocks.previewBackupArchive.mockResolvedValue({ householdName: "Home", counts: { feedPhotos: 3 } });
+
+    const response = await POST(request("PK", "application/zip"));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ data: { counts: { feedPhotos: 3 } } });
+    expect(mocks.previewBackupArchive).toHaveBeenCalledWith("/staging/upload.zip");
+  });
+
+  it("says which file to choose when a JSON backup lists photos it cannot carry", async () => {
+    mocks.previewBackupJson.mockRejectedValue(new Error("backup_photos_missing"));
+    const response = await POST(request('{"version":2}'));
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "backup_photos_missing", message: expect.stringMatching(/\.zip backup/) } });
   });
 
   it.each([

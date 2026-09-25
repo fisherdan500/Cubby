@@ -188,6 +188,25 @@ const feedReactionSchema = z
   .strict()
   .refine(exactlyOneParent, { message: "backup_invalid_feed_parent" });
 
+// A feed photo (DEC-PROD-422): which post it belongs to and where, its shape, and the size and digest
+// of its bytes. The bytes travel beside backup.json in the archive, as photos/<id>.jpg; listing their
+// digests here binds them into the backup checksum.
+const feedPhotoSchema = z
+  .object({
+    id: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+    postId: id,
+    position: z.number().int().min(0).max(9),
+    width: z.number().int().positive().max(100_000),
+    height: z.number().int().positive().max(100_000),
+    byteSize: z.number().int().positive().max(25 * 1024 * 1024),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/)
+  })
+  .strict();
+
+export function feedPhotoArchiveName(photoId: string) {
+  return `photos/${photoId}.jpg`;
+}
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
@@ -201,14 +220,19 @@ const v2PayloadSchema = z
     plannedSchedules: z.array(plannedScheduleSchema).max(10_000).optional(),
     feedPosts: z.array(feedPostSchema).max(1_000_000).optional(),
     feedComments: z.array(feedCommentSchema).max(1_000_000).optional(),
-    feedReactions: z.array(feedReactionSchema).max(1_000_000).optional()
+    feedReactions: z.array(feedReactionSchema).max(1_000_000).optional(),
+    feedPhotos: z.array(feedPhotoSchema).max(60_000).optional()
   })
   .strict()
   .superRefine((payload, ctx) => {
     const groups = [
       payload.babies, payload.contacts, payload.catalogs, payload.activities, payload.calendarEvents, payload.reminders,
-      payload.feedPosts ?? [], payload.feedComments ?? []
+      payload.feedPosts ?? [], payload.feedComments ?? [], payload.feedPhotos ?? []
     ];
+    const photoPlaces = (payload.feedPhotos ?? []).map((photo) => `${photo.postId}:${photo.position}`);
+    if (new Set(photoPlaces).size !== photoPlaces.length) {
+      ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
+    }
     for (const group of groups) {
       if (new Set(group.map((item) => item.id)).size !== group.length) {
         ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
@@ -231,7 +255,8 @@ const v2PayloadSchema = z
       plannedSchedules.some((item) => !babies.has(item.babyId)) ||
       (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId)) ||
       (payload.feedComments ?? []).some((item) => !onCarriedParent(item)) ||
-      (payload.feedReactions ?? []).some((item) => !onCarriedParent(item));
+      (payload.feedReactions ?? []).some((item) => !onCarriedParent(item)) ||
+      (payload.feedPhotos ?? []).some((item) => !posts.has(item.postId));
     if (dangling) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const activity of payload.activities) {
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {
@@ -420,7 +445,8 @@ export function backupSummary(parsed: ParsedBackup) {
       plannedSchedules: payload.plannedSchedules?.length ?? 0,
       feedPosts: payload.feedPosts?.length ?? 0,
       feedComments: payload.feedComments?.length ?? 0,
-      feedReactions: payload.feedReactions?.length ?? 0
+      feedReactions: payload.feedReactions?.length ?? 0,
+      feedPhotos: payload.feedPhotos?.length ?? 0
     },
     exclusions: [...BACKUP_EXCLUSIONS]
   };
