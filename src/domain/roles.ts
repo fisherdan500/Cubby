@@ -29,8 +29,10 @@ export type Permission =
   | "integration.manage"
   | "backup.manage"
   | "notification.manage"
-  // The family feed (DEC-PROD-421): posting, and removing anyone's post.
+  // The family feed (DEC-PROD-421): posting; commenting and reacting, which every member may do;
+  // and removing anyone's post or comment.
   | "feed.post"
+  | "feed.comment"
   | "feed.moderate";
 
 const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
@@ -50,6 +52,7 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "backup.manage",
     "notification.manage",
     "feed.post",
+    "feed.comment",
     "feed.moderate"
   ],
   admin: [
@@ -67,6 +70,7 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "backup.manage",
     "notification.manage",
     "feed.post",
+    "feed.comment",
     "feed.moderate"
   ],
   parent: [
@@ -79,6 +83,7 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "session.manage",
     "notification.manage",
     "feed.post",
+    "feed.comment",
     "feed.moderate"
   ],
   caretaker: [
@@ -87,9 +92,10 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "activity.update.own",
     "activity.delete.own",
     "session.manage",
-    "feed.post"
+    "feed.post",
+    "feed.comment"
   ],
-  read_only: ["activity.read", "session.manage"]
+  read_only: ["activity.read", "session.manage", "feed.comment"]
 };
 
 export function hasPermission(role: HouseholdRoleName, permission: Permission) {

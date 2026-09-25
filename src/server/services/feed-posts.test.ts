@@ -22,9 +22,11 @@ vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 import {
   issueFeedPostCreateBrowserOperation,
   issueFeedPostDeleteBrowserOperation,
+  issueFeedPostUpdateBrowserOperation,
   listFeedPosts,
   submitFeedPostCreateBrowserOperation,
-  submitFeedPostDeleteBrowserOperation
+  submitFeedPostDeleteBrowserOperation,
+  submitFeedPostUpdateBrowserOperation
 } from "@/server/services/feed-posts";
 
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
@@ -57,14 +59,45 @@ beforeEach(() => {
 describe("feed posts", () => {
   it("lists a baby's posts and the whole family's, never removed ones, and says which this member may remove", async () => {
     mocks.findMany.mockResolvedValue([
-      { id: "post-1", authorMemberId: "member-1", author: { displayName: "Sam", user: { name: "Sam P" } }, externalAuthorName: null },
-      { id: "post-2", authorMemberId: "member-2", author: { displayName: null, user: { name: "Alex" } }, externalAuthorName: null }
+      { id: "post-1", authorMemberId: "member-1", author: { displayName: "Sam", user: { name: "Sam P" } }, externalAuthorName: null, editedAt: new Date() },
+      { id: "post-2", authorMemberId: "member-2", author: { displayName: null, user: { name: "Alex" } }, externalAuthorName: null, editedAt: null }
     ]);
     const posts = await listFeedPosts({ babyId: "baby-1", tag: "firsts" });
     const where = mocks.findMany.mock.calls[0][0].where;
 
     expect(where).toMatchObject({ householdId: "household-1", deletedAt: null, OR: [{ babyId: "baby-1" }, { babyId: null }], tags: { has: "firsts" } });
-    expect(posts.map((item) => [item.id, item.authorName, item.canRemove])).toEqual([["post-1", "Sam", true], ["post-2", "Alex", false]]);
+    expect(posts.map((item) => [item.id, item.authorName, item.canRemove, item.canEdit, item.edited])).toEqual([
+      ["post-1", "Sam", true, true, true],
+      ["post-2", "Alex", false, false, false]
+    ]);
+  });
+
+  it("lets the author edit their post's caption, re-reading its tags, and refuses one changed meanwhile", async () => {
+    await issueFeedPostUpdateBrowserOperation({ operationId, postId: "post-1" });
+    const call = mocks.issueHousehold.mock.calls[0][0];
+    expect(call).toMatchObject({ operationKey: BrowserOperationKey.feedPostUpdate, targetKind: "post", targetId: "post-1", permission: "feed.post" });
+    const snapshot = { kind: "feed-post-update", schemaVersion: 1, postId: "post-1", updatedAt: "2026-09-25T10:00:00.000Z" };
+    await expect(call.targetSnapshot(transaction({ post: post() }), ctx)).resolves.toEqual(snapshot);
+    // Even a parent, who may remove any post, may not rewrite someone else's.
+    await expect(call.targetSnapshot(transaction({ post: post({ authorMemberId: "member-2" }) }), { ...ctx, role: "parent" })).rejects.toThrow("forbidden");
+
+    const tx = transaction({ post: post() });
+    mocks.executeHousehold.mockImplementation(async (contract) => {
+      await contract.validate(tx, ctx, { targetSnapshot: snapshot });
+      return contract.execute(tx, ctx, { targetSnapshot: snapshot });
+    });
+    await expect(submitFeedPostUpdateBrowserOperation({ operationId, postId: "post-1", body: "First bath #firsts #splash" }))
+      .resolves.toEqual({ kind: "feed_post", code: "updated", postId: "post-1" });
+    expect(tx.feedPost.updateMany).toHaveBeenCalledWith({
+      where: { id: "post-1", householdId: "household-1", deletedAt: null, updatedAt: new Date("2026-09-25T10:00:00.000Z") },
+      data: { body: "First bath #firsts #splash", tags: ["firsts", "splash"], editedAt: expect.any(Date) }
+    });
+    expect(mocks.writeAudit).toHaveBeenCalledWith(ctx, expect.objectContaining({ action: "feed_post.update", after: { tagCount: 2 } }), tx);
+    expect(JSON.stringify(mocks.writeAudit.mock.calls)).not.toContain("First bath");
+
+    const changed = transaction({ post: post({ updatedAt: new Date("2026-09-25T11:00:00Z") }) });
+    mocks.executeHousehold.mockImplementation((contract) => contract.validate(changed, ctx, { targetSnapshot: snapshot }));
+    await expect(submitFeedPostUpdateBrowserOperation({ operationId, postId: "post-1", body: "Again" })).rejects.toThrow("stale_revision");
   });
 
   it("opens a post for members who may post, binding it to nothing yet", async () => {

@@ -1,6 +1,6 @@
 import { BrowserOperationKey, type Prisma } from "@prisma/client";
 import { z } from "zod";
-import { canRemoveFeedPost, parseFeedPostInput } from "@/domain/feed-post";
+import { canEditFeedPost, canRemoveFeedPost, parseFeedPostEdit, parseFeedPostInput } from "@/domain/feed-post";
 import { prisma } from "@/lib/db/prisma";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
@@ -14,16 +14,18 @@ import {
 /**
  * Text posts in the private family feed (DEC-PROD-421). A post is about one baby, or the whole
  * family, and whole-family posts appear in every baby's feed. Anyone but read-only members may post;
- * an author may remove their own post, and owners, admins and parents any. The audit trail records
- * that a post was made or removed, never what it said.
+ * an author may edit their own post and remove it, and owners, admins and parents may remove any. The
+ * audit trail records that a post was made, edited or removed, never what it said.
  */
 
-const deleteSnapshotSchema = z.object({
-  kind: z.literal("feed-post-delete"),
+const revisionSnapshotSchema = (kind: "feed-post-delete" | "feed-post-update") => z.object({
+  kind: z.literal(kind),
   schemaVersion: z.literal(1),
   postId: z.string().min(1),
   updatedAt: z.string().datetime()
 }).strict();
+const deleteSnapshotSchema = revisionSnapshotSchema("feed-post-delete");
+const updateSnapshotSchema = revisionSnapshotSchema("feed-post-update");
 
 const postIdSchema = z.object({ postId: z.string().min(1).max(200) });
 
@@ -50,6 +52,8 @@ export async function listFeedPosts(params: {
   return posts.map((post) => ({
     ...post,
     authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone",
+    edited: post.editedAt !== null,
+    canEdit: canEditFeedPost(ctx.role, post.authorMemberId === ctx.memberId),
     canRemove: canRemoveFeedPost(ctx.role, post.authorMemberId === ctx.memberId)
   }));
 }
@@ -99,16 +103,72 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
   });
 }
 
-/** The live post, locked for the rest of the transaction, if this member may remove it. */
-async function lockRemovablePost(tx: Prisma.TransactionClient, ctx: BrowserOperationContext, postId: string) {
+/** The live post, locked for the rest of the transaction, if this member may act on it. */
+async function lockPost(
+  tx: Prisma.TransactionClient,
+  ctx: BrowserOperationContext,
+  postId: string,
+  allowed: (role: BrowserOperationContext["role"], isAuthor: boolean) => boolean
+) {
   await tx.$queryRaw`SELECT "id" FROM "FeedPost" WHERE "id" = ${postId} AND "householdId" = ${ctx.householdId} FOR UPDATE`;
   const post = await tx.feedPost.findFirst({
     where: { id: postId, householdId: ctx.householdId, deletedAt: null },
     select: { id: true, authorMemberId: true, updatedAt: true }
   });
   if (!post) throw new Error("not_found");
-  if (!canRemoveFeedPost(ctx.role, post.authorMemberId === ctx.memberId)) throw new Error("forbidden");
+  if (!allowed(ctx.role, post.authorMemberId === ctx.memberId)) throw new Error("forbidden");
   return post;
+}
+
+const lockRemovablePost = (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, postId: string) => lockPost(tx, ctx, postId, canRemoveFeedPost);
+const lockEditablePost = (tx: Prisma.TransactionClient, ctx: BrowserOperationContext, postId: string) => lockPost(tx, ctx, postId, canEditFeedPost);
+
+export async function issueFeedPostUpdateBrowserOperation(raw: Record<string, unknown>) {
+  const { postId } = postIdSchema.parse(raw);
+  const ctx = await getBrowserOperationContextForHousehold();
+  return issueHouseholdBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: BrowserOperationKey.feedPostUpdate,
+    targetKind: "post",
+    targetId: postId,
+    permission: "feed.post",
+    targetSnapshot: async (tx, lockedCtx) => {
+      const post = await lockEditablePost(tx, lockedCtx, postId);
+      return { kind: "feed-post-update", schemaVersion: 1, postId: post.id, updatedAt: post.updatedAt.toISOString() };
+    }
+  });
+}
+
+export async function submitFeedPostUpdateBrowserOperation(raw: Record<string, unknown>) {
+  const { postId } = postIdSchema.parse(raw);
+  const input = parseFeedPostEdit({ body: raw.body });
+  const ctx = await getBrowserOperationContextForHousehold();
+  return executeHouseholdBrowserOperation({
+    ctx,
+    operationId: raw.operationId,
+    operationKey: BrowserOperationKey.feedPostUpdate,
+    intent: { postId, ...input },
+    targetKind: "post",
+    targetId: postId,
+    permission: "feed.post",
+    validate: async (tx, lockedCtx, binding) => {
+      const snapshot = updateSnapshotSchema.safeParse(binding.targetSnapshot);
+      if (!snapshot.success || snapshot.data.postId !== postId) throw new Error("not_found");
+      const post = await lockEditablePost(tx, lockedCtx, postId);
+      if (post.updatedAt.toISOString() !== snapshot.data.updatedAt) throw new Error("stale_revision");
+    },
+    execute: async (tx, lockedCtx, binding) => {
+      const snapshot = updateSnapshotSchema.parse(binding.targetSnapshot);
+      const updated = await tx.feedPost.updateMany({
+        where: { id: postId, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: new Date(snapshot.updatedAt) },
+        data: { body: input.body, tags: input.tags, editedAt: new Date() }
+      });
+      if (updated.count !== 1) throw new Error("stale_revision");
+      await writeAudit(lockedCtx, { action: "feed_post.update", entityType: "feed_post", entityId: postId, after: { tagCount: input.tags.length } }, tx);
+      return { kind: "feed_post", code: "updated", postId } as const;
+    }
+  });
 }
 
 export async function issueFeedPostDeleteBrowserOperation(raw: Record<string, unknown>) {

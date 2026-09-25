@@ -197,6 +197,11 @@ enum BrowserOperationKey {
   plannedScheduleSave        @map("planned_schedule.save")
   feedPostCreate             @map("feed_post.create")
   feedPostDelete             @map("feed_post.delete")
+  feedPostUpdate             @map("feed_post.update")
+  feedCommentCreate          @map("feed_comment.create")
+  feedCommentUpdate          @map("feed_comment.update")
+  feedCommentDelete          @map("feed_comment.delete")
+  feedReactionSet            @map("feed_reaction.set")
 }
 
 enum BrowserOperationTargetKind {
@@ -211,6 +216,7 @@ enum BrowserOperationTargetKind {
   calendar
   apiKey @map("api_key")
   post
+  comment
 }
 
 enum BrowserOperationProtocolVersion {
@@ -465,6 +471,8 @@ model Household {
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
   plannedSchedules PlannedSchedule[]
   feedPosts       FeedPost[]
+  feedComments    FeedComment[]
+  feedReactions   FeedReaction[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -495,6 +503,8 @@ model HouseholdMember {
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
   feedPosts   FeedPost[]
+  feedComments FeedComment[]
+  feedReactions FeedReaction[]
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -767,6 +777,8 @@ model ActivityLog {
   webhookDeliveries WebhookDelivery[]
   notificationLogs  NotificationLog[]
   pauseIntervals    ActivityTimerPauseInterval[]
+  feedComments      FeedComment[]
+  feedReactions     FeedReaction[]
 
   @@index([householdId])
   @@index([babyId])
@@ -776,6 +788,7 @@ model ActivityLog {
   @@index([deletedAt])
   @@index([householdId, babyId, type, occurredAt])
   @@unique([householdId, clientMutationId])
+  @@unique([householdId, id])
 }
 
 model ActivityTimerPauseInterval {
@@ -1012,15 +1025,71 @@ model FeedPost {
   occurredAt         DateTime         @default(now())
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  editedAt           DateTime?
   deletedAt          DateTime?
   deletedByMemberId  String?
   household          Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
   baby               Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
   author             HouseholdMember? @relation(fields: [householdId, authorMemberId], references: [householdId, id], onDelete: Restrict)
+  comments           FeedComment[]
+  reactions          FeedReaction[]
 
   @@unique([householdId, id])
   @@index([householdId, babyId, occurredAt])
   @@index([householdId, occurredAt])
+}
+
+// A comment in the family feed (DEC-PROD-421), on a post or on a logged entry - exactly one of the
+// two. It never changes the entry itself. Every reference carries the household.
+model FeedComment {
+  id                 String           @id @default(cuid())
+  householdId        String
+  postId             String?
+  activityId         String?
+  authorMemberId     String?
+  externalAuthorName String?
+  body               String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  editedAt           DateTime?
+  deletedAt          DateTime?
+  deletedByMemberId  String?
+  household          Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  post               FeedPost?        @relation(fields: [householdId, postId], references: [householdId, id], onDelete: Cascade)
+  activity           ActivityLog?     @relation(fields: [householdId, activityId], references: [householdId, id], onDelete: Cascade)
+  author             HouseholdMember? @relation(fields: [householdId, authorMemberId], references: [householdId, id], onDelete: Restrict)
+
+  @@unique([householdId, id])
+  @@index([householdId, postId, createdAt])
+  @@index([householdId, activityId, createdAt])
+}
+
+enum FeedReactionKind {
+  love
+  funny
+  aww
+  celebrate
+  well_done
+}
+
+// One member's reaction on a post or a logged entry. Each member chooses each reaction at most once
+// per post or entry; turning it off removes the row. A restored reaction keeps the name instead.
+model FeedReaction {
+  id                  String           @id @default(cuid())
+  householdId         String
+  postId              String?
+  activityId          String?
+  memberId            String?
+  externalReactorName String?
+  reaction            FeedReactionKind
+  createdAt           DateTime         @default(now())
+  household           Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  post                FeedPost?        @relation(fields: [householdId, postId], references: [householdId, id], onDelete: Cascade)
+  activity            ActivityLog?     @relation(fields: [householdId, activityId], references: [householdId, id], onDelete: Cascade)
+  member              HouseholdMember? @relation(fields: [householdId, memberId], references: [householdId, id], onDelete: Cascade)
+
+  @@unique([householdId, postId, memberId, reaction])
+  @@unique([householdId, activityId, memberId, reaction])
 }
 
 model DashboardWarningDismissal {

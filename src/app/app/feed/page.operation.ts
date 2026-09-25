@@ -8,6 +8,11 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "feedInteractionKey",
+      target: "src/server/services/feed-interactions.ts#feedInteractionKey"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getActivityRowViewer",
       target: "src/server/services/activities.ts#getActivityRowViewer"
     },
@@ -25,6 +30,11 @@ export const operation = {
       kind: "server_value_import",
       symbol: "listActivities",
       target: "src/server/services/activities.ts#listActivities"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "listFeedInteractions",
+      target: "src/server/services/feed-interactions.ts#listFeedInteractions"
     },
     {
       kind: "server_value_import",

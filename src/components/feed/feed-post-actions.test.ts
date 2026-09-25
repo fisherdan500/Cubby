@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
 vi.mock("@/lib/browser-operation-tab-scope", () => ({ tabScopedBrowserOperationStorageKey: async (_partition: string, key: string) => `${key}:tab:test` }));
 
-import { FeedPostComposer, FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
+import { FeedPostBody, FeedPostComposer, FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
 
 globalThis.React = React;
 const response = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body }) as Response;
@@ -86,6 +86,49 @@ describe("FeedPostRemoveButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove post" }));
     fireEvent.click(screen.getByRole("button", { name: "Keep" }));
     expect(screen.getByRole("button", { name: "Remove post" })).toBeTruthy();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("FeedPostBody", () => {
+  const linked = createElement("span", null, "First bath ", createElement("a", { href: "#" }, "#firsts"));
+
+  it("shows the caption as written, and whether it was edited", () => {
+    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath #firsts", edited: true, canEdit: false }, linked));
+    expect(screen.getByText("#firsts")).toBeTruthy();
+    expect(screen.getByText("edited")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Edit post" })).toBeNull();
+  });
+
+  it("lets the author edit the caption through an operation bound to the post", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(partition())
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath #firsts", edited: false, canEdit: true }, linked));
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit post" }));
+    const field = screen.getByLabelText("Edit your post") as HTMLTextAreaElement;
+    expect(field.value).toBe("First bath #firsts");
+    fireEvent.change(field, { target: { value: "First bath #firsts #splash" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls.slice(1).map(([url, init]) => [url, init?.method])).toEqual([
+      ["/api/feed/posts/post-1?issue=1", "PATCH"],
+      ["/api/feed/posts/post-1", "PATCH"]
+    ]);
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId, body: "First bath #firsts #splash" });
+    expect(screen.queryByLabelText("Edit your post")).toBeNull();
+  });
+
+  it("can be backed out of without saving", () => {
+    globalThis.fetch = vi.fn();
+    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath", edited: false, canEdit: true }, linked));
+    fireEvent.click(screen.getByRole("button", { name: "Edit post" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("#firsts")).toBeTruthy();
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });

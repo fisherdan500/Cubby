@@ -26,6 +26,10 @@ const mocks = vi.hoisted(() => ({
   plannedScheduleCreate: vi.fn(),
   feedPostFindMany: vi.fn(),
   feedPostCreate: vi.fn(),
+  feedCommentFindMany: vi.fn(),
+  feedCommentCreate: vi.fn(),
+  feedReactionFindMany: vi.fn(),
+  feedReactionCreate: vi.fn(),
   backupCreate: vi.fn(),
   backupFindMany: vi.fn(),
   backupFindFirst: vi.fn(),
@@ -69,6 +73,8 @@ vi.mock("@/lib/db/prisma", () => ({
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
     plannedSchedule: { findMany: mocks.plannedScheduleFindMany, create: mocks.plannedScheduleCreate },
     feedPost: { findMany: mocks.feedPostFindMany, create: mocks.feedPostCreate },
+    feedComment: { findMany: mocks.feedCommentFindMany, create: mocks.feedCommentCreate },
+    feedReaction: { findMany: mocks.feedReactionFindMany, create: mocks.feedReactionCreate },
     backupRecord: {
       create: mocks.backupCreate,
       findMany: mocks.backupFindMany,
@@ -163,6 +169,9 @@ beforeEach(() => {
   mocks.reminderFindMany.mockResolvedValue([]);
   mocks.plannedScheduleFindMany.mockResolvedValue([]);
   mocks.feedPostFindMany.mockResolvedValue([]);
+  mocks.feedPostCreate.mockImplementation(async ({ data }) => ({ id: `saved-${data.body.slice(0, 5)}` }));
+  mocks.feedCommentFindMany.mockResolvedValue([]);
+  mocks.feedReactionFindMany.mockResolvedValue([]);
   mocks.backupCreate.mockResolvedValue({ id: "backup-1" });
   mocks.backupFindMany.mockResolvedValue([]);
   mocks.settingsUpsert.mockResolvedValue({});
@@ -285,6 +294,100 @@ describe("backup unit preferences", () => {
     // Memberships are not restored, so the post keeps who wrote it by name.
     expect(mocks.feedPostCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ babyId: "saved-baby-1", externalAuthorName: "Sam", tags: ["firsts"] }) });
     expect(mocks.feedPostCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ babyId: null, externalAuthorName: "Alex" }) });
+  });
+
+  it("exports the live comments and the reactions with the names of who wrote and chose them", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([
+      { id: "post-1", babyId: null, body: "Family walk", tags: [], occurredAt: new Date("2026-09-21T10:00:00Z"), externalAuthorName: null, author: { displayName: "Alex", user: { name: "Alex" } } }
+    ]);
+    mocks.feedCommentFindMany.mockResolvedValue([
+      {
+        id: "comment-1", postId: "post-1", activityId: null, body: "Lovely", createdAt: new Date("2026-09-21T11:00:00Z"),
+        editedAt: new Date("2026-09-21T11:05:00Z"), externalAuthorName: null, author: { displayName: "Sam", user: { name: "Sam P" } }
+      }
+    ]);
+    mocks.feedReactionFindMany.mockResolvedValue([
+      { postId: "post-1", activityId: null, reaction: "well_done", externalReactorName: null, member: { displayName: null, user: { name: "Jo" } } }
+    ]);
+
+    const exported = await buildHouseholdV2Snapshot(
+      transactionClient() as unknown as Parameters<typeof buildHouseholdV2Snapshot>[0],
+      "household-1",
+      "2026-09-27T18:00:00.000Z"
+    );
+
+    // Only comments and reactions on posts and entries the backup itself carries.
+    expect(mocks.feedCommentFindMany.mock.calls[0][0].where).toEqual({
+      householdId: "household-1",
+      deletedAt: null,
+      OR: [
+        { post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+        { activity: { deletedAt: null, baby: { deletedAt: null } } }
+      ]
+    });
+    expect(exported.payload.feedComments).toEqual([
+      { id: "comment-1", postId: "post-1", activityId: null, body: "Lovely", createdAt: "2026-09-21T11:00:00.000Z", edited: true, authorName: "Sam" }
+    ]);
+    expect(exported.payload.feedReactions).toEqual([{ postId: "post-1", activityId: null, reaction: "well_done", name: "Jo" }]);
+  });
+
+  it("restores comments and reactions onto the restored posts and entries, keeping names", async () => {
+    mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", name: "Finley", inactiveAt: null });
+    const backup = createV2Backup({
+      household: { name: "Recovered Home" },
+      settings: {},
+      babies: [{
+        id: "source-baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null,
+        feedingWarningMinutes: null, diaperWarningMinutes: null, sleepWarningMinutes: null, preferredUnits: null, inactiveAt: null
+      }],
+      contacts: [],
+      catalogs: [],
+      activities: [{
+        id: "source-activity-1", babyId: "source-baby-1", type: "milestone",
+        occurredAt: "2026-09-20T10:00:00.000Z", startedAt: null, endedAt: null,
+        timezone: "UTC", notes: null, source: "manual", externalActorName: null,
+        timerState: "none", durationSeconds: null, pausedAt: null, pausedSeconds: 0,
+        contactId: null, detail: { title: "First steps" }
+      }],
+      calendarEvents: [],
+      reminders: [],
+      feedPosts: [{ id: "source-post-1", babyId: null, body: "Family walk", tags: [], occurredAt: "2026-09-21T10:00:00.000Z", authorName: "Alex" }],
+      feedComments: [
+        { id: "source-comment-1", postId: "source-post-1", activityId: null, body: "Lovely", createdAt: "2026-09-21T11:00:00.000Z", edited: false, authorName: "Sam" },
+        { id: "source-comment-2", postId: null, activityId: "source-activity-1", body: "Go Finley!", createdAt: "2026-09-20T12:00:00.000Z", edited: true, authorName: "Jo" }
+      ],
+      feedReactions: [{ postId: null, activityId: "source-activity-1", reaction: "celebrate", name: "Alex" }]
+    }, "2026-09-27T18:00:00.000Z");
+
+    await expect(restoreBackupJson(backup, { confirmation: "Home", previewChecksum: backup.checksum })).resolves.toMatchObject({
+      counts: { feedPosts: 1, feedComments: 2, feedReactions: 1 }
+    });
+    expect(mocks.feedCommentCreate).toHaveBeenCalledWith({
+      data: {
+        householdId: "household-1", postId: "saved-Famil", activityId: null, externalAuthorName: "Sam", body: "Lovely",
+        createdAt: new Date("2026-09-21T11:00:00.000Z"), editedAt: null
+      }
+    });
+    expect(mocks.feedCommentCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ postId: null, activityId: "activity-restored", externalAuthorName: "Jo", editedAt: new Date("2026-09-20T12:00:00.000Z") })
+    });
+    expect(mocks.feedReactionCreate).toHaveBeenCalledWith({
+      data: { householdId: "household-1", postId: null, activityId: "activity-restored", externalReactorName: "Alex", reaction: "celebrate" }
+    });
+  });
+
+  it("refuses a comment or reaction on a post or entry the backup does not carry", async () => {
+    const base = {
+      household: { name: "Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: []
+    };
+    expect(() => createV2Backup({
+      ...base,
+      feedComments: [{ id: "c-1", postId: "missing", activityId: null, body: "Hi", createdAt: "2026-09-21T11:00:00.000Z", edited: false, authorName: "Sam" }]
+    }, "2026-09-27T18:00:00.000Z")).toThrow("backup_dangling_reference");
+    expect(() => createV2Backup({
+      ...base,
+      feedReactions: [{ postId: null, activityId: "missing", reaction: "love", name: "Sam" }]
+    }, "2026-09-27T18:00:00.000Z")).toThrow("backup_dangling_reference");
   });
 
   it("restores a complete v2 snapshot with mapped relationships and one recovery audit", async () => {
@@ -1155,6 +1258,8 @@ function transactionClient() {
     reminder: { findMany: mocks.reminderFindMany, create: mocks.reminderCreate },
     plannedSchedule: { findMany: mocks.plannedScheduleFindMany, create: mocks.plannedScheduleCreate },
     feedPost: { findMany: mocks.feedPostFindMany, create: mocks.feedPostCreate },
+    feedComment: { findMany: mocks.feedCommentFindMany, create: mocks.feedCommentCreate },
+    feedReaction: { findMany: mocks.feedReactionFindMany, create: mocks.feedReactionCreate },
     backupRecord: { create: mocks.backupCreate }
   };
 }

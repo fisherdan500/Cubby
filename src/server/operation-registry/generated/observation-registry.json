@@ -1,7 +1,7 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 106,
+    "api_route": 109,
     "client_binding": 38,
     "instrumentation": 1,
     "package_command": 27,
@@ -9,7 +9,7 @@
     "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "7add4ac3841063a1a992e2dfe1290d9a6074b70f7f9c7b90071b51a9d68f497e",
+  "declarationDigest": "df4c622f1b9f9d66154e35cbb2b02713b7399c1146c429f1aac124a9a0165116",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -2404,7 +2404,77 @@
           {
             "kind": "route_method",
             "symbol": "DELETE",
+            "target": "src/app/api/feed/comments/[id]/route.ts#DELETE"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "PATCH",
+            "target": "src/app/api/feed/comments/[id]/route.ts#PATCH"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/feed/comments/[id]/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/feed/comments/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/feed/comments/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/feed/comments/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/feed/comments/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/feed/comments/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "DELETE",
             "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "PATCH",
+            "target": "src/app/api/feed/posts/[id]/route.ts#PATCH"
           }
         ],
         "deferredGateIds": [
@@ -2457,6 +2527,36 @@
       },
       "id": "api_route:src/app/api/feed/posts/route.ts",
       "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "PUT",
+            "target": "src/app/api/feed/reactions/route.ts#PUT"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/feed/reactions/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/feed/reactions/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/feed/reactions/route.ts",
+      "sidecarPath": "src/app/api/feed/reactions/route.operation.ts"
     },
     {
       "declaration": {
@@ -4713,6 +4813,11 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "feedInteractionKey",
+            "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getActivityRowViewer",
             "target": "src/server/services/activities.ts#getActivityRowViewer"
           },
@@ -4730,6 +4835,11 @@
             "kind": "server_value_import",
             "symbol": "listActivities",
             "target": "src/server/services/activities.ts#listActivities"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listFeedInteractions",
+            "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
           },
           {
             "kind": "server_value_import",
@@ -7518,7 +7628,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "eae00deb1f1c7bd71a6ff1a31bf5ab7d565748d310dfb7da92e35881af74ac55",
+  "generatorDigest": "53af7be236a30de84870d7090230b1bcddd31bc28e8c380f495d735c2d085ede",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8327,13 +8437,69 @@
     {
       "bindings": [
         {
+          "anchorDigest": "6e5f5f75dae0693a1ff25dfe3680dbca7311e36bb8c2b391c03f0fe4ccf0a4f6",
+          "anchorEnd": 2396,
+          "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
+          "anchorStart": 1407,
+          "kind": "route_method",
+          "symbol": "DELETE",
+          "target": "src/app/api/feed/comments/[id]/route.ts#DELETE"
+        },
+        {
+          "anchorDigest": "f7a0e5369b62378b85a2f6b1adb7a61b757c6cc3f0ffb6dbe976b8f51f66cf80",
+          "anchorEnd": 1405,
+          "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
+          "anchorStart": 401,
+          "kind": "route_method",
+          "symbol": "PATCH",
+          "target": "src/app/api/feed/comments/[id]/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/feed/comments/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "e8d118cb9db19a5f671034a408066f49cea5771f919d686e5ed23d52b0acb762",
+          "anchorEnd": 1198,
+          "anchorFile": "src/app/api/feed/comments/route.ts",
+          "anchorStart": 312,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/feed/comments/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/feed/comments/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/comments/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "9adfc7310cb6c348ece09691bfbea0ca9bfd9618b14c6672e8943718834a8397",
-          "anchorEnd": 1279,
+          "anchorEnd": 2359,
           "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
-          "anchorStart": 299,
+          "anchorStart": 1379,
           "kind": "route_method",
           "symbol": "DELETE",
           "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+        },
+        {
+          "anchorDigest": "c76150261094afd97bd1916741b296da1ec9a28b06e472e81faffce4464d8bdf",
+          "anchorEnd": 1377,
+          "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
+          "anchorStart": 382,
+          "kind": "route_method",
+          "symbol": "PATCH",
+          "target": "src/app/api/feed/posts/[id]/route.ts#PATCH"
         }
       ],
       "disposition": "observed",
@@ -8361,6 +8527,25 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/posts/route.ts",
       "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "5c90df6c549093036c1b90c137dffa63ed7546804295b8a9a74409eb3f378408",
+          "anchorEnd": 1250,
+          "anchorFile": "src/app/api/feed/reactions/route.ts",
+          "anchorStart": 369,
+          "kind": "route_method",
+          "symbol": "PUT",
+          "target": "src/app/api/feed/reactions/route.ts#PUT"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/feed/reactions/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/reactions/route.ts",
+      "sidecarPath": "src/app/api/feed/reactions/route.operation.ts"
     },
     {
       "bindings": [
@@ -9949,55 +10134,73 @@
     {
       "bindings": [
         {
-          "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-          "anchorEnd": 673,
+          "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
+          "anchorEnd": 895,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 653,
+          "anchorStart": 877,
+          "kind": "server_value_import",
+          "symbol": "feedInteractionKey",
+          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+        },
+        {
+          "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
+          "anchorEnd": 739,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 719,
           "kind": "server_value_import",
           "symbol": "getActivityRowViewer",
           "target": "src/server/services/activities.ts#getActivityRowViewer"
         },
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 918,
+          "anchorEnd": 1080,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 892,
+          "anchorStart": 1054,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 759,
+          "anchorEnd": 825,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 738,
+          "anchorStart": 804,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 689,
+          "anchorEnd": 755,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 675,
+          "anchorStart": 741,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
-          "anchorEnd": 824,
+          "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
+          "anchorEnd": 917,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 811,
+          "anchorStart": 897,
+          "kind": "server_value_import",
+          "symbol": "listFeedInteractions",
+          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
+          "anchorEnd": 986,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 973,
           "kind": "server_value_import",
           "symbol": "listFeedPosts",
           "target": "src/server/services/feed-posts.ts#listFeedPosts"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 611,
+          "anchorEnd": 677,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 596,
+          "anchorStart": 662,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -11099,36 +11302,36 @@
       "bindings": [
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 854,
+          "anchorEnd": 878,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 789,
+          "anchorStart": 813,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
-          "anchorEnd": 2252,
+          "anchorEnd": 2462,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 2101,
+          "anchorStart": 2311,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-          "anchorEnd": 3229,
+          "anchorEnd": 3439,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3162,
+          "anchorStart": 3372,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "c77e773b3deb1ba450ae38aef595edad224dd27ee7e1b10472a52f78efcb2e73",
-          "anchorEnd": 3849,
+          "anchorDigest": "edc76dd7036d85384f82f92c0e7f791657304dbaab834082a04c6c4aa34cd56d",
+          "anchorEnd": 4068,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3717,
+          "anchorStart": 3927,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -13539,8 +13742,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 207,
-  "observationDigest": "cbb5840e7a1969b71a7884068b01c84c187d7be2c7bbe956c209f35590f79ef6",
+  "observationCount": 210,
+  "observationDigest": "15671b209c8ba09850a93020b86d31c4ee3756ed5ab0d0d1c4e4e1fd76dae749",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14312,13 +14515,67 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1279,
+          "anchorEnd": 2396,
+          "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
+          "anchorStart": 1407,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+          "symbol": "DELETE",
+          "target": "src/app/api/feed/comments/[id]/route.ts#DELETE"
+        },
+        {
+          "anchorEnd": 1405,
+          "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
+          "anchorStart": 401,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+          "symbol": "PATCH",
+          "target": "src/app/api/feed/comments/[id]/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/feed/comments/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1198,
+          "anchorFile": "src/app/api/feed/comments/route.ts",
+          "anchorStart": 312,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/comments/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/feed/comments/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/feed/comments/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/comments/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 2359,
           "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
-          "anchorStart": 299,
+          "anchorStart": 1379,
           "kind": "route_method",
           "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
           "symbol": "DELETE",
           "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
+        },
+        {
+          "anchorEnd": 1377,
+          "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
+          "anchorStart": 382,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+          "symbol": "PATCH",
+          "target": "src/app/api/feed/posts/[id]/route.ts#PATCH"
         }
       ],
       "disposition": "observed",
@@ -14344,6 +14601,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/posts/route.ts",
       "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1250,
+          "anchorFile": "src/app/api/feed/reactions/route.ts",
+          "anchorStart": 369,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/feed/reactions/route.ts",
+          "symbol": "PUT",
+          "target": "src/app/api/feed/reactions/route.ts#PUT"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/feed/reactions/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/reactions/route.ts",
+      "sidecarPath": "src/app/api/feed/reactions/route.operation.ts"
     },
     {
       "bindings": [
@@ -15860,54 +16135,72 @@
     {
       "bindings": [
         {
-          "anchorEnd": 673,
+          "anchorEnd": 895,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 653,
+          "anchorStart": 877,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "feedInteractionKey",
+          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+        },
+        {
+          "anchorEnd": 739,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 719,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getActivityRowViewer",
           "target": "src/server/services/activities.ts#getActivityRowViewer"
         },
         {
-          "anchorEnd": 918,
+          "anchorEnd": 1080,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 892,
+          "anchorStart": 1054,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 759,
+          "anchorEnd": 825,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 738,
+          "anchorStart": 804,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 689,
+          "anchorEnd": 755,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 675,
+          "anchorStart": 741,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 824,
+          "anchorEnd": 917,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 811,
+          "anchorStart": 897,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "listFeedInteractions",
+          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorEnd": 986,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 973,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "listFeedPosts",
           "target": "src/server/services/feed-posts.ts#listFeedPosts"
         },
         {
-          "anchorEnd": 611,
+          "anchorEnd": 677,
           "anchorFile": "src/app/app/feed/page.tsx",
-          "anchorStart": 596,
+          "anchorStart": 662,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/feed/page.tsx",
           "symbol": "requireUserPage",
@@ -16976,36 +17269,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 854,
+          "anchorEnd": 878,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 789,
+          "anchorStart": 813,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2252,
+          "anchorEnd": 2462,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 2101,
+          "anchorStart": 2311,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3229,
+          "anchorEnd": 3439,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3162,
+          "anchorStart": 3372,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3849,
+          "anchorEnd": 4068,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3717,
+          "anchorStart": 3927,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[4]",
@@ -19481,6 +19774,18 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/feed/comments/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/feed/comments/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/comments/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/feed/posts/[id]/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
@@ -19491,6 +19796,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/feed/posts/route.ts",
       "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/feed/reactions/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/feed/reactions/route.ts",
+      "sidecarPath": "src/app/api/feed/reactions/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/health/route.ts",
@@ -20495,9 +20806,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "0d7deae76cec1f6eaa5ef9f8b56e19a1ae4ed912774e5b21bf567843042ad8e2",
+  "ownerSetDigest": "b6a185871f48367394aecdd0623a68a53f18dcb3c0f662b93b3f9d1aa886b851",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "771664e42f379215ecbcb4f5f9ed7e45396e0b458f8184b2ae92d32f880afc87",
+  "registryDigest": "5db83a8336212a683a2aa323bf1fd4fa141829552ec168e9900e2f9b5e0691dc",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   listActivities: vi.fn(),
   getActivityRowViewer: vi.fn(),
   listFeedPosts: vi.fn(),
+  listFeedInteractions: vi.fn(),
   getActivityUnitPreferences: vi.fn()
 }));
 
@@ -18,9 +19,25 @@ vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/activities", () => ({ listActivities: mocks.listActivities, getActivityRowViewer: mocks.getActivityRowViewer }));
 vi.mock("@/server/services/feed-posts", () => ({ listFeedPosts: mocks.listFeedPosts }));
+vi.mock("@/server/services/feed-interactions", () => ({
+  listFeedInteractions: mocks.listFeedInteractions,
+  feedInteractionKey: (kind: string, id: string) => `${kind}:${id}`
+}));
 vi.mock("@/components/feed/feed-post-actions", () => ({
   FeedPostComposer: ({ babyName }: { babyName: string }) => createElement("div", { "data-composer": babyName }),
-  FeedPostRemoveButton: ({ postId }: { postId: string }) => createElement("button", { type: "button", "data-remove": postId }, "Remove post")
+  FeedPostRemoveButton: ({ postId }: { postId: string }) => createElement("button", { type: "button", "data-remove": postId }, "Remove post"),
+  FeedPostBody: ({ canEdit, edited, children }: { canEdit: boolean; edited: boolean; children: React.ReactNode }) =>
+    createElement("p", { "data-can-edit": String(canEdit), "data-edited": String(edited) }, children)
+}));
+vi.mock("@/components/feed/feed-responses", () => ({
+  FeedResponses: ({ parentKind, parentId, comments, reactions, canRespond }: {
+    parentKind: string; parentId: string; comments: unknown[]; reactions: unknown[]; canRespond: boolean;
+  }) => createElement("div", {
+    "data-responses": `${parentKind}:${parentId}`,
+    "data-comments": String(comments.length),
+    "data-reactions": String(reactions.length),
+    "data-can-respond": String(canRespond)
+  })
 }));
 vi.mock("@/server/services/unit-preferences", () => ({ getActivityUnitPreferences: mocks.getActivityUnitPreferences }));
 vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "UTC" } }));
@@ -58,6 +75,7 @@ beforeEach(() => {
   mocks.getActivityUnitPreferences.mockResolvedValue({ preferences: { volume: "oz" } });
   mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-1", role: "caretaker" });
   mocks.listFeedPosts.mockResolvedValue([]);
+  mocks.listFeedInteractions.mockResolvedValue({ comments: {}, reactions: {}, canRespond: true });
   mocks.listActivities.mockResolvedValue([
     entry("a1", "2026-09-25T15:00:00Z", "milestone", { milestone: { title: "Rolled over", category: "Motor" } }),
     entry("a2", "2026-09-25T09:00:00Z", "diaper", { diaper: { kind: "wet" } }),
@@ -87,7 +105,7 @@ describe("Feed page", () => {
 
   it("opens an entry and comes back to the same feed", async () => {
     const body = await renderFeed({ babyId: "baby-1", filter: "milestone" });
-    const href = body.querySelector("article")?.closest("a")?.getAttribute("href") ?? "";
+    const href = body.querySelector("article a")?.getAttribute("href") ?? "";
 
     expect(href).toMatch(/^\/app\/activities\/a1\?/);
     expect(new URL(href, "https://cubby.invalid").searchParams.get("returnTo")).toBe("/app/feed?babyId=baby-1&filter=milestone");
@@ -155,6 +173,30 @@ describe("Feed page", () => {
     mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-9", role: "read_only" });
     body = await renderFeed({ babyId: "baby-1" });
     expect(body.querySelector("[data-composer]")).toBeNull();
+  });
+
+  it("puts the family's reactions and comments under every post and entry shown", async () => {
+    mocks.listFeedPosts.mockResolvedValue([{
+      id: "post-1", babyId: null, body: "Family walk", tags: [], occurredAt: new Date("2026-09-25T12:00:00Z"),
+      authorName: "Sam", canRemove: true, canEdit: true, edited: true
+    }]);
+    mocks.listFeedInteractions.mockResolvedValue({
+      comments: { "activity:a1": [{ id: "comment-1" }, { id: "comment-2" }] },
+      reactions: { "post:post-1": [{ key: "love" }] },
+      canRespond: true
+    });
+    const body = await renderFeed({ babyId: "baby-1" });
+
+    expect(mocks.listFeedInteractions).toHaveBeenCalledWith({ postIds: ["post-1"], activityIds: ["a1", "a2", "a3"] });
+    const cards = [...body.querySelectorAll("article")];
+    expect(cards.map((card) => card.querySelector("[data-responses]")?.getAttribute("data-responses")))
+      .toEqual(["activity:a1", "post:post-1", "activity:a2", "activity:a3"]);
+    expect(cards[0].querySelector("[data-responses]")?.getAttribute("data-comments")).toBe("2");
+    expect(cards[1].querySelector("[data-responses]")?.getAttribute("data-reactions")).toBe("1");
+    // Responding sits beside the entry's link, not inside it.
+    expect(cards[0].querySelector("a [data-responses]")).toBeNull();
+    expect(cards[1].querySelector("[data-can-edit]")?.getAttribute("data-can-edit")).toBe("true");
+    expect(cards[1].querySelector("[data-edited]")?.getAttribute("data-edited")).toBe("true");
   });
 
   it("says so kindly when there is nothing yet", async () => {

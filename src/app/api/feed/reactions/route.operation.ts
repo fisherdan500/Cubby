@@ -2,19 +2,14 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "api_route:src/app/api/feed/posts/[id]/route.ts",
-  ownerModule: "src/app/api/feed/posts/[id]/route.ts",
+  id: "api_route:src/app/api/feed/reactions/route.ts",
+  ownerModule: "src/app/api/feed/reactions/route.ts",
   ownerKind: "api_route",
   bindings: [
     {
       kind: "route_method",
-      symbol: "DELETE",
-      target: "src/app/api/feed/posts/[id]/route.ts#DELETE"
-    },
-    {
-      kind: "route_method",
-      symbol: "PATCH",
-      target: "src/app/api/feed/posts/[id]/route.ts#PATCH"
+      symbol: "PUT",
+      target: "src/app/api/feed/reactions/route.ts#PUT"
     }
   ],
   disposition: "observed",

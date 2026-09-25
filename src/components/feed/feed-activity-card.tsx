@@ -11,19 +11,22 @@ type FeedActivity = Parameters<typeof describeActivity>[0] & {
 
 /**
  * One logged entry as a feed card: what it was, when, who logged it, and the part worth reading.
- * Milestones get more room, since they are the moments a family looks back for. The whole card opens
- * the entry, and the entry's Back returns to the feed exactly as it was.
+ * Milestones get more room, since they are the moments a family looks back for. The entry itself
+ * opens it, and the entry's Back returns to the feed exactly as it was; the family's reactions and
+ * comments sit below, outside that link.
  */
 export function FeedActivityCard({
   activity,
   returnTo,
   timeZone,
-  volume
+  volume,
+  footer
 }: {
   activity: FeedActivity;
   returnTo: string;
   timeZone: string;
   volume: VolumeUnit;
+  footer?: React.ReactNode;
 }) {
   const type = activity.type as ActivityTypeName;
   const label = activityLabels[type];
@@ -33,15 +36,15 @@ export function FeedActivityCard({
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt);
 
   return (
-    <Link
-      replace
-      prefetch={false}
-      href={activityDetailHref(activity.id, returnTo)}
-      className="block rounded-xl transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <article
+      aria-label={label}
+      className={`space-y-2 rounded-xl border p-3.5 ${milestone ? "border-primary/40 bg-primary/8" : "border-border bg-card"}`}
     >
-      <article
-        aria-label={label}
-        className={`space-y-2 rounded-xl border p-3.5 ${milestone ? "border-primary/40 bg-primary/8" : "border-border bg-card"}`}
+      <Link
+        replace
+        prefetch={false}
+        href={activityDetailHref(activity.id, returnTo)}
+        className="-m-1.5 block space-y-2 rounded-lg p-1.5 transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <header className="flex items-center gap-3">
           <ActivityArtwork type={type} size={milestone ? "md" : "sm"} className="shrink-0" />
@@ -56,7 +59,8 @@ export function FeedActivityCard({
         {summary ? (
           <p className={milestone ? "font-editorial text-lg font-semibold" : "text-sm text-foreground/90"}>{summary}</p>
         ) : null}
-      </article>
-    </Link>
+      </Link>
+      {footer}
+    </article>
   );
 }
