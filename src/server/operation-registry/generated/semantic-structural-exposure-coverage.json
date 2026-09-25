@@ -5749,6 +5749,74 @@
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
     },
     {
+      "anchorBytes": "getActivityUnitPreferences",
+      "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
+      "anchorEnd": 630,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 604,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getActivityUnitPreferences",
+        "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:getActivityUnitPreferences:src/server/services/unit-preferences.ts#getActivityUnitPreferences",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getHeaderBabySelector",
+      "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
+      "anchorEnd": 552,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 531,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getHeaderBabySelector",
+        "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:getHeaderBabySelector:src/server/services/baby-selector.ts#getHeaderBabySelector",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
+      "anchorBytes": "listActivities",
+      "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
+      "anchorEnd": 482,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 468,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listActivities",
+        "target": "src/server/services/activities.ts#listActivities"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:listActivities:src/server/services/activities.ts#listActivities",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 426,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 411,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
       "anchorBytes": "getActivityRowViewer",
       "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
       "anchorEnd": 767,
@@ -7064,10 +7132,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "03e96851cd5d93b841df14ebbf1a92608b6e9d02fa453ed2abf633f7f5ce9ec5",
+  "semanticArtifactDigest": "48e971de298df5286c7457f6dcd9b0f36d50ae70d90b509d7ac58e7a20db595c",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "618ddb9870b110b0e3ff1834ead9fc9a2847ddc968077fe35ef3bd7c4bc10d4a",
+  "semanticCoverageDigest": "7e37e092b34c9910214928b54837a87b805234060e47388c317565e7b8be96f1",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "b6bff5c7c5b8cf4e2af682f8c4293b32af604715448ad95d749507d3a20a9725"
+  "semanticFingerprint": "9ace4bf2fef6dcbda47a5b7ac0a56d3b2e88db1b1c53c600d6effa7e7b4edd26"
 }

@@ -6,10 +6,10 @@
     "instrumentation": 1,
     "package_command": 27,
     "server_action": 1,
-    "server_loader": 27,
+    "server_loader": 28,
     "worker": 6
   },
-  "declarationDigest": "c9808a594862abef27d9d19effab7a0339fae45cdd878001a6063ace9fc8d3fa",
+  "declarationDigest": "e91aac882bdc9bd34e5f88bf933e99d9c0a2c4c309daa30dab8081efee6fba8c",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4653,6 +4653,51 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getActivityUnitPreferences",
+            "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getHeaderBabySelector",
+            "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listActivities",
+            "target": "src/server/services/activities.ts#listActivities"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/app/feed/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/app/feed/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
             "symbol": "getActivityRowViewer",
             "target": "src/server/services/activities.ts#getActivityRowViewer"
           },
@@ -7358,7 +7403,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "c860bb0de604c6d1ea47f97d64f3b66828fa85fa36ac3540e7504029552df82a",
+  "generatorDigest": "2d893a265def34932d037a1b4b950e7a5a64816a610a94a94a1a8df919c74d7d",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -9747,6 +9792,52 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
+          "anchorEnd": 630,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 604,
+          "kind": "server_value_import",
+          "symbol": "getActivityUnitPreferences",
+          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+        },
+        {
+          "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
+          "anchorEnd": 552,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 531,
+          "kind": "server_value_import",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
+          "anchorEnd": 482,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 468,
+          "kind": "server_value_import",
+          "symbol": "listActivities",
+          "target": "src/server/services/activities.ts#listActivities"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 426,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 411,
+          "kind": "server_value_import",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/app/feed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
     },
     {
       "bindings": [
@@ -13231,8 +13322,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 203,
-  "observationDigest": "6d17c872ed4745249602629bae8b92933d5af7ab53bb7d525fa053a556106756",
+  "observationCount": 204,
+  "observationDigest": "b6b6a970e90db4cd1163bfa58561b6ba409f02bea450185442a503940d804db4",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15512,6 +15603,51 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 630,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 604,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "getActivityUnitPreferences",
+          "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
+        },
+        {
+          "anchorEnd": 552,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 531,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "getHeaderBabySelector",
+          "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
+        },
+        {
+          "anchorEnd": 482,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 468,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "listActivities",
+          "target": "src/server/services/activities.ts#listActivities"
+        },
+        {
+          "anchorEnd": 426,
+          "anchorFile": "src/app/app/feed/page.tsx",
+          "anchorStart": 411,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/feed/page.tsx",
+          "symbol": "requireUserPage",
+          "target": "src/server/auth/session.ts#requireUserPage"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/app/feed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
     },
     {
       "bindings": [
@@ -19461,6 +19597,12 @@
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
     },
     {
+      "id": "server_loader:src/app/app/feed/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
       "id": "server_loader:src/app/app/history/page.tsx",
       "ownerKind": "server_loader",
       "ownerModule": "src/app/app/history/page.tsx",
@@ -20019,9 +20161,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "b5dfbdb36021b6e07cc5dc5d8be96f916c0c4c6c4fd07f1b110d39fb1ca65b63",
+  "ownerSetDigest": "4c758b629b75fcbcdb2fc5ebe98536a0633e4bbbb5d9606ee1150ec1d456cf02",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "1e8978265d3866580e7ad36eb9a6fbae003b1b35d7e727e89323521f6ba8a8e1",
+  "registryDigest": "4c15e90f3c1d789e0fdae24bb1c2a7e8e897aca739dedb885d9879dad7e93e52",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

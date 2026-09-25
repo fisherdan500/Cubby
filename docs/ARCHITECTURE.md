@@ -72,7 +72,7 @@ resolution. Offline expansion is intentionally deferred.
 
 ## Source Layout
 
-- `src/app/app`: authenticated app pages such as Log Entry, Full Log, Calendar, Reports, and Settings.
+- `src/app/app`: authenticated app pages such as Log Entry, Feed, Full Log, Calendar, Reports, and Settings.
 - `src/app/api`: HTTP route handlers for app actions, auth, exports, backups, hooks, notifications, timers, settings, and dashboard warnings.
 - `src/components`: shared UI components and app shell pieces.
 - `src/domain`: app-level domain constants such as roles and permissions.

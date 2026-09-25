@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, ClipboardList, LineChart, Moon, PlusCircle, Settings } from "lucide-react";
+import { CalendarDays, ClipboardList, LineChart, Moon, Newspaper, PlusCircle, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { HeaderBabySelector } from "@/components/header-baby-selector";
@@ -12,6 +12,7 @@ import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
   { href: "/app", label: "Log Entry", icon: PlusCircle },
+  { href: "/app/feed", label: "Feed", icon: Newspaper },
   { href: "/app/history", label: "Full Log", icon: ClipboardList },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/app/reports", label: "Reports", icon: LineChart }
