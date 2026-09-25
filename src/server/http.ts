@@ -42,6 +42,27 @@ export async function readBoundedJson(request: Request, maxBytes = MAX_BACKUP_BY
   }
 }
 
+/** A raw request body, refused as soon as it passes `maxBytes` rather than after reading it all. */
+export async function readBoundedBytes(request: Request, maxBytes: number, tooLargeCode: string) {
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new Error(tooLargeCode);
+  if (!request.body) return Buffer.alloc(0);
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new Error(tooLargeCode);
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks, total);
+}
+
 export function handleError(error: unknown) {
   if (error instanceof ZodError) return fail("validation_error", "Please check the highlighted fields.", 422, error.flatten());
   if (error instanceof Error) {
@@ -93,6 +114,11 @@ export function handleError(error: unknown) {
     if (error.message === "file_too_large") return fail("file_too_large", "Backup files must be 100 MB or smaller.", 413);
     if (error.message === "invalid_sqlite_backup") return fail("invalid_sqlite_backup", "That file is not a valid SQLite backup.", 422);
     if (error.message === "sprout_sqlite_unavailable") return fail("sprout_sqlite_unavailable", "Cubby could not start the Sprout SQLite reader. Rebuild and restart the app, then try the import again.", 500);
+    if (error.message === "attachment_type_unavailable") return fail("not_found", "Not found.", 404);
+    if (error.message === "attachment_too_large") return fail("attachment_too_large", "Photos must be 25 MB or smaller.", 413);
+    if (error.message === "attachment_unsupported_format") return fail("attachment_unsupported_format", "Choose a JPEG, PNG or WebP photo.", 415);
+    if (error.message === "attachment_invalid_selection") return fail("attachment_invalid_selection", "A post can have up to 10 photos.", 422);
+    if (error.message.startsWith("attachment_store_")) return fail("attachment_store_unavailable", "Photos can't be saved right now. Try again later.", 503);
     if (error.message === "unsupported_sprout_backup") return fail("unsupported_sprout_backup", "Upload a Sprout Track zip, baby-tracker.db, or data.json backup.", 422);
   }
   console.error(error);

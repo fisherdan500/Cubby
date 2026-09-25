@@ -56,11 +56,21 @@ export async function runIntegrityCommand(
 }
 
 async function loadOperations(): Promise<IntegrityCommandOperations> {
-  const [{ prisma }, { runDatabaseIntegritySuite }] = await Promise.all([
+  const [{ prisma }, { runDatabaseIntegritySuite }, { readAttachmentConfig }, store] = await Promise.all([
     import("../src/lib/db/prisma"),
-    import("../src/server/services/integrity")
+    import("../src/server/services/integrity"),
+    import("../src/lib/attachment-config"),
+    import("../src/server/services/attachment-store")
   ]);
-  return { run: () => runDatabaseIntegritySuite(prisma) };
+  const { directory } = readAttachmentConfig({ ATTACHMENT_DIRECTORY: process.env.ATTACHMENT_DIRECTORY });
+  return {
+    run: () => runDatabaseIntegritySuite(prisma, {
+      attachmentStore: {
+        listKeys: () => store.listAttachmentObjectKeys(directory),
+        read: (storageKey, expected) => store.readAttachmentObject(directory, storageKey, expected)
+      }
+    })
+  };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

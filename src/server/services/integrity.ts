@@ -5,6 +5,12 @@ import {
   type IntegrityBackupRecord
 } from "@/server/services/integrity-backup-evidence";
 import {
+  ATTACHMENT_INVENTORY_QUERY,
+  checkAttachmentInventory,
+  normalizeAttachmentInventoryRows,
+  type AttachmentObjectReader
+} from "@/server/services/integrity-attachment-evidence";
+import {
   refreshActiveHouseholdAuditCheckpoints,
   refreshPlatformAuditCheckpoint,
   type AuditCheckpointSchedulerDatabase
@@ -348,6 +354,19 @@ const DATABASE_CHECKS: ReadonlyArray<{ id: string; query: string }> = [
         HAVING MIN(audit."chainOrder") <> 1
           OR MAX(audit."chainOrder") <> COUNT(*)
       ) broken_chains`
+  },
+  {
+    // An attached photo must belong to a post of its own household, a shown photo to a live post, and
+    // nothing may sit in staging or past its recovery window long after the purge should have run.
+    id: "attachment_lifecycle_consistency",
+    query: `SELECT COUNT(*)::int AS count
+      FROM "Attachment" attachment
+      LEFT JOIN "FeedPost" post ON post.id = attachment."postId"
+      WHERE (attachment.state IN ('available', 'unavailable', 'deleted')
+          AND (post.id IS NULL OR post."householdId" <> attachment."householdId"))
+        OR (attachment.state = 'available' AND post."deletedAt" IS NOT NULL)
+        OR (attachment.state = 'staging' AND attachment."createdAt" < NOW() - INTERVAL '48 hours')
+        OR (attachment.state = 'deleted' AND attachment."purgeAfter" < NOW() - INTERVAL '2 days')`
   }
 ];
 
@@ -578,12 +597,38 @@ function unavailableBackupCheck(): IntegrityCheck {
   return { id: "backup_file_checksum_unavailable", run: async () => ({ status: "incomplete" }) };
 }
 
+export type IntegrityAttachmentStore = {
+  listKeys: () => Promise<string[]>;
+  read: AttachmentObjectReader;
+};
+
+/**
+ * The stored photo bytes against their records. The store is listed before the records are read, so
+ * an upload still in progress is seen at most as a record whose bytes already exist, never as a stray.
+ */
+async function readAttachmentByteCheck(database: IntegrityDatabase, store: IntegrityAttachmentStore): Promise<IntegrityCheck> {
+  const id = "attachment_byte_consistency";
+  try {
+    const keys = await store.listKeys();
+    const records = await database.$transaction(async (client) => {
+      await client.$executeRawUnsafe("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      return normalizeAttachmentInventoryRows(await client.$queryRawUnsafe(ATTACHMENT_INVENTORY_QUERY));
+    });
+    if (records === null || records.length > 100_000) return { id, run: async () => ({ status: "incomplete" }) };
+    const outcome = await checkAttachmentInventory(records, keys, store.read);
+    return { id, run: async () => outcome };
+  } catch {
+    return { id, run: async () => ({ status: "incomplete" }) };
+  }
+}
+
 export async function runDatabaseIntegritySuite(
   database: IntegrityDatabase,
-  options: { now?: () => Date; backupReader?: IntegrityBackupReader } = {}
+  options: { now?: () => Date; backupReader?: IntegrityBackupReader; attachmentStore?: IntegrityAttachmentStore } = {}
 ) {
   const now = options.now ?? (() => new Date());
   const startedAt = now().toISOString();
+  const attachmentChecks = options.attachmentStore ? [await readAttachmentByteCheck(database, options.attachmentStore)] : [];
   let firstSnapshot: {
     checks: IntegrityCheck[];
     sproutMappingCheck: IntegrityCheck;
@@ -608,6 +653,7 @@ export async function runDatabaseIntegritySuite(
     return runIntegritySuite(
       [
         ...firstSnapshot.checks,
+        ...attachmentChecks,
         unavailableBackupCheck(),
         firstSnapshot.sproutMappingCheck,
         IMPORT_EVIDENCE_UNAVAILABLE
@@ -659,6 +705,7 @@ export async function runDatabaseIntegritySuite(
   return runIntegritySuite(
     [
       ...firstSnapshot.checks,
+      ...attachmentChecks,
       ...backupChecks,
       firstSnapshot.sproutMappingCheck,
       IMPORT_EVIDENCE_UNAVAILABLE

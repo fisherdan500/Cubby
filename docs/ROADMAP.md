@@ -85,7 +85,17 @@ Step 3 adds comments, reactions and editing:
 - the audit records what was done and what it was on, never the words;
 - comments and reactions are carried in backups, by name, with the posts and entries they belong to.
 
-Photos wait for the attachment gate (DEC-PROD-070, 141–147).
+Photos (DEC-PROD-422) are the first attachment type, built to the attachment rules (DEC-PROD-070, 141–147) in three steps, and switched on only after the last:
+1. The attachment foundation:
+   - photos are re-saved server-side at up to 2560px with location and camera data removed;
+   - bytes are kept in a private store under random names, with size and checksum checked on every read;
+   - photos are served only to current household members, uncached;
+   - removed photos are recoverable for 30 days, then purged;
+   - the audit is content-free, and the integrity check covers photo bytes and records.
+
+   There is no user-facing change yet.
+2. Photo posts: up to 10 photos per post, captions optional with photos, and removal and restore. Off by default.
+3. Backup and restore carry the photos (the household backup becomes an archive). The storage volume and install steps come with this step, and then photos are switched on.
 
 ### Routine And Planned Schedule
 

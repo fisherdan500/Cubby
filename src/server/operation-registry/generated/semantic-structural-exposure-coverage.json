@@ -377,6 +377,40 @@
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function GET(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    if (!ATTACHMENT_ID.test(params.id)) throw new Error(\"not_found\");\n    const { bytes, mimeType } = await openAttachment(params.id);\n    return new Response(new Uint8Array(bytes), {\n      status: 200,\n      headers: {\n        ...privateHeaders,\n        \"Content-Type\": mimeType,\n        \"Content-Length\": String(bytes.length),\n        \"Content-Disposition\": 'inline; filename=\"photo.jpg\"'\n      }\n    });\n  } catch (error) {\n    return withPrivateHeaders(handleError(error));\n  }\n}",
+      "anchorDigest": "698b8190db5cf37a9836143133b628fbd79478b1878d60915dc447c0a1bee918",
+      "anchorEnd": 1340,
+      "anchorFile": "src/app/api/attachments/[id]/route.ts",
+      "anchorStart": 762,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/attachments/[id]/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/attachments/[id]/route.ts:route_method:GET:src/app/api/attachments/[id]/route.ts#GET",
+      "ownerId": "api_route:src/app/api/attachments/[id]/route.ts",
+      "ownerModule": "src/app/api/attachments/[id]/route.ts",
+      "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const upload = await readBoundedBytes(request, attachmentPolicy.feed_photo.maxInputBytes, \"attachment_too_large\");\n    const staged = await stageFeedPhoto(upload);\n    return ok(staged, { status: 201, headers: { \"Cache-Control\": \"no-store\" } });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "6ea6b72a09dcc75254f0c6e661ad9c368e88b609bd7b293a679b1d5944e80560",
+      "anchorEnd": 788,
+      "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
+      "anchorStart": 427,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/attachments/feed-photos/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/attachments/feed-photos/route.ts:route_method:POST:src/app/api/attachments/feed-photos/route.ts#POST",
+      "ownerId": "api_route:src/app/api/attachments/feed-photos/route.ts",
+      "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/feed-photos/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const search = new URL(request.url).searchParams;\n    const babyId = search.get(\"babyId\");\n    if (babyId) return ok(await listBabySafetyHistory(babyId));\n    if (search.get(\"format\") === \"csv\") {\n      return new Response(await exportHouseholdAuditCsv(), {\n        headers: {\n          \"content-type\": \"text/csv; charset=utf-8\",\n          \"content-disposition\": 'attachment; filename=\"cubby-audit.csv\"'\n        }\n      });\n    }\n    const rawLimit = search.get(\"limit\");\n    const limit = rawLimit === null ? undefined : Number(rawLimit);\n    return ok(await listHouseholdAuditEvents({ limit, cursor: search.get(\"cursor\") ?? undefined }));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "6a19a6713c90c0c1092316d186321e75871d859fe1f5adea8046aa47340c8ab2",
       "anchorEnd": 969,
@@ -7387,10 +7421,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "31b47713ff81f198a7fc948a8209fa5e2a7ef1dddf97bada20af42a06eb59e2a",
+  "semanticArtifactDigest": "093001e2a0de57f0b43dc00ebac7aec27b53a2691c1f1c67c1096bb4a79c221e",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "d78f8af01357ce6b5e8af6abec98b12e601ed7819fc155e7cc1adda2fb209a53",
+  "semanticCoverageDigest": "69b303c203e47f24c0b0b697411e16db7558d6c0f25d33ed811c2465c7bb8905",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "797bb35c4b0549076fb04b02e940da564062210dbac9d48198a276634ce425e0"
+  "semanticFingerprint": "1cde283899d655e9ad2862c5e4f989f48d84a4bbcd07c02341ecc0254b16f9d8"
 }

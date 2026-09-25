@@ -473,6 +473,7 @@ model Household {
   feedPosts       FeedPost[]
   feedComments    FeedComment[]
   feedReactions   FeedReaction[]
+  attachments     Attachment[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -505,6 +506,7 @@ model HouseholdMember {
   feedPosts   FeedPost[]
   feedComments FeedComment[]
   feedReactions FeedReaction[]
+  attachments Attachment[]
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -1033,10 +1035,61 @@ model FeedPost {
   author             HouseholdMember? @relation(fields: [householdId, authorMemberId], references: [householdId, id], onDelete: Restrict)
   comments           FeedComment[]
   reactions          FeedReaction[]
+  photos             Attachment[]
 
   @@unique([householdId, id])
   @@index([householdId, babyId, occurredAt])
   @@index([householdId, occurredAt])
+}
+
+enum AttachmentType {
+  feed_photo
+}
+
+// staging: stored and verified, claimed by nothing yet. available: attached and served.
+// unavailable: its bytes went missing or changed, so it is no longer served. deleted: removed but
+// privately recoverable until purgeAfter. purged: bytes gone for good; the row remains as a tombstone.
+enum AttachmentState {
+  staging
+  available
+  unavailable
+  deleted
+  purged
+}
+
+// One household-owned file (DEC-PROD-141-147): its metadata here, its verified bytes in the private
+// attachment store under storageKey, a random name that says nothing about the file. Feed photos
+// (DEC-PROD-422) belong to a post. Every reference carries the household.
+model Attachment {
+  id                String           @id @default(cuid())
+  householdId       String
+  type              AttachmentType
+  state             AttachmentState  @default(staging)
+  storageKey        String           @unique
+  byteSize          Int
+  sha256            String
+  mimeType          String
+  width             Int
+  height            Int
+  postId            String?
+  position          Int?
+  createdByMemberId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  activatedAt       DateTime?
+  unavailableAt     DateTime?
+  deletedAt         DateTime?
+  deletedByMemberId String?
+  purgeAfter        DateTime?
+  purgedAt          DateTime?
+  household         Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  post              FeedPost?        @relation(fields: [householdId, postId], references: [householdId, id], onDelete: Cascade)
+  createdBy         HouseholdMember? @relation(fields: [householdId, createdByMemberId], references: [householdId, id], onDelete: Restrict)
+
+  @@unique([householdId, id])
+  @@unique([householdId, postId, position])
+  @@index([state, purgeAfter])
+  @@index([state, createdAt])
 }
 
 // A comment in the family feed (DEC-PROD-421), on a post or on a logged entry - exactly one of the
