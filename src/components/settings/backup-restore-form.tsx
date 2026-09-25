@@ -18,6 +18,11 @@ type Preview = {
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
+// A household with photos backs up as one .zip holding its data and photos; otherwise it is .json.
+function uploadContentType(file: File) {
+  return file.name.toLowerCase().endsWith(".zip") ? "application/zip" : "application/json";
+}
+
 export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHouseholdName: string; timeZone: string }) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -36,7 +41,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
     try {
       const response = await fetch("/api/backups/restore/preview", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": uploadContentType(file) },
         body: file
       });
       const result = await response.json() as ApiResult<Preview>;
@@ -61,7 +66,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
       const response = await fetch("/api/backups/restore", {
         method: "POST",
         headers: {
-          "content-type": "application/json",
+          "content-type": uploadContentType(selectedFile),
           "x-cubby-restore-confirmation": encodeURIComponent(confirmation),
           "x-cubby-backup-checksum": preview.checksum ?? "legacy-v1"
         },
@@ -81,8 +86,8 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
   return (
     <div className="min-w-0 space-y-4">
       <div className="space-y-2">
-        <label htmlFor="backup-file" className="block text-sm font-bold">Cubby JSON backup</label>
-        <Input id="backup-file" type="file" accept="application/json,.json" disabled={pending !== null}
+        <label htmlFor="backup-file" className="block text-sm font-bold">Cubby backup (.json, or .zip with photos)</label>
+        <Input id="backup-file" type="file" accept="application/json,.json,application/zip,.zip" disabled={pending !== null}
           onChange={(event) => void selectFile(event.currentTarget.files?.[0] ?? null)} />
       </div>
       {pending === "preview" ? <p className="text-sm text-muted-foreground">Validating backup…</p> : null}

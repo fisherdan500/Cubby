@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "45bcf4ab1d15f73c881ffd2ca7d2d30c0593d612f1da179c9d581b8a127b1f0f",
+  "declarationDigest": "7c830f17750b6e378a0f5784e7830edbf0301d031a2e57a466fed00d022d84a7",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -440,17 +440,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "3241c52c426531b73ec36f8a94d20966eb7a6b99911a3873bdd8b4e09aa4d3e6",
+          "digest": "59ecbade38012030a8e01cb781d07d0d59c894974b3d878f8c74fe74a5d144b5",
           "file": "src/app/api/backups/export/route.ts"
         }
       ],
       "declarationDigest": "9476937b078a231d60e0890a6ad18fbfd0ec8944ba2559abcbe7ec1a787b29de",
-      "fingerprint": "3332f035aec1ab6f8a675381f0d718f9cc9a065da0188a414329c022c4c9e46c",
+      "fingerprint": "f217c888af1c3eb67c2e95fd567823e06b3d54687ad87550f672d037ae4cdfb8",
       "id": "fingerprint:api_route:src/app/api/backups/export/route.ts",
       "ownerId": "api_route:src/app/api/backups/export/route.ts",
       "ownerModule": "src/app/api/backups/export/route.ts",
       "sidecarPath": "src/app/api/backups/export/route.operation.ts",
-      "sourceDigest": "5239635db3900adff76996ebcd5070f99b0f72d37a9cf5aa037d1d69ac30f086",
+      "sourceDigest": "15c6b176bb403efdc6ff9a2344a62ead4ca9b0b528bf31b736d26a0d4afb6240",
       "status": "declared"
     },
     {
@@ -472,33 +472,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "9110b2c1adc9a0e876045f6377142c59082cd4aae5fc2470e6e07523d780d9e1",
+          "digest": "d0cc2a6b909d6e9439f124865e7c91f1ded126c1e7abbe435f7900412cdb4168",
           "file": "src/app/api/backups/restore/preview/route.ts"
         }
       ],
       "declarationDigest": "6483f48a49c609037a67b4cfeeb003ac40986ea8c81097385e320ddeee9129b3",
-      "fingerprint": "256299f832b73eea998bc16e767b675b5472e1efd9b6509b719d43309db5b620",
+      "fingerprint": "ac1f188066d136d35e9f7589a182835c68a72971d3cc97b932f768b901335ddc",
       "id": "fingerprint:api_route:src/app/api/backups/restore/preview/route.ts",
       "ownerId": "api_route:src/app/api/backups/restore/preview/route.ts",
       "ownerModule": "src/app/api/backups/restore/preview/route.ts",
       "sidecarPath": "src/app/api/backups/restore/preview/route.operation.ts",
-      "sourceDigest": "ed6288972cd7c9b5495335ff74f960766d406a4032a9feba2f1b42f35eacb099",
+      "sourceDigest": "989a03a92f9dc329d0f896145ade64323e9b1f0a8d5815abc6767124eb90c6cd",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "54671393694b5422038740f2af032ff4f9af985bbf350ab6b4c274a7fff23787",
+          "digest": "72e3099bfd39340ab231340eb4aa4951b6e0ffe2282c7dcbda045d94bc636ff0",
           "file": "src/app/api/backups/restore/route.ts"
         }
       ],
       "declarationDigest": "bf9900c0ce497e93bc409533d4a11e2f888f6ffafdeadd1c00e69f259207f52a",
-      "fingerprint": "43ef4aaa87baea1cd06aa7bbb8854ba944b46bcbc95e948c07fc0cf122a4b6bb",
+      "fingerprint": "b2a12af0bf1c8e53c118bc0b60fbe72f67ee565e63bb00f7bd82550153233b3f",
       "id": "fingerprint:api_route:src/app/api/backups/restore/route.ts",
       "ownerId": "api_route:src/app/api/backups/restore/route.ts",
       "ownerModule": "src/app/api/backups/restore/route.ts",
       "sidecarPath": "src/app/api/backups/restore/route.operation.ts",
-      "sourceDigest": "256818bfe2dfedcf0176834eb5c43e0024475b61629449e551d944afc5170a39",
+      "sourceDigest": "060c3a9857ecc9f8dd07fe4ca49da627a4db6cb1a5fbc6f95a97b2fd786cb397",
       "status": "declared"
     },
     {
@@ -2688,33 +2688,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "abb276c088b8aaf1b79eab91668fb7f85bb08f32b5a0750f51cff973c53bf178",
+          "digest": "f211682c7a7a1a4a6e10a895d5f1fd7e7304a9433318e21ecfb5b160dd1ffffc",
           "file": "src/components/settings/backup-download-button.tsx"
         }
       ],
       "declarationDigest": "130696769ebbca2a8f03774593eb9579707ac0da91723a2f685948298a91da07",
-      "fingerprint": "db72627f53d2b5ff75f3125b87092e222c1f0c830c86515d7fe4bd470b825c35",
+      "fingerprint": "6d86a403e1f5a4e6dae1dd6078b431c6d68f60391ef00b1cf421578efbc812fc",
       "id": "fingerprint:client_binding:src/components/settings/backup-download-button.tsx",
       "ownerId": "client_binding:src/components/settings/backup-download-button.tsx",
       "ownerModule": "src/components/settings/backup-download-button.tsx",
       "sidecarPath": "src/components/settings/backup-download-button.operation.ts",
-      "sourceDigest": "e58fb419957790dddda6c4cecba80712c2fe6825d825033d662a5563448be6fa",
+      "sourceDigest": "05014105fb788514ff190ba7d1374a7f89b2ed128274edbe6c1dce7c133bd991",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "b58ade0edec070fbeec5d92b9f391a795ba71666fce3785088e9403a72576843",
+          "digest": "6ff3e9fe5737d1ad8f1b10cb741e7b02d0e7a1851acd1a1d326982e53cefe696",
           "file": "src/components/settings/backup-restore-form.tsx"
         }
       ],
       "declarationDigest": "a24b18c134da8a75e1fec73c47e0355f92d55d337b81ff013b30008454bbcf10",
-      "fingerprint": "b5d12151ef3080ee277d977dfc645bb130684a1f820d6cc4a963645fce3fdf00",
+      "fingerprint": "94450b6715e66514b9b1ba161d9a6e35f84fc2a8dafaa2cdf2b5374a907b8e12",
       "id": "fingerprint:client_binding:src/components/settings/backup-restore-form.tsx",
       "ownerId": "client_binding:src/components/settings/backup-restore-form.tsx",
       "ownerModule": "src/components/settings/backup-restore-form.tsx",
       "sidecarPath": "src/components/settings/backup-restore-form.operation.ts",
-      "sourceDigest": "9918fcd3d0a76a0abf78e9a52aa1abe6c4a28a150fb203791d2273a7f5648751",
+      "sourceDigest": "85206339c503e55a942815e5aee5d0befb73b3c09771bd494ba1f08d6ecb90d1",
       "status": "declared"
     },
     {
@@ -2912,17 +2912,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "941d6c7e06ceb758c5b19d96434cb9b7c9701f70a693b9946b2b05966e69906a",
+          "digest": "f6296a23c53ce06d75564984f3c4c0aa1e2231a7a961871c22bcd9cbb996d8a0",
           "file": "src/server/attachment-retention-scheduler.ts"
         }
       ],
-      "declarationDigest": "6be25f9e36d81dd201bba368f73af3fc0f66c82e51fea6197c024c8270b3e22a",
-      "fingerprint": "3dd09138a0c7368832b3f8f0ac62005f8cdbec86775ea4276f39996dd4467793",
+      "declarationDigest": "6c8c749945764f84f367029114f5766273bce3f7ca0e4efc10beef8e64311592",
+      "fingerprint": "d8452c4d725adb91bd38f934b8232530599cb88327fb3eaeb58c7c6e8cd6590a",
       "id": "fingerprint:worker:src/server/attachment-retention-scheduler.ts",
       "ownerId": "worker:src/server/attachment-retention-scheduler.ts",
       "ownerModule": "src/server/attachment-retention-scheduler.ts",
       "sidecarPath": "src/server/attachment-retention-scheduler.operation.ts",
-      "sourceDigest": "0a66a38aafbf26571c0b4d294a4e9bde9d66ca06fc5e1fd4001074f35e57258a",
+      "sourceDigest": "806598d20e37b7e1c99c2bb41a6988337e8aac6b22681f3296caa97a11d9889a",
       "status": "declared"
     },
     {
@@ -3840,11 +3840,11 @@
   ],
   "generatorDigest": "9cfcaabb3df67fc3c92ece352af32140f9b9becb73ca359d71461733d0e1ea0b",
   "generatorVersion": "r0.1",
-  "observationDigest": "a31cbf44d6e617086d9f5f5d4dc28fed39f85fdce87f626f98eb0383c7e41afe",
+  "observationDigest": "76351ea0ed7053f85f2f43b62e0f83262b07c10e47fd4b7f925edf4a0a7cc0f7",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "510e8d788264e19c2a7ae961dfa3dbc1f94b7b2dcff9b93318b313909e0a131b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5a05fe06a4c03226caa08e8a652b1c9d4f2d136ee9b0c227c1caced7c87e49a4",
+  "registryDigest": "5bcbc4b1a3e773273a389c95dcc1c7f1123e55688403c1d70debbd949b89501c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

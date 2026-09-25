@@ -73,6 +73,34 @@ both the database project and generated temporary backup directory.
 - Non-deleted calendar events with baby/contact links.
 - Non-deleted reminders.
 
+## Backups With Photos
+
+Once a household has feed photos (DEC-PROD-422), its backup download is one
+`.zip` archive instead of a `.json` file. The archive holds:
+
+- `backup.json`, the ordinary version 2 backup. Its `feedPhotos` section lists
+  each photo's post, position, shape, byte size and SHA-256 digest, so the
+  backup checksum covers every photo.
+- `photos/<id>.jpg`, one file per listed photo.
+
+Nothing else may be in the archive, and every listed photo must be present. The
+archive is uncompressed (the photos are already compressed JPEGs), under 4 GiB,
+and opens with any ordinary unzip tool. Cubby accepts uploads up to 2 GiB.
+
+Restore accepts the `.zip` directly:
+
+1. The upload is written to a private staging directory beside the photo store,
+   and removed when the preview or restore finishes. Uploads left by an
+   interrupted restore are cleared after a day.
+2. Preview checks every photo against its listed digest before showing counts.
+3. Restore checks each photo again and stores it under a new random name, then
+   makes the data and photos visible together in one transaction. If anything
+   fails, the photos stored for that attempt are removed.
+
+A `backup.json` that lists photos cannot be restored on its own, because it
+would silently lose them; restore the whole `.zip` instead. Households without
+photos keep getting the same `.json` file as before, with an unchanged checksum.
+
 ## What Is Excluded
 
 - Users, accounts/credentials, sessions, household memberships, roles, and

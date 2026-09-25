@@ -19,7 +19,7 @@ export const operation = {
     {
       kind: "worker_tick",
       symbol: "tick",
-      target: "src/server/services/attachments.ts#purgeDueAttachments"
+      target: "src/server/services/attachment-retention.ts#runAttachmentRetention"
     }
   ],
   disposition: "observed",
