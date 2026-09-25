@@ -64,6 +64,13 @@ implementation, merge, deployment, and cleanup approvals.
 - Acceptance: P0 assigns every `DEC-PROD-001` through `DEC-PROD-402` an evidence-backed `implemented`, `partially implemented`, `missing`, `policy-only/no build`, or `deferred by confirmed sequence` disposition and names the smallest safe first slice; P1 establishes identity, platform/household authority, authorization, data-integrity, audit, migration, and recovery foundations; P2 completes the canonical 14-type activity contract, subtype-first field matrices, drafts, date/time controls, timers, and personal dashboard editor; P3 completes daily care coordination, handoff, caregiver coverage, shared-device, and accessibility journeys; P4 passes system-of-record reliability, integrity, performance, update, backup, host-loss, and outage-continuity gates; P5 delivers reports, schedules, reminders, and care artifacts over authoritative data; P6 adds only approved optional domain depth; P7 adds narrow capability-gated integrations and quick capture; P8 leaves optional AI, offline/PWA, and broader distribution until the local deterministic core is dependable.
 - Notes: The expanded dependency model, decision anchors, exclusions, phase acceptance gates, and cross-phase definition of done are canonical in `C:\Projects\Cubby\hermes-control\contexts\implementation-roadmap.md`. P0 and P1.1 are complete in the application branch history. P1.2.1 was squash-merged through PR #23 after its bounded remediation, canonical local verification, independent review, and disposable rehearsal. A fresh post-merge exact-head review, deployment, and cutover remain separate approval gates; each later slice still requires exact-tree planning and the normal worktree/action approvals.
 
+### Family Feed
+
+- Status: in progress (DEC-PROD-421)
+- Priority: medium
+- Goal: A private family journal: everything logged for the baby as a scrollable feed, then text posts with #tags, then comments and emoji reactions, and later photos.
+- Notes: Private to the household. No public sharing, followers, like counts, ranking, streaks or engagement notifications. Step 1 adds a Feed tab: every logged activity as its own card for the selected baby, newest first under household days, with header filters, opening the entry and returning to the same feed. On phones it takes the Full Log's tab, and the Full Log moves behind More, with the aim that the feed replaces it. Next: text posts with #tags (new tables, backup), then comments and reactions (reactions show who, never counts). Photos wait for the attachment gate (DEC-PROD-070, 141–147).
+
 ### Routine And Planned Schedule
 
 - Status: in progress (DEC-PROD-420)

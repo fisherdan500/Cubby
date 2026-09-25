@@ -384,6 +384,7 @@ if (webhookResponse.status !== 201 || typeof webhookId !== "string") {
 // that is the normal state of a household that signed in weeks ago.
 const renderedPages = [
   "/app",
+  "/app/feed",
   "/app/history",
   "/app/calendar",
   "/app/reports",

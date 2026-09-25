@@ -28,15 +28,18 @@ function renderNav() {
 }
 
 describe("MobileBottomNav", () => {
-  it("keeps four tabs and moves Settings, appearance and sign-out behind More", async () => {
+  it("keeps four tabs, with the Feed in place of Full Log, and moves the rest behind More", async () => {
     const more = renderNav();
-    for (const label of ["Log", "Full Log", "Calendar", "Reports"]) {
+    for (const label of ["Log", "Feed", "Calendar", "Reports"]) {
       expect(screen.getByRole("link", { name: label }).getAttribute("href")).toContain("babyId=baby-1");
     }
+    expect(screen.queryByRole("link", { name: "Full Log" })).toBeNull();
 
     await userEvent.click(more);
 
     expect(more.getAttribute("aria-expanded")).toBe("true");
+    // The feed is meant to replace the Full Log in time (DEC-PROD-421); until then it is one tap further.
+    expect(screen.getByRole("link", { name: "Full Log" }).getAttribute("href")).toBe("/app/history?babyId=baby-1");
     expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/app/settings");
     expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
     // Nursery is retired: it duplicated Log Entry once dark became the default.
@@ -46,7 +49,7 @@ describe("MobileBottomNav", () => {
   it("moves focus into the sheet on open and back to More on Escape", async () => {
     const more = renderNav();
     await userEvent.click(more);
-    expect(document.activeElement).toBe(screen.getByRole("link", { name: "Settings" }));
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: "Full Log" }));
 
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("group", { name: "More" })).toBeNull();
@@ -67,8 +70,17 @@ describe("MobileBottomNav", () => {
   });
 
   it("marks More as the current place on the pages it holds", () => {
-    navigation.pathname = "/app/settings/units";
-    const more = renderNav();
-    expect(more.className).toContain("text-primary");
+    for (const pathname of ["/app/settings/units", "/app/history"]) {
+      navigation.pathname = pathname;
+      const more = renderNav();
+      expect(more.className).toContain("text-primary");
+      cleanup();
+    }
+  });
+
+  it("marks the Feed tab current on the feed", () => {
+    navigation.pathname = "/app/feed";
+    renderNav();
+    expect(screen.getByRole("link", { name: "Feed" }).getAttribute("aria-current")).toBe("page");
   });
 });

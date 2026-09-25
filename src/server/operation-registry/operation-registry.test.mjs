@@ -1567,6 +1567,7 @@ test("declares the activity detail loader family", () => {
 test("declares the primary authenticated loader family", () => {
   assertDeclarationFamily([
     "src/app/app/babies/page.operation.ts",
+    "src/app/app/feed/page.operation.ts",
     "src/app/app/history/page.operation.ts",
     "src/app/app/layout.operation.ts",
     "src/app/app/log/[type]/page.operation.ts",
