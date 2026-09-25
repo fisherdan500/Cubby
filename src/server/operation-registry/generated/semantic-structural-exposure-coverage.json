@@ -802,11 +802,62 @@
       "sidecarPath": "src/app/api/export/activities.tsv/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, commentId: params.id };\n    const issued = await issueFeedCommentDeleteBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedCommentDeleteBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "6e5f5f75dae0693a1ff25dfe3680dbca7311e36bb8c2b391c03f0fe4ccf0a4f6",
+      "anchorEnd": 2396,
+      "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
+      "anchorStart": 1407,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "DELETE",
+        "target": "src/app/api/feed/comments/[id]/route.ts#DELETE"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/comments/[id]/route.ts:route_method:DELETE:src/app/api/feed/comments/[id]/route.ts#DELETE",
+      "ownerId": "api_route:src/app/api/feed/comments/[id]/route.ts",
+      "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, commentId: params.id, body: raw.body };\n    const issued = await issueFeedCommentUpdateBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedCommentUpdateBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "f7a0e5369b62378b85a2f6b1adb7a61b757c6cc3f0ffb6dbe976b8f51f66cf80",
+      "anchorEnd": 1405,
+      "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
+      "anchorStart": 401,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PATCH",
+        "target": "src/app/api/feed/comments/[id]/route.ts#PATCH"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/comments/[id]/route.ts:route_method:PATCH:src/app/api/feed/comments/[id]/route.ts#PATCH",
+      "ownerId": "api_route:src/app/api/feed/comments/[id]/route.ts",
+      "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueFeedCommentCreateBrowserOperation(raw);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedCommentCreateBrowserOperation(raw) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "e8d118cb9db19a5f671034a408066f49cea5771f919d686e5ed23d52b0acb762",
+      "anchorEnd": 1198,
+      "anchorFile": "src/app/api/feed/comments/route.ts",
+      "anchorStart": 312,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/feed/comments/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/comments/route.ts:route_method:POST:src/app/api/feed/comments/route.ts#POST",
+      "ownerId": "api_route:src/app/api/feed/comments/route.ts",
+      "ownerModule": "src/app/api/feed/comments/route.ts",
+      "sidecarPath": "src/app/api/feed/comments/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, postId: params.id };\n    const issued = await issueFeedPostDeleteBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostDeleteBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
       "anchorDigest": "9adfc7310cb6c348ece09691bfbea0ca9bfd9618b14c6672e8943718834a8397",
-      "anchorEnd": 1279,
+      "anchorEnd": 2359,
       "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
-      "anchorStart": 299,
+      "anchorStart": 1379,
       "binding": {
         "kind": "route_method",
         "symbol": "DELETE",
@@ -814,6 +865,23 @@
       },
       "coverage": "structural_only",
       "id": "api_route:src/app/api/feed/posts/[id]/route.ts:route_method:DELETE:src/app/api/feed/posts/[id]/route.ts#DELETE",
+      "ownerId": "api_route:src/app/api/feed/posts/[id]/route.ts",
+      "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
+      "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, postId: params.id, body: raw.body };\n    const issued = await issueFeedPostUpdateBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostUpdateBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c76150261094afd97bd1916741b296da1ec9a28b06e472e81faffce4464d8bdf",
+      "anchorEnd": 1377,
+      "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
+      "anchorStart": 382,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PATCH",
+        "target": "src/app/api/feed/posts/[id]/route.ts#PATCH"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/posts/[id]/route.ts:route_method:PATCH:src/app/api/feed/posts/[id]/route.ts#PATCH",
       "ownerId": "api_route:src/app/api/feed/posts/[id]/route.ts",
       "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
       "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
@@ -834,6 +902,23 @@
       "ownerId": "api_route:src/app/api/feed/posts/route.ts",
       "ownerModule": "src/app/api/feed/posts/route.ts",
       "sidecarPath": "src/app/api/feed/posts/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PUT(request: Request) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const issued = await issueFeedReactionSetBrowserOperation(raw);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedReactionSetBrowserOperation(raw) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "5c90df6c549093036c1b90c137dffa63ed7546804295b8a9a74409eb3f378408",
+      "anchorEnd": 1250,
+      "anchorFile": "src/app/api/feed/reactions/route.ts",
+      "anchorStart": 369,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PUT",
+        "target": "src/app/api/feed/reactions/route.ts#PUT"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/feed/reactions/route.ts:route_method:PUT:src/app/api/feed/reactions/route.ts#PUT",
+      "ownerId": "api_route:src/app/api/feed/reactions/route.ts",
+      "ownerModule": "src/app/api/feed/reactions/route.ts",
+      "sidecarPath": "src/app/api/feed/reactions/route.operation.ts"
     },
     {
       "anchorBytes": "export async function GET() {\n  if (process.env.CUBBY_P13_ACCEPTANCE_HEALTH_SENTINEL === \"1\") {\n    return new Response(null, { status: 204 });\n  }\n  try {\n    const { verifyBrowserOperationInfrastructure } = await import(\"@/server/services/browser-operation-integrity\");\n    await verifyBrowserOperationInfrastructure();\n    return Response.json({ status: \"ready\" }, responseInit);\n  } catch {\n    return Response.json(\n      { status: \"unavailable\" },\n      { ...responseInit, status: 503 }\n    );\n  }\n}",
@@ -2589,9 +2674,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 854,
+      "anchorEnd": 878,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 789,
+      "anchorStart": 813,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2606,9 +2691,9 @@
     {
       "anchorBytes": "fetch(url, {\n        method,\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId, ...fields })\n      })",
       "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
-      "anchorEnd": 2252,
+      "anchorEnd": 2462,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 2101,
+      "anchorStart": 2311,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2623,9 +2708,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
       "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-      "anchorEnd": 3229,
+      "anchorEnd": 3439,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 3162,
+      "anchorStart": 3372,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2638,11 +2723,11 @@
       "sidecarPath": "src/components/feed/feed-post-actions.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`${url}?issue=1`, {\n      method,\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({})\n    })",
-      "anchorDigest": "c77e773b3deb1ba450ae38aef595edad224dd27ee7e1b10472a52f78efcb2e73",
-      "anchorEnd": 3849,
+      "anchorBytes": "fetch(`${url}?issue=1`, {\n      method,\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify(issueFields)\n    })",
+      "anchorDigest": "edc76dd7036d85384f82f92c0e7f791657304dbaab834082a04c6c4aa34cd56d",
+      "anchorEnd": 4068,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 3717,
+      "anchorStart": 3927,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -5851,11 +5936,28 @@
       "sidecarPath": "src/app/app/calendar/page.operation.ts"
     },
     {
+      "anchorBytes": "feedInteractionKey",
+      "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
+      "anchorEnd": 895,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 877,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "feedInteractionKey",
+        "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:feedInteractionKey:src/server/services/feed-interactions.ts#feedInteractionKey",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
       "anchorBytes": "getActivityRowViewer",
       "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-      "anchorEnd": 673,
+      "anchorEnd": 739,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 653,
+      "anchorStart": 719,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityRowViewer",
@@ -5870,9 +5972,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 918,
+      "anchorEnd": 1080,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 892,
+      "anchorStart": 1054,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -5887,9 +5989,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 759,
+      "anchorEnd": 825,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 738,
+      "anchorStart": 804,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5904,9 +6006,9 @@
     {
       "anchorBytes": "listActivities",
       "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-      "anchorEnd": 689,
+      "anchorEnd": 755,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 675,
+      "anchorStart": 741,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivities",
@@ -5919,11 +6021,28 @@
       "sidecarPath": "src/app/app/feed/page.operation.ts"
     },
     {
+      "anchorBytes": "listFeedInteractions",
+      "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
+      "anchorEnd": 917,
+      "anchorFile": "src/app/app/feed/page.tsx",
+      "anchorStart": 897,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listFeedInteractions",
+        "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/feed/page.tsx:server_value_import:listFeedInteractions:src/server/services/feed-interactions.ts#listFeedInteractions",
+      "ownerId": "server_loader:src/app/app/feed/page.tsx",
+      "ownerModule": "src/app/app/feed/page.tsx",
+      "sidecarPath": "src/app/app/feed/page.operation.ts"
+    },
+    {
       "anchorBytes": "listFeedPosts",
       "anchorDigest": "81384248f7e97fbd9c9dd41dff96f33ca62443e1a22c101ca67f3f4794d06065",
-      "anchorEnd": 824,
+      "anchorEnd": 986,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 811,
+      "anchorStart": 973,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listFeedPosts",
@@ -5938,9 +6057,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 611,
+      "anchorEnd": 677,
       "anchorFile": "src/app/app/feed/page.tsx",
-      "anchorStart": 596,
+      "anchorStart": 662,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7268,10 +7387,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "d5d2534cc11cffaf4d40607a226437cbff365722767abf3b587c4bc612611beb",
+  "semanticArtifactDigest": "31b47713ff81f198a7fc948a8209fa5e2a7ef1dddf97bada20af42a06eb59e2a",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "3d034cc8fd43874247c66c4b3ce4dd80463f2c6c1777d3512cb4d5fb94296cc1",
+  "semanticCoverageDigest": "d78f8af01357ce6b5e8af6abec98b12e601ed7819fc155e7cc1adda2fb209a53",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "fba31418da6d6934cd559e649215dd38f3b87926d852001656e858adf7a05db4"
+  "semanticFingerprint": "797bb35c4b0549076fb04b02e940da564062210dbac9d48198a276634ce425e0"
 }

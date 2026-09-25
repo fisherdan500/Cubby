@@ -78,7 +78,14 @@ Step 2 adds text posts:
 - the audit records only that a post was made or removed, never its text;
 - posts are carried in backups, keeping the author's name on restore.
 
-Next: comments and reactions (reactions show who, never counts), and editing posts. Photos wait for the attachment gate (DEC-PROD-070, 141–147).
+Step 3 adds comments, reactions and editing:
+- every member, read-only members included, may comment on and react to a post or a logged entry; neither changes the entry;
+- five reactions - ❤️ love, 😂 funny, 🥹 aww, 🎉 celebrate, 👏 well done - shown with the names of who chose them, never a count;
+- authors edit their own comments and posts, marked "edited"; authors remove their own comments, and owners, admins and parents any;
+- the audit records what was done and what it was on, never the words;
+- comments and reactions are carried in backups, by name, with the posts and entries they belong to.
+
+Photos wait for the attachment gate (DEC-PROD-070, 141–147).
 
 ### Routine And Planned Schedule
 

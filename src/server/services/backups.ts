@@ -45,6 +45,7 @@ type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
   "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
+  | "feedComment" | "feedReaction"
 >;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
@@ -197,7 +198,16 @@ export async function buildHouseholdV2Snapshot(
   householdId: string,
   exportedAt = new Date().toISOString()
 ) {
-  const [household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts] = await Promise.all([
+  // Comments and reactions travel only with the posts and entries this backup itself carries.
+  const carriedFeedParent = {
+    OR: [
+      { post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+      { activity: { deletedAt: null, baby: { deletedAt: null } } }
+    ]
+  };
+  const [
+    household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments, feedReactions
+  ] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
@@ -222,6 +232,22 @@ export async function buildHouseholdV2Snapshot(
         author: { select: { displayName: true, user: { select: { name: true } } } }
       },
       orderBy: { occurredAt: "asc" }
+    }),
+    tx.feedComment.findMany({
+      where: { householdId, deletedAt: null, ...carriedFeedParent },
+      select: {
+        id: true, postId: true, activityId: true, body: true, createdAt: true, editedAt: true, externalAuthorName: true,
+        author: { select: { displayName: true, user: { select: { name: true } } } }
+      },
+      orderBy: { createdAt: "asc" }
+    }),
+    tx.feedReaction.findMany({
+      where: { householdId, ...carriedFeedParent },
+      select: {
+        postId: true, activityId: true, reaction: true, externalReactorName: true,
+        member: { select: { displayName: true, user: { select: { name: true } } } }
+      },
+      orderBy: { createdAt: "asc" }
     })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
@@ -301,6 +327,21 @@ export async function buildHouseholdV2Snapshot(
       tags: post.tags,
       occurredAt: post.occurredAt.toISOString(),
       authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone"
+    })),
+    feedComments: feedComments.map((comment) => ({
+      id: comment.id,
+      postId: comment.postId,
+      activityId: comment.activityId,
+      body: comment.body,
+      createdAt: comment.createdAt.toISOString(),
+      edited: comment.editedAt !== null,
+      authorName: comment.author?.displayName ?? comment.author?.user.name ?? comment.externalAuthorName ?? "Someone"
+    })),
+    feedReactions: feedReactions.map((reaction) => ({
+      postId: reaction.postId,
+      activityId: reaction.activityId,
+      reaction: reaction.reaction,
+      name: reaction.member?.displayName ?? reaction.member?.user.name ?? reaction.externalReactorName ?? "Someone"
     }))
   }, exportedAt);
 }
@@ -510,6 +551,7 @@ async function restoreV2InTransaction(
     createdBabies.set(saved.id, saved as Awaited<ReturnType<typeof lockBabyForWrite>>);
   }
 
+  const activityMap = new Map<string, string>();
   for (const activity of payload.activities) {
     const targetBabyId = babyMap.get(activity.babyId)!;
     const targetContactId = activity.contactId ? contactMap.get(activity.contactId)! : undefined;
@@ -529,7 +571,7 @@ async function restoreV2InTransaction(
     const timer = activity.timerState === "stopped"
       ? { timerState: TimerState.stopped, durationSeconds: activity.durationSeconds!, pausedSeconds: activity.pausedSeconds }
       : undefined;
-    await restoreHistoricalActivityForContext(input, lockedCtx, tx, timer, {
+    const restoredActivity = await restoreHistoricalActivityForContext(input, lockedCtx, tx, timer, {
       source: activity.source,
       externalActorName: activity.externalActorName
     }, {
@@ -543,6 +585,7 @@ async function restoreV2InTransaction(
         endedAt: new Date(pause.endedAt)
       }))
     });
+    activityMap.set(activity.id, restoredActivity.id);
   }
 
   for (const event of payload.calendarEvents) {
@@ -591,8 +634,9 @@ async function restoreV2InTransaction(
       }
     });
   }
+  const postMap = new Map<string, string>();
   for (const post of payload.feedPosts ?? []) {
-    await tx.feedPost.create({
+    const saved = await tx.feedPost.create({
       data: {
         householdId: lockedCtx.householdId,
         babyId: post.babyId === null ? null : babyMap.get(post.babyId)!,
@@ -601,6 +645,30 @@ async function restoreV2InTransaction(
         tags: post.tags,
         occurredAt: new Date(post.occurredAt)
       }
+    });
+    postMap.set(post.id, saved.id);
+  }
+  const feedParent = (item: { postId: string | null; activityId: string | null }) => ({
+    postId: item.postId === null ? null : postMap.get(item.postId)!,
+    activityId: item.activityId === null ? null : activityMap.get(item.activityId)!
+  });
+  for (const comment of payload.feedComments ?? []) {
+    const createdAt = new Date(comment.createdAt);
+    await tx.feedComment.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        ...feedParent(comment),
+        externalAuthorName: comment.authorName,
+        body: comment.body,
+        createdAt,
+        // When it was edited is not carried, only that it was.
+        editedAt: comment.edited ? createdAt : null
+      }
+    });
+  }
+  for (const reaction of payload.feedReactions ?? []) {
+    await tx.feedReaction.create({
+      data: { householdId: lockedCtx.householdId, ...feedParent(reaction), externalReactorName: reaction.name, reaction: reaction.reaction }
     });
   }
   for (const baby of payload.babies) {
@@ -618,10 +686,12 @@ async function restoreV2InTransaction(
     calendarEvents: payload.calendarEvents.length,
     reminders: payload.reminders.length,
     plannedSchedules: payload.plannedSchedules?.length ?? 0,
-    feedPosts: payload.feedPosts?.length ?? 0
+    feedPosts: payload.feedPosts?.length ?? 0,
+    feedComments: payload.feedComments?.length ?? 0,
+    feedReactions: payload.feedReactions?.length ?? 0
   };
   const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders
-    + counts.plannedSchedules + counts.feedPosts;
+    + counts.plannedSchedules + counts.feedPosts + counts.feedComments + counts.feedReactions;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
   return { restored, counts, legacyPartial: false };
 }

@@ -18,6 +18,7 @@ const MINUTE_MS = 60 * 1000;
 type AutomationDb = Pick<
   Prisma.TransactionClient,
   "household" | "backupRecord" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
+  | "feedComment" | "feedReaction"
 >;
 
 type BackupRecordRow = {

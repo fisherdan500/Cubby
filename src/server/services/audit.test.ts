@@ -93,6 +93,21 @@ describe("household audit contract", () => {
     expect(mocks.auditEventCreate).not.toHaveBeenCalled();
   });
 
+  it("never stores the words of a family post or comment", async () => {
+    for (const [action, after] of [
+      ["feed_post.update", { tagCount: 1, body: "private caption" }],
+      ["feed_comment.create", { parentKind: "post", body: "private comment" }],
+      ["feed_comment.update", { body: "private comment" }],
+      ["feed_reaction.set", { reaction: "love", on: true, note: "private" }]
+    ] as const) {
+      await expect(writeAudit(context, { action, entityType: "feed_comment", entityId: "comment-1", after })).rejects.toThrow();
+    }
+    expect(mocks.auditEventCreate).not.toHaveBeenCalled();
+
+    await writeAudit(context, { action: "feed_comment.create", entityType: "feed_comment", entityId: "comment-1", after: { parentKind: "activity" } });
+    expect(mocks.auditEventCreate).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects undeclared integration token material for every classified action", async () => {
     await expect(
       writeAudit(context, {

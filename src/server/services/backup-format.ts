@@ -161,6 +161,32 @@ const feedPostSchema = z
   })
   .strict();
 
+// Comments and reactions on a post or a logged entry - exactly one - carried by name, like posts.
+// A comment keeps whether it was edited, not when.
+const exactlyOneParent = (item: { postId: string | null; activityId: string | null }) => (item.postId === null) !== (item.activityId === null);
+const feedCommentSchema = z
+  .object({
+    id,
+    postId: id.nullable(),
+    activityId: id.nullable(),
+    body: z.string().trim().min(1).max(1_000),
+    createdAt: isoDateTime,
+    edited: z.boolean(),
+    authorName: shortString
+  })
+  .strict()
+  .refine(exactlyOneParent, { message: "backup_invalid_feed_parent" });
+
+const feedReactionSchema = z
+  .object({
+    postId: id.nullable(),
+    activityId: id.nullable(),
+    reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
+    name: shortString
+  })
+  .strict()
+  .refine(exactlyOneParent, { message: "backup_invalid_feed_parent" });
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
@@ -172,11 +198,16 @@ const v2PayloadSchema = z
     calendarEvents: z.array(calendarEventSchema).max(100_000),
     reminders: z.array(reminderSchema).max(100_000),
     plannedSchedules: z.array(plannedScheduleSchema).max(10_000).optional(),
-    feedPosts: z.array(feedPostSchema).max(1_000_000).optional()
+    feedPosts: z.array(feedPostSchema).max(1_000_000).optional(),
+    feedComments: z.array(feedCommentSchema).max(1_000_000).optional(),
+    feedReactions: z.array(feedReactionSchema).max(1_000_000).optional()
   })
   .strict()
   .superRefine((payload, ctx) => {
-    const groups = [payload.babies, payload.contacts, payload.catalogs, payload.activities, payload.calendarEvents, payload.reminders, payload.feedPosts ?? []];
+    const groups = [
+      payload.babies, payload.contacts, payload.catalogs, payload.activities, payload.calendarEvents, payload.reminders,
+      payload.feedPosts ?? [], payload.feedComments ?? []
+    ];
     for (const group of groups) {
       if (new Set(group.map((item) => item.id)).size !== group.length) {
         ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
@@ -188,12 +219,18 @@ const v2PayloadSchema = z
     }
     const babies = new Set(payload.babies.map((item) => item.id));
     const contacts = new Set(payload.contacts.map((item) => item.id));
+    const activities = new Set(payload.activities.map((item) => item.id));
+    const posts = new Set((payload.feedPosts ?? []).map((item) => item.id));
+    const onCarriedParent = (item: { postId: string | null; activityId: string | null }) =>
+      item.postId !== null ? posts.has(item.postId) : activities.has(item.activityId!);
     const dangling =
       payload.activities.some((item) => !babies.has(item.babyId) || (item.contactId !== null && !contacts.has(item.contactId))) ||
       payload.calendarEvents.some((item) => item.babyIds.some((value) => !babies.has(value)) || item.contactIds.some((value) => !contacts.has(value))) ||
       payload.reminders.some((item) => !babies.has(item.babyId)) ||
       plannedSchedules.some((item) => !babies.has(item.babyId)) ||
-      (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId));
+      (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId)) ||
+      (payload.feedComments ?? []).some((item) => !onCarriedParent(item)) ||
+      (payload.feedReactions ?? []).some((item) => !onCarriedParent(item));
     if (dangling) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const activity of payload.activities) {
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {
@@ -380,7 +417,9 @@ export function backupSummary(parsed: ParsedBackup) {
       calendarEvents: payload.calendarEvents.length,
       reminders: payload.reminders.length,
       plannedSchedules: payload.plannedSchedules?.length ?? 0,
-      feedPosts: payload.feedPosts?.length ?? 0
+      feedPosts: payload.feedPosts?.length ?? 0,
+      feedComments: payload.feedComments?.length ?? 0,
+      feedReactions: payload.feedReactions?.length ?? 0
     },
     exclusions: [...BACKUP_EXCLUSIONS]
   };

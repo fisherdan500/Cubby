@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type PropsWithChildren } from "react";
 import { useRouter } from "next/navigation";
 import { PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,10 +30,17 @@ async function operationResponse(response: Response) {
 }
 
 /**
- * One feed write through a server-issued browser operation: retained for this tab so a retry after a
- * lost response reconciles the same request rather than posting twice, and cleared once it settles.
+ * One feed write - a post, comment or reaction - through a server-issued browser operation: retained
+ * for this tab so a retry after a lost response reconciles the same request rather than posting twice,
+ * and cleared once it settles. `issueFields` names what the operation binds to when the URL does not.
  */
-async function runFeedOperation(storageName: string, url: string, method: "POST" | "DELETE", fields: Record<string, unknown>): Promise<Outcome> {
+export async function runFeedOperation(
+  storageName: string,
+  url: string,
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  fields: Record<string, unknown>,
+  issueFields: Record<string, unknown> = {}
+): Promise<Outcome> {
   try {
     const { partition } = await householdPartition();
     const storageKey = await tabScopedBrowserOperationStorageKey(partition, `${storageName}:${partition}`);
@@ -73,7 +80,7 @@ async function runFeedOperation(storageName: string, url: string, method: "POST"
     const issued = await operationResponse(await fetch(`${url}?issue=1`, {
       method,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({})
+      body: JSON.stringify(issueFields)
     }));
     const operationId = issued.body?.data?.operationId;
     if (!operationId || (issued.status !== "open" && issued.status !== "prepared")) {
@@ -168,6 +175,89 @@ export function FeedPostComposer({ babyId, babyName }: { babyId: string; babyNam
         <Button type="button" variant="ghost" disabled={submitting} onClick={() => { setOpen(false); setError(""); }}>Cancel</Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * A post's caption, as rendered by the card, with "edited" once it has changed - and, for its author,
+ * a way to rewrite it in place. Tags are read again from the new words.
+ */
+export function FeedPostBody({
+  postId,
+  body,
+  edited,
+  canEdit,
+  children
+}: PropsWithChildren<{
+  postId: string;
+  body: string;
+  edited: boolean;
+  canEdit: boolean;
+}>) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(body);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function save() {
+    if (!draft.trim()) {
+      setError("Write something to share first.");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    const outcome = await runFeedOperation(`cubby:feed-post-update:${postId}`, `/api/feed/posts/${encodeURIComponent(postId)}`, "PATCH", { body: draft });
+    setSubmitting(false);
+    if (!outcome.ok) {
+      setError(outcome.message);
+      return;
+    }
+    setEditing(false);
+    router.refresh();
+  }
+
+  if (editing) {
+    return (
+      <form
+        className="space-y-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void save();
+        }}
+      >
+        <label className="grid gap-1 text-sm font-semibold">
+          <span className="sr-only">Edit your post</span>
+          <Textarea value={draft} maxLength={FEED_POST_MAX_LENGTH} rows={3} onChange={(event) => setDraft(event.target.value)} />
+        </label>
+        {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p> : null}
+        <div className="flex gap-2">
+          <Button type="submit" disabled={submitting}>{submitting ? "Saving..." : "Save"}</Button>
+          <Button type="button" variant="ghost" disabled={submitting} onClick={() => { setEditing(false); setDraft(body); setError(""); }}>Cancel</Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="whitespace-pre-line break-words text-sm leading-6">{children}</p>
+      {edited || canEdit ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {edited ? <span>edited</span> : null}
+          {canEdit ? (
+            <button
+              type="button"
+              aria-label="Edit post"
+              onClick={() => { setDraft(body); setEditing(true); }}
+              className="inline-flex min-h-11 items-center rounded-lg px-2 font-semibold hover:bg-muted hover:text-foreground"
+            >
+              Edit
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

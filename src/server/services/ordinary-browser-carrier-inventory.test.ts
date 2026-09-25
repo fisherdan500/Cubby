@@ -27,7 +27,13 @@ const carriers = [
   ["account.appearance.update", "src/app/api/account/appearance/route.ts", "src/components/personal-appearance-form.tsx"],
   ["planned_schedule.save", "src/app/api/babies/[id]/schedule/route.ts", "src/components/reports/planned-schedule.tsx"],
   ["feed_post.create", "src/app/api/feed/posts/route.ts", "src/components/feed/feed-post-actions.tsx"],
-  ["feed_post.delete", "src/app/api/feed/posts/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"]
+  ["feed_post.delete", "src/app/api/feed/posts/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"],
+  ["feed_post.update", "src/app/api/feed/posts/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"],
+  // Comments and reactions are written through the same feed carrier.
+  ["feed_comment.create", "src/app/api/feed/comments/route.ts", "src/components/feed/feed-post-actions.tsx"],
+  ["feed_comment.update", "src/app/api/feed/comments/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"],
+  ["feed_comment.delete", "src/app/api/feed/comments/[id]/route.ts", "src/components/feed/feed-post-actions.tsx"],
+  ["feed_reaction.set", "src/app/api/feed/reactions/route.ts", "src/components/feed/feed-post-actions.tsx"]
 ] as const;
 
 const deniedLegacyInvitationRoutes = [
@@ -37,9 +43,9 @@ const deniedLegacyInvitationRoutes = [
 ] as const;
 
 describe("ordinary browser carrier closure inventory", () => {
-  it("covers exactly the closed 23-operation browser-operation registry", () => {
-    expect(carriers.map(([operation]) => operation)).toHaveLength(23);
-    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(23);
+  it("covers exactly the closed 28-operation browser-operation registry", () => {
+    expect(carriers.map(([operation]) => operation)).toHaveLength(28);
+    expect(new Set(carriers.map(([operation]) => operation)).size).toBe(28);
   });
 
   it.each(deniedLegacyInvitationRoutes)("%s remains an explicit fail-closed legacy route", (operation, ingress) => {

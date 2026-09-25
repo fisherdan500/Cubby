@@ -106,6 +106,32 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     code: z.literal("deleted"),
     postId: z.string().min(1)
   }).strict(),
+  [BrowserOperationKey.feedPostUpdate]: z.object({
+    kind: z.literal("feed_post"),
+    code: z.literal("updated"),
+    postId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.feedCommentCreate]: z.object({
+    kind: z.literal("feed_comment"),
+    code: z.literal("created"),
+    commentId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.feedCommentUpdate]: z.object({
+    kind: z.literal("feed_comment"),
+    code: z.literal("updated"),
+    commentId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.feedCommentDelete]: z.object({
+    kind: z.literal("feed_comment"),
+    code: z.literal("deleted"),
+    commentId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.feedReactionSet]: z.object({
+    kind: z.literal("feed_reaction"),
+    code: z.literal("set"),
+    reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
+    on: z.boolean()
+  }).strict(),
   [BrowserOperationKey.plannedScheduleSave]: z.object({
     kind: z.literal("planned_schedule"),
     code: z.literal("ok"),

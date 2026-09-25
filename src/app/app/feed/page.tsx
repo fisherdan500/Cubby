@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { FeedActivityCard } from "@/components/feed/feed-activity-card";
 import { FeedPostComposer } from "@/components/feed/feed-post-actions";
 import { FeedPostCard } from "@/components/feed/feed-post-card";
+import { FeedResponses } from "@/components/feed/feed-responses";
 import { Card } from "@/components/ui/card";
 import { hasPermission } from "@/domain/roles";
 import { env } from "@/lib/env";
@@ -11,6 +12,7 @@ import { historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination
 import { requireUserPage } from "@/server/auth/session";
 import { getActivityRowViewer, listActivities } from "@/server/services/activities";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
+import { feedInteractionKey, listFeedInteractions } from "@/server/services/feed-interactions";
 import { listFeedPosts, type FeedPostView } from "@/server/services/feed-posts";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
@@ -61,6 +63,23 @@ export default async function FeedPage({
   const returnTo = feedHref({ babyId, filter: filter.key, tag, cursor: searchParams.cursor, before: searchParams.before });
   const groups = groupFeedByDay(items.map((item) => ({ ...item, occurredAt: item.at })), env.APP_TIMEZONE);
   const canPost = hasPermission(viewer.role, "feed.post");
+  const interactions = await listFeedInteractions({
+    postIds: items.flatMap((item) => item.kind === "post" ? [item.post.id] : []),
+    activityIds: items.flatMap((item) => item.kind === "activity" ? [item.activity.id] : [])
+  });
+  const responses = (parentKind: "post" | "activity", parentId: string) => {
+    const key = feedInteractionKey(parentKind, parentId);
+    return (
+      <FeedResponses
+        parentKind={parentKind}
+        parentId={parentId}
+        reactions={interactions.reactions[key] ?? []}
+        comments={interactions.comments[key] ?? []}
+        canRespond={interactions.canRespond}
+        timeZone={env.APP_TIMEZONE}
+      />
+    );
+  };
 
   return (
     <AppShell title="Feed" userName={user.name} babySelector={babySelector}>
@@ -111,13 +130,20 @@ export default async function FeedPage({
               {group.items.map((item) => (
                 <li key={item.kind === "post" ? `post-${item.post.id}` : item.activity.id}>
                   {item.kind === "post" ? (
-                    <FeedPostCard post={item.post} babyId={babyId} babyName={babyName} timeZone={env.APP_TIMEZONE} />
+                    <FeedPostCard
+                      post={item.post}
+                      babyId={babyId}
+                      babyName={babyName}
+                      timeZone={env.APP_TIMEZONE}
+                      footer={responses("post", item.post.id)}
+                    />
                   ) : (
                     <FeedActivityCard
                       activity={item.activity}
                       returnTo={returnTo}
                       timeZone={env.APP_TIMEZONE}
                       volume={unitSettings.preferences.volume}
+                      footer={responses("activity", item.activity.id)}
                     />
                   )}
                 </li>

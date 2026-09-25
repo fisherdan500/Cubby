@@ -23,14 +23,19 @@ export function feedPostTags(body: string) {
   return tags;
 }
 
-const inputSchema = z.object({
-  body: z
+/** Family-written feed text - a caption or a comment: trimmed, never empty, at most `max` long. */
+export function feedTextSchema(max: number) {
+  return z
     .string()
     .trim()
     .min(1)
-    .max(FEED_POST_MAX_LENGTH)
+    .max(max)
     // Line breaks are fine in a caption; other control characters are not.
-    .refine((value) => !/[\u0000-\u0009\u000b-\u001f\u007f]/.test(value)),
+    .refine((value) => !/[\u0000-\u0009\u000b-\u001f\u007f]/.test(value));
+}
+
+const inputSchema = z.object({
+  body: feedTextSchema(FEED_POST_MAX_LENGTH),
   babyId: z.string().min(1).max(200).nullable()
 });
 
@@ -40,6 +45,17 @@ export function parseFeedPostInput(raw: unknown) {
 }
 
 export type FeedPostInput = ReturnType<typeof parseFeedPostInput>;
+
+/** An edit changes the caption only; who the post is about stays as it was shared. */
+export function parseFeedPostEdit(raw: unknown) {
+  const { body } = z.object({ body: feedTextSchema(FEED_POST_MAX_LENGTH) }).parse(raw);
+  return { body, tags: feedPostTags(body) };
+}
+
+/** Only the author edits a post, and only while their role still lets them post. */
+export function canEditFeedPost(role: HouseholdRoleName, isAuthor: boolean) {
+  return isAuthor && hasPermission(role, "feed.post");
+}
 
 /** An author may remove their own post; owners, admins and parents may remove any. */
 export function canRemoveFeedPost(role: HouseholdRoleName, isAuthor: boolean) {

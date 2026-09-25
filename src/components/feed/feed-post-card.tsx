@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PenLine } from "lucide-react";
-import { FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
+import { FeedPostBody, FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
 import { feedHref } from "@/lib/feed";
 
 type FeedPost = {
@@ -10,6 +10,8 @@ type FeedPost = {
   occurredAt: Date;
   authorName: string;
   canRemove: boolean;
+  canEdit?: boolean;
+  edited?: boolean;
 };
 
 // The same rule that takes tags from a caption: a tag starts a word.
@@ -17,18 +19,21 @@ const TAG_IN_TEXT = /(^|\s)#([\p{L}\p{N}_]{1,40})/gu;
 
 /**
  * A family post in the feed: who shared it, when, whether it is about the baby or the whole family,
- * and the caption with its #tags as links to every post that shares them.
+ * and the caption with its #tags as links to every post that shares them. The family's reactions and
+ * comments go in the footer.
  */
 export function FeedPostCard({
   post,
   babyId,
   babyName,
-  timeZone
+  timeZone,
+  footer
 }: {
   post: FeedPost;
   babyId?: string;
   babyName?: string;
   timeZone: string;
+  footer?: React.ReactNode;
 }) {
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(post.occurredAt);
   const scope = post.babyId === null ? "The whole family" : babyName ? `About ${babyName}` : "";
@@ -48,7 +53,10 @@ export function FeedPostCard({
         </div>
         {post.canRemove ? <FeedPostRemoveButton postId={post.id} /> : null}
       </header>
-      <p className="whitespace-pre-line break-words text-sm leading-6">{linkTags(post.body, babyId)}</p>
+      <FeedPostBody postId={post.id} body={post.body} edited={post.edited ?? false} canEdit={post.canEdit ?? false}>
+        {linkTags(post.body, babyId)}
+      </FeedPostBody>
+      {footer}
     </article>
   );
 }

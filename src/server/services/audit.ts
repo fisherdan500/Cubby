@@ -27,8 +27,13 @@ const auditActionSchema = z.enum([
   "household.create",
   "calendar_event.create",
   "export.csv",
+  "feed_comment.create",
+  "feed_comment.delete",
+  "feed_comment.update",
   "feed_post.create",
   "feed_post.delete",
+  "feed_post.update",
+  "feed_reaction.set",
   "invite.accept",
   "invite.conflict",
   "invite.create",
@@ -130,6 +135,12 @@ const notificationPreferenceSchema = z.object({
 // A plan's labels, times and notes are private caregiver text; the audit keeps only that it changed.
 // A post's caption and tags are private family text; the audit keeps only how many tags it had.
 const feedPostCreateSchema = z.object({ tagCount: z.number().int().nonnegative() }).strict();
+// A comment's words are private family text too: the audit keeps only what it was on.
+const feedCommentCreateSchema = z.object({ parentKind: z.enum(["post", "activity"]) }).strict();
+const feedReactionSetSchema = z.object({
+  reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
+  on: z.boolean()
+}).strict();
 const plannedScheduleSchema = z.object({
   revision: z.number().int().positive(),
   itemCount: z.number().int().nonnegative()
@@ -194,10 +205,16 @@ function minimizeAuditPayload(
   if (action === "planned_schedule.save") {
     return plannedScheduleSchema.parse(payload) as Prisma.InputJsonValue;
   }
-  if (action === "feed_post.create") {
+  if (action === "feed_post.create" || action === "feed_post.update") {
     return feedPostCreateSchema.parse(payload) as Prisma.InputJsonValue;
   }
-  if (action === "feed_post.delete") {
+  if (action === "feed_comment.create") {
+    return feedCommentCreateSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "feed_reaction.set") {
+    return feedReactionSetSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "feed_post.delete" || action === "feed_comment.update" || action === "feed_comment.delete") {
     return emptyAuditPayloadSchema.parse(payload) as Prisma.InputJsonValue;
   }
   return payload;
