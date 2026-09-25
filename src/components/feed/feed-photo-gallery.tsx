@@ -29,10 +29,16 @@ function download(file: File) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Phones share files through the system sheet; on an iPhone that is how a photo gets into Photos,
-// since a download only reaches the Files app.
-function canShareFiles() {
-  return typeof navigator !== "undefined" && typeof navigator.share === "function" && typeof navigator.canShare === "function";
+/**
+ * How this device keeps a photo. A web page cannot write to a phone's photo library; the system share
+ * sheet can, and on an iPhone its Save Image is the only way into Photos - a download reaches only the
+ * Files app. So on a touch screen that can share files, Save opens the sheet ("save"); a computer
+ * downloads, with Share beside it where it can share ("button"); otherwise there is only the download.
+ */
+function sharingMode(): "none" | "button" | "save" {
+  if (typeof navigator === "undefined" || typeof navigator.share !== "function" || typeof navigator.canShare !== "function") return "none";
+  const touch = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+  return touch ? "save" : "button";
 }
 
 const viewerButton =
@@ -48,7 +54,12 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
   const [open, setOpen] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [shareable, setShareable] = useState(false);
+  const [saveNote, setSaveNote] = useState("");
+  const [sharing, setSharing] = useState<"none" | "button" | "save">("none");
+  // Photos fetched for keeping, by id. A phone only opens the share sheet straight from a tap, so the
+  // open photo is fetched ahead and the sheet opens the moment Save is tapped.
+  const requests = useRef(new Map<string, Promise<File>>());
+  const [ready, setReady] = useState<Record<string, File>>({});
   // Opening adds one history step so Back closes the viewer; closing another way takes that step back.
   const pushedHistory = useRef(false);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -90,21 +101,64 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
   useEffect(() => {
     if (open !== null) closeButton.current?.focus();
     setSaveError("");
+    setSaveNote("");
   }, [open]);
 
   // Known only in the browser, so decided after the first render to match the server's.
-  useEffect(() => setShareable(canShareFiles()), []);
+  useEffect(() => setSharing(sharingMode()), []);
 
-  async function keep(photo: Photo, how: "save" | "share") {
+  const fetchFile = useCallback((photo: Photo) => {
+    let pending = requests.current.get(photo.id);
+    if (!pending) {
+      pending = photoFile(photo);
+      requests.current.set(photo.id, pending);
+      pending.then(
+        (file) => setReady((current) => ({ ...current, [photo.id]: file })),
+        () => requests.current.delete(photo.id)
+      );
+    }
+    return pending;
+  }, []);
+
+  const shownId = open === null ? undefined : photos[open]?.id;
+  useEffect(() => {
+    const photo = photos.find((candidate) => candidate.id === shownId);
+    if (sharing === "save" && photo) fetchFile(photo).catch(() => undefined);
+  }, [sharing, shownId, photos, fetchFile]);
+
+  async function shareFile(file: File) {
+    try {
+      if (!navigator.canShare({ files: [file] })) {
+        download(file);
+        return;
+      }
+      await navigator.share({ files: [file] });
+    } catch (error) {
+      const name = error instanceof DOMException ? error.name : "";
+      // Closing the sheet without choosing anything is not a failure.
+      if (name === "AbortError") return;
+      // The phone refused a sheet that did not come straight from the tap; the photo is here now.
+      if (name === "NotAllowedError") setSaveNote("The photo is ready. Tap Save again, then Save Image.");
+      else setSaveError("Couldn't save the photo. Try again.");
+    }
+  }
+
+  async function keep(photo: Photo, how: "download" | "share") {
     setSaveError("");
+    setSaveNote("");
+    const file = ready[photo.id];
+    if (how === "share" && file) {
+      // Nothing awaited before the sheet opens, so it still counts as the tap's own.
+      void shareFile(file);
+      return;
+    }
     setSaving(true);
     try {
-      const file = await photoFile(photo);
-      if (how === "share" && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] });
-      else download(file);
-    } catch (error) {
-      // Closing the share sheet without choosing anything is not a failure.
-      if (!(error instanceof DOMException && error.name === "AbortError")) setSaveError("Couldn't get the photo. Try again.");
+      const fetched = await fetchFile(photo);
+      if (how === "share") await shareFile(fetched);
+      else download(fetched);
+    } catch {
+      setSaveError("Couldn't get the photo. Try again.");
     } finally {
       setSaving(false);
     }
@@ -167,12 +221,19 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
             className="relative max-h-full max-w-full object-contain"
           />
           <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex gap-2">
-            {shareable ? (
+            {sharing === "button" ? (
               <button type="button" aria-label="Share photo" disabled={saving} onClick={() => void keep(shown, "share")} className={viewerButton}>
                 <Share2 className="h-6 w-6" aria-hidden="true" />
               </button>
             ) : null}
-            <button type="button" aria-label="Save photo" disabled={saving} onClick={() => void keep(shown, "save")} className={viewerButton}>
+            <button
+              type="button"
+              aria-label="Save photo"
+              data-ready={sharing === "save" ? String(Boolean(ready[shown.id])) : undefined}
+              disabled={saving}
+              onClick={() => void keep(shown, sharing === "save" ? "share" : "download")}
+              className={viewerButton}
+            >
               <Download className="h-6 w-6" aria-hidden="true" />
             </button>
             <button ref={closeButton} type="button" aria-label="Close photo" onClick={close} className={viewerButton}>
@@ -182,6 +243,11 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
           {saveError ? (
             <p role="alert" className="absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] rounded-lg bg-black/80 px-3 py-2 text-center text-sm font-semibold text-white">
               {saveError}
+            </p>
+          ) : null}
+          {saveNote ? (
+            <p role="status" className="absolute left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] rounded-lg bg-black/80 px-3 py-2 text-center text-sm font-semibold text-white">
+              {saveNote}
             </p>
           ) : null}
           {photos.length > 1 ? (

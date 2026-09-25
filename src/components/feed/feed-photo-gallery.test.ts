@@ -118,21 +118,85 @@ describe("FeedPhotoGallery", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("Couldn't get the photo. Try again.");
   });
 
-  it("shares the photo where the phone can, which is how an iPhone saves it to Photos", async () => {
+  it("offers Share beside Save on a computer that can share files", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jpeg()));
     const share = vi.fn(async (_data: { files: File[] }) => undefined);
     Object.assign(navigator, { share, canShare: () => true });
 
     render(createElement(FeedPhotoGallery, { photos }));
     fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
-    fireEvent.click(screen.getByRole("button", { name: "Share photo" }));
+    expect(screen.getByRole("button", { name: "Save photo" })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Share photo" }));
 
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
     const [file] = share.mock.calls[0][0].files;
     expect([file.name, file.type]).toEqual(["cubby-photo-a.jpg", "image/jpeg"]);
   });
 
-  it("offers Share only where the phone can share files", () => {
+  describe("on a phone", () => {
+    // A touch screen that can share files: an iPhone, where a download only reaches the Files app and
+    // the share sheet's Save Image is the way into Photos.
+    function asPhone(share: (data: { files: File[] }) => Promise<void>) {
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(pointer: coarse)", media: query }));
+      Object.assign(navigator, { share, canShare: () => true });
+    }
+
+    it("saves through the share sheet, with the photo fetched when opened so the sheet opens at once", async () => {
+      const fetchPhoto = vi.fn(async () => jpeg());
+      vi.stubGlobal("fetch", fetchPhoto);
+      const share = vi.fn(async (_data: { files: File[] }) => undefined);
+      asPhone(share);
+      const download = vi.spyOn(HTMLAnchorElement.prototype, "click");
+
+      render(createElement(FeedPhotoGallery, { photos }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 2 of 2" }));
+      await waitFor(() => expect(fetchPhoto).toHaveBeenCalledWith("/api/attachments/photo-b", { credentials: "same-origin" }));
+      // Ready before the tap: an iPhone only opens the sheet straight from a tap, not after a wait.
+      await waitFor(() => expect(screen.getByRole("button", { name: "Save photo" }).getAttribute("data-ready")).toBe("true"));
+
+      fireEvent.click(screen.getByRole("button", { name: "Save photo" }));
+
+      expect(share).toHaveBeenCalledTimes(1);
+      expect(share.mock.calls[0][0].files[0].name).toBe("cubby-photo-b.jpg");
+      expect(fetchPhoto).toHaveBeenCalledTimes(1);
+      expect(download).not.toHaveBeenCalled();
+      // One button: Share would open the very same sheet.
+      expect(screen.queryByRole("button", { name: "Share photo" })).toBeNull();
+    });
+
+    it("asks for one more tap when the phone refused the sheet because the photo was still arriving", async () => {
+      vi.stubGlobal("fetch", vi.fn(async () => jpeg()));
+      const share = vi.fn(async () => {
+        throw new DOMException("Not allowed", "NotAllowedError");
+      });
+      asPhone(share);
+
+      render(createElement(FeedPhotoGallery, { photos }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save photo" }));
+
+      expect((await screen.findByRole("status")).textContent).toBe("The photo is ready. Tap Save again, then Save Image.");
+    });
+
+    it("says nothing when the share sheet is closed without saving", async () => {
+      vi.stubGlobal("fetch", vi.fn(async () => jpeg()));
+      const share = vi.fn(async () => {
+        throw new DOMException("Share canceled", "AbortError");
+      });
+      asPhone(share);
+
+      render(createElement(FeedPhotoGallery, { photos }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+      await waitFor(() => expect(screen.getByRole("button", { name: "Save photo" }).getAttribute("data-ready")).toBe("true"));
+      fireEvent.click(screen.getByRole("button", { name: "Save photo" }));
+
+      await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+  });
+
+  it("offers Share only where the device can share files", () => {
     render(createElement(FeedPhotoGallery, { photos }));
     fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
     expect(screen.queryByRole("button", { name: "Share photo" })).toBeNull();
