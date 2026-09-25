@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { backupArchiveStream, openBackupArchive } from "@/server/services/backup-archive";
+import { backupArchiveStream, openBackupArchive, readBackupArchiveSync } from "@/server/services/backup-archive";
 import { createV2Backup } from "@/server/services/backup-format";
 import { zipStoreStream } from "@/server/services/zip-store";
 
@@ -86,6 +86,21 @@ describe("backup archives", () => {
 
     const notZip = await saved(new Response("{}").body!);
     await expect(openBackupArchive(notZip)).rejects.toThrow("backup_invalid");
+  });
+
+  it("checks an archive synchronously too, for command-line checks", async () => {
+    const snapshot = backup();
+    const file = await saved(backupArchiveStream(snapshot, async (photoId) => readers[photoId]!));
+    expect(readBackupArchiveSync(file).backup.checksum).toBe(snapshot.checksum);
+
+    async function* files(list: Array<[string, Buffer]>) {
+      for (const [name, data] of list) yield { name, data };
+    }
+    const json = Buffer.from(JSON.stringify(snapshot));
+    const changed = await saved(zipStoreStream(files([["backup.json", json], ["photos/ph-a.jpg", bytesA], ["photos/ph-b.jpg", Buffer.from("second photo bytes?")]])));
+    expect(() => readBackupArchiveSync(changed)).toThrow("backup_photo_mismatch");
+    const missing = await saved(zipStoreStream(files([["backup.json", json], ["photos/ph-a.jpg", bytesA]])));
+    expect(() => readBackupArchiveSync(missing)).toThrow("backup_invalid");
   });
 
   it("stops writing if a photo's bytes cannot be read, rather than finishing an incomplete backup", async () => {

@@ -15,6 +15,9 @@ const mocks = vi.hoisted(() => ({
   queryRaw: vi.fn(),
   buildSnapshot: vi.fn(),
   publish: vi.fn(),
+  publishArchive: vi.fn(),
+  attachmentFindMany: vi.fn(),
+  readObject: vi.fn(),
   read: vi.fn(),
   remove: vi.fn(),
   reconcile: vi.fn(),
@@ -41,8 +44,11 @@ vi.mock("@/server/services/backups", () => ({
   summarizeBackupItemCount: vi.fn(() => 7)
 }));
 
+vi.mock("@/server/services/attachment-store", () => ({ readAttachmentObject: mocks.readObject }));
+
 vi.mock("@/server/services/local-backup-storage", () => ({
   publishLocalBackup: mocks.publish,
+  publishLocalBackupArchive: mocks.publishArchive,
   readLocalBackup: mocks.read,
   removeLocalBackup: mocks.remove,
   reconcileLocalBackupTemps: mocks.reconcile,
@@ -77,6 +83,7 @@ beforeEach(() => {
       activityLog: { count: mocks.activityCount },
       calendarEvent: { count: mocks.eventCount },
       reminder: { count: mocks.reminderCount },
+      attachment: { findMany: mocks.attachmentFindMany },
       household: {}
     })
   );
@@ -197,14 +204,42 @@ describe("automated backups", () => {
     }));
   });
 
-  it("records a failure, not a backup missing its photos, for a household with photos", async () => {
+  it("writes a household with photos as an archive of its backup and every verified photo", async () => {
     const snapshot = await mocks.buildSnapshot();
-    mocks.buildSnapshot.mockResolvedValue({ ...snapshot, payload: { ...snapshot.payload, feedPhotos: [{ id: "ph-1" }] } });
+    const photo = { id: "ph-1", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: "b".repeat(64) };
+    mocks.buildSnapshot.mockResolvedValue({ ...snapshot, payload: { ...snapshot.payload, feedPhotos: [photo] } });
+    mocks.attachmentFindMany.mockResolvedValue([{ id: "ph-1", storageKey: "1".repeat(32) }]);
+    mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
+    mocks.publishArchive.mockImplementation(async (_directory, _snapshot, readPhoto) => {
+      await readPhoto("ph-1");
+      return { filename: "backup.zip", checksum: "a".repeat(64), exportedAt: "2026-07-15T21:50:13.000Z", householdName: "Home", size: 5000, absolutePath: "x" };
+    });
 
     const result = await runAutomatedBackupIfDue("household-1", new Date("2026-07-15T22:00:00.000Z"), config);
 
-    expect(result).toEqual({ failed: true, error: "backup_photos_require_archive" });
+    expect(result).toEqual({ completed: true, filename: "backup.zip" });
     expect(mocks.publish).not.toHaveBeenCalled();
+    expect(mocks.publishArchive).toHaveBeenCalledWith(config.directory, expect.objectContaining({ checksum: "a".repeat(64) }), expect.any(Function), {
+      filenameDiscriminator: expect.stringMatching(/^[a-f0-9]{32}$/)
+    });
+    expect(mocks.attachmentFindMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", id: { in: ["ph-1"] } },
+      select: { id: true, storageKey: true }
+    });
+    expect(mocks.readObject).toHaveBeenCalledWith(expect.any(String), "1".repeat(32), { byteSize: 4, sha256: "b".repeat(64) });
+    expect(mocks.backupCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: "complete", storageFilename: "backup.zip", byteSize: 5000 })
+    }));
+  });
+
+  it("records a failure when a photo cannot be read, rather than an incomplete archive", async () => {
+    const snapshot = await mocks.buildSnapshot();
+    mocks.buildSnapshot.mockResolvedValue({ ...snapshot, payload: { ...snapshot.payload, feedPhotos: [{ id: "ph-1", byteSize: 4, sha256: "b".repeat(64) }] } });
+    mocks.attachmentFindMany.mockResolvedValue([]);
+    mocks.publishArchive.mockImplementation(async (_directory, _snapshot, readPhoto) => readPhoto("ph-1"));
+
+    const result = await runAutomatedBackupIfDue("household-1", new Date("2026-07-15T22:00:00.000Z"), config);
+    expect(result).toEqual({ failed: true, error: "backup_photo_unavailable" });
   });
 
   it("retries an hour after a failure newer than a recent success", async () => {

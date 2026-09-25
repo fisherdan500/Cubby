@@ -785,6 +785,20 @@ describe("backup unit preferences", () => {
     expect(status.versions[0]).toEqual(expect.objectContaining({ filename: ownFilename }));
   });
 
+  it("hands back an archive version by its path, to be streamed rather than read into memory", async () => {
+    const filename = "cubby-backup-v2-20260930T100000Z-aaaaaaaaaaaa.zip";
+    mocks.isLocalBackupFilename.mockReturnValue(true);
+    mocks.backupFindFirst.mockResolvedValue({ checksum: "a".repeat(64), storageFilename: filename });
+    mocks.readLocalBackupDocument.mockResolvedValue({
+      file: { filename, absolutePath: "/var/lib/cubby/backups/" + filename, checksum: "a".repeat(64), size: 5000 },
+      body: null
+    });
+
+    await expect(downloadLocalBackupFile(filename)).resolves.toEqual({
+      filename, archivePath: "/var/lib/cubby/backups/" + filename, size: 5000
+    });
+  });
+
   it("rejects a malformed persisted filename before querying or opening storage", async () => {
     const malformedFilename = "../cubby-backup-v2-20260714T200000Z-aaaaaaaaaaaa.json";
     mocks.isLocalBackupFilename.mockReturnValue(false);

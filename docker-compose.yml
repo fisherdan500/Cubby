@@ -53,6 +53,8 @@ services:
     volumes:
       - ${CUBBY_BACKUP_HOST_DIR:-./docker-data/backups}:/var/lib/cubby/backups
       - ${CUBBY_SPROUT_STAGING_HOST_DIR:-./docker-data/sprout-staging}:/var/lib/cubby/sprout-staging
+      # Feed photos (DEC-PROD-422): private, and part of the recovery set with the database.
+      - ${CUBBY_ATTACHMENT_HOST_DIR:-./docker-data/attachments}:/var/lib/cubby/attachments
     secrets:
       - cubby_sprout_staging_key
     restart: unless-stopped

@@ -130,8 +130,8 @@ hex() { od -An -N"$1" -tx1 /dev/urandom | tr -d ' \n'; }
 base64_bytes() { head -c "$1" /dev/urandom | base64 | tr -d '\n'; }
 base64url_bytes() { base64_bytes "$1" | tr '+/' '-_' | tr -d '='; }
 
-mkdir -p "$data/backups" "$data/sprout-staging" "$data/secrets"
-chmod 700 "$data/backups" "$data/sprout-staging" "$data/secrets"
+mkdir -p "$data/backups" "$data/sprout-staging" "$data/attachments" "$data/secrets"
+chmod 700 "$data/backups" "$data/sprout-staging" "$data/attachments" "$data/secrets"
 
 # Partly written secrets live only inside the git-ignored data directory, and an interrupted run removes
 # them and a key it wrote without its .env, so it can simply be run again.
@@ -151,9 +151,9 @@ chmod 400 "$key_tmp"
 mv "$key_tmp" "$key_file"
 
 if [ "$data_owner" != "$current_owner" ]; then
-  # The container reads the key and writes backups and staged uploads as this user; Linux bind
-  # mounts keep the host's owner and mode, so nothing else would let it.
-  chown "$data_owner" "$data/backups" "$data/sprout-staging" "$key_file"
+  # The container reads the key and writes backups, staged uploads and photos as this user; Linux
+  # bind mounts keep the host's owner and mode, so nothing else would let it.
+  chown "$data_owner" "$data/backups" "$data/sprout-staging" "$data/attachments" "$key_file"
   if [ -n "${SUDO_UID:-}" ] && [ -n "${SUDO_GID:-}" ]; then
     # Compose runs as the operator, who must still be able to find the key it hands to Docker.
     chown "$SUDO_UID:$SUDO_GID" "$data" "$data/secrets"
@@ -180,6 +180,7 @@ fi
   printf 'CUBBY_EMAIL_DELIVERY_ACTIVE_KEY_VERSION=1\n'
   printf 'CUBBY_BACKUP_HOST_DIR=./docker-data/backups\n'
   printf 'CUBBY_SPROUT_STAGING_HOST_DIR=./docker-data/sprout-staging\n'
+  printf 'CUBBY_ATTACHMENT_HOST_DIR=./docker-data/attachments\n'
   printf 'CUBBY_SPROUT_STAGING_KEY_FILE=./docker-data/secrets/sprout-staging.key\n'
   printf 'SPROUT_STAGING_KEY_VERSION=v1\n'
   printf 'AUTOMATED_BACKUPS_ENABLED=false\n'

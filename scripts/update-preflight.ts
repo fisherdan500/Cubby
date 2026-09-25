@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { parseBackup } from "../src/server/services/backup-format";
+import { readBackupArchiveSync } from "../src/server/services/backup-archive";
+import { parseBackup, type ParsedBackup } from "../src/server/services/backup-format";
 
 export const MAX_BACKUP_AGE_MS = 24 * 60 * 60 * 1_000;
 export const BACKUP_FREE_SPACE_FLOOR_BYTES = 100 * 1024 * 1024;
@@ -19,6 +20,8 @@ export type CommandResult =
 export type PreflightAdapters = {
   now: () => Date;
   readFile: (path: string) => string;
+  /** A .zip backup (a household with photos): its backup.json, after every photo is checked. */
+  readBackupArchive?: (path: string) => ParsedBackup;
   run: (program: string, args: readonly string[]) => CommandResult;
 };
 
@@ -105,7 +108,9 @@ export function runPreflight(args: readonly string[], adapters: PreflightAdapter
 
   let backupValid = false;
   try {
-    const parsed = parseBackup(JSON.parse(adapters.readFile(backupPath)) as unknown);
+    const parsed = backupPath.toLowerCase().endsWith(".zip")
+      ? (adapters.readBackupArchive ?? readBackupArchiveSync)(backupPath)
+      : parseBackup(JSON.parse(adapters.readFile(backupPath)) as unknown);
     const exportedAt = parsed.version === 2 ? Date.parse(parsed.backup.exportedAt) : Number.NaN;
     const age = adapters.now().getTime() - exportedAt;
     backupValid = parsed.version === 2 && parsed.checksumVerified && Number.isFinite(age) && age >= 0 && age <= MAX_BACKUP_AGE_MS;

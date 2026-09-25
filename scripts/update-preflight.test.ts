@@ -76,6 +76,20 @@ describe("update preflight", () => {
     expect(runPreflight(["--backup-file", "selected.json"], validAdapters({ readFile: () => JSON.stringify(corrupt) })).lines).toContain("FAIL backup-v2-checksum-freshness");
   });
 
+  it("accepts a household's .zip backup, only once every photo in it checks out", () => {
+    const backup = createV2Backup(payload, "2026-07-16T11:00:00.000Z");
+    const parsed = { version: 2 as const, legacyPartial: false as const, checksumVerified: true as const, backup };
+    const readBackupArchive = vi.fn(() => parsed);
+    const io = validAdapters({ readBackupArchive });
+
+    expect(runPreflight(["--backup-file", "final.zip"], io).lines).toContain("PASS backup-v2-checksum-freshness");
+    expect(readBackupArchive).toHaveBeenCalledWith("final.zip");
+    expect(io.readFile).not.toHaveBeenCalled();
+
+    const damaged = validAdapters({ readBackupArchive: () => { throw new Error("backup_photo_mismatch"); } });
+    expect(runPreflight(["--backup-file", "final.zip"], damaged).lines).toContain("FAIL backup-v2-checksum-freshness");
+  });
+
   it("passes every named check with complete healthy read-only results", () => {
     const result = runPreflight(["--backup-file", "selected.json"], validAdapters());
     expect(result.exitCode).toBe(0);

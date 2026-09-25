@@ -63,8 +63,9 @@ sudo sh scripts/quick-start.sh --url https://cubby.example.com \
 ```
 
    It writes a complete `.env` with a fresh value for every secret, writes the
-   Sprout staging key to `docker-data/secrets/`, and creates `docker-data/backups`
-   and `docker-data/sprout-staging` owned by the container's user (uid 1000). It
+   Sprout staging key to `docker-data/secrets/`, and creates `docker-data/backups`,
+   `docker-data/sprout-staging` and `docker-data/attachments` (feed photos) owned
+   by the container's user (uid 1000). It
    never overwrites an existing `.env` and prints no secret. `sudo` is needed only
    to hand those directories to uid 1000; if your own account is uid 1000 it is not
    needed. Other options: `--port` (the host port; default the URL's own port, 80 for a plain `http://`
@@ -87,6 +88,14 @@ docker compose up --build -d
 
 To configure by hand instead, copy `.env.example` to `.env`: it lists every key
 `scripts/quick-start.sh` writes, each with the format it needs.
+
+An install made before feed photos needs their directory once, before photos are
+switched on: from the repository root, run
+`sudo install -d -m 0700 -o 1000 -g 1000 ./docker-data/attachments`, then
+`docker compose up -d`. Without it, Docker creates the directory owned by root and
+Cubby cannot save photos. Back `docker-data/attachments` up together with the
+database volume: a photo record without its file, or a file without its record, is
+not a complete recovery.
 `npm run verify:quick-start` rehearses this whole path on a Linux Docker host with
 empty volumes.
 

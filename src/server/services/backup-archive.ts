@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { MAX_BACKUP_BYTES, feedPhotoArchiveName, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
-import { openZipStore, zipStoreStream, type ZipEntry } from "@/server/services/zip-store";
+import { openZipStore, withZipStoreSync, zipStoreStream, type ZipEntry } from "@/server/services/zip-store";
 
 /**
  * A household backup with photos (DEC-PROD-422): one uncompressed ZIP holding backup.json - the
@@ -40,6 +40,57 @@ export type OpenedBackupArchive = {
   close(): Promise<void>;
 };
 
+function parseArchivedBackupJson(bytes: Buffer): Extract<ParsedBackup, { version: 2 }> {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    throw new Error("backup_invalid");
+  }
+  let parsed: ParsedBackup;
+  try {
+    parsed = parseBackup(raw);
+  } catch (error) {
+    if (error instanceof Error && error.message === "backup_checksum_mismatch") throw error;
+    throw new Error("backup_invalid");
+  }
+  if (parsed.version !== 2) throw new Error("backup_invalid");
+  return parsed;
+}
+
+function assertArchiveLayout(names: string[], photos: FeedPhoto[]) {
+  const expected = new Set([BACKUP_JSON_NAME, ...photos.map((photo) => feedPhotoArchiveName(photo.id))]);
+  if (names.length !== expected.size || names.some((name) => !expected.has(name))) throw new Error("backup_invalid");
+}
+
+/**
+ * Read a backup archive synchronously - its backup.json and every photo, each checked against its
+ * listed digest - for command-line checks that cannot await, such as the update preflight.
+ */
+export function readBackupArchiveSync(filePath: string) {
+  return withZipStoreSync(filePath, (zip) => {
+    let json: Buffer;
+    try {
+      json = zip.read(BACKUP_JSON_NAME, MAX_BACKUP_BYTES);
+    } catch {
+      throw new Error("backup_invalid");
+    }
+    const parsed = parseArchivedBackupJson(json);
+    const photos = parsed.backup.payload.feedPhotos ?? [];
+    assertArchiveLayout(zip.names(), photos);
+    for (const photo of photos) {
+      let bytes: Buffer;
+      try {
+        bytes = zip.read(feedPhotoArchiveName(photo.id), photo.byteSize);
+      } catch {
+        throw new Error("backup_photo_mismatch");
+      }
+      if (bytes.length !== photo.byteSize || sha256(bytes) !== photo.sha256) throw new Error("backup_photo_mismatch");
+    }
+    return parsed;
+  }, { maxEntries: 60_001 });
+}
+
 /** Open an uploaded backup archive. Its layout and backup.json are checked here; photos on demand. */
 export async function openBackupArchive(filePath: string): Promise<OpenedBackupArchive> {
   let zip;
@@ -49,25 +100,17 @@ export async function openBackupArchive(filePath: string): Promise<OpenedBackupA
     throw new Error("backup_invalid");
   }
   try {
-    const names = new Set(zip.names());
-    if (!names.has(BACKUP_JSON_NAME)) throw new Error("backup_invalid");
-    let raw: unknown;
+    const names = zip.names();
+    if (!names.includes(BACKUP_JSON_NAME)) throw new Error("backup_invalid");
+    let json: Buffer;
     try {
-      raw = JSON.parse((await zip.read(BACKUP_JSON_NAME, MAX_BACKUP_BYTES)).toString("utf8"));
+      json = await zip.read(BACKUP_JSON_NAME, MAX_BACKUP_BYTES);
     } catch {
       throw new Error("backup_invalid");
     }
-    let parsed: ParsedBackup;
-    try {
-      parsed = parseBackup(raw);
-    } catch (error) {
-      if (error instanceof Error && error.message === "backup_checksum_mismatch") throw error;
-      throw new Error("backup_invalid");
-    }
-    if (parsed.version !== 2) throw new Error("backup_invalid");
+    const parsed = parseArchivedBackupJson(json);
     const photos = parsed.backup.payload.feedPhotos ?? [];
-    const expected = new Set([BACKUP_JSON_NAME, ...photos.map((photo) => feedPhotoArchiveName(photo.id))]);
-    if (names.size !== expected.size || [...names].some((name) => !expected.has(name))) throw new Error("backup_invalid");
+    assertArchiveLayout(names, photos);
     const byId = new Map(photos.map((photo) => [photo.id, photo]));
     const opened = zip;
 

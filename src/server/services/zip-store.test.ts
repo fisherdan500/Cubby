@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
 import { afterEach, describe, expect, it } from "vitest";
-import { openZipStore, zipStoreStream } from "@/server/services/zip-store";
+import { openZipStore, withZipStoreSync, zipStoreStream } from "@/server/services/zip-store";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -98,6 +98,25 @@ describe("zip store archives", () => {
     const zip = await openZipStore(await tempFile(bytes));
     await expect(zip.read("backup.json", 100)).rejects.toThrow("archive_invalid");
     await expect(zip.read("missing.json", 100)).rejects.toThrow("archive_invalid");
+  });
+
+  it("reads the same archive synchronously, with the same refusals", async () => {
+    const bytes = await collect(zipStoreStream(entries([
+      { name: "backup.json", data: Buffer.from('{"ok":true}') },
+      { name: "photos/p1.jpg", data: photo }
+    ])));
+    const file = await tempFile(bytes);
+
+    const read = withZipStoreSync(file, (archive) => ({ names: archive.names(), photo: archive.read("photos/p1.jpg", 100) }));
+    expect(read).toEqual({ names: ["backup.json", "photos/p1.jpg"], photo });
+    expect(() => withZipStoreSync(file, (archive) => archive.read("backup.json", 2))).toThrow("archive_invalid");
+
+    const damaged = Buffer.from(bytes);
+    damaged[damaged.indexOf(photo) + 5] ^= 0xff;
+    const damagedFile = await tempFile(damaged);
+    expect(() => withZipStoreSync(damagedFile, (archive) => archive.read("photos/p1.jpg", 100))).toThrow("archive_invalid");
+    const notZip = await tempFile(Buffer.from("not a zip"));
+    expect(() => withZipStoreSync(notZip, () => null)).toThrow("archive_invalid");
   });
 
   it("keeps the archive file untouched while reading it", async () => {
