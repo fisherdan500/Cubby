@@ -199,6 +199,8 @@ describe("system restore", () => {
     expect(readFileSync(path.join(machine.restoredPhotos, "objects", "ab", "ab0123456789abcdef0123456789abcd"), "utf8")).toBe("photo bytes");
 
     const calls = machine.calls();
+    // Files only: a fresh install makes its empty photo folders on start, and those are not photos.
+    expect(calls).toContain("compose exec -T app sh -c find /var/lib/cubby/attachments -type f -print | head -n 1");
     const order = [
       "compose up -d --wait postgres app",
       "compose stop app",

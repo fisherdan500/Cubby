@@ -70,7 +70,8 @@ households=$(psql_value 'SELECT count(*) FROM "Household"') || fail "the new ins
 accounts=$(psql_value 'SELECT count(*) FROM "User"') || fail "the new install could not be read"
 [ "$households" = 0 ] && [ "$accounts" = 0 ] \
   || fail "this install already has accounts or households; restore only into a new, empty install"
-stored=$(docker compose exec -T app sh -c 'find /var/lib/cubby/attachments -mindepth 1 -print | head -n 1') \
+# Files only: Cubby makes its empty photo folders on every start.
+stored=$(docker compose exec -T app sh -c 'find /var/lib/cubby/attachments -type f -print | head -n 1') \
   || fail "the photo directory could not be read"
 [ -z "$stored" ] || fail "this install already has photos; restore only into a new, empty install"
 
