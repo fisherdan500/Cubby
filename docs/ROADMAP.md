@@ -104,7 +104,7 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
 3. Backup and restore carry the photos, in three parts:
    - 3a: a household with photos downloads one uncompressed `.zip` (`backup.json` with a checksummed photo list, plus `photos/<id>.jpg`), and restore accepts it with every photo verified. Households without photos keep the same `.json`.
    - 3b: automated backups written as `.zip` versions (written, synced and fully read back before they count), verified photo by photo by the integrity check, streamed on download, and accepted by the update preflight; plus the `docker-data/attachments` volume, `quick-start.sh` and install notes.
-   - 3c: photos switched on.
+   - 3c: photos switched on. An existing install needs `docker-data/attachments` owned by uid 1000 first (see the README); `enabledTypes.feed_photo` in `src/domain/attachments.ts` switches them off again if ever needed.
 
 ### Routine And Planned Schedule
 

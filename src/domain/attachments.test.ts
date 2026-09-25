@@ -19,10 +19,10 @@ describe("attachment type policy", () => {
     });
   });
 
-  it("keeps every type switched off until its whole gate has passed", () => {
-    // DEC-PROD-070 / DEC-PROD-422: feed photos turn on only after backup and restore carry them.
-    expect(attachmentTypeEnabled("feed_photo")).toBe(false);
-    expect(attachmentTypeEnabled("feed_photo", { feed_photo: true })).toBe(true);
+  it("switches feed photos on now that their whole gate has passed, and can switch them off again", () => {
+    // DEC-PROD-070 / DEC-PROD-422: storage, private delivery, recovery and backup with photos are all in.
+    expect(attachmentTypeEnabled("feed_photo")).toBe(true);
+    expect(attachmentTypeEnabled("feed_photo", { feed_photo: false })).toBe(false);
   });
 
   it("keeps a removed attachment recoverable for thirty days", () => {

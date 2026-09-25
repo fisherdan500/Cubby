@@ -24,8 +24,10 @@ export const attachmentPolicy = {
   }
 } as const satisfies Record<AttachmentTypeName, unknown>;
 
-// Switched on per type once its gate passes (DEC-PROD-070). Feed photos wait for backup and restore.
-const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: false };
+// Switched on per type once its gate passes (DEC-PROD-070). Feed photos passed with storage, private
+// delivery, 30-day recovery, and manual and automated backup and restore that carry them (#148-#151).
+// Setting a type back to false switches it off again: uploads refuse and nothing is served.
+const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true };
 
 export function attachmentTypeEnabled(type: AttachmentTypeName, overrides?: Partial<Record<AttachmentTypeName, boolean>>) {
   return overrides?.[type] ?? enabledTypes[type];

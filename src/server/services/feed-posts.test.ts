@@ -189,7 +189,7 @@ describe("photo posts", () => {
   const photosOn = { enabled: { feed_photo: true } };
 
   it("refuses photos while they are switched off, before any operation runs", async () => {
-    await expect(submitFeedPostCreateBrowserOperation({ operationId, body: "", babyId: null, attachmentIds: ["att-1"] }))
+    await expect(submitFeedPostCreateBrowserOperation({ operationId, body: "", babyId: null, attachmentIds: ["att-1"] }, { enabled: { feed_photo: false } }))
       .rejects.toThrow("attachment_type_unavailable");
     expect(mocks.executeHousehold).not.toHaveBeenCalled();
   });

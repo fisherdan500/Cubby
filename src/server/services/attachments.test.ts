@@ -69,7 +69,7 @@ beforeEach(() => {
 
 describe("staging a feed photo", () => {
   it("does nothing while feed photos are switched off", async () => {
-    await expect(stageFeedPhoto(Buffer.from("x"))).rejects.toThrow("attachment_type_unavailable");
+    await expect(stageFeedPhoto(Buffer.from("x"), { enabled: { feed_photo: false } })).rejects.toThrow("attachment_type_unavailable");
     expect(mocks.processFeedPhoto).not.toHaveBeenCalled();
     expect(mocks.writeObject).not.toHaveBeenCalled();
   });
@@ -153,7 +153,7 @@ describe("opening a photo", () => {
     mocks.attachment.findFirst.mockResolvedValue(null);
     await expect(openAttachment("att-1", { enabled, now })).rejects.toThrow("not_found");
     mocks.attachment.findFirst.mockResolvedValue(row());
-    await expect(openAttachment("att-1", { now })).rejects.toThrow("not_found");
+    await expect(openAttachment("att-1", { now, enabled: { feed_photo: false } })).rejects.toThrow("not_found");
     expect(mocks.readObject).not.toHaveBeenCalled();
   });
 
