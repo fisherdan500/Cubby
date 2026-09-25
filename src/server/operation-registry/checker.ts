@@ -320,6 +320,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/integrity-suite.acceptance-rehearsal.operation.ts",
   "scripts/platform-first-account.acceptance-rehearsal.operation.ts",
   "scripts/quick-start.acceptance-rehearsal.operation.ts",
+  "scripts/system-backup.acceptance-rehearsal.operation.ts",
   "scripts/verify-gates.operation.ts",
   "scripts/scripts.vitest.config.operation.ts",
   "scripts/platform-owner.operation.ts",

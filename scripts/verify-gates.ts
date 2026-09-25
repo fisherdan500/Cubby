@@ -39,7 +39,8 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "platform-first-account", group: "disposable", script: "verify:platform-first-account", what: "first-account setup with the setup code against real PostgreSQL" },
   { id: "backup-recovery", group: "image", script: "verify:backup-recovery", what: "backup, restore, and container replacement against a built application image" },
   { id: "browser-operation-save-path", group: "image", script: "verify:browser-operation-save-path", what: "the end-to-end save path against a built application image" },
-  { id: "quick-start", group: "image", script: "verify:quick-start", what: "the documented fresh-server quick start, from an empty checkout to a signed-in owner" }
+  { id: "quick-start", group: "image", script: "verify:quick-start", what: "the documented fresh-server quick start, from an empty checkout to a signed-in owner" },
+  { id: "system-backup", group: "image", script: "verify:system-backup", what: "a whole-server backup, the server lost, and everything restored onto a fresh install" }
 ];
 
 export type VerifyGateOutcome = { id: string; group: VerifyGateGroup; passed: boolean; seconds: number };

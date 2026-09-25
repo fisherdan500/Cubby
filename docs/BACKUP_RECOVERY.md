@@ -1,5 +1,8 @@
 # Backup Recovery
 
+- [Whole-System Backup](recovery/system-backup.md): one archive of every
+  household, account and photo, made on the server every night, and the restore
+  that brings a whole Cubby back on a new server after losing the old one.
 - [Automated Local Backups](recovery/automated-local-backups.md): local-only
   automation defaults, retention, failure semantics, download-based recovery,
   and operator responsibilities.
@@ -13,7 +16,8 @@ separately prepared database restore, see
 [Always-On Updates And Migration Recovery](ALWAYS_ON_UPDATES.md).
 
 Platform authority, platform registration settings, and platform audit events are
-deployment state and are not included in household JSON backups. A physical
+deployment state and are not included in household JSON backups; a whole-system
+backup includes them. A physical
 PostgreSQL restore preserves those tables with the rest of the database. A fresh
 deployment restored only from household JSON must separately create the first
 account, complete the audited host-local bootstrap verification when needed, and
