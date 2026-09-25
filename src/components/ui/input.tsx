@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
@@ -13,9 +13,11 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   );
 }
 
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+// Takes a ref so a caller can focus it within a tap, which is when a phone raises its keyboard.
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...props }, ref) {
   return (
     <textarea
+      ref={ref}
       className={cn(
         "min-h-24 w-full rounded-lg border border-control bg-card px-3 py-2 text-base outline-none sm:text-sm transition focus:border-ring focus:ring-4 focus:ring-ring/20",
         className
@@ -23,7 +25,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
       {...props}
     />
   );
-}
+});
 
 /** Native select styled like Input: same height, focus ring, and 16px mobile text so iOS does not zoom. */
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {

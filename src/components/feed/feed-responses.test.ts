@@ -43,8 +43,18 @@ function renderResponses(overrides: object = {}) {
   }));
 }
 
-beforeEach(() => { sessionStorage.clear(); mocks.refresh.mockReset(); });
-afterEach(cleanup);
+// Every browser has scrollIntoView; jsdom does not.
+const scrolled = vi.fn();
+beforeEach(() => {
+  sessionStorage.clear();
+  mocks.refresh.mockReset();
+  scrolled.mockReset();
+  HTMLElement.prototype.scrollIntoView = scrolled;
+});
+afterEach(() => {
+  cleanup();
+  delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+});
 
 describe("FeedResponses reactions", () => {
   it("shows who reacted by name, never a number, and offers all four reactions", () => {
@@ -105,6 +115,20 @@ describe("FeedResponses comments", () => {
       ["/api/feed/comments", "POST", { operationId, parentKind: "activity", parentId: "activity-1", body: "Well done, little one" }]
     ]);
     expect(screen.queryByLabelText("Your comment")).toBeNull();
+  });
+
+  it("opens the keyboard at once: the comment box is focused within the tap itself and brought into view", () => {
+    renderResponses({ comments: [comment()] });
+
+    // A plain tap, outside the test helper that finishes React's work afterwards: an iPhone raises
+    // the keyboard only when focus lands during the tap, not a moment later.
+    screen.getByRole("button", { name: "Comment" }).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    const box = screen.getByLabelText("Your comment");
+    expect(document.activeElement).toBe(box);
+    expect(scrolled).toHaveBeenCalledWith({ block: "center" });
+    // An invitation, not a rule about what to say.
+    expect(box.getAttribute("placeholder")).toBe("Add your two cents…");
   });
 
   it("asks for words before sending a comment", () => {

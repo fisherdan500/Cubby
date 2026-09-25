@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type RefObject } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,16 @@ export function FeedResponses({
   const [composing, setComposing] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<FeedReactionKey | null>(null);
+  const commentBox = useRef<HTMLTextAreaElement>(null);
   const parent = { parentKind, parentId };
+
+  // A phone raises its keyboard only when focus lands during the tap itself, so the box is put on the
+  // page within the tap, focused, and brought up from under any long run of comments.
+  function startComment() {
+    flushSync(() => setComposing(true));
+    commentBox.current?.focus();
+    commentBox.current?.scrollIntoView({ block: "center" });
+  }
 
   async function react(reaction: FeedReactionKey, on: boolean) {
     setError("");
@@ -108,7 +118,7 @@ export function FeedResponses({
           {!composing ? (
             <button
               type="button"
-              onClick={() => setComposing(true)}
+              onClick={startComment}
               className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
@@ -125,12 +135,24 @@ export function FeedResponses({
         </ul>
       ) : null}
 
-      {canRespond && composing ? <FeedCommentComposer parentKind={parentKind} parentId={parentId} onDone={() => setComposing(false)} /> : null}
+      {canRespond && composing ? (
+        <FeedCommentComposer parentKind={parentKind} parentId={parentId} boxRef={commentBox} onDone={() => setComposing(false)} />
+      ) : null}
     </div>
   );
 }
 
-function FeedCommentComposer({ parentKind, parentId, onDone }: { parentKind: FeedParentKind; parentId: string; onDone: () => void }) {
+function FeedCommentComposer({
+  parentKind,
+  parentId,
+  boxRef,
+  onDone
+}: {
+  parentKind: FeedParentKind;
+  parentId: string;
+  boxRef: RefObject<HTMLTextAreaElement>;
+  onDone: () => void;
+}) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
@@ -165,7 +187,7 @@ function FeedCommentComposer({ parentKind, parentId, onDone }: { parentKind: Fee
     >
       <label className="grid gap-1 text-sm font-semibold">
         <span className="sr-only">Your comment</span>
-        <Textarea value={body} maxLength={FEED_COMMENT_MAX_LENGTH} rows={2} onChange={(event) => setBody(event.target.value)} placeholder="Say something kind" />
+        <Textarea ref={boxRef} value={body} maxLength={FEED_COMMENT_MAX_LENGTH} rows={2} onChange={(event) => setBody(event.target.value)} placeholder="Add your two cents…" />
       </label>
       {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p> : null}
       <div className="flex gap-2">
