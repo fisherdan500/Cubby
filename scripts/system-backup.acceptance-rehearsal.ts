@@ -101,7 +101,7 @@ export async function runSystemBackupAcceptanceRehearsal() {
     const digest = createHash("sha256").update(photo).digest("hex");
     sql(`
       INSERT INTO "Household" ("id", "name", "createdByUserId", "updatedAt") VALUES ('rehearsalhousehold0000001', 'Rehearsal Home', '${ownerUserId}', now());
-      INSERT INTO "FeedPost" ("id", "householdId", "body", "updatedAt") VALUES ('rehearsalpost000000000001', 'rehearsalhousehold0000001', 'First bath', now());
+      INSERT INTO "FeedPost" ("id", "householdId", "externalAuthorName", "body", "updatedAt") VALUES ('rehearsalpost000000000001', 'rehearsalhousehold0000001', 'Rehearsal Owner', 'First bath', now());
       INSERT INTO "Attachment" ("id", "householdId", "type", "state", "storageKey", "byteSize", "sha256", "mimeType", "width", "height", "postId", "position", "activatedAt", "updatedAt")
         VALUES ('rehearsalphoto00000000001', 'rehearsalhousehold0000001', 'feed_photo', 'available', '${storageKey}', ${photo.length}, '${digest}', 'image/jpeg', 640, 480, 'rehearsalpost000000000001', 0, now(), now());
     `);
