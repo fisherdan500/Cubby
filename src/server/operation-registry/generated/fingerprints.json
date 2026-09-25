@@ -2448,17 +2448,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "d4e47877da934a05d2c81fa5162eb743fcea7e09b822f55291ed448431cb4a50",
+          "digest": "c21598da3a8c4c0213f04703f8e2e7378d9eb94e1b87477052456e3f333a8ca9",
           "file": "src/components/feed/feed-photo-gallery.tsx"
         }
       ],
       "declarationDigest": "3e3bef8ff066b181f3171fea8442f2b992219c675f6bdc6fbcb727e5fd1d159d",
-      "fingerprint": "81c29089b94af6f7ab815cbd6b784998e754db1aa05053ca13d8526d1772ad30",
+      "fingerprint": "aa103fa000d91b634be88d16e1dd2bfeb9c9ff15afdd96bb700fcc024e4913aa",
       "id": "fingerprint:client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerId": "client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
       "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts",
-      "sourceDigest": "082361c51d6344526533bfc980449604a19f1efdf9ae19c7eea3728045fbf913",
+      "sourceDigest": "04b7df7bf962f9c070f76d40a6e65bd9a964a69ff45d9e4ebec1c7c66567f742",
       "status": "declared"
     },
     {
