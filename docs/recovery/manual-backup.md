@@ -2,7 +2,9 @@
 
 Cubby version 2 JSON backups are checksummed logical snapshots for recovering
 approved household data into a fresh household. They are not PostgreSQL volume
-backups and do not copy authentication or integration secrets.
+backups and do not copy authentication or integration secrets. To bring back a
+whole server, every household and account at once, use a
+[Whole-System Backup](system-backup.md) instead.
 
 Automated local backups use this same version 2 format. See
 [Automated Local Backups](automated-local-backups.md) for enablement, retention,
@@ -72,6 +74,12 @@ both the database project and generated temporary backup directory.
 - Non-deleted contacts and medicine/supplement catalogs.
 - Non-deleted calendar events with baby/contact links.
 - Non-deleted reminders.
+- Each baby's planned schedule.
+- Moments (the family feed): non-removed posts with their #tags, comments and reactions, and each
+  post's photos (see Backups With Photos below). Memberships are not in backups, so authors and
+  the people who reacted travel as names: after a restore their posts, comments and reactions show
+  under those names but are no longer tied to an account, so they cannot be edited or removed by
+  the person who made them.
 
 ## Backups With Photos
 

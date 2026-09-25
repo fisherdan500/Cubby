@@ -34,6 +34,8 @@ conversation context when the repo can answer the question.
 - Preserve the `ActivityLog` aggregate plus type-specific detail table pattern.
 - Keep timestamps as stored instants and group/display them through `APP_TIMEZONE`.
 - Treat Docker Compose as the primary deployment path.
+- Keep `docs/INSTALL.md` current: a change to installing, configuring, backing up, restoring or
+  updating Cubby updates that guide in the same change.
 - Respect Cubby's soft editorial nursery visual system in both light and dark themes: warm semantic surfaces, restrained family accents, original activity artwork, and familiar utility icons.
 - Design and check Cubby UI mobile-first; most use is expected from phones, with desktop kept tidy but secondary.
 - Use semantic theme tokens and `ActivityArtwork`; avoid page-specific saturated palettes, copied icon art, and decorative imagery that competes with daily tracking.
