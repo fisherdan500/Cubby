@@ -3084,17 +3084,17 @@
           "file": "package.json"
         },
         {
-          "digest": "9d5fa5e530f9237172908a7da9b723c427ee22ee963c43e3ec1631755de210f4",
+          "digest": "8aaa3f0bf3fc4bb55c52fed8ec599de4ee1a095d4902730037fceabdc287ed81",
           "file": "scripts/backup-recovery-rehearsal.ts"
         }
       ],
       "declarationDigest": "55358c2e6713469367903e21ccd0dee474de55aeb3b390abf070d6f8211eaff8",
-      "fingerprint": "a50e4c59c12e284b48628c92c09405aae8e40146cd3073559cb60123287e0a77",
+      "fingerprint": "b2ff93f7455b5bc48e5dcb6c446b575f2d96ae4f2bbfc63fd42ea1dfacd449fc",
       "id": "fingerprint:package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerId": "package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerModule": "scripts/backup-recovery-rehearsal.ts",
       "sidecarPath": "scripts/backup-recovery-rehearsal.operation.ts",
-      "sourceDigest": "60ee12c6d831e430c2429dfc36b81441ce9da9bc8613f4ac0673fd7138dec149",
+      "sourceDigest": "65a313c5c984378505b7a19e042b8ed61237f5b0f5bc0b3ac532f43badcad40b",
       "status": "declared"
     },
     {

@@ -1,8 +1,10 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ActivityType, HouseholdRole, TimerState } from "@prisma/client";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { createHash, randomBytes } from "node:crypto";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const auth = vi.hoisted(() => ({
@@ -32,11 +34,18 @@ vi.mock("@/server/auth/session", () => ({
 }));
 
 import { prisma } from "@/lib/db/prisma";
+import { attachmentConfig } from "@/lib/env";
+import { listAttachmentObjectKeys, readAttachmentObject, writeAttachmentObject } from "@/server/services/attachment-store";
+import { openBackupArchive } from "@/server/services/backup-archive";
 import {
   downloadLocalBackupFile,
+  exportBackupForDownload,
   exportBackupJson,
+  exportHouseholdBackupJson,
   getAutomatedBackupStatus,
+  previewBackupArchive,
   previewBackupJson,
+  restoreBackupArchive,
   restoreBackupJson
 } from "@/server/services/backups";
 import { parseBackup, payloadChecksum } from "@/server/services/backup-format";
@@ -142,6 +151,35 @@ async function createOwnerHousehold(suffix: string, householdName: string) {
     data: { householdId: household.id, userId: user.id, role: HouseholdRole.owner, displayName: `${suffix} owner` }
   });
   return { user, household, member, ctx: context(user.id, household.id, member.id) };
+}
+
+/**
+ * A backup's Moments and plans with every id replaced by what it points at - the baby's name, the
+ * post's caption, the entry's kind and time - so a restored household, whose ids are all new, can be
+ * compared with the one it came from.
+ */
+function normalizedMoments(payload: Record<string, any>) {
+  const babyName = new Map<string, string>(payload.babies.map((baby: any) => [baby.id, baby.name]));
+  const postCaption = new Map<string, string>((payload.feedPosts ?? []).map((post: any) => [post.id, post.body]));
+  const entryKey = new Map<string, string>(payload.activities.map((activity: any) => [activity.id, `${activity.type}@${activity.occurredAt}`]));
+  const parent = (item: { postId: string | null; activityId: string | null }) =>
+    item.postId ? `post:${postCaption.get(item.postId)}` : `entry:${entryKey.get(item.activityId!)}`;
+  const byKey = (key: (item: any) => string) => (left: any, right: any) => key(left).localeCompare(key(right));
+  return {
+    plannedSchedules: (payload.plannedSchedules ?? []).map(({ babyId, items }: any) => ({ baby: babyName.get(babyId), items })),
+    feedPosts: (payload.feedPosts ?? [])
+      .map(({ id: _id, babyId, ...post }: any) => ({ ...post, baby: babyId === null ? null : babyName.get(babyId) }))
+      .sort(byKey((post) => post.body)),
+    feedComments: (payload.feedComments ?? [])
+      .map(({ id: _id, postId, activityId, ...comment }: any) => ({ ...comment, on: parent({ postId, activityId }) }))
+      .sort(byKey((comment) => comment.body)),
+    feedReactions: (payload.feedReactions ?? [])
+      .map(({ postId, activityId, ...reaction }: any) => ({ ...reaction, on: parent({ postId, activityId }) }))
+      .sort(byKey((reaction) => `${reaction.on}|${reaction.reaction}|${reaction.name}`)),
+    feedPhotos: (payload.feedPhotos ?? [])
+      .map(({ id: _id, postId, ...photo }: any) => ({ ...photo, post: postCaption.get(postId) }))
+      .sort(byKey((photo) => `${photo.post}|${photo.position}`))
+  };
 }
 
 afterAll(async () => {
@@ -991,5 +1029,152 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       checksum: fourthAutomatedRecord.checksum,
       timerProbeState: baselineTimers.map((timer) => timer.timerState).sort()
     }), { mode: 0o600 });
+  });
+
+  it("carries Moments - posts, comments, reactions and photos - and the planned schedule through a backup archive", async () => {
+    const source = await createOwnerHousehold("moments-source", "Moments Source");
+    const householdId = source.household.id;
+    const baby = await prisma.baby.create({ data: { householdId, name: "Juniper", timezone: "UTC" } });
+    const entry = await prisma.activityLog.create({
+      data: {
+        householdId,
+        babyId: baby.id,
+        actorMemberId: source.member.id,
+        type: ActivityType.medicine,
+        occurredAt: new Date("2026-07-20T09:00:00.000Z"),
+        timezone: "UTC",
+        source: "manual",
+        medicine: { create: { name: "Vitamin D", dose: "1", unit: "drop" } }
+      }
+    });
+    await prisma.plannedSchedule.create({
+      data: {
+        householdId,
+        babyId: baby.id,
+        document: {
+          schemaVersion: 1,
+          items: [
+            { kind: "wake", label: null, timing: { mode: "exact", at: "06:30" }, note: null },
+            { kind: "nap", label: null, timing: { mode: "window", from: "09:00", to: "10:30" }, note: "In the dark room" },
+            { kind: "custom", label: "Story time", timing: { mode: "exact", at: "18:45" }, note: null }
+          ]
+        }
+      }
+    });
+
+    const photoPost = await prisma.feedPost.create({
+      data: { householdId, babyId: baby.id, authorMemberId: source.member.id, body: "Bath time #firsts", tags: ["firsts"], occurredAt: new Date("2026-07-20T18:00:00.000Z") }
+    });
+    // A photo post may have no caption at all.
+    const photoOnlyPost = await prisma.feedPost.create({
+      data: { householdId, babyId: baby.id, authorMemberId: source.member.id, body: "", tags: [], occurredAt: new Date("2026-07-21T08:00:00.000Z") }
+    });
+    await prisma.feedPost.create({
+      data: { householdId, babyId: null, authorMemberId: source.member.id, body: "Sunday walk", tags: [], occurredAt: new Date("2026-07-19T15:00:00.000Z") }
+    });
+    await prisma.feedComment.createMany({
+      data: [
+        { householdId, postId: photoPost.id, authorMemberId: source.member.id, body: "So splashy", createdAt: new Date("2026-07-20T18:05:00.000Z") },
+        { householdId, postId: photoPost.id, externalAuthorName: "Grandma Jo", body: "Adorable!", createdAt: new Date("2026-07-20T18:30:00.000Z"), editedAt: new Date("2026-07-20T19:00:00.000Z") },
+        { householdId, activityId: entry.id, authorMemberId: source.member.id, body: "Took it well", createdAt: new Date("2026-07-20T09:05:00.000Z") }
+      ]
+    });
+    await prisma.feedReaction.createMany({
+      data: [
+        { householdId, postId: photoPost.id, memberId: source.member.id, reaction: "love" },
+        { householdId, postId: photoPost.id, externalReactorName: "Grandma Jo", reaction: "aww" },
+        { householdId, activityId: entry.id, memberId: source.member.id, reaction: "celebrate" }
+      ]
+    });
+
+    // Three stored photos: two on the captioned post, one on the caption-less one.
+    const photos = [
+      { postId: photoPost.id, caption: "Bath time #firsts", position: 0, bytes: randomBytes(3000) },
+      { postId: photoPost.id, caption: "Bath time #firsts", position: 1, bytes: randomBytes(4000) },
+      { postId: photoOnlyPost.id, caption: "", position: 0, bytes: randomBytes(2500) }
+    ];
+    const sourceKeys: string[] = [];
+    for (const photo of photos) {
+      const storageKey = randomBytes(16).toString("hex");
+      const sha256 = createHash("sha256").update(photo.bytes).digest("hex");
+      await writeAttachmentObject(attachmentConfig.directory, storageKey, photo.bytes, { byteSize: photo.bytes.length, sha256 });
+      await prisma.attachment.create({
+        data: {
+          householdId, type: "feed_photo", state: "available", storageKey, byteSize: photo.bytes.length, sha256,
+          mimeType: "image/jpeg", width: 1200, height: 900, postId: photo.postId, position: photo.position,
+          activatedAt: new Date("2026-07-21T08:00:00.000Z"), createdByMemberId: source.member.id
+        }
+      });
+      sourceKeys.push(storageKey);
+    }
+
+    // The household's backup is one archive, since it has photos.
+    auth.context = source.ctx;
+    const download = await exportBackupForDownload();
+    if (download.kind !== "archive") throw new Error("expected a backup archive for a household with photos");
+    const workDirectory = await mkdtemp(join(tmpdir(), "cubby-moments-rehearsal-"));
+    try {
+      const archivePath = join(workDirectory, download.filename);
+      await writeFile(archivePath, Buffer.from(await new Response(download.stream).arrayBuffer()), { mode: 0o600 });
+      const opened = await openBackupArchive(archivePath);
+      const sourceBackup = opened.parsed.backup as V2Envelope;
+      await opened.close();
+      expect(normalizedMoments(sourceBackup.payload).feedPhotos).toHaveLength(3);
+
+      const target = await createOwnerHousehold("moments-target", "Moments Target");
+      await refreshHouseholdAuditCheckpoint(target.household.id, prisma);
+      auth.context = target.ctx;
+      // Its backup.json alone would lose the photos, so it cannot be restored on its own.
+      await expect(previewBackupJson(sourceBackup)).rejects.toThrow("backup_photos_missing");
+      await expect(previewBackupArchive(archivePath)).resolves.toMatchObject({
+        householdName: "Moments Source",
+        counts: expect.objectContaining({ plannedSchedules: 1, feedPosts: 3, feedComments: 3, feedReactions: 3, feedPhotos: 3 })
+      });
+      await expect(
+        restoreBackupArchive(archivePath, { confirmation: "Moments Target", previewChecksum: sourceBackup.checksum })
+      ).resolves.toMatchObject({ legacyPartial: false });
+
+      // The same Moments and plan, pointing at the same things, under new ids.
+      const targetBackup = await exportHouseholdBackupJson(target.household.id);
+      expect(normalizedMoments(targetBackup.payload)).toEqual(normalizedMoments(sourceBackup.payload));
+
+      // Each photo stored afresh under a new name, with exactly its original bytes.
+      const restoredPhotos = await prisma.attachment.findMany({
+        where: { householdId: target.household.id },
+        select: { state: true, storageKey: true, byteSize: true, sha256: true, position: true, post: { select: { body: true } } }
+      });
+      expect(restoredPhotos).toHaveLength(3);
+      for (const photo of photos) {
+        const restored = restoredPhotos.find((row) => row.post?.body === photo.caption && row.position === photo.position);
+        expect(restored?.state).toBe("available");
+        expect(sourceKeys).not.toContain(restored!.storageKey);
+        const bytes = await readAttachmentObject(attachmentConfig.directory, restored!.storageKey, { byteSize: restored!.byteSize, sha256: restored!.sha256 });
+        expect(bytes.equals(photo.bytes)).toBe(true);
+      }
+
+      // Memberships are not in backups: authors and reactors come back as names, not accounts.
+      const restoredPosts = await prisma.feedPost.findMany({
+        where: { householdId: target.household.id },
+        select: { authorMemberId: true, externalAuthorName: true }
+      });
+      expect(restoredPosts).toEqual(Array.from({ length: 3 }, () => ({ authorMemberId: null, externalAuthorName: "moments-source owner" })));
+      const restoredReactions = await prisma.feedReaction.findMany({
+        where: { householdId: target.household.id },
+        select: { memberId: true, externalReactorName: true }
+      });
+      expect(restoredReactions.every((reaction) => reaction.memberId === null)).toBe(true);
+      expect(restoredReactions.map((reaction) => reaction.externalReactorName).sort()).toEqual(["Grandma Jo", "moments-source owner", "moments-source owner"]);
+      expect(await prisma.householdMember.count({ where: { householdId: target.household.id } })).toBe(1);
+
+      // Now populated, the target refuses a second restore before storing any photo.
+      await expect(
+        restoreBackupArchive(archivePath, { confirmation: "Moments Target", previewChecksum: sourceBackup.checksum })
+      ).rejects.toThrow("backup_target_not_empty");
+      expect(await prisma.attachment.count({ where: { householdId: target.household.id } })).toBe(3);
+      expect(await listAttachmentObjectKeys(attachmentConfig.directory)).toHaveLength(6);
+    } finally {
+      auth.context = null;
+      await rm(workDirectory, { recursive: true, force: true });
+    }
   });
 });
