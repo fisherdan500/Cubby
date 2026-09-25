@@ -35,7 +35,7 @@ const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
 
 export async function getReports(
   userId: string,
-  input?: { babyId?: string; start?: string; end?: string; routineWindow?: string; compare?: boolean }
+  input?: { babyId?: string; start?: string; end?: string; routineWindow?: string; compare?: boolean; history?: boolean }
 ) {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
@@ -66,11 +66,12 @@ export async function getReports(
       activities: [],
       routine: buildRoutine([], endKey, routineWindow, env.APP_TIMEZONE),
       stats: null,
-      previous: null
+      previous: null,
+      history: null
     };
   }
 
-  const [activities, routineActivities, previousActivities] = await Promise.all([
+  const [activities, routineActivities, previousActivities, historyActivities] = await Promise.all([
     prisma.activityLog.findMany({
       where: {
         householdId: ctx.householdId,
@@ -104,6 +105,19 @@ export async function getReports(
           include: activityInclude,
           orderBy: { occurredAt: "asc" }
         })
+      : Promise.resolve(null),
+    // Growth and milestones are a history, not a window: babies are measured weeks apart.
+    input?.history
+      ? prisma.activityLog.findMany({
+          where: {
+            householdId: ctx.householdId,
+            babyId: baby.id,
+            deletedAt: null,
+            type: { in: [ActivityType.measurement, ActivityType.milestone] }
+          },
+          include: activityInclude,
+          orderBy: { occurredAt: "asc" }
+        })
       : Promise.resolve(null)
   ]);
   const preferences = parseUnitPreferences(home.household.settings?.unitPreferences);
@@ -126,6 +140,9 @@ export async function getReports(
           endKey: addDaysToDateKey(startKey, -1),
           stats: buildReportStats(previousActivities, baby.birthDate, env.APP_TIMEZONE, preferences)
         }
+      : null,
+    history: historyActivities
+      ? (({ growth, milestones }) => ({ growth, milestones }))(buildReportStats(historyActivities, baby.birthDate, env.APP_TIMEZONE, preferences))
       : null
   };
 }
@@ -210,7 +227,10 @@ export function buildReportStats(
     head: []
   };
 
-  const milestones: Array<{ date: Date; title: string; category?: string | null }> = [];
+  const milestones: Array<{ date: Date; title: string; category?: string | null; ageMonths: number | null }> = [];
+  // Average months since birth, to one place; unknown without a birth date rather than zero.
+  const ageMonthsAt = (date: Date) =>
+    birthDate ? Number(((date.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)).toFixed(1)) : null;
 
   for (const activity of activities) {
     daysWithEntries.add(dateKeyInTimeZone(activity.occurredAt, timeZone));
@@ -241,9 +261,7 @@ export function buildReportStats(
     }
     if (activity.measurement) {
       const date = dateKeyInTimeZone(activity.occurredAt, timeZone);
-      const ageMonths = birthDate
-        ? Number(((activity.occurredAt.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)).toFixed(1))
-        : 0;
+      const ageMonths = ageMonthsAt(activity.occurredAt);
       if (activity.measurement.weight) {
         growth.weight = appendGrowthPoint(
           growth.weight,
@@ -273,7 +291,12 @@ export function buildReportStats(
       }
     }
     if (activity.milestone) {
-      milestones.push({ date: activity.occurredAt, title: activity.milestone.title, category: activity.milestone.category });
+      milestones.push({
+        date: activity.occurredAt,
+        title: activity.milestone.title,
+        category: activity.milestone.category,
+        ageMonths: ageMonthsAt(activity.occurredAt)
+      });
     }
   }
 
@@ -307,12 +330,12 @@ export function buildReportStats(
 
 export type ReportStats = ReturnType<typeof buildReportStats>;
 
-type GrowthPoint = { date: string; ageMonths: number; value: number; unit: string };
+type GrowthPoint = { date: string; ageMonths: number | null; value: number; unit: string };
 
 function appendGrowthPoint(
   points: GrowthPoint[] | null,
   date: string,
-  ageMonths: number,
+  ageMonths: number | null,
   value: number | null,
   unit: string
 ) {

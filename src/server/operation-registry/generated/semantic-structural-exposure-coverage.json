@@ -5972,9 +5972,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 660,
+      "anchorEnd": 713,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 639,
+      "anchorStart": 692,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -5989,9 +5989,9 @@
     {
       "anchorBytes": "getPlannedSchedule",
       "anchorDigest": "b1f5d69b1bdda67ed827a0cb9e64ce027893b4a6484c0ed60d2f4be9799646d2",
-      "anchorEnd": 730,
+      "anchorEnd": 783,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 712,
+      "anchorStart": 765,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getPlannedSchedule",
@@ -6006,9 +6006,9 @@
     {
       "anchorBytes": "getReports",
       "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-      "anchorEnd": 795,
+      "anchorEnd": 848,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 785,
+      "anchorStart": 838,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getReports",
@@ -6023,9 +6023,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 597,
+      "anchorEnd": 650,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 582,
+      "anchorStart": 635,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7064,9 +7064,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "46e5949b29ae08da73b3e5d5d6cb4ecf63185f13b6f7a50be4ae5483414f57e3",
+  "semanticArtifactDigest": "03e96851cd5d93b841df14ebbf1a92608b6e9d02fa453ed2abf633f7f5ce9ec5",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c7a6547c539e0f518c8b6ae8e7e012251dd450768035ee61f6694734a78e865a",
+  "semanticCoverageDigest": "618ddb9870b110b0e3ff1834ead9fc9a2847ddc968077fe35ef3bd7c4bc10d4a",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "b6bff5c7c5b8cf4e2af682f8c4293b32af604715448ad95d749507d3a20a9725"

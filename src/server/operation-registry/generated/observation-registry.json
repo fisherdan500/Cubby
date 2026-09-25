@@ -9909,36 +9909,36 @@
       "bindings": [
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 660,
+          "anchorEnd": 713,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 639,
+          "anchorStart": 692,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "b1f5d69b1bdda67ed827a0cb9e64ce027893b4a6484c0ed60d2f4be9799646d2",
-          "anchorEnd": 730,
+          "anchorEnd": 783,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 712,
+          "anchorStart": 765,
           "kind": "server_value_import",
           "symbol": "getPlannedSchedule",
           "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
         },
         {
           "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-          "anchorEnd": 795,
+          "anchorEnd": 848,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 785,
+          "anchorStart": 838,
           "kind": "server_value_import",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 597,
+          "anchorEnd": 650,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 582,
+          "anchorStart": 635,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -13232,7 +13232,7 @@
     }
   ],
   "observationCount": 203,
-  "observationDigest": "4b308040f63da63655c7e8ab0051a4dd7353fe59a896a48151bdf5d4d04593d4",
+  "observationDigest": "6d17c872ed4745249602629bae8b92933d5af7ab53bb7d525fa053a556106756",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15669,36 +15669,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 660,
+          "anchorEnd": 713,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 639,
+          "anchorStart": 692,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 730,
+          "anchorEnd": 783,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 712,
+          "anchorStart": 765,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getPlannedSchedule",
           "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
         },
         {
-          "anchorEnd": 795,
+          "anchorEnd": 848,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 785,
+          "anchorStart": 838,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
         },
         {
-          "anchorEnd": 597,
+          "anchorEnd": 650,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 582,
+          "anchorStart": 635,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "requireUserPage",
@@ -20021,7 +20021,7 @@
   ],
   "ownerSetDigest": "b5dfbdb36021b6e07cc5dc5d8be96f916c0c4c6c4fd07f1b110d39fb1ca65b63",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "e9a981b94afa158b98d47f30bdd7786ce94d988c563939dec8fa7f374fc1fdc6",
+  "registryDigest": "1e8978265d3866580e7ad36eb9a6fbae003b1b35d7e727e89323521f6ba8a8e1",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
