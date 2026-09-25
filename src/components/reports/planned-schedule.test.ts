@@ -113,3 +113,98 @@ describe("PlannedSchedulePanel", () => {
     print.mockRestore();
   });
 });
+
+describe("suggesting a plan from the routine", () => {
+  const slot = (minutes: number, spreadMinutes: number, days: number) => ({ minutes, time: "", spreadMinutes, durationSeconds: null, duration: null, days });
+  const routine = {
+    startKey: "2026-09-18",
+    endKey: "2026-10-01",
+    windowDays: 14,
+    daysWithData: 14,
+    enoughData: true,
+    naps: { usualCount: 1, daysWithUsualCount: 11, daysCounted: 14, minCount: 1, maxCount: 2, slots: [] },
+    feeds: null,
+    timeline: [
+      { id: "wake", kind: "wake" as const, activityType: "sleep" as const, label: "Wake up", slot: slot(7 * 60, 5, 14) },
+      { id: "nap-0", kind: "nap" as const, activityType: "sleep" as const, label: "Nap", slot: slot(9 * 60 + 30, 30, 11) },
+      { id: "bedtime", kind: "bedtime" as const, activityType: "sleep" as const, label: "Bedtime", slot: slot(19 * 60 + 12, 15, 13) }
+    ]
+  };
+
+  function renderWithRoutine(schedule = plan, withRoutine: typeof routine | undefined = routine) {
+    render(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule, routine: withRoutine }));
+  }
+
+  it("offers suggestions only to someone who may edit, and only when there is a routine", () => {
+    renderWithRoutine();
+    expect(screen.getByRole("button", { name: "Suggest from routine" })).toBeTruthy();
+    cleanup();
+    renderWithRoutine({ ...plan, canEdit: false });
+    expect(screen.queryByRole("button", { name: "Suggest from routine" })).toBeNull();
+    cleanup();
+    renderWithRoutine(plan, { ...routine, enoughData: false, timeline: [] });
+    expect(screen.queryByRole("button", { name: "Suggest from routine" })).toBeNull();
+  });
+
+  it("shows each suggestion with its evidence and confidence, undecided until a choice is made", () => {
+    renderWithRoutine();
+    fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
+
+    const nap = screen.getByRole("group", { name: "Nap" });
+    expect(nap.textContent).toMatch(/9:00 AM to 10:00 AM/);
+    expect(nap.textContent).toMatch(/Now in your plan: 9:30 AM to 10:00 AM/);
+    expect(nap.textContent).toMatch(/Seen on 11 of 14 days/);
+    expect(nap.textContent).toMatch(/3 days left out/);
+    expect(nap.textContent).toMatch(/Fairly steady/);
+    expect((within(nap).getByLabelText("Decide later") as HTMLInputElement).checked).toBe(true);
+    // Nothing is chosen for anyone, so there is nothing to review yet.
+    expect((screen.getByRole("button", { name: "Review changes" }) as HTMLButtonElement).disabled).toBe(true);
+    // Suggested from observations, not advice.
+    expect(screen.getByText(/from what was logged/i)).toBeTruthy();
+  });
+
+  it("previews exactly the resulting plan, then saves only the accepted changes", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+    globalThis.fetch = fetchMock;
+    renderWithRoutine();
+    fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
+
+    fireEvent.click(within(screen.getByRole("group", { name: "Nap" })).getByLabelText("Reject"));
+    const bedtime = screen.getByRole("group", { name: "Bedtime" });
+    fireEvent.click(within(bedtime).getByLabelText("Edit, then accept"));
+    fireEvent.change(within(bedtime).getByLabelText("When"), { target: { value: "exact" } });
+    fireEvent.change(within(bedtime).getByLabelText("At"), { target: { value: "19:15" } });
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+
+    const preview = screen.getByRole("list", { name: "Plan after these changes" });
+    expect(within(preview).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      expect.stringContaining("6:30 AMWake up"),
+      expect.stringContaining("9:30 AM to 10:00 AMNap"),
+      expect.stringMatching(/7:15 PMBedtime.*New/)
+    ]);
+    expect(screen.getByText(/1 added, 0 changed, 1 rejected, 1 left undecided/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save to plan" }));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    const body = JSON.parse(String(fetchMock.mock.calls[2][1]?.body));
+    expect(body).toMatchObject({ expectedRevision: 2 });
+    expect(body.items.map((item: { kind: string; timing: unknown }) => [item.kind, item.timing])).toEqual([
+      ["wake", { mode: "exact", at: "06:30" }],
+      ["nap", { mode: "window", from: "09:30", to: "10:00" }],
+      ["bedtime", { mode: "exact", at: "19:15" }]
+    ]);
+  });
+
+  it("can be put away without changing anything", () => {
+    globalThis.fetch = vi.fn();
+    renderWithRoutine();
+    fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Nap" })).getByLabelText("Accept"));
+    fireEvent.click(screen.getByRole("button", { name: "Close suggestions" }));
+    expect(screen.queryByRole("group", { name: "Nap" })).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+});

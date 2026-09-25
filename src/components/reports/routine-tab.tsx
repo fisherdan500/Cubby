@@ -137,7 +137,7 @@ export function RoutineTab({ babyId, babyName, startKey, endKey, routine, schedu
       )}
       </div>
 
-      {schedule ? <PlannedSchedulePanel babyName={babyName} schedule={schedule} /> : null}
+      {schedule ? <PlannedSchedulePanel babyName={babyName} schedule={schedule} routine={routine} /> : null}
     </div>
   );
 }

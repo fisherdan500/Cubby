@@ -111,7 +111,15 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
 - Status: in progress (DEC-PROD-420)
 - Priority: medium
 - Goal: Show what the baby's day actually looks like, and let caregivers write the plan they intend, printable for anyone looking after the baby.
-- Notes: Step 1 (#141) rebuilt the observed Routine: wake, naps and bedtime read by time rather than position, with feed rhythm, variability, an honest not-enough-data state, and a print view labelled observed. Step 2 adds one planned schedule per baby: items at an exact time or within a window, with optional notes. It is edited on the Routine tab beside the observed routine, prints on its own, is saved against its revision, is audited without its text, and is carried in backups. Medicine and supplement items wait for their safety fields (DEC-PROD-149). Next: suggest a plan from Routine with item-by-item review; later, named templates, elapsed and sequence timing, reminders, and the fuller caregiver handoff (DEC-PROD-148–151).
+- Notes: Step 1 (#141) rebuilt the observed Routine: wake, naps and bedtime read by time rather than position, with feed rhythm, variability, an honest not-enough-data state, and a print view labelled observed. Step 2 adds one planned schedule per baby: items at an exact time or within a window, with optional notes. It is edited on the Routine tab beside the observed routine, prints on its own, is saved against its revision, is audited without its text, and is carried in backups. Medicine and supplement items wait for their safety fields (DEC-PROD-149).
+
+Step 3 suggests a plan from the Routine (DEC-PROD-152–154), from the selected Routine window:
+- Each suggestion shows the days it rests on, how much the time moved, the days left out, and a plain confidence level.
+- Too little or too varied data gives a reason, not a time.
+- Nearby plan items of the same kind are shown as changes beside their current time.
+- Every item starts undecided, and a preview of the whole resulting plan comes before the ordinary revision-checked save.
+
+Later: named templates, elapsed and sequence timing, reminders, pinned or suggestible entries, and the fuller caregiver handoff (DEC-PROD-148–151).
 
 ### Nursery Night Treatment
 

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Printer, Trash2 } from "lucide-react";
+import { Plus, Printer, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,13 @@ import {
 import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 import { printSection } from "@/lib/print-section";
+import {
+  applyProposalChoices,
+  proposeScheduleFromRoutine,
+  type ProposalChoice,
+  type ProposalRoutine,
+  type ScheduleProposalItem
+} from "@/lib/schedule-proposal";
 import type { PlannedScheduleView } from "@/server/services/planned-schedule";
 
 type OperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
@@ -81,13 +88,27 @@ function fromDrafts(drafts: Draft[]) {
  * routine that was observed and never mixed with it: this is what is meant to happen, not what did.
  * Saving replaces the whole plan, and only from the version the editor was opened on.
  */
-export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string; schedule: PlannedScheduleView }) {
+export function PlannedSchedulePanel({
+  babyName,
+  schedule,
+  routine
+}: {
+  babyName: string;
+  schedule: PlannedScheduleView;
+  /** The observed routine shown beside the plan; when there is one, suggestions can be drawn from it. */
+  routine?: ProposalRoutine;
+}) {
   const router = useRouter();
   const nextKey = useRef(0);
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { babyId, items, canEdit, revision } = schedule;
+  const closeEditors = () => {
+    setDrafts(null);
+    setSuggesting(false);
+  };
 
   function startEditing() {
     setError("");
@@ -113,7 +134,7 @@ export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string;
       setError("This save expired. Save again to open a new request.");
     } else if (result.status === "completed") {
       sessionStorage.removeItem(storageKey);
-      setDrafts(null);
+      closeEditors();
       router.refresh();
     } else if (result.status === "pending") {
       setError("The save is still in progress. Try again in a moment to check whether it went through.");
@@ -139,6 +160,11 @@ export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string;
       setError("Something in this plan cannot be saved. Check the names, times and notes.");
       return;
     }
+    await saveItems(planned);
+  }
+
+  /** Save a whole plan, only from the revision it was opened on. */
+  async function saveItems(planned: PlannedScheduleItem[]) {
     setError("");
     setSubmitting(true);
     try {
@@ -151,7 +177,7 @@ export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string;
           sessionStorage.removeItem(storageKey);
         } else if (reconciled.status === "completed") {
           sessionStorage.removeItem(storageKey);
-          setDrafts(null);
+          closeEditors();
           router.refresh();
           return;
         } else if (reconciled.status === "prepared") {
@@ -200,12 +226,18 @@ export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string;
             <h2 className="text-base font-semibold">Planned schedule</h2>
             <p className="text-sm text-muted-foreground">What you intend the day to look like. Planned, not what happened: logging never changes it.</p>
           </div>
-          {!drafts ? (
+          {!drafts && !suggesting ? (
             <div className="flex flex-wrap gap-2">
               {items.length ? (
                 <Button type="button" variant="secondary" onClick={() => printSection("plan")}>
                   <Printer className="h-4 w-4" aria-hidden="true" />
                   Print plan
+                </Button>
+              ) : null}
+              {canEdit && routine?.enoughData ? (
+                <Button type="button" variant="secondary" onClick={() => { setError(""); setSuggesting(true); }}>
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  Suggest from routine
                 </Button>
               ) : null}
               {canEdit ? (
@@ -217,7 +249,16 @@ export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string;
           ) : null}
         </div>
 
-        {drafts ? (
+        {suggesting && routine ? (
+          <ScheduleSuggestions
+            routine={routine}
+            items={items}
+            error={error}
+            submitting={submitting}
+            onSave={(planned) => void saveItems(planned)}
+            onClose={() => { setSuggesting(false); setError(""); }}
+          />
+        ) : drafts ? (
           <div className="space-y-3 print:hidden">
             {drafts.length === 0 ? <p className="text-sm text-muted-foreground">No items. Add the first one below.</p> : null}
             {drafts.map((draft, index) => (
@@ -312,5 +353,202 @@ export function PlannedSchedulePanel({ babyName, schedule }: { babyName: string;
         )}
       </Card>
     </section>
+  );
+}
+
+type Choice = "accept" | "edit" | "reject" | "undecided";
+type EditDraft = { mode: "exact" | "window"; at: string; from: string; to: string };
+
+const choiceLabels: Array<[Choice, string]> = [
+  ["accept", "Accept"],
+  ["edit", "Edit, then accept"],
+  ["reject", "Reject"],
+  ["undecided", "Decide later"]
+];
+
+function editDraftFor(item: ScheduleProposalItem): EditDraft {
+  return item.proposed.mode === "exact"
+    ? { mode: "exact", at: item.proposed.at, from: "", to: "" }
+    : { mode: "window", at: "", from: item.proposed.from, to: item.proposed.to };
+}
+
+function formatDayKey(key: string) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+/**
+ * Suggestions drawn from the observed routine (DEC-PROD-152 to 154). Each one shows its evidence and
+ * confidence and starts undecided; only what the caregiver accepts - as suggested, or edited - enters
+ * a final preview of the whole resulting plan, and only saving that changes anything. Choices are
+ * kept on this screen alone: closing it forgets them.
+ */
+function ScheduleSuggestions({
+  routine,
+  items,
+  error,
+  submitting,
+  onSave,
+  onClose
+}: {
+  routine: ProposalRoutine;
+  items: PlannedScheduleItem[];
+  error: string;
+  submitting: boolean;
+  onSave: (planned: PlannedScheduleItem[]) => void;
+  onClose: () => void;
+}) {
+  const [proposal] = useState(() => proposeScheduleFromRoutine(routine, items));
+  const [choices, setChoices] = useState<Record<string, Choice>>({});
+  const [edits, setEdits] = useState<Record<string, EditDraft>>({});
+  const [previewing, setPreviewing] = useState(false);
+  const [problem, setProblem] = useState("");
+
+  const chosen = (id: string) => choices[id] ?? "undecided";
+  const anyAccepted = proposal.items.some((item) => chosen(item.id) === "accept" || chosen(item.id) === "edit");
+
+  function decisions(): Record<string, ProposalChoice> | null {
+    const result: Record<string, ProposalChoice> = {};
+    for (const item of proposal.items) {
+      const choice = chosen(item.id);
+      if (choice === "accept" || choice === "reject") result[item.id] = { choice };
+      if (choice === "edit") {
+        const edit = edits[item.id] ?? editDraftFor(item);
+        if (edit.mode === "exact" ? !edit.at : !edit.from || !edit.to || edit.from >= edit.to) {
+          setProblem(`${item.label} needs a time${edit.mode === "window" ? " window that ends after it starts" : ""}.`);
+          return null;
+        }
+        result[item.id] = { choice: "edit", timing: edit.mode === "exact" ? { mode: "exact", at: edit.at } : { mode: "window", from: edit.from, to: edit.to } };
+      }
+    }
+    return result;
+  }
+
+  const decided = previewing ? decisions() : null;
+  const outcome = decided ? applyProposalChoices(items, proposal.items, decided) : null;
+
+  if (previewing && outcome) {
+    const { added, changed, rejected, undecided } = outcome.counts;
+    return (
+      <div className="space-y-3 print:hidden">
+        <h3 className="text-sm font-semibold">Check the plan before saving</h3>
+        <p className="text-sm text-muted-foreground">{`${added} added, ${changed} changed, ${rejected} rejected, ${undecided} left undecided.`} Everything else stays as it is.</p>
+        <ol aria-label="Plan after these changes" className="divide-y divide-border">
+          {outcome.entries.map((entry, index) => (
+            <li key={index} className="grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)_auto] items-center gap-3 py-2.5">
+              <span className="tabular text-sm font-bold text-primary">{formatScheduleTiming(entry.item.timing)}</span>
+              <span className="min-w-0 text-sm font-semibold">{scheduleItemLabel(entry.item)}</span>
+              {entry.status === "kept" ? <span /> : (
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">{entry.status === "added" ? "New" : "Changed"}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+        {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p> : null}
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={() => onSave(outcome.items)} disabled={submitting}>{submitting ? "Saving..." : "Save to plan"}</Button>
+          <Button type="button" variant="ghost" onClick={() => setPreviewing(false)} disabled={submitting}>Back to suggestions</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 print:hidden">
+      <div>
+        <h3 className="text-sm font-semibold">Suggestions from the routine</h3>
+        <p className="text-sm text-muted-foreground">
+          Worked out from what was logged, {formatDayKey(routine.startKey)} to {formatDayKey(routine.endKey)}. These are observations, not advice:
+          nothing changes until you choose for each one and save.
+        </p>
+      </div>
+      {proposal.limitation ? <p className="text-sm text-muted-foreground">{proposal.limitation}</p> : null}
+      {proposal.items.map((item) => {
+        const choice = chosen(item.id);
+        const edit = edits[item.id] ?? editDraftFor(item);
+        const setEdit = (change: Partial<EditDraft>) => setEdits((current) => ({ ...current, [item.id]: { ...edit, ...change } }));
+        const { days, windowDays, spreadMinutes, leftOutDays } = item.evidence;
+        return (
+          <fieldset key={item.id} aria-label={item.label} className="space-y-2 rounded-lg border border-border p-3">
+            <legend className="sr-only">{item.label}</legend>
+            <p className="text-sm font-semibold">
+              {item.label}: <span className="tabular text-primary">{formatScheduleTiming(item.proposed)}</span>
+            </p>
+            {item.change.type === "change" ? (
+              <p className="text-xs text-muted-foreground">Now in your plan: {formatScheduleTiming(item.change.current)}</p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              {[
+                `Seen on ${days} of ${windowDays} days`,
+                spreadMinutes >= 5 ? `moves about ${spreadMinutes} min either way` : null,
+                leftOutDays ? `${leftOutDays} ${leftOutDays === 1 ? "day" : "days"} left out${item.kind === "nap" || item.kind === "feeding" ? " (a different number that day)" : " (not logged)"}` : null
+              ].filter(Boolean).join(" · ")}
+            </p>
+            <p className="text-xs text-muted-foreground">{item.confidenceText}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {choiceLabels.map(([value, label]) => (
+                <label key={value} className="inline-flex min-h-11 items-center gap-2">
+                  <input
+                    type="radio"
+                    name={`suggestion-${item.id}`}
+                    checked={choice === value}
+                    onChange={() => { setProblem(""); setChoices((current) => ({ ...current, [item.id]: value })); }}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+            {choice === "edit" ? (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <label className="grid gap-1 text-xs font-bold text-muted-foreground">
+                  When
+                  <select
+                    value={edit.mode}
+                    onChange={(event) => setEdit({ mode: event.target.value as EditDraft["mode"] })}
+                    className="min-h-11 rounded-lg border border-control bg-card px-3 text-sm text-foreground"
+                  >
+                    <option value="exact">At a time</option>
+                    <option value="window">Between two times</option>
+                  </select>
+                </label>
+                {edit.mode === "exact" ? (
+                  <label className="grid gap-1 text-xs font-bold text-muted-foreground">
+                    At
+                    <Input type="time" value={edit.at} onChange={(event) => setEdit({ at: event.target.value })} />
+                  </label>
+                ) : (
+                  <>
+                    <label className="grid gap-1 text-xs font-bold text-muted-foreground">
+                      From
+                      <Input type="time" value={edit.from} onChange={(event) => setEdit({ from: event.target.value })} />
+                    </label>
+                    <label className="grid gap-1 text-xs font-bold text-muted-foreground">
+                      To
+                      <Input type="time" value={edit.to} onChange={(event) => setEdit({ to: event.target.value })} />
+                    </label>
+                  </>
+                )}
+              </div>
+            ) : null}
+          </fieldset>
+        );
+      })}
+      {proposal.alreadyPlanned.length ? (
+        <p className="text-xs text-muted-foreground">Already in your plan as observed: {proposal.alreadyPlanned.join(", ")}.</p>
+      ) : null}
+      {proposal.omitted.length ? (
+        <div className="text-xs text-muted-foreground">
+          <p className="font-semibold">Not suggested</p>
+          <ul className="list-disc pl-5">
+            {proposal.omitted.map((entry) => <li key={entry.label}>{entry.label}: {entry.reason}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      {problem ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{problem}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" disabled={!anyAccepted} onClick={() => { if (decisions()) setPreviewing(true); }}>Review changes</Button>
+        <Button type="button" variant="ghost" onClick={onClose}>Close suggestions</Button>
+      </div>
+    </div>
   );
 }
