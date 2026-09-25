@@ -4323,9 +4323,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 5524,
+      "anchorEnd": 5605,
       "anchorFile": "package.json",
-      "anchorStart": 5515,
+      "anchorStart": 5596,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -4578,9 +4578,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 5625,
+      "anchorEnd": 5706,
       "anchorFile": "package.json",
-      "anchorStart": 5607,
+      "anchorStart": 5688,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -4969,9 +4969,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 5568,
+      "anchorEnd": 5649,
       "anchorFile": "package.json",
-      "anchorStart": 5552,
+      "anchorStart": 5633,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -5613,6 +5613,23 @@
       "sidecarPath": "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts"
     },
     {
+      "anchorBytes": "\"verify:system-backup\"",
+      "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
+      "anchorEnd": 5105,
+      "anchorFile": "package.json",
+      "anchorStart": 5083,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:system-backup",
+        "target": "package.json#scripts.verify:system-backup"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/system-backup.acceptance-rehearsal.ts:package_script:verify:system-backup:package.json#scripts.verify:system-backup",
+      "ownerId": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/system-backup.acceptance-rehearsal.operation.ts"
+    },
+    {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
       "anchorEnd": 4579,
@@ -5632,9 +5649,9 @@
     {
       "anchorBytes": "\"verify:gates:all\"",
       "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-      "anchorEnd": 5152,
+      "anchorEnd": 5233,
       "anchorFile": "package.json",
-      "anchorStart": 5134,
+      "anchorStart": 5215,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:all",
@@ -5649,9 +5666,9 @@
     {
       "anchorBytes": "\"verify:gates:disposable\"",
       "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-      "anchorEnd": 5220,
+      "anchorEnd": 5301,
       "anchorFile": "package.json",
-      "anchorStart": 5195,
+      "anchorStart": 5276,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:disposable",
@@ -5666,9 +5683,9 @@
     {
       "anchorBytes": "\"verify:gates:image\"",
       "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-      "anchorEnd": 5290,
+      "anchorEnd": 5371,
       "anchorFile": "package.json",
-      "anchorStart": 5270,
+      "anchorStart": 5351,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:image",
@@ -5683,9 +5700,9 @@
     {
       "anchorBytes": "\"verify:gates\"",
       "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-      "anchorEnd": 5097,
+      "anchorEnd": 5178,
       "anchorFile": "package.json",
-      "anchorStart": 5083,
+      "anchorStart": 5164,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates",
@@ -7608,10 +7625,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "5cc52182fe64f9dcf54e80b6eefcb9b4a6c7043fd1b47b03d8a9df942580808e",
+  "semanticArtifactDigest": "601176d250be4a3006d8d4d6f7f6ba23ce180e5115a10cd1d82f23c38c3be495",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c3d6f7447b40420048b6c45d6167dbcc86deba22f0b985382d49b9e060725c88",
+  "semanticCoverageDigest": "78602c4e2c9dc584e36f859e05bf1d92d912e5fa79f18660beaa40f59ca5b511",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "9e7c25d7e33a757a73f5578769234db500c6cdddc4232e6ec76accbc9d87e247"
+  "semanticFingerprint": "4c19a05b6cab8c53ef41f891d6eaf0972e455a8df7bd16523ed8953168f157c8"
 }

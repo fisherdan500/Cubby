@@ -4,12 +4,12 @@
     "api_route": 112,
     "client_binding": 39,
     "instrumentation": 1,
-    "package_command": 27,
+    "package_command": 28,
     "server_action": 1,
     "server_loader": 29,
     "worker": 7
   },
-  "declarationDigest": "994176a9bea3fd308356fa6b21e3f9d763dbd038791bac8174f1626c285fe0b4",
+  "declarationDigest": "63633a8a24e09d22c9d751d59481c791d2d014a9def4de6c29bc0c543d42cf6e",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -1068,6 +1068,40 @@
       },
       "id": "package_command:scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:system-backup",
+            "target": "package.json#scripts.verify:system-backup"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/system-backup.acceptance-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -7817,6 +7851,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+      "packageScripts": [
+        "verify:system-backup"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/verify-gates.ts",
       "packageScripts": [
         "verify:gates",
@@ -7843,7 +7885,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "f3f0107ed0d3e647606fbe39b737ac44ead2fa89bceca8c036dd72bf4d443fd5",
+  "generatorDigest": "a1fe8d4151563105c7c2f3e5db2a8992d7eddd1a96ea3cbf19557f24d4a0b2ab",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -13034,9 +13076,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 5524,
+          "anchorEnd": 5605,
           "anchorFile": "package.json",
-          "anchorStart": 5515,
+          "anchorStart": 5596,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -13265,9 +13307,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5625,
+          "anchorEnd": 5706,
           "anchorFile": "package.json",
-          "anchorStart": 5607,
+          "anchorStart": 5688,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -13579,9 +13621,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 5568,
+          "anchorEnd": 5649,
           "anchorFile": "package.json",
-          "anchorStart": 5552,
+          "anchorStart": 5633,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -14061,6 +14103,32 @@
     {
       "bindings": [
         {
+          "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
+          "anchorEnd": 5105,
+          "anchorFile": "package.json",
+          "anchorStart": 5083,
+          "kind": "package_script",
+          "symbol": "verify:system-backup",
+          "target": "package.json#scripts.verify:system-backup"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+        "packageScripts": [
+          "verify:system-backup"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/system-backup.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
           "anchorEnd": 4579,
           "anchorFile": "package.json",
@@ -14081,36 +14149,36 @@
       "bindings": [
         {
           "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-          "anchorEnd": 5097,
+          "anchorEnd": 5178,
           "anchorFile": "package.json",
-          "anchorStart": 5083,
+          "anchorStart": 5164,
           "kind": "package_script",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
           "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-          "anchorEnd": 5152,
+          "anchorEnd": 5233,
           "anchorFile": "package.json",
-          "anchorStart": 5134,
+          "anchorStart": 5215,
           "kind": "package_script",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
           "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-          "anchorEnd": 5220,
+          "anchorEnd": 5301,
           "anchorFile": "package.json",
-          "anchorStart": 5195,
+          "anchorStart": 5276,
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
           "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-          "anchorEnd": 5290,
+          "anchorEnd": 5371,
           "anchorFile": "package.json",
-          "anchorStart": 5270,
+          "anchorStart": 5351,
           "kind": "package_script",
           "symbol": "verify:gates:image",
           "target": "package.json#scripts.verify:gates:image"
@@ -14134,8 +14202,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 216,
-  "observationDigest": "ca369baf0783841e259f6a897a2f2b123b195746ed959797dcf0099af7b9a602",
+  "observationCount": 217,
+  "observationDigest": "9c21bc2e8b53352945bf44517cc4994be5fb0ae42b4855d809dce6c298e4bb91",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -19137,9 +19205,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5524,
+          "anchorEnd": 5605,
           "anchorFile": "package.json",
-          "anchorStart": 5515,
+          "anchorStart": 5596,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -19326,9 +19394,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5625,
+          "anchorEnd": 5706,
           "anchorFile": "package.json",
-          "anchorStart": 5607,
+          "anchorStart": 5688,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -19596,9 +19664,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 5568,
+          "anchorEnd": 5649,
           "anchorFile": "package.json",
-          "anchorStart": 5552,
+          "anchorStart": 5633,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -20046,6 +20114,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 5105,
+          "anchorFile": "package.json",
+          "anchorStart": 5083,
+          "kind": "package_script",
+          "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+          "symbol": "verify:system-backup",
+          "target": "package.json#scripts.verify:system-backup"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/system-backup.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 4579,
           "anchorFile": "package.json",
           "anchorStart": 4554,
@@ -20064,36 +20150,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5097,
+          "anchorEnd": 5178,
           "anchorFile": "package.json",
-          "anchorStart": 5083,
+          "anchorStart": 5164,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
-          "anchorEnd": 5152,
+          "anchorEnd": 5233,
           "anchorFile": "package.json",
-          "anchorStart": 5134,
+          "anchorStart": 5215,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
-          "anchorEnd": 5220,
+          "anchorEnd": 5301,
           "anchorFile": "package.json",
-          "anchorStart": 5195,
+          "anchorStart": 5276,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
-          "anchorEnd": 5290,
+          "anchorEnd": 5371,
           "anchorFile": "package.json",
-          "anchorStart": 5270,
+          "anchorStart": 5351,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:image",
@@ -21393,6 +21479,12 @@
       "sidecarPath": "scripts/sprout-preview-commit.acceptance-rehearsal.operation.ts"
     },
     {
+      "id": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/system-backup.acceptance-rehearsal.operation.ts"
+    },
+    {
       "id": "package_command:scripts/update-preflight.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/update-preflight.ts",
@@ -21405,9 +21497,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "334d267a60d5e6293708629b00ce2c8ab547f8ce162db76e07b40a9c1e2baf67",
+  "ownerSetDigest": "33fa36c13570a71bdf0699cf49668ea1d9fe2a2632cf58c6f6a3546394990f33",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "90c80cd514124e9449a85d0220e62f9625944b58fee27846dde1cd95232f4b2c",
+  "registryDigest": "7291f93c1d808b85ca5e83890d4814c31d0f8f460a5fdee6b5cbd47e9bf1cd04",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

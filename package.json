@@ -43,6 +43,7 @@
     "verify:integrity-suite": "tsx scripts/integrity-suite.acceptance-rehearsal.ts",
     "verify:platform-first-account": "tsx scripts/platform-first-account.acceptance-rehearsal.ts",
     "verify:quick-start": "tsx scripts/quick-start.acceptance-rehearsal.ts",
+    "verify:system-backup": "tsx scripts/system-backup.acceptance-rehearsal.ts",
     "verify:gates": "tsx scripts/verify-gates.ts",
     "verify:gates:all": "tsx scripts/verify-gates.ts --all",
     "verify:gates:disposable": "tsx scripts/verify-gates.ts --disposable",
