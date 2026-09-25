@@ -218,9 +218,9 @@ describe("Feed page", () => {
     expect(images[0].closest("a")?.getAttribute("href")).toBe("/api/attachments/photo-a");
   });
 
-  it("keeps photos off the composer until they are switched on, and links to recently removed posts", async () => {
+  it("offers photos in the composer now they are switched on, and links to recently removed posts", async () => {
     const body = await renderFeed({ babyId: "baby-1" });
-    expect(body.querySelector("[data-composer]")?.getAttribute("data-photos")).toBe("false");
+    expect(body.querySelector("[data-composer]")?.getAttribute("data-photos")).toBe("true");
     const removed = [...body.querySelectorAll("a")].find((link) => link.textContent === "Recently removed");
     expect(removed?.getAttribute("href")).toBe("/app/feed/removed?babyId=baby-1");
 
