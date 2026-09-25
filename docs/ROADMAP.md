@@ -82,7 +82,7 @@ Step 2 adds text posts:
 
 Step 3 adds comments, reactions and editing:
 - every member, read-only members included, may comment on and react to a post or a logged entry; neither changes the entry;
-- five reactions - ❤️ love, 😂 funny, 🥰 aww, 🎉 celebrate, 👏 well done - shown with the names of who chose them, never a count;
+- four reactions - ❤️ love, 😂 funny, 🥰 aww, 🎉 celebrate - shown with the names of who chose them, never a count. 👏 well done was retired so the row fits beside Comment on a phone; stored ones are kept but hidden;
 - authors edit their own comments and posts, marked "edited"; authors remove their own comments, and owners, admins and parents any;
 - the audit records what was done and what it was on, never the words;
 - comments and reactions are carried in backups, by name, with the posts and entries they belong to.

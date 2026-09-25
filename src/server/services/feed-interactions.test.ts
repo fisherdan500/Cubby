@@ -238,14 +238,15 @@ describe("reacting", () => {
   it("turns a reaction off by removing only this member's one", async () => {
     const tx = transaction();
     runContract(tx, opened("feed-reaction-set", "activity", "activity-1"));
-    await submitFeedReactionSetBrowserOperation({ operationId, parentKind: "activity", parentId: "activity-1", reaction: "well_done", on: false });
+    await submitFeedReactionSetBrowserOperation({ operationId, parentKind: "activity", parentId: "activity-1", reaction: "celebrate", on: false });
     expect(tx.feedReaction.deleteMany).toHaveBeenCalledWith({
-      where: { householdId: "household-1", postId: null, activityId: "activity-1", memberId: "member-1", reaction: "well_done" }
+      where: { householdId: "household-1", postId: null, activityId: "activity-1", memberId: "member-1", reaction: "celebrate" }
     });
   });
 
-  it("refuses a reaction outside the offered five before any operation runs", async () => {
+  it("refuses a reaction outside the offered four, retired well done included, before any operation runs", async () => {
     await expect(submitFeedReactionSetBrowserOperation({ operationId, parentKind: "post", parentId: "post-1", reaction: "angry", on: true })).rejects.toThrow();
+    await expect(submitFeedReactionSetBrowserOperation({ operationId, parentKind: "post", parentId: "post-1", reaction: "well_done", on: true })).rejects.toThrow();
     expect(mocks.executeHousehold).not.toHaveBeenCalled();
   });
 });

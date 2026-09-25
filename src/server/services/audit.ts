@@ -158,6 +158,7 @@ const attachmentAuditSchema = z.object({
 // A comment's words are private family text too: the audit keeps only what it was on.
 const feedCommentCreateSchema = z.object({ parentKind: z.enum(["post", "activity"]) }).strict();
 const feedReactionSetSchema = z.object({
+  // Retired "well_done" stays, so history written while it was offered still reads.
   reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
   on: z.boolean()
 }).strict();
