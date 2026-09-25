@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type TouchEvent as ReactTouchEvent } from "react";
 import { ChevronLeft, ChevronRight, Download, Share2, X } from "lucide-react";
 
 type Photo = { id: string; width: number; height: number };
@@ -41,14 +41,23 @@ function sharingMode(): "none" | "button" | "save" {
   return touch ? "save" : "button";
 }
 
+const CONTROLS_SHOWN_MS = 2000;
+// How far a finger travels before a swipe counts: sideways to step, down to close.
+const STEP_SWIPE_PX = 50;
+const CLOSE_SWIPE_PX = 100;
+// A tap within this share of the screen's width from either side steps that way.
+const EDGE_TAP_SHARE = 0.25;
+
 const viewerButton =
   "inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";
 
 /**
  * A post's photos (DEC-PROD-422). One shows at its own shape; several share a grid of squares. A tap
  * opens the photo full screen inside Cubby, never as a separate page: an installed app has no browser
- * back button, so leaving for the raw image stranded people there. The viewer closes with its Close
- * button, Escape, a tap outside the photo, or the phone's back gesture.
+ * back button, so leaving for the raw image stranded people there. It works like a phone's photo
+ * viewer: swipe or tap near either side to move between photos, stopping at the ends; swipe down to
+ * close, well clear of the bottom edge a phone keeps for switching apps; tap the middle to show or
+ * hide the buttons, which fade on their own. Close, Escape and the back gesture close it too.
  */
 export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -72,9 +81,34 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
     }
   }, []);
 
+  // Stops at the first and last photo, as a phone's photo viewer does, rather than wrapping around.
   const step = useCallback((by: number) => {
-    setOpen((current) => (current === null ? null : (current + by + photos.length) % photos.length));
+    setOpen((current) => (current === null ? null : Math.min(photos.length - 1, Math.max(0, current + by))));
   }, [photos.length]);
+
+  // The buttons show when a photo opens and fade after a moment, so the photo is clear; a tap in the
+  // middle brings them back or puts them away.
+  const [controls, setControls] = useState(true);
+  const hideTimer = useRef<number>();
+  const showControls = useCallback(() => {
+    setControls(true);
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setControls(false), CONTROLS_SHOWN_MS);
+  }, []);
+  const hideControls = useCallback(() => {
+    window.clearTimeout(hideTimer.current);
+    setControls(false);
+  }, []);
+  const viewing = open !== null;
+  useEffect(() => {
+    if (viewing) showControls();
+    return () => window.clearTimeout(hideTimer.current);
+  }, [viewing, showControls]);
+
+  // A swipe left or right steps; a swipe down closes, as in Photos. The photo follows the finger along
+  // whichever way the swipe first went.
+  const touchStart = useRef<{ x: number; y: number; axis?: "x" | "y" } | null>(null);
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (open === null) return;
@@ -177,6 +211,56 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
   }
 
   const shown = open === null ? null : photos[open];
+  const first = open === 0;
+  const last = open === photos.length - 1;
+
+  function onTouchStart(event: ReactTouchEvent) {
+    const touch = event.touches[0];
+    if (!touch || event.touches.length > 1) return;
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function onTouchMove(event: ReactTouchEvent) {
+    const start = touchStart.current;
+    const touch = event.touches[0];
+    if (!start || !touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (!start.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) start.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    // Past either end the photo moves only a little, to show there is nothing more that way.
+    const pastEnd = (dx > 0 && first) || (dx < 0 && last);
+    if (start.axis === "x") setDrag({ x: pastEnd ? dx / 4 : dx, y: 0 });
+    else if (start.axis === "y") setDrag({ x: 0, y: Math.max(0, dy) });
+  }
+
+  function onTouchEnd(event: ReactTouchEvent) {
+    const start = touchStart.current;
+    const touch = event.changedTouches[0];
+    touchStart.current = null;
+    setDrag(null);
+    if (!start || !touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) >= STEP_SWIPE_PX && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
+    else if (dy >= CLOSE_SWIPE_PX && dy > Math.abs(dx)) close();
+  }
+
+  function onSurfaceClick(event: ReactMouseEvent) {
+    // The buttons do their own thing, even where they sit over an edge.
+    if (event.target instanceof Element && event.target.closest("button")) return;
+    const width = window.innerWidth;
+    if (event.clientX < width * EDGE_TAP_SHARE) {
+      if (!first) step(-1);
+    } else if (event.clientX > width * (1 - EDGE_TAP_SHARE)) {
+      if (!last) step(1);
+    } else if (controls) {
+      hideControls();
+    } else {
+      showControls();
+    }
+  }
+
+  const controlsClass = `transition-opacity duration-300 ${controls ? "opacity-100" : "pointer-events-none opacity-0"}`;
 
   return (
     <>
@@ -209,18 +293,33 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
           role="dialog"
           aria-modal="true"
           aria-label={`Photo ${open + 1} of ${photos.length}`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
+          data-controls={controls ? "shown" : "hidden"}
+          onClick={onSurfaceClick}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onTouchCancel={() => {
+            touchStart.current = null;
+            setDrag(null);
+          }}
+          // The viewer handles every touch itself, so the page behind neither scrolls nor bounces.
+          className="fixed inset-0 z-50 flex touch-none select-none items-center justify-center bg-black"
+          style={{ backgroundColor: drag?.y ? `rgb(0 0 0 / ${Math.max(0.4, 1 - drag.y / 600)})` : undefined }}
         >
-          <div data-testid="photo-viewer-backdrop" className="absolute inset-0" onClick={close} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photoSrc(shown)}
             width={shown.width}
             height={shown.height}
             alt={`Photo ${open + 1} of ${photos.length}`}
+            draggable={false}
             className="relative max-h-full max-w-full object-contain"
+            style={{
+              transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(${1 - Math.min(drag.y, 400) / 1600})` : undefined,
+              transition: drag ? "none" : "transform 150ms ease-out"
+            }}
           />
-          <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex gap-2">
+          <div className={`absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex gap-2 ${controlsClass}`}>
             {sharing === "button" ? (
               <button type="button" aria-label="Share photo" disabled={saving} onClick={() => void keep(shown, "share")} className={viewerButton}>
                 <Share2 className="h-6 w-6" aria-hidden="true" />
@@ -252,23 +351,33 @@ export function FeedPhotoGallery({ photos }: { photos: Photo[] }) {
           ) : null}
           {photos.length > 1 ? (
             <>
-              <button
-                type="button"
-                aria-label="Previous photo"
-                onClick={() => step(-1)}
-                className="absolute left-2 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              >
-                <ChevronLeft className="h-6 w-6" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-label="Next photo"
-                onClick={() => step(1)}
-                className="absolute right-2 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              >
-                <ChevronRight className="h-6 w-6" aria-hidden="true" />
-              </button>
-              <p className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 text-center text-sm font-semibold text-white/80">
+              {!first ? (
+                <button
+                  type="button"
+                  aria-label="Previous photo"
+                  onClick={() => {
+                    step(-1);
+                    showControls();
+                  }}
+                  className={`absolute left-2 top-1/2 -translate-y-1/2 ${viewerButton} ${controlsClass}`}
+                >
+                  <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+                </button>
+              ) : null}
+              {!last ? (
+                <button
+                  type="button"
+                  aria-label="Next photo"
+                  onClick={() => {
+                    step(1);
+                    showControls();
+                  }}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 ${viewerButton} ${controlsClass}`}
+                >
+                  <ChevronRight className="h-6 w-6" aria-hidden="true" />
+                </button>
+              ) : null}
+              <p className={`pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 text-center text-sm font-semibold text-white/80 ${controlsClass}`}>
                 {open + 1} of {photos.length}
               </p>
             </>

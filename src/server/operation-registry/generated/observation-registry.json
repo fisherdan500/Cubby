@@ -11611,9 +11611,9 @@
       "bindings": [
         {
           "anchorDigest": "3f4a1102387a73f479c415697bae20b8960e55e13ad5da5b52e031dfdd91925b",
-          "anchorEnd": 613,
+          "anchorEnd": 685,
           "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-          "anchorStart": 559,
+          "anchorStart": 631,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -14135,7 +14135,7 @@
     }
   ],
   "observationCount": 216,
-  "observationDigest": "115fc58607e0895097e3f7467613f83f6efaa8786b99e7a38cab16b81e2197bd",
+  "observationDigest": "864a1644a4f7d3f38dc9eaea6e7e69ea8818c7559912dee4f92f1c40aa9e596e",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -17751,9 +17751,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 613,
+          "anchorEnd": 685,
           "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-          "anchorStart": 559,
+          "anchorStart": 631,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
           "symbol": "fetch[1]",
@@ -21407,7 +21407,7 @@
   ],
   "ownerSetDigest": "334d267a60d5e6293708629b00ce2c8ab547f8ce162db76e07b40a9c1e2baf67",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "49c7deca30752ea37e825c3b6ae330af2ed29e45e3d2b6e795dd85064b1a1e65",
+  "registryDigest": "aca182d8bdd3f1af48009e52d99ad828f4855fd259b88fc28f4fcaa2a399aad6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

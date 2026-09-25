@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React, { createElement } from "react";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
 
@@ -66,11 +66,16 @@ describe("FeedPhotoGallery", () => {
     expect(window.history.back).not.toHaveBeenCalled();
   });
 
-  it("closes with Escape or a tap outside the photo, and steps between photos", () => {
+  it("closes with Escape, and steps with the buttons and arrow keys without running past either end", () => {
     render(createElement(FeedPhotoGallery, { photos }));
     fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
 
+    // Nothing before the first photo, so no way back from it.
+    expect(screen.queryByRole("button", { name: "Previous photo" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Next photo" }));
+    expect(screen.getByRole("dialog", { name: "Photo 2 of 2" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Next photo" })).toBeNull();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
     expect(screen.getByRole("dialog", { name: "Photo 2 of 2" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Previous photo" }));
     expect(screen.getByRole("dialog", { name: "Photo 1 of 2" })).toBeTruthy();
@@ -79,10 +84,83 @@ describe("FeedPhotoGallery", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
-    fireEvent.click(screen.getByTestId("photo-viewer-backdrop"));
-    expect(screen.queryByRole("dialog")).toBeNull();
+  describe("gestures", () => {
+    const three = [...photos, { id: "photo-c", width: 1000, height: 1000 }];
+    const viewer = () => screen.getByRole("dialog");
+
+    function swipe(from: [number, number], to: [number, number]) {
+      fireEvent.touchStart(viewer(), { touches: [{ clientX: from[0], clientY: from[1] }] });
+      fireEvent.touchMove(viewer(), { touches: [{ clientX: to[0], clientY: to[1] }] });
+      fireEvent.touchEnd(viewer(), { changedTouches: [{ clientX: to[0], clientY: to[1] }] });
+    }
+
+    it("swipes left and right between photos, stopping at the first and last", () => {
+      render(createElement(FeedPhotoGallery, { photos: three }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 3" }));
+
+      swipe([300, 400], [360, 405]);
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 1 of 3");
+      swipe([300, 400], [200, 410]);
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 2 of 3");
+      swipe([300, 400], [200, 390]);
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 3 of 3");
+      swipe([300, 400], [200, 400]);
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 3 of 3");
+      swipe([200, 400], [300, 400]);
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 2 of 3");
+    });
+
+    it("closes with a swipe down, as the Photos app does, and not with a short or upward one", () => {
+      render(createElement(FeedPhotoGallery, { photos: three }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 2 of 3" }));
+
+      swipe([300, 400], [305, 430]);
+      swipe([300, 400], [300, 250]);
+      expect(screen.getByRole("dialog")).toBeTruthy();
+
+      swipe([300, 300], [310, 450]);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(window.history.back).toHaveBeenCalledTimes(1);
+    });
+
+    it("steps with a tap near either edge, and shows or hides the buttons with a tap in the middle", () => {
+      render(createElement(FeedPhotoGallery, { photos: three }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 2 of 3" }));
+      const width = window.innerWidth;
+
+      fireEvent.click(viewer(), { clientX: width - 10, clientY: 300 });
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 3 of 3");
+      fireEvent.click(viewer(), { clientX: 10, clientY: 300 });
+      expect(viewer().getAttribute("aria-label")).toBe("Photo 2 of 3");
+
+      expect(viewer().getAttribute("data-controls")).toBe("shown");
+      fireEvent.click(viewer(), { clientX: width / 2, clientY: 300 });
+      expect(viewer().getAttribute("data-controls")).toBe("hidden");
+      fireEvent.click(viewer(), { clientX: width / 2, clientY: 300 });
+      expect(viewer().getAttribute("data-controls")).toBe("shown");
+      // A tap in the middle never closes the photo.
+      expect(screen.getByRole("dialog")).toBeTruthy();
+    });
+
+    it("fades the buttons out after two seconds so the photo is clear, and a button tap does not step", () => {
+      vi.useFakeTimers();
+      try {
+        render(createElement(FeedPhotoGallery, { photos: three }));
+        fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 3" }));
+        expect(viewer().getAttribute("data-controls")).toBe("shown");
+
+        act(() => vi.advanceTimersByTime(2100));
+        expect(viewer().getAttribute("data-controls")).toBe("hidden");
+
+        // Close sits over the right edge; tapping it closes rather than stepping.
+        fireEvent.click(screen.getByRole("button", { name: "Close photo" }), { clientX: window.innerWidth - 10 });
+        expect(screen.queryByRole("dialog")).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   it("saves the open photo to the device from the private photo address", async () => {
