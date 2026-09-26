@@ -111,6 +111,9 @@ export async function runSystemBackupAcceptanceRehearsal() {
     // The backup, then a copy of it off the server.
     const backup = run("sh", ["scripts/system-backup.sh"], { cwd: checkout, env: scriptEnv, capture: true });
     if (!/system_backup_created .* households=1 accounts=1 photos=1/.test(backup.stdout)) throw new Error(`system_backup_summary_unexpected:${backup.stdout}`);
+    // The run is recorded for the platform page and the owner's backup alerts.
+    const recorded = sql(`SELECT status || '|' || households || '|' || accounts || '|' || photos FROM "SystemBackupRun"`);
+    if (recorded !== "succeeded|1|1|1") throw new Error(`system_backup_run_not_recorded:${recorded}`);
     const archives = readdirSync(resolve(checkout, "docker-data", "system-backups")).filter((name) => /^cubby-system-\d{8}T\d{6}Z\.tar$/.test(name));
     if (archives.length !== 1) throw new Error("system_backup_archive_missing");
     const kept = resolve(offsite, archives[0]!);
