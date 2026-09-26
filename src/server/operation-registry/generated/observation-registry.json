@@ -7,9 +7,9 @@
     "package_command": 28,
     "server_action": 1,
     "server_loader": 29,
-    "worker": 7
+    "worker": 8
   },
-  "declarationDigest": "63633a8a24e09d22c9d751d59481c791d2d014a9def4de6c29bc0c543d42cf6e",
+  "declarationDigest": "8a6403be3a13d7aef04c5245355e7decb0f36d5414e7db507010f2b78f69660e",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -5812,6 +5812,11 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "getPlatformHealth",
+            "target": "src/server/services/platform-health.ts#getPlatformHealth"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getPlatformRegistrationSettings",
             "target": "src/server/services/platform-authority.ts#getPlatformRegistrationSettings"
           },
@@ -7401,6 +7406,11 @@
             "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
           },
           {
+            "kind": "worker_dynamic_import",
+            "symbol": "startPlatformHealthScheduler",
+            "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+          },
+          {
             "kind": "worker_start_call",
             "symbol": "startAutomatedBackupScheduler",
             "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -7434,6 +7444,11 @@
             "kind": "worker_start_call",
             "symbol": "startAttachmentRetentionScheduler",
             "target": "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startPlatformHealthScheduler",
+            "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
           }
         ],
         "deferredGateIds": [
@@ -7703,6 +7718,46 @@
           {
             "kind": "worker_schedule",
             "symbol": "tick",
+            "target": "src/server/platform-health-scheduler.ts#tick"
+          },
+          {
+            "kind": "worker_start_call",
+            "symbol": "startPlatformHealthScheduler",
+            "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+          },
+          {
+            "kind": "worker_tick",
+            "symbol": "tick",
+            "target": "src/server/services/platform-health.ts#runPlatformHealthCheck"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "worker:src/server/platform-health-scheduler.ts",
+        "ownerKind": "worker",
+        "ownerModule": "src/server/platform-health-scheduler.ts",
+        "schemaVersion": 1
+      },
+      "id": "worker:src/server/platform-health-scheduler.ts",
+      "sidecarPath": "src/server/platform-health-scheduler.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "worker_schedule",
+            "symbol": "tick",
             "target": "src/server/sprout-source-retention-scheduler.ts#tick"
           },
           {
@@ -7885,7 +7940,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "a1fe8d4151563105c7c2f3e5db2a8992d7eddd1a96ea3cbf19557f24d4a0b2ab",
+  "generatorDigest": "7027686cdc461715f90d73b2a100ebe7685734c86d7e70991592f7d2163ec269",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11234,19 +11289,28 @@
     {
       "bindings": [
         {
-          "anchorDigest": "314f7535d548cfd553fcc9b2fec51e60d6efda321bfc293f5bc2d0a0bf8bf2e5",
-          "anchorEnd": 557,
+          "anchorDigest": "71ffc13962c8483345665e5c2d5159b8273b16a2e35e80125cdcd5a66f8312fb",
+          "anchorEnd": 747,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 526,
+          "anchorStart": 730,
+          "kind": "server_value_import",
+          "symbol": "getPlatformHealth",
+          "target": "src/server/services/platform-health.ts#getPlatformHealth"
+        },
+        {
+          "anchorDigest": "314f7535d548cfd553fcc9b2fec51e60d6efda321bfc293f5bc2d0a0bf8bf2e5",
+          "anchorEnd": 673,
+          "anchorFile": "src/app/platform/settings/page.tsx",
+          "anchorStart": 642,
           "kind": "server_value_import",
           "symbol": "getPlatformRegistrationSettings",
           "target": "src/server/services/platform-authority.ts#getPlatformRegistrationSettings"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 484,
+          "anchorEnd": 600,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 469,
+          "anchorStart": 585,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -12734,6 +12798,15 @@
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
+          "anchorDigest": "9dc92348786349579a589adf05984c960af74911af96f93cef8d3cf8fd1edf92",
+          "anchorEnd": 3458,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3430,
+          "kind": "worker_dynamic_import",
+          "symbol": "startPlatformHealthScheduler",
+          "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+        },
+        {
           "anchorDigest": "bd7dfaa9223fc1679c9fac61f1adcda2fafb6ecd65f665a5b6f3bf4ffa4e117c",
           "anchorEnd": 1641,
           "anchorFile": "src/instrumentation.ts",
@@ -12795,6 +12868,15 @@
           "kind": "worker_start_call",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
+        },
+        {
+          "anchorDigest": "a1d8c85b9dee278fce9c2ad555a8873a50fbcb3c1b0ab872cfb397a30650e4bd",
+          "anchorEnd": 3555,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3525,
+          "kind": "worker_start_call",
+          "symbol": "startPlatformHealthScheduler",
+          "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
         },
         {
           "anchorDigest": "ffe604c7d22f70ec42842bb3ea8cd1f99406697f6fa0f911fdac89a396c102f6",
@@ -13034,6 +13116,43 @@
       "ownerKind": "worker",
       "ownerModule": "src/server/integrity-scheduler.ts",
       "sidecarPath": "src/server/integrity-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "0f7acc38d03d54b47d71e38cf34eb42bd65f583ad464f5b3af709dee4cc49258",
+          "anchorEnd": 1209,
+          "anchorFile": "src/server/platform-health-scheduler.ts",
+          "anchorStart": 1159,
+          "kind": "worker_schedule",
+          "symbol": "tick",
+          "target": "src/server/platform-health-scheduler.ts#tick"
+        },
+        {
+          "anchorDigest": "8d0361baebeff111d025e782494b0c4bebf3b14d5ce3d6efa7a118a0871bf199",
+          "anchorEnd": 1253,
+          "anchorFile": "src/server/platform-health-scheduler.ts",
+          "anchorStart": 701,
+          "kind": "worker_start_call",
+          "symbol": "startPlatformHealthScheduler",
+          "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+        },
+        {
+          "anchorDigest": "5c77a1c31c5f55ff5a61850af94dad8be8fe93a368aa21a9337c042c46840cc5",
+          "anchorEnd": 976,
+          "anchorFile": "src/server/platform-health-scheduler.ts",
+          "anchorStart": 952,
+          "kind": "worker_tick",
+          "symbol": "tick",
+          "target": "src/server/services/platform-health.ts#runPlatformHealthCheck"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "worker:src/server/platform-health-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/platform-health-scheduler.ts",
+      "sidecarPath": "src/server/platform-health-scheduler.operation.ts"
     },
     {
       "bindings": [
@@ -14202,8 +14321,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 217,
-  "observationDigest": "9c21bc2e8b53352945bf44517cc4994be5fb0ae42b4855d809dce6c298e4bb91",
+  "observationCount": 218,
+  "observationDigest": "cbcb6b6fc8fa10265680eeee5b34aa3d2831cf2935edfe278d2a2308857ee559",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -17414,18 +17533,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 557,
+          "anchorEnd": 747,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 526,
+          "anchorStart": 730,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/platform/settings/page.tsx",
+          "symbol": "getPlatformHealth",
+          "target": "src/server/services/platform-health.ts#getPlatformHealth"
+        },
+        {
+          "anchorEnd": 673,
+          "anchorFile": "src/app/platform/settings/page.tsx",
+          "anchorStart": 642,
           "kind": "server_value_import",
           "ownerModule": "src/app/platform/settings/page.tsx",
           "symbol": "getPlatformRegistrationSettings",
           "target": "src/server/services/platform-authority.ts#getPlatformRegistrationSettings"
         },
         {
-          "anchorEnd": 484,
+          "anchorEnd": 600,
           "anchorFile": "src/app/platform/settings/page.tsx",
-          "anchorStart": 469,
+          "anchorStart": 585,
           "kind": "server_value_import",
           "ownerModule": "src/app/platform/settings/page.tsx",
           "symbol": "requireUserPage",
@@ -18872,6 +19000,15 @@
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
         },
         {
+          "anchorEnd": 3458,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3430,
+          "kind": "worker_dynamic_import",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startPlatformHealthScheduler",
+          "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+        },
+        {
           "anchorEnd": 1641,
           "anchorFile": "src/instrumentation.ts",
           "anchorStart": 1606,
@@ -18933,6 +19070,15 @@
           "ownerModule": "src/instrumentation.ts",
           "symbol": "startIntegrityScheduler",
           "target": "src/server/integrity-scheduler.ts#startIntegrityScheduler"
+        },
+        {
+          "anchorEnd": 3555,
+          "anchorFile": "src/instrumentation.ts",
+          "anchorStart": 3525,
+          "kind": "worker_start_call",
+          "ownerModule": "src/instrumentation.ts",
+          "symbol": "startPlatformHealthScheduler",
+          "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
         },
         {
           "anchorEnd": 2875,
@@ -19165,6 +19311,42 @@
       "ownerKind": "worker",
       "ownerModule": "src/server/integrity-scheduler.ts",
       "sidecarPath": "src/server/integrity-scheduler.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1209,
+          "anchorFile": "src/server/platform-health-scheduler.ts",
+          "anchorStart": 1159,
+          "kind": "worker_schedule",
+          "ownerModule": "src/server/platform-health-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/platform-health-scheduler.ts#tick"
+        },
+        {
+          "anchorEnd": 1253,
+          "anchorFile": "src/server/platform-health-scheduler.ts",
+          "anchorStart": 701,
+          "kind": "worker_start_call",
+          "ownerModule": "src/server/platform-health-scheduler.ts",
+          "symbol": "startPlatformHealthScheduler",
+          "target": "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+        },
+        {
+          "anchorEnd": 976,
+          "anchorFile": "src/server/platform-health-scheduler.ts",
+          "anchorStart": 952,
+          "kind": "worker_tick",
+          "ownerModule": "src/server/platform-health-scheduler.ts",
+          "symbol": "tick",
+          "target": "src/server/services/platform-health.ts#runPlatformHealthCheck"
+        }
+      ],
+      "disposition": "observed",
+      "id": "worker:src/server/platform-health-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/platform-health-scheduler.ts",
+      "sidecarPath": "src/server/platform-health-scheduler.operation.ts"
     },
     {
       "bindings": [
@@ -21323,6 +21505,12 @@
       "sidecarPath": "src/server/integrity-scheduler.operation.ts"
     },
     {
+      "id": "worker:src/server/platform-health-scheduler.ts",
+      "ownerKind": "worker",
+      "ownerModule": "src/server/platform-health-scheduler.ts",
+      "sidecarPath": "src/server/platform-health-scheduler.operation.ts"
+    },
+    {
       "id": "worker:src/server/sprout-source-retention-scheduler.ts",
       "ownerKind": "worker",
       "ownerModule": "src/server/sprout-source-retention-scheduler.ts",
@@ -21497,9 +21685,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "33fa36c13570a71bdf0699cf49668ea1d9fe2a2632cf58c6f6a3546394990f33",
+  "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "7291f93c1d808b85ca5e83890d4814c31d0f8f460a5fdee6b5cbd47e9bf1cd04",
+  "registryDigest": "6c1816c4c9e8f884e5621b7bd787d41cc5695bfeaa869bb5cf396e3553453af2",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

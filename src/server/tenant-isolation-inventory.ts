@@ -4,8 +4,8 @@ export const prismaModelNames = [
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedComment", "FeedPost", "FeedReaction", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
   "GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityOperation", "GlobalSecurityOperationBinding", "GlobalSecurityOperationReservationTombstone", "GlobalSecurityOperationTombstone", "GlobalSecurityThrottleKey", "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "InvitationAccountSetup", "InvitationLineage", "InvitationOperationBinding", "InvitationOperationIdentity", "InvitationOperationResult", "InvitationOperationTombstone", "InvitationPresentationClaim", "InvitationRecoveryRehearsalChallenge", "InvitationSetupCorridorAttestationReceipt", "MeasurementLog",
   "MedicineCatalog", "MedicineLog", "MilestoneLog", "MilkInventoryLog", "MoodLog", "MutationReceipt", "NoteLog", "NotificationLog", "PasswordChangeCredentialMutation", "RecoveryResetCredentialMutation", "InvitationProcedureTransitionBinding", "InvitationRecoveryEnrollmentBridge",
-  "NotificationPreference", "NotificationPreferenceBaby", "PlannedSchedule", "PlatformAuditEvent", "PlatformAuthority", "PlatformRegistrationOperation", "PlatformSettings", "PlatformSetupCode", "PlayLog", "PumpingLog",
-  "PushSubscription", "RecoveryCode", "RecoveryCodeSet", "RecoverySession", "Reminder", "Session", "SessionSecurityActivity", "SleepLog", "SupplementLog", "User", "VaccineDocument", "VaccineLog",
+  "NotificationPreference", "NotificationPreferenceBaby", "PlannedSchedule", "PlatformAuditEvent", "PlatformAuthority", "PlatformHealthAlert", "PlatformRegistrationOperation", "PlatformSettings", "PlatformSetupCode", "PlayLog", "PumpingLog",
+  "PushSubscription", "RecoveryCode", "RecoveryCodeSet", "RecoverySession", "Reminder", "Session", "SessionSecurityActivity", "SleepLog", "SupplementLog", "SystemBackupRun", "User", "VaccineDocument", "VaccineLog",
   "Verification", "WebhookDelivery", "WebhookEndpoint"
 ] as const;
 export type PrismaModelName = (typeof prismaModelNames)[number];
@@ -96,6 +96,7 @@ export const tenantIsolationInventory = [
   { model: "PlatformRegistrationOperation", ownership: "global", operationClasses: ["platform_registration_operation"], disposition: "excluded" },
   { model: "PlatformSettings", ownership: "global", operationClasses: ["platform_settings"], disposition: "excluded" },
   { model: "PlatformSetupCode", ownership: "global", operationClasses: ["platform_setup_claim"], disposition: "excluded" },
+  { model: "PlatformHealthAlert", ownership: "global", operationClasses: ["platform_health_alert"], disposition: "excluded" },
   { model: "PasswordChangeCredentialMutation", ownership: "global", operationClasses: ["global_security_password_change_receipt"], disposition: "excluded" },
   { model: "RecoveryResetCredentialMutation", ownership: "global", operationClasses: ["global_security_recovery_reset_receipt"], disposition: "excluded" },
   { model: "PushSubscription", ownership: "direct", operationClasses: ["notification_write"], disposition: "deferred_constraint" },
@@ -116,6 +117,7 @@ export const tenantIsolationInventory = [
   { model: "PumpingLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "MedicineLog", ownership: "multi_parent", operationClasses: ["activity_detail", "contact_reference"], disposition: "deferred_constraint" },
   { model: "SupplementLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
+  { model: "SystemBackupRun", ownership: "global", operationClasses: ["system_backup_record"], disposition: "excluded" },
   { model: "MeasurementLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "MilestoneLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },
   { model: "NoteLog", ownership: "inherited", operationClasses: ["activity_detail"], disposition: "inherited_parent" },

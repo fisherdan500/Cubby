@@ -69,5 +69,7 @@ export async function register() {
     // Started after the fixed acceptance stages, so their sequence is unchanged.
     const { startAttachmentRetentionScheduler } = await import("@/server/attachment-retention-scheduler");
     await startAttachmentRetentionScheduler();
+    const { startPlatformHealthScheduler } = await import("@/server/platform-health-scheduler");
+    await startPlatformHealthScheduler();
   }
 }

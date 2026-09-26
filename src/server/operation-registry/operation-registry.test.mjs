@@ -1508,6 +1508,13 @@ test("declares the feed post restore family and the attachment retention worker"
   ]);
 });
 
+test("declares the platform health worker and the page that shows it", () => {
+  assertDeclarationFamily([
+    "src/app/platform/settings/page.operation.ts",
+    "src/server/platform-health-scheduler.operation.ts"
+  ]);
+});
+
 test("declares the family feed comment and reaction route family", () => {
   assertDeclarationFamily([
     "src/app/api/feed/comments/[id]/route.operation.ts",
