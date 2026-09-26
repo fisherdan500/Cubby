@@ -69,8 +69,11 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
       ref={rootRef}
       className="md:hidden print:hidden"
       onBlur={(event) => {
-        // Tabbing out of the sheet closes it, so it never lingers over the page behind focus.
-        if (open && !rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
+        // Tabbing out of the sheet closes it, so it never lingers over the page behind focus. Only focus
+        // that lands somewhere else counts: Safari on iPhone focuses nothing on a tap, so a tap on an
+        // item would otherwise close the sheet before the tap arrived. Taps outside close it on their own.
+        const next = event.relatedTarget as Node | null;
+        if (open && next && !rootRef.current?.contains(next)) setOpen(false);
       }}
     >
       {open ? (
