@@ -83,9 +83,12 @@ describe("ActiveTimerBar", () => {
     expect(screen.getByRole("region", { name: "Running timers" })).toBeTruthy();
   });
 
-  it("receives the shell's selected baby instead of falling back to another baby", () => {
+  it("is placed by the shell only on the Log screen and on an activity's own screen", () => {
     const shell = readFileSync(resolve(process.cwd(), "src/components/app-shell.tsx"), "utf8");
+    // Moments, Calendar, Reports, Settings and every other screen get no bar at all.
+    expect(shell).toContain("{showAllTimers || timerActivityType ? (");
     expect(shell).toContain("<ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />");
+    expect(shell.match(/<ActiveTimerBar\b/g)).toHaveLength(1);
   });
 
   it("on an activity's own screen, shows only a timer of that activity, never another one's", async () => {
@@ -272,10 +275,10 @@ describe("ActiveTimerBar", () => {
     expect(screen.getAllByRole("button", { name: /^Stop .* timer/ })).toHaveLength(12);
   });
 
-  it("shows on every app screen now that no screen carries its own timer controls", async () => {
-    for (const pathname of ["/app", "/app/history", "/app/reports", "/app/settings"]) {
+  it("shows on each of its activity's screens: logging, viewing and editing it", async () => {
+    for (const pathname of ["/app/log/sleep", "/app/activities/timer-1", "/app/activities/timer-1/edit"]) {
       navigation.pathname = pathname;
-      await renderBar([timer()]);
+      await renderBar([timer()], "baby-1", "sleep");
       expect({ pathname, shown: screen.queryByRole("region", { name: "Running timers" }) !== null }).toEqual({ pathname, shown: true });
       cleanup();
     }

@@ -175,6 +175,14 @@ not contain or authorize roadmap work.
 - Acceptance: A running timer shows as an indicator rather than a control cluster; stopping is one tap from any screen and returns the caregiver where they were; the palette is tuned equally in both modes and every foreground/background pairing meets its contrast target under test.
 - Notes: Pull requests #114-#119. The User chose a minimal dot indicator plus a persistent shell timer bar, with pause reserved for the activity's own screen (#114), and stopping a timer now leaves the activity by itself (#115). Cubby opens dark by default while stored `system` choices are left alone (#116). The palette rewrite (#117) is pinned by `src/styles/theme-contrast.test.ts`, which computes WCAG ratios across both modes and all five accents and found three real faults before merge. The daily summary gained an Awake Time figure measured against the day (#118, #119), which also corrected sleep from "attributed to its start day" to "the part of each sleep overlapping the day". Nursery was later retired rather than given a night treatment.
 
+Revised after live use:
+- The User found the shell bar in the way: it covered another activity's Save and cluttered Moments, Calendar and Reports.
+- It now appears in two places only:
+  - the Log screen, with every running timer and one-tap Stop;
+  - the running activity's own screens (logging, viewing or editing it), with that activity's timer only.
+- Moments, Calendar, Reports, Settings and other activities' screens show no bar.
+- Stopping from those screens means going to Log first, by choice. The acceptance line above no longer holds as written.
+
 ### Always-On Update And Migration Hardening
 
 - Status: done

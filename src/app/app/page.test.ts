@@ -13,7 +13,8 @@ globalThis.React = React;
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/dashboard", () => ({ getDashboardPageData: mocks.getDashboardPageData }));
 vi.mock("@/components/app-shell", () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => createElement("main", null, children)
+  AppShell: ({ children, showAllTimers }: { children: React.ReactNode; showAllTimers?: boolean }) =>
+    createElement("main", { "data-show-all-timers": String(Boolean(showAllTimers)) }, children)
 }));
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 vi.mock("@/components/dashboard/dashboard-warnings", () => ({ DashboardWarnings: () => null }));
@@ -131,6 +132,13 @@ describe("daily summary chips", () => {
     // Every filter chip is a link; awake is not one, because no activity accounts for it.
     expect(links.some((href) => href.includes("summaryType=sleep"))).toBe(true);
     expect(links.some((href) => href.includes("summaryType=awake"))).toBe(false);
+  });
+});
+
+describe("the running-timer bar on the Log screen", () => {
+  it("is asked for here, with every running timer and one-tap Stop", async () => {
+    const body = await renderDashboard();
+    expect(body.querySelector("main")?.getAttribute("data-show-all-timers")).toBe("true");
   });
 });
 
