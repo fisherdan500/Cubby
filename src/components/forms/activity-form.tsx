@@ -111,7 +111,9 @@ export function ActivityForm({
   const [lengthMinutes, setLengthMinutes] = useState<number | null>(() =>
     isWallTime(savedStart) && isWallTime(savedEnd) ? Math.max(0, minutesBetween(savedStart, savedEnd)) : null
   );
-  const [activeTimer, setActiveTimer] = useState(false);
+  // A new sleep starts as a running timer: it is usually logged as the baby goes down, not after they
+  // wake. One tap turns it into an entry that has ended. Every other activity starts as ended.
+  const [activeTimer, setActiveTimer] = useState(() => type === "sleep" && !initial);
   useFollowNow(when, setWhen, appTimeZone);
 
   function clearOperation(storageKey: string) {
