@@ -129,9 +129,41 @@ update means pulling the new code and rebuilding. Your data is not inside the im
 lives in the `cubby_postgres_data` volume, and photos and backups in `docker-data/`. Replacing the
 container leaves all of it in place.
 
-Run these from the checkout on the server, while Cubby is running:
+### Where To Run These
 
-1. **Make a backup first**, and copy the archive off the server:
+Every command below runs on the server, in the Cubby folder: the folder you cloned this repository
+into at install. It is the one holding `docker-compose.yml`, `.env`, `scripts/` and `docker-data/`,
+such as `/home/you/cubby`, the same path as in your backup's crontab line. Run them as the account
+that runs Cubby, the one in that crontab.
+
+If you are not sure where that folder is, Docker can tell you. The `CONFIG FILES` column shows the
+full path of the Cubby folder's `docker-compose.yml`:
+
+```bash
+docker compose ls
+```
+
+Go into that folder first, and stay in it for every step:
+
+```bash
+cd /home/you/cubby
+```
+
+Check you are in the right place: this should list `docker-compose.yml`, `scripts` and
+`docker-data`, among others.
+
+```bash
+ls
+```
+
+The `docker compose` commands find Cubby through the `docker-compose.yml` in the current folder, and
+the `scripts/...` and `git` commands are relative to it. Run from anywhere else, they fail or act
+on the wrong thing.
+
+### The Steps
+
+1. **Make a backup first**, and copy the archive off the server. It is written to
+   `docker-data/system-backups/` inside the Cubby folder:
 
    ```bash
    sh scripts/system-backup.sh
@@ -213,5 +245,5 @@ signs in as before. See [Whole-System Backup](recovery/system-backup.md#restorin
 - [ ] `AUTOMATED_BACKUPS_ENABLED=true` in `.env`
 - [ ] Backups copied off the server on a schedule
 - [ ] Practice restore done on a throwaway machine
-- [ ] Before every update: a backup first; then `git pull`, `docker compose build --pull app`,
+- [ ] Before every update: `cd` into the Cubby folder and make a backup first; then `git pull`, `docker compose build --pull app`,
       `docker compose pull postgres`, `docker compose up -d`; never `docker compose down --volumes`
