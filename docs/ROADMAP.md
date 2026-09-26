@@ -58,6 +58,7 @@ implementation, merge, deployment, and cleanup approvals.
   - Partial: P1-1, P1-3 and P1-4. Blocked: P1-8.
   - The whole-app visual rework, driven directly by the User's phone review (#114–#119), is complete; Nursery was retired as redundant rather than redesigned (see below).
   - An independent audit of #102–#122 was remediated in #135: calendar tenant links, timer shell, exact sleep pauses, report averages, spreadsheet formula exports, verification correctness, 3:1 control outlines, first-account setup with the setup code, and a working fresh-server quick start.
+  - Since #135 (through #175), work has followed the User's live use: the Reports and Routine rework, the family feed as Moments with photos, whole-system backup and restore, and phone refinements (see the entries below and under Recently Completed). The review of #102–#122 has no successor yet; an independent review of #136–#175 is the natural next check.
   - Deployment and cleanup remain separate gates.
 - Priority: high
 - Goal: Reconcile all confirmed product policy against the exact application tree, then deliver missing behavior in dependency order without mistaking decisions for implementation.
@@ -137,7 +138,7 @@ Later: named templates, elapsed and sequence timing, reminders, pinned or sugges
 - Status: retired (2026-09-24)
 - Priority: low
 - Goal: Give the Nursery screen a way to read as "night" now that the whole application is dark.
-- Notes: Nursery inherited the new palette in #117 but kept its old layout, so the contrast that used to say "night" is gone. With dark as the default it duplicated the Log Entry dashboard (the same quick actions, and running timers the shell timer bar already covers), and the User judged it redundant. No night treatment was built. The screen is retired: it is gone from the sidebar and the phone's More menu, the shell timer bar now shows on every screen, and `/app/nursery` redirects to Log Entry with the selected baby so old links and home-screen shortcuts still work. The stored `nurseryModeEnabled` setting stays in the schema and backup format so older backups still restore.
+- Notes: Nursery inherited the new palette in #117 but kept its old layout, so the contrast that used to say "night" is gone. With dark as the default it duplicated the Log Entry dashboard (the same quick actions, and running timers the shell timer bar already covers), and the User judged it redundant. No night treatment was built. The screen is retired: it is gone from the sidebar and the phone's More menu, the shell timer bar took over its running timers (since #171, on the Log screen and each activity's own screens), and `/app/nursery` redirects to Log Entry with the selected baby so old links and home-screen shortcuts still work. The stored `nurseryModeEnabled` setting stays in the schema and backup format so older backups still restore.
 
 ## Later
 
@@ -158,6 +159,34 @@ heading remains only as a historical redirect for earlier evidence links; it doe
 not contain or authorize roadmap work.
 
 ## Recently Completed
+
+### Whole-System Backup, Restore, Health Alerts And Install Guide
+
+- Status: done
+- Priority: high
+- Goal: Let the platform owner bring back everything (every household, account and photo) after losing the server, and hear about it when backups stop working.
+- Acceptance: One archive holds the whole database and every photo, checked by a manifest and checksums; it is made on a schedule while Cubby runs; restore refuses anything but an empty install and checks the counts afterwards; the owner sees backup and disk health and is emailed when either fails; one guide covers install to everyday use, including updates.
+- Notes:
+  - #164 added `scripts/system-backup.sh` and `scripts/system-restore.sh`, [Whole-System Backup](recovery/system-backup.md), and the Linux image gate `verify:system-backup`. Its first CI runs found a real restore bug: the empty-install check counted Cubby's own empty photo folders.
+  - `.env` is deliberately not in the archive. The owner keeps a copy separately, because accounts and email cannot be restored without it.
+  - #166 rehearses Moments, comments, reactions, photos and the planned schedule through a real household backup archive.
+  - #167 records each system backup run, shows "Backups and storage" on Platform administration, and emails the owner when a backup fails or goes stale, household backups are overdue, or a disk is under 20% free. It emails once, reminds daily and clears when fixed.
+  - [INSTALL.md](INSTALL.md) is the single path from an empty server to everyday use (#165). Updating a running install is spelled out step by step, including which folder to run the commands in (#173, #175).
+
+### Live-Use Refinements
+
+- Status: done
+- Priority: medium
+- Goal: Fix what daily use on a real phone showed to be slow, confusing or broken.
+- Acceptance: Each change came from the User's own use and was checked by them on a phone after rebuilding.
+- Notes:
+  - Platform administration can send a test email (#137).
+  - A new entry offers a short-lived Undo (#139).
+  - Swiping a log row left offers Edit and Delete (#140).
+  - A new feed starts from the last one's kind and bottle amount (#168).
+  - A new sleep starts as a running timer, with "Still going" checked (#174).
+  - The phone's More menu now responds to taps on an iPhone (#172). Safari focuses nothing on a tap, and the sheet had read that as focus leaving and closed before the tap arrived.
+  - For the timer bar's narrower placement (#170, #171), see Running Timer Indicators below.
 
 ### Automated Verification Gates And Continuous Integration
 
