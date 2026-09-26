@@ -7,6 +7,7 @@ import { activityLabels, activityTypes, type ActivityTypeName } from "@/domain/a
 import { resolveSelectedBaby } from "@/lib/baby-selector";
 import { env } from "@/lib/env";
 import { requireUserPage } from "@/server/auth/session";
+import { getLastFeeding } from "@/server/services/activities";
 import { getHouseholdHome } from "@/server/services/households";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 
@@ -28,6 +29,8 @@ export default async function LogActivityPage({
     name: baby.name
   }));
   const selectedBaby = resolveSelectedBaby(babies, searchParams.babyId);
+  // A new feed starts as the last one was, so the same bottle is not typed in every time.
+  const lastFeeding = type === "feeding" ? await getLastFeeding(selectedBaby?.id) : null;
 
   return (
     <AppShell title={`Log ${activityLabels[type]}`} userName={user.name} timerBabyId={selectedBaby?.id}>
@@ -46,6 +49,7 @@ export default async function LogActivityPage({
               unitPreferences={unitSettings.preferences}
               medicineNames={unitSettings.medicineNames}
               supplementNames={unitSettings.supplementNames}
+              lastFeeding={lastFeeding}
             />
           ) : (
             <p className="text-sm text-muted-foreground">No active babies.</p>

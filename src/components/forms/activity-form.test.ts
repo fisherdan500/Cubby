@@ -35,6 +35,45 @@ async function submitMountedActivity(activityId?: string) {
   await act(async () => { await props.action(new FormData(form)); });
 }
 
+describe("a new feed", () => {
+  const feedForm = (props: object) => render(createElement(ActivityForm, {
+    babies: [{ id: "baby-1", name: "Avery" }], type: "feeding", selectedBabyId: "baby-1",
+    appTimeZone: "UTC", unitPreferences: defaultUnitPreferences, medicineNames: [], supplementNames: [], ...props
+  }));
+  const amount = () => (screen.getByRole("textbox", { name: "Amount" }) as HTMLInputElement).value;
+  const chosenKind = () => screen.getAllByRole("radio").find((kind) => kind.getAttribute("aria-checked") === "true" && ["Breast", "Bottle", "Formula", "Solids"].includes(kind.textContent ?? ""))?.textContent;
+
+  it("starts as the last feed was, so the same bottle is not typed in every time", () => {
+    feedForm({ lastFeeding: { mode: "formula", amount: "4.5", unit: "oz" } });
+
+    expect(chosenKind()).toBe("Formula");
+    expect(amount()).toBe("4.5");
+  });
+
+  it("keeps the last bottle's amount ready after a breastfeed, for when a bottle is chosen", async () => {
+    feedForm({ lastFeeding: { mode: "breast", amount: "4", unit: "oz" } });
+    expect(chosenKind()).toBe("Breast");
+    expect(screen.queryByRole("textbox", { name: "Amount" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("radio", { name: "Bottle" }));
+    expect(amount()).toBe("4");
+  });
+
+  it("starts empty with no feed to go by, and never overrides an entry being edited", () => {
+    feedForm({ lastFeeding: null });
+    expect(amount()).toBe("");
+    cleanup();
+
+    feedForm({
+      activityId: "activity-1",
+      initial: { babyId: "baby-1", mode: "bottle", amount: "3", unit: "oz", updatedAt: "2026-08-21T00:00:00.000Z" },
+      lastFeeding: { mode: "formula", amount: "5", unit: "oz" }
+    });
+    expect(chosenKind()).toBe("Bottle");
+    expect(amount()).toBe("3");
+  });
+});
+
 describe("ActivityForm browser-v2 handling", () => {
   it("mounts a create form and updates its browser-controlled fields", async () => {
     render(createElement(ActivityForm, {

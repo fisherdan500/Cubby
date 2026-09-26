@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { scrollRow, useFollowNow, WhenField, type WhenValue } from "@/components/forms/when-field";
 import { activityLabels, timerActivityTypes, type ActivityTypeName } from "@/domain/activity";
+import { feedingFormStart, type LastFeeding } from "@/domain/feeding-defaults";
 import type { UnitPreferences } from "@/domain/unit-preferences";
 import { normalizeVolumeUnit } from "@/domain/units";
 import {
@@ -32,6 +33,7 @@ type Initial = Record<string, string | number | boolean | null | undefined>;
 type Slots = {
   initial?: Initial;
   editing: boolean;
+  lastFeeding?: LastFeeding | null;
   preferences: UnitPreferences;
   medicineNames: string[];
   supplementNames: string[];
@@ -73,7 +75,8 @@ export function ActivityForm({
   appTimeZone,
   unitPreferences,
   medicineNames,
-  supplementNames
+  supplementNames,
+  lastFeeding
 }: {
   babies: BabyOption[];
   type: ActivityTypeName;
@@ -88,6 +91,8 @@ export function ActivityForm({
   unitPreferences: UnitPreferences;
   medicineNames: string[];
   supplementNames: string[];
+  /** The baby's last feed, which a new feed starts from; unused when editing. */
+  lastFeeding?: LastFeeding | null;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -237,7 +242,7 @@ export function ActivityForm({
       <BabyField babies={babies} defaultBaby={defaultBaby} />
       <TypeFields
         type={type}
-        slots={{ initial, editing: Boolean(initial), preferences: unitPreferences, medicineNames, supplementNames, when: whenSection, notes }}
+        slots={{ initial, editing: Boolean(initial), lastFeeding, preferences: unitPreferences, medicineNames, supplementNames, when: whenSection, notes }}
       />
 
       {/* Cancel and Save share the activity page's bar: FIXED just above the phone's bottom navigation, the
@@ -460,8 +465,10 @@ function useVolumeUnit(slots: Slots) {
 
 function FeedingFields({ slots }: { slots: Slots }) {
   const { initial } = slots;
-  const [mode, setMode] = useState(String(initial?.mode ?? "bottle"));
   const [unit, setUnit] = useVolumeUnit(slots);
+  // A new feed starts as the last one was: its kind, and the last bottle or formula amount.
+  const [start] = useState(() => (slots.editing ? null : feedingFormStart(slots.lastFeeding, unit)));
+  const [mode, setMode] = useState(String(initial?.mode ?? start?.mode ?? "bottle"));
   const liquid = mode === "bottle" || mode === "formula";
 
   return (
@@ -470,7 +477,7 @@ function FeedingFields({ slots }: { slots: Slots }) {
       main={
         <>
           <ChoiceField name="mode" label="Kind" options={["breast", "bottle", "formula", "solids"]} value={mode} onChange={setMode} />
-          {liquid || hasActivityDetail(initial, ["amount"]) ? <AmountStepper name="amount" label="Amount" defaultValue={initial?.amount} unit={unit} /> : null}
+          {liquid || hasActivityDetail(initial, ["amount"]) ? <AmountStepper name="amount" label="Amount" defaultValue={initial?.amount ?? start?.amount} unit={unit} /> : null}
           {mode === "breast" || hasActivityDetail(initial, ["side"]) ? (
             <ChoiceInput name="side" label="Side" options={["left", "right", "both"]} defaultValue={String(initial?.side ?? "")} optional />
           ) : null}

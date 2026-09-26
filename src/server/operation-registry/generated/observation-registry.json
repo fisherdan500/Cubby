@@ -9,7 +9,7 @@
     "server_loader": 29,
     "worker": 8
   },
-  "declarationDigest": "8a6403be3a13d7aef04c5245355e7decb0f36d5414e7db507010f2b78f69660e",
+  "declarationDigest": "a10e7d287223af4532288d87569eda688b106326f6dc2cc40aadfeceb88f1777",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -5034,6 +5034,11 @@
             "kind": "server_value_import",
             "symbol": "getHouseholdHome",
             "target": "src/server/services/households.ts#getHouseholdHome"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getLastFeeding",
+            "target": "src/server/services/activities.ts#getLastFeeding"
           },
           {
             "kind": "server_value_import",
@@ -10596,21 +10601,30 @@
       "bindings": [
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 632,
+          "anchorEnd": 695,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 606,
+          "anchorStart": 669,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 557,
+          "anchorEnd": 620,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 541,
+          "anchorStart": 604,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
+        },
+        {
+          "anchorDigest": "e04c42dec24b7f12114440accfa8910e4726d852aa23953c6eb946f06f202766",
+          "anchorEnd": 555,
+          "anchorFile": "src/app/app/log/[type]/page.tsx",
+          "anchorStart": 541,
+          "kind": "server_value_import",
+          "symbol": "getLastFeeding",
+          "target": "src/server/services/activities.ts#getLastFeeding"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
@@ -11791,45 +11805,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 10652,
+          "anchorEnd": 10901,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10637,
+          "anchorStart": 10886,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 2132,
+          "anchorEnd": 2248,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2067,
+          "anchorStart": 2183,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 6180,
+          "anchorEnd": 6429,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6103,
+          "anchorStart": 6352,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 7519,
+          "anchorEnd": 7768,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7347,
+          "anchorStart": 7596,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 8272,
+          "anchorEnd": 8521,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8067,
+          "anchorStart": 8316,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -14322,7 +14336,7 @@
     }
   ],
   "observationCount": 218,
-  "observationDigest": "cbcb6b6fc8fa10265680eeee5b34aa3d2831cf2935edfe278d2a2308857ee559",
+  "observationDigest": "8b6060b3402f5a3636ad56c90b9cdcc795b4aaee9673953fabfad9ffd1f73c69",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -16858,22 +16872,31 @@
     {
       "bindings": [
         {
-          "anchorEnd": 632,
+          "anchorEnd": 695,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 606,
+          "anchorStart": 669,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 557,
+          "anchorEnd": 620,
           "anchorFile": "src/app/app/log/[type]/page.tsx",
-          "anchorStart": 541,
+          "anchorStart": 604,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/log/[type]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
+        },
+        {
+          "anchorEnd": 555,
+          "anchorFile": "src/app/app/log/[type]/page.tsx",
+          "anchorStart": 541,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/log/[type]/page.tsx",
+          "symbol": "getLastFeeding",
+          "target": "src/server/services/activities.ts#getLastFeeding"
         },
         {
           "anchorEnd": 499,
@@ -18019,45 +18042,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 10652,
+          "anchorEnd": 10901,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10637,
+          "anchorStart": 10886,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2132,
+          "anchorEnd": 2248,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2067,
+          "anchorStart": 2183,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6180,
+          "anchorEnd": 6429,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6103,
+          "anchorStart": 6352,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7519,
+          "anchorEnd": 7768,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7347,
+          "anchorStart": 7596,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 8272,
+          "anchorEnd": 8521,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8067,
+          "anchorStart": 8316,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -21687,7 +21710,7 @@
   ],
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "6c1816c4c9e8f884e5621b7bd787d41cc5695bfeaa869bb5cf396e3553453af2",
+  "registryDigest": "2b147d674f1945a45d0e3c4b7257f7c247ad54ba735fcef58d6e715a82848e41",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

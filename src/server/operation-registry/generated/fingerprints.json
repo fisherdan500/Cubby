@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "8a6403be3a13d7aef04c5245355e7decb0f36d5414e7db507010f2b78f69660e",
+  "declarationDigest": "a10e7d287223af4532288d87569eda688b106326f6dc2cc40aadfeceb88f1777",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -1936,17 +1936,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8a91c8f51898e306f043634d7b35353e6ab55965b764e88dcbcbdf2505c277f4",
+          "digest": "752e66175b3b5d1182e1f108c34e91275c1e0682f08b8e9c689476e4864d5122",
           "file": "src/app/app/log/[type]/page.tsx"
         }
       ],
-      "declarationDigest": "3054a9558526deb2de087383eb4c96b359eb27f63fdf9b881097110bbcafecb6",
-      "fingerprint": "b5c5f207c478c8c33352654f6e53520624a5fcf73adddc173737261fb8677718",
+      "declarationDigest": "23dcb767f2eebf170caae52d98a2e20ac71ed9b981f95bc8b7f865d2487a5e12",
+      "fingerprint": "a8d5732bad07914701f8852598f12651d71da6327bba441e4f92ea996643f56d",
       "id": "fingerprint:server_loader:src/app/app/log/[type]/page.tsx",
       "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts",
-      "sourceDigest": "afdc18429450b053cf73a1846064cb8517d7c288b1fde5eb99b3c8c1f5867ac0",
+      "sourceDigest": "4a0b9cf3ceec2e59be69e200822f19f2dc298fada7accc38d7e5cb02a2f3f36a",
       "status": "declared"
     },
     {
@@ -2480,17 +2480,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "e35d90d39260d0400d748dff5120a1c48c031b5fa9c368a7ec46611bb327630c",
+          "digest": "995c0766463a2640b9a7af52548881759b6d4a7437210d8e2017051409b7a127",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "298e60d35ef0aa775adb57a5f0c3ad62a980a4dc6b25bcc751b42b9099b4664d",
+      "fingerprint": "96f5ebb64ed95a270e776069f62cae5f12a81fe0c2910526140eecdae8f0f718",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "476938ff82851eb85b700e2a37d191d3d6c2bb43a4328cc4e8a43683ca8b9a8f",
+      "sourceDigest": "86568dd4c47d1a1225bbb601499871f8c3b4c91aa22cc7b12241837047d3b4f7",
       "status": "declared"
     },
     {
@@ -3892,11 +3892,11 @@
   ],
   "generatorDigest": "7027686cdc461715f90d73b2a100ebe7685734c86d7e70991592f7d2163ec269",
   "generatorVersion": "r0.1",
-  "observationDigest": "cbcb6b6fc8fa10265680eeee5b34aa3d2831cf2935edfe278d2a2308857ee559",
+  "observationDigest": "8b6060b3402f5a3636ad56c90b9cdcc795b4aaee9673953fabfad9ffd1f73c69",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "6c1816c4c9e8f884e5621b7bd787d41cc5695bfeaa869bb5cf396e3553453af2",
+  "registryDigest": "2b147d674f1945a45d0e3c4b7257f7c247ad54ba735fcef58d6e715a82848e41",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
