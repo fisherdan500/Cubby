@@ -33,7 +33,7 @@ export default async function LogActivityPage({
   const lastFeeding = type === "feeding" ? await getLastFeeding(selectedBaby?.id) : null;
 
   return (
-    <AppShell title={`Log ${activityLabels[type]}`} userName={user.name} timerBabyId={selectedBaby?.id}>
+    <AppShell title={`Log ${activityLabels[type]}`} userName={user.name} timerBabyId={selectedBaby?.id} timerActivityType={type}>
       {/* Bottom padding keeps the last field clear of the form's fixed Cancel / Log bar. */}
       <div className="pb-20">
         <Card className="mx-auto max-w-lg space-y-4">

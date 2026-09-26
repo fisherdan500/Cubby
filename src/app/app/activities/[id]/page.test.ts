@@ -15,8 +15,8 @@ vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage
 vi.mock("@/server/services/households", () => ({ getHouseholdHome: mocks.getHouseholdHome }));
 vi.mock("@/server/services/activities", () => ({ getActivityView: mocks.getActivityView }));
 vi.mock("@/components/app-shell", () => ({
-  AppShell: ({ children, timerBabyId }: { children: React.ReactNode; timerBabyId?: string }) =>
-    createElement("main", { "data-timer-baby-id": timerBabyId }, children)
+  AppShell: ({ children, timerBabyId, timerActivityType }: { children: React.ReactNode; timerBabyId?: string; timerActivityType?: string }) =>
+    createElement("main", { "data-timer-baby-id": timerBabyId, "data-timer-activity-type": timerActivityType }, children)
 }));
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 vi.mock("@/components/actions/confirmed-activity-delete", () => ({
@@ -72,6 +72,8 @@ describe("activity detail timer controls", () => {
     const body = await renderDetail(savedActivity({ babyId: "baby-detail" }));
 
     expect(body.querySelector("main")?.getAttribute("data-timer-baby-id")).toBe("baby-detail");
+    // And to its activity: another activity's timer does not show on this one's screen.
+    expect(body.querySelector("main")?.getAttribute("data-timer-activity-type")).toBe("sleep");
   });
 
   it("offers pause and stop for a running timer, with how long it has run", async () => {

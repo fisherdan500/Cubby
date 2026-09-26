@@ -8820,9 +8820,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "6d561dc3b5483576ca7527de8ff286edf6cb45dcf9e8158f38e719393b41a208",
+  "semanticArtifactDigest": "fe4d7f9d2c831e7eea684fc0852349ca5f4485a4268e4ccaedebad65a304af1e",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "4e33baef595175cad89020dccc67cf8573612c8253aae1eebe25a23477c93304",
+  "semanticCoverageDigest": "3b3388f831581b134bfc7246456388b8452791ec808956d50bb19804fa96df9e",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "9eb606bcb7a53babbcfa0be13cd831b1d6b5a76509c339b99cf2225216a23cbd",

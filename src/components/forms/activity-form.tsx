@@ -249,7 +249,8 @@ export function ActivityForm({
           same height and in the same spot on every form, so the thumb always finds them and they never
           scroll. The page adds bottom padding so the last field stays clear of
           it. An error shows inside the bar, right above the button that caused it, not off-screen. */}
-      <div className="fixed inset-x-0 bottom-[4.75rem] z-20 px-3 md:bottom-4 md:left-64 md:px-6">
+      {/* It moves up by the running-timer bar's height when that shows, so Save is never covered. */}
+      <div className="fixed inset-x-0 bottom-[calc(4.75rem+var(--active-timer-bar,0rem))] z-20 px-3 md:bottom-[calc(1rem+var(--active-timer-bar,0rem))] md:left-64 md:px-6">
         <div className="mx-auto max-w-lg space-y-2 rounded-xl border border-border bg-card/95 p-2 shadow-soft backdrop-blur">
           {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p> : null}
           <div className="flex items-center gap-2">

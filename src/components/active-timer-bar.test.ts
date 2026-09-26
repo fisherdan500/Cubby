@@ -39,10 +39,10 @@ function timer(overrides: Partial<ActiveTimerSummary> = {}): ActiveTimerSummary 
   };
 }
 
-async function renderBar(timers: ActiveTimerSummary[], selectedBabyId?: string) {
+async function renderBar(timers: ActiveTimerSummary[], selectedBabyId?: string, activityType?: string) {
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, data: { timers } }) });
   vi.stubGlobal("fetch", fetchMock);
-  render(createElement(ActiveTimerBar, { selectedBabyId }));
+  render(createElement(ActiveTimerBar, { selectedBabyId, activityType }));
   // The bar asks the server for its own timers, so let that settle before asserting.
   await act(async () => {
     await Promise.resolve();
@@ -85,7 +85,23 @@ describe("ActiveTimerBar", () => {
 
   it("receives the shell's selected baby instead of falling back to another baby", () => {
     const shell = readFileSync(resolve(process.cwd(), "src/components/app-shell.tsx"), "utf8");
-    expect(shell).toContain("<ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} />");
+    expect(shell).toContain("<ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />");
+  });
+
+  it("on an activity's own screen, shows only a timer of that activity, never another one's", async () => {
+    await renderBar([timer({ id: "sleep-1", type: "sleep" }), timer({ id: "feed-1", type: "feeding" })], "baby-1", "feeding");
+
+    expect(screen.getByRole("region", { name: "Running timers" }).textContent).toContain("Feed");
+    expect(document.querySelector('[data-stops="feed-1"]')).toBeTruthy();
+    expect(document.querySelector('[data-stops="sleep-1"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: /more running timers/ })).toBeNull();
+  });
+
+  it("stays out of the way entirely on another activity's screen, so its buttons are never covered", async () => {
+    await renderBar([timer({ id: "sleep-1", type: "sleep" })], "baby-1", "diaper");
+
+    expect(screen.queryByRole("region", { name: "Running timers" })).toBeNull();
+    expect(document.documentElement.style.getPropertyValue("--active-timer-bar")).toBe("0rem");
   });
 
   it("shows nothing at all when no timer is running", async () => {

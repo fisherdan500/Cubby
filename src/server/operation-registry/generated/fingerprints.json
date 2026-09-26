@@ -1836,33 +1836,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "626c3967db0036ca603d7922c40bff4ab88cd1032ea66ad05f66744ad3fd342a",
+          "digest": "ca69c4a37b0b89671e80880349c03d236370e0c5b4716aeab7dd2db24082c197",
           "file": "src/app/app/activities/[id]/edit/page.tsx"
         }
       ],
       "declarationDigest": "8f1343ae3639493f39746966897cd3f62df100becad55c4fb7b529673d49225f",
-      "fingerprint": "d7f330082429f84b8dcf4501757a01b2b1c2aea86ac87554b84e84cd931eda87",
+      "fingerprint": "80caf0dba4dcb706b5316a35b414947b6ec9bae782f3838afe04da6ccb3d6659",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/edit/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/edit/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/edit/page.operation.ts",
-      "sourceDigest": "fb8a934f9057f2bf6752bb4b3654dc62bb0aebbf990e0eecc270c7af7e491ebc",
+      "sourceDigest": "b3d36188470c6273f8ef4ba6fd734921d419e0221c51e77dc1ce97a7e2e3c5d4",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "2beac2c6c1748feda7317940753f0c4842873474d80cf012057d4ddca9daff18",
+          "digest": "81f26df920992711626249bf85b7a5551237364bffc535617f1d7cb7aa01a1cf",
           "file": "src/app/app/activities/[id]/page.tsx"
         }
       ],
       "declarationDigest": "7db689af1701252bff79d689cc65d47d28b401ad8933e95b5f469603025660c1",
-      "fingerprint": "a64bcc725c5897147b17c7e102ed182d64380d738a7c4b834b48a7a9d6e2aafc",
+      "fingerprint": "ee9cfa8100f395f9dccaded63fed4b8b759dcf82cf16477f0bf8889eca502a84",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts",
-      "sourceDigest": "0a447c96990fbf9eba47a9ed4ce534f96ce88acb8569a17ad55c15bd157fe26d",
+      "sourceDigest": "eaaa21c38ea31cb4464712acf83aaf70bef5a15a80b35df0c4223ea48dd84ce1",
       "status": "declared"
     },
     {
@@ -1936,17 +1936,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "752e66175b3b5d1182e1f108c34e91275c1e0682f08b8e9c689476e4864d5122",
+          "digest": "1a4bca09da7c1483942b1a23f4d74c3ac3f5fa9ac823475c7a440b91d1a7d4a7",
           "file": "src/app/app/log/[type]/page.tsx"
         }
       ],
       "declarationDigest": "23dcb767f2eebf170caae52d98a2e20ac71ed9b981f95bc8b7f865d2487a5e12",
-      "fingerprint": "a8d5732bad07914701f8852598f12651d71da6327bba441e4f92ea996643f56d",
+      "fingerprint": "9b450d265a85a594e17d5ee9a6fcf1093e19142d9ce37b268abeaf5b28b93005",
       "id": "fingerprint:server_loader:src/app/app/log/[type]/page.tsx",
       "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts",
-      "sourceDigest": "4a0b9cf3ceec2e59be69e200822f19f2dc298fada7accc38d7e5cb02a2f3f36a",
+      "sourceDigest": "dfe98752b6aaa57d767ac81ea672e476a3d506070080e267535e0d2f0c44d9e4",
       "status": "declared"
     },
     {
@@ -2368,17 +2368,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "9e8cd3cfdde17b6a9c05edb8e34de8636fb58e0a3641971166e4593932a3f5d4",
+          "digest": "028c8284c800ef378848ce130aeeaff65b56e713fb86c60e988716fd76ad6fd9",
           "file": "src/components/active-timer-bar.tsx"
         }
       ],
       "declarationDigest": "1161fd5a506c806d7c14d8c50fc2988e3befec80a4b0dbd7f8acac4162db5165",
-      "fingerprint": "2d709c5177e76c885e2b3f4e5989f8acbc2ea7842a9d0e0733e13a5cc1932f15",
+      "fingerprint": "399ce0b99fb11c37a2c687bc22577b9e5949153814e093cfd9f019f1ddf16a7d",
       "id": "fingerprint:client_binding:src/components/active-timer-bar.tsx",
       "ownerId": "client_binding:src/components/active-timer-bar.tsx",
       "ownerModule": "src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts",
-      "sourceDigest": "f89015ad7a39727599e97a66f7a9dea8e9d5295cebc57c0c5b64cee8525e2ed3",
+      "sourceDigest": "d6e2b13ce7cfec6501a6dd5957e92bcb3fc2ac086942a83d527adcf47255ae7c",
       "status": "declared"
     },
     {
@@ -2480,17 +2480,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "995c0766463a2640b9a7af52548881759b6d4a7437210d8e2017051409b7a127",
+          "digest": "4ebb236f5a15d8a02a8e8ddbe3096050b6a83298dc39e414944d5a4a2e084312",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "96f5ebb64ed95a270e776069f62cae5f12a81fe0c2910526140eecdae8f0f718",
+      "fingerprint": "dc202fc0f8e733f99834da3934ec0c6345788b58f83d8fa4ed18c7d6efeea016",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "86568dd4c47d1a1225bbb601499871f8c3b4c91aa22cc7b12241837047d3b4f7",
+      "sourceDigest": "b806ff8e97db31182ed7a98f56b6bfd13f4f388c058d431c5e6521c3d8f4c492",
       "status": "declared"
     },
     {
@@ -3892,11 +3892,11 @@
   ],
   "generatorDigest": "7027686cdc461715f90d73b2a100ebe7685734c86d7e70991592f7d2163ec269",
   "generatorVersion": "r0.1",
-  "observationDigest": "7444a5824d771f5399dd8173ea88fd4fc328cf6f58a38fcdc4b2b4e8d0283eee",
+  "observationDigest": "50367570dc68dd30ec86c5a2340178e0ab0de75d0d94df59f90c6e8d7dbaa835",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "51e80b6a4dcc3882302985fedee55062489e4e1ec95ce0cc8a08b31226b38ba2",
+  "registryDigest": "7b444cb98441b6d43c00c6cd139f1fe9a0152de2fc300b0c1a79764af5970ef7",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
