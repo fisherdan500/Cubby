@@ -56,6 +56,22 @@ describe("MobileBottomNav", () => {
     expect(document.activeElement).toBe(more);
   });
 
+  it("stays open for a tap on one of its items on an iPhone, where the tap moves focus nowhere", async () => {
+    const more = renderNav();
+    await userEvent.click(more);
+    const settings = screen.getByRole("link", { name: "Settings" });
+
+    // Safari on iPhone does not focus a tapped link or button: the tap only takes focus away from the
+    // item focused when the sheet opened, with nothing receiving it.
+    act(() => {
+      settings.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+      (document.activeElement as HTMLElement).dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
+    });
+
+    expect(screen.getByRole("group", { name: "More" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/app/settings");
+  });
+
   it("closes when focus leaves the sheet", async () => {
     const more = renderNav();
     await userEvent.click(more);
