@@ -2480,17 +2480,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "4ebb236f5a15d8a02a8e8ddbe3096050b6a83298dc39e414944d5a4a2e084312",
+          "digest": "9dfc3a78b3ada797291fa6fdf5de16252e1714b927cafd41a25ec8dade91fe90",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "dc202fc0f8e733f99834da3934ec0c6345788b58f83d8fa4ed18c7d6efeea016",
+      "fingerprint": "59b3a80be4333e826e2e64ebbe79be72457386f19db87e2c5147e6f7c3ceeafc",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "b806ff8e97db31182ed7a98f56b6bfd13f4f388c058d431c5e6521c3d8f4c492",
+      "sourceDigest": "093c7e5f490a93f4c2b1269b63148ae8b2999577412c0e6249dd3bfbad62a20c",
       "status": "declared"
     },
     {
@@ -3892,11 +3892,11 @@
   ],
   "generatorDigest": "7027686cdc461715f90d73b2a100ebe7685734c86d7e70991592f7d2163ec269",
   "generatorVersion": "r0.1",
-  "observationDigest": "ca9c86690a2c20140112fed17e5625e0f59afc0d3f0ec8babb1801954b2b7a2b",
+  "observationDigest": "083742d233f7107f4d452c71634fa61b70b90e947fdb9cc9f920ce2a6081db23",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "e0eee066ac3977a21656ec4482bc91485ac01587258d1766dc85fd25c81b7945",
+  "registryDigest": "ddbd324f01bbc0728ce35d39c7a724db9c030de200bbdbd633e39caf71fa1c7c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

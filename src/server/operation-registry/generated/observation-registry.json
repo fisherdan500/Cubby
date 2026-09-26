@@ -11805,9 +11805,9 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 10901,
+          "anchorEnd": 11129,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10886,
+          "anchorStart": 11114,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
@@ -11823,27 +11823,27 @@
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 6429,
+          "anchorEnd": 6657,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6352,
+          "anchorStart": 6580,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 7768,
+          "anchorEnd": 7996,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7596,
+          "anchorStart": 7824,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 8521,
+          "anchorEnd": 8749,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8316,
+          "anchorStart": 8544,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -14336,7 +14336,7 @@
     }
   ],
   "observationCount": 218,
-  "observationDigest": "ca9c86690a2c20140112fed17e5625e0f59afc0d3f0ec8babb1801954b2b7a2b",
+  "observationDigest": "083742d233f7107f4d452c71634fa61b70b90e947fdb9cc9f920ce2a6081db23",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18042,9 +18042,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 10901,
+          "anchorEnd": 11129,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 10886,
+          "anchorStart": 11114,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
@@ -18060,27 +18060,27 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6429,
+          "anchorEnd": 6657,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6352,
+          "anchorStart": 6580,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7768,
+          "anchorEnd": 7996,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7596,
+          "anchorStart": 7824,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 8521,
+          "anchorEnd": 8749,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8316,
+          "anchorStart": 8544,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -21710,7 +21710,7 @@
   ],
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "e0eee066ac3977a21656ec4482bc91485ac01587258d1766dc85fd25c81b7945",
+  "registryDigest": "ddbd324f01bbc0728ce35d39c7a724db9c030de200bbdbd633e39caf71fa1c7c",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

@@ -107,6 +107,30 @@ describe("activity form time entry", () => {
     expect(screen.queryByRole("group", { name: "How long" })).toBeNull();
   });
 
+  it("starts a new sleep as a running timer, since a sleep is usually logged as the baby goes down", async () => {
+    const user = userEvent.setup();
+    const values = renderForm("sleep");
+    const stillGoing = screen.getByRole("checkbox", { name: /start a timer/ }) as HTMLInputElement;
+    expect(stillGoing.checked).toBe(true);
+    expect(values()).toMatchObject({ startedAt: "2026-09-15T15:47", activeTimer: "on", endedAt: "" });
+    expect(screen.queryByRole("group", { name: "How long" })).toBeNull();
+
+    // A sleep that has already ended is one tap away.
+    await user.click(stillGoing);
+    await user.click(screen.getByRole("button", { name: "45 min" }));
+    expect(values().activeTimer).toBeUndefined();
+    expect(values().endedAt).toBe("2026-09-15T16:32");
+  });
+
+  it("leaves every other timed activity as an entry that has ended", () => {
+    for (const type of ["feeding", "pumping", "play"] as const) {
+      const values = renderForm(type);
+      expect((screen.getByRole("checkbox", { name: /start a timer/ }) as HTMLInputElement).checked).toBe(false);
+      expect(values().activeTimer).toBeUndefined();
+      cleanup();
+    }
+  });
+
   it("opens an edit with its saved start, length, kind and amount", () => {
     const values = renderForm("feeding", {
       babyId: "baby-1", updatedAt: "2026-09-15T00:00:00.000Z", occurredAt: "2026-09-14T08:10", startedAt: "2026-09-14T08:10", endedAt: "2026-09-14T08:30",
