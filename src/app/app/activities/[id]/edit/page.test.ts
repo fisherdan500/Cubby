@@ -27,8 +27,8 @@ vi.mock("@/lib/baby-selector", () => ({ activityEditBabies: (babies: unknown[]) 
 vi.mock("@/lib/activity-edit-initial", () => ({ activityEditInitial: () => ({}) }));
 vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "Etc/UTC" } }));
 vi.mock("@/components/app-shell", () => ({
-  AppShell: ({ children, timerBabyId }: { children: React.ReactNode; timerBabyId?: string }) =>
-    createElement("main", { "data-timer-baby-id": timerBabyId }, children)
+  AppShell: ({ children, timerBabyId, timerActivityType }: { children: React.ReactNode; timerBabyId?: string; timerActivityType?: string }) =>
+    createElement("main", { "data-timer-baby-id": timerBabyId, "data-timer-activity-type": timerActivityType }, children)
 }));
 vi.mock("@/components/forms/activity-form", () => ({ ActivityForm: () => createElement("div") }));
 vi.mock("@/components/forms/activity-form-header", () => ({ ActivityFormHeader: () => createElement("span") }));
@@ -56,5 +56,6 @@ describe("edit activity timer scope", () => {
     );
 
     expect(document.querySelector("main")?.getAttribute("data-timer-baby-id")).toBe("baby-b");
+    expect(document.querySelector("main")?.getAttribute("data-timer-activity-type")).toBe("sleep");
   });
 });

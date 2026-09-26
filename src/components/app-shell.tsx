@@ -24,6 +24,7 @@ export function AppShell({
   userName,
   babySelector,
   timerBabyId,
+  timerActivityType,
   parent
 }: {
   children: React.ReactNode;
@@ -31,6 +32,8 @@ export function AppShell({
   userName: string;
   babySelector?: HeaderBabySelectorData | null;
   timerBabyId?: string;
+  // On one activity's own screen: the running-timer bar then shows only a timer of that activity.
+  timerActivityType?: string;
   // Where a phone's back link at the top of the page goes, for pages reached from another page
   // (the settings sections) rather than from a bottom tab.
   parent?: { href: string; label: string };
@@ -115,7 +118,7 @@ export function AppShell({
       </main>
 
       {/* Fetches its own running timers, so no page gains a database read for it. */}
-      <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} />
+      <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />
       <SavedEntryUndo />
       <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>

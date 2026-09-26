@@ -18,8 +18,8 @@ vi.mock("@/server/services/households", () => ({ getHouseholdHome: mocks.getHous
 vi.mock("@/server/services/unit-preferences", () => ({ getActivityUnitPreferences: mocks.getActivityUnitPreferences }));
 vi.mock("@/server/services/activities", () => ({ getLastFeeding: mocks.getLastFeeding }));
 vi.mock("@/components/app-shell", () => ({
-  AppShell: ({ children, timerBabyId }: { children: React.ReactNode; timerBabyId?: string }) =>
-    createElement("main", { "data-timer-baby-id": timerBabyId }, children)
+  AppShell: ({ children, timerBabyId, timerActivityType }: { children: React.ReactNode; timerBabyId?: string; timerActivityType?: string }) =>
+    createElement("main", { "data-timer-baby-id": timerBabyId, "data-timer-activity-type": timerActivityType }, children)
 }));
 vi.mock("@/components/forms/activity-form", () => ({
   ActivityForm: ({ selectedBabyId, lastFeeding }: { selectedBabyId?: string; lastFeeding?: unknown }) =>
@@ -52,6 +52,8 @@ describe("log activity timer scope", () => {
 
     expect(document.querySelector("main")?.getAttribute("data-timer-baby-id")).toBe("baby-b");
     expect(document.querySelector("[data-form-baby-id]")?.getAttribute("data-form-baby-id")).toBe("baby-b");
+    // Only a timer of this activity may show here, so another activity's timer never covers Log.
+    expect(document.querySelector("main")?.getAttribute("data-timer-activity-type")).toBe("feeding");
   });
 
   it("starts a new feed from that baby's last one, and reads it for feeds only", async () => {

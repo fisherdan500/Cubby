@@ -24,10 +24,15 @@ function timerHref(timer: ActiveTimerSummary, returnTo: string) {
   return `/app/activities/${timer.id}?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
-export function ActiveTimerBar({ selectedBabyId }: { selectedBabyId?: string }) {
+/**
+ * On one activity's own screen - logging, viewing or editing it - `activityType` is that activity, and
+ * only a timer of the same activity shows: a running sleep never sits over a diaper's buttons.
+ */
+export function ActiveTimerBar({ selectedBabyId, activityType }: { selectedBabyId?: string; activityType?: string }) {
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
-  const [timers, setTimers] = useState<ActiveTimerSummary[]>([]);
+  const [allTimers, setTimers] = useState<ActiveTimerSummary[]>([]);
+  const timers = activityType ? allTimers.filter((timer) => timer.type === activityType) : allTimers;
   const [nowMs, setNowMs] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const search = searchParams.toString();

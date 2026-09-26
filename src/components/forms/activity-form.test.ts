@@ -35,6 +35,15 @@ async function submitMountedActivity(activityId?: string) {
   await act(async () => { await props.action(new FormData(form)); });
 }
 
+describe("the form's Cancel and Log bar", () => {
+  it("moves up by the running-timer bar's height, so the timer bar never covers Save", () => {
+    renderActivity();
+    const bar = screen.getByRole("button", { name: "Log note" }).closest("div.fixed");
+    expect(bar?.className).toContain("bottom-[calc(4.75rem+var(--active-timer-bar,0rem))]");
+    expect(bar?.className).toContain("md:bottom-[calc(1rem+var(--active-timer-bar,0rem))]");
+  });
+});
+
 describe("a new feed", () => {
   const feedForm = (props: object) => render(createElement(ActivityForm, {
     babies: [{ id: "baby-1", name: "Avery" }], type: "feeding", selectedBabyId: "baby-1",

@@ -11582,9 +11582,9 @@
       "bindings": [
         {
           "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
-          "anchorEnd": 2292,
+          "anchorEnd": 2642,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2254,
+          "anchorStart": 2604,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -14336,7 +14336,7 @@
     }
   ],
   "observationCount": 218,
-  "observationDigest": "7444a5824d771f5399dd8173ea88fd4fc328cf6f58a38fcdc4b2b4e8d0283eee",
+  "observationDigest": "50367570dc68dd30ec86c5a2340178e0ab0de75d0d94df59f90c6e8d7dbaa835",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -17826,9 +17826,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2292,
+          "anchorEnd": 2642,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2254,
+          "anchorStart": 2604,
           "kind": "global_fetch",
           "ownerModule": "src/components/active-timer-bar.tsx",
           "symbol": "fetch[1]",
@@ -21710,7 +21710,7 @@
   ],
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "51e80b6a4dcc3882302985fedee55062489e4e1ec95ce0cc8a08b31226b38ba2",
+  "registryDigest": "7b444cb98441b6d43c00c6cd139f1fe9a0152de2fc300b0c1a79764af5970ef7",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
