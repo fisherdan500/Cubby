@@ -2827,9 +2827,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 10652,
+      "anchorEnd": 10901,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 10637,
+      "anchorStart": 10886,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -2844,9 +2844,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 2132,
+      "anchorEnd": 2248,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 2067,
+      "anchorStart": 2183,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2861,9 +2861,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${currentOperationId}`, { cache: \"no-store\" })",
       "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-      "anchorEnd": 6180,
+      "anchorEnd": 6429,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 6103,
+      "anchorStart": 6352,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2878,9 +2878,9 @@
     {
       "anchorBytes": "fetch(endpoint, {\n          method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ babyId: body.babyId })\n        })",
       "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-      "anchorEnd": 7519,
+      "anchorEnd": 7768,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 7347,
+      "anchorStart": 7596,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2895,9 +2895,9 @@
     {
       "anchorBytes": "fetch(activityId ? `/api/activities/${activityId}` : \"/api/activities\", {\n        method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(body)\n      })",
       "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-      "anchorEnd": 8272,
+      "anchorEnd": 8521,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 8067,
+      "anchorStart": 8316,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -6210,9 +6210,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 632,
+      "anchorEnd": 695,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 606,
+      "anchorStart": 669,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -6227,9 +6227,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 557,
+      "anchorEnd": 620,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 541,
+      "anchorStart": 604,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -6237,6 +6237,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/app/log/[type]/page.tsx:server_value_import:getHouseholdHome:src/server/services/households.ts#getHouseholdHome",
+      "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
+      "ownerModule": "src/app/app/log/[type]/page.tsx",
+      "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getLastFeeding",
+      "anchorDigest": "e04c42dec24b7f12114440accfa8910e4726d852aa23953c6eb946f06f202766",
+      "anchorEnd": 555,
+      "anchorFile": "src/app/app/log/[type]/page.tsx",
+      "anchorStart": 541,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getLastFeeding",
+        "target": "src/server/services/activities.ts#getLastFeeding"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/log/[type]/page.tsx:server_value_import:getLastFeeding:src/server/services/activities.ts#getLastFeeding",
       "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts"
@@ -7625,10 +7642,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "601176d250be4a3006d8d4d6f7f6ba23ce180e5115a10cd1d82f23c38c3be495",
+  "semanticArtifactDigest": "84b5cbbf871ae4495f50a95624a7207e7121765c90cd8bd7f207c0879d582f90",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "78602c4e2c9dc584e36f859e05bf1d92d912e5fa79f18660beaa40f59ca5b511",
+  "semanticCoverageDigest": "1900c45a578ef7c835f1f6282771bb15ae93a6a99db562a7e07ce5bb06a767a0",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "4c19a05b6cab8c53ef41f891d6eaf0972e455a8df7bd16523ed8953168f157c8"
+  "semanticFingerprint": "64813526f7d889cee42edb5200218e26ca8dba7ee085e0e2e628c7dbfeab886a"
 }

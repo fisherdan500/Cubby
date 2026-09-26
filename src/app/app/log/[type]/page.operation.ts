@@ -18,6 +18,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "getLastFeeding",
+      target: "src/server/services/activities.ts#getLastFeeding"
+    },
+    {
+      kind: "server_value_import",
       symbol: "requireUserPage",
       target: "src/server/auth/session.ts#requireUserPage"
     }
