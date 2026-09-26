@@ -22,8 +22,24 @@
 set -eu
 umask 077
 
+# Each run is recorded in the database, succeeded or failed with the reason below, so Cubby's platform
+# page shows the newest backup and the platform owner is emailed when they fail or stop. Recording is
+# best effort: when the database itself is down the run cannot be recorded, and Cubby notices the
+# missing backup instead. Only runs that got as far as starting are recorded, never a mistyped option.
+started=false
+record_run() {
+  docker compose exec -T postgres psql -U cubby_migrator -d cubby -XAt -v ON_ERROR_STOP=1 -c "$1" > /dev/null 2>&1 \
+    || printf 'system_backup_unrecorded: this run could not be recorded for the platform page\n' >&2
+}
+sql_text() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
+}
+
 fail() {
   printf 'system_backup_failed: %s\n' "$1" >&2
+  if [ "$started" = true ]; then
+    record_run "INSERT INTO \"SystemBackupRun\" (status, failure) VALUES ('failed', $(sql_text "$1"))"
+  fi
   exit 1
 }
 
@@ -51,6 +67,7 @@ chmod 700 "$output_dir"
 work="$output_dir/.cubby-system-$stamp.partial"
 archive="$output_dir/cubby-system-$stamp.tar"
 [ ! -e "$work" ] && [ ! -e "$archive" ] || fail "a backup named $stamp already exists; try again in a second"
+started=true
 mkdir "$work"
 trap 'rm -rf "$work" "$archive.partial"' EXIT INT TERM
 
@@ -99,5 +116,7 @@ ls "$output_dir" | grep -E '^cubby-system-[0-9]{8}T[0-9]{6}Z\.tar$' | sort -r | 
 done
 
 size=$(wc -c < "$archive" | tr -d ' ')
+# Recorded after the archive exists, so this backup is not in its own dump; older records go after 90 days.
+record_run "INSERT INTO \"SystemBackupRun\" (status, \"archiveName\", \"byteSize\", households, accounts, photos) VALUES ('succeeded', $(sql_text "$(basename "$archive")"), $size, $households, $accounts, $photos); DELETE FROM \"SystemBackupRun\" WHERE \"recordedAt\" < now() - interval '90 days'"
 printf 'system_backup_created file=%s bytes=%s households=%s accounts=%s photos=%s\n' "$archive" "$size" "$households" "$accounts" "$photos"
 printf 'Copy it off this server: a backup on the same disk goes with the disk.\n'

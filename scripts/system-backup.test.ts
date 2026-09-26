@@ -31,6 +31,7 @@ case "$*" in
   "up "*|"stop "*) exit 0 ;;
 esac
 case "$last" in
+  *'"SystemBackupRun"'*) [ "\${FAKE_RECORD_FAIL:-0}" = 1 ] && exit 5; exit 0 ;;
   *_prisma_migrations*) echo "${migration}" ;;
   "DROP DATABASE cubby") exit 0 ;;
   *'"Household"'*) if live; then echo "\${FAKE_HOUSEHOLDS:-2}"; else echo "\${FAKE_EMPTY_HOUSEHOLDS:-0}"; fi ;;
@@ -148,6 +149,29 @@ describe("system backup", () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("system_backup_failed: the database could not be dumped");
     expect(machine.archives()).toEqual([]);
+  });
+
+  it("records each run for the platform page: what a success made, and why a failure stopped", () => {
+    const machine = server();
+    backUp(machine);
+    const success = machine.calls().find((call) => call.includes('"SystemBackupRun"'));
+    expect(success).toMatch(/INSERT INTO "SystemBackupRun" \(status, "archiveName", "byteSize", households, accounts, photos\) VALUES \('succeeded', 'cubby-system-\d{8}T\d{6}Z\.tar', \d+, 2, 3, 1\)/);
+    expect(success).toContain(`DELETE FROM "SystemBackupRun" WHERE "recordedAt" < now() - interval '90 days'`);
+
+    const failing = server();
+    failing.run("system-backup.sh", [], { FAKE_MODE: "backup", FAKE_DUMP_FAIL: "1" });
+    expect(failing.calls().filter((call) => call.includes('"SystemBackupRun"'))).toEqual([
+      `compose exec -T postgres psql -U cubby_migrator -d cubby -XAt -v ON_ERROR_STOP=1 -c INSERT INTO "SystemBackupRun" (status, failure) VALUES ('failed', 'the database could not be dumped; is the postgres service running?')`
+    ]);
+  });
+
+  it("keeps a good backup when it cannot be recorded, and says so", () => {
+    const machine = server();
+    const result = machine.run("system-backup.sh", [], { FAKE_MODE: "backup", FAKE_RECORD_FAIL: "1" });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("system_backup_unrecorded");
+    expect(machine.archives()).toHaveLength(1);
   });
 
   it("keeps the newest archives it made, and never touches any other file", () => {

@@ -62,8 +62,20 @@ checkout:
 15 3 * * * cd /home/you/cubby && sh scripts/system-backup.sh >> docker-data/system-backup.log 2>&1
 ```
 
-That makes an archive at 3:15 every night and keeps two weeks of them. Check
-`docker-data/system-backup.log` now and then; a failed run says `system_backup_failed:` and why.
+That makes an archive at 3:15 every night and keeps two weeks of them.
+
+Each run records itself in the database: what it made, or why it failed. Platform administration
+(`/platform/settings`) shows the newest backup under **Backups and storage**. Cubby checks every hour
+and **emails the platform owner** when:
+
+- the last run failed;
+- no run has succeeded for 36 hours, once the first one has been made;
+- households' automatic backups have stopped;
+- the disk holding photos or backups falls under a fifth free.
+
+It sends one email when a problem starts, then one a day until it is fixed. If the database is down,
+a run cannot record itself, and Cubby notices the missing backup instead.
+`docker-data/system-backup.log` still has each run's own output.
 
 ## Copy It Off The Server
 

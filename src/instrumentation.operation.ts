@@ -42,6 +42,11 @@ export const operation = {
       target: "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
     },
     {
+      kind: "worker_dynamic_import",
+      symbol: "startPlatformHealthScheduler",
+      target: "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
+    },
+    {
       kind: "worker_start_call",
       symbol: "startAutomatedBackupScheduler",
       target: "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -75,6 +80,11 @@ export const operation = {
       kind: "worker_start_call",
       symbol: "startAttachmentRetentionScheduler",
       target: "src/server/attachment-retention-scheduler.ts#startAttachmentRetentionScheduler"
+    },
+    {
+      kind: "worker_start_call",
+      symbol: "startPlatformHealthScheduler",
+      target: "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
     }
   ],
   disposition: "observed",

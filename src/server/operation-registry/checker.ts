@@ -302,6 +302,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/app/settings/security-history/page.operation.ts",
   "src/instrumentation.operation.ts",
   "src/server/attachment-retention-scheduler.operation.ts",
+  "src/server/platform-health-scheduler.operation.ts",
   "src/server/automated-backup-scheduler.operation.ts",
   "src/server/browser-operation-retention-scheduler.operation.ts",
   "src/server/email-change-lifecycle-scheduler.operation.ts",
