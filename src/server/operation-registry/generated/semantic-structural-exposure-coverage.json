@@ -377,9 +377,9 @@
       "sidecarPath": "src/app/api/activities/undo-last/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET(_request: Request, { params }: { params: { id: string } }) {\n  try {\n    if (!ATTACHMENT_ID.test(params.id)) throw new Error(\"not_found\");\n    const { bytes, mimeType } = await openAttachment(params.id);\n    return new Response(new Uint8Array(bytes), {\n      status: 200,\n      headers: {\n        ...privateHeaders,\n        \"Content-Type\": mimeType,\n        \"Content-Length\": String(bytes.length),\n        \"Content-Disposition\": 'inline; filename=\"photo.jpg\"'\n      }\n    });\n  } catch (error) {\n    return withPrivateHeaders(handleError(error));\n  }\n}",
-      "anchorDigest": "698b8190db5cf37a9836143133b628fbd79478b1878d60915dc447c0a1bee918",
-      "anchorEnd": 1340,
+      "anchorBytes": "export async function GET(request: Request, { params }: { params: { id: string } }) {\n  try {\n    if (!ATTACHMENT_ID.test(params.id)) throw new Error(\"not_found\");\n    // ?size=thumbnail asks for the small copy grids use; anything else is the photo itself.\n    const thumbnail = new URL(request.url).searchParams.get(\"size\") === \"thumbnail\";\n    const { bytes, mimeType } = thumbnail ? await openAttachment(params.id, { size: \"thumbnail\" }) : await openAttachment(params.id);\n    return new Response(new Uint8Array(bytes), {\n      status: 200,\n      headers: {\n        ...privateHeaders,\n        \"Content-Type\": mimeType,\n        \"Content-Length\": String(bytes.length),\n        \"Content-Disposition\": 'inline; filename=\"photo.jpg\"'\n      }\n    });\n  } catch (error) {\n    return withPrivateHeaders(handleError(error));\n  }\n}",
+      "anchorDigest": "be4f5a6e9f92aba6f408c482cd035466e7d8b5b7df647f6495fdbd4ffbb4a206",
+      "anchorEnd": 1586,
       "anchorFile": "src/app/api/attachments/[id]/route.ts",
       "anchorStart": 762,
       "binding": {
@@ -2725,9 +2725,9 @@
     {
       "anchorBytes": "fetch(photoSrc(photo), { credentials: \"same-origin\" })",
       "anchorDigest": "3f4a1102387a73f479c415697bae20b8960e55e13ad5da5b52e031dfdd91925b",
-      "anchorEnd": 685,
+      "anchorEnd": 831,
       "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-      "anchorStart": 631,
+      "anchorStart": 777,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -7744,9 +7744,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "f07c184380916f44060f2429ea20b317530b6236df74004328e9cd8b2594becb",
+  "semanticArtifactDigest": "6d561dc3b5483576ca7527de8ff286edf6cb45dcf9e8158f38e719393b41a208",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "bc58c9fce1b4da5ce0036c10bd3597a46179486bfe44e6cef03a00642bdb87a5",
+  "semanticCoverageDigest": "4e33baef595175cad89020dccc67cf8573612c8253aae1eebe25a23477c93304",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "9eb606bcb7a53babbcfa0be13cd831b1d6b5a76509c339b99cf2225216a23cbd"

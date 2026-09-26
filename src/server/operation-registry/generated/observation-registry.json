@@ -8329,8 +8329,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "698b8190db5cf37a9836143133b628fbd79478b1878d60915dc447c0a1bee918",
-          "anchorEnd": 1340,
+          "anchorDigest": "be4f5a6e9f92aba6f408c482cd035466e7d8b5b7df647f6495fdbd4ffbb4a206",
+          "anchorEnd": 1586,
           "anchorFile": "src/app/api/attachments/[id]/route.ts",
           "anchorStart": 762,
           "kind": "route_method",
@@ -11731,9 +11731,9 @@
       "bindings": [
         {
           "anchorDigest": "3f4a1102387a73f479c415697bae20b8960e55e13ad5da5b52e031dfdd91925b",
-          "anchorEnd": 685,
+          "anchorEnd": 831,
           "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-          "anchorStart": 631,
+          "anchorStart": 777,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -14336,7 +14336,7 @@
     }
   ],
   "observationCount": 218,
-  "observationDigest": "8b6060b3402f5a3636ad56c90b9cdcc795b4aaee9673953fabfad9ffd1f73c69",
+  "observationDigest": "7444a5824d771f5399dd8173ea88fd4fc328cf6f58a38fcdc4b2b4e8d0283eee",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14703,7 +14703,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1340,
+          "anchorEnd": 1586,
           "anchorFile": "src/app/api/attachments/[id]/route.ts",
           "anchorStart": 762,
           "kind": "route_method",
@@ -17970,9 +17970,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 685,
+          "anchorEnd": 831,
           "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-          "anchorStart": 631,
+          "anchorStart": 777,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
           "symbol": "fetch[1]",
@@ -21710,7 +21710,7 @@
   ],
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "2b147d674f1945a45d0e3c4b7257f7c247ad54ba735fcef58d6e715a82848e41",
+  "registryDigest": "51e80b6a4dcc3882302985fedee55062489e4e1ec95ce0cc8a08b31226b38ba2",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

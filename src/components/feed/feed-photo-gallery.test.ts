@@ -35,9 +35,10 @@ describe("FeedPhotoGallery", () => {
     render(createElement(FeedPhotoGallery, { photos }));
     const images = within(screen.getByRole("list", { name: "Photos" })).getAllByRole("img");
 
+    // Grids load small copies; the photo's own shape still sets how much room each takes.
     expect(images.map((image) => [image.getAttribute("src"), image.getAttribute("width"), image.getAttribute("alt")])).toEqual([
-      ["/api/attachments/photo-a", "2560", "Photo 1 of 2"],
-      ["/api/attachments/photo-b", "1440", "Photo 2 of 2"]
+      ["/api/attachments/photo-a?size=thumbnail", "2560", "Photo 1 of 2"],
+      ["/api/attachments/photo-b?size=thumbnail", "1440", "Photo 2 of 2"]
     ]);
     expect(screen.queryAllByRole("link")).toEqual([]);
     expect(screen.getByRole("button", { name: "Open photo 2 of 2" })).toBeTruthy();
@@ -48,6 +49,7 @@ describe("FeedPhotoGallery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open photo 2 of 2" }));
 
     const viewer = screen.getByRole("dialog", { name: "Photo 2 of 2" });
+    // Full screen shows the photo itself, not the small copy.
     expect(within(viewer).getByRole("img").getAttribute("src")).toBe("/api/attachments/photo-b");
     expect(window.history.pushState).toHaveBeenCalledTimes(1);
 

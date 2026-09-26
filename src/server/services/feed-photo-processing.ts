@@ -14,6 +14,18 @@ export type ProcessedFeedPhoto = {
   height: number;
 };
 
+// Big enough to look sharp as a single photo across a phone screen, small enough that a grid of them
+// loads quickly on mobile data.
+const THUMBNAIL_DIMENSION = 800;
+
+/** A small copy of a stored photo, for grids; the full photo is kept for the viewer and for saving. */
+export async function makeFeedPhotoThumbnail(photo: Buffer) {
+  return sharp(photo, { limitInputPixels: policy.maxInputPixels, failOn: "truncated" })
+    .resize({ width: THUMBNAIL_DIMENSION, height: THUMBNAIL_DIMENSION, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 75, mozjpeg: true })
+    .toBuffer();
+}
+
 /**
  * Re-save an uploaded feed photo (DEC-PROD-422): the format is judged from the bytes, the photo is
  * turned the right way up, scaled to fit 2560px, and written as a fresh JPEG carrying no metadata -
