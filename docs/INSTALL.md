@@ -122,16 +122,77 @@ throwaway machine or VM:
 
 Then throw the practice machine away.
 
-## 6. Updating
+## 6. Updating A Running Cubby
 
-1. **Make a backup first**: `sh scripts/system-backup.sh`, and copy the archive off the server.
-2. Fetch the new version: `git pull`.
-3. Rebuild and restart: `docker compose up --build -d`. Cubby updates its database on start and
+Cubby has no published image to pull. The server builds its own image from this repository, so an
+update means pulling the new code and rebuilding. Your data is not inside the image: the database
+lives in the `cubby_postgres_data` volume, and photos and backups in `docker-data/`. Replacing the
+container leaves all of it in place.
+
+Run these from the checkout on the server, while Cubby is running:
+
+1. **Make a backup first**, and copy the archive off the server:
+
+   ```bash
+   sh scripts/system-backup.sh
+   ```
+
+2. **Check nothing local is in the way.** `git status` should list no changed files. `.env` and
+   `docker-data/` are never listed, and they stay as they are.
+
+   ```bash
+   git status
+   ```
+
+3. **Pull the new code:**
+
+   ```bash
+   git pull
+   ```
+
+4. **Build a fresh image.** `--pull` also fetches the newest Node base image, so security fixes to
+   it arrive with the update. The running Cubby keeps serving while this builds.
+
+   ```bash
+   docker compose build --pull app
+   ```
+
+5. **Refresh PostgreSQL** to the newest 16.x image. This stays within PostgreSQL 16, so the
+   database needs no conversion:
+
+   ```bash
+   docker compose pull postgres
+   ```
+
+6. **Swap in the new containers.** Compose replaces only the containers whose image changed. Cubby
+   is unavailable for the minute or so it takes to restart. It updates its database on start and
    refuses to start if that fails.
-4. Check it is healthy: `docker compose ps` shows both services healthy, and Cubby opens as usual.
 
-**Never run `docker compose down --volumes`**: it deletes the database. For the full runbook,
-with the preflight checks and what to do if an update fails, see
+   ```bash
+   docker compose up -d
+   ```
+
+7. **Check it is healthy.** Both services should show `healthy` within about a minute. Then open
+   Cubby as usual and check your newest entries and photos are there.
+
+   ```bash
+   docker compose ps
+   docker compose logs --tail 100 app
+   ```
+
+8. **Optionally, reclaim disk space** from old images once the new one is healthy:
+
+   ```bash
+   docker image prune
+   ```
+
+If the new version does not become healthy, do not go back to the old code on your own once the
+database has been updated: an older Cubby may not understand the newer database. Leave it stopped,
+keep the backup from step 1, and follow
+[Failure Handling](ALWAYS_ON_UPDATES.md#failure-handling) in Always-On Updates.
+
+**Never run `docker compose down --volumes`**: it deletes the database. Plain `docker compose down`
+and `docker compose up -d` are safe. For the full runbook, with the preflight checks, see
 [Always-On Updates](ALWAYS_ON_UPDATES.md).
 
 ## 7. If The Server Dies
@@ -152,4 +213,5 @@ signs in as before. See [Whole-System Backup](recovery/system-backup.md#restorin
 - [ ] `AUTOMATED_BACKUPS_ENABLED=true` in `.env`
 - [ ] Backups copied off the server on a schedule
 - [ ] Practice restore done on a throwaway machine
-- [ ] Before every update: a backup first; never `docker compose down --volumes`
+- [ ] Before every update: a backup first; then `git pull`, `docker compose build --pull app`,
+      `docker compose pull postgres`, `docker compose up -d`; never `docker compose down --volumes`
