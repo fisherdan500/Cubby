@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { ActivityType, BrowserOperationKey, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
+import { ActivityType, BrowserOperationKey, FeedingKind, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { durationSeconds } from "@/lib/dates";
 import { env } from "@/lib/env";
@@ -12,6 +12,7 @@ import {
   type ActivityRestoreInput
 } from "@/lib/validation/activity";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
+import type { LastFeeding } from "@/domain/feeding-defaults";
 import { canMutateOwnOrAny } from "@/domain/roles";
 import type { ActivityRowViewer } from "@/lib/activity-row-actions";
 import { writeAudit } from "@/server/services/audit";
@@ -713,6 +714,28 @@ export async function listActivitiesForContext(
       take: 100
     })
   });
+}
+
+/**
+ * A baby's newest feed in this household, for a new feed to start from: its kind, and the amount and
+ * unit of the newest bottle or formula feed. Null without a baby or a feed.
+ */
+export async function getLastFeeding(babyId: string | undefined): Promise<LastFeeding | null> {
+  if (!babyId) return null;
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "activity.read");
+  const where = { householdId: ctx.householdId, babyId, deletedAt: null, type: ActivityType.feeding };
+  const orderBy = [{ occurredAt: "desc" as const }, { id: "desc" as const }];
+  const [newest, newestLiquid] = await Promise.all([
+    prisma.activityLog.findFirst({ where: { ...where, feeding: { isNot: null } }, orderBy, select: { feeding: { select: { mode: true } } } }),
+    prisma.activityLog.findFirst({
+      where: { ...where, feeding: { is: { mode: { in: [FeedingKind.bottle, FeedingKind.formula] }, amount: { not: null } } } },
+      orderBy,
+      select: { feeding: { select: { amount: true, unit: true } } }
+    })
+  ]);
+  if (!newest?.feeding) return null;
+  return { mode: newest.feeding.mode, amount: newestLiquid?.feeding?.amount?.toString() ?? null, unit: newestLiquid?.feeding?.unit ?? null };
 }
 
 /** Who is looking at a list of activities, for deciding which rows they may edit or delete. */

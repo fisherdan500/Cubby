@@ -1,19 +1,25 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BrandLockup } from "@/components/brand";
+import { PlatformHealthPanel } from "@/components/settings/platform-health-panel";
 import { PlatformTestEmail } from "@/components/settings/platform-test-email";
 import { RegistrationSettingsForm } from "@/components/settings/registration-settings-form";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Card } from "@/components/ui/card";
+import { env } from "@/lib/env";
 import { requireUserPage } from "@/server/auth/session";
 import { getPlatformRegistrationSettings } from "@/server/services/platform-authority";
+import { getPlatformHealth } from "@/server/services/platform-health";
 
 export default async function PlatformSettingsPage() {
   const user = await requireUserPage();
   let settings;
+  let health;
+  const now = new Date();
   try {
     settings = await getPlatformRegistrationSettings();
+    health = await getPlatformHealth(now);
   } catch (error) {
     if (error instanceof Error && error.message === "forbidden") {
       notFound();
@@ -48,6 +54,9 @@ export default async function PlatformSettingsPage() {
             householdCreationMode={settings.householdCreationMode}
             allowPublicRegistration={settings.allowPublicRegistration}
           />
+        </Card>
+        <Card>
+          <PlatformHealthPanel health={health} now={now} timeZone={env.APP_TIMEZONE} />
         </Card>
         <Card>
           <PlatformTestEmail />

@@ -65,6 +65,7 @@ import {
   deleteActivity,
   getActivityForEdit,
   getActivityView,
+  getLastFeeding,
   pauseTimer,
   restoreHistoricalActivityForContext,
   resumeTimer,
@@ -73,6 +74,36 @@ import {
   undoLastActivity,
   updateActivity
 } from "@/server/services/activities";
+
+describe("the last feed, to start the next one from", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getEffectiveHouseholdContext.mockResolvedValue(context("caretaker"));
+  });
+
+  it("reads this household's newest feed for the baby, and its newest bottle or formula amount", async () => {
+    mocks.activityFindFirst
+      .mockResolvedValueOnce({ feeding: { mode: "breast" } })
+      .mockResolvedValueOnce({ feeding: { amount: { toString: () => "4.5" }, unit: "oz" } });
+
+    await expect(getLastFeeding("baby-1")).resolves.toEqual({ mode: "breast", amount: "4.5", unit: "oz" });
+    const [newest, newestLiquid] = mocks.activityFindFirst.mock.calls.map(([query]) => query);
+    for (const query of [newest, newestLiquid]) {
+      expect(query.where).toMatchObject({ householdId: "household-1", babyId: "baby-1", deletedAt: null, type: "feeding" });
+      expect(query.orderBy).toEqual([{ occurredAt: "desc" }, { id: "desc" }]);
+    }
+    expect(newestLiquid.where.feeding).toEqual({ is: { mode: { in: ["bottle", "formula"] }, amount: { not: null } } });
+    expect(mocks.requirePermission).toHaveBeenCalledWith(expect.anything(), "activity.read");
+  });
+
+  it("has nothing to start from without a baby or a feed", async () => {
+    await expect(getLastFeeding(undefined)).resolves.toBeNull();
+    expect(mocks.activityFindFirst).not.toHaveBeenCalled();
+
+    mocks.activityFindFirst.mockResolvedValue(null);
+    await expect(getLastFeeding("baby-1")).resolves.toBeNull();
+  });
+});
 
 describe("activity page access", () => {
   beforeEach(() => {

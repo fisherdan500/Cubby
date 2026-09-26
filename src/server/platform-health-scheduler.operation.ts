@@ -2,24 +2,24 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/platform/settings/page.tsx",
-  ownerModule: "src/app/platform/settings/page.tsx",
-  ownerKind: "server_loader",
+  id: "worker:src/server/platform-health-scheduler.ts",
+  ownerModule: "src/server/platform-health-scheduler.ts",
+  ownerKind: "worker",
   bindings: [
     {
-      kind: "server_value_import",
-      symbol: "getPlatformHealth",
-      target: "src/server/services/platform-health.ts#getPlatformHealth"
+      kind: "worker_schedule",
+      symbol: "tick",
+      target: "src/server/platform-health-scheduler.ts#tick"
     },
     {
-      kind: "server_value_import",
-      symbol: "getPlatformRegistrationSettings",
-      target: "src/server/services/platform-authority.ts#getPlatformRegistrationSettings"
+      kind: "worker_start_call",
+      symbol: "startPlatformHealthScheduler",
+      target: "src/server/platform-health-scheduler.ts#startPlatformHealthScheduler"
     },
     {
-      kind: "server_value_import",
-      symbol: "requireUserPage",
-      target: "src/server/auth/session.ts#requireUserPage"
+      kind: "worker_tick",
+      symbol: "tick",
+      target: "src/server/services/platform-health.ts#runPlatformHealthCheck"
     }
   ],
   disposition: "observed",

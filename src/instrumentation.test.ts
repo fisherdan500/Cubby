@@ -10,11 +10,15 @@ const mocks = vi.hoisted(() => ({
   startEmailDelivery: vi.fn(),
   startEmailChangeLifecycle: vi.fn(),
   startAttachmentRetention: vi.fn(),
+  startPlatformHealth: vi.fn(),
   writeFileSync: vi.fn()
 }));
 
 vi.mock("@/server/attachment-retention-scheduler", () => ({
   startAttachmentRetentionScheduler: mocks.startAttachmentRetention
+}));
+vi.mock("@/server/platform-health-scheduler", () => ({
+  startPlatformHealthScheduler: mocks.startPlatformHealth
 }));
 
 
@@ -70,6 +74,7 @@ describe("instrumentation", () => {
     expect(mocks.startEmailDelivery).toHaveBeenCalledOnce();
     expect(mocks.startEmailChangeLifecycle).toHaveBeenCalledOnce();
     expect(mocks.startAttachmentRetention).toHaveBeenCalledOnce();
+    expect(mocks.startPlatformHealth).toHaveBeenCalledOnce();
   });
 
   it("advances only the fixed acceptance instrumentation stages", async () => {

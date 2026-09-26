@@ -100,6 +100,15 @@ Set these up before the family relies on Cubby. There are two kinds, and you wan
 
 4. **Keep `.env` and `docker-data/` private.** They hold every secret and every household's data.
 
+Cubby watches all of this for you. Platform administration (`/platform/settings`) shows the newest
+backups and free disk space under **Backups and storage**. You get an email when:
+
+- a backup fails or stops;
+- a disk holding photos or backups is nearly full.
+
+The email goes out when the problem starts, then once a day until it is fixed. It uses the same mail
+settings as the test email in step 3.
+
 ## 5. Practise A Restore, Early
 
 Do this once, before there is much data, so a real recovery is not the first one. On a second,

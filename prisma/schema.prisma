@@ -317,6 +317,32 @@ model PlatformSetupCode {
   createdAt  DateTime @default(now())
 }
 
+// One run of scripts/system-backup.sh, recorded by the script itself through the database superuser
+// (see 20261001120000_platform_health), so the platform page can show the newest whole-system backup
+// and the platform owner is told when they fail or stop. The application only reads it.
+model SystemBackupRun {
+  id          String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  status      String
+  archiveName String?
+  byteSize    BigInt?
+  households  Int?
+  accounts    Int?
+  photos      Int?
+  failure     String?
+  recordedAt  DateTime @default(now())
+
+  @@index([recordedAt])
+}
+
+// A backup or storage problem the platform owner has been emailed about: when it began and when they
+// were last told, so an ongoing problem is repeated once a day rather than every hour. Its row goes
+// when the problem does.
+model PlatformHealthAlert {
+  key         String    @id
+  activeSince DateTime
+  lastSentAt  DateTime?
+}
+
 enum PlatformRegistrationOperationStatus {
   pending
   completed
