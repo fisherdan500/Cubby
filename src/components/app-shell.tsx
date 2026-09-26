@@ -25,6 +25,7 @@ export function AppShell({
   babySelector,
   timerBabyId,
   timerActivityType,
+  showAllTimers,
   parent
 }: {
   children: React.ReactNode;
@@ -32,8 +33,12 @@ export function AppShell({
   userName: string;
   babySelector?: HeaderBabySelectorData | null;
   timerBabyId?: string;
-  // On one activity's own screen: the running-timer bar then shows only a timer of that activity.
+  // Set on one activity's own screens (logging, viewing, editing it): the running-timer bar appears
+  // there for a timer of that activity only.
   timerActivityType?: string;
+  // Set on the Log screen alone: the bar appears there with every running timer. No other screen
+  // sets either, so Moments, Calendar, Reports and Settings never show the bar.
+  showAllTimers?: boolean;
   // Where a phone's back link at the top of the page goes, for pages reached from another page
   // (the settings sections) rather than from a bottom tab.
   parent?: { href: string; label: string };
@@ -117,8 +122,12 @@ export function AppShell({
         {children}
       </main>
 
-      {/* Fetches its own running timers, so no page gains a database read for it. */}
-      <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />
+      {/* On the Log screen, with every running timer, and on an activity's own screen, for a timer of
+          that activity - nowhere else. Fetches its own running timers, so no page gains a database
+          read for it. */}
+      {showAllTimers || timerActivityType ? (
+        <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />
+      ) : null}
       <SavedEntryUndo />
       <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>

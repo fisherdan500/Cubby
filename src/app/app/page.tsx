@@ -64,7 +64,7 @@ export default async function DashboardPage({
   const visibleActivities = baby ? filterActivitiesBySummaryType(currentDashboard.activities, selectedSummaryType) : [];
 
   return (
-    <AppShell title="Log Entry" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Log Entry" userName={user.name} babySelector={babySelector} showAllTimers>
       {!baby ? (
         <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (

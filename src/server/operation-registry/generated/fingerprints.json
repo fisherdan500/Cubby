@@ -1984,17 +1984,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "9d4cadc7f1425fbdc3a6cf00a8ffa886d5607e546b07b6e2861e5c50bcdeb8f7",
+          "digest": "6f0add3d5408713b04882df78453bc935f9f0298a9503d8cc2d73eecf597055f",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "7e3cd8bd2773b7be03d0d0f969b856e661788ee3a46f8fb53dddd12633d4a3d7",
+      "fingerprint": "2d160ebc1cafd1c48cb73053eee4538ffe00b93ab3aac0298f71ee6e5a11398c",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "d5891b3df8fa69a480bb60d9e724a422dce2bc354560dc1ccefbf45b05124161",
+      "sourceDigest": "4314e6128387b380f7d925babb56834f91197beab4d9faca3417f15f8abd002d",
       "status": "declared"
     },
     {
@@ -2368,17 +2368,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "028c8284c800ef378848ce130aeeaff65b56e713fb86c60e988716fd76ad6fd9",
+          "digest": "3646b6b878577231c52a33cdc98637248f779c7ce459f52fa12a07f0a5ed3542",
           "file": "src/components/active-timer-bar.tsx"
         }
       ],
       "declarationDigest": "1161fd5a506c806d7c14d8c50fc2988e3befec80a4b0dbd7f8acac4162db5165",
-      "fingerprint": "399ce0b99fb11c37a2c687bc22577b9e5949153814e093cfd9f019f1ddf16a7d",
+      "fingerprint": "6d8ccc98bb75ee58e66a766d8dea8cdf9993875f594de5887c3cf5d3619954a0",
       "id": "fingerprint:client_binding:src/components/active-timer-bar.tsx",
       "ownerId": "client_binding:src/components/active-timer-bar.tsx",
       "ownerModule": "src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts",
-      "sourceDigest": "d6e2b13ce7cfec6501a6dd5957e92bcb3fc2ac086942a83d527adcf47255ae7c",
+      "sourceDigest": "bd09cf8d6584c94659f94bfaf7fd44119c46d841c22c5af414a4043ba3dcc29c",
       "status": "declared"
     },
     {
@@ -3892,11 +3892,11 @@
   ],
   "generatorDigest": "7027686cdc461715f90d73b2a100ebe7685734c86d7e70991592f7d2163ec269",
   "generatorVersion": "r0.1",
-  "observationDigest": "50367570dc68dd30ec86c5a2340178e0ab0de75d0d94df59f90c6e8d7dbaa835",
+  "observationDigest": "ca9c86690a2c20140112fed17e5625e0f59afc0d3f0ec8babb1801954b2b7a2b",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "7b444cb98441b6d43c00c6cd139f1fe9a0152de2fc300b0c1a79764af5970ef7",
+  "registryDigest": "e0eee066ac3977a21656ec4482bc91485ac01587258d1766dc85fd25c81b7945",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

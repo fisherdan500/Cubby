@@ -12,12 +12,13 @@ import { canonicalTimerReturnTo } from "@/lib/activity-navigation";
 import type { ActiveTimerSummary } from "@/server/services/active-timers";
 
 /**
- * One line above the bottom navigation, whenever a timer is running, carrying the thing you actually
- * need in a hurry: how long it has been going, and Stop.
+ * One line above the bottom navigation, carrying the thing you actually need in a hurry: how long a
+ * timer has been going, and Stop. It shows on the Log screen, with every running timer, and on a
+ * running activity's own screens, with that activity's timer - nowhere else: not over another
+ * activity's form, and not on Moments, Calendar or Reports, where it only got in the way.
  *
- * It lives in the shell rather than on the dashboard because the moment a feed ends is rarely the
- * moment you happen to be looking at the dashboard. Pause is deliberately not here - it is far rarer
- * than stop, and it lives on the activity's own screen, where there is room to think.
+ * Pause is deliberately not here - it is far rarer than stop, and it lives on the activity's own
+ * screen, where there is room to think.
  */
 
 function timerHref(timer: ActiveTimerSummary, returnTo: string) {
