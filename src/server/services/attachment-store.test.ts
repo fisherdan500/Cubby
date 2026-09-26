@@ -6,8 +6,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   listAttachmentObjectKeys,
   readAttachmentObject,
+  readAttachmentThumbnail,
   removeAttachmentObject,
-  writeAttachmentObject
+  removeAttachmentThumbnail,
+  writeAttachmentObject,
+  writeAttachmentThumbnail
 } from "@/server/services/attachment-store";
 
 const roots: string[] = [];
@@ -81,6 +84,27 @@ describe("attachment store", () => {
     await writeAttachmentObject(root, key, bytes, expected);
     await writeFile(path.join(root, "objects", "01", "notes.txt"), "stray");
     expect(await listAttachmentObjectKeys(root)).toEqual([key]);
+  });
+
+  it("keeps thumbnails in their own directory, apart from the photos the integrity check verifies", async () => {
+    const root = await tempRoot();
+    await writeAttachmentObject(root, key, bytes, expected);
+    const thumbnail = Buffer.from("small jpeg");
+
+    await expect(readAttachmentThumbnail(root, key)).resolves.toBeNull();
+    await writeAttachmentThumbnail(root, key, thumbnail);
+    // Written twice at once by two viewers: the second finds it already there, and that is fine.
+    await writeAttachmentThumbnail(root, key, thumbnail);
+    await expect(readAttachmentThumbnail(root, key)).resolves.toEqual(thumbnail);
+
+    expect(await readdir(path.join(root, "thumbnails", "01"))).toEqual([key]);
+    expect(await listAttachmentObjectKeys(root)).toEqual([key]);
+
+    await removeAttachmentThumbnail(root, key);
+    await removeAttachmentThumbnail(root, key);
+    await expect(readAttachmentThumbnail(root, key)).resolves.toBeNull();
+    await expect(readAttachmentObject(root, key, expected)).resolves.toEqual(bytes);
+    await expect(writeAttachmentThumbnail(root, "../../etc/passwd", thumbnail)).rejects.toThrow("attachment_store_invalid_key");
   });
 
   it("refuses a storage root reached through a link", async () => {

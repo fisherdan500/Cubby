@@ -67,6 +67,20 @@ describe("GET /api/attachments/[id]", () => {
     expect(mocks.openAttachment).toHaveBeenCalledWith(photoId);
   });
 
+  it("serves a thumbnail for ?size=thumbnail with the same private headers, and the full photo otherwise", async () => {
+    mocks.openAttachment.mockResolvedValue({ bytes: Buffer.from("small"), mimeType: "image/jpeg" });
+    const response = await GET(new Request(`https://cubby.test/api/attachments/${photoId}?size=thumbnail`), { params: { id: photoId } });
+
+    expect(response.status).toBe(200);
+    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId, { size: "thumbnail" });
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("content-security-policy")).toBe("default-src 'none'; sandbox");
+
+    mocks.openAttachment.mockClear();
+    await GET(new Request(`https://cubby.test/api/attachments/${photoId}?size=huge`), { params: { id: photoId } });
+    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId);
+  });
+
   it("answers the same way whenever the photo cannot be shown to this person", async () => {
     mocks.openAttachment.mockRejectedValue(new Error("not_found"));
     const response = await GET(new Request(`https://cubby.test/api/attachments/${photoId}`), { params: { id: photoId } });

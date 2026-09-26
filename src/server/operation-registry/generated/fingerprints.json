@@ -296,17 +296,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "1e10bdea27a675cd0d87175419d783dcd48d6617195d01da610decc1df136925",
+          "digest": "488004f832e4d4bcc147aedd515932239ae3720c61af5b7b5d869b9205848fb2",
           "file": "src/app/api/attachments/[id]/route.ts"
         }
       ],
       "declarationDigest": "e3552c16da1b3559a3e29c4f775c351b24013d5c2e59f1bcbb61cc4f9c7f7476",
-      "fingerprint": "fb24ac70bf343bfd97c9c8f43133c54bbc37c2bd139a36609ed5dae77a0444cb",
+      "fingerprint": "de669c1823a2b5afbdf5935ccd9f815a4913a8184d43d60fc3132418bc18db90",
       "id": "fingerprint:api_route:src/app/api/attachments/[id]/route.ts",
       "ownerId": "api_route:src/app/api/attachments/[id]/route.ts",
       "ownerModule": "src/app/api/attachments/[id]/route.ts",
       "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts",
-      "sourceDigest": "6f4f5fa1c39b16de693a7a35ea222dd22ea76753a83b26c046e7e64e84382be0",
+      "sourceDigest": "a16c03bc78d8e9a892086236d952f7e92a92e7a7c05ba517ab6cc9e03a1d6b47",
       "status": "declared"
     },
     {
@@ -2448,17 +2448,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8ba0b77926d29dabb245dbe09e4db218f8eb7226e0630b89a5cde6fe8ca62f25",
+          "digest": "49f343c33b5749e886f7c4c8540d7894df785fdd1128bddca3b0962acfbe7e79",
           "file": "src/components/feed/feed-photo-gallery.tsx"
         }
       ],
       "declarationDigest": "3e3bef8ff066b181f3171fea8442f2b992219c675f6bdc6fbcb727e5fd1d159d",
-      "fingerprint": "40d5d4a85583da8c6690898ba3a2d5bdb0e019fe921a684a8af926f8e129f0ee",
+      "fingerprint": "c012d5e05aca5a7ca00b55870db6cefc2884dc2653518e48a9edad9914934445",
       "id": "fingerprint:client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerId": "client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
       "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts",
-      "sourceDigest": "93394f3a34d6ba01a092979abf8c1c0609514d60a57e55d08f50ea4b258a9237",
+      "sourceDigest": "c5ceab61130393057e32690c2d511a5fc7338c74e01ae9f9429e1a8161824bbb",
       "status": "declared"
     },
     {
@@ -3876,11 +3876,11 @@
   ],
   "generatorDigest": "a1fe8d4151563105c7c2f3e5db2a8992d7eddd1a96ea3cbf19557f24d4a0b2ab",
   "generatorVersion": "r0.1",
-  "observationDigest": "9c21bc2e8b53352945bf44517cc4994be5fb0ae42b4855d809dce6c298e4bb91",
+  "observationDigest": "c813ca053efbaa45edf0f48dab44e99d5012a29c4fa89ee281d1b0b49947bbd0",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "33fa36c13570a71bdf0699cf49668ea1d9fe2a2632cf58c6f6a3546394990f33",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "7291f93c1d808b85ca5e83890d4814c31d0f8f460a5fdee6b5cbd47e9bf1cd04",
+  "registryDigest": "c7c5752de7445377f56c0e942aaff21ab6c92ccf007a30c3ce1aa57c6abedc25",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

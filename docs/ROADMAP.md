@@ -110,7 +110,8 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
 4. Using the photos:
    - a full-screen viewer inside Moments: swipe or tap either side to move between photos, stopping at the ends; swipe down to close; buttons that fade after two seconds;
    - Save (on a phone, through the share sheet, so an iPhone puts it in Photos) and, on a computer, Share;
-   - a Photos filter gathering every post's photos into one grid, newest post first, 25 posts a page.
+   - a Photos filter gathering every post's photos into one grid, newest post first, 25 posts a page;
+   - small copies (up to 800px) for grids and post cards, made on first view from the verified photo after the same household checks, kept in their own `thumbnails/` directory apart from the verified objects, and erased with the photo. The viewer and Save use the photo itself.
 
 ### Routine And Planned Schedule
 

@@ -7,6 +7,10 @@ const mocks = vi.hoisted(() => ({
   writeObject: vi.fn(),
   readObject: vi.fn(),
   removeObject: vi.fn(),
+  readThumbnail: vi.fn(),
+  writeThumbnail: vi.fn(),
+  removeThumbnail: vi.fn(),
+  makeThumbnail: vi.fn(),
   writeAudit: vi.fn(),
   attachment: {
     create: vi.fn(),
@@ -21,11 +25,14 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext, requirePermission: mocks.requirePermission }));
-vi.mock("@/server/services/feed-photo-processing", () => ({ processFeedPhoto: mocks.processFeedPhoto }));
+vi.mock("@/server/services/feed-photo-processing", () => ({ processFeedPhoto: mocks.processFeedPhoto, makeFeedPhotoThumbnail: mocks.makeThumbnail }));
 vi.mock("@/server/services/attachment-store", () => ({
   writeAttachmentObject: mocks.writeObject,
   readAttachmentObject: mocks.readObject,
-  removeAttachmentObject: mocks.removeObject
+  removeAttachmentObject: mocks.removeObject,
+  readAttachmentThumbnail: mocks.readThumbnail,
+  writeAttachmentThumbnail: mocks.writeThumbnail,
+  removeAttachmentThumbnail: mocks.removeThumbnail
 }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 vi.mock("@/lib/env", () => ({ attachmentConfig: { directory: "/data/attachments" } }));
@@ -65,6 +72,9 @@ beforeEach(() => {
   mocks.attachment.updateMany.mockResolvedValue({ count: 1 });
   mocks.transaction.mockImplementation((work) => work(tx()));
   mocks.queryRaw.mockResolvedValue([]);
+  // The store's writes and removals resolve, as the real ones do.
+  mocks.writeThumbnail.mockResolvedValue(undefined);
+  mocks.removeThumbnail.mockResolvedValue(undefined);
 });
 
 describe("staging a feed photo", () => {
@@ -190,6 +200,52 @@ describe("opening a photo", () => {
   });
 });
 
+describe("opening a photo's thumbnail", () => {
+  it("serves a kept thumbnail after the same checks, without reading the full photo", async () => {
+    mocks.attachment.findFirst.mockResolvedValue(row());
+    mocks.readThumbnail.mockResolvedValue(Buffer.from("small"));
+
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toEqual({ bytes: Buffer.from("small"), mimeType: "image/jpeg" });
+    expect(mocks.attachment.findFirst.mock.calls[0][0].where).toMatchObject({ id: "att-1", householdId: "household-1", state: "available" });
+    expect(mocks.readThumbnail).toHaveBeenCalledWith("/data/attachments", "0".repeat(32));
+    expect(mocks.readObject).not.toHaveBeenCalled();
+  });
+
+  it("makes one from the verified photo the first time, and keeps it", async () => {
+    mocks.attachment.findFirst.mockResolvedValue(row());
+    mocks.readThumbnail.mockResolvedValue(null);
+    mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
+    mocks.makeThumbnail.mockResolvedValue(Buffer.from("small"));
+
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toEqual({ bytes: Buffer.from("small"), mimeType: "image/jpeg" });
+    expect(mocks.makeThumbnail).toHaveBeenCalledWith(Buffer.from("jpeg"));
+    expect(mocks.writeThumbnail).toHaveBeenCalledWith("/data/attachments", "0".repeat(32), Buffer.from("small"));
+  });
+
+  it("still serves the thumbnail when it cannot be kept, and never one for a photo it may not show", async () => {
+    mocks.attachment.findFirst.mockResolvedValue(row());
+    mocks.readThumbnail.mockResolvedValue(null);
+    mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
+    mocks.makeThumbnail.mockResolvedValue(Buffer.from("small"));
+    mocks.writeThumbnail.mockRejectedValue(new Error("attachment_store_write_failed"));
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toMatchObject({ bytes: Buffer.from("small") });
+
+    mocks.readThumbnail.mockClear();
+    mocks.attachment.findFirst.mockResolvedValue(null);
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).rejects.toThrow("not_found");
+    expect(mocks.readThumbnail).not.toHaveBeenCalled();
+  });
+
+  it("stops serving a photo whose bytes changed, thumbnail or not", async () => {
+    mocks.attachment.findFirst.mockResolvedValue(row());
+    mocks.readThumbnail.mockResolvedValue(null);
+    mocks.readObject.mockRejectedValue(new Error("attachment_bytes_mismatch"));
+
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).rejects.toThrow("not_found");
+    expect(mocks.attachment.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { state: "unavailable", unavailableAt: now } }));
+  });
+});
+
 describe("removing and restoring a post's photos", () => {
   it("makes them privately recoverable for thirty days", async () => {
     await removePostPhotos(tx() as never, ctx as never, { postId: "post-1", now });
@@ -232,6 +288,8 @@ describe("purging", () => {
       ]
     });
     expect(mocks.removeObject.mock.calls).toEqual([["/data/attachments", "0".repeat(32)], ["/data/attachments", "1".repeat(32)]]);
+    // A thumbnail goes with its photo: nothing of an erased photo is left behind.
+    expect(mocks.removeThumbnail.mock.calls).toEqual([["/data/attachments", "0".repeat(32)], ["/data/attachments", "1".repeat(32)]]);
     expect(mocks.attachment.updateMany.mock.calls.map(([call]) => call.data)).toEqual([
       { state: "purged", purgedAt: now }, { state: "purged", purgedAt: now }
     ]);

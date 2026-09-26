@@ -20,10 +20,12 @@ function withPrivateHeaders(response: Response) {
   return response;
 }
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     if (!ATTACHMENT_ID.test(params.id)) throw new Error("not_found");
-    const { bytes, mimeType } = await openAttachment(params.id);
+    // ?size=thumbnail asks for the small copy grids use; anything else is the photo itself.
+    const thumbnail = new URL(request.url).searchParams.get("size") === "thumbnail";
+    const { bytes, mimeType } = thumbnail ? await openAttachment(params.id, { size: "thumbnail" }) : await openAttachment(params.id);
     return new Response(new Uint8Array(bytes), {
       status: 200,
       headers: {

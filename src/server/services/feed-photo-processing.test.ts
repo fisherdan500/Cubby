@@ -1,13 +1,31 @@
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { processFeedPhoto } from "@/server/services/feed-photo-processing";
+import { makeFeedPhotoThumbnail, processFeedPhoto } from "@/server/services/feed-photo-processing";
 
 const exif = { IFD0: { Make: "ProbeCam", Model: "Private Model" }, GPSIFD: { GPSLatitudeRef: "N", GPSLatitude: "51/1 30/1 0/1" } };
 
 function image(width: number, height: number, format: "jpeg" | "png" | "webp" | "gif" | "tiff" = "jpeg") {
   return sharp({ create: { width, height, channels: 3, background: "#88aacc" } }).withExifMerge(exif).toFormat(format).toBuffer();
 }
+
+describe("makeFeedPhotoThumbnail", () => {
+  it("makes a small JPEG no larger than 800px for grids, keeping the photo's shape", async () => {
+    const photo = await processFeedPhoto(await image(2560, 1920));
+    const thumbnail = await makeFeedPhotoThumbnail(photo.bytes);
+    const meta = await sharp(thumbnail).metadata();
+
+    expect([meta.format, meta.width, meta.height]).toEqual(["jpeg", 800, 600]);
+    expect(thumbnail.length).toBeLessThan(photo.bytes.length);
+    expect(meta.exif).toBeUndefined();
+  });
+
+  it("never enlarges a photo already smaller than a thumbnail", async () => {
+    const photo = await processFeedPhoto(await image(300, 400));
+    const meta = await sharp(await makeFeedPhotoThumbnail(photo.bytes)).metadata();
+    expect([meta.width, meta.height]).toEqual([300, 400]);
+  });
+});
 
 describe("processFeedPhoto", () => {
   it("re-saves a photo as JPEG no larger than 2560px, keeping its shape", async () => {

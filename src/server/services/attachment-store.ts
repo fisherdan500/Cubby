@@ -13,7 +13,11 @@ import { attachmentPolicy, isAttachmentStorageKey } from "@/domain/attachments";
  */
 
 const OBJECTS = "objects";
+// Small copies for grids, made from verified objects and kept apart from them, so the integrity check
+// of what was uploaded never sees one. Losing a thumbnail loses nothing: it is made again.
+const THUMBNAILS = "thumbnails";
 const MAX_OBJECT_BYTES = attachmentPolicy.feed_photo.maxInputBytes;
+const MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024;
 
 type Expected = { byteSize: number; sha256: string };
 
@@ -49,10 +53,14 @@ async function trustedRoot(root: string, create: boolean) {
   return resolved;
 }
 
-async function objectDirectory(root: string, key: string, create: boolean) {
+function objectDirectory(root: string, key: string, create: boolean) {
+  return shardDirectory(root, OBJECTS, key, create);
+}
+
+async function shardDirectory(root: string, top: string, key: string, create: boolean) {
   const base = await trustedRoot(root, create);
-  const directory = path.join(base, OBJECTS, key.slice(0, 2));
-  for (const part of [path.join(base, OBJECTS), directory]) {
+  const directory = path.join(base, top, key.slice(0, 2));
+  for (const part of [path.join(base, top), directory]) {
     try {
       const stats = await lstat(part);
       if (stats.isSymbolicLink() || !stats.isDirectory()) throw new Error("attachment_store_unavailable");
@@ -155,6 +163,71 @@ export async function removeAttachmentObject(root: string, key: string) {
   try {
     await unlink(path.join(directory, key));
     await syncDirectory(directory);
+  } catch (error) {
+    if (!isMissing(error)) throw new Error("attachment_store_write_failed");
+  }
+}
+
+/** The cached thumbnail for `key`, or null when there is none to use, so it is made again. */
+export async function readAttachmentThumbnail(root: string, key: string): Promise<Buffer | null> {
+  assertKey(key);
+  let handle;
+  try {
+    const filePath = path.join(await shardDirectory(root, THUMBNAILS, key, false), key);
+    const before = await lstat(filePath);
+    if (!before.isFile() || before.isSymbolicLink() || before.size > MAX_THUMBNAIL_BYTES) return null;
+    handle = await open(filePath, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
+    const stats = await handle.stat();
+    if (stats.dev !== before.dev || stats.ino !== before.ino) return null;
+    return await handle.readFile();
+  } catch {
+    return null;
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+}
+
+/** Keep a thumbnail for `key`. One already there - made by another viewer meanwhile - is left as it is. */
+export async function writeAttachmentThumbnail(root: string, key: string, bytes: Buffer) {
+  assertKey(key);
+  if (bytes.length === 0 || bytes.length > MAX_THUMBNAIL_BYTES) throw new Error("attachment_store_write_failed");
+  let directory: string;
+  try {
+    directory = await shardDirectory(root, THUMBNAILS, key, true);
+  } catch {
+    throw new Error("attachment_store_unavailable");
+  }
+  const tempPath = path.join(directory, `.${key}.${randomBytes(8).toString("hex")}.tmp`);
+  let file;
+  try {
+    file = await open(tempPath, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
+    await file.writeFile(bytes);
+    await file.sync();
+    await file.close();
+    file = undefined;
+    await link(tempPath, path.join(directory, key)).catch((error: unknown) => {
+      if (!(error && typeof error === "object" && "code" in error && error.code === "EEXIST")) throw error;
+    });
+    await unlink(tempPath);
+  } catch {
+    await file?.close().catch(() => undefined);
+    await unlink(tempPath).catch(() => undefined);
+    throw new Error("attachment_store_write_failed");
+  }
+}
+
+/** Remove the thumbnail for `key`, when its photo is erased. Removing one that is not there succeeds. */
+export async function removeAttachmentThumbnail(root: string, key: string) {
+  assertKey(key);
+  let directory: string;
+  try {
+    directory = await shardDirectory(root, THUMBNAILS, key, false);
+  } catch (error) {
+    if (isMissing(error)) return;
+    throw new Error("attachment_store_unavailable");
+  }
+  try {
+    await unlink(path.join(directory, key));
   } catch (error) {
     if (!isMissing(error)) throw new Error("attachment_store_write_failed");
   }

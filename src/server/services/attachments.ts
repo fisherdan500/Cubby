@@ -10,9 +10,16 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { attachmentConfig } from "@/lib/env";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
-import { readAttachmentObject, removeAttachmentObject, writeAttachmentObject } from "@/server/services/attachment-store";
+import {
+  readAttachmentObject,
+  readAttachmentThumbnail,
+  removeAttachmentObject,
+  removeAttachmentThumbnail,
+  writeAttachmentObject,
+  writeAttachmentThumbnail
+} from "@/server/services/attachment-store";
 import { writeAudit } from "@/server/services/audit";
-import { processFeedPhoto } from "@/server/services/feed-photo-processing";
+import { makeFeedPhotoThumbnail, processFeedPhoto } from "@/server/services/feed-photo-processing";
 
 /**
  * The attachment lifecycle (DEC-PROD-141-147) for its first type, feed photos (DEC-PROD-422):
@@ -21,7 +28,7 @@ import { processFeedPhoto } from "@/server/services/feed-photo-processing";
  * tombstone. Audit records say what happened to which attachment, never its name or content.
  */
 
-type Options = { enabled?: Partial<Record<AttachmentTypeName, boolean>>; now?: Date };
+type Options = { enabled?: Partial<Record<AttachmentTypeName, boolean>>; now?: Date; size?: "full" | "thumbnail" };
 type Actor = Pick<HouseholdContext, "householdId" | "userId" | "memberId" | "role">;
 
 const TYPE = "feed_photo" as const;
@@ -130,6 +137,9 @@ function startOfUtcDay(date: Date) {
  * The bytes of an available photo, for a current household member, on a live post - checked again
  * on every request. Missing, foreign, removed or switched-off photos all answer alike. Bytes that
  * went missing or changed stop being served from that moment.
+ *
+ * With `size: "thumbnail"`, a small copy for grids after exactly the same checks: the one kept, or
+ * one made from the verified photo and kept for next time.
  */
 export async function openAttachment(id: string, options: Options = {}) {
   const ctx = await getEffectiveHouseholdContext();
@@ -146,22 +156,9 @@ export async function openAttachment(id: string, options: Options = {}) {
   });
   if (!attachment || !attachmentTypeEnabled(attachment.type, options.enabled)) throw new Error("not_found");
 
-  let bytes: Buffer;
-  try {
-    bytes = await readAttachmentObject(directory(), attachment.storageKey, { byteSize: attachment.byteSize, sha256: attachment.sha256 });
-  } catch (error) {
-    const reason = error instanceof Error && error.message === "attachment_bytes_mismatch" ? "bytes_mismatch" : "bytes_missing";
-    await prisma.$transaction(async (tx) => {
-      const marked = await tx.attachment.updateMany({
-        where: { id: attachment.id, householdId: ctx.householdId, state: "available" },
-        data: { state: "unavailable", unavailableAt: now }
-      });
-      if (marked.count === 1) {
-        await writeAudit(ctx, { action: "attachment.unavailable", entityType: "attachment", entityId: attachment.id, after: { type: attachment.type, reason } }, tx);
-      }
-    });
-    throw new Error("not_found");
-  }
+  const thumbnail = options.size === "thumbnail";
+  let bytes: Buffer | null = thumbnail ? await readAttachmentThumbnail(directory(), attachment.storageKey) : null;
+  if (!bytes) bytes = await readVerifiedPhoto(ctx, attachment, now, thumbnail);
 
   const viewedToday = await prisma.auditEvent.findFirst({
     where: {
@@ -178,6 +175,38 @@ export async function openAttachment(id: string, options: Options = {}) {
     await writeAudit(ctx, { action: "attachment.view", entityType: "attachment", entityId: attachment.id, after: { type: attachment.type } });
   }
   return { bytes, mimeType: attachment.mimeType };
+}
+
+type ServedAttachment = { id: string; type: AttachmentTypeName; storageKey: string; byteSize: number; sha256: string };
+
+/**
+ * The stored photo, checked against its record - or, for a thumbnail, a small copy made from it and
+ * kept for next time. Bytes that went missing or changed mark the photo unavailable from now on.
+ */
+async function readVerifiedPhoto(ctx: HouseholdContext, attachment: ServedAttachment, now: Date, thumbnail: boolean) {
+  let photo: Buffer;
+  try {
+    photo = await readAttachmentObject(directory(), attachment.storageKey, { byteSize: attachment.byteSize, sha256: attachment.sha256 });
+  } catch (error) {
+    const reason = error instanceof Error && error.message === "attachment_bytes_mismatch" ? "bytes_mismatch" : "bytes_missing";
+    await prisma.$transaction(async (tx) => {
+      const marked = await tx.attachment.updateMany({
+        where: { id: attachment.id, householdId: ctx.householdId, state: "available" },
+        data: { state: "unavailable", unavailableAt: now }
+      });
+      if (marked.count === 1) {
+        await writeAudit(ctx, { action: "attachment.unavailable", entityType: "attachment", entityId: attachment.id, after: { type: attachment.type, reason } }, tx);
+      }
+    });
+    throw new Error("not_found");
+  }
+  if (!thumbnail) return photo;
+  // Should a thumbnail ever fail to be made, the photo itself still shows.
+  const small = await makeFeedPhotoThumbnail(photo).catch(() => null);
+  if (!small) return photo;
+  // Serving it does not wait on keeping it; the next view makes it again if keeping failed.
+  await writeAttachmentThumbnail(directory(), attachment.storageKey, small).catch(() => undefined);
+  return small;
 }
 
 /** When a post is removed, its photos become privately recoverable for thirty days. */
@@ -242,6 +271,7 @@ export async function purgeDueAttachments(now = new Date(), limit = 100) {
       });
       if (!attachment) return false;
       await removeAttachmentObject(directory(), attachment.storageKey);
+      await removeAttachmentThumbnail(directory(), attachment.storageKey);
       await tx.attachment.updateMany({ where: { id: attachment.id, state: attachment.state }, data: { state: "purged", purgedAt: now } });
       await writeAudit({ householdId: attachment.householdId, userId: null, memberId: null }, {
         action: "attachment.purge",

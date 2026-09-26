@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight, Download, Share2, X } from "lucide-react";
 type Photo = { id: string; width: number; height: number };
 
 const photoSrc = (photo: Photo) => `/api/attachments/${photo.id}`;
+// Grids load a small copy; the viewer and Save use the photo itself.
+const thumbnailSrc = (photo: Photo) => `${photoSrc(photo)}?size=thumbnail`;
 
 const extensions: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -279,7 +281,7 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
               {/* Served by Cubby's own checked endpoint; the image optimizer could not carry the viewer's session. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={photoSrc(photo)}
+                src={thumbnailSrc(photo)}
                 width={photo.width}
                 height={photo.height}
                 loading="lazy"

@@ -212,8 +212,8 @@ describe("Feed page", () => {
     const images = [...post.querySelectorAll("img")];
 
     expect(images.map((image) => [image.getAttribute("src"), image.getAttribute("width"), image.getAttribute("height"), image.getAttribute("alt")])).toEqual([
-      ["/api/attachments/photo-a", "2560", "1920", "Photo 1 of 2"],
-      ["/api/attachments/photo-b", "1440", "2560", "Photo 2 of 2"]
+      ["/api/attachments/photo-a?size=thumbnail", "2560", "1920", "Photo 1 of 2"],
+      ["/api/attachments/photo-b?size=thumbnail", "1440", "2560", "Photo 2 of 2"]
     ]);
     expect(images.every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
     // A photo opens in a viewer inside the feed; a link away stranded the installed app on the raw image.
@@ -248,9 +248,9 @@ describe("Feed page", () => {
       expect(mocks.listFeedInteractions).not.toHaveBeenCalled();
       const grid = body.querySelector('ul[aria-label="Photos"]')!;
       expect([...grid.querySelectorAll("img")].map((image) => image.getAttribute("src"))).toEqual([
-        "/api/attachments/photo-c",
-        "/api/attachments/photo-a",
-        "/api/attachments/photo-b"
+        "/api/attachments/photo-c?size=thumbnail",
+        "/api/attachments/photo-a?size=thumbnail",
+        "/api/attachments/photo-b?size=thumbnail"
       ]);
       expect([...grid.querySelectorAll("button")].map((button) => button.getAttribute("aria-label")))
         .toEqual(["Open photo 1 of 3", "Open photo 2 of 3", "Open photo 3 of 3"]);
