@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type TouchEvent as ReactTouchEvent } from "react";
 import { ChevronLeft, ChevronRight, Download, Share2, X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 type Photo = { id: string; width: number; height: number };
 
@@ -74,7 +75,9 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
   const [ready, setReady] = useState<Record<string, File>>({});
   // Opening adds one history step so Back closes the viewer; closing another way takes that step back.
   const pushedHistory = useRef(false);
-  const closeButton = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const keyboardControls = useRef(false);
 
   const close = useCallback(() => {
     setOpen(null);
@@ -93,16 +96,23 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
   // middle brings them back or puts them away.
   const [controls, setControls] = useState(true);
   const hideTimer = useRef<number>();
+  const hideIfUnfocused = useCallback(() => {
+    const focused = document.activeElement;
+    if (!keyboardControls.current && !(focused instanceof Element && focused.closest("button") && dialogRef.current?.contains(focused))) setControls(false);
+  }, []);
   const showControls = useCallback(() => {
     setControls(true);
     window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setControls(false), CONTROLS_SHOWN_MS);
-  }, []);
+    hideTimer.current = window.setTimeout(hideIfUnfocused, CONTROLS_SHOWN_MS);
+  }, [hideIfUnfocused]);
   const hideControls = useCallback(() => {
     window.clearTimeout(hideTimer.current);
-    setControls(false);
-  }, []);
-  const viewing = open !== null;
+    hideIfUnfocused();
+  }, [hideIfUnfocused]);
+  const viewing = open !== null && Boolean(photos[open]);
+  useEffect(() => {
+    if (open !== null && !viewing) close();
+  }, [open, viewing, close]);
   useEffect(() => {
     if (viewing) showControls();
     return () => window.clearTimeout(hideTimer.current);
@@ -112,17 +122,35 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
   // whichever way the swipe first went.
   const touchStart = useRef<{ x: number; y: number; axis?: "x" | "y" } | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const multiTouch = useRef(false);
+  const suppressClickUntil = useRef(0);
+  const zoomed = () => (window.visualViewport?.scale ?? 1) > 1;
+
+  function cancelSwipe() {
+    touchStart.current = null;
+    setDrag(null);
+    suppressClickUntil.current = Date.now() + 500;
+  }
 
   useEffect(() => {
-    if (open === null) return;
+    if (!viewing) return;
     const onPopState = () => {
       pushedHistory.current = false;
       setOpen(null);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-      else if (event.key === "ArrowRight" && photos.length > 1) step(1);
-      else if (event.key === "ArrowLeft" && photos.length > 1) step(-1);
+      keyboardControls.current = true;
+      showControls();
+      if (event.key === "Escape") { event.preventDefault(); close(); }
+      else if (event.key === "ArrowRight" && photos.length > 1) { event.preventDefault(); step(1); }
+      else if (event.key === "ArrowLeft" && photos.length > 1) { event.preventDefault(); step(-1); }
+      else if (event.key === "Tab") {
+        const buttons = Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])") ?? []);
+        const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        const next = event.shiftKey ? (index <= 0 ? buttons.length - 1 : index - 1) : (index + 1) % buttons.length;
+        event.preventDefault();
+        (buttons[next] ?? dialogRef.current)?.focus();
+      }
     };
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -133,10 +161,43 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
       window.removeEventListener("popstate", onPopState);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, close, step, photos.length]);
+  }, [viewing, close, step, photos.length, showControls]);
 
   useEffect(() => {
-    if (open !== null) closeButton.current?.focus();
+    if (!viewing || !dialogRef.current) return;
+    const dialog = dialogRef.current;
+    const opener = openerRef.current;
+    dialog.focus();
+    // Portalled to body so no app ancestor (including transformed cards) can clip the viewer.
+    const isolated = new Map<Element, string | null>();
+    const isolate = () => {
+      for (const sibling of Array.from(document.body.children)) {
+        if (sibling === dialog || isolated.has(sibling)) continue;
+        isolated.set(sibling, sibling.getAttribute("inert"));
+        sibling.setAttribute("inert", "");
+      }
+    };
+    isolate();
+    const observer = new MutationObserver(isolate);
+    observer.observe(document.body, { childList: true });
+    const containFocus = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dialog.contains(event.target)) dialog.focus();
+    };
+    document.addEventListener("focusin", containFocus);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("focusin", containFocus);
+      for (const [element, previous] of isolated) {
+        if (previous === null) element.removeAttribute("inert");
+        else element.setAttribute("inert", previous);
+      }
+      keyboardControls.current = false;
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [viewing]);
+
+  useEffect(() => {
+    if (open !== null && !dialogRef.current?.contains(document.activeElement)) dialogRef.current?.focus();
     setSaveError("");
     setSaveNote("");
   }, [open]);
@@ -207,7 +268,12 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
     ? "grid-cols-3 sm:grid-cols-4"
     : single ? "" : photos.length === 2 || photos.length === 4 ? "grid-cols-2" : "grid-cols-3";
 
-  function openAt(index: number) {
+  function openAt(index: number, opener: HTMLButtonElement) {
+    openerRef.current = opener;
+    multiTouch.current = false;
+    touchStart.current = null;
+    suppressClickUntil.current = 0;
+    setDrag(null);
     if (!pushedHistory.current) {
       window.history.pushState({ cubbyPhotoViewer: true }, "");
       pushedHistory.current = true;
@@ -221,11 +287,21 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
 
   function onTouchStart(event: ReactTouchEvent) {
     const touch = event.touches[0];
-    if (!touch || event.touches.length > 1) return;
+    if (event.touches.length > 1 || zoomed()) {
+      multiTouch.current = true;
+      cancelSwipe();
+      return;
+    }
+    if (!touch || multiTouch.current || (event.target instanceof Element && event.target.closest("button"))) return;
     touchStart.current = { x: touch.clientX, y: touch.clientY };
   }
 
   function onTouchMove(event: ReactTouchEvent) {
+    if (event.touches.length > 1 || multiTouch.current || zoomed()) {
+      multiTouch.current = true;
+      cancelSwipe();
+      return;
+    }
     const start = touchStart.current;
     const touch = event.touches[0];
     if (!start || !touch) return;
@@ -239,6 +315,11 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
   }
 
   function onTouchEnd(event: ReactTouchEvent) {
+    if (multiTouch.current || event.touches.length > 0 || zoomed()) {
+      multiTouch.current = event.touches.length > 0;
+      cancelSwipe();
+      return;
+    }
     const start = touchStart.current;
     const touch = event.changedTouches[0];
     touchStart.current = null;
@@ -246,13 +327,16 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
     if (!start || !touch) return;
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    if (Math.abs(dx) >= STEP_SWIPE_PX && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
-    else if (dy >= CLOSE_SWIPE_PX && dy > Math.abs(dx)) close();
+    if (Math.abs(dx) >= STEP_SWIPE_PX && Math.abs(dx) > Math.abs(dy)) {
+      suppressClickUntil.current = Date.now() + 500;
+      step(dx < 0 ? 1 : -1);
+    } else if (dy >= CLOSE_SWIPE_PX && dy > Math.abs(dx)) close();
   }
 
   function onSurfaceClick(event: ReactMouseEvent) {
     // The buttons do their own thing, even where they sit over an edge.
     if (event.target instanceof Element && event.target.closest("button")) return;
+    if (Date.now() < suppressClickUntil.current || zoomed()) return;
     const width = window.innerWidth;
     if (event.clientX < width * EDGE_TAP_SHARE) {
       if (!first) step(-1);
@@ -275,7 +359,7 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
             <button
               type="button"
               aria-label={`Open photo ${index + 1} of ${photos.length}`}
-              onClick={() => openAt(index)}
+              onClick={(event) => openAt(index, event.currentTarget)}
               className="block w-full overflow-hidden rounded-lg bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {/* Served by Cubby's own checked endpoint; the image optimizer could not carry the viewer's session. */}
@@ -293,8 +377,13 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
         ))}
       </ul>
 
-      {shown && open !== null ? (
+      {shown && open !== null ? createPortal(
         <div
+          ref={dialogRef}
+          tabIndex={-1}
+          onFocusCapture={(event) => {
+            if (event.target instanceof Element && event.target.closest("button")) showControls();
+          }}
           role="dialog"
           aria-modal="true"
           aria-label={`Photo ${open + 1} of ${photos.length}`}
@@ -303,12 +392,12 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
-          onTouchCancel={() => {
-            touchStart.current = null;
-            setDrag(null);
+          onTouchCancel={(event) => {
+            multiTouch.current = event.touches.length > 0;
+            cancelSwipe();
           }}
-          // The viewer handles every touch itself, so the page behind neither scrolls nor bounces.
-          className="fixed inset-0 z-50 flex touch-none select-none items-center justify-center bg-black"
+          // Leave pinch zoom to the browser; multi-touch and zoomed gestures never navigate.
+          className="fixed inset-0 z-50 flex touch-pinch-zoom select-none items-center justify-center bg-black"
           style={{ backgroundColor: drag?.y ? `rgb(0 0 0 / ${Math.max(0.4, 1 - drag.y / 600)})` : undefined }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -326,13 +415,14 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
           />
           <div className={`absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex gap-2 ${controlsClass}`}>
             {sharing === "button" ? (
-              <button type="button" aria-label="Share photo" disabled={saving} onClick={() => void keep(shown, "share")} className={viewerButton}>
+              <button tabIndex={controls ? 0 : -1} type="button" aria-label="Share photo" disabled={saving} onClick={() => void keep(shown, "share")} className={viewerButton}>
                 <Share2 className="h-6 w-6" aria-hidden="true" />
               </button>
             ) : null}
             <button
               type="button"
               aria-label="Save photo"
+              tabIndex={controls ? 0 : -1}
               data-ready={sharing === "save" ? String(Boolean(ready[shown.id])) : undefined}
               disabled={saving}
               onClick={() => void keep(shown, sharing === "save" ? "share" : "download")}
@@ -340,7 +430,7 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
             >
               <Download className="h-6 w-6" aria-hidden="true" />
             </button>
-            <button ref={closeButton} type="button" aria-label="Close photo" onClick={close} className={viewerButton}>
+            <button tabIndex={controls ? 0 : -1} type="button" aria-label="Close photo" onClick={close} className={viewerButton}>
               <X className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
@@ -360,6 +450,7 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
                 <button
                   type="button"
                   aria-label="Previous photo"
+                  tabIndex={controls ? 0 : -1}
                   onClick={() => {
                     step(-1);
                     showControls();
@@ -373,6 +464,7 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
                 <button
                   type="button"
                   aria-label="Next photo"
+                  tabIndex={controls ? 0 : -1}
                   onClick={() => {
                     step(1);
                     showControls();
@@ -387,7 +479,7 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
               </p>
             </>
           ) : null}
-        </div>
+        </div>, document.body
       ) : null}
     </>
   );

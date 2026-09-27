@@ -61,7 +61,7 @@ function machine(options: {
     } as unknown as PlatformHealthDeps["db"],
     statfs: vi.fn(async (path: string) => {
       const disk = disks[path];
-      if (!disk || disk === "unreadable") throw new Error("ENOENT");
+      if (!disk || disk === "unreadable") throw Object.assign(new Error("synthetic unreadable storage"), { code: "EIO" });
       const blocks = ((disk.totalGiB ?? 100) * GIB) / 4096;
       return { bsize: 4096, blocks, bavail: Math.round(blocks * disk.freeShare) };
     }),
@@ -122,6 +122,26 @@ describe("platform health", () => {
     expect((await readPlatformHealth(now, never.deps)).systemBackup).toEqual({ lastRun: null, lastSuccess: null });
   });
 
+  it("includes a whole-family-only household in overdue monitoring with the automation root policy", async () => {
+    const { deps } = machine();
+    const where = {
+      deletedAt: null,
+      createdAt: { lt: hoursAgo(36) },
+      OR: [
+        { babies: { some: { deletedAt: null } } },
+        { contacts: { some: { deletedAt: null } } },
+        { medicineCatalog: { some: { deletedAt: null } } },
+        { activities: { some: { deletedAt: null } } },
+        { calendarEvents: { some: { deletedAt: null } } },
+        { reminders: { some: { deletedAt: null } } },
+        { feedPosts: { some: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } } }
+      ]
+    };
+    vi.mocked(deps.db.household.findMany).mockResolvedValue([{ id: "family-only", backupRecords: [] }] as never);
+    expect((await readPlatformHealth(now, deps)).householdBackups).toEqual({ enabled: true, households: 1, stale: 1 });
+    expect(deps.db.household.findMany).toHaveBeenCalledWith(expect.objectContaining({ where }));
+  });
+
   it("counts households whose automatic backups stopped, only when they are switched on", async () => {
     const households = [{ lastAutomated: hoursAgo(3) }, { lastAutomated: hoursAgo(50) }, { lastAutomated: null }];
     const on = await readPlatformHealth(now, machine({ households }).deps);
@@ -133,16 +153,34 @@ describe("platform health", () => {
     expect(off.problems).toEqual([]);
   });
 
-  it("warns when a disk holding photos or backups falls under a fifth free, and skips one it cannot read", async () => {
+  it("warns when a disk is low and explicitly reports unreadable capacity", async () => {
     const { deps } = machine({ disks: { "/photos": { freeShare: 0.12 }, "/backups": "unreadable" } });
     const health = await readPlatformHealth(now, deps);
 
-    expect(health.disks).toEqual([{ label: "photos", freeBytes: 12 * GIB, totalBytes: 100 * GIB }]);
-    expect(health.problems).toEqual([{ key: "disk_low_photos", message: "The disk holding photos has 12 GB free (12%)." }]);
+    expect(health.disks).toEqual([{ label: "photos", freeBytes: 12 * GIB, totalBytes: 100 * GIB }, { label: "backups", freeBytes: null, totalBytes: null }]);
+    expect(health.problems).toEqual([
+      { key: "disk_low_photos", message: "The disk holding photos has 12 GB free (12%)." },
+      { key: "disk_unavailable_backups", message: "Storage holding backups cannot be checked. Free space is unknown." }
+    ]);
   });
 });
 
 describe("platform health alerts", () => {
+  it.each(["photos", "backups"])("preserves low-disk alerts including the combined legacy key while %s is unreadable", async (label) => {
+    const disks = { "/photos": { freeShare: 0.5 }, "/backups": { freeShare: 0.5 } } as Record<string, { freeShare: number } | "unreadable">;
+    disks[`/${label}`] = "unreadable";
+    const prior = [`disk_low_${label}`, "disk_low_photos_and_backups"].map((key) => ({ key, activeSince: hoursAgo(5), lastSentAt: hoursAgo(5) }));
+    const { deps, alerts, sent } = machine({ disks, alerts: prior });
+    await runPlatformHealthCheck(now, deps);
+    for (const alert of prior) expect(alerts()).toContainEqual(alert);
+    expect(alerts().map((alert) => alert.key)).toContain(`disk_unavailable_${label}`);
+    expect(sent[0]?.text).toContain("Free space is unknown");
+    expect(sent[0]?.text).not.toContain(`/${label}`);
+    disks[`/${label}`] = { freeShare: 0.5 };
+    await runPlatformHealthCheck(now, deps);
+    expect(alerts()).toEqual([]);
+  });
+
   it("emails the platform owner once when a problem starts, and not every hour after", async () => {
     const { deps, sent, alerts } = machine({ runs: [{ status: "succeeded", recordedAt: hoursAgo(40) }] });
 

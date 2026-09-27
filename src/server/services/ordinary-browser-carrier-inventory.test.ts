@@ -1,8 +1,35 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import ts from "typescript";
 
 const root = new URL("../../../", import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), "utf8");
+
+const delegatedClients = [
+  "src/components/feed/feed-post-actions.tsx",
+  "src/components/reports/planned-schedule.tsx"
+] as const;
+const decoderModule = "@/lib/client-operation-response";
+function callsSharedDecoder(source: string): boolean {
+  const tree = ts.createSourceFile("carrier.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const names = new Set<string>();
+  for (const statement of tree.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)
+        || statement.moduleSpecifier.text !== decoderModule || statement.importClause?.isTypeOnly) continue;
+    const imports = statement.importClause?.namedBindings;
+    if (!imports || !ts.isNamedImports(imports)) continue;
+    for (const binding of imports.elements) {
+      if (!binding.isTypeOnly && (binding.propertyName ?? binding.name).text === "clientOperationResponse") names.add(binding.name.text);
+    }
+  }
+  let called = false;
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && names.has(node.expression.text)) called = true;
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  return called;
+}
 
 const carriers = [
   ["activity.delete", "src/app/api/activities/[id]/route.ts", "src/components/actions/confirmed-activity-delete.tsx"],
@@ -98,9 +125,22 @@ describe("ordinary browser carrier closure inventory", () => {
     const source = read(client);
     expect(source, operation).toContain("sessionStorage");
     expect(source, operation).toMatch(/\/api\/(?:account\/)?browser-operations\/\$\{/);
-    expect(source, operation).toContain("pending");
-    expect(source, operation).toContain("completed");
-    expect(source, operation).toContain("expired");
+    let protocolSource = source;
+    if (delegatedClients.some((path) => path === client)) {
+      expect(callsSharedDecoder(source), operation).toBe(true);
+      protocolSource += read("src/lib/client-operation-response.ts");
+    }
+    expect(protocolSource, operation).toContain("pending");
+    expect(protocolSource, operation).toContain("completed");
+    expect(protocolSource, operation).toContain("expired");
+  });
+
+  it.each(delegatedClients)("%s must import and invoke its delegated decoder", (client) => {
+    const source = read(client);
+    expect(callsSharedDecoder(source)).toBe(true);
+    expect(callsSharedDecoder(source.replaceAll(decoderModule, "@/lib/unlinked-decoder"))).toBe(false);
+    expect(callsSharedDecoder(source.replace(/clientOperationResponse\s*\(/g, "unlinkedDecoder("))).toBe(false);
+    expect(callsSharedDecoder('import { clientOperationResponse } from "@/lib/client-operation-response"; // clientOperationResponse()')).toBe(false);
   });
 
   it.each(carriers)("%s has a server-issued, partitioned browser reservation with no browser-minted ID", (operation, _ingress, client) => {

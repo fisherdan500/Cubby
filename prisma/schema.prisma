@@ -466,6 +466,7 @@ model Verification {
 }
 
 model Household {
+  attachmentWriteIntents AttachmentWriteIntent[]
   id              String            @id @default(cuid())
   name            String
   createdByUserId String
@@ -1084,9 +1085,23 @@ enum AttachmentState {
   purged
 }
 
-// One household-owned file (DEC-PROD-141-147): its metadata here, its verified bytes in the private
-// attachment store under storageKey, a random name that says nothing about the file. Feed photos
-// (DEC-PROD-422) belong to a post. Every reference carries the household.
+// Private cleanup ownership, not verified household attachment data. Survives household deletion.
+model AttachmentWriteIntent {
+  storageKey String @id
+  householdId String?
+  household Household? @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  purpose String
+  state String @default("pending")
+  byteSize Int
+  sha256 String
+  createdAt DateTime @default(now())
+  nextAttemptAt DateTime
+  cleanedAt DateTime?
+
+  @@index([state, nextAttemptAt])
+}
+
+// One household-owned verified file (DEC-PROD-141-147); feed photos belong to a post.
 model Attachment {
   id                String           @id @default(cuid())
   householdId       String

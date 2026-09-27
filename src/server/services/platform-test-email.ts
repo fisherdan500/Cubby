@@ -10,12 +10,18 @@ export type SmtpFailureReason = "authentication" | "connection" | "temporary" | 
 export type PlatformTestEmailResult =
   | { status: "sent"; recipient: string }
   | { status: "not_configured" }
+  | { status: "throttled"; retryAfterSeconds: number }
   | { status: "failed"; reason: SmtpFailureReason; responseCode: number | null; recipient: string };
 
 type TestAdapter = { send: (payload: { recipient: string; subject: string; text: string; messageId: string }) => Promise<unknown> };
 
 // Short enough that a wrong host or port answers the owner in seconds, not nodemailer's two minutes.
 const TEST_TIMEOUTS = { connectionTimeout: 15_000, greetingTimeout: 15_000, socketTimeout: 20_000 };
+// Process-wide across route bundles, not durable or shared between app instances.
+// A minute after actual settlement bounds repeated diagnostics without blocking normal setup.
+const TEST_EMAIL_COOLDOWN_MS = 60_000;
+const admission = globalThis as typeof globalThis & { cubbyTestEmailAdmission?: { inFlight: boolean; nextAllowedAt: number } };
+const gate = admission.cubbyTestEmailAdmission ??= { inFlight: false, nextAllowedAt: 0 };
 const CONNECTION_CODES = new Set(["ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "ECONNREFUSED", "ECONNRESET", "ETLS"]);
 
 /**
@@ -47,6 +53,20 @@ export async function sendPlatformTestEmail(
   const user = await prisma.user.findUnique({ where: { id: owner.userId }, select: { email: true } });
   if (!user) throw new Error("forbidden");
 
+  const remaining = gate.nextAllowedAt - performance.now();
+  if (gate.inFlight || remaining > 0) {
+    return { status: "throttled", retryAfterSeconds: gate.inFlight ? 60 : Math.ceil(remaining / 1000) };
+  }
+  gate.inFlight = true;
+  try {
+    return await sendAndAudit(owner.userId, user.email, createAdapter);
+  } finally {
+    gate.nextAllowedAt = performance.now() + TEST_EMAIL_COOLDOWN_MS;
+    gate.inFlight = false;
+  }
+}
+
+async function sendAndAudit(userId: string, recipient: string, createAdapter: () => TestAdapter): Promise<PlatformTestEmailResult> {
   let result: PlatformTestEmailResult;
   let adapter: TestAdapter | null = null;
   try {
@@ -57,14 +77,14 @@ export async function sendPlatformTestEmail(
   if (adapter) {
     try {
       await adapter.send({
-        recipient: user.email,
+        recipient,
         subject: "Cubby test email",
         text: "This is a test message from your Cubby server. If you are reading it, Cubby can send email.",
         messageId: `<cubby-test.${randomUUID()}@mail.cubby.local>`
       });
-      result = { status: "sent", recipient: user.email };
+      result = { status: "sent", recipient };
     } catch (error) {
-      result = { status: "failed", ...classifySmtpFailure(error), recipient: user.email };
+      result = { status: "failed", ...classifySmtpFailure(error), recipient };
     }
   }
 
@@ -73,7 +93,7 @@ export async function sendPlatformTestEmail(
     action: "platform.email.test",
     entityType: "platform_authority",
     entityId: PLATFORM_SINGLETON_ID,
-    actorUserId: owner.userId,
+    actorUserId: userId,
     source: `email_test_${outcome}`
   }, tx));
   return result!;

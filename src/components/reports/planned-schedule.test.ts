@@ -31,6 +31,41 @@ function renderPanel(schedule = plan) {
 }
 
 describe("PlannedSchedulePanel", () => {
+  it("closes a draft on baby change instead of submitting it as the next baby's plan", () => {
+    globalThis.fetch = vi.fn();
+    const { rerender } = render(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule: plan }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit plan" }));
+    fireEvent.change(screen.getByLabelText("At"), { target: { value: "08:00" } });
+    rerender(createElement(PlannedSchedulePanel, { babyName: "Blake", schedule: { ...plan, babyId: "baby-2", revision: 9, items: [] } }));
+    expect(screen.queryByRole("button", { name: "Save plan" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Create a plan" }));
+    expect(screen.queryAllByRole("group", { name: /^Item \d+$/ })).toHaveLength(0);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("preserves a stale draft and blocks save until an explicit close and reopen", async () => {
+    globalThis.fetch = vi.fn();
+    const { rerender } = render(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule: plan }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit plan" }));
+    fireEvent.change(screen.getByLabelText("At"), { target: { value: "08:00" } });
+    rerender(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule: { ...plan, revision: 3, items: [] } }));
+    fireEvent.click(screen.getByRole("button", { name: "Save plan" }));
+    expect((screen.getByLabelText("At") as HTMLInputElement).value).toBe("08:00");
+    expect(screen.getByRole("alert").textContent).toMatch(/changed this plan/);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create a plan" }));
+    expect(screen.queryAllByRole("group", { name: /^Item \d+$/ })).toHaveLength(0);
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "planned_schedule", code: "ok", babyId: "baby-1", revision: 4, itemCount: 0 } } }));
+    globalThis.fetch = fetchMock;
+    fireEvent.click(screen.getByRole("button", { name: "Save plan" }));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toMatchObject({ expectedRevision: 3, items: [] });
+  });
+
   it("shows the plan as written, marked as a plan", () => {
     renderPanel();
     const items = within(screen.getByRole("list", { name: "Planned schedule" })).getAllByRole("listitem");
@@ -52,9 +87,9 @@ describe("PlannedSchedulePanel", () => {
 
   it("saves an edited plan through a server-issued operation, from the revision it was opened on", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "planned_schedule", code: "ok", babyId: "baby-1", revision: 3, itemCount: 3 } } }));
     globalThis.fetch = fetchMock;
     renderPanel();
 
@@ -75,7 +110,7 @@ describe("PlannedSchedulePanel", () => {
     const saved = JSON.parse(String(fetchMock.mock.calls[2][1]?.body));
     expect(saved).toMatchObject({ operationId, expectedRevision: 2 });
     expect(saved.items.map((item: { kind: string }) => item.kind)).toEqual(["wake", "nap", "bedtime"]);
-    expect(sessionStorage.getItem("cubby:planned-schedule-operation:household-a:baby-1:tab:test")).toBeNull();
+    expect(sessionStorage.getItem("cubby:planned-schedule-operation:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:baby-1:tab:test")).toBeNull();
   });
 
   it("explains a plan that cannot be saved before sending it", () => {
@@ -93,7 +128,7 @@ describe("PlannedSchedulePanel", () => {
 
   it("says so when someone else changed the plan meanwhile, rather than overwriting it", async () => {
     globalThis.fetch = vi.fn()
-      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }))
       .mockResolvedValueOnce(response(409, { ok: false, error: { code: "stale_revision", message: "changed" } }));
     renderPanel();
     fireEvent.click(screen.getByRole("button", { name: "Edit plan" }));
@@ -135,6 +170,22 @@ describe("suggesting a plan from the routine", () => {
     render(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule, routine: withRoutine }));
   }
 
+  it("freezes suggestion inputs on refresh and closes them when changing baby", () => {
+    globalThis.fetch = vi.fn();
+    const { rerender } = render(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule: plan, routine }));
+    fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Nap" })).getByLabelText("Accept"));
+    rerender(createElement(PlannedSchedulePanel, { babyName: "Avery", schedule: { ...plan, revision: 3, items: [] }, routine: { ...routine, timeline: [] } }));
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    expect(screen.getByRole("list", { name: "Plan after these changes" }).textContent).toMatch(/Wake up/);
+    expect(screen.getByRole("alert").textContent).toMatch(/changed this plan/);
+    fireEvent.click(screen.getByRole("button", { name: "Save to plan" }));
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    rerender(createElement(PlannedSchedulePanel, { babyName: "Blake", schedule: { ...plan, babyId: "baby-2" }, routine }));
+    expect(screen.queryByRole("button", { name: "Save to plan" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Suggest from routine" })).toBeTruthy();
+  });
+
   it("offers suggestions only to someone who may edit, and only when there is a routine", () => {
     renderWithRoutine();
     expect(screen.getByRole("button", { name: "Suggest from routine" })).toBeTruthy();
@@ -165,9 +216,9 @@ describe("suggesting a plan from the routine", () => {
 
   it("previews exactly the resulting plan, then saves only the accepted changes", async () => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "planned_schedule", code: "ok", babyId: "baby-1", revision: 3, itemCount: 3 } } }));
     globalThis.fetch = fetchMock;
     renderWithRoutine();
     fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
@@ -196,6 +247,28 @@ describe("suggesting a plan from the routine", () => {
       ["nap", { mode: "window", from: "09:30", to: "10:00" }],
       ["bedtime", { mode: "exact", at: "19:15" }]
     ]);
+  });
+
+  it.each([40, 39])("keeps choices and edits with an actionable capacity error for a %i-item plan", (count) => {
+    globalThis.fetch = vi.fn();
+    renderWithRoutine({ ...plan, items: Array.from({ length: count }, () => plan.items[1]) });
+    fireEvent.click(screen.getByRole("button", { name: "Suggest from routine" }));
+    const bedtime = screen.getByRole("group", { name: "Bedtime" });
+    fireEvent.click(within(bedtime).getByLabelText("Edit, then accept"));
+    fireEvent.change(within(bedtime).getByLabelText("When"), { target: { value: "exact" } });
+    fireEvent.change(within(bedtime).getByLabelText("At"), { target: { value: "19:15" } });
+    if (count === 39) fireEvent.click(within(screen.getByRole("group", { name: "Wake up" })).getByLabelText("Accept"));
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    expect(screen.getByRole("alert").textContent).toMatch(/40 items.*reject/i);
+    expect((within(bedtime).getByLabelText("Edit, then accept") as HTMLInputElement).checked).toBe(true);
+    expect((within(bedtime).getByLabelText("At") as HTMLInputElement).value).toBe("19:15");
+    expect(screen.queryByRole("button", { name: "Save to plan" })).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    fireEvent.click(within(bedtime).getByLabelText("Reject"));
+    fireEvent.click(within(screen.getByRole("group", { name: "Nap" })).getByLabelText("Accept"));
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    expect(within(screen.getByRole("list", { name: "Plan after these changes" })).getAllByRole("listitem")).toHaveLength(40);
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("can be put away without changing anything", () => {

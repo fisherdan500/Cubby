@@ -74,7 +74,7 @@ type ImportCounters = {
 
 const SOURCE_SYSTEM = SPROUT_SOURCE_SYSTEM;
 const PREVIEW_EXPIRY_MS = 24 * 60 * 60 * 1000;
-const SAFE_SPROUT_ERRORS = new Set(["unauthenticated", "forbidden", "sprout_preview_expired", "sprout_preview_mismatch", "sprout_preview_required", "invalid_sqlite_backup", "sprout_sqlite_unavailable", "unsupported_sprout_backup"]);
+const SAFE_SPROUT_ERRORS = new Set(["unauthenticated", "forbidden", "sprout_preview_expired", "sprout_preview_mismatch", "sprout_preview_required", "invalid_sqlite_backup", "sprout_sqlite_unavailable", "unsupported_sprout_backup", "backup_upload_busy", "upload_timeout", "upload_aborted", "file_too_large"]);
 
 export function normalizeSproutError(error: unknown) {
   if (error instanceof Error && SAFE_SPROUT_ERRORS.has(error.message)) return error;

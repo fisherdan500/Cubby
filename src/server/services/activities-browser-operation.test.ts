@@ -118,6 +118,65 @@ describe("activity browser-v2 opening bindings", () => {
   });
 });
 
+describe("browser Undo superseding changes", () => {
+  const createdAt = new Date("2026-08-17T12:00:00.000Z");
+  function undoFixture(supersedingAt: Date | null) {
+    const activity = timerActivity("running");
+    if (!supersedingAt) activity.updatedAt = createdAt;
+    const tx = timerTransaction(activity);
+    const latest = { id: "audit-1", entityId: activity.id, action: "activity.create", createdAt, after: { updatedAt: createdAt.toISOString(), deletedAt: null } };
+    const auditFindFirst = vi.fn(async ({ where }) => {
+      if (where.actorMemberId) return latest;
+      expect(where).toEqual({ householdId: ctx.householdId, entityType: "activity", entityId: activity.id, createdAt: { gte: createdAt }, id: { not: latest.id } });
+      // An update by a different caregiver; equal-time lower IDs must also block.
+      return supersedingAt && supersedingAt >= where.createdAt.gte ? { id: "audit-0", action: "activity.update", actorMemberId: "other-member" } : null;
+    });
+    return { activity, latest, tx: { ...tx, auditEvent: { findFirst: auditFindFirst } } };
+  }
+
+  it.each(["later", "equal"])("refuses a %s-time edit already present before Undo issue", async (timing) => {
+    const { activity, tx } = undoFixture(new Date(createdAt.getTime() + (timing === "later" ? 1000 : 0)));
+    mocks.issueHousehold.mockImplementation((contract) => contract.targetSnapshot(tx, ctx));
+    await expect(issueActivityUndoLastBrowserOperation({ operationId })).rejects.toThrow("stale_revision");
+    expect(tx.activityLog.updateMany).not.toHaveBeenCalled();
+    expect(activity.deletedAt).toBeNull();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it.each(["validate", "execute"])("rejects a pre-issue edit through %s of an older binding", async (phase) => {
+    const { activity, latest, tx } = undoFixture(createdAt);
+    mocks.executeHousehold.mockImplementation((contract) => contract[phase](tx, ctx, {
+      targetSnapshot: { latest: { ...latest, createdAt: createdAt.toISOString(), state: { updatedAt: createdAt, deletedAt: null } }, binding: timerSnapshot(activity) }
+    }));
+    await expect(submitActivityUndoLastBrowserOperation({ operationId, activityId: activity.id })).rejects.toThrow("stale_revision");
+    expect(tx.activityLog.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("still refuses a revision changed after issue without a superseding audit", async () => {
+    const { activity, latest, tx } = undoFixture(null);
+    const binding = timerSnapshot(activity);
+    activity.updatedAt = new Date(activity.updatedAt.getTime() + 1000);
+    mocks.executeHousehold.mockImplementation((contract) => contract.validate(tx, ctx, { targetSnapshot: { latest, binding } }));
+    await expect(submitActivityUndoLastBrowserOperation({ operationId, activityId: activity.id })).rejects.toThrow("stale_revision");
+    expect(tx.activityLog.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("allows an unchanged original action to open and undo", async () => {
+    const { activity, tx } = undoFixture(null);
+    mocks.issueHousehold.mockImplementation((contract) => contract.targetSnapshot(tx, ctx));
+    const snapshot = await issueActivityUndoLastBrowserOperation({ operationId });
+    mocks.executeHousehold.mockImplementation(async (contract) => {
+      const binding = { targetSnapshot: snapshot };
+      await contract.validate(tx, ctx, binding);
+      return contract.execute(tx, ctx, binding);
+    });
+    await expect(submitActivityUndoLastBrowserOperation({ operationId, activityId: activity.id })).resolves.toMatchObject({ action: "undo" });
+    expect(tx.activityLog.updateMany).toHaveBeenCalledOnce();
+    expect(mocks.writeAudit).toHaveBeenCalledOnce();
+  });
+});
+
 describe("activity browser-v2 timer writes", () => {
   it("records an exact pause interval through the browser operation path", async () => {
     const pausedAt = new Date("2026-08-17T12:30:00.000Z");

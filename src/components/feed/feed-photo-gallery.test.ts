@@ -31,6 +31,40 @@ afterEach(() => {
 });
 
 describe("FeedPhotoGallery", () => {
+  it("contains keyboard focus, isolates the background, and restores the actual opener", () => {
+    vi.useFakeTimers();
+    try {
+      const background = document.createElement("button");
+      background.textContent = "Outside";
+      document.body.append(background);
+      const { container } = render(createElement(FeedPhotoGallery, { photos }));
+      const opener = screen.getByRole("button", { name: "Open photo 2 of 2" });
+      // Pointer opens need not focus their trigger (notably Safari).
+      background.focus();
+      fireEvent.click(opener);
+      const viewer = screen.getByRole("dialog");
+      expect(document.activeElement).toBe(viewer);
+      expect(container.hasAttribute("inert")).toBe(true);
+      expect(background.hasAttribute("inert")).toBe(true);
+      expect(viewer.closest("[inert]")).toBeNull();
+      fireEvent.keyDown(viewer, { key: "Tab", shiftKey: true });
+      expect(document.activeElement).toBe(within(viewer).getByRole("button", { name: "Previous photo" }));
+      fireEvent.keyDown(document.activeElement!, { key: "Tab" });
+      expect(document.activeElement).toBe(within(viewer).getByRole("button", { name: "Save photo" }));
+      act(() => vi.advanceTimersByTime(2100));
+      expect(viewer.getAttribute("data-controls")).toBe("shown");
+      // Pointer toggles must not hide a keyboard-focused interactive control either.
+      fireEvent.click(viewer, { clientX: window.innerWidth / 2 });
+      expect(viewer.getAttribute("data-controls")).toBe("shown");
+      fireEvent.keyDown(viewer, { key: "Escape" });
+      expect(document.activeElement).toBe(opener);
+      expect(container.hasAttribute("inert")).toBe(false);
+      expect(background.hasAttribute("inert")).toBe(false);
+      background.remove();
+    } finally { vi.useRealTimers(); }
+  });
+
+
   it("shows the photos in the post, each a button that opens it in place rather than a link away", () => {
     render(createElement(FeedPhotoGallery, { photos }));
     const images = within(screen.getByRole("list", { name: "Photos" })).getAllByRole("img");
@@ -86,6 +120,108 @@ describe("FeedPhotoGallery", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("allows native pinch zoom and discards a single-finger swipe once a second finger joins", () => {
+    render(createElement(FeedPhotoGallery, { photos }));
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+    const viewer = screen.getByRole("dialog");
+    fireEvent.touchStart(viewer, { touches: [{ clientX: 300, clientY: 200 }] });
+    fireEvent.touchMove(viewer, { touches: [{ clientX: 240, clientY: 200 }] });
+    fireEvent.touchStart(viewer, { touches: [{ clientX: 240, clientY: 200 }, { clientX: 400, clientY: 200 }] });
+    fireEvent.touchEnd(viewer, { touches: [{ clientX: 400, clientY: 200 }], changedTouches: [{ clientX: 100, clientY: 200 }] });
+    fireEvent.touchEnd(viewer, { touches: [], changedTouches: [{ clientX: 400, clientY: 400 }] });
+    fireEvent.click(viewer, { clientX: window.innerWidth - 10 });
+    expect(viewer.getAttribute("aria-label")).toBe("Photo 1 of 2");
+    expect(within(viewer).getByRole("img").style.transform).toBe("");
+    expect(viewer.classList.contains("touch-none")).toBe(false);
+    expect(viewer.classList.contains("touch-pinch-zoom")).toBe(true);
+    // Geometry contract only: jsdom cannot measure native layout or image aspect rendering.
+    expect(viewer.className).toContain("fixed inset-0");
+    expect(within(viewer).getByRole("img").className).toBe("relative max-h-full max-w-full object-contain");
+  });
+
+  it.each(["Close", "Back"])("restores the selected opener on %s without resetting focus on every photo", (method) => {
+    render(createElement(FeedPhotoGallery, { photos }));
+    const opener = screen.getByRole("button", { name: "Open photo 2 of 2" });
+    fireEvent.click(opener);
+    const save = screen.getByRole("button", { name: "Save photo" });
+    act(() => save.focus());
+    fireEvent.keyDown(save, { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(save);
+    if (method === "Close") fireEvent.click(screen.getByRole("button", { name: "Close photo" }));
+    else fireEvent(window, new PopStateEvent("popstate"));
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("reveals auto-hidden controls on Tab and keeps focus inside after a navigation button disappears", () => {
+    vi.useFakeTimers();
+    try {
+      render(createElement(FeedPhotoGallery, { photos }));
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+      const viewer = screen.getByRole("dialog");
+      act(() => vi.advanceTimersByTime(2100));
+      expect(viewer.getAttribute("data-controls")).toBe("hidden");
+      expect([...viewer.querySelectorAll("button")].every((button) => button.tabIndex === -1)).toBe(true);
+      fireEvent.keyDown(viewer, { key: "Tab" });
+      expect(viewer.getAttribute("data-controls")).toBe("shown");
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Save photo" }));
+      const next = screen.getByRole("button", { name: "Next photo" });
+      act(() => next.focus());
+      fireEvent.click(next);
+      expect(document.activeElement).toBe(viewer);
+      fireEvent.keyDown(viewer, { key: "Tab", shiftKey: true });
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Previous photo" }));
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("restores background isolation and overflow on unmount, preserving prior inert values", async () => {
+    const existing = document.createElement("section");
+    existing.setAttribute("inert", "already-isolated");
+    document.body.append(existing);
+    const before = document.body.style.overflow;
+    document.body.style.overflow = "clip";
+    const { unmount } = render(createElement(FeedPhotoGallery, { photos }));
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+      const late = document.createElement("button");
+      document.body.append(late);
+      await act(async () => { await Promise.resolve(); });
+      expect(late.hasAttribute("inert")).toBe(true);
+      act(() => late.focus());
+      expect(document.activeElement).toBe(screen.getByRole("dialog"));
+      unmount();
+      expect(late.hasAttribute("inert")).toBe(false);
+      expect(existing.getAttribute("inert")).toBe("already-isolated");
+      expect(document.body.style.overflow).toBe("clip");
+      late.remove();
+    } finally { existing.remove(); document.body.style.overflow = before; }
+  });
+
+  it.each(["move", "cancel", "zoom"])("never navigates or closes after %s interrupts a gesture", (mode) => {
+    render(createElement(FeedPhotoGallery, { photos }));
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 2" }));
+    const viewer = screen.getByRole("dialog");
+    fireEvent.touchStart(viewer, { touches: [{ clientX: 300, clientY: 200 }] });
+    if (mode === "zoom") vi.stubGlobal("visualViewport", { scale: 2 });
+    if (mode === "cancel") fireEvent.touchCancel(viewer, { touches: [] });
+    else fireEvent.touchMove(viewer, { touches: [{ clientX: 300, clientY: 400 }, { clientX: 400, clientY: 200 }] });
+    fireEvent.touchEnd(viewer, { touches: [], changedTouches: [{ clientX: 300, clientY: 400 }] });
+    fireEvent.click(viewer, { clientX: window.innerWidth - 1 });
+    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe("Photo 1 of 2");
+    expect(within(viewer).getByRole("img").style.transform).toBe("");
+  });
+
+  it("releases modal isolation when the displayed photo disappears during a refresh", () => {
+    const { container, rerender } = render(createElement(FeedPhotoGallery, { photos }));
+    const overflow = document.body.style.overflow;
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 2 of 2" }));
+    expect(container.hasAttribute("inert")).toBe(true);
+    rerender(createElement(FeedPhotoGallery, { photos: [] }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(container.hasAttribute("inert")).toBe(false);
+    expect(document.body.style.overflow).toBe(overflow);
+    expect(window.history.back).toHaveBeenCalledTimes(1);
   });
 
   describe("gestures", () => {

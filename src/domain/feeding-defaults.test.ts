@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { feedingFormStart } from "@/domain/feeding-defaults";
 
 describe("feedingFormStart", () => {
+  it("uses the canonical ounces convention for unitless history", () => {
+    expect(feedingFormStart({ mode: "bottle", amount: "4", unit: null }, "mL")).toEqual({ mode: "bottle", amount: "120" });
+  });
+
+  it.each(["oz", "mL"])("does not relabel unsupported history as %s", (unit) => {
+    expect(feedingFormStart({ mode: "formula", amount: "4", unit: "scoops" }, unit)).toEqual({ mode: "formula", amount: null });
+  });
+
   it("starts a new feed as the last one was: its kind, and the last bottle or formula amount", () => {
     expect(feedingFormStart({ mode: "formula", amount: "4.5", unit: "oz" }, "oz")).toEqual({ mode: "formula", amount: "4.5" });
     // After a breastfeed the kind is breast; the amount waits for the next bottle.

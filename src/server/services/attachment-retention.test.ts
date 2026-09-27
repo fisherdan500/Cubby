@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ purgeDueAttachments: vi.fn(), sweepStaleBackupUploads: vi.fn() }));
+const mocks = vi.hoisted(() => ({ purgeDueAttachments: vi.fn(), sweepStaleBackupUploads: vi.fn(), sweepIntents: vi.fn() }));
+vi.mock("@/server/services/attachment-write-intents", () => ({ sweepPhotoWriteIntents: mocks.sweepIntents }));
 vi.mock("@/server/services/attachments", () => ({ purgeDueAttachments: mocks.purgeDueAttachments }));
 vi.mock("@/server/services/backup-upload", () => ({ sweepStaleBackupUploads: mocks.sweepStaleBackupUploads }));
 
@@ -15,5 +16,6 @@ describe("attachment retention", () => {
     await expect(runAttachmentRetention(now)).resolves.toEqual({ purged: 2, staleUploads: 1 });
     expect(mocks.purgeDueAttachments).toHaveBeenCalledWith(now);
     expect(mocks.sweepStaleBackupUploads).toHaveBeenCalledWith(now);
+    expect(mocks.sweepIntents).toHaveBeenCalledWith(now);
   });
 });

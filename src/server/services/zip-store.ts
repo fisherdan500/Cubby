@@ -14,7 +14,7 @@ const LOCAL_HEADER = 0x04034b50;
 const CENTRAL_HEADER = 0x02014b50;
 const END_OF_CENTRAL_DIRECTORY = 0x06054b50;
 const UTF8_NAMES = 0x0800;
-const ENCRYPTED = 0x0001;
+
 const VERSION = 20;
 // A fixed timestamp (1980-01-01) keeps the same content producing the same archive.
 const DOS_TIME = 0;
@@ -116,7 +116,8 @@ export function zipStoreStream(entries: AsyncIterable<ZipEntry>): ReadableStream
   });
 }
 
-type CentralEntry = { name: string; crc: number; size: number; offset: number };
+type CentralEntry = { name: string; crc: number; size: number; offset: number; flags: number; version: number; folder: boolean; dataStart: number };
+type ReaderOptions = { maxEntries?: number; maxTotalBytes?: number; maxFileBytes?: number };
 
 export type ZipStoreReader = {
   names(): string[];
@@ -166,11 +167,11 @@ function locateDirectory(tail: Buffer, size: number, maxEntries: number): Direct
 
 function parseDirectory(directory: Buffer, location: DirectoryLocation) {
   const entries = new Map<string, CentralEntry>();
-  const seenFolders = new Set<string>();
   let cursor = 0;
   for (let index = 0; index < location.entryCount; index += 1) {
     if (cursor + 46 > directory.length || directory.readUInt32LE(cursor) !== CENTRAL_HEADER) invalid();
     const flags = directory.readUInt16LE(cursor + 8);
+    const version = directory.readUInt16LE(cursor + 6);
     const method = directory.readUInt16LE(cursor + 10);
     const crc = directory.readUInt32LE(cursor + 16);
     const compressedSize = directory.readUInt32LE(cursor + 20);
@@ -182,18 +183,15 @@ function parseDirectory(directory: Buffer, location: DirectoryLocation) {
     const nameEnd = cursor + 46 + nameLength;
     if (nameEnd + extraLength + commentLength > directory.length) invalid();
     const name = directory.subarray(cursor + 46, nameEnd).toString("utf8");
-    if ((flags & ENCRYPTED) !== 0 || method !== 0 || compressedSize !== uncompressedSize) invalid();
+    if ((flags & ~UTF8_NAMES) !== 0 || version > VERSION || method !== 0 || compressedSize !== uncompressedSize) invalid();
+    if (directory.readUInt16LE(cursor + 34) !== 0) invalid();
     if (compressedSize === MAX_OFFSET || offset === MAX_OFFSET) invalid();
     cursor = nameEnd + extraLength + commentLength;
-    // Other tools list folders as empty entries ending in "/"; they hold nothing, so they are skipped.
-    if (name.endsWith("/") && uncompressedSize === 0 && isSafeArchiveName(name.slice(0, -1))) {
-      if (seenFolders.has(name)) invalid();
-      seenFolders.add(name);
-      continue;
-    }
-    if (!isSafeArchiveName(name) || entries.has(name)) invalid();
+    // Validate folder extents too, although they are not exposed as payload entries.
+    const folder = name.endsWith("/") && uncompressedSize === 0 && isSafeArchiveName(name.slice(0, -1));
+    if ((!folder && !isSafeArchiveName(name)) || entries.has(name)) invalid();
     if (offset + 30 + nameLength + uncompressedSize > location.directoryOffset) invalid();
-    entries.set(name, { name, crc, size: uncompressedSize, offset });
+    entries.set(name, { name, crc, size: uncompressedSize, offset, flags, version, folder, dataStart: 0 });
   }
   if (cursor !== directory.length) invalid();
   return entries;
@@ -202,15 +200,33 @@ function parseDirectory(directory: Buffer, location: DirectoryLocation) {
 /** Where an entry's data starts, once its local header agrees with the central directory. */
 function dataStartFromLocalHeader(local: Buffer, localName: Buffer, entry: CentralEntry, directoryOffset: number) {
   if (local.readUInt32LE(0) !== LOCAL_HEADER || local.readUInt16LE(8) !== 0) invalid();
+  if (local.readUInt16LE(4) !== entry.version || local.readUInt16LE(6) !== entry.flags ||
+      local.readUInt32LE(14) !== entry.crc || local.readUInt32LE(18) !== entry.size || local.readUInt32LE(22) !== entry.size) invalid();
   if (localName.toString("utf8") !== entry.name) invalid();
   const dataStart = entry.offset + 30 + local.readUInt16LE(26) + local.readUInt16LE(28);
   if (dataStart + entry.size > directoryOffset) invalid();
   return dataStart;
 }
 
+function validateExtents(entries: Map<string, CentralEntry>, maxTotalBytes: number) {
+  if (!Number.isSafeInteger(maxTotalBytes) || maxTotalBytes < 0) invalid();
+  let end = 0;
+  let total = 0;
+  for (const entry of [...entries.values()].sort((a, b) => a.offset - b.offset)) {
+    if (entry.offset < end) invalid();
+    end = entry.dataStart + entry.size;
+    total += entry.size;
+    if (total > maxTotalBytes) invalid();
+  }
+}
+
+function payloadNames(entries: Map<string, CentralEntry>) {
+  return [...entries.values()].filter((entry) => !entry.folder).map((entry) => entry.name);
+}
+
 function entryFor(entries: Map<string, CentralEntry>, name: string, maxBytes: number) {
   const entry = entries.get(name);
-  if (!entry || entry.size > maxBytes) invalid();
+  if (!entry || entry.folder || entry.size > maxBytes) invalid();
   return entry;
 }
 
@@ -223,24 +239,28 @@ function checked(data: Buffer, entry: CentralEntry) {
  * Open an uncompressed ZIP archive for reading. Anything unusual - compression, encryption, ZIP64,
  * unsafe or repeated names, trailing or overlapping data - is refused as "archive_invalid".
  */
-export async function openZipStore(filePath: string, options: { maxEntries?: number } = {}): Promise<ZipStoreReader> {
+export async function openZipStore(filePath: string, options: ReaderOptions = {}): Promise<ZipStoreReader> {
   const handle = await open(filePath, "r");
   try {
     const { size } = await handle.stat();
-    if (size < 22 || size > MAX_OFFSET) invalid();
+    if (size < 22 || size > Math.min(MAX_OFFSET, options.maxFileBytes ?? MAX_OFFSET)) invalid();
     const tailLength = Math.min(size, 22 + 0xffff);
     const location = locateDirectory(await readAt(handle, size - tailLength, tailLength), size, options.maxEntries ?? MAX_ENTRIES);
     const entries = parseDirectory(await readAt(handle, location.directoryOffset, location.directorySize), location);
 
+    for (const entry of entries.values()) {
+      const local = await readAt(handle, entry.offset, 30);
+      const localName = await readAt(handle, entry.offset + 30, local.readUInt16LE(26));
+      entry.dataStart = dataStartFromLocalHeader(local, localName, entry, location.directoryOffset);
+    }
+    validateExtents(entries, options.maxTotalBytes ?? MAX_OFFSET);
+
     return {
-      names: () => [...entries.keys()],
+      names: () => payloadNames(entries),
       size: (name) => entries.get(name)?.size ?? invalid(),
       async read(name, maxBytes) {
         const entry = entryFor(entries, name, maxBytes);
-        const local = await readAt(handle, entry.offset, 30);
-        const localName = await readAt(handle, entry.offset + 30, local.readUInt16LE(26));
-        const dataStart = dataStartFromLocalHeader(local, localName, entry, location.directoryOffset);
-        return checked(entry.size === 0 ? Buffer.alloc(0) : await readAt(handle, dataStart, entry.size), entry);
+        return checked(entry.size === 0 ? Buffer.alloc(0) : await readAt(handle, entry.dataStart, entry.size), entry);
       },
       close: () => handle.close()
     };
@@ -258,7 +278,7 @@ export async function openZipStore(filePath: string, options: { maxEntries?: num
 export function withZipStoreSync<T>(
   filePath: string,
   visit: (archive: { names(): string[]; read(name: string, maxBytes: number): Buffer }) => T,
-  options: { maxEntries?: number } = {}
+  options: ReaderOptions = {}
 ): T {
   let descriptor: number;
   try {
@@ -271,22 +291,25 @@ export function withZipStoreSync<T>(
     let location: DirectoryLocation;
     try {
       const { size } = fstatSync(descriptor);
-      if (size < 22 || size > MAX_OFFSET) invalid();
+      if (size < 22 || size > Math.min(MAX_OFFSET, options.maxFileBytes ?? MAX_OFFSET)) invalid();
       const tailLength = Math.min(size, 22 + 0xffff);
       location = locateDirectory(readAtSync(descriptor, size - tailLength, tailLength), size, options.maxEntries ?? MAX_ENTRIES);
       entries = parseDirectory(readAtSync(descriptor, location.directoryOffset, location.directorySize), location);
+      for (const entry of entries.values()) {
+        const local = readAtSync(descriptor, entry.offset, 30);
+        const localName = readAtSync(descriptor, entry.offset + 30, local.readUInt16LE(26));
+        entry.dataStart = dataStartFromLocalHeader(local, localName, entry, location.directoryOffset);
+      }
+      validateExtents(entries, options.maxTotalBytes ?? MAX_OFFSET);
     } catch {
       throw new Error("archive_invalid");
     }
     return visit({
-      names: () => [...entries.keys()],
+      names: () => payloadNames(entries),
       read(name, maxBytes) {
         try {
           const entry = entryFor(entries, name, maxBytes);
-          const local = readAtSync(descriptor, entry.offset, 30);
-          const localName = readAtSync(descriptor, entry.offset + 30, local.readUInt16LE(26));
-          const dataStart = dataStartFromLocalHeader(local, localName, entry, location.directoryOffset);
-          return checked(entry.size === 0 ? Buffer.alloc(0) : readAtSync(descriptor, dataStart, entry.size), entry);
+          return checked(entry.size === 0 ? Buffer.alloc(0) : readAtSync(descriptor, entry.dataStart, entry.size), entry);
         } catch {
           throw new Error("archive_invalid");
         }

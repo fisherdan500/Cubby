@@ -25,6 +25,13 @@ const healthy: PlatformHealth = {
 };
 
 describe("PlatformHealthPanel", () => {
+  it("does not invent free-space numbers for unreadable storage", () => {
+    const body = render({ ...healthy, disks: [{ label: "photos", freeBytes: null, totalBytes: null }], problems: [{ key: "disk_unavailable_photos", message: "Storage holding photos cannot be checked. Free space is unknown." }] });
+    expect(body.textContent).toContain("photos: Free space unknown");
+    expect(body.textContent).not.toContain("0 MB");
+    expect(body.textContent).not.toContain("Everything looks fine.");
+  });
+
   it("shows the newest whole-system backup, household backups and free space, all well", () => {
     const body = render(healthy);
 

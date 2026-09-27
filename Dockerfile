@@ -54,6 +54,7 @@ FROM runner-standalone AS runner-static
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
 FROM runner-static AS runner-runtime-artifacts
+COPY --from=builder --chown=node:node /app/runtime/thumbnail-validator.cjs ./runtime/thumbnail-validator.cjs
 COPY --from=builder --chown=node:node /app/dist/platform-owner.mjs ./platform-owner.mjs
 COPY --from=builder --chown=node:node /app/dist/integrity-check.mjs ./integrity-check.mjs
 COPY --from=builder /usr/local/bin/cubby-sprout-stage-unlink /usr/local/bin/cubby-sprout-stage-unlink

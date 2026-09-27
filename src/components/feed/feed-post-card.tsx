@@ -9,10 +9,12 @@ type FeedPost = {
   babyId: string | null;
   body: string;
   occurredAt: Date;
+  updatedAt: Date;
   authorName: string;
   canRemove: boolean;
   canEdit?: boolean;
   edited?: boolean;
+  hasRetainedPhotos?: boolean;
   photos?: Array<{ id: string; width: number; height: number }>;
 };
 
@@ -56,7 +58,7 @@ export function FeedPostCard({
         {post.canRemove ? <FeedPostRemoveButton postId={post.id} /> : null}
       </header>
       <FeedPhotoGallery photos={post.photos ?? []} />
-      <FeedPostBody postId={post.id} body={post.body} edited={post.edited ?? false} canEdit={post.canEdit ?? false}>
+      <FeedPostBody key={post.id} postId={post.id} body={post.body} updatedAt={post.updatedAt} hasPhotos={post.hasRetainedPhotos ?? (post.photos?.length ?? 0) > 0} edited={post.edited ?? false} canEdit={post.canEdit ?? false}>
         {linkTags(post.body, babyId)}
       </FeedPostBody>
       {footer}

@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: async () => ({ role: "owner" }),
+  requirePermission: vi.fn()
+}));
 
 const mocks = vi.hoisted(() => ({ stageFeedPhoto: vi.fn(), openAttachment: vi.fn() }));
 vi.mock("@/server/services/attachments", () => ({ stageFeedPhoto: mocks.stageFeedPhoto, openAttachment: mocks.openAttachment }));

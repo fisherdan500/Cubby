@@ -19,8 +19,12 @@ function adapterSending(send: (payload: { recipient: string; subject: string; te
   return () => ({ send: vi.fn(send) });
 }
 
+let monotonicNow = 0;
 beforeEach(() => {
+  vi.restoreAllMocks();
   vi.resetAllMocks();
+  monotonicNow += 120_000;
+  vi.spyOn(performance, "now").mockImplementation(() => monotonicNow);
   mocks.getPlatformOwnerContext.mockResolvedValue({ userId: "usr_owner", authorityId: "platform" });
   mocks.userFindUnique.mockResolvedValue({ email: "owner@example.test" });
   mocks.transaction.mockImplementation(async (callback) => callback({ tx: true }));
@@ -28,6 +32,53 @@ beforeEach(() => {
 });
 
 describe("sendPlatformTestEmail", () => {
+  it("claims before transport construction and holds through settlement, then waits 60 seconds", async () => {
+    let settle!: () => void;
+    const send = vi.fn(async () => {}).mockImplementationOnce(() => new Promise<void>((resolve) => { settle = resolve; }));
+    const createAdapter = vi.fn(() => ({ send }));
+    const first = sendPlatformTestEmail(createAdapter);
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    monotonicNow += 120_000;
+    await expect(sendPlatformTestEmail(createAdapter)).resolves.toEqual({ status: "throttled", retryAfterSeconds: 60 });
+    expect(createAdapter).toHaveBeenCalledTimes(1);
+    settle();
+    await expect(first).resolves.toMatchObject({ status: "sent" });
+    await expect(sendPlatformTestEmail(createAdapter)).resolves.toEqual({ status: "throttled", retryAfterSeconds: 60 });
+    monotonicNow += 59_999;
+    await expect(sendPlatformTestEmail(createAdapter)).resolves.toEqual({ status: "throttled", retryAfterSeconds: 1 });
+    monotonicNow += 1;
+    send.mockResolvedValueOnce();
+    await expect(sendPlatformTestEmail(createAdapter)).resolves.toMatchObject({ status: "sent" });
+    expect(createAdapter).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["transport", "unavailable", "audit"])("consumes cooldown after %s failure without an automatic resend", async (kind) => {
+    const send = vi.fn(async () => { if (kind === "transport") throw new Error("smtp_temporary"); });
+    const createAdapter = vi.fn(() => { if (kind === "unavailable") throw new Error("unavailable"); return { send }; });
+    if (kind === "audit") mocks.writePlatformAudit.mockRejectedValueOnce(new Error("audit_failed"));
+    if (kind === "audit") await expect(sendPlatformTestEmail(createAdapter)).rejects.toThrow("audit_failed");
+    else await expect(sendPlatformTestEmail(createAdapter)).resolves.toMatchObject({ status: kind === "transport" ? "failed" : "not_configured" });
+    await expect(sendPlatformTestEmail(createAdapter)).resolves.toMatchObject({ status: "throttled" });
+    expect(createAdapter).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledTimes(kind === "unavailable" ? 0 : 1);
+    monotonicNow += 60_000;
+    await sendPlatformTestEmail(createAdapter);
+    expect(createAdapter).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps admission while a successful send awaits audit settlement", async () => {
+    let settle!: () => void;
+    mocks.writePlatformAudit.mockImplementationOnce(() => new Promise<void>((resolve) => { settle = resolve; }));
+    const createAdapter = vi.fn(() => ({ send: vi.fn(async () => {}) }));
+    const first = sendPlatformTestEmail(createAdapter);
+    await vi.waitFor(() => expect(mocks.writePlatformAudit).toHaveBeenCalledTimes(1));
+    monotonicNow += 120_000;
+    await expect(sendPlatformTestEmail(createAdapter)).resolves.toMatchObject({ status: "throttled" });
+    expect(createAdapter).toHaveBeenCalledTimes(1);
+    settle();
+    await first;
+  });
+
   it("sends one message to the platform owner's own address and audits it", async () => {
     const send = vi.fn(async () => ({ responseCode: 250 }));
 

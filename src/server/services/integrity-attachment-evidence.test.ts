@@ -1,10 +1,32 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkAttachmentInventory, normalizeAttachmentInventoryRows } from "@/server/services/integrity-attachment-evidence";
+import { ATTACHMENT_INVENTORY_QUERY, checkAttachmentInventory, normalizeAttachmentInventoryRows } from "@/server/services/integrity-attachment-evidence";
 
 const key = (digit: string) => digit.repeat(32);
 const record = (digit: string, state = "available") => ({ storageKey: key(digit), byteSize: 4, sha256: "a".repeat(64), state });
 
 describe("attachment byte inventory", () => {
+  it("recognizes pending write ownership without calling it a verified photo or a stray", async () => {
+    const pending = record("7", "write_pending");
+    expect(normalizeAttachmentInventoryRows([pending])).toEqual([pending]);
+    const read = vi.fn();
+    await expect(checkAttachmentInventory([pending], [key("7")], read)).resolves.toEqual({ status: "incomplete" });
+    await expect(checkAttachmentInventory([pending], [], read)).resolves.toEqual({ status: "incomplete" });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("still reports genuinely unknown files alongside a pending write", async () => {
+    await expect(checkAttachmentInventory([record("7", "write_pending")], [key("7"), key("8")], vi.fn()))
+      .resolves.toMatchObject({ status: "findings", count: 1 });
+  });
+
+  it("the shared bounded inventory includes only pending intents without overriding Attachment ownership", () => {
+    expect(ATTACHMENT_INVENTORY_QUERY).toContain('FROM "AttachmentWriteIntent"');
+    expect(ATTACHMENT_INVENTORY_QUERY).toContain("'write_pending'");
+    expect(ATTACHMENT_INVENTORY_QUERY).toContain("intent.state = 'pending'");
+    expect(ATTACHMENT_INVENTORY_QUERY).toContain("NOT EXISTS");
+    expect(ATTACHMENT_INVENTORY_QUERY).toContain("LIMIT 100001");
+  });
+
   it("is clean when every recorded photo's bytes are present and exact, and nothing else is stored", async () => {
     const read = vi.fn().mockResolvedValue(Buffer.from("jpeg"));
     await expect(checkAttachmentInventory([record("1"), record("2", "deleted"), record("3", "staging")], [key("1"), key("2"), key("3")], read))

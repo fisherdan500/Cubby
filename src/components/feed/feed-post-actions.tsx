@@ -1,32 +1,28 @@
 "use client";
 
-import { useState, type PropsWithChildren } from "react";
+import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, PenLine, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { FEED_POST_MAX_LENGTH, FEED_POST_MAX_PHOTOS } from "@/domain/feed-post";
-import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
-
-type OperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
+import { clientOperationResponse, feedOutcomeValidator, householdPartitionSchema, type OutcomeValidator } from "@/lib/client-operation-response";
 type Partition = { version: 1; scope: "household"; partition: string };
 type Outcome = { ok: true } | { ok: false; message: string };
+
+// Only the server-issued ID survives reload. Private intent stays in this document's memory.
+const retainedIntents = new Map<string, { operationId: string; intent: string; validOutcome: OutcomeValidator }>();
+function intentKey(value: unknown): string {
+  return JSON.stringify(value, (_key, item) => item && typeof item === "object" && !Array.isArray(item)
+    ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, item[key]])) : item);
+}
 
 async function householdPartition(): Promise<Partition> {
   const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
   const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition } | null;
-  if (!response.ok || !body?.ok || !body.data || body.data.scope !== "household") throw new Error("operation_partition_unavailable");
-  return body.data;
-}
-
-async function operationResponse(response: Response) {
-  const body = await response.json().catch(() => null) as {
-    ok?: boolean;
-    data?: { status?: OperationStatus; operationId?: string };
-    error?: { code?: string; message?: string };
-  } | null;
-  return { response, body, status: body?.ok ? body.data?.status : undefined };
+  if (!response.ok || body?.ok !== true || !householdPartitionSchema.safeParse(body.data).success) throw new Error("operation_partition_unavailable");
+  return householdPartitionSchema.parse(body.data);
 }
 
 /**
@@ -41,53 +37,73 @@ export async function runFeedOperation(
   fields: Record<string, unknown>,
   issueFields: Record<string, unknown> = {}
 ): Promise<Outcome> {
+  const intent = intentKey({ url, method, fields, issueFields });
+  fields = JSON.parse(JSON.stringify(fields));
+  issueFields = JSON.parse(JSON.stringify(issueFields));
+  const validOutcome = feedOutcomeValidator(url, method, fields);
   try {
     const { partition } = await householdPartition();
     const storageKey = await tabScopedBrowserOperationStorageKey(partition, `${storageName}:${partition}`);
     const submit = async (operationId: string): Promise<Outcome> => {
-      const result = await operationResponse(await fetch(url, {
+      const result = await clientOperationResponse(await fetch(url, {
         method,
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ operationId, ...fields })
-      }));
-      if (isAuthorizedBrowserOperation410(result.response.status, result.body, operationId)) {
+      }), validOutcome, operationId);
+      if (result.status === "expired") {
         sessionStorage.removeItem(storageKey);
+        retainedIntents.delete(storageKey);
         return { ok: false, message: "This request expired. Try again." };
       }
       if (result.status === "completed") {
         sessionStorage.removeItem(storageKey);
+        retainedIntents.delete(storageKey);
         return { ok: true };
       }
       if (result.status === "pending") return { ok: false, message: "Still saving. Try again in a moment to check." };
-      sessionStorage.removeItem(storageKey);
-      if (result.status === "stale" || result.status === "rejected") return { ok: false, message: "This changed meanwhile. Refresh and try again." };
+      if (result.status === "stale" || result.status === "rejected") {
+        sessionStorage.removeItem(storageKey);
+        retainedIntents.delete(storageKey);
+        return { ok: false, message: "This changed meanwhile. Refresh and try again." };
+      }
       return { ok: false, message: result.body?.error?.message ?? "That did not work. Try again." };
     };
 
     const retained = sessionStorage.getItem(storageKey);
     if (retained) {
-      const reconciled = await operationResponse(await fetch(`/api/browser-operations/${retained}`, { cache: "no-store" }));
+      const previous = retainedIntents.get(storageKey);
+      const sameIntent = previous?.operationId === retained && previous.intent === intent;
+      const reconciled = await clientOperationResponse(await fetch(`/api/browser-operations/${retained}`, { cache: "no-store" }), previous?.operationId === retained ? previous.validOutcome : feedOutcomeValidator(url, method, fields, "unknown"), retained);
       if (reconciled.status === "completed") {
         sessionStorage.removeItem(storageKey);
-        return { ok: true };
+        retainedIntents.delete(storageKey);
+        return sameIntent ? { ok: true } : { ok: false, message: "The previous request was saved. Your current draft was not sent. Review it and save again." };
       }
-      if (reconciled.status === "prepared") return submit(retained);
+      if (reconciled.status === "prepared") {
+        if (!sameIntent) return { ok: false, message: "The previous request is unresolved. Restore its original draft to retry, or wait for its expiry; this draft has not been sent." };
+        return await submit(retained);
+      }
       if (reconciled.status === "pending") return { ok: false, message: "The last request is still saving. Try again in a moment." };
-      // Expired, stale or unknown: start afresh.
-      sessionStorage.removeItem(storageKey);
+      if (reconciled.status === "expired" || reconciled.status === "stale" || reconciled.status === "rejected") {
+        sessionStorage.removeItem(storageKey);
+        retainedIntents.delete(storageKey);
+        return { ok: false, message: "The previous request ended. Review your draft and try again." };
+      }
+      return { ok: false, message: "Could not confirm the last request. Try again to check." };
     }
 
-    const issued = await operationResponse(await fetch(`${url}?issue=1`, {
+    const issued = await clientOperationResponse(await fetch(`${url}?issue=1`, {
       method,
       headers: { "content-type": "application/json" },
       body: JSON.stringify(issueFields)
-    }));
+    }), validOutcome);
     const operationId = issued.body?.data?.operationId;
     if (!operationId || (issued.status !== "open" && issued.status !== "prepared")) {
       return { ok: false, message: issued.body?.error?.message ?? "That did not work. Try again." };
     }
     sessionStorage.setItem(storageKey, operationId);
-    return submit(operationId);
+    retainedIntents.set(storageKey, { operationId, intent, validOutcome });
+    return await submit(operationId);
   } catch {
     return { ok: false, message: "Could not reach Cubby. Check your connection and try again." };
   }
@@ -123,11 +139,28 @@ export function FeedPostComposer({ babyId, babyName, photosEnabled = false }: { 
   const [body, setBody] = useState("");
   const [scope, setScope] = useState<"baby" | "family">("baby");
   const [photos, setPhotos] = useState<ChosenPhoto[]>([]);
+  const previewUrls = useRef(new Set<string>());
+  const uploadGeneration = useRef(0);
+  useEffect(() => {
+    const urls = previewUrls.current;
+    uploadGeneration.current += 1;
+    return () => {
+      uploadGeneration.current += 1;
+      for (const url of urls) URL.revokeObjectURL(url);
+      urls.clear();
+    };
+  }, []);
+  function releasePreview(url: string) {
+    if (previewUrls.current.delete(url)) URL.revokeObjectURL(url);
+  }
+  const currentDraft = useRef({ body, scope, photos, babyId });
+  currentDraft.current = { body, scope, photos, babyId };
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function addPhotos(files: File[]) {
+    const generation = uploadGeneration.current;
     setError("");
     const room = FEED_POST_MAX_PHOTOS - photos.length;
     const accepted = files.slice(0, room);
@@ -135,8 +168,10 @@ export function FeedPostComposer({ babyId, babyName, photosEnabled = false }: { 
     let failure = files.length > room ? `A post can have up to ${FEED_POST_MAX_PHOTOS} photos.` : "";
     for (const file of accepted) {
       const result = await uploadFeedPhoto(file);
+      if (generation !== uploadGeneration.current) return;
       if (result.ok) {
         const photo = { attachmentId: result.attachmentId, previewUrl: URL.createObjectURL(file) };
+        previewUrls.current.add(photo.previewUrl);
         setPhotos((current) => [...current, photo]);
       } else {
         failure = result.message;
@@ -149,12 +184,13 @@ export function FeedPostComposer({ babyId, babyName, photosEnabled = false }: { 
   function removePhoto(index: number) {
     setPhotos((current) => {
       const removed = current[index];
-      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      if (removed) releasePreview(removed.previewUrl);
       return current.filter((_, position) => position !== index);
     });
   }
 
   async function post() {
+    const submittedDraft = currentDraft.current;
     if (!body.trim() && photos.length === 0) {
       setError("Write something to share first.");
       return;
@@ -171,7 +207,12 @@ export function FeedPostComposer({ babyId, babyName, photosEnabled = false }: { 
       setError(outcome.message);
       return;
     }
-    for (const photo of photos) URL.revokeObjectURL(photo.previewUrl);
+    if (currentDraft.current.body !== submittedDraft.body || currentDraft.current.scope !== submittedDraft.scope || currentDraft.current.photos !== submittedDraft.photos || currentDraft.current.babyId !== submittedDraft.babyId) {
+      setError("The previous draft was saved. Your newer changes have not been sent.");
+      router.refresh();
+      return;
+    }
+    for (const photo of photos) releasePreview(photo.previewUrl);
     setBody("");
     setScope("baby");
     setPhotos([]);
@@ -276,32 +317,44 @@ export function FeedPostComposer({ babyId, babyName, photosEnabled = false }: { 
 export function FeedPostBody({
   postId,
   body,
+  updatedAt,
   edited,
   canEdit,
+  hasPhotos = false,
   children
 }: PropsWithChildren<{
   postId: string;
   body: string;
+  updatedAt: Date;
   edited: boolean;
   canEdit: boolean;
+  hasPhotos?: boolean;
 }>) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(body);
+  const [openingRevision, setOpeningRevision] = useState("");
+  const currentEdit = useRef(draft);
+  currentEdit.current = draft;
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function save() {
-    if (!draft.trim()) {
+    if (!draft.trim() && !hasPhotos) {
       setError("Write something to share first.");
       return;
     }
     setError("");
     setSubmitting(true);
-    const outcome = await runFeedOperation(`cubby:feed-post-update:${postId}`, `/api/feed/posts/${encodeURIComponent(postId)}`, "PATCH", { body: draft });
+    const outcome = await runFeedOperation(`cubby:feed-post-update:${postId}`, `/api/feed/posts/${encodeURIComponent(postId)}`, "PATCH", { body: draft, expectedUpdatedAt: openingRevision }, { expectedUpdatedAt: openingRevision });
     setSubmitting(false);
     if (!outcome.ok) {
       setError(outcome.message);
+      return;
+    }
+    if (currentEdit.current !== draft) {
+      setError("The previous draft was saved. Your newer changes have not been sent. Reopen the editor before saving them.");
+      router.refresh();
       return;
     }
     setEditing(false);
@@ -340,7 +393,7 @@ export function FeedPostBody({
             <button
               type="button"
               aria-label="Edit post"
-              onClick={() => { setDraft(body); setEditing(true); }}
+              onClick={() => { setDraft(body); setOpeningRevision(updatedAt.toISOString()); setEditing(true); }}
               className="inline-flex min-h-11 items-center rounded-lg px-2 font-semibold hover:bg-muted hover:text-foreground"
             >
               Edit

@@ -14,7 +14,7 @@
 # with the archived one, puts the photos back, starts Cubby, and checks the households, accounts and
 # photos match what the archive says it holds.
 #
-# Usage: sh scripts/system-restore.sh --archive FILE --confirm-empty-install
+# Usage: sh scripts/system-restore.sh --archive FILE --confirm-empty-install --maintenance
 # See docs/recovery/system-backup.md.
 set -eu
 umask 077
@@ -26,8 +26,10 @@ fail() {
 
 archive=""
 confirmed=false
+maintenance=false
 while [ $# -gt 0 ]; do
   case "$1" in
+    --maintenance) maintenance=true; shift ;;
     --archive) [ $# -ge 2 ] || fail "--archive needs a file"; archive="$2"; shift 2 ;;
     --confirm-empty-install) confirmed=true; shift ;;
     -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
@@ -40,6 +42,12 @@ done
 [ -f docker-compose.yml ] || fail "run this from the Cubby checkout, where docker-compose.yml is"
 [ -f .env ] || fail "put the old server's .env in this checkout first"
 
+[ "$maintenance" = true ] || fail "restore requires downtime; add --maintenance after excluding external writers"
+command -v node > /dev/null || fail "Node.js 22 or newer is required on the host"
+node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' || fail "Node.js 22 or newer is required on the host"
+. ./scripts/system-maintenance.sh
+maintenance_acquire
+
 psql_value() {
   docker compose exec -T postgres psql -U cubby_migrator -d "${2:-cubby}" -XAt -v ON_ERROR_STOP=1 -c "$1"
 }
@@ -48,46 +56,39 @@ manifest_value() {
 }
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT INT TERM
-
-# The archive: exactly the four files a backup writes, each matching its checksum.
-names=$(tar -tf "$archive" 2>/dev/null | sort | tr '\n' ' ') || fail "the archive does not open"
-[ "$names" = "attachments.tar checksums.sha256 database.dump manifest.txt " ] || fail "this is not a Cubby system backup"
-tar -xf "$archive" -C "$work" || fail "the archive does not unpack"
-[ "$(manifest_value format)" = "cubby-system-backup-1" ] || fail "this archive's format is not one this version reads"
-(cd "$work" && sha256sum -c --quiet checksums.sha256) || fail "the archive is damaged: a checksum does not match"
-tar -tf "$work/attachments.tar" > /dev/null || fail "the photo archive is damaged"
-
-# The code must know every change the archived database has had; an older checkout would not.
-migration=$(manifest_value migration)
-[ -n "$migration" ] && [ -d "prisma/migrations/$migration" ] \
-  || fail "the archive comes from a newer Cubby ($migration); update this checkout first"
+# A private copy fixes the bytes used for validation/extraction against source-file replacement.
+# The operator must provide an immutable, trusted archive and adequate private scratch space.
+node scripts/system-archive.mjs size "$archive" prisma/migrations || fail "invalid archive size or type"
+cp -- "$archive" "$work/input.tar" || fail "the archive could not be staged"
+node scripts/system-archive.mjs prepare "$work/input.tar" prisma/migrations "$work" \
+  || fail "archive validation failed; no database or attachment destination was changed"
 
 # A fresh install creates its database users and tables on first start; the restore needs both.
-docker compose up -d --wait postgres app || fail "Cubby did not start; finish the install first"
+docker compose up -d --wait postgres app > /dev/null || {
+  docker compose stop app > /dev/null 2>&1 || :
+  fail "Cubby did not start; finish the install first; app restart was not attempted"
+}
+maintenance_stop
+# This is the authoritative empty check, after all supported writers have exited.
 
 households=$(psql_value 'SELECT count(*) FROM "Household"') || fail "the new install could not be read"
 accounts=$(psql_value 'SELECT count(*) FROM "User"') || fail "the new install could not be read"
 [ "$households" = 0 ] && [ "$accounts" = 0 ] \
   || fail "this install already has accounts or households; restore only into a new, empty install"
 # Files only: Cubby makes its empty photo folders on every start.
-stored=$(docker compose exec -T app sh -c 'find /var/lib/cubby/attachments -type f -print | head -n 1') \
+stored=$(docker compose run --rm --no-deps -T --entrypoint sh app -c 'find /var/lib/cubby/attachments ! -type d -print -quit') \
   || fail "the photo directory could not be read"
 [ -z "$stored" ] || fail "this install already has photos; restore only into a new, empty install"
 
 printf 'system_restore_step: replacing the empty database\n'
-docker compose stop app > /dev/null || fail "Cubby could not be stopped"
 psql_value 'DROP DATABASE cubby' postgres > /dev/null || fail "the empty database could not be removed"
 docker compose exec -T postgres createdb -U cubby_migrator -T template0 cubby || fail "the database could not be recreated"
 docker compose exec -T postgres pg_restore -U cubby_migrator -d cubby --exit-on-error --single-transaction < "$work/database.dump" \
-  || fail "the database could not be restored; the install is now empty, and nothing else was changed"
+  || fail "the database restore failed; the target may be partial and the app remains stopped; do not retry on this target"
 
 printf 'system_restore_step: putting the photos back\n'
-docker compose run --rm --no-deps -T --entrypoint tar app -xf - -C /var/lib/cubby/attachments < "$work/attachments.tar" \
+docker compose run --rm --no-deps -T --entrypoint tar app --no-same-owner --no-same-permissions -xf - -C /var/lib/cubby/attachments < "$work/attachments.tar" \
   || fail "the photos could not be put back"
-
-printf 'system_restore_step: starting Cubby\n'
-docker compose up -d --wait app || fail "Cubby did not start on the restored data; is the old server's .env in place?"
 
 households=$(psql_value 'SELECT count(*) FROM "Household" WHERE "deletedAt" IS NULL')
 accounts=$(psql_value 'SELECT count(*) FROM "User"')
@@ -95,5 +96,9 @@ photos=$(psql_value "SELECT count(*) FROM \"Attachment\" WHERE state <> 'purged'
 [ "$households" = "$(manifest_value households)" ] && [ "$accounts" = "$(manifest_value accounts)" ] && [ "$photos" = "$(manifest_value photos)" ] \
   || fail "the restored counts differ from the archive (households=$households accounts=$accounts photos=$photos)"
 
+# Verify while still quiescent; startup retention/migrations must not race the counts.
+printf 'system_restore_step: starting Cubby\n'
+maintenance_was_running=true
+maintenance_resume
 printf 'system_restore_complete households=%s accounts=%s photos=%s from=%s\n' "$households" "$accounts" "$photos" "$(manifest_value created)"
 printf 'Sign in as before. Turn automated backups back on once you have checked everything is there.\n'

@@ -394,11 +394,11 @@
       "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const upload = await readBoundedBytes(request, attachmentPolicy.feed_photo.maxInputBytes, \"attachment_too_large\");\n    const staged = await stageFeedPhoto(upload);\n    return ok(staged, { status: 201, headers: { \"Cache-Control\": \"no-store\" } });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "6ea6b72a09dcc75254f0c6e661ad9c368e88b609bd7b293a679b1d5944e80560",
-      "anchorEnd": 788,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    requirePermission(await getEffectiveHouseholdContext(), \"feed.post\");\n    return await withPhotoUploadAdmission(async () => {\n      const upload = await readBoundedBytes(request, attachmentPolicy.feed_photo.maxInputBytes, \"attachment_too_large\");\n      const staged = await stageFeedPhoto(upload);\n      return ok(staged, { status: 201, headers: { \"Cache-Control\": \"no-store\" } });\n    });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "515cbc8b7e034733298bef99e059462dbca5901bc5ccebd02b38055177213e05",
+      "anchorEnd": 1097,
       "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
-      "anchorStart": 427,
+      "anchorStart": 592,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -632,11 +632,11 @@
       "sidecarPath": "src/app/api/backups/local/[filename]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    if (isBackupArchiveUpload(request)) return ok(await withUploadedBackupArchive(request, previewBackupArchive));\n    return ok(await previewBackupJson(await readBoundedJson(request)));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "66af7a6dbb67806412056d574212d589bc36ed7b5e002425316fb2272b752da6",
-      "anchorEnd": 669,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    requirePermission(await getEffectiveHouseholdContext(), \"backup.manage\");\n    if (isBackupArchiveUpload(request)) return ok(await withUploadedBackupArchive(request, previewBackupArchive));\n    return ok(await withBackupUploadAdmission(async () => previewBackupJson(await readBoundedJson(request))));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "f0e1c8094d1909146f4c6479d59500b6cc87c0ec2cb93bbfc06be1608d24292d",
+      "anchorEnd": 903,
       "anchorFile": "src/app/api/backups/restore/preview/route.ts",
-      "anchorStart": 371,
+      "anchorStart": 488,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -649,11 +649,11 @@
       "sidecarPath": "src/app/api/backups/restore/preview/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const encodedConfirmation = request.headers.get(\"x-cubby-restore-confirmation\") ?? undefined;\n    const previewChecksum = request.headers.get(\"x-cubby-backup-checksum\") ?? undefined;\n    if (!encodedConfirmation) throw new Error(\"backup_confirmation_mismatch\");\n    if (!previewChecksum) throw new Error(\"backup_preview_mismatch\");\n    let confirmation: string;\n    try {\n      confirmation = decodeURIComponent(encodedConfirmation);\n    } catch {\n      throw new Error(\"backup_confirmation_mismatch\");\n    }\n    if (isBackupArchiveUpload(request)) {\n      return ok(await withUploadedBackupArchive(request, (filePath) => restoreBackupArchive(filePath, { confirmation, previewChecksum })));\n    }\n    return ok(await restoreBackupJson(await readBoundedJson(request), { confirmation, previewChecksum }));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "43fc535c0d5398b34752aee2fbb5d0d3f1e4a2bb206be4b4325642671c9532e3",
-      "anchorEnd": 1212,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    requirePermission(await getEffectiveHouseholdContext(), \"backup.manage\");\n    const encodedConfirmation = request.headers.get(\"x-cubby-restore-confirmation\") ?? undefined;\n    const previewChecksum = request.headers.get(\"x-cubby-backup-checksum\") ?? undefined;\n    if (!encodedConfirmation) throw new Error(\"backup_confirmation_mismatch\");\n    if (!previewChecksum) throw new Error(\"backup_preview_mismatch\");\n    let confirmation: string;\n    try {\n      confirmation = decodeURIComponent(encodedConfirmation);\n    } catch {\n      throw new Error(\"backup_confirmation_mismatch\");\n    }\n    if (isBackupArchiveUpload(request)) {\n      return ok(await withUploadedBackupArchive(request, (filePath) => restoreBackupArchive(filePath, { confirmation, previewChecksum })));\n    }\n    return ok(await withBackupUploadAdmission(async () => restoreBackupJson(await readBoundedJson(request), { confirmation, previewChecksum })));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "2c4029a359f70586cfe46f84c6d98c68886c53b223383be28aca78fb7ece7708",
+      "anchorEnd": 1446,
       "anchorFile": "src/app/api/backups/restore/route.ts",
-      "anchorStart": 293,
+      "anchorStart": 410,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -683,11 +683,11 @@
       "sidecarPath": "src/app/api/backups/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const formData = await request.formData();\n    const previewId = formData.get(\"previewId\");\n    return ok(await importSproutBackup({ previewId: typeof previewId === \"string\" ? previewId : undefined }));\n  } catch (error) {\n    return handleError(normalizeSproutError(error));\n  }\n}",
-      "anchorDigest": "5b800c5ab5c1960fff1ec1ccc2a4ba2438019ea61b5d42292285ffe591bc80bf",
-      "anchorEnd": 556,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    requirePermission(await getEffectiveHouseholdContext(), \"backup.manage\");\n    return await withSproutUpload(request, false, async (formData) => {\n      const previewId = formData.get(\"previewId\");\n      return ok(await importSproutBackup({ previewId: typeof previewId === \"string\" ? previewId : undefined }));\n    });\n  } catch (error) {\n    return handleError(normalizeSproutError(error));\n  }\n}",
+      "anchorDigest": "15b9c9c297b985678dc077e97a59a48d504273e7e144a969a761f117dcc48fe5",
+      "anchorEnd": 829,
       "anchorFile": "src/app/api/backups/sprout/import/route.ts",
-      "anchorStart": 216,
+      "anchorStart": 374,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -700,11 +700,11 @@
       "sidecarPath": "src/app/api/backups/sprout/import/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    return ok(await previewSproutBackup(await request.formData()));\n  } catch (error) {\n    return handleError(normalizeSproutError(error));\n  }\n}",
-      "anchorDigest": "be83640c5f57edc26ad276876a5037ad75327052428e413da4514b2e46ecee6e",
-      "anchorEnd": 418,
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    requirePermission(await getEffectiveHouseholdContext(), \"backup.manage\");\n    return await withSproutUpload(request, true, async (form) => ok(await previewSproutBackup(form)));\n  } catch (error) {\n    return handleError(normalizeSproutError(error));\n  }\n}",
+      "anchorDigest": "e0aaa88696b4c55b84a060fa27f209193a315696f93336cb72c131c803d48ef5",
+      "anchorEnd": 689,
       "anchorFile": "src/app/api/backups/sprout/preview/route.ts",
-      "anchorStart": 217,
+      "anchorStart": 375,
       "binding": {
         "kind": "route_method",
         "symbol": "POST",
@@ -838,9 +838,9 @@
     {
       "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, commentId: params.id };\n    const issued = await issueFeedCommentDeleteBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedCommentDeleteBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
       "anchorDigest": "6e5f5f75dae0693a1ff25dfe3680dbca7311e36bb8c2b391c03f0fe4ccf0a4f6",
-      "anchorEnd": 2396,
+      "anchorEnd": 2438,
       "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
-      "anchorStart": 1407,
+      "anchorStart": 1449,
       "binding": {
         "kind": "route_method",
         "symbol": "DELETE",
@@ -853,9 +853,9 @@
       "sidecarPath": "src/app/api/feed/comments/[id]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, commentId: params.id, body: raw.body };\n    const issued = await issueFeedCommentUpdateBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedCommentUpdateBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "f7a0e5369b62378b85a2f6b1adb7a61b757c6cc3f0ffb6dbe976b8f51f66cf80",
-      "anchorEnd": 1405,
+      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, commentId: params.id, body: raw.body, expectedUpdatedAt: raw.expectedUpdatedAt };\n    const issued = await issueFeedCommentUpdateBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedCommentUpdateBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "41531778c3bbb9552d1bb9c45e8e19d89cd6695a56e06bf38db5b8797b4b90ff",
+      "anchorEnd": 1447,
       "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
       "anchorStart": 401,
       "binding": {
@@ -906,9 +906,9 @@
     {
       "anchorBytes": "export async function DELETE(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, postId: params.id };\n    const issued = await issueFeedPostDeleteBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostDeleteBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
       "anchorDigest": "9adfc7310cb6c348ece09691bfbea0ca9bfd9618b14c6672e8943718834a8397",
-      "anchorEnd": 2359,
+      "anchorEnd": 2401,
       "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
-      "anchorStart": 1379,
+      "anchorStart": 1421,
       "binding": {
         "kind": "route_method",
         "symbol": "DELETE",
@@ -921,9 +921,9 @@
       "sidecarPath": "src/app/api/feed/posts/[id]/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, postId: params.id, body: raw.body };\n    const issued = await issueFeedPostUpdateBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostUpdateBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "c76150261094afd97bd1916741b296da1ec9a28b06e472e81faffce4464d8bdf",
-      "anchorEnd": 1377,
+      "anchorBytes": "export async function PATCH(request: Request, { params }: { params: { id: string } }) {\n  let operationId: unknown;\n  try {\n    const raw = await request.json() as Record<string, unknown>;\n    operationId = raw.operationId;\n    const input = { operationId, postId: params.id, body: raw.body, expectedUpdatedAt: raw.expectedUpdatedAt };\n    const issued = await issueFeedPostUpdateBrowserOperation(input);\n    if (new URL(request.url).searchParams.get(\"issue\") === \"1\") {\n      return ok(issued, { status: issued.status === \"pending\" || issued.status === \"prepared\" ? 202 : issued.status === \"expired\" ? 410 : 200 });\n    }\n    const result = issued.status === \"open\" || issued.status === \"prepared\" ? await submitFeedPostUpdateBrowserOperation(input) : issued;\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    const failure = browserOperationFailureResult(operationId, error);\n    if (failure) return ok(failure);\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "6ff89ae00905accb1ff91e49c75a17fa8597af08e38834ef4dc31e4f44880829",
+      "anchorEnd": 1419,
       "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
       "anchorStart": 382,
       "binding": {
@@ -1941,9 +1941,9 @@
       "sidecarPath": "src/app/api/platform/setup/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function POST() {\n  try {\n    return ok(await sendPlatformTestEmail());\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "dbc0a21a0f9398ff9c5096b3f09e29dd46f39c44cb04513e52655c4d96193cc6",
-      "anchorEnd": 311,
+      "anchorBytes": "export async function POST() {\n  try {\n    const result = await sendPlatformTestEmail();\n    return ok(result, result.status === \"throttled\" ? { status: 429, headers: { \"Retry-After\": String(result.retryAfterSeconds) } } : undefined);\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "0b73be0f9203cbc6f7d75499de801cd4e4792a3c061ff6437619cb7bf39b5510",
+      "anchorEnd": 461,
       "anchorFile": "src/app/api/platform/test-email/route.ts",
       "anchorStart": 170,
       "binding": {
@@ -2725,9 +2725,9 @@
     {
       "anchorBytes": "fetch(photoSrc(photo), { credentials: \"same-origin\" })",
       "anchorDigest": "3f4a1102387a73f479c415697bae20b8960e55e13ad5da5b52e031dfdd91925b",
-      "anchorEnd": 831,
+      "anchorEnd": 873,
       "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-      "anchorStart": 777,
+      "anchorStart": 819,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2742,9 +2742,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 914,
+      "anchorEnd": 1342,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 849,
+      "anchorStart": 1277,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2759,9 +2759,9 @@
     {
       "anchorBytes": "fetch(url, {\n        method,\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ operationId, ...fields })\n      })",
       "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
-      "anchorEnd": 2498,
+      "anchorEnd": 2878,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 2347,
+      "anchorStart": 2727,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2776,9 +2776,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
       "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-      "anchorEnd": 3475,
+      "anchorEnd": 4133,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 3408,
+      "anchorStart": 4066,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2793,9 +2793,9 @@
     {
       "anchorBytes": "fetch(`${url}?issue=1`, {\n      method,\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify(issueFields)\n    })",
       "anchorDigest": "edc76dd7036d85384f82f92c0e7f791657304dbaab834082a04c6c4aa34cd56d",
-      "anchorEnd": 4104,
+      "anchorEnd": 5596,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 3963,
+      "anchorStart": 5455,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -2810,9 +2810,9 @@
     {
       "anchorBytes": "fetch(\"/api/attachments/feed-photos\", {\n      method: \"POST\",\n      headers: { \"content-type\": file.type || \"application/octet-stream\" },\n      body: file\n    })",
       "anchorDigest": "f61364fa4b4b384c209c3aa010a47f600162d032721875b65ccc59496d7cbea3",
-      "anchorEnd": 5020,
+      "anchorEnd": 6608,
       "anchorFile": "src/components/feed/feed-post-actions.tsx",
-      "anchorStart": 4859,
+      "anchorStart": 6447,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[5]",
@@ -2827,9 +2827,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 11129,
+      "anchorEnd": 11200,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 11114,
+      "anchorStart": 11185,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -2844,9 +2844,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 2248,
+      "anchorEnd": 2266,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 2183,
+      "anchorStart": 2201,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -2861,9 +2861,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${currentOperationId}`, { cache: \"no-store\" })",
       "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-      "anchorEnd": 6657,
+      "anchorEnd": 6728,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 6580,
+      "anchorStart": 6651,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -2878,9 +2878,9 @@
     {
       "anchorBytes": "fetch(endpoint, {\n          method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ babyId: body.babyId })\n        })",
       "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-      "anchorEnd": 7996,
+      "anchorEnd": 8067,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 7824,
+      "anchorStart": 7895,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -2895,9 +2895,9 @@
     {
       "anchorBytes": "fetch(activityId ? `/api/activities/${activityId}` : \"/api/activities\", {\n        method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(body)\n      })",
       "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-      "anchorEnd": 8749,
+      "anchorEnd": 8820,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 8544,
+      "anchorStart": 8615,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -3320,9 +3320,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 1651,
+      "anchorEnd": 2502,
       "anchorFile": "src/components/reports/planned-schedule.tsx",
-      "anchorStart": 1586,
+      "anchorStart": 2437,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3335,11 +3335,11 @@
       "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule`, {\n      method: \"PUT\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ operationId, expectedRevision: revision, items: planned })\n    })",
-      "anchorDigest": "a087a003de178c9c316a5e0c28cf632ab06056046e6d1dd1b8c81d45f193c1dc",
-      "anchorEnd": 5394,
+      "anchorBytes": "fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule`, {\n          method: \"PUT\", headers: { \"content-type\": \"application/json\" },\n          body: JSON.stringify({ operationId, expectedRevision: revision, items: planned })\n        })",
+      "anchorDigest": "50ab431731b81a1d9941810328e35f859d0ecde46923b6c0bfda8c3cf14d91cc",
+      "anchorEnd": 8425,
       "anchorFile": "src/components/reports/planned-schedule.tsx",
-      "anchorStart": 5162,
+      "anchorStart": 8187,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -3354,9 +3354,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${retained}`, { cache: \"no-store\" })",
       "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-      "anchorEnd": 7196,
+      "anchorEnd": 9273,
       "anchorFile": "src/components/reports/planned-schedule.tsx",
-      "anchorStart": 7129,
+      "anchorStart": 9206,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -3369,11 +3369,11 @@
       "sidecarPath": "src/components/reports/planned-schedule.operation.ts"
     },
     {
-      "anchorBytes": "fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule?issue=1`, {\n        method: \"PUT\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ expectedRevision: revision })\n      })",
-      "anchorDigest": "d7277aee7984b9d484069307b15dd651e16e4951b06778bf8927c17929ee4f36",
-      "anchorEnd": 8174,
+      "anchorBytes": "fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule?issue=1`, {\n        method: \"PUT\", headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ expectedRevision: revision })\n      })",
+      "anchorDigest": "7d79b1bda5f95152b7afb9e6a0b8622e8b6ee612f1785369777f338bafab34df",
+      "anchorEnd": 10308,
       "anchorFile": "src/components/reports/planned-schedule.tsx",
-      "anchorStart": 7955,
+      "anchorStart": 10097,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -3813,9 +3813,9 @@
     {
       "anchorBytes": "fetch(\"/api/platform/test-email\", { method: \"POST\" })",
       "anchorDigest": "ab176f155b3da1070fa3c3470effbe597cac800f80cd81e62d6c954bac46691f",
-      "anchorEnd": 2172,
+      "anchorEnd": 2399,
       "anchorFile": "src/components/settings/platform-test-email.tsx",
-      "anchorStart": 2119,
+      "anchorStart": 2346,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -4459,9 +4459,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs",
       "anchorDigest": "966bfbf0ed7ea272d7bbd981da0544dd117f2bb8a5f04cd14949bfd9f631f839",
-      "anchorEnd": 4678,
+      "anchorEnd": 4787,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4540,
+      "anchorStart": 4649,
       "binding": {
         "kind": "container_copy",
         "symbol": "household-deletion-readiness-guard.mjs",
@@ -4544,9 +4544,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/integrity-check.mjs ./integrity-check.mjs",
       "anchorDigest": "6469934a9c31ae1bb945e67d3a213635d84a6f943af02d85a4a632ab3fe6f09c",
-      "anchorEnd": 3414,
+      "anchorEnd": 3523,
       "anchorFile": "Dockerfile",
-      "anchorStart": 3325,
+      "anchorStart": 3434,
       "binding": {
         "kind": "container_copy",
         "symbol": "integrity-check.mjs",
@@ -4680,9 +4680,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/p1-3-node-builtin-probe.mjs /app/scripts/p1-3-node-builtin-probe.mjs",
       "anchorDigest": "7ca283f72641952c4b347328ab7d06c2f2d47b04ae0586b28a11c29a46af7a61",
-      "anchorEnd": 4795,
+      "anchorEnd": 4904,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4679,
+      "anchorStart": 4788,
       "binding": {
         "kind": "container_copy",
         "symbol": "p1-3-node-builtin-probe.mjs",
@@ -4935,9 +4935,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/platform-owner.mjs ./platform-owner.mjs",
       "anchorDigest": "16964ad1dfe52aa6020d948969aeb84b54c3fceabfa66776ec5e90a3d7be91a0",
-      "anchorEnd": 3324,
+      "anchorEnd": 3433,
       "anchorFile": "Dockerfile",
-      "anchorStart": 3237,
+      "anchorStart": 3346,
       "binding": {
         "kind": "container_copy",
         "symbol": "platform-owner.mjs",
@@ -5020,9 +5020,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs",
       "anchorDigest": "2a92011c4766dc9f7a69e1428da6256b8ace4b2764b70c4ce948aee1b3ea1548",
-      "anchorEnd": 4445,
+      "anchorEnd": 4554,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4332,
+      "anchorStart": 4441,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-database-timezone.mjs",
@@ -5088,9 +5088,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-email-delivery-keys.mjs ./provision-email-delivery-keys.mjs",
       "anchorDigest": "8760fe085f1fef583af6a11c1a4c88c3f93ae3712c47af44f3ffdd91eece953a",
-      "anchorEnd": 4077,
+      "anchorEnd": 4186,
       "anchorFile": "Dockerfile",
-      "anchorStart": 3960,
+      "anchorStart": 4069,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-email-delivery-keys.mjs",
@@ -5156,9 +5156,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-fresh-auth-attestation-keys.mjs ./provision-fresh-auth-attestation-keys.mjs",
       "anchorDigest": "af4c2958fc374854821afd78d5beb2b37e4f33bd932950565c7402d07806809f",
-      "anchorEnd": 3959,
+      "anchorEnd": 4068,
       "anchorFile": "Dockerfile",
-      "anchorStart": 3826,
+      "anchorStart": 3935,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-fresh-auth-attestation-keys.mjs",
@@ -5224,9 +5224,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-global-security-throttle-key.mjs ./provision-global-security-throttle-key.mjs",
       "anchorDigest": "b5c0844e64a8731bbc6a51252001ed091d2dc6d00af4c045b1e7694ec709fc73",
-      "anchorEnd": 4213,
+      "anchorEnd": 4322,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4078,
+      "anchorStart": 4187,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-global-security-throttle-key.mjs",
@@ -5292,9 +5292,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-invitation-runtime-roles.mjs ./provision-invitation-runtime-roles.mjs",
       "anchorDigest": "5ce628bf79dd5f7f7fbc1666a7801f60fe4f2def2cc5d7b99b40e8837e254d06",
-      "anchorEnd": 3825,
+      "anchorEnd": 3934,
       "anchorFile": "Dockerfile",
-      "anchorStart": 3698,
+      "anchorStart": 3807,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-invitation-runtime-roles.mjs",
@@ -5360,9 +5360,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-platform-setup-code.mjs ./provision-platform-setup-code.mjs",
       "anchorDigest": "6d390bc1923967fe7f1497623e146ac3278115d5881488e8e85e575513cb34ea",
-      "anchorEnd": 4331,
+      "anchorEnd": 4440,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4214,
+      "anchorStart": 4323,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-platform-setup-code.mjs",
@@ -5428,9 +5428,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-security-runtime-role.mjs ./provision-security-runtime-role.mjs",
       "anchorDigest": "050d53df7097507f33d6640838357abee6a41749f2ff4185ab602aeaa3615866",
-      "anchorEnd": 3697,
+      "anchorEnd": 3806,
       "anchorFile": "Dockerfile",
-      "anchorStart": 3576,
+      "anchorStart": 3685,
       "binding": {
         "kind": "container_copy",
         "symbol": "provision-security-runtime-role.mjs",
@@ -5547,9 +5547,9 @@
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/security-operator.mjs ./security-operator.mjs",
       "anchorDigest": "085033173f4af300b24122305ba8d6fa4076ea182004db164214a9e4b810f240",
-      "anchorEnd": 4539,
+      "anchorEnd": 4648,
       "anchorFile": "Dockerfile",
-      "anchorStart": 4446,
+      "anchorStart": 4555,
       "binding": {
         "kind": "container_copy",
         "symbol": "security-operator.mjs",
@@ -6424,6 +6424,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/app/moments/page.tsx:server_value_import:listFeedPosts:src/server/services/feed-posts.ts#listFeedPosts",
+      "ownerId": "server_loader:src/app/app/moments/page.tsx",
+      "ownerModule": "src/app/app/moments/page.tsx",
+      "sidecarPath": "src/app/app/moments/page.operation.ts"
+    },
+    {
+      "anchorBytes": "listMixedMoments",
+      "anchorDigest": "0965fa3fa22b9bd39003e7630ca8ea7782bf1ba62258de1d04886f857e5c4e0e",
+      "anchorEnd": 1286,
+      "anchorFile": "src/app/app/moments/page.tsx",
+      "anchorStart": 1270,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listMixedMoments",
+        "target": "src/server/services/moments.ts#listMixedMoments"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/moments/page.tsx:server_value_import:listMixedMoments:src/server/services/moments.ts#listMixedMoments",
       "ownerId": "server_loader:src/app/app/moments/page.tsx",
       "ownerModule": "src/app/app/moments/page.tsx",
       "sidecarPath": "src/app/app/moments/page.operation.ts"
@@ -7744,10 +7761,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "2ca0212be77029e574908bc0395562f1749e589962cb71c413e0a5ba8df7a15c",
+  "semanticArtifactDigest": "099b4c746c4c3ee1e06fc3364e2abb6baa641747bab089114be9a9f0b71758ab",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "2a1832f0b50a90046ee878a8c2065158e7fb443e66b34661229c54be54839d7b",
+  "semanticCoverageDigest": "90e95cd6a23c26cc973da88144090dbda6a77508929d0bd9e653487d4a36e773",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "9eb606bcb7a53babbcfa0be13cd831b1d6b5a76509c339b99cf2225216a23cbd"
+  "semanticFingerprint": "e74e567621c48806b7d4fc00ae24967fa72dcab78e4bac7f42c07c547bea195b"
 }

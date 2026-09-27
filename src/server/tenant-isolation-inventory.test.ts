@@ -21,6 +21,7 @@ const expectedDirectHouseholdModels = [
   "ActivityLog",
   "ApiKey",
   "Attachment",
+  "AttachmentWriteIntent",
   "AuditEvent",
   "Baby",
   "BackupRecord",

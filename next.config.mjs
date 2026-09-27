@@ -6,6 +6,7 @@ const nextConfig = {
     instrumentationHook: true,
     serverComponentsExternalPackages: ["sql.js"],
     outputFileTracingIncludes: {
+      "/*": ["./runtime/thumbnail-validator.cjs"],
       "/api/backups/sprout/**/*": ["./node_modules/sql.js/dist/sql-wasm.wasm"]
     }
   },

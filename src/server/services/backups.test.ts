@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getEffectiveHouseholdContext: vi.fn(),
+  intent: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
   requirePermission: vi.fn(),
   householdFind: vi.fn(),
   householdCount: vi.fn(),
@@ -43,6 +44,9 @@ const mocks = vi.hoisted(() => ({
   restoreActivity: vi.fn(),
   transaction: vi.fn(),
   lockActor: vi.fn(),
+  lockPhotoActor: vi.fn(),
+  sessionFind: vi.fn(),
+  memberFind: vi.fn(),
   lockBaby: vi.fn(),
   writeAudit: vi.fn(),
   memberCreate: vi.fn(),
@@ -60,6 +64,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
+    attachmentWriteIntent: mocks.intent,
     household: {
       findUniqueOrThrow: mocks.householdFind,
       update: mocks.householdUpdate,
@@ -116,6 +121,8 @@ vi.mock("@/server/services/mutation-locks", () => ({
 }));
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/browser-operations", () => ({ getBrowserOperationContextForHousehold: mocks.getEffectiveHouseholdContext }));
+vi.mock("@/server/services/photo-write-actor", () => ({ lockPhotoWriteActor: mocks.lockPhotoActor }));
 vi.mock("@/server/services/attachment-store", () => ({
   writeAttachmentObject: mocks.writeObject,
   readAttachmentObject: mocks.readObject,
@@ -166,6 +173,9 @@ const unitPreferences = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.intent.create.mockImplementation(async ({ data }) => data);
+  mocks.intent.findUnique.mockImplementation(async ({ where }) => mocks.intent.create.mock.calls.map(([call]) => call.data).find((row) => row.storageKey === where.storageKey));
+  mocks.intent.updateMany.mockResolvedValue({ count: 1 });
   mocks.getEffectiveHouseholdContext.mockResolvedValue(ctx);
   mocks.householdFind.mockResolvedValue({ id: "household-1", name: "Home" });
   mocks.householdCount.mockResolvedValue(1);
@@ -178,8 +188,9 @@ beforeEach(() => {
   mocks.babyCreate.mockResolvedValue(null);
   mocks.babyUpdate.mockResolvedValue(null);
   mocks.restoreActivity.mockResolvedValue({ id: "activity-restored" });
-  mocks.transaction.mockImplementation((operation) => operation(transactionClient()));
+  mocks.transaction.mockImplementation((operation) => operation({ ...transactionClient(), attachmentWriteIntent: mocks.intent }));
   mocks.lockActor.mockResolvedValue(ctx);
+  mocks.lockPhotoActor.mockImplementation((...args) => mocks.lockActor(...args));
   mocks.lockBaby.mockImplementation(async (_tx, _ctx, id) => ({ id, inactiveAt: null }));
   mocks.activityFindMany.mockResolvedValue([]);
   mocks.activityFindFirst.mockResolvedValue(null);
@@ -259,6 +270,67 @@ describe("backup unit preferences", () => {
     expect(mocks.settingsUpsert).not.toHaveBeenCalled();
     expect(mocks.babyCreate).not.toHaveBeenCalled();
     expect(mocks.backupCreate).not.toHaveBeenCalled();
+  });
+
+  it.each(["FeedPost", "FeedComment", "FeedReaction", "Attachment", "PlannedSchedule"])("refuses a target containing only newer %s domain data", async (table) => {
+    mocks.freshState.mockImplementation(async (sql: TemplateStringsArray) => [{
+      actorIsSoleOwner: true, operationalCount: sql.join("").includes(`FROM "${table}"`) ? 1n : 0n
+    }]);
+    const backup = { version: 1, babies: [], activities: [] };
+    await expect(restoreBackupJson(backup)).rejects.toThrow("backup_target_not_empty");
+    await expect(previewBackupJson(backup)).rejects.toThrow("backup_target_not_empty");
+    expect(mocks.settingsUpsert).not.toHaveBeenCalled();
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ isolationLevel: "Serializable" }));
+  });
+
+  it.each([1, 2])("refuses v%s JSON restore when captured session was revoked before transaction authority", async (version) => {
+    const { lockPhotoWriteActor } = await vi.importActual<typeof import("./photo-write-actor")>("./photo-write-actor");
+    mocks.lockPhotoActor.mockImplementation(lockPhotoWriteActor);
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({ ...ctx, sessionId: "captured-session" });
+    mocks.sessionFind.mockResolvedValue(null);
+    mocks.memberFind.mockResolvedValue(ctx);
+    const backup = version === 1 ? { version: 1, settings: { accentTheme: "sage" }, babies: [], activities: [] }
+      : createV2Backup({ household: { name: "Recovered" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [] });
+    await expect(restoreBackupJson(backup, { confirmation: "Home", previewChecksum: "checksum" in backup ? backup.checksum : undefined })).rejects.toThrow("forbidden");
+    expect(mocks.sessionFind).toHaveBeenCalledWith({ where: { id: "captured-session", userId: ctx.userId, expiresAt: { gt: expect.any(Date) } } });
+    expect(mocks.memberFind).not.toHaveBeenCalled();
+    expect(mocks.settingsUpsert).not.toHaveBeenCalled();
+    expect(mocks.householdUpdate).not.toHaveBeenCalled();
+    expect(mocks.babyCreate).not.toHaveBeenCalled();
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("uses session-before-member authority for restore-first synthetic ordering (not PostgreSQL)", async () => {
+    const { lockPhotoWriteActor } = await vi.importActual<typeof import("./photo-write-actor")>("./photo-write-actor");
+    mocks.lockPhotoActor.mockImplementation(lockPhotoWriteActor);
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({ ...ctx, sessionId: "captured-session" });
+    const events: string[] = [];
+    let revoked = false;
+    mocks.sessionFind.mockImplementation(async () => { events.push("session-read"); return revoked ? null : { id: "captured-session" }; });
+    mocks.memberFind.mockImplementation(async () => { events.push("member-read"); return ctx; });
+    mocks.transaction.mockImplementation(async (work) => {
+      const tx = transactionClient();
+      const query = tx.$queryRaw;
+      tx.$queryRaw = (sql, ...args) => {
+        if (sql.join("").includes("lock_actor_session_for_operation")) events.push("session-lock");
+        if (sql.join("").includes("FOR UPDATE")) events.push("member-lock");
+        return query(sql, ...args);
+      };
+      const result = await work(tx);
+      events.push("restore-commit");
+      // Models a revoker ordered behind the restore's session lock, not a real database race.
+      revoked = true;
+      events.push("revocation-commit");
+      return result;
+    });
+    await restoreBackupJson({ version: 1, settings: { accentTheme: "sage" }, babies: [], activities: [] }, { confirmation: "Home" });
+    expect(events).toEqual(["session-lock", "session-read", "member-lock", "member-read", "restore-commit", "revocation-commit"]);
+    expect(mocks.settingsUpsert).toHaveBeenCalledOnce();
+    expect(mocks.backupCreate).toHaveBeenCalledOnce();
+    expect(mocks.writeAudit).toHaveBeenCalledOnce();
+    expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable", maxWait: 10_000, timeout: 120_000 });
   });
 
   it("rechecks target emptiness inside the serializable restore transaction", async () => {
@@ -510,6 +582,20 @@ describe("backup unit preferences", () => {
       expect.objectContaining({ action: "backup.export", entityType: "backup" }),
       expect.anything()
     );
+  });
+
+  it.each(["manual", "automated"])("refuses a %s recovery snapshot with unresolved photos on carried posts", async (kind) => {
+    mocks.attachmentFindMany.mockImplementation(async ({ where }) => {
+      const states = typeof where.state === "string" ? [where.state] : where.state?.in ?? [];
+      return states.includes("unavailable") ? [{ id: "unresolved", state: "unavailable", postId: "post-1" }] : [];
+    });
+    const result = kind === "manual" ? exportBackupForDownload() : exportHouseholdBackupJson("household-1");
+    await expect(result).rejects.toThrow("backup_photo_unavailable");
+    expect(mocks.attachmentFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ householdId: "household-1", post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } })
+    }));
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 
   it("builds the same canonical v2 payload for internal and manual export paths", async () => {
@@ -1278,10 +1364,12 @@ describe("backup unit preferences", () => {
 
 function transactionClient() {
   return {
-    $queryRaw: mocks.freshState,
+    $queryRaw: (sql: TemplateStringsArray, ...args: unknown[]) => sql.join("").includes('AS "stagedBytes"')
+      ? Promise.resolve([{ stagedBytes: 0n }]) : mocks.freshState(sql, ...args),
     household: { findUniqueOrThrow: mocks.householdFind, update: mocks.householdUpdate },
     householdSettings: { findUnique: mocks.settingsFind, upsert: mocks.settingsUpsert },
-    householdMember: { findUnique: vi.fn() },
+    householdMember: { findUnique: vi.fn(), findFirst: mocks.memberFind },
+    session: { findFirst: mocks.sessionFind },
     baby: {
       findMany: mocks.babyFindMany,
       findFirst: mocks.babyFindFirst,
@@ -1308,7 +1396,7 @@ describe("backups with photos", () => {
     id: "post-1", babyId: null, body: "", tags: [], occurredAt: new Date("2026-09-29T10:00:00Z"), externalAuthorName: null,
     author: { displayName: "Sam", user: { name: "Sam P" } }
   };
-  const photoRow = { id: "ph-1", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
+  const photoRow = { id: "ph-1", state: "available", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
   const listed = { id: "ph-1", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha };
 
   function photoBackup() {
@@ -1335,7 +1423,7 @@ describe("backups with photos", () => {
     const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1", "2026-09-30T10:00:00.000Z");
 
     expect(mocks.attachmentFindMany.mock.calls[0][0].where).toEqual({
-      householdId: "household-1", type: "feed_photo", state: "available",
+      householdId: "household-1", type: "feed_photo", state: { in: ["available", "unavailable"] },
       post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
     });
     expect(snapshot.payload.feedPhotos).toEqual([listed]);
@@ -1351,6 +1439,71 @@ describe("backups with photos", () => {
     expect(download.kind).toBe("json");
     expect(download.filename).toMatch(/^cubby-backup-\d{4}-\d{2}-\d{2}\.json$/);
     expect(JSON.parse((download as { body: string }).body)).toMatchObject({ format: "cubby-household-backup", version: 2 });
+  });
+
+  it("rejects legal individual photos whose combined archive exceeds restore capacity before success or byte reads", async () => {
+    mocks.feedPostFindMany.mockResolvedValue(Array.from({ length: 100 }, (_, index) => ({ ...postRow, id: `post-${index}` })));
+    mocks.attachmentFindMany.mockResolvedValue(Array.from({ length: 100 }, (_, index) => ({
+      ...photoRow, id: `photo-${index}`, postId: `post-${index}`, byteSize: 25 * 1024 * 1024
+    })));
+    await expect(exportBackupForDownload()).rejects.toThrow("archive_too_large");
+    await expect(exportHouseholdBackupJson("household-1")).rejects.toThrow("archive_too_large");
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.readObject).not.toHaveBeenCalled();
+  });
+
+  it("does not record success when the JSON-only export cannot carry its photos", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([postRow]);
+    mocks.attachmentFindMany.mockResolvedValue([photoRow]);
+    await expect(exportBackupJson()).rejects.toThrow("backup_photos_missing");
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("refuses first-photo verification failure without completed export metadata or audit", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([postRow]);
+    mocks.attachmentFindMany.mockResolvedValue([photoRow]);
+    mocks.readObject.mockRejectedValue(new Error("attachment_store_unavailable"));
+    await expect(exportBackupForDownload()).rejects.toThrow("backup_photo_unavailable");
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("verifies outside transactions then records preparation, not later stream receipt", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([postRow]);
+    mocks.attachmentFindMany.mockResolvedValue([photoRow]);
+    let active = false;
+    mocks.transaction.mockImplementation(async (work) => {
+      active = true;
+      try { return await work(transactionClient()); } finally { active = false; }
+    });
+    mocks.readObject.mockImplementationOnce(async () => {
+      expect(active).toBe(false);
+      expect(mocks.backupCreate).not.toHaveBeenCalled();
+      expect(mocks.writeAudit).not.toHaveBeenCalled();
+      return Buffer.from("jpeg");
+    }).mockRejectedValue(new Error("attachment_store_unavailable"));
+    const download = await exportBackupForDownload();
+    expect(mocks.lockActor).toHaveBeenCalled();
+    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+    expect(mocks.backupCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ kind: "export", status: "complete" }) });
+    if (download.kind !== "archive") throw new Error("expected archive");
+    await expect(new Response(download.stream).arrayBuffer()).rejects.toThrow("backup_photo_unavailable");
+    expect(mocks.backupCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses export preparation if authority is revoked after photo verification", async () => {
+    mocks.feedPostFindMany.mockResolvedValue([postRow]);
+    mocks.attachmentFindMany.mockResolvedValue([photoRow]);
+    mocks.readObject.mockImplementation(async () => {
+      mocks.lockActor.mockRejectedValue(new Error("forbidden"));
+      return Buffer.from("jpeg");
+    });
+    await expect(exportBackupForDownload()).rejects.toThrow("forbidden");
+    expect(mocks.backupCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 
   it("downloads a household with photos as one archive of the backup and each verified photo", async () => {
@@ -1396,6 +1549,8 @@ describe("backups with photos", () => {
     const archive = fakeArchive();
     mocks.openBackupArchive.mockResolvedValue(archive);
 
+    mocks.writeObject.mockImplementation(async () => { expect(mocks.intent.create).toHaveBeenCalledTimes(1); });
+
     await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: archive.parsed.backup.checksum }))
       .resolves.toMatchObject({ counts: { feedPosts: 1, feedPhotos: 1 } });
 
@@ -1413,7 +1568,7 @@ describe("backups with photos", () => {
     expect(mocks.removeObject).not.toHaveBeenCalled();
   });
 
-  it("removes the photos it stored when the restore does not commit, and refuses a stale preview first", async () => {
+  it("retains owned photos for reconciliation on ambiguous failure, and refuses a stale preview first", async () => {
     const archive = fakeArchive();
     mocks.openBackupArchive.mockResolvedValue(archive);
     await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: "0".repeat(64) })).rejects.toThrow("backup_preview_mismatch");
@@ -1431,7 +1586,8 @@ describe("backups with photos", () => {
       .rejects.toThrow("database went away");
     const storageKey = mocks.writeObject.mock.calls[0]?.[1];
     expect(storageKey).toMatch(/^[a-f0-9]{32}$/);
-    expect(mocks.removeObject).toHaveBeenCalledWith(expect.any(String), storageKey);
+    expect(mocks.intent.create).toHaveBeenCalledTimes(1);
+    expect(mocks.removeObject).not.toHaveBeenCalled();
     expect(archive.close).toHaveBeenCalledTimes(3);
   });
 });

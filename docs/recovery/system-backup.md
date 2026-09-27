@@ -36,16 +36,55 @@ password hash.
 Also left out: the household backup files in `docker-data/backups` (the database lists them, and
 Cubby marks any that are missing after a restore) and the temporary Sprout import files.
 
+## Prerequisites, Exclusion And Format Limits
+
+- Supported operational platform: Linux with Docker Compose, GNU tar/coreutils and **host Node.js
+  22 or newer** (`node` on the operator and cron PATH). The validator uses Node builtins only; no npm
+  install is needed. The scripts fail before Docker if Node is missing/too old. Refresh all four
+  `system-backup.sh`, `system-restore.sh`, `system-maintenance.sh`, `system-archive.mjs` files together.
+- One Compose app/Node process owns the database and attachment store. All backup/restore operators
+  use the same checkout and lock. Stop external admin writers, migrations, helper jobs, independent
+  app instances and deployment automation for the entire window. This is **not** a database fence
+  against arbitrary clients or a distributed lock across different checkouts. PostgreSQL remains up.
+- Lock contention fails closed; a stale lock is never stolen by age. After an uncatchable kill or host
+  crash, inspect the operation and app state before manually removing an orphaned lock. Caught failure
+  releases only this operation's lock and temporary files, never an earlier partial directory.
+- Provide private disk space for the dump, photo tar and final archive during backup, and roughly
+  twice the input archive plus restored destination data during restore (private input copy plus
+  prepared payloads). Keep the input immutable. Shell signals cannot guarantee cleanup after SIGKILL.
+- The closed parser accepts basic USTAR/GNU headers, not PAX/longname/sparse extensions, links,
+  devices, alternate path spellings or duplicate members. It reads payloads in 64 KiB chunks and
+  bounds metadata (4 KiB manifest, 256-byte checksum file), entries (1,000,000), stored photo members
+  (25 MiB each), and total archive size (1 TiB). Unsigned GNU base-256 sizes support outer payloads
+  larger than 8 GiB without buffering them. Larger-than-1-TiB installations need a separately reviewed
+  format extension; backup refuses before publishing or rotating archives.
+- New archives are format **v2**; restore accepts **v1 and v2** within these strict bounds. Household
+  JSON/ZIP formats are unchanged. Legacy v1 thumbnail and incoming restore-upload members are
+  validated but discarded, not restored as recovery truth. New v2 backups exclude those directories.
+  Originals, including removed/staged photos, and deterministic `.KEY.write-v1.tmp` files are kept;
+  the complete dump includes `AttachmentWriteIntent` durable cleanup ownership. Historical random
+  object temp files are validated but discarded on restore. No live orphan cleanup is performed.
+- A v1 archive made online may already contain inconsistent data; structural acceptance cannot
+  retroactively make it coherent. Counts/checksums do not prove every photo agrees with database
+  digests or repair historical missing/corrupt bytes. Check recovered photos and application integrity.
+- Backups are trusted administrator inputs, **not safe arbitrary uploads**. The PostgreSQL dump can
+  execute privileged SQL. SHA-256 detects accidental corruption, not authenticity; it does not cover
+  the manifest. Keep trusted custody of the whole archive and the original keys.
+
 ## Making One
 
 From the Cubby checkout on the server, as the account that runs `docker compose`:
 
 ```bash
-sh scripts/system-backup.sh
+sh scripts/system-backup.sh --maintenance
 ```
 
-Cubby keeps running. The script copies the database first and the photos straight after, so a photo
-shared in between is simply left for the next backup. It writes to `./docker-data/system-backups`,
+This is a **maintenance backup, not an online snapshot**. `--maintenance` acknowledges downtime
+and that you have excluded every external writer. The script holds the shared checkout-local
+`.cubby-system-maintenance.lock`, stops the sole Compose app (including requests, retention and
+scheduled jobs), verifies it is no longer running, then copies the database, originals and counts
+while stopped. It resumes only an app that was running when backup stopped it, and only on success.
+It writes to `./docker-data/system-backups`,
 checks the dump reads back, and keeps the newest 14 archives. `--output-dir DIR` and `--keep N`
 change both. A successful run ends with:
 
@@ -59,10 +98,14 @@ Add a line to the crontab of the account that runs Cubby (`crontab -e`), changin
 checkout:
 
 ```cron
-15 3 * * * cd /home/you/cubby && sh scripts/system-backup.sh >> docker-data/system-backup.log 2>&1
+15 3 * * * cd /home/you/cubby && sh scripts/system-backup.sh --maintenance >> docker-data/system-backup.log 2>&1
 ```
 
-That makes an archive at 3:15 every night and keeps two weeks of them.
+That opts into downtime at 3:15 every night and keeps two weeks of archives. Review existing cron
+entries explicitly: old invocations without `--maintenance` now fail before Docker. The scripts do
+not add or edit schedules, enable household backups, or change settings. Monitor the host log and
+exit status externally: if a backup fails after stopping Cubby, Cubby stays stopped and cannot email
+its own alert. After investigating the failure, the operator decides whether to restart it.
 
 Each run records itself in the database: what it made, or why it failed. Platform administration
 (`/platform/settings`) shows the newest backup under **Backups and storage**. Cubby checks every hour
@@ -99,13 +142,15 @@ newest archive to your own computer each week.
 4. Copy the archive onto the new server and run, from the checkout:
 
    ```bash
-   sh scripts/system-restore.sh --archive /path/to/cubby-system-20261004T031500Z.tar --confirm-empty-install
+   sh scripts/system-restore.sh --archive /path/to/cubby-system-20261004T031500Z.tar --confirm-empty-install --maintenance
    ```
 
-The script checks the archive's checksums and version, refuses any install that already has an
-account, a household or a photo, and only then replaces the new install's empty database with the
-archived one, puts the photos back and starts Cubby. It ends by checking the households, accounts
-and photos match the archive:
+The script validates both tar levels, exact checksum coverage and the strict manifest before any
+Docker call or payload extraction. It bootstraps the new schema if needed, **stops and verifies the
+app before the authoritative account/household/storage empty checks**, and holds exclusion through
+replacement, photo extraction and restored-count verification. It rejects any non-directory storage
+entry, including symlinks. Only after verification does it start Cubby. Successful restore explicitly
+starts the app; backup, unlike restore, never starts an originally stopped app. It reports:
 
 ```text
 system_restore_complete households=2 accounts=5 photos=140 from=20261004T031500Z
@@ -115,8 +160,12 @@ Everyone then signs in as before. If the new version of Cubby is newer than the 
 the restored database forward on that first start, as any update does. Point your domain at the new
 server and turn automated backups back on once you have checked everything is there.
 
-If the restore stops partway, the message says what failed. Nothing is ever changed on the old
-server, and an install the restore stopped on can be discarded and made again.
+Before database replacement, refusal preserves committed target data (bootstrap may already have
+initialized/migrated the new schema). After DROP or a partial restore, the target may be partially
+restored, **not necessarily empty**. Failures after quiescence leave the app stopped; there is no
+automatic rollback or destructive retry. Inspect the failure and use a separately prepared fresh
+target rather than clearing the refused target blindly. A failed final app start triggers a stop
+attempt; if Docker itself fails, manually establish its state. Nothing changes the source server.
 
 ## Rehearsal
 

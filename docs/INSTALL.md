@@ -60,6 +60,10 @@ From the repository on the server:
    you the platform owner.
 3. **Send yourself a test email**: Settings → Platform administration (`/platform/settings`) → Send
    test email. Password resets and email changes depend on it; if it fails, it says why.
+   Only one owner test-email attempt runs at a time, followed by a 60-second cooldown after
+   it settles (including failures). This diagnostic limit is process-local, uses a monotonic
+   clock, and resets on restart; it assumes one app process, not multiple replicas. A busy
+   response asks you to wait; it never queues or automatically resends mail.
 4. Create your household. Cubby starts with household creation closed, even for you: open
    `/platform/settings`, set household creation to open, create your household and add your baby,
    then set it back to closed (or invitation-only, if you will host other families).
@@ -75,14 +79,22 @@ Set these up before the family relies on Cubby. There are two kinds, and you wan
 - **Household backups**, each household owner's: one household's data and photos, for moving a
   household to another Cubby. Settings → Backups makes one on demand.
 
+Whole-system scripts require **Node.js 22+ on the host**, GNU tar/coreutils, and a planned
+maintenance window. `--maintenance` explicitly permits downtime: the sole app and its jobs
+stop until a successful backup is verified. Failures after stop leave it stopped; monitor the
+host log because a stopped app cannot send alerts. Do not run another app, manual database or
+photo writer, or deployment during this window. All system-backup/restore operators must use
+this same checkout and shared lock. Neither script edits schedules/settings. See the recovery
+guide for scratch capacity, format bounds and safe failure handling.
+
 1. **Make the nightly whole-system backup.** Add this line with `crontab -e`, as the account that
    runs Cubby, changing the path to your checkout:
 
    ```cron
-   15 3 * * * cd /home/you/cubby && sh scripts/system-backup.sh >> docker-data/system-backup.log 2>&1
+   15 3 * * * cd /home/you/cubby && sh scripts/system-backup.sh --maintenance >> docker-data/system-backup.log 2>&1
    ```
 
-   Run `sh scripts/system-backup.sh` once by hand now to check it works.
+   Run `sh scripts/system-backup.sh --maintenance` once by hand now to check it works.
 
 2. **Turn on automated household backups.** They are off by default. Add this line to `.env`, then
    run `docker compose up -d`:
@@ -104,12 +116,78 @@ Cubby watches all of this for you. Platform administration (`/platform/settings`
 backups and free disk space under **Backups and storage**. You get an email when:
 
 - a backup fails or stops;
-- a disk holding photos or backups is nearly full.
+- a disk holding photos or backups is nearly full;
+- photo or backup storage cannot be checked (free space is unknown, not healthy).
+
+An unreadable measurement does not clear an existing low-space alert, including a prior
+combined photos-and-backups warning. Fresh successful measurements can clear it again.
 
 The email goes out when the problem starts, then once a day until it is fixed. It uses the same mail
 settings as the test email in step 3.
 
+Household JSON/ZIP restore and preview uploads require backup permission before Cubby reads
+or stages bytes. One upload/preview/restore runs at a time per app process, reserving the
+full archive allowance (2 GiB; JSON remains capped at 25 MiB), regardless of Content-Length.
+A busy request is refused before staging; retry after the current request finishes. Body
+ingestion has a two-minute deadline and cancels on disconnect. Filesystem operations already
+in progress are awaited before cleanup and capacity release, not abandoned on timeout.
+This is not a shared quota across multiple app processes, nor a quota on retained photos.
+If staging-file removal fails, uploads stay blocked in that process: investigate storage,
+then restart only after resolving it. Existing stale-upload cleanup handles old staging files;
+any entry still in restore-staging consumes the full archive slot after restart. New ZIP
+uploads refuse before body reading until it is resolved. Unknown entries are not deleted;
+known old uploads retain the existing 24-hour cleanup policy. This prevents adding a new
+2 GiB upload beside crash leftovers, not remediation of pre-existing excess storage.
+A cleanup error after restore
+does not imply that the restore transaction failed: check the household before retrying.
+
+Manual household exports verify every listed photo before recording export preparation.
+The history label "Export prepared" and the `backup.export` audit event do not confirm that
+the browser received the file. Later storage or connection failures can still interrupt a
+download; check that it finished saving. Older manual export records also do not prove receipt.
+Automated local backup completion instead follows durable publication and read-back verification.
+
 ## 5. Practise A Restore, Early
+
+Photo writes now reserve durable private cleanup ownership before creating files, including restored
+photos. Failed writes remain owned until the retention tick retries after 24 hours; deletion errors
+retain the owner and retry after 15 minutes. This relies on one Node app process per attachment store:
+do not overlap app instances sharing it. A stalled in-process writer is not swept merely because it
+is old. Historical unowned objects and legacy temporary files are not automatically deleted. The new
+`AttachmentWriteIntent` migration must be applied by the normal update path before running this code.
+New reservations now lock and recheck the live session and member permission before committing.
+A serialized database check limits pending write intents plus unclaimed staging photos to
+2 GiB across the store, including after restart. Transferred intents are not counted twice,
+and claimed household photo history is not capped. Expired unclaimed photos still consume
+capacity until cleanup actually succeeds. If staging is full, share pending photos or wait
+for cleanup; do not delete private objects by hand. Historical unowned bytes are outside this
+accounting and require separately reviewed reconciliation.
+
+Photos have one pre-body upload slot per process (25 MiB input, two-minute body deadline),
+held through processing and storage completion. Upload and thumbnail decoding share one
+native decode slot, with a 30-second Sharp timeout and elapsed-time rejection that includes
+queue time. This is not forced native cancellation: late work retains capacity until it
+actually settles, and late results are refused. Concurrent thumbnail reads fall back to the
+size/digest-verified original when native decoding is busy; unchecked cached pixels are not served.
+
+Cached thumbnails are validated in one short-lived Node process per image so native warnings
+cannot be consumed by another decoder. This adds process-start overhead, not an OS security
+sandbox. Validation accepts at most 2 MiB and 800×800 pixels, rejects decoder warnings, bounds
+output and kills the child after five seconds; capacity stays held until its streams close.
+If termination fails, capacity stays unavailable until the child actually exits. Missing or
+failed validation never serves unchecked cache bytes: the original must pass size/digest checks.
+Upload normalization is unchanged. The fixed `runtime/thumbnail-validator.cjs` and production
+Sharp dependencies must accompany the app; Next standalone tracing and the Docker source copy
+include the helper. Run development/`next start` from the checkout root; standalone runs from
+its packaged root. This remains a single-app-process design, not a multi-replica resource limit.
+A stuck native/filesystem operation can
+therefore block new work rather than permitting unbounded work behind it.
+
+Sprout preview/import shares the JSON/ZIP backup slot through service completion. Multipart
+parsing happens only after a bounded actual-byte read with the same two-minute cancellation
+deadline: preview allows the existing 100 MiB file plus 1 MiB envelope, while import's
+preview-ID-only form allows 1 MiB total. These are operational ingestion bounds, not new
+limits on household history. No Content-Length value bypasses actual-byte accounting.
 
 Do this once, before there is much data, so a real recovery is not the first one. On a second,
 throwaway machine or VM:
@@ -117,7 +195,7 @@ throwaway machine or VM:
 1. Install Cubby as in step 2, up to `docker compose up --build -d`, but put your saved `.env` in
    place of the one the quick start wrote, and do not open `/setup`.
 2. Copy over your newest system backup and run
-   `sh scripts/system-restore.sh --archive <file> --confirm-empty-install`.
+   `sh scripts/system-restore.sh --archive <file> --confirm-empty-install --maintenance`.
 3. Sign in with your usual password and check your entries, Moments posts and photos are there.
 
 Then throw the practice machine away.
@@ -166,7 +244,7 @@ on the wrong thing.
    `docker-data/system-backups/` inside the Cubby folder:
 
    ```bash
-   sh scripts/system-backup.sh
+   sh scripts/system-backup.sh --maintenance
    ```
 
 2. **Check nothing local is in the way.** `git status` should list no changed files. `.env` and

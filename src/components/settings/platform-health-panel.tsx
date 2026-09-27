@@ -65,7 +65,7 @@ export function PlatformHealthPanel({ health, now, timeZone }: { health: Platfor
           {health.disks.length
             ? health.disks.map((disk) => (
                 <span key={disk.label} className="block">
-                  {disk.label}: {size(disk.freeBytes)} free of {size(disk.totalBytes)} ({Math.round((disk.freeBytes / Math.max(disk.totalBytes, 1)) * 100)}%)
+                  {disk.label}: {disk.freeBytes === null ? "Free space unknown" : `${size(disk.freeBytes)} free of ${size(disk.totalBytes)} (${Math.round((disk.freeBytes / Math.max(disk.totalBytes, 1)) * 100)}%)`}
                 </span>
               ))
             : "Not available"}

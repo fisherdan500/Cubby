@@ -11,6 +11,7 @@ import {
 } from "@/domain/feed-post";
 import { hasPermission } from "@/domain/roles";
 import { prisma } from "@/lib/db/prisma";
+import { momentsAfter, type MomentsBoundary } from "@/lib/moments-pagination";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { claimStagedFeedPhotos, removePostPhotos, restorePostPhotos } from "@/server/services/attachments";
 import { writeAudit } from "@/server/services/audit";
@@ -61,6 +62,7 @@ export async function listFeedPosts(params: {
   tag?: string;
   // Only posts with a photo still shown: the Photos gallery, gathered from every post.
   withPhotos?: boolean;
+  momentsAfter?: MomentsBoundary;
   page?: { take: number; orderBy: Prisma.FeedPostOrderByWithRelationInput[]; cursor?: { id: string }; skip?: number };
 }) {
   const ctx = await getEffectiveHouseholdContext();
@@ -69,16 +71,22 @@ export async function listFeedPosts(params: {
     where: {
       householdId: ctx.householdId,
       deletedAt: null,
+      ...(params.momentsAfter ? { AND: [momentsAfter("post", params.momentsAfter)] } : {}),
       ...(params.babyId ? { OR: [{ babyId: params.babyId }, { babyId: null }] } : {}),
       ...(params.from || params.to ? { occurredAt: { ...(params.from ? { gte: params.from } : {}), ...(params.to ? { lt: params.to } : {}) } } : {}),
       ...(params.tag ? { tags: { has: params.tag.toLowerCase() } } : {}),
       ...(params.withPhotos ? { photos: { some: { state: "available" as const } } } : {})
     },
-    include: { author: { select: { displayName: true, user: { select: { name: true } } } }, photos: shownPhotos },
+    include: {
+      author: { select: { displayName: true, user: { select: { name: true } } } },
+      photos: shownPhotos,
+      _count: { select: { photos: { where: { householdId: ctx.householdId, state: { in: ["available", "unavailable"] } } } } }
+    },
     ...(params.page ?? { orderBy: [{ occurredAt: "desc" as const }, { id: "desc" as const }], take: 200 })
   });
-  return posts.map((post) => ({
+  return posts.map(({ _count, ...post }) => ({
     ...post,
+    hasRetainedPhotos: (_count?.photos ?? 0) > 0,
     authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone",
     edited: post.editedAt !== null,
     canEdit: canEditFeedPost(ctx.role, post.authorMemberId === ctx.memberId),
@@ -190,6 +198,7 @@ const lockEditablePost = (tx: Prisma.TransactionClient, ctx: BrowserOperationCon
 
 export async function issueFeedPostUpdateBrowserOperation(raw: Record<string, unknown>) {
   const { postId } = postIdSchema.parse(raw);
+  const expectedUpdatedAt = z.string().datetime().parse(raw.expectedUpdatedAt);
   const ctx = await getBrowserOperationContextForHousehold();
   return issueHouseholdBrowserOperation({
     ctx,
@@ -200,6 +209,7 @@ export async function issueFeedPostUpdateBrowserOperation(raw: Record<string, un
     permission: "feed.post",
     targetSnapshot: async (tx, lockedCtx) => {
       const post = await lockEditablePost(tx, lockedCtx, postId);
+      if (post.updatedAt.toISOString() !== expectedUpdatedAt) throw new Error("stale_revision");
       return { kind: "feed-post-update", schemaVersion: 1, postId: post.id, updatedAt: post.updatedAt.toISOString() };
     }
   });

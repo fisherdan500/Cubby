@@ -122,27 +122,42 @@ describe("DEC-PROD-407 real PostgreSQL service acceptance", () => {
     const first = await issueAccountAppearanceBrowserOperation({});
     const second = await issueAccountAppearanceBrowserOperation({});
     const observer = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+    let failed = false;
+    let failure: unknown;
     let releaseBarrier: (() => void) | undefined;
-    const release = new Promise<void>((resolve) => { releaseBarrier = resolve; });
-    let readyBarrier: (() => void) | undefined;
-    const ready = new Promise<void>((resolve) => { readyBarrier = resolve; });
-    const barrier = observer.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${"dec-u1"} FOR UPDATE`;
-      readyBarrier?.();
-      await release;
-    }, { isolationLevel: "Serializable" });
-    await ready;
-    const firstSubmit = submitAccountAppearanceBrowserOperation({ operationId: first.operationId, appearanceMode: "light" });
-    const secondSubmit = submitAccountAppearanceBrowserOperation({ operationId: second.operationId, appearanceMode: "system" });
+    const work: Promise<unknown>[] = [];
+    const track = <T>(promise: Promise<T>) => { work.push(promise); void promise.catch(() => undefined); return promise; };
     try {
+      const release = new Promise<void>((resolve) => { releaseBarrier = resolve; });
+      let readyBarrier!: () => void;
+      let rejectReady!: (error: unknown) => void;
+      const ready = new Promise<void>((resolve, reject) => { readyBarrier = resolve; rejectReady = reject; });
+      const barrier = track(observer.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${"dec-u1"} FOR UPDATE`;
+        readyBarrier();
+        await release;
+      }, { isolationLevel: "Serializable" }));
+      void barrier.then(() => rejectReady(new Error("barrier_finished_without_ready")), rejectReady);
+      await ready;
+      const firstSubmit = track(submitAccountAppearanceBrowserOperation({ operationId: first.operationId, appearanceMode: "light" }));
+      const secondSubmit = track(submitAccountAppearanceBrowserOperation({ operationId: second.operationId, appearanceMode: "system" }));
       await waitForLockWaiters(observer, 2);
+      releaseBarrier?.();
+      await barrier;
+      const results = await Promise.all([firstSubmit, secondSubmit]);
+      expect(results.map((result) => result.status).sort()).toEqual(["completed", "stale"]);
+    } catch (error) {
+      failed = true;
+      failure = error;
+      throw error;
     } finally {
       releaseBarrier?.();
+      await Promise.allSettled(work);
+      try { await observer.$disconnect(); } catch (error) {
+        if (failed) throw new AggregateError([failure, error], "fixture_and_cleanup_failed");
+        throw error;
+      }
     }
-    await barrier;
-    const results = await Promise.all([firstSubmit, secondSubmit]);
-    await observer.$disconnect();
-    expect(results.map((result) => result.status).sort()).toEqual(["completed", "stale"]);
   });
 
   it("rejects terminal binding state while the linked operation is still non-terminal", async () => {
@@ -203,38 +218,56 @@ describe("DEC-PROD-407 real PostgreSQL service acceptance", () => {
     const retainedId = "bmo_00000000000000000000000016";
     const now = new Date("2027-03-01T00:00:00Z");
     const observer = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+    let failed = false;
+    let failure: unknown;
     let releaseBarrier: (() => void) | undefined;
-    const release = new Promise<void>((resolve) => { releaseBarrier = resolve; });
-    let barrierReady: (() => void) | undefined;
-    const ready = new Promise<void>((resolve) => { barrierReady = resolve; });
-    auth.session = { user: { id: "dec-u1" }, session: { id: "dec-s1" } };
-    auth.context = { userId: "dec-u1", householdId: "dec-h1", memberId: "dec-m1", role: "owner" };
-    await prisma.browserOperationBinding.createMany({ data: [
-      { id: "dec-hb-concurrent-a", sessionId: "dec-s1", actorUserId: "dec-u1", actorMemberId: "dec-m1", householdId: "dec-h1", operationId: abandonedId, operationKey: "settingsUnitsUpdate", openingFingerprint: fingerprint, persistenceVersion: 2, targetKind: "settings", targetSnapshot: {}, protocolVersion: "browserV2", expiresAt: new Date("2027-04-01T00:00:00Z") },
-      { id: "dec-hb-concurrent-r", sessionId: "dec-s1", actorUserId: "dec-u1", actorMemberId: "dec-m1", householdId: "dec-h1", operationId: retainedId, operationKey: "settingsUnitsUpdate", openingFingerprint: fingerprint, persistenceVersion: 2, targetKind: "settings", targetSnapshot: {}, protocolVersion: "browserV2", expiresAt: new Date("2026-01-01T00:00:00Z") }
-    ] });
-    const barrier = observer.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT "lock_household_browser_operation_identity"(${"dec-h1"}, ${abandonedId})`;
-      await tx.$executeRaw`SELECT "lock_household_browser_operation_identity"(${"dec-h1"}, ${retainedId})`;
-      barrierReady?.();
-      await release;
-    }, { isolationLevel: "Serializable" });
-    await ready;
-    const abandon = abandonHouseholdBrowserOperation({ ctx: { ...auth.context, sessionId: "dec-s1" }, operationId: abandonedId });
-    const retention = runBrowserOperationRetention({ now, batchSize: 10 });
-    const status = getHouseholdBrowserOperationStatus(abandonedId);
-    await waitForLockWaiters(observer, 3);
-    releaseBarrier?.();
-    await barrier;
-    const [abandoned, retained, concurrentStatus] = await Promise.all([abandon, retention, status]);
-    await observer.$disconnect();
+    const work: Promise<unknown>[] = [];
+    const track = <T>(promise: Promise<T>) => { work.push(promise); void promise.catch(() => undefined); return promise; };
+    try {
+      const release = new Promise<void>((resolve) => { releaseBarrier = resolve; });
+      let barrierReady!: () => void;
+      let rejectReady!: (error: unknown) => void;
+      const ready = new Promise<void>((resolve, reject) => { barrierReady = resolve; rejectReady = reject; });
+      auth.session = { user: { id: "dec-u1" }, session: { id: "dec-s1" } };
+      auth.context = { userId: "dec-u1", householdId: "dec-h1", memberId: "dec-m1", role: "owner" };
+      await prisma.browserOperationBinding.createMany({ data: [
+        { id: "dec-hb-concurrent-a", sessionId: "dec-s1", actorUserId: "dec-u1", actorMemberId: "dec-m1", householdId: "dec-h1", operationId: abandonedId, operationKey: "settingsUnitsUpdate", openingFingerprint: fingerprint, persistenceVersion: 2, targetKind: "settings", targetSnapshot: {}, protocolVersion: "browserV2", expiresAt: new Date("2027-04-01T00:00:00Z") },
+        { id: "dec-hb-concurrent-r", sessionId: "dec-s1", actorUserId: "dec-u1", actorMemberId: "dec-m1", householdId: "dec-h1", operationId: retainedId, operationKey: "settingsUnitsUpdate", openingFingerprint: fingerprint, persistenceVersion: 2, targetKind: "settings", targetSnapshot: {}, protocolVersion: "browserV2", expiresAt: new Date("2026-01-01T00:00:00Z") }
+      ] });
+      const barrier = track(observer.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT "lock_household_browser_operation_identity"(${"dec-h1"}, ${abandonedId})`;
+        await tx.$executeRaw`SELECT "lock_household_browser_operation_identity"(${"dec-h1"}, ${retainedId})`;
+        barrierReady();
+        await release;
+      }, { isolationLevel: "Serializable" }));
+      void barrier.then(() => rejectReady(new Error("barrier_finished_without_ready")), rejectReady);
+      await ready;
+      const abandon = track(abandonHouseholdBrowserOperation({ ctx: { ...auth.context, sessionId: "dec-s1" }, operationId: abandonedId }));
+      const retention = track(runBrowserOperationRetention({ now, batchSize: 10 }));
+      const status = track(getHouseholdBrowserOperationStatus(abandonedId));
+      await waitForLockWaiters(observer, 3);
+      releaseBarrier?.();
+      await barrier;
+      const [abandoned, retained, concurrentStatus] = await Promise.all([abandon, retention, status]);
 
-    expect(abandoned).toEqual({ status: "expired", operationId: abandonedId, code: "operation_abandoned" });
-    expect(retained.household.deletedBindingCount).toBe(1);
-    expect(["prepared", "expired"]).toContain(concurrentStatus.status);
-    await expect(getHouseholdBrowserOperationStatus(abandonedId)).resolves.toEqual({ status: "expired", operationId: abandonedId, code: "operation_abandoned" });
-    expect(await prisma.browserOperationReservationTombstone.count({ where: { householdId: "dec-h1", operationId: abandonedId, terminalCode: "operation_abandoned" } })).toBe(1);
-    expect(await prisma.browserOperationReservationTombstone.count({ where: { householdId: "dec-h1", operationId: retainedId, terminalCode: "operation_result_expired" } })).toBe(1);
+      expect(abandoned).toEqual({ status: "expired", operationId: abandonedId, code: "operation_abandoned" });
+      expect(retained.household.deletedBindingCount).toBe(1);
+      expect(["prepared", "expired"]).toContain(concurrentStatus.status);
+      await expect(getHouseholdBrowserOperationStatus(abandonedId)).resolves.toEqual({ status: "expired", operationId: abandonedId, code: "operation_abandoned" });
+      expect(await prisma.browserOperationReservationTombstone.count({ where: { householdId: "dec-h1", operationId: retainedId, terminalCode: "operation_result_expired" } })).toBe(1);
+      expect(await prisma.browserOperationReservationTombstone.count({ where: { householdId: "dec-h1", operationId: abandonedId, terminalCode: "operation_abandoned" } })).toBe(1);
+    } catch (error) {
+      failed = true;
+      failure = error;
+      throw error;
+    } finally {
+      releaseBarrier?.();
+      await Promise.allSettled(work);
+      try { await observer.$disconnect(); } catch (error) {
+        if (failed) throw new AggregateError([failure, error], "fixture_and_cleanup_failed");
+        throw error;
+      }
+    }
   });
 
   it("rejects hostile direct-SQL reservation tombstones unless every binding authority field matches", async () => {
@@ -386,9 +419,11 @@ describe("DEC-PROD-407 real PostgreSQL service acceptance", () => {
       persistenceVersion: 1, protocolVersion: "browserV1", expiresAt: new Date("2026-01-01T00:00:00Z")
     } });
 
-    await expect(runBrowserOperationRetention({ now, batchSize: 10 })).resolves.toMatchObject({
-      household: { deletedBindingCount: 1 }, account: { deletedBindingCount: 1 }
-    });
+    await runBrowserOperationRetention({ now, batchSize: 10 });
+    // A global sweep may legitimately collect rows left by an earlier failed fixture. Prove
+    // removal of these exact reservations instead of asserting an unrelated global count.
+    await expect(prisma.browserOperationBinding.findUnique({ where: { id: "dec-hb-retention" } })).resolves.toBeNull();
+    await expect(prisma.accountOperationBinding.findUnique({ where: { id: "dec-ab-retention" } })).resolves.toBeNull();
     await expect(getHouseholdBrowserOperationStatus(householdExpiryId)).resolves.toEqual({
       status: "expired", operationId: householdExpiryId, code: "operation_result_expired"
     });

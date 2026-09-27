@@ -9,7 +9,7 @@
     "server_loader": 29,
     "worker": 8
   },
-  "declarationDigest": "a10e7d287223af4532288d87569eda688b106326f6dc2cc40aadfeceb88f1777",
+  "declarationDigest": "a401d3a0bb707f021e5a15d527657aa36f48eb8516d968f2d4cfd119b73f7836",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -5107,6 +5107,11 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "listMixedMoments",
+            "target": "src/server/services/moments.ts#listMixedMoments"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "requireUserPage",
             "target": "src/server/auth/session.ts#requireUserPage"
           }
@@ -8348,10 +8353,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "6ea6b72a09dcc75254f0c6e661ad9c368e88b609bd7b293a679b1d5944e80560",
-          "anchorEnd": 788,
+          "anchorDigest": "515cbc8b7e034733298bef99e059462dbca5901bc5ccebd02b38055177213e05",
+          "anchorEnd": 1097,
           "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
-          "anchorStart": 427,
+          "anchorStart": 592,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/attachments/feed-photos/route.ts#POST"
@@ -8574,10 +8579,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "66af7a6dbb67806412056d574212d589bc36ed7b5e002425316fb2272b752da6",
-          "anchorEnd": 669,
+          "anchorDigest": "f0e1c8094d1909146f4c6479d59500b6cc87c0ec2cb93bbfc06be1608d24292d",
+          "anchorEnd": 903,
           "anchorFile": "src/app/api/backups/restore/preview/route.ts",
-          "anchorStart": 371,
+          "anchorStart": 488,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/restore/preview/route.ts#POST"
@@ -8593,10 +8598,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "43fc535c0d5398b34752aee2fbb5d0d3f1e4a2bb206be4b4325642671c9532e3",
-          "anchorEnd": 1212,
+          "anchorDigest": "2c4029a359f70586cfe46f84c6d98c68886c53b223383be28aca78fb7ece7708",
+          "anchorEnd": 1446,
           "anchorFile": "src/app/api/backups/restore/route.ts",
-          "anchorStart": 293,
+          "anchorStart": 410,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/restore/route.ts#POST"
@@ -8631,10 +8636,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "5b800c5ab5c1960fff1ec1ccc2a4ba2438019ea61b5d42292285ffe591bc80bf",
-          "anchorEnd": 556,
+          "anchorDigest": "15b9c9c297b985678dc077e97a59a48d504273e7e144a969a761f117dcc48fe5",
+          "anchorEnd": 829,
           "anchorFile": "src/app/api/backups/sprout/import/route.ts",
-          "anchorStart": 216,
+          "anchorStart": 374,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/sprout/import/route.ts#POST"
@@ -8650,10 +8655,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "be83640c5f57edc26ad276876a5037ad75327052428e413da4514b2e46ecee6e",
-          "anchorEnd": 418,
+          "anchorDigest": "e0aaa88696b4c55b84a060fa27f209193a315696f93336cb72c131c803d48ef5",
+          "anchorEnd": 689,
           "anchorFile": "src/app/api/backups/sprout/preview/route.ts",
-          "anchorStart": 217,
+          "anchorStart": 375,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/backups/sprout/preview/route.ts#POST"
@@ -8793,16 +8798,16 @@
       "bindings": [
         {
           "anchorDigest": "6e5f5f75dae0693a1ff25dfe3680dbca7311e36bb8c2b391c03f0fe4ccf0a4f6",
-          "anchorEnd": 2396,
+          "anchorEnd": 2438,
           "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
-          "anchorStart": 1407,
+          "anchorStart": 1449,
           "kind": "route_method",
           "symbol": "DELETE",
           "target": "src/app/api/feed/comments/[id]/route.ts#DELETE"
         },
         {
-          "anchorDigest": "f7a0e5369b62378b85a2f6b1adb7a61b757c6cc3f0ffb6dbe976b8f51f66cf80",
-          "anchorEnd": 1405,
+          "anchorDigest": "41531778c3bbb9552d1bb9c45e8e19d89cd6695a56e06bf38db5b8797b4b90ff",
+          "anchorEnd": 1447,
           "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
           "anchorStart": 401,
           "kind": "route_method",
@@ -8859,16 +8864,16 @@
       "bindings": [
         {
           "anchorDigest": "9adfc7310cb6c348ece09691bfbea0ca9bfd9618b14c6672e8943718834a8397",
-          "anchorEnd": 2359,
+          "anchorEnd": 2401,
           "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
-          "anchorStart": 1379,
+          "anchorStart": 1421,
           "kind": "route_method",
           "symbol": "DELETE",
           "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
         },
         {
-          "anchorDigest": "c76150261094afd97bd1916741b296da1ec9a28b06e472e81faffce4464d8bdf",
-          "anchorEnd": 1377,
+          "anchorDigest": "6ff89ae00905accb1ff91e49c75a17fa8597af08e38834ef4dc31e4f44880829",
+          "anchorEnd": 1419,
           "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
           "anchorStart": 382,
           "kind": "route_method",
@@ -9957,8 +9962,8 @@
     {
       "bindings": [
         {
-          "anchorDigest": "dbc0a21a0f9398ff9c5096b3f09e29dd46f39c44cb04513e52655c4d96193cc6",
-          "anchorEnd": 311,
+          "anchorDigest": "0b73be0f9203cbc6f7d75499de801cd4e4792a3c061ff6437619cb7bf39b5510",
+          "anchorEnd": 461,
           "anchorFile": "src/app/api/platform/test-email/route.ts",
           "anchorStart": 170,
           "kind": "route_method",
@@ -10707,6 +10712,15 @@
           "kind": "server_value_import",
           "symbol": "listFeedPosts",
           "target": "src/server/services/feed-posts.ts#listFeedPosts"
+        },
+        {
+          "anchorDigest": "0965fa3fa22b9bd39003e7630ca8ea7782bf1ba62258de1d04886f857e5c4e0e",
+          "anchorEnd": 1286,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1270,
+          "kind": "server_value_import",
+          "symbol": "listMixedMoments",
+          "target": "src/server/services/moments.ts#listMixedMoments"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
@@ -11731,9 +11745,9 @@
       "bindings": [
         {
           "anchorDigest": "3f4a1102387a73f479c415697bae20b8960e55e13ad5da5b52e031dfdd91925b",
-          "anchorEnd": 831,
+          "anchorEnd": 873,
           "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-          "anchorStart": 777,
+          "anchorStart": 819,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -11750,45 +11764,45 @@
       "bindings": [
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 914,
+          "anchorEnd": 1342,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 849,
+          "anchorStart": 1277,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "40764f8618d2f6d3eaf77fe493a1030e28b7897da0147d6b9632c9d4991cd30c",
-          "anchorEnd": 2498,
+          "anchorEnd": 2878,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 2347,
+          "anchorStart": 2727,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-          "anchorEnd": 3475,
+          "anchorEnd": 4133,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3408,
+          "anchorStart": 4066,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "edc76dd7036d85384f82f92c0e7f791657304dbaab834082a04c6c4aa34cd56d",
-          "anchorEnd": 4104,
+          "anchorEnd": 5596,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3963,
+          "anchorStart": 5455,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "f61364fa4b4b384c209c3aa010a47f600162d032721875b65ccc59496d7cbea3",
-          "anchorEnd": 5020,
+          "anchorEnd": 6608,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 4859,
+          "anchorStart": 6447,
           "kind": "global_fetch",
           "symbol": "fetch[5]",
           "target": "globalThis.fetch"
@@ -11805,45 +11819,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 11129,
+          "anchorEnd": 11200,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 11114,
+          "anchorStart": 11185,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 2248,
+          "anchorEnd": 2266,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2183,
+          "anchorStart": 2201,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 6657,
+          "anchorEnd": 6728,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6580,
+          "anchorStart": 6651,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 7996,
+          "anchorEnd": 8067,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7824,
+          "anchorStart": 7895,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 8749,
+          "anchorEnd": 8820,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8544,
+          "anchorStart": 8615,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -12176,36 +12190,36 @@
       "bindings": [
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 1651,
+          "anchorEnd": 2502,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 1586,
+          "anchorStart": 2437,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "a087a003de178c9c316a5e0c28cf632ab06056046e6d1dd1b8c81d45f193c1dc",
-          "anchorEnd": 5394,
+          "anchorDigest": "50ab431731b81a1d9941810328e35f859d0ecde46923b6c0bfda8c3cf14d91cc",
+          "anchorEnd": 8425,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 5162,
+          "anchorStart": 8187,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-          "anchorEnd": 7196,
+          "anchorEnd": 9273,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 7129,
+          "anchorStart": 9206,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "d7277aee7984b9d484069307b15dd651e16e4951b06778bf8927c17929ee4f36",
-          "anchorEnd": 8174,
+          "anchorDigest": "7d79b1bda5f95152b7afb9e6a0b8622e8b6ee612f1785369777f338bafab34df",
+          "anchorEnd": 10308,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 7955,
+          "anchorStart": 10097,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -12527,9 +12541,9 @@
       "bindings": [
         {
           "anchorDigest": "ab176f155b3da1070fa3c3470effbe597cac800f80cd81e62d6c954bac46691f",
-          "anchorEnd": 2172,
+          "anchorEnd": 2399,
           "anchorFile": "src/components/settings/platform-test-email.tsx",
-          "anchorStart": 2119,
+          "anchorStart": 2346,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -13349,9 +13363,9 @@
       "bindings": [
         {
           "anchorDigest": "966bfbf0ed7ea272d7bbd981da0544dd117f2bb8a5f04cd14949bfd9f631f839",
-          "anchorEnd": 4678,
+          "anchorEnd": 4787,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4540,
+          "anchorStart": 4649,
           "kind": "container_copy",
           "symbol": "household-deletion-readiness-guard.mjs",
           "target": "Dockerfile#/app/dist/household-deletion-readiness-guard.mjs=>/app/scripts/household-deletion-readiness-guard.mjs"
@@ -13404,9 +13418,9 @@
       "bindings": [
         {
           "anchorDigest": "6469934a9c31ae1bb945e67d3a213635d84a6f943af02d85a4a632ab3fe6f09c",
-          "anchorEnd": 3414,
+          "anchorEnd": 3523,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3325,
+          "anchorStart": 3434,
           "kind": "container_copy",
           "symbol": "integrity-check.mjs",
           "target": "Dockerfile#/app/dist/integrity-check.mjs=>/app/integrity-check.mjs"
@@ -13537,9 +13551,9 @@
       "bindings": [
         {
           "anchorDigest": "7ca283f72641952c4b347328ab7d06c2f2d47b04ae0586b28a11c29a46af7a61",
-          "anchorEnd": 4795,
+          "anchorEnd": 4904,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4679,
+          "anchorStart": 4788,
           "kind": "container_copy",
           "symbol": "p1-3-node-builtin-probe.mjs",
           "target": "Dockerfile#/app/dist/p1-3-node-builtin-probe.mjs=>/app/scripts/p1-3-node-builtin-probe.mjs"
@@ -13718,9 +13732,9 @@
         },
         {
           "anchorDigest": "16964ad1dfe52aa6020d948969aeb84b54c3fceabfa66776ec5e90a3d7be91a0",
-          "anchorEnd": 3324,
+          "anchorEnd": 3433,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3237,
+          "anchorStart": 3346,
           "kind": "container_copy",
           "symbol": "platform-owner.mjs",
           "target": "Dockerfile#/app/dist/platform-owner.mjs=>/app/platform-owner.mjs"
@@ -13773,9 +13787,9 @@
       "bindings": [
         {
           "anchorDigest": "2a92011c4766dc9f7a69e1428da6256b8ace4b2764b70c4ce948aee1b3ea1548",
-          "anchorEnd": 4445,
+          "anchorEnd": 4554,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4332,
+          "anchorStart": 4441,
           "kind": "container_copy",
           "symbol": "provision-database-timezone.mjs",
           "target": "Dockerfile#/app/dist/provision-database-timezone.mjs=>/app/provision-database-timezone.mjs"
@@ -13819,9 +13833,9 @@
       "bindings": [
         {
           "anchorDigest": "8760fe085f1fef583af6a11c1a4c88c3f93ae3712c47af44f3ffdd91eece953a",
-          "anchorEnd": 4077,
+          "anchorEnd": 4186,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3960,
+          "anchorStart": 4069,
           "kind": "container_copy",
           "symbol": "provision-email-delivery-keys.mjs",
           "target": "Dockerfile#/app/dist/provision-email-delivery-keys.mjs=>/app/provision-email-delivery-keys.mjs"
@@ -13865,9 +13879,9 @@
       "bindings": [
         {
           "anchorDigest": "af4c2958fc374854821afd78d5beb2b37e4f33bd932950565c7402d07806809f",
-          "anchorEnd": 3959,
+          "anchorEnd": 4068,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3826,
+          "anchorStart": 3935,
           "kind": "container_copy",
           "symbol": "provision-fresh-auth-attestation-keys.mjs",
           "target": "Dockerfile#/app/dist/provision-fresh-auth-attestation-keys.mjs=>/app/provision-fresh-auth-attestation-keys.mjs"
@@ -13911,9 +13925,9 @@
       "bindings": [
         {
           "anchorDigest": "b5c0844e64a8731bbc6a51252001ed091d2dc6d00af4c045b1e7694ec709fc73",
-          "anchorEnd": 4213,
+          "anchorEnd": 4322,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4078,
+          "anchorStart": 4187,
           "kind": "container_copy",
           "symbol": "provision-global-security-throttle-key.mjs",
           "target": "Dockerfile#/app/dist/provision-global-security-throttle-key.mjs=>/app/provision-global-security-throttle-key.mjs"
@@ -13957,9 +13971,9 @@
       "bindings": [
         {
           "anchorDigest": "5ce628bf79dd5f7f7fbc1666a7801f60fe4f2def2cc5d7b99b40e8837e254d06",
-          "anchorEnd": 3825,
+          "anchorEnd": 3934,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3698,
+          "anchorStart": 3807,
           "kind": "container_copy",
           "symbol": "provision-invitation-runtime-roles.mjs",
           "target": "Dockerfile#/app/dist/provision-invitation-runtime-roles.mjs=>/app/provision-invitation-runtime-roles.mjs"
@@ -14003,9 +14017,9 @@
       "bindings": [
         {
           "anchorDigest": "6d390bc1923967fe7f1497623e146ac3278115d5881488e8e85e575513cb34ea",
-          "anchorEnd": 4331,
+          "anchorEnd": 4440,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4214,
+          "anchorStart": 4323,
           "kind": "container_copy",
           "symbol": "provision-platform-setup-code.mjs",
           "target": "Dockerfile#/app/dist/provision-platform-setup-code.mjs=>/app/provision-platform-setup-code.mjs"
@@ -14049,9 +14063,9 @@
       "bindings": [
         {
           "anchorDigest": "050d53df7097507f33d6640838357abee6a41749f2ff4185ab602aeaa3615866",
-          "anchorEnd": 3697,
+          "anchorEnd": 3806,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3576,
+          "anchorStart": 3685,
           "kind": "container_copy",
           "symbol": "provision-security-runtime-role.mjs",
           "target": "Dockerfile#/app/dist/provision-security-runtime-role.mjs=>/app/provision-security-runtime-role.mjs"
@@ -14156,9 +14170,9 @@
         },
         {
           "anchorDigest": "085033173f4af300b24122305ba8d6fa4076ea182004db164214a9e4b810f240",
-          "anchorEnd": 4539,
+          "anchorEnd": 4648,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4446,
+          "anchorStart": 4555,
           "kind": "container_copy",
           "symbol": "security-operator.mjs",
           "target": "Dockerfile#/app/dist/security-operator.mjs=>/app/security-operator.mjs"
@@ -14336,7 +14350,7 @@
     }
   ],
   "observationCount": 218,
-  "observationDigest": "083742d233f7107f4d452c71634fa61b70b90e947fdb9cc9f920ce2a6081db23",
+  "observationDigest": "0398e6ee4b87a061ea0a1510e0615ae29ab23f205398e0dc90352013811c25aa",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14721,9 +14735,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 788,
+          "anchorEnd": 1097,
           "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
-          "anchorStart": 427,
+          "anchorStart": 592,
           "kind": "route_method",
           "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
           "symbol": "POST",
@@ -14937,9 +14951,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 669,
+          "anchorEnd": 903,
           "anchorFile": "src/app/api/backups/restore/preview/route.ts",
-          "anchorStart": 371,
+          "anchorStart": 488,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/restore/preview/route.ts",
           "symbol": "POST",
@@ -14955,9 +14969,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1212,
+          "anchorEnd": 1446,
           "anchorFile": "src/app/api/backups/restore/route.ts",
-          "anchorStart": 293,
+          "anchorStart": 410,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/restore/route.ts",
           "symbol": "POST",
@@ -14991,9 +15005,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 556,
+          "anchorEnd": 829,
           "anchorFile": "src/app/api/backups/sprout/import/route.ts",
-          "anchorStart": 216,
+          "anchorStart": 374,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/sprout/import/route.ts",
           "symbol": "POST",
@@ -15009,9 +15023,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 418,
+          "anchorEnd": 689,
           "anchorFile": "src/app/api/backups/sprout/preview/route.ts",
-          "anchorStart": 217,
+          "anchorStart": 375,
           "kind": "route_method",
           "ownerModule": "src/app/api/backups/sprout/preview/route.ts",
           "symbol": "POST",
@@ -15144,16 +15158,16 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2396,
+          "anchorEnd": 2438,
           "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
-          "anchorStart": 1407,
+          "anchorStart": 1449,
           "kind": "route_method",
           "ownerModule": "src/app/api/feed/comments/[id]/route.ts",
           "symbol": "DELETE",
           "target": "src/app/api/feed/comments/[id]/route.ts#DELETE"
         },
         {
-          "anchorEnd": 1405,
+          "anchorEnd": 1447,
           "anchorFile": "src/app/api/feed/comments/[id]/route.ts",
           "anchorStart": 401,
           "kind": "route_method",
@@ -15207,16 +15221,16 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2359,
+          "anchorEnd": 2401,
           "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
-          "anchorStart": 1379,
+          "anchorStart": 1421,
           "kind": "route_method",
           "ownerModule": "src/app/api/feed/posts/[id]/route.ts",
           "symbol": "DELETE",
           "target": "src/app/api/feed/posts/[id]/route.ts#DELETE"
         },
         {
-          "anchorEnd": 1377,
+          "anchorEnd": 1419,
           "anchorFile": "src/app/api/feed/posts/[id]/route.ts",
           "anchorStart": 382,
           "kind": "route_method",
@@ -16251,7 +16265,7 @@
     {
       "bindings": [
         {
-          "anchorEnd": 311,
+          "anchorEnd": 461,
           "anchorFile": "src/app/api/platform/test-email/route.ts",
           "anchorStart": 170,
           "kind": "route_method",
@@ -16978,6 +16992,15 @@
           "ownerModule": "src/app/app/moments/page.tsx",
           "symbol": "listFeedPosts",
           "target": "src/server/services/feed-posts.ts#listFeedPosts"
+        },
+        {
+          "anchorEnd": 1286,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1270,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "listMixedMoments",
+          "target": "src/server/services/moments.ts#listMixedMoments"
         },
         {
           "anchorEnd": 812,
@@ -17970,9 +17993,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 831,
+          "anchorEnd": 873,
           "anchorFile": "src/components/feed/feed-photo-gallery.tsx",
-          "anchorStart": 777,
+          "anchorStart": 819,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
           "symbol": "fetch[1]",
@@ -17988,45 +18011,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 914,
+          "anchorEnd": 1342,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 849,
+          "anchorStart": 1277,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2498,
+          "anchorEnd": 2878,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 2347,
+          "anchorStart": 2727,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 3475,
+          "anchorEnd": 4133,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3408,
+          "anchorStart": 4066,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4104,
+          "anchorEnd": 5596,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 3963,
+          "anchorStart": 5455,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5020,
+          "anchorEnd": 6608,
           "anchorFile": "src/components/feed/feed-post-actions.tsx",
-          "anchorStart": 4859,
+          "anchorStart": 6447,
           "kind": "global_fetch",
           "ownerModule": "src/components/feed/feed-post-actions.tsx",
           "symbol": "fetch[5]",
@@ -18042,45 +18065,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 11129,
+          "anchorEnd": 11200,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 11114,
+          "anchorStart": 11185,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2248,
+          "anchorEnd": 2266,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2183,
+          "anchorStart": 2201,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6657,
+          "anchorEnd": 6728,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6580,
+          "anchorStart": 6651,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7996,
+          "anchorEnd": 8067,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7824,
+          "anchorStart": 7895,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 8749,
+          "anchorEnd": 8820,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8544,
+          "anchorStart": 8615,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -18402,36 +18425,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1651,
+          "anchorEnd": 2502,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 1586,
+          "anchorStart": 2437,
           "kind": "global_fetch",
           "ownerModule": "src/components/reports/planned-schedule.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5394,
+          "anchorEnd": 8425,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 5162,
+          "anchorStart": 8187,
           "kind": "global_fetch",
           "ownerModule": "src/components/reports/planned-schedule.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 7196,
+          "anchorEnd": 9273,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 7129,
+          "anchorStart": 9206,
           "kind": "global_fetch",
           "ownerModule": "src/components/reports/planned-schedule.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 8174,
+          "anchorEnd": 10308,
           "anchorFile": "src/components/reports/planned-schedule.tsx",
-          "anchorStart": 7955,
+          "anchorStart": 10097,
           "kind": "global_fetch",
           "ownerModule": "src/components/reports/planned-schedule.tsx",
           "symbol": "fetch[4]",
@@ -18744,9 +18767,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2172,
+          "anchorEnd": 2399,
           "anchorFile": "src/components/settings/platform-test-email.tsx",
-          "anchorStart": 2119,
+          "anchorStart": 2346,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/platform-test-email.tsx",
           "symbol": "fetch[1]",
@@ -19509,9 +19532,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4678,
+          "anchorEnd": 4787,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4540,
+          "anchorStart": 4649,
           "kind": "container_copy",
           "ownerModule": "scripts/household-deletion-readiness-guard.ts",
           "symbol": "household-deletion-readiness-guard.mjs",
@@ -19563,9 +19586,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3414,
+          "anchorEnd": 3523,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3325,
+          "anchorStart": 3434,
           "kind": "container_copy",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "integrity-check.mjs",
@@ -19671,9 +19694,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4795,
+          "anchorEnd": 4904,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4679,
+          "anchorStart": 4788,
           "kind": "container_copy",
           "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
           "symbol": "p1-3-node-builtin-probe.mjs",
@@ -19833,9 +19856,9 @@
           "target": "scripts/platform-owner.ts#parsePlatformOwnerCommand:verify-bootstrap"
         },
         {
-          "anchorEnd": 3324,
+          "anchorEnd": 3433,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3237,
+          "anchorStart": 3346,
           "kind": "container_copy",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform-owner.mjs",
@@ -19887,9 +19910,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4445,
+          "anchorEnd": 4554,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4332,
+          "anchorStart": 4441,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-database-timezone.mjs",
           "symbol": "provision-database-timezone.mjs",
@@ -19932,9 +19955,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4077,
+          "anchorEnd": 4186,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3960,
+          "anchorStart": 4069,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-email-delivery-keys.mjs",
           "symbol": "provision-email-delivery-keys.mjs",
@@ -19977,9 +20000,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3959,
+          "anchorEnd": 4068,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3826,
+          "anchorStart": 3935,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
           "symbol": "provision-fresh-auth-attestation-keys.mjs",
@@ -20022,9 +20045,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4213,
+          "anchorEnd": 4322,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4078,
+          "anchorStart": 4187,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
           "symbol": "provision-global-security-throttle-key.mjs",
@@ -20067,9 +20090,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3825,
+          "anchorEnd": 3934,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3698,
+          "anchorStart": 3807,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
           "symbol": "provision-invitation-runtime-roles.mjs",
@@ -20112,9 +20135,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4331,
+          "anchorEnd": 4440,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4214,
+          "anchorStart": 4323,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-platform-setup-code.mjs",
           "symbol": "provision-platform-setup-code.mjs",
@@ -20157,9 +20180,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3697,
+          "anchorEnd": 3806,
           "anchorFile": "Dockerfile",
-          "anchorStart": 3576,
+          "anchorStart": 3685,
           "kind": "container_copy",
           "ownerModule": "scripts/provision-security-runtime-role.mjs",
           "symbol": "provision-security-runtime-role.mjs",
@@ -20247,9 +20270,9 @@
           "target": "scripts/security-operator.ts#parseSecurityOperatorCommand:aggregate"
         },
         {
-          "anchorEnd": 4539,
+          "anchorEnd": 4648,
           "anchorFile": "Dockerfile",
-          "anchorStart": 4446,
+          "anchorStart": 4555,
           "kind": "container_copy",
           "ownerModule": "scripts/security-operator.ts",
           "symbol": "security-operator.mjs",
@@ -21710,7 +21733,7 @@
   ],
   "ownerSetDigest": "ebb851f7eb0c6fcd96300c675f5e5731c45f527013bc0a16709619af1ab0154c",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "ddbd324f01bbc0728ce35d39c7a724db9c030de200bbdbd633e39caf71fa1c7c",
+  "registryDigest": "68cb77314e911eddc250de91f345c832b7519e9fc89380f8b87fa9a566b3e099",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
@@ -22031,8 +22054,8 @@
       "targetFile": "Dockerfile"
     },
     {
-      "anchorDigest": "fcd5fae166f2e3584b85dfad31a0277fcc9822dfabac1ef56b9e2962e3115beb",
-      "end": 5441,
+      "anchorDigest": "20aa1eae20c5555c462de4b466ec3c0d73be398bbbf855df55db50d3fcbe87f8",
+      "end": 5550,
       "file": "Dockerfile",
       "kind": "container_dockerfile",
       "start": 0,

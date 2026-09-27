@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: async () => ({ role: "owner" }),
+  requirePermission: vi.fn()
+}));
 
 const mocks = vi.hoisted(() => ({ restoreBackupJson: vi.fn(), restoreBackupArchive: vi.fn(), withUpload: vi.fn() }));
 vi.mock("@/server/services/backups", () => ({ restoreBackupJson: mocks.restoreBackupJson, restoreBackupArchive: mocks.restoreBackupArchive }));
-vi.mock("@/server/services/backup-upload", () => ({ withUploadedBackupArchive: mocks.withUpload }));
+vi.mock("@/server/services/backup-upload", () => ({ withBackupUploadAdmission: (work: () => Promise<unknown>) => work(), withUploadedBackupArchive: mocks.withUpload }));
 
 import { POST } from "@/app/api/backups/restore/route";
 

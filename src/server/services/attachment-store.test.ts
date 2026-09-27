@@ -1,8 +1,18 @@
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
+import sharp from "sharp";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const faults = vi.hoisted(() => ({ openCode: "" }));
+vi.mock("node:fs/promises", async (original) => {
+  const fs = await original<typeof import("node:fs/promises")>();
+  return { ...fs, open: async (...args: Parameters<typeof fs.open>) => {
+    if (faults.openCode) throw Object.assign(new Error("synthetic read failure"), { code: faults.openCode });
+    return fs.open(...args);
+  } };
+});
 import {
   listAttachmentObjectKeys,
   readAttachmentObject,
@@ -15,6 +25,7 @@ import {
 
 const roots: string[] = [];
 afterEach(async () => {
+  faults.openCode = "";
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
@@ -29,6 +40,24 @@ const bytes = Buffer.from("photo bytes");
 const expected = { byteSize: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") };
 
 describe("attachment store", () => {
+  it("removes only the exact new owned temporary name as well as the final object", async () => {
+    const root = await tempRoot();
+    await writeAttachmentObject(root, key, bytes, expected);
+    const shard = path.join(root, "objects", "01");
+    await writeFile(path.join(shard, `.${key}.write-v1.tmp`), bytes);
+    await writeFile(path.join(shard, `.${key}.legacy.tmp`), bytes);
+    await removeAttachmentObject(root, key);
+    expect(await readdir(shard)).toEqual([`.${key}.legacy.tmp`]);
+  });
+  it.each(["EACCES", "EMFILE", "EIO"])("classifies %s as retryable infrastructure failure, not missing bytes", async (code) => {
+    const root = await tempRoot();
+    await writeAttachmentObject(root, key, bytes, expected);
+    faults.openCode = code;
+    await expect(readAttachmentObject(root, key, expected)).rejects.toThrow("attachment_store_unavailable");
+    faults.openCode = "";
+    await expect(readAttachmentObject(root, key, expected)).resolves.toEqual(bytes);
+  });
+
   it("writes an object under its storage name and reads back exactly those bytes", async () => {
     const root = await tempRoot();
     await writeAttachmentObject(root, key, bytes, expected);
@@ -89,7 +118,7 @@ describe("attachment store", () => {
   it("keeps thumbnails in their own directory, apart from the photos the integrity check verifies", async () => {
     const root = await tempRoot();
     await writeAttachmentObject(root, key, bytes, expected);
-    const thumbnail = Buffer.from("small jpeg");
+    const thumbnail = await sharp({ create: { width: 16, height: 16, channels: 3, background: "red" } }).jpeg().toBuffer();
 
     await expect(readAttachmentThumbnail(root, key)).resolves.toBeNull();
     await writeAttachmentThumbnail(root, key, thumbnail);
@@ -105,6 +134,28 @@ describe("attachment store", () => {
     await expect(readAttachmentThumbnail(root, key)).resolves.toBeNull();
     await expect(readAttachmentObject(root, key, expected)).resolves.toEqual(bytes);
     await expect(writeAttachmentThumbnail(root, "../../etc/passwd", thumbnail)).rejects.toThrow("attachment_store_invalid_key");
+  });
+
+  it.each(["empty", "truncated", "truncated-pixels", "wrong-format", "oversized-dimensions"])("repairs a %s cache persistently without changing the original", async (kind) => {
+    const root = await tempRoot();
+    await writeAttachmentObject(root, key, bytes, expected);
+    const thumbnail = await sharp({ create: { width: 16, height: 16, channels: 3, background: "red" } }).jpeg().toBuffer();
+    await writeAttachmentThumbnail(root, key, thumbnail);
+    const corrupt = kind === "empty" ? Buffer.alloc(0)
+      : kind === "truncated" ? thumbnail.subarray(0, thumbnail.length - 2)
+      : kind === "truncated-pixels" ? Buffer.concat([thumbnail.subarray(0, thumbnail.length - 5), thumbnail.subarray(-2)])
+      : await sharp({ create: { width: kind === "oversized-dimensions" ? 801 : 16, height: 16, channels: 3, background: "blue" } })
+        .toFormat(kind === "wrong-format" ? "png" : "jpeg").toBuffer();
+    if (kind.startsWith("truncated")) expect((await sharp(corrupt).metadata()).format).toBe("jpeg");
+    await writeFile(path.join(root, "thumbnails", "01", key), corrupt);
+    expect(await readAttachmentThumbnail(root, key)).toBeNull();
+    // Repeated validation must not inherit a native cached load that lost its warnings.
+    expect(await readAttachmentThumbnail(root, key)).toBeNull();
+    await writeAttachmentThumbnail(root, key, thumbnail);
+    expect(await readAttachmentThumbnail(root, key)).toEqual(thumbnail);
+    expect(await readAttachmentThumbnail(root, key)).toEqual(thumbnail);
+    expect(await readAttachmentObject(root, key, expected)).toEqual(bytes);
+    expect(await readdir(path.join(root, "thumbnails", "01"))).toEqual([key]);
   });
 
   it("refuses a storage root reached through a link", async () => {

@@ -30,8 +30,8 @@ export function resolveFeedFilter(value: string | undefined): FeedFilter {
 }
 
 /**
- * `before` is the moment the next page continues from, so the posts shown alongside a page of entries
- * are exactly those from the same stretch of time - none skipped between pages, none shown twice.
+ * `before` is retained for old return links only. Mixed pages now use a versioned composite cursor;
+ * posts/photos/activity-only filters keep their existing ID cursors.
  */
 export function feedHref({ babyId, filter, tag, cursor, before }: { babyId?: string; filter?: string; tag?: string; cursor?: string; before?: string }) {
   const params = new URLSearchParams();

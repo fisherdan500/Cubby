@@ -794,16 +794,26 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
       babyId: null
     };
     let operation: { operationId: string; status: BrowserMutationOperationStatus; outcomeCode: string | null; outcomeSnapshot: unknown } | null = null;
+    let mutationSavepoint = false;
     try {
       await input.validate?.(transaction, lockedCtx, binding);
       operation = await db.browserMutationOperation.create({ data: operationData });
       await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
+      // Keep the submitted identity outside the rollback boundary.
+      await db.$executeRaw`SAVEPOINT browser_operation_mutation`;
+      mutationSavepoint = true;
       const outcome = outcomeSchema.parse(await input.execute(transaction, lockedCtx, binding));
+      await db.$executeRaw`RELEASE SAVEPOINT browser_operation_mutation`;
+      mutationSavepoint = false;
       committedThisInvocation = true;
       return persistTerminalOperation(db, binding, { status: "completed", operationId, outcome });
     } catch (error) {
       const stale = staleResult(operationId, error);
       if (!stale) throw error;
+      if (mutationSavepoint) {
+        await db.$executeRaw`ROLLBACK TO SAVEPOINT browser_operation_mutation`;
+        await db.$executeRaw`RELEASE SAVEPOINT browser_operation_mutation`;
+      }
       if (!operation) {
         operation = await db.browserMutationOperation.create({ data: operationData });
         await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
@@ -871,6 +881,7 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
       return browserOperationResultFromPersistence(binding.operation);
     }
     let operation = binding.operation;
+    let mutationSavepoint = false;
     const operationData = {
       bindingId: binding.id,
       householdId: binding.householdId,
@@ -893,12 +904,21 @@ export async function executeBrowserOperation<T extends Record<string, unknown>>
       if (!binding.operation) {
         await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });
       }
+      // Keep the submitted identity outside the rollback boundary.
+      await db.$executeRaw`SAVEPOINT browser_operation_mutation`;
+      mutationSavepoint = true;
       const outcome = outcomeSchema.parse(await input.execute(tx, lockedCtx, baby));
+      await db.$executeRaw`RELEASE SAVEPOINT browser_operation_mutation`;
+      mutationSavepoint = false;
       committedThisInvocation = true;
       return persistTerminalOperation(db, binding, { status: "completed", operationId, outcome });
     } catch (error) {
       const stale = staleResult(operationId, error);
       if (!stale) throw error;
+      if (mutationSavepoint) {
+        await db.$executeRaw`ROLLBACK TO SAVEPOINT browser_operation_mutation`;
+        await db.$executeRaw`RELEASE SAVEPOINT browser_operation_mutation`;
+      }
       if (!operation) {
         operation = await db.browserMutationOperation.create({ data: operationData });
         await db.browserOperationBinding.update({ where: { id: binding.id }, data: { state: "submitted" } });

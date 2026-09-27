@@ -188,13 +188,15 @@ export function buildRoutine(records: RoutineRecord[], endKey: string, window: R
 
 /**
  * A timed activity runs from its start to its recorded end; one stopped without an end time ends
- * after its recorded length, and one still running has no end yet.
+ * after its recorded length, and one still running has no end yet. Active length is separate from
+ * those wall-clock endpoints so pauses do not become activity time in the routine.
  */
 export function routineEventsFrom(records: RoutineRecord[]): RoutineEvent[] {
   return records.map((record) => {
     const start = record.startedAt ?? record.occurredAt;
     const end = record.endedAt ?? (record.durationSeconds === null ? null : new Date(start.getTime() + record.durationSeconds * 1000));
-    return { type: record.type, start, end };
+    const durationSeconds = record.durationSeconds ?? (end ? (end.getTime() - start.getTime()) / 1000 : null);
+    return { type: record.type, start, end, durationSeconds };
   });
 }
 

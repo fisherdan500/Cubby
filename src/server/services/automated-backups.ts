@@ -55,15 +55,16 @@ function dueCutoff(now: Date, hours: number) {
 }
 
 async function householdHasRecoverableData(tx: AutomationDb, householdId: string) {
-  const [babies, contacts, catalogs, activities, events, reminders] = await Promise.all([
+  const [babies, contacts, catalogs, activities, events, reminders, posts] = await Promise.all([
     tx.baby.count({ where: { householdId, deletedAt: null } }),
     tx.contact.count({ where: { householdId, deletedAt: null } }),
     tx.medicineCatalog.count({ where: { householdId, deletedAt: null } }),
     tx.activityLog.count({ where: { householdId, deletedAt: null } }),
     tx.calendarEvent.count({ where: { householdId, deletedAt: null } }),
-    tx.reminder.count({ where: { householdId, deletedAt: null } })
+    tx.reminder.count({ where: { householdId, deletedAt: null } }),
+    tx.feedPost.count({ where: { householdId, deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } })
   ]);
-  return babies + contacts + catalogs + activities + events + reminders > 0;
+  return babies + contacts + catalogs + activities + events + reminders + posts > 0;
 }
 
 async function latestAutomatedRecords(tx: AutomationDb, householdId: string) {

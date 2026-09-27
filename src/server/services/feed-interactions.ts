@@ -60,6 +60,7 @@ export type FeedCommentView = {
   body: string;
   authorName: string;
   createdAt: Date;
+  updatedAt: Date;
   edited: boolean;
   canEdit: boolean;
   canRemove: boolean;
@@ -99,6 +100,7 @@ export async function listFeedInteractions(params: { postIds: string[]; activity
       body: row.body,
       authorName: memberName(row.author, row.externalAuthorName),
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
       edited: row.editedAt !== null,
       canEdit: canEditFeedComment(ctx.role as HouseholdRoleName, isAuthor),
       canRemove: canRemoveFeedComment(ctx.role as HouseholdRoleName, isAuthor)
@@ -210,6 +212,7 @@ function issueCommentRevision(
   allowed: (role: HouseholdRoleName, isAuthor: boolean) => boolean
 ) {
   const { commentId } = commentIdSchema.parse(raw);
+  const expectedUpdatedAt = kind === "feed-comment-update" ? z.string().datetime().parse(raw.expectedUpdatedAt) : null;
   return getBrowserOperationContextForHousehold().then((ctx) => issueHouseholdBrowserOperation({
     ctx,
     operationId: raw.operationId,
@@ -219,6 +222,7 @@ function issueCommentRevision(
     permission: "feed.comment",
     targetSnapshot: async (tx, lockedCtx) => {
       const comment = await lockComment(tx, lockedCtx, commentId, allowed);
+      if (expectedUpdatedAt !== null && comment.updatedAt.toISOString() !== expectedUpdatedAt) throw new Error("stale_revision");
       return { kind, schemaVersion: 1, commentId: comment.id, updatedAt: comment.updatedAt.toISOString() };
     }
   }));

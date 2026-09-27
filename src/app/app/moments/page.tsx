@@ -17,9 +17,7 @@ import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { feedInteractionKey, listFeedInteractions } from "@/server/services/feed-interactions";
 import { listFeedPosts, type FeedPostView } from "@/server/services/feed-posts";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
-
-type ActivityItem = Awaited<ReturnType<typeof listActivities>>[number];
-type FeedItem = { kind: "activity"; at: Date; activity: ActivityItem } | { kind: "post"; at: Date; post: FeedPostView };
+import { listMixedMoments, type MomentItem as FeedItem } from "@/server/services/moments";
 
 /**
  * Moments, the family feed (DEC-PROD-421): everything logged for the selected baby and the family's posts,
@@ -38,12 +36,12 @@ export default async function FeedPage({
   const babyName = babySelector?.babies.find((baby) => baby.id === babyId)?.name;
   const filter = resolveFeedFilter(searchParams.filter);
   const tag = filter.posts === "only" && searchParams.tag ? searchParams.tag.toLowerCase() : undefined;
-  const before = parseInstant(searchParams.before);
+
   const [unitSettings, viewer] = await Promise.all([getActivityUnitPreferences(), getActivityRowViewer()]);
 
   let items: FeedItem[] = [];
   let nextCursor: string | undefined;
-  let nextBefore: string | undefined;
+
   // Under Photos: every post's shown photos in one gallery, a page of posts at a time, newest first.
   let gallery: FeedPostView["photos"] | undefined;
   if (filter.posts === "photos") {
@@ -54,18 +52,14 @@ export default async function FeedPage({
     const page = paginateHistoryItems(await listFeedPosts({ babyId, tag, page: historyPageQuery(searchParams.cursor) }));
     items = page.items.map((post) => ({ kind: "post", at: post.occurredAt, post }));
     nextCursor = page.nextCursor;
+  } else if (filter.posts === "mixed") {
+    const page = await listMixedMoments({ babyId, cursor: searchParams.cursor });
+    items = page.items;
+    nextCursor = page.nextCursor;
   } else {
     const page = paginateHistoryItems(await listActivities({ babyId, type: filter.type, page: historyPageQuery(searchParams.cursor) }));
-    const oldestShown = page.nextCursor ? page.items.at(-1)?.occurredAt : undefined;
-    // Posts from the same stretch of time as this page of entries: from the oldest entry shown (when
-    // there are older ones to come) up to where the previous page stopped.
-    const posts = filter.posts === "mixed" ? await listFeedPosts({ babyId, from: oldestShown, to: before }) : [];
-    items = [
-      ...page.items.map((activity): FeedItem => ({ kind: "activity", at: activity.occurredAt, activity })),
-      ...posts.map((post): FeedItem => ({ kind: "post", at: post.occurredAt, post }))
-    ].sort((left, right) => right.at.getTime() - left.at.getTime());
+    items = page.items.map((activity) => ({ kind: "activity", at: activity.occurredAt, activity }));
     nextCursor = page.nextCursor;
-    nextBefore = oldestShown?.toISOString();
   }
 
   const returnTo = feedHref({ babyId, filter: filter.key, tag, cursor: searchParams.cursor, before: searchParams.before });
@@ -183,7 +177,7 @@ export default async function FeedPage({
             ) : null}
             {nextCursor ? (
               <Link
-                href={feedHref({ babyId, filter: filter.key, tag, cursor: nextCursor, before: nextBefore })}
+                href={feedHref({ babyId, filter: filter.key, tag, cursor: nextCursor })}
                 className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold hover:bg-muted"
               >
                 {gallery ? "Older photos" : "Older entries"}
@@ -205,10 +199,4 @@ export default async function FeedPage({
       </div>
     </AppShell>
   );
-}
-
-function parseInstant(value: string | undefined) {
-  if (!value) return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date;
 }

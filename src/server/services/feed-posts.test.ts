@@ -70,6 +70,16 @@ beforeEach(() => {
 });
 
 describe("feed posts", () => {
+  it("carries retained unavailable-photo presence without serving unavailable bytes", async () => {
+    mocks.findMany.mockResolvedValue([{ ...post(), author: null, photos: [], _count: { photos: 1 } }]);
+    const listed = await listFeedPosts({ babyId: "baby-1" });
+    expect(listed[0]).toMatchObject({ photos: [], hasRetainedPhotos: true });
+    expect(mocks.findMany.mock.calls[0][0].include._count).toEqual({
+      select: { photos: { where: { householdId: ctx.householdId, state: { in: ["available", "unavailable"] } } } }
+    });
+    expect(mocks.findMany.mock.calls[0][0].include.photos.where).toEqual({ state: "available" });
+  });
+
   it("lists a baby's posts and the whole family's, never removed ones, and says which this member may remove", async () => {
     mocks.findMany.mockResolvedValue([
       { id: "post-1", authorMemberId: "member-1", author: { displayName: "Sam", user: { name: "Sam P" } }, externalAuthorName: null, editedAt: new Date() },
@@ -86,7 +96,7 @@ describe("feed posts", () => {
   });
 
   it("lets the author edit their post's caption, re-reading its tags, and refuses one changed meanwhile", async () => {
-    await issueFeedPostUpdateBrowserOperation({ operationId, postId: "post-1" });
+    await issueFeedPostUpdateBrowserOperation({ operationId, postId: "post-1", expectedUpdatedAt: "2026-09-25T10:00:00.000Z" });
     const call = mocks.issueHousehold.mock.calls[0][0];
     expect(call).toMatchObject({ operationKey: BrowserOperationKey.feedPostUpdate, targetKind: "post", targetId: "post-1", permission: "feed.post" });
     const snapshot = { kind: "feed-post-update", schemaVersion: 1, postId: "post-1", updatedAt: "2026-09-25T10:00:00.000Z" };

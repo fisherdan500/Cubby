@@ -21,7 +21,28 @@ async function stagingDirectory() {
   return directory;
 }
 
+// A full-size reservation, independent of caller-controlled Content-Length. Shared by route bundles.
+const admission = globalThis as typeof globalThis & { cubbyBackupUploadActive?: boolean; cubbyBackupUploadCleanupFailed?: boolean };
+
+export async function withBackupUploadAdmission<T>(work: () => Promise<T>): Promise<T> {
+  if (admission.cubbyBackupUploadActive) throw new Error("backup_upload_busy");
+  admission.cubbyBackupUploadActive = true;
+  try {
+    return await work();
+  } finally {
+    if (!admission.cubbyBackupUploadCleanupFailed) admission.cubbyBackupUploadActive = false;
+  }
+}
+
 export async function withUploadedBackupArchive<T>(
+  request: Request,
+  work: (filePath: string) => Promise<T>,
+  options: { maxBytes?: number } = {}
+): Promise<T> {
+  return withBackupUploadAdmission(() => stageBackupArchive(request, work, options));
+}
+
+async function stageBackupArchive<T>(
   request: Request,
   work: (filePath: string) => Promise<T>,
   options: { maxBytes?: number } = {}
@@ -31,29 +52,64 @@ export async function withUploadedBackupArchive<T>(
   if (Number.isFinite(declared) && declared > maxBytes) throw new Error("archive_too_large");
   if (!request.body) throw new Error("backup_invalid");
 
-  const filePath = path.join(await stagingDirectory(), `${randomBytes(16).toString("hex")}.zip`);
-  const file = await open(filePath, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
+  if (request.signal.aborted) throw new Error("backup_upload_aborted");
+  const directory = await stagingDirectory();
+  // Every leftover consumes the full slot after restart, even a zero-byte/unknown entry.
+  // Do not adopt or delete it here. This keeps the next full-size reservation honest.
+  const entries = await opendir(directory);
+  try {
+    if (await entries.read()) throw new Error("backup_upload_busy");
+  } finally {
+    await entries.close();
+  }
+  if (request.signal.aborted) throw new Error("backup_upload_aborted");
+  const reader = request.body.getReader();
+  let failure: Error | undefined;
+  let cancellation: Promise<void> | undefined;
+  const stop = (code: string) => {
+    failure ??= new Error(code);
+    cancellation ??= reader.cancel(failure).catch(() => undefined);
+  };
+  const onAbort = () => stop("backup_upload_aborted");
+  request.signal.addEventListener("abort", onAbort, { once: true });
+  const timer = setTimeout(() => stop("backup_upload_timeout"), 120_000);
+  const check = () => { if (failure) throw failure; };
+  let filePath: string | undefined;
   try {
     try {
-      const reader = request.body.getReader();
-      let total = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        total += value.byteLength;
-        if (total > maxBytes) {
-          await reader.cancel();
-          throw new Error("archive_too_large");
+      check();
+      const candidate = path.join(directory, `${randomBytes(16).toString("hex")}.zip`);
+      const file = await open(candidate, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
+      filePath = candidate;
+      try {
+        let total = 0;
+        while (true) {
+          check();
+          const { done, value } = await reader.read();
+          check();
+          if (done) break;
+          total += value.byteLength;
+          if (total > maxBytes) throw new Error("archive_too_large");
+          // Await disk operations even after cancellation: never release admission over orphaned I/O.
+          await file.writeFile(value);
         }
-        await file.write(value);
+        await file.sync();
+        check();
+      } finally {
+        await file.close();
       }
-      await file.sync();
     } finally {
-      await file.close();
+      clearTimeout(timer);
+      request.signal.removeEventListener("abort", onAbort);
+      await (cancellation ?? reader.cancel().catch(() => undefined));
+      reader.releaseLock();
     }
     return await work(filePath);
   } finally {
-    await unlink(filePath).catch(() => undefined);
+    if (filePath) await unlink(filePath).catch(() => {
+      admission.cubbyBackupUploadCleanupFailed = true;
+      throw new Error("attachment_store_unavailable");
+    });
   }
 }
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 type Result =
   | { status: "sent"; recipient: string }
   | { status: "not_configured" }
+  | { status: "throttled"; retryAfterSeconds: number }
   | { status: "failed"; reason: "authentication" | "connection" | "temporary" | "rejected" | "unknown"; responseCode: number | null; recipient: string };
 
 /** What the owner can do about each outcome, in the terms of the .env file they will be editing. */
@@ -16,6 +17,9 @@ export function testEmailMessage(result: Result) {
   }
   if (result.status === "not_configured") {
     return "Email isn't set up. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD and EMAIL_FROM in .env, then run docker compose up -d.";
+  }
+  if (result.status === "throttled") {
+    return `A test email is still running or was just attempted. Wait ${result.retryAfterSeconds} seconds before trying again.`;
   }
   switch (result.reason) {
     case "authentication":
@@ -42,6 +46,11 @@ export function PlatformTestEmail() {
     try {
       const response = await fetch("/api/platform/test-email", { method: "POST" });
       const body = (await response.json().catch(() => null)) as { ok?: boolean; data?: Result; error?: { message?: string } } | null;
+      if (response.status === 429 && body?.ok && body.data?.status === "throttled") {
+        setSent(false);
+        setMessage(testEmailMessage(body.data));
+        return;
+      }
       if (!response.ok || !body?.ok || !body.data) {
         setSent(false);
         setMessage(body?.error?.message ?? "Couldn't send the test email. Try again.");

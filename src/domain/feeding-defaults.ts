@@ -15,9 +15,10 @@ export function feedingFormStart(last: LastFeeding | null | undefined, formUnit:
   if (amount === null || !Number.isFinite(amount)) return { mode: last.mode, amount: null };
 
   const target = normalizeVolumeUnit(formUnit);
-  const source = normalizeVolumeUnit(last.unit ?? formUnit);
-  if (!target || !source || source === target) return { mode: last.mode, amount: String(amount) };
-  const converted = convertVolume(amount, source, target);
+  const source = normalizeVolumeUnit(last.unit ?? "oz");
+  if (!target || !source) return { mode: last.mode, amount: null };
+  if (source === target) return { mode: last.mode, amount: String(amount) };
+  const converted = convertVolume(amount, last.unit, target);
   if (converted === null) return { mode: last.mode, amount: null };
   const step = target === "mL" ? 5 : 0.5;
   return { mode: last.mode, amount: String(Number((Math.round(converted / step) * step).toFixed(2))) };

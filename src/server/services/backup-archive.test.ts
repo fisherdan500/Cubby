@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { backupArchiveStream, openBackupArchive, readBackupArchiveSync } from "@/server/services/backup-archive";
+import { assertBackupArchiveCapacity, backupArchiveStream, openBackupArchive, readBackupArchiveSync } from "@/server/services/backup-archive";
 import { createV2Backup } from "@/server/services/backup-format";
 import { zipStoreStream } from "@/server/services/zip-store";
 
@@ -38,6 +38,18 @@ function backup() {
 const readers = { "ph-a": bytesA, "ph-b": bytesB } as Record<string, Buffer>;
 
 describe("backup archives", () => {
+  it("counts the exact manifest, entry names and STORE framing at inclusive capacity boundaries", async () => {
+    const snapshot = backup();
+    const manifestBytes = Buffer.byteLength(JSON.stringify(snapshot, null, 2));
+    const bytes = await new Response(backupArchiveStream(snapshot, async (id) => readers[id]!)).arrayBuffer();
+    const limits = { maxArchiveBytes: bytes.byteLength, maxManifestBytes: manifestBytes, maxEntries: 3 };
+    expect(assertBackupArchiveCapacity(manifestBytes, snapshot.payload.feedPhotos!, limits)).toBe(bytes.byteLength);
+    expect(assertBackupArchiveCapacity(manifestBytes, snapshot.payload.feedPhotos!, { ...limits, maxArchiveBytes: bytes.byteLength + 1 })).toBe(bytes.byteLength);
+    expect(() => assertBackupArchiveCapacity(manifestBytes, snapshot.payload.feedPhotos!, { ...limits, maxArchiveBytes: bytes.byteLength - 1 })).toThrow("archive_too_large");
+    expect(() => assertBackupArchiveCapacity(manifestBytes, snapshot.payload.feedPhotos!, { ...limits, maxManifestBytes: manifestBytes - 1 })).toThrow("backup_too_large");
+    expect(() => assertBackupArchiveCapacity(manifestBytes, snapshot.payload.feedPhotos!, { ...limits, maxEntries: 2 })).toThrow("archive_too_large");
+  });
+
   it("carries backup.json and every listed photo, and reads back verified", async () => {
     const snapshot = backup();
     const readPhoto = vi.fn(async (photoId: string) => readers[photoId]!);
