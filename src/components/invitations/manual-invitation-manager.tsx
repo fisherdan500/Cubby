@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,15 @@ type Invite = { id: string; email: string; role: "admin" | "parent" | "caretaker
 type Retained = { operationId: string; openingFingerprint: string; intentFingerprint?: string; inviteId?: string; acknowledgement?: string; kind: "create" | "replace" | "revoke" | "revoke-all" };
 const retainedKey = "cubby:invitation-manual-operation:v1";
 const genericFailure = "We could not confirm that request. Check its status before trying again.";
+const notCreated = "The invitation could not be created. Nothing was created; check the details and try again.";
+const signInRequired = "Sign in again to manage invitations.";
+const signInNothingChanged = `${signInRequired} Nothing was created or changed.`;
+const completedStates = ["TERMINAL_FULL", "completed", "created", "replaced", "revoked"];
+/**
+ * A refused first reservation or a sign-in demand is answered before any invitation is written, so nothing is worth
+ * retaining. A retried operation may already have completed, so it stays retained for a status check instead.
+ */
+function reserveRefusal(result: Record<string, unknown> | null, retried: boolean) { return retried ? null : result?.status === "sign_in_required" ? signInNothingChanged : result?.status === "unavailable" ? notCreated : null; }
 
 function readRetained(): Retained | null {
   try {
@@ -21,6 +31,7 @@ function retain(value: Retained | null) { try { if (value) sessionStorage.setIte
 function data(value: unknown) { const body = value as { ok?: boolean; data?: Record<string, unknown> } | null; return body?.ok && body.data ? body.data : null; }
 
 export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, timeZone }: { invites: Invite[]; canInviteAdmin: boolean; isOwner: boolean; timeZone: string }) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [displayOnceUrl, setDisplayOnceUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,6 +58,10 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     } finally { controllers.current.delete(controller); }
   }
   function saveRetained(next: Retained | null) { retain(next); setRetained(next); }
+  function mutationSignInRequired(retried: boolean) {
+    if (!retried) saveRetained(null);
+    setMessage(retried ? `${signInRequired} The earlier request may have completed; check its status before starting another request.` : signInNothingChanged);
+  }
   function showDisplayOnce(result: Record<string, unknown>) {
     const path = typeof result.displayOnceUrl === "string" ? result.displayOnceUrl : typeof result.acceptUrl === "string" ? result.acceptUrl : typeof result.inviteToken === "string" ? `/invite#c=${encodeURIComponent(result.inviteToken)}` : "";
     if (!path) { setMessage("The invitation was completed. Its link is not available again; create a replacement only if needed."); return; }
@@ -54,7 +69,7 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     setMessage("Copy the invitation link now. It will not be shown again after this response.");
   }
   async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = new FormData(event.currentTarget);
+    event.preventDefault(); const formElement = event.currentTarget; const form = new FormData(formElement);
     const recipientEmail = String(form.get("recipientEmail") ?? "").trim(); const role = String(form.get("role") ?? "caretaker"); const expiresInHours = Number(form.get("expiresInHours") ?? 168);
     if (!recipientEmail || !Number.isInteger(expiresInHours)) return;
     setBusy(true); setMessage(""); setDisplayOnceUrl("");
@@ -63,11 +78,14 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (retained?.kind === "create" && retained.openingFingerprint !== openingFingerprint) { setMessage("This differs from the retained invitation request. Check its status before starting a new request."); return; }
       const next = { operationId, openingFingerprint, kind: "create" as const }; saveRetained(next);
       const reserve = await request("/api/invitations/manual/create", { action: "reserve", operationId, recipientEmail, role, expiresInHours, openingFingerprint });
+      const refusal = reserveRefusal(reserve, retained?.kind === "create"); if (refusal) { saveRetained(null); setMessage(refusal); return; }
+      if (reserve?.status === "sign_in_required") { setMessage(signInRequired); return; }
       if (reserve?.status !== "prepared") throw new Error("reserve");
       const intentFingerprint = await invitationFingerprint("manual-create-submit", { operationId, recipientEmail, role, expiresInHours });
       const submit = await request("/api/invitations/manual/create", { action: "submit", operationId, openingFingerprint, intentFingerprint });
+      if (submit?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "create"); return; }
       if (submit?.status !== "completed" && submit?.status !== "created") throw new Error("submit");
-      saveRetained(null); showDisplayOnce(submit); event.currentTarget.reset();
+      saveRetained(null); showDisplayOnce(submit); formElement.reset(); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
   }
   async function replace(inviteId: string, event: MouseEvent<HTMLButtonElement>) {
@@ -75,13 +93,16 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     try {
       const operationId = retained?.kind === "replace" ? retained.operationId : invitationOperationId(); const expiresInHours = 168; const openingFingerprint = await invitationFingerprint("manual-replace", { operationId, inviteId, expiresInHours });
       if (retained?.kind === "replace" && retained.openingFingerprint !== openingFingerprint) { setMessage("This differs from the retained replacement request. Check its status before starting a new request."); return; }
-      const next = { operationId, openingFingerprint, kind: "replace" as const }; saveRetained(next);
+      const next = { operationId, openingFingerprint, inviteId, kind: "replace" as const }; saveRetained(next);
       const reserve = await request("/api/invitations/manual/replace", { action: "reserve", operationId, inviteId, expiresInHours, openingFingerprint });
+      const refusal = reserveRefusal(reserve, retained?.kind === "replace"); if (refusal) { saveRetained(null); setMessage(refusal === notCreated ? "The replacement link could not be created. The current link is unchanged." : refusal); return; }
+      if (reserve?.status === "sign_in_required") { setMessage(signInRequired); return; }
       if (reserve?.status !== "prepared") throw new Error("reserve");
       const intentFingerprint = await invitationFingerprint("manual-replace-submit", { operationId, inviteId, expiresInHours });
-      const submit = await request("/api/invitations/manual/replace", { action: "submit", operationId, openingFingerprint, intentFingerprint });
+      const submit = await request("/api/invitations/manual/replace", { action: "submit", operationId, inviteId, openingFingerprint, intentFingerprint });
+      if (submit?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "replace"); return; }
       if (submit?.status !== "completed" && submit?.status !== "replaced") throw new Error("submit");
-      saveRetained(null); showDisplayOnce(submit);
+      saveRetained(null); showDisplayOnce(submit); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
   }
   async function status() {
@@ -90,8 +111,11 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       const endpoint = retained.kind === "create" ? "/api/invitations/manual/status" : retained.kind === "replace" ? "/api/invitations/manual/replace/status" : retained.kind === "revoke" ? "/api/invitations/revoke" : "/api/invitations/revoke-all";
       const result = await request(endpoint, retained.kind === "revoke" ? { ...retained, inviteId: retained.inviteId } : retained);
       if (!result) throw new Error("status");
-      if (result.status === "completed" || result.status === "created" || result.status === "replaced" || result.status === "revoked") { saveRetained(null); setMessage(retained.kind === "revoke" || retained.kind === "revoke-all" ? "The revocation completed." : "The request completed. A display-once link is not available from status; create a replacement only if needed."); }
-      else if (result.status === "prepared") setMessage("This request is still prepared. You can abandon it or retry from the same form.");
+      if (result.status === "sign_in_required") { setMessage(signInRequired); return; }
+      // Issuer status procedures report the operation `state`; revocation replays report `status`.
+      const outcome = typeof result.state === "string" ? result.state : result.status;
+      if (typeof outcome === "string" && completedStates.includes(outcome)) { saveRetained(null); setMessage(retained.kind === "revoke" || retained.kind === "revoke-all" ? "The revocation completed." : "The request completed. A display-once link is not available from status; create a replacement only if needed."); router.refresh(); }
+      else if (outcome === "PREPARED" || outcome === "prepared") setMessage("This request is still prepared. You can abandon it or retry from the same form.");
       else setMessage("This request is no longer available.");
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }
@@ -100,7 +124,8 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     try {
       if (retained.kind === "revoke" || retained.kind === "revoke-all") { saveRetained(null); setMessage("The retained revocation request was cleared locally. Its server status is unchanged."); return; }
       const endpoint = retained.kind === "create" ? "/api/invitations/manual/abandon" : "/api/invitations/manual/replace/abandon";
-      const result = await request(endpoint, retained); if (!result || (result.status !== "abandoned" && result.state !== "abandoned")) throw new Error("abandon");
+      const result = await request(endpoint, retained); if (result?.status === "sign_in_required") { setMessage(signInRequired); return; }
+      if (!result || (result.status !== "abandoned" && result.state !== "abandoned")) throw new Error("abandon");
       saveRetained(null); setMessage("The prepared invitation request was abandoned.");
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }
@@ -111,7 +136,8 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (retained?.kind === "revoke" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint || retained.inviteId !== inviteId)) { setMessage("This differs from the retained revocation request. Check its status before starting a new request."); return; }
       saveRetained({ operationId, openingFingerprint, intentFingerprint, inviteId, kind: "revoke" });
       const result = await request("/api/invitations/revoke", { inviteId, operationId, openingFingerprint, intentFingerprint });
-      if (result?.status !== "revoked") throw new Error("revoke"); saveRetained(null); setMessage("Invitation revoked.");
+      if (result?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "revoke"); return; }
+      if (result?.status !== "revoked") throw new Error("revoke"); saveRetained(null); setMessage("Invitation revoked."); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }
   async function revokeAll(event: FormEvent<HTMLFormElement>) {
@@ -123,15 +149,16 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (retained?.kind === "revoke-all" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint || retained.acknowledgement !== acknowledgement)) { setMessage("This differs from the retained revocation request. Check its status before starting a new request."); return; }
       saveRetained({ operationId, openingFingerprint, intentFingerprint, acknowledgement, kind: "revoke-all" });
       const result = await request("/api/invitations/revoke-all", { operationId, acknowledgement, openingFingerprint, intentFingerprint });
-      if (result?.status !== "revoked") throw new Error("revoke-all"); saveRetained(null); setMessage("Pending invitations revoked.");
+      if (result?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "revoke-all"); return; }
+      if (result?.status !== "revoked") throw new Error("revoke-all"); saveRetained(null); setMessage("Pending invitations revoked."); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }
   return <section aria-labelledby="manual-invites-heading" className="space-y-4"><div><h2 id="manual-invites-heading" className="text-lg font-bold">Invite member</h2><p className="text-sm text-muted-foreground">Create a household invitation. The link is displayed once, only after completion.</p></div>
     <form onSubmit={(event) => void create(event)} className="space-y-3"><label className="block text-sm font-semibold">Recipient email<Input name="recipientEmail" type="email" autoComplete="email" required /></label><label className="block text-sm font-semibold">Access level<select name="role" defaultValue="caretaker" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3 py-2 text-sm"><option value="caretaker">Caretaker</option><option value="parent">Parent</option><option value="read_only">Read only</option>{canInviteAdmin ? <option value="admin">Admin</option> : null}</select></label><label className="block text-sm font-semibold">Expires in<select name="expiresInHours" defaultValue="168" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3 py-2 text-sm"><option value="1">1 hour</option><option value="24">1 day</option><option value="168">7 days</option></select></label><Button type="submit" disabled={busy}>{busy ? "Working…" : "Create invitation"}</Button></form>
+    {message ? <p ref={errorSummary} role="alert" tabIndex={-1} className="text-sm text-muted-foreground">{message}</p> : null}
     {retained ? <div className="flex flex-wrap gap-2 rounded-lg border border-border p-3"><p className="w-full text-sm text-muted-foreground">A prepared invitation request is available for this browser tab.</p><Button type="button" variant="secondary" onClick={() => void status()} disabled={busy}>Check request status</Button><Button type="button" variant="ghost" onClick={() => void abandon()} disabled={busy}>Abandon request</Button></div> : null}
     {displayOnceUrl ? <div ref={displayOnceRegion} role="region" aria-label="Display-once invitation link" aria-live="off" tabIndex={-1} className="rounded-lg border border-border bg-muted p-3"><p className="font-semibold">Copy invitation link now</p><p className="mt-1 break-all text-sm text-muted-foreground">{displayOnceUrl}</p><Button type="button" variant="secondary" className="mt-3" onClick={() => void navigator.clipboard?.writeText(displayOnceUrl)}>Copy invitation link</Button><p className="mt-2 text-xs text-muted-foreground">This link is not retained in status or after remounting this screen.</p></div> : null}
     <div className="space-y-2 border-t border-border pt-4"><h3 className="font-bold">Pending invitations</h3>{invites.length === 0 ? <p className="text-sm text-muted-foreground">No pending invitations.</p> : invites.map((invite) => <div key={invite.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"><div className="min-w-0"><p className="truncate font-semibold">{invite.email}</p><p className="text-sm text-muted-foreground">{invite.role} · expires {formatInstantDate(invite.expiresAt, timeZone)}</p></div><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={(event) => void replace(invite.id, event)} disabled={busy}>Replace link</Button><Button type="button" variant="danger" onClick={(event) => void revoke(invite.id, event)} disabled={busy}>Revoke</Button></div></div>)}</div>
     {isOwner && invites.length > 0 ? <form onSubmit={(event) => void revokeAll(event)} className="space-y-3 rounded-lg border border-danger/40 bg-danger/5 p-3"><h3 className="font-bold text-danger">Revoke every pending invitation</h3><label className="block text-sm font-semibold">Type <span className="font-mono">I_REVOKE_ALL_PENDING_INVITATIONS</span><Input name="acknowledgement" autoComplete="off" required /></label><Button type="submit" variant="danger" disabled={busy}>Revoke all pending invitations</Button></form> : null}
-    {message ? <p ref={errorSummary} role="alert" tabIndex={-1} className="text-sm text-muted-foreground">{message}</p> : null}
   </section>;
 }

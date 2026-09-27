@@ -58,7 +58,9 @@ describe("invitation carrier compatibility", () => {
 
   it("uses one exact manual purpose vocabulary at Node and SQL boundaries", () => {
     const node = service();
-    for (const purpose of ["manual_invite_create", "manual_invite_status", "manual_invite_create_abandon", "manual_invite_replace", "manual_invite_replace_status", "manual_invite_replace_abandon"]) expect(node).toContain(`purpose: \"${purpose}\"`);
+    for (const purpose of ["manual_invite_create", "manual_invite_status", "manual_invite_abandon", "manual_invite_replace", "manual_invite_replace_status", "manual_invite_replace_abandon"]) expect(node).toContain(`purpose: \"${purpose}\"`);
+    expect(procedureBody(migration(), "abandon_manual_invite_create_v2")).toContain("'manual_invite_abandon'");
+    expect(node).not.toContain("manual_invite_create_abandon");
     expect(procedureBody(migration(), "status_manual_invite_create_v2")).toContain("'manual_invite_status'");
     expect(node).not.toContain("manual_invite_create_status");
     expect(node).not.toContain("manual_invite_create_reserve");
