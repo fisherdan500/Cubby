@@ -9,7 +9,8 @@ import { fileURLToPath } from "node:url";
 
 const auth = vi.hoisted(() => ({
   context: null as null | { userId: string; householdId: string; memberId: string; role: HouseholdRole },
-  user: null as null | { id: string; name: string; email: string; emailVerified: boolean }
+  user: null as null | { id: string; name: string; email: string; emailVerified: boolean },
+  sessionIds: new Map<string, string>()
 }));
 
 vi.mock("@/server/auth/context", () => ({
@@ -29,9 +30,11 @@ vi.mock("@/server/auth/context", () => ({
 vi.mock("@/server/auth/session", () => ({
   getSession: vi.fn(async () => {
     if (!auth.context) return null;
+    const sessionId = auth.sessionIds.get(auth.context.userId);
+    if (!sessionId) return null;
     return {
       user: { id: auth.context.userId },
-      session: { id: `rehearsal-session:${auth.context.userId}` }
+      session: { id: sessionId }
     };
   }),
   requireUser: vi.fn(async () => {
@@ -78,6 +81,14 @@ type V2Envelope = ReturnType<typeof parseBackup> extends infer _Result ? {
 
 function context(userId: string, householdId: string, memberId: string) {
   return { userId, householdId, memberId, role: HouseholdRole.owner };
+}
+
+async function createRehearsalSession(userId: string, suffix: string) {
+  const session = await prisma.session.create({
+    data: { token: `${suffix}-session-token`, expiresAt: new Date("2099-01-01T00:00:00.000Z"), userId }
+  });
+  auth.sessionIds.set(userId, session.id);
+  return session;
 }
 
 const backupDirectory = process.env.AUTOMATED_BACKUP_DIRECTORY;
@@ -157,6 +168,7 @@ async function createOwnerHousehold(suffix: string, householdName: string) {
   const member = await prisma.householdMember.create({
     data: { householdId: household.id, userId: user.id, role: HouseholdRole.owner, displayName: `${suffix} owner` }
   });
+  await createRehearsalSession(user.id, suffix);
   return { user, household, member, ctx: context(user.id, household.id, member.id) };
 }
 
@@ -199,6 +211,7 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
     const targetUser = await prisma.user.create({
       data: { name: "target Owner", email: "target@rehearsal.invalid", emailVerified: true }
     });
+    await createRehearsalSession(targetUser.id, "target");
     const staleTarget = await createOwnerHousehold("stale-target", "Stale Target");
 
     await prisma.householdSettings.create({
@@ -356,9 +369,6 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
       }
     });
 
-    await prisma.session.create({
-      data: { token: "source-session-token", expiresAt: new Date("2099-01-01T00:00:00.000Z"), userId: source.user.id }
-    });
     await prisma.account.create({
       data: { id: "source-account", accountId: source.user.email, providerId: "credential", userId: source.user.id, password: "not-a-real-password-hash" }
     });
