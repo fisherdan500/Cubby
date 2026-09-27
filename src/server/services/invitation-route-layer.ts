@@ -181,8 +181,14 @@ function recoveryEnrollmentDisplayOnceReceipt(
   };
 }
 
+/** An issuer may learn only that their own session must be renewed; every other failure stays neutral. */
+class IssuerSignInRequired extends Error {}
+
 async function issuerRequest(input: Json, intent: boolean) {
-  const session = await requireFreshSession();
+  const session = await requireFreshSession().catch((error: unknown) => {
+    if (error instanceof Error && (error.message === "fresh_authentication_required" || error.message === "unauthenticated")) throw new IssuerSignInRequired();
+    throw error;
+  });
   const household = await getEffectiveHouseholdContext();
   if (!session.session?.id || !session.user?.id || household.userId !== session.user.id) throw new Error("unauthenticated");
   return {
@@ -226,6 +232,7 @@ function safeReservation(value: unknown) {
 }
 
 function errorResponse(error: unknown) {
+  if (error instanceof IssuerSignInRequired) return response({ status: "sign_in_required" });
   if (error instanceof Error && error.message === "invitation_request_invalid") return response({ status: "unavailable" });
   return unavailable();
 }
@@ -333,7 +340,8 @@ export async function handleInvitationRoute(request: Request, route: InvitationR
       if (route === "accept-submit") return response(await services.acceptance.submit({ operationId, reviewVersion: integer(input, "reviewVersion"), reviewSnapshotDigest: text(input, "reviewSnapshotDigest", 64), typedHouseholdName: text(input, "typedHouseholdName"), adminAcknowledgement: input.adminAcknowledgement === null ? null : text(input, "adminAcknowledgement"), request: context.request }));
       return response(route === "accept-status" ? await services.acceptance.status({ operationId, request: context.request }) : await services.acceptance.abandon({ operationId, request: context.request }));
     }
-    const issuer = await issuerRequest(input, route === "manual-create" || route === "manual-replace" || route === "revoke" || route === "revoke-all");
+    // Reserve precedes the intent fingerprint; only the submitting step carries one.
+    const issuer = await issuerRequest(input, ((route === "manual-create" || route === "manual-replace") && input.action === "submit") || route === "revoke" || route === "revoke-all");
     const operationId = uuid(input, "operationId");
     if (route === "manual-create") {
       if (input.action === "reserve") return response(await services.manualCreate.reserve({ operationId, householdId: issuer.household.householdId, role: text(input, "role", 32), expiresInHours: integer(input, "expiresInHours", 1, 720), recipientEmail: text(input, "recipientEmail", 320), request: issuer.request }));

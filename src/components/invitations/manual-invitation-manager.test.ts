@@ -7,6 +7,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 globalThis.React = React;
+const router = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/components/invitations/invitation-browser", () => ({
   invitationOperationId: vi.fn(() => "11111111-1111-4111-8111-111111111111"),
   invitationFingerprint: vi.fn(async (scope: string) => scope.padEnd(64, "0").slice(0, 64))
@@ -16,7 +18,7 @@ import { ManualInvitationManager } from "@/components/invitations/manual-invitat
 const response = (data: Record<string, unknown>) => ({ ok: true, json: async () => ({ ok: true, data }) }) as Response;
 const props = { invites: [{ id: "invite-1", email: "member@example.test", role: "parent" as const, expiresAt: "2030-01-01T00:00:00.000Z" }], canInviteAdmin: true, isOwner: true, timeZone: "UTC" };
 
-beforeEach(() => { sessionStorage.clear(); Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn(async () => undefined) } }); });
+beforeEach(() => { sessionStorage.clear(); router.refresh.mockClear(); Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn(async () => undefined) } }); });
 afterEach(() => cleanup());
 
 describe("ManualInvitationManager rendered behavior", () => {
@@ -37,6 +39,108 @@ describe("ManualInvitationManager rendered behavior", () => {
     const copy = screen.getByRole("button", { name: "Copy invitation link" });
     await userEvent.click(copy);
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining("display-once-token"));
+  });
+});
+
+const retainedKey = "cubby:invitation-manual-operation:v1";
+const operationId = "11111111-1111-4111-8111-111111111111";
+const bodies = () => vi.mocked(globalThis.fetch).mock.calls.map(([path, init]) => ({ path: String(path), body: JSON.parse(String(init?.body)) as Record<string, unknown> }));
+async function submitCreate() {
+  await userEvent.type(screen.getByLabelText("Recipient email"), "new@example.test");
+  await userEvent.click(screen.getByRole("button", { name: "Create invitation" }));
+}
+
+describe("ManualInvitationManager outcomes", () => {
+  it("refreshes the pending list after creation while the display-once link stays available", async () => {
+    globalThis.fetch = vi.fn(async (_path, init) => response(JSON.parse(String(init?.body)).action === "reserve" ? { status: "prepared" } : { status: "created", inviteToken: "display-once-token" }));
+    const view = render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await submitCreate();
+    await screen.findByRole("region", { name: "Display-once invitation link" });
+    expect(screen.getByRole("alert").textContent).toContain("Copy the invitation link now");
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    view.rerender(createElement(ManualInvitationManager, { ...props, invites: [{ id: "invite-2", email: "new@example.test", role: "caretaker", expiresAt: "2030-01-01T00:00:00.000Z" }] }));
+    expect(screen.getByText("new@example.test")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Display-once invitation link" }).textContent).toContain("display-once-token");
+    expect(sessionStorage.getItem(retainedKey)).toBeNull();
+  });
+
+  it("says nothing was created when the reservation is refused, and forgets the operation", async () => {
+    globalThis.fetch = vi.fn(async () => response({ status: "unavailable" }));
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await submitCreate();
+    expect((await screen.findByRole("alert")).textContent).toContain("Nothing was created");
+    expect(sessionStorage.getItem(retainedKey)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Check request status" })).toBeNull();
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  it("keeps a retried operation for a status check when its reservation is refused", async () => {
+    const retainedCreate = { operationId, openingFingerprint: "manual-create".padEnd(64, "0").slice(0, 64), kind: "create" };
+    sessionStorage.setItem(retainedKey, JSON.stringify(retainedCreate));
+    globalThis.fetch = vi.fn(async () => response({ status: "unavailable" }));
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await screen.findByRole("button", { name: "Check request status" });
+    await submitCreate();
+    expect((await screen.findByRole("alert")).textContent).toContain("Check its status");
+    expect(JSON.parse(sessionStorage.getItem(retainedKey) ?? "null")).toMatchObject(retainedCreate);
+  });
+
+  it("asks the issuer to sign in again when the server requires it", async () => {
+    globalThis.fetch = vi.fn(async () => response({ status: "sign_in_required" }));
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await submitCreate();
+    expect((await screen.findByRole("alert")).textContent).toContain("Sign in again");
+    expect(sessionStorage.getItem(retainedKey)).toBeNull();
+  });
+
+  it("keeps the operation for a status check when the submit outcome is unknown", async () => {
+    globalThis.fetch = vi.fn(async (_path, init) => { if (JSON.parse(String(init?.body)).action === "reserve") return response({ status: "prepared" }); throw new TypeError("network lost"); });
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await submitCreate();
+    expect((await screen.findByRole("alert")).textContent).toContain("Check its status");
+    expect(JSON.parse(sessionStorage.getItem(retainedKey) ?? "null")).toMatchObject({ operationId, kind: "create" });
+    expect(screen.getByRole("button", { name: "Check request status" })).toBeTruthy();
+  });
+
+  it("reconciles a completed create from the status state without redisclosing any token", async () => {
+    sessionStorage.setItem(retainedKey, JSON.stringify({ operationId, openingFingerprint: "a".repeat(64), kind: "create" }));
+    globalThis.fetch = vi.fn(async () => response({ operationId, state: "TERMINAL_FULL", outcomeCode: "invite_created", inviteToken: "must-not-show" }));
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await userEvent.click(await screen.findByRole("button", { name: "Check request status" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("The request completed");
+    expect(screen.queryByRole("region", { name: "Display-once invitation link" })).toBeNull();
+    expect(document.body.textContent).not.toContain("must-not-show");
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(retainedKey)).toBeNull();
+  });
+
+  it("reports a still-prepared operation from the status state", async () => {
+    sessionStorage.setItem(retainedKey, JSON.stringify({ operationId, openingFingerprint: "a".repeat(64), kind: "create" }));
+    globalThis.fetch = vi.fn(async () => response({ operationId, state: "PREPARED" }));
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    await userEvent.click(await screen.findByRole("button", { name: "Check request status" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("still prepared");
+  });
+
+  it("sends the replaced invitation's id with replace submit and status", async () => {
+    globalThis.fetch = vi.fn(async (_path, init) => { if (JSON.parse(String(init?.body)).action === "reserve") return response({ status: "prepared" }); throw new TypeError("network lost"); });
+    render(createElement(ManualInvitationManager, props));
+    await userEvent.click(screen.getByRole("button", { name: "Replace link" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Check request status" }));
+    const [reserve, submit, status] = bodies();
+    expect(reserve!.body).toMatchObject({ action: "reserve", inviteId: "invite-1" });
+    expect(submit!.body).toMatchObject({ action: "submit", inviteId: "invite-1" });
+    expect(status!.path).toBe("/api/invitations/manual/replace/status");
+    expect(status!.body).toMatchObject({ operationId, inviteId: "invite-1" });
+  });
+
+  it("shows request feedback beside the form instead of below the pending list", async () => {
+    globalThis.fetch = vi.fn(async () => response({ status: "unavailable" }));
+    render(createElement(ManualInvitationManager, props));
+    await submitCreate();
+    const alert = await screen.findByRole("alert");
+    const pending = screen.getByRole("heading", { name: "Pending invitations" });
+    expect(alert.compareDocumentPosition(pending) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
