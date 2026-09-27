@@ -144,6 +144,61 @@ describe("ManualInvitationManager outcomes", () => {
   });
 });
 
+describe("ManualInvitationManager email delivery", () => {
+  const created = (email: string) => vi.fn(async (_path, init) => response(JSON.parse(String(init?.body)).action === "reserve" ? { status: "prepared" } : { status: "created", inviteToken: "display-once-token", email }));
+
+  it("offers email ticked by default when available, sends the choice with submit, and still shows the link", async () => {
+    globalThis.fetch = created("queued");
+    render(createElement(ManualInvitationManager, { ...props, invites: [], emailAvailable: true }));
+    expect((screen.getByRole("checkbox", { name: "Also email this invitation" }) as HTMLInputElement).checked).toBe(true);
+    await submitCreate();
+    await screen.findByRole("region", { name: "Display-once invitation link" });
+    const submit = bodies().find(({ body }) => body.action === "submit")!;
+    expect(submit.body.sendEmail).toBe(true);
+    expect(bodies().find(({ body }) => body.action === "reserve")!.body.sendEmail).toBeUndefined();
+    expect(screen.getByRole("alert").textContent).toContain("also being emailed to new@example.test");
+  });
+
+  it("does not email when the issuer unticks the box", async () => {
+    globalThis.fetch = created("queued");
+    render(createElement(ManualInvitationManager, { ...props, invites: [], emailAvailable: true }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Also email this invitation" }));
+    await submitCreate();
+    await screen.findByRole("region", { name: "Display-once invitation link" });
+    expect(bodies().find(({ body }) => body.action === "submit")!.body.sendEmail).toBe(false);
+  });
+
+  it("says when the email could not be queued while keeping the link", async () => {
+    globalThis.fetch = created("not_queued");
+    render(createElement(ManualInvitationManager, { ...props, invites: [], emailAvailable: true }));
+    await submitCreate();
+    await screen.findByRole("region", { name: "Display-once invitation link" });
+    expect(screen.getByRole("alert").textContent).toContain("The email could not be sent");
+  });
+
+  it("offers no email choice when email is not set up", async () => {
+    globalThis.fetch = created("queued");
+    render(createElement(ManualInvitationManager, { ...props, invites: [] }));
+    expect(screen.queryByRole("checkbox", { name: "Also email this invitation" })).toBeNull();
+    await submitCreate();
+    await screen.findByRole("region", { name: "Display-once invitation link" });
+    expect(bodies().find(({ body }) => body.action === "submit")!.body.sendEmail).toBeUndefined();
+  });
+
+  it("shows each pending invitation's email status and re-sends by emailing a replacement link", async () => {
+    globalThis.fetch = vi.fn(async (_path, init) => response(JSON.parse(String(init?.body)).action === "reserve" ? { status: "prepared" } : { status: "replaced", inviteToken: "display-once-token", email: "queued" }));
+    const invites = [{ ...props.invites[0]!, emailStatus: "failed" as const }];
+    render(createElement(ManualInvitationManager, { ...props, invites, emailAvailable: true }));
+    expect(screen.getByText(/Email failed/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Re-send email" }));
+    await screen.findByRole("region", { name: "Display-once invitation link" });
+    const submit = bodies().find(({ body }) => body.action === "submit")!;
+    expect(submit.path).toBe("/api/invitations/manual/replace");
+    expect(submit.body).toMatchObject({ inviteId: "invite-1", sendEmail: true });
+    expect(router.refresh).toHaveBeenCalled();
+  });
+});
+
 describe("ManualInvitationManager contract", () => {
   it("uses reviewed issuer operations for creation, replacement, status, abandonment, and revocation", () => {
     const source = readFileSync(resolve(process.cwd(), "src/components/invitations/manual-invitation-manager.tsx"), "utf8");

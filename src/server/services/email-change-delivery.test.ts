@@ -59,7 +59,7 @@ describe("email-change encrypted delivery payloads", () => {
     const createTransport = vi.fn(() => ({ sendMail })) as never;
     const adapter = createSmtpEmailDeliveryAdapter({ SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "password", EMAIL_FROM: "Cubby <noreply@example.invalid>", SMTP_CA_CERT: "synthetic-ca" }, { createTransport });
     await expect(adapter.send({ recipient: "new@example.invalid", subject: "Verify", text: "body", messageId: "<delivery-1@cubby.local>" })).resolves.toEqual({ responseCode: 250, messageId: "<delivery-1@cubby.local>", accepted: ["new@example.invalid"] });
-    expect(sendMail).toHaveBeenCalledWith({ from: "Cubby <noreply@example.invalid>", to: "new@example.invalid", subject: "Verify", text: "body", messageId: "<delivery-1@cubby.local>" });
+    expect(sendMail).toHaveBeenCalledWith({ from: "Cubby <noreply@example.invalid>", to: { name: "", address: "new@example.invalid" }, envelope: { from: "Cubby <noreply@example.invalid>", to: ["new@example.invalid"] }, subject: "Verify", text: "body", messageId: "<delivery-1@cubby.local>" });
     expect(createTransport).toHaveBeenCalledWith(expect.objectContaining({ requireTLS: true, tls: { rejectUnauthorized: true, ca: "synthetic-ca" } }));
   });
 

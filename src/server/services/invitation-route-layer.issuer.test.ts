@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireFreshSession: vi.fn(),
   getEffectiveHouseholdContext: vi.fn(),
+  queueManualInvitationEmail: vi.fn(),
   services: {
     manualCreate: { reserve: vi.fn(), submit: vi.fn(), status: vi.fn(), abandon: vi.fn() },
     manualReplace: { reserve: vi.fn(), submit: vi.fn(), status: vi.fn(), abandon: vi.fn() },
@@ -20,6 +21,7 @@ vi.mock("@/server/services/invitation-attestation", () => ({ invitationFingerpri
 vi.mock("@/server/services/invitation-service", () => ({ getInvitationServices: async () => mocks.services }));
 vi.mock("@/server/services/global-security", () => ({ issueFreshAuthGrantForCurrentPassword: vi.fn() }));
 vi.mock("@/server/services/invitation-setup-corridor", () => ({ assertInvitationSetupCorridorAccess: vi.fn(), classifyInvitationSetupCorridor: vi.fn() }));
+vi.mock("@/server/services/invitation-email-queue", () => ({ queueManualInvitationEmail: mocks.queueManualInvitationEmail }));
 
 import { handleInvitationRoute, type InvitationRoute } from "@/server/services/invitation-route-layer";
 
@@ -45,6 +47,18 @@ beforeEach(() => {
 });
 
 describe("issuer invitation routes", () => {
+  it.each(["first@example.test,second@example.test", "first@example.test <second@example.test>", "Group:first@example.test;", "first@example.test\r\nBcc:second@example.test", "first@example.test\n", "not-a-mailbox"])("rejects unsafe recipient syntax before reservation: %j", async (recipientEmail) => {
+    const result = await call("manual-create", { action: "reserve", operationId, recipientEmail, role: "caretaker", expiresInHours: 168, openingFingerprint });
+    expect(result.body.data.status).toBe("unavailable");
+    expect(mocks.services.manualCreate.reserve).not.toHaveBeenCalled();
+    expect(mocks.queueManualInvitationEmail).not.toHaveBeenCalled();
+  });
+
+  it("canonicalizes a single mailbox before reserving it", async () => {
+    await call("manual-create", { action: "reserve", operationId, recipientEmail: "  Member+tag@Example.TEST  ", role: "caretaker", expiresInHours: 168, openingFingerprint });
+    expect(mocks.services.manualCreate.reserve).toHaveBeenCalledWith(expect.objectContaining({ recipientEmail: "member+tag@example.test" }));
+  });
+
   it("reserves a manual invitation from the browser's reserve payload, which carries no intent yet", async () => {
     const result = await call("manual-create", { action: "reserve", operationId, recipientEmail: "member@example.test", role: "caretaker", expiresInHours: 168, openingFingerprint });
     expect(result.body.data.status).toBe("prepared");
@@ -85,6 +99,37 @@ describe("issuer invitation routes", () => {
     mocks.services.manualCreate.reserve.mockRejectedValue(new Error('permission denied for function reserve_manual_invite_create_v2 [REDACTED]'));
     const result = await call("manual-create", { action: "reserve", operationId, recipientEmail: "member@example.test", role: "caretaker", expiresInHours: 168, openingFingerprint });
     expect(result.body.data).toEqual({ status: "unavailable" });
+  });
+
+  it("queues the invitation email only when the issuer asked for it, after the invitation exists", async () => {
+    mocks.services.manualCreate.submit.mockResolvedValue({ operationId, status: "created", inviteToken: "display-once" });
+    mocks.queueManualInvitationEmail.mockResolvedValue("queued");
+    const without = await call("manual-create", { action: "submit", operationId, openingFingerprint, intentFingerprint });
+    expect(without.body.data).toEqual({ operationId, status: "created", inviteToken: "display-once" });
+    expect(mocks.queueManualInvitationEmail).not.toHaveBeenCalled();
+    const withEmail = await call("manual-create", { action: "submit", operationId, openingFingerprint, intentFingerprint, sendEmail: true });
+    expect(withEmail.body.data).toEqual({ operationId, status: "created", inviteToken: "display-once", email: "queued" });
+    expect(mocks.queueManualInvitationEmail).toHaveBeenCalledWith(expect.objectContaining({ operationId, operationKind: "MANUAL_INVITE_CREATE", target: "household-1", householdId: "household-1", inviteToken: "display-once", request: expect.objectContaining({ subjectUserId: "user-1" }) }));
+  });
+
+  it("targets the replaced invitation when emailing a replacement link", async () => {
+    mocks.services.manualReplace.submit.mockResolvedValue({ operationId, status: "replaced", inviteToken: "display-once" });
+    mocks.queueManualInvitationEmail.mockResolvedValue("queued");
+    const result = await call("manual-replace", { action: "submit", operationId, inviteId: "invite-1", openingFingerprint, intentFingerprint, sendEmail: true });
+    expect(result.body.data.email).toBe("queued");
+    expect(mocks.queueManualInvitationEmail).toHaveBeenCalledWith(expect.objectContaining({ operationKind: "MANUAL_INVITE_REPLACE", target: "invite-1", householdId: "household-1" }));
+  });
+
+  it("keeps a created invitation and its link when the email cannot be queued or the outcome is a replay", async () => {
+    mocks.services.manualCreate.submit.mockResolvedValueOnce({ operationId, status: "created", inviteToken: "display-once" });
+    mocks.queueManualInvitationEmail.mockResolvedValue("not_queued");
+    const failed = await call("manual-create", { action: "submit", operationId, openingFingerprint, intentFingerprint, sendEmail: true });
+    expect(failed.body.data).toEqual({ operationId, status: "created", inviteToken: "display-once", email: "not_queued" });
+    mocks.services.manualCreate.submit.mockResolvedValueOnce({ operationId, status: "completed", outcomeCode: "invite_created" });
+    mocks.queueManualInvitationEmail.mockClear();
+    const replay = await call("manual-create", { action: "submit", operationId, openingFingerprint, intentFingerprint, sendEmail: true });
+    expect(replay.body.data).toEqual({ operationId, status: "completed", outcomeCode: "invite_created", email: "not_queued" });
+    expect(mocks.queueManualInvitationEmail).not.toHaveBeenCalled();
   });
 
   it("reaches no invitation procedure when the household context belongs to another user", async () => {

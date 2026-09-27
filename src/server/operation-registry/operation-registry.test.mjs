@@ -2872,6 +2872,11 @@ test("classifies rehearsal, fixture, build-tool, and registry exclusions exactly
         packageScripts: ["verify:activity-update-safety"]
       },
       {
+        ownerModule: "scripts/invitation-email-delivery-rehearsal.ts",
+        category: "rehearsal",
+        packageScripts: ["verify:invitation-email-delivery"]
+      },
+      {
         ownerModule: "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
         category: "rehearsal",
         packageScripts: ["verify:browser-operation-pilot"]

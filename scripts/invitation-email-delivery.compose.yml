@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cubby_invitation_email_acceptance
+      POSTGRES_USER: cubby_invitation_email_acceptance
+      POSTGRES_PASSWORD: ${CUBBY_INVITATION_EMAIL_ACCEPTANCE_PASSWORD:?synthetic password required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cubby_invitation_email_acceptance -d cubby_invitation_email_acceptance"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - invitation_email_acceptance_data:/var/lib/postgresql/data
+
+volumes:
+  invitation_email_acceptance_data:

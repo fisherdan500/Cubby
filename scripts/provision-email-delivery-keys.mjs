@@ -32,6 +32,9 @@ try {
     const referenced = await tx.$queryRaw`
       SELECT DISTINCT "keyVersion" FROM "EmailChangeDelivery"
       WHERE "state" IN ('queued','dispatching','retryable_failed')
+      UNION
+      SELECT DISTINCT "keyVersion" FROM "InvitationEmailDelivery"
+      WHERE "state" IN ('queued','dispatching','retryable_failed')
     `;
     for (const row of referenced) {
       const configured = entries.find(({ keyVersion }) => keyVersion === row.keyVersion);

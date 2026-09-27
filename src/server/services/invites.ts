@@ -21,6 +21,7 @@ import {
   issueHouseholdBrowserOperation
 } from "@/server/services/browser-operations";
 import { PLATFORM_SIGNUP_POLICY_LOCK_ID } from "@/server/services/platform-constants";
+import { invitationEmailAvailable } from "@/server/services/invitation-email";
 
 export function hashInviteToken(token: string) {
   return `sha256:${createHash("sha256").update(token).digest("hex")}`;
@@ -618,11 +619,25 @@ export async function listMembersAndInvites() {
       }
     }
   });
+  // Only these delivery columns are readable by the runtime role; the encrypted payload is not.
+  const deliveries = household.invites.length ? await prisma.invitationEmailDelivery.findMany({
+    where: { householdId: ctx.householdId, inviteId: { in: household.invites.map((invite) => invite.id) } },
+    select: { inviteId: true, state: true }
+  }) : [];
+  const emailStatus = new Map(deliveries.map((delivery) => [delivery.inviteId, invitationEmailStatus(delivery.state)]));
   return {
     ...household,
+    invites: household.invites.map((invite) => ({ ...invite, emailStatus: emailStatus.get(invite.id) ?? "not_sent" as const })),
+    emailAvailable: invitationEmailAvailable(),
     viewerRole: ctx.role,
     viewerMemberId: ctx.memberId
   };
+}
+
+function invitationEmailStatus(state: string) {
+  if (state === "accepted") return "sent" as const;
+  if (state === "permanent_failed") return "failed" as const;
+  return "queued" as const;
 }
 
 type MemberBrowserAction = "restore" | "remove" | "role.update" | "suspend";

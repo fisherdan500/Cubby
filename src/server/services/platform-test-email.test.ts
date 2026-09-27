@@ -14,6 +14,7 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 import { classifySmtpFailure, sendPlatformTestEmail } from "@/server/services/platform-test-email";
+import { createSmtpEmailDeliveryAdapter } from "@/server/services/smtp-email-delivery";
 
 function adapterSending(send: (payload: { recipient: string; subject: string; text: string; messageId: string }) => Promise<unknown>) {
   return () => ({ send: vi.fn(send) });
@@ -32,6 +33,21 @@ beforeEach(() => {
 });
 
 describe("sendPlatformTestEmail", () => {
+  it.each([
+    [{ code: "EAUTH", responseCode: 535 }, "authentication", 535],
+    [{ code: "EAUTH" }, "authentication", null],
+    [{ code: "ETIMEDOUT" }, "connection", null],
+    [{ code: "ECONNECTION" }, "connection", null],
+    [{ code: "EENVELOPE", responseCode: 550 }, "rejected", 550],
+    [{ code: "EAUTH", responseCode: 454 }, "temporary", 454]
+  ] as const)("keeps owner diagnostics through the real adapter for %j", async (shape, reason, responseCode) => {
+    const sendMail = vi.fn().mockRejectedValue(Object.assign(new Error("private-provider-detail"), shape));
+    const result = await sendPlatformTestEmail(() => createSmtpEmailDeliveryAdapter({ SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "synthetic-user", SMTP_PASSWORD: "synthetic-password", EMAIL_FROM: "Cubby <noreply@example.invalid>" }, { createTransport: vi.fn(() => ({ sendMail })) as never }));
+    expect(result).toEqual({ status: "failed", reason, responseCode, recipient: "owner@example.test" });
+    expect(JSON.stringify(result)).not.toContain("private-provider-detail");
+    expect(mocks.writePlatformAudit).toHaveBeenCalledWith(expect.objectContaining({ source: `email_test_failed_${reason}` }), { tx: true });
+  });
+
   it("claims before transport construction and holds through settlement, then waits 60 seconds", async () => {
     let settle!: () => void;
     const send = vi.fn(async () => {}).mockImplementationOnce(() => new Promise<void>((resolve) => { settle = resolve; }));

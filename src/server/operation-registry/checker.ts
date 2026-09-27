@@ -310,6 +310,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/server/integrity-scheduler.operation.ts",
   "src/server/sprout-source-retention-scheduler.operation.ts",
   "scripts/activity-update-safety-rehearsal.operation.ts",
+  "scripts/invitation-email-delivery-rehearsal.operation.ts",
   "scripts/backup-recovery-rehearsal.operation.ts",
   "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
   "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts",

@@ -8,6 +8,8 @@ import { invitationFingerprint, prepareRecoveryVerifierBatch } from "@/server/se
 import { getInvitationServices } from "@/server/services/invitation-service";
 import { issueFreshAuthGrantForCurrentPassword } from "@/server/services/global-security";
 import { assertInvitationSetupCorridorAccess, classifyInvitationSetupCorridor, type InvitationSetupCorridorOwner } from "@/server/services/invitation-setup-corridor";
+import { queueManualInvitationEmail } from "@/server/services/invitation-email-queue";
+import { singleMailbox } from "@/lib/validation/email";
 
 export const INVITATION_CLAIM_COOKIE = "cubby_invitation_claim";
 // The claim reference is deliberately HttpOnly and never exposes an invitation token.
@@ -231,6 +233,18 @@ function safeReservation(value: unknown) {
   };
 }
 
+/**
+ * Adds the issuer-requested email outcome to a manual create/replace receipt. Only a fresh receipt carries the
+ * display-once token needed to email it; a replayed receipt reports `not_queued` so the issuer can re-send.
+ */
+async function withInvitationEmail(receipt: unknown, input: Json, email: Omit<Parameters<typeof queueManualInvitationEmail>[0], "inviteToken">) {
+  if (input.sendEmail !== true || !receipt || typeof receipt !== "object" || Array.isArray(receipt)) return receipt;
+  const submitted = receipt as Json;
+  if (submitted.status !== "created" && submitted.status !== "replaced" && submitted.status !== "completed") return receipt;
+  const inviteToken = submitted.status === "completed" ? null : submitted.inviteToken;
+  return { ...submitted, email: typeof inviteToken === "string" ? await queueManualInvitationEmail({ ...email, inviteToken }) : "not_queued" };
+}
+
 function errorResponse(error: unknown) {
   if (error instanceof IssuerSignInRequired) return response({ status: "sign_in_required" });
   if (error instanceof Error && error.message === "invitation_request_invalid") return response({ status: "unavailable" });
@@ -344,13 +358,16 @@ export async function handleInvitationRoute(request: Request, route: InvitationR
     const issuer = await issuerRequest(input, ((route === "manual-create" || route === "manual-replace") && input.action === "submit") || route === "revoke" || route === "revoke-all");
     const operationId = uuid(input, "operationId");
     if (route === "manual-create") {
-      if (input.action === "reserve") return response(await services.manualCreate.reserve({ operationId, householdId: issuer.household.householdId, role: text(input, "role", 32), expiresInHours: integer(input, "expiresInHours", 1, 720), recipientEmail: text(input, "recipientEmail", 320), request: issuer.request }));
-      if (input.action === "submit") return response(await services.manualCreate.submit({ operationId, householdId: issuer.household.householdId, request: issuer.request }));
+      if (input.action === "reserve") return response(await services.manualCreate.reserve({ operationId, householdId: issuer.household.householdId, role: text(input, "role", 32), expiresInHours: integer(input, "expiresInHours", 1, 720), recipientEmail: singleMailbox(text(input, "recipientEmail", 320)).toLowerCase(), request: issuer.request }));
+      if (input.action === "submit") return response(await withInvitationEmail(await services.manualCreate.submit({ operationId, householdId: issuer.household.householdId, request: issuer.request }), input, { services, operationId, operationKind: "MANUAL_INVITE_CREATE", target: issuer.household.householdId, householdId: issuer.household.householdId, request: issuer.request }));
       throw new Error("invitation_request_invalid");
     }
     if (route === "manual-replace") {
       if (input.action === "reserve") return response(await services.manualReplace.reserve({ operationId, inviteId: text(input, "inviteId"), expiresInHours: integer(input, "expiresInHours", 1, 720), request: issuer.request }));
-      if (input.action === "submit") return response(await services.manualReplace.submit({ operationId, inviteId: text(input, "inviteId"), request: issuer.request }));
+      if (input.action === "submit") {
+        const inviteId = text(input, "inviteId");
+        return response(await withInvitationEmail(await services.manualReplace.submit({ operationId, inviteId, request: issuer.request }), input, { services, operationId, operationKind: "MANUAL_INVITE_REPLACE", target: inviteId, householdId: issuer.household.householdId, request: issuer.request }));
+      }
       throw new Error("invitation_request_invalid");
     }
     if (route === "manual-status") return response(await services.manualCreate.status({ operationId, householdId: issuer.household.householdId, request: issuer.request }));

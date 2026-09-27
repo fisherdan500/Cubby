@@ -41,6 +41,7 @@ const expectedDirectHouseholdModels = [
   "HouseholdSettings",
   "ImportBatch",
   "ImportedRecord",
+  "InvitationEmailDelivery",
   "InvitationLineage",
   "InvitationOperationBinding",
   "InvitationOperationIdentity",

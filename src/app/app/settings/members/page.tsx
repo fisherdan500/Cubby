@@ -41,8 +41,10 @@ export default async function MembersPage() {
               id: invite.id,
               email: invite.email,
               role: invite.role as "admin" | "parent" | "caretaker" | "read_only",
-              expiresAt: invite.expiresAt.toISOString()
+              expiresAt: invite.expiresAt.toISOString(),
+              emailStatus: invite.emailStatus
             }))}
+            emailAvailable={household.emailAvailable}
             timeZone={env.APP_TIMEZONE}
           />
         </Card>
