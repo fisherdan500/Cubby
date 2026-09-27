@@ -34,6 +34,7 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "script-unit", group: "canonical", script: "test:scripts", what: "the self-contained tests beside the scripts" },
   { id: "integrity-suite", group: "disposable", script: "verify:integrity-suite", what: "every integrity check against real PostgreSQL" },
   { id: "activity-update-safety", group: "disposable", script: "verify:activity-update-safety", what: "activity update reauthorization and replay against real PostgreSQL" },
+  { id: "invitation-email-delivery", group: "disposable", script: "verify:invitation-email-delivery", what: "invitation email queue, grants, sending and cancellation against real PostgreSQL" },
   { id: "browser-operation-pilot", group: "disposable", script: "verify:browser-operation-pilot", what: "browser-operation constraints against real PostgreSQL" },
   { id: "sprout-preview-commit", group: "disposable", script: "verify:sprout-preview-commit", what: "Sprout preview and commit against real PostgreSQL" },
   { id: "platform-first-account", group: "disposable", script: "verify:platform-first-account", what: "first-account setup with the setup code against real PostgreSQL" },

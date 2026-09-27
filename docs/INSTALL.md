@@ -68,6 +68,11 @@ From the repository on the server:
    `/platform/settings`, set household creation to open, create your household and add your baby,
    then set it back to closed (or invitation-only, if you will host other families).
 5. Invite the rest of the family from Settings → Members and access. Sign-up is by invitation only.
+   Cubby shows each new invitation link once for you to copy, and also emails it to the person
+   (untick "Also email this invitation" to share it yourself). The email uses the same mail settings
+   as the test email and links to your address from `--url`; no extra setting is needed. A pending
+   invitation shows whether its email was sent, and **Re-send email** replaces the link and emails
+   the new one, because Cubby never keeps a copy of a link it has shown.
 
 ## 4. Backups
 

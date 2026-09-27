@@ -1772,6 +1772,34 @@ model EmailChangeDelivery {
   @@index([keyVersion])
 }
 
+/// Household invitation email queue; the runtime role may read only id, inviteId and state.
+model InvitationEmailDelivery {
+  id String @id
+  householdId String
+  inviteId String @unique
+  operationId String @db.Uuid
+  recipientDigest Bytes
+  state EmailChangeDeliveryState @default(queued)
+  ciphertext Bytes?
+  iv Bytes?
+  authTag Bytes?
+  aadDigest Bytes?
+  keyVersion Int?
+  attemptCount Int @default(0)
+  leaseOwner String?
+  leaseExpiresAt DateTime?
+  nextAttemptAt DateTime?
+  smtpResponseCode Int?
+  messageIdDigest Bytes?
+  acceptedAt DateTime?
+  lastFailureCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([state, nextAttemptAt])
+  @@index([householdId])
+  @@index([keyVersion])
+}
+
 model EmailChangeIdentityMutation {
   userId String
   operationId String

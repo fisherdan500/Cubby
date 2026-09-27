@@ -84,6 +84,20 @@ describe("invitation services", () => {
     expect(text(maintenance.$queryRaw.mock.calls[0]?.[0])).toContain("compact_invitation_operation_v2");
   });
 
+  it("queues an invitation email through the enqueue procedure with the issuer carrier and only the token hash", async () => {
+    const runtime = { $queryRaw: vi.fn().mockResolvedValue([{ receipt: { status: "queued" } }]) };
+    const signRequest = vi.fn((_input: Record<string, unknown>) => ({ keyVersion: 1, nonce: Buffer.alloc(32), issuedAt: new Date(), mac: Buffer.alloc(32) }));
+    const services = createInvitationServices({ runtime, expiry: runtime, maintenance: runtime, signer: { signRequest } as never });
+    const operationId = "11111111-1111-4111-8111-111111111111";
+    const encrypted = { keyVersion: 1, ciphertext: Buffer.from("opaque"), iv: Buffer.alloc(12), authTag: Buffer.alloc(16), aadDigest: Buffer.alloc(32) };
+    await expect(services.manualEmail.enqueue({ operationId, operationKind: "MANUAL_INVITE_REPLACE", target: "invite-old", tokenHash: "c".repeat(64), delivery: { deliveryId: `ied_${"d".repeat(32)}`, recipientDigest: Buffer.alloc(32, 7), encrypted }, request })).resolves.toEqual({ status: "queued" });
+    const query = runtime.$queryRaw.mock.calls[0]?.[0] as { strings: readonly string[]; values: unknown[] };
+    expect(query.strings.join("?")).toContain("invitation_protocol.enqueue_manual_invitation_email_v1");
+    expect(query.values).toContain("c".repeat(64));
+    expect(signRequest).toHaveBeenCalledWith(expect.objectContaining({ operationId, operationKind: "MANUAL_INVITE_REPLACE", target: "invite-old", purpose: "manual_invite_email", intentFingerprint: request.intentFingerprint }));
+    query.values.forEach((value, index) => { if (typeof value === "number") expect(query.strings[index + 1]).toMatch(/^::integer/); });
+  });
+
   it("does not apply a delayed receipt for another operation", () => {
     expect(invitationResponseForOperation("operation-1", { operationId: "operation-2", status: "completed" })).toBeNull();
     expect(invitationResponseForOperation("operation-1", { operationId: "operation-1", status: "completed" })).toEqual({ operationId: "operation-1", status: "completed" });

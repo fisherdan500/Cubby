@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { invitationFingerprint, invitationOperationId } from "@/components/invitations/invitation-browser";
 import { formatInstantDate } from "@/lib/timezone";
 
-type Invite = { id: string; email: string; role: "admin" | "parent" | "caretaker" | "read_only"; expiresAt: string };
+type EmailStatus = "sent" | "queued" | "failed" | "not_sent";
+type Invite = { id: string; email: string; role: "admin" | "parent" | "caretaker" | "read_only"; expiresAt: string; emailStatus?: EmailStatus };
+const emailStatusLabels: Record<EmailStatus, string> = { sent: "Emailed", queued: "Email queued", failed: "Email failed", not_sent: "Not emailed" };
 type Retained = { operationId: string; openingFingerprint: string; intentFingerprint?: string; inviteId?: string; acknowledgement?: string; kind: "create" | "replace" | "revoke" | "revoke-all" };
 const retainedKey = "cubby:invitation-manual-operation:v1";
 const genericFailure = "We could not confirm that request. Check its status before trying again.";
@@ -30,7 +32,7 @@ function readRetained(): Retained | null {
 function retain(value: Retained | null) { try { if (value) sessionStorage.setItem(retainedKey, JSON.stringify(value)); else sessionStorage.removeItem(retainedKey); } catch { /* Server status remains authoritative. */ } }
 function data(value: unknown) { const body = value as { ok?: boolean; data?: Record<string, unknown> } | null; return body?.ok && body.data ? body.data : null; }
 
-export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, timeZone }: { invites: Invite[]; canInviteAdmin: boolean; isOwner: boolean; timeZone: string }) {
+export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, timeZone, emailAvailable = false }: { invites: Invite[]; canInviteAdmin: boolean; isOwner: boolean; timeZone: string; emailAvailable?: boolean }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [displayOnceUrl, setDisplayOnceUrl] = useState("");
@@ -58,15 +60,17 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     } finally { controllers.current.delete(controller); }
   }
   function saveRetained(next: Retained | null) { retain(next); setRetained(next); }
-  function showDisplayOnce(result: Record<string, unknown>) {
+  function showDisplayOnce(result: Record<string, unknown>, recipient: string) {
     const path = typeof result.displayOnceUrl === "string" ? result.displayOnceUrl : typeof result.acceptUrl === "string" ? result.acceptUrl : typeof result.inviteToken === "string" ? `/invite#c=${encodeURIComponent(result.inviteToken)}` : "";
-    if (!path) { setMessage("The invitation was completed. Its link is not available again; create a replacement only if needed."); return; }
+    const email = result.email === "queued" ? ` It is also being emailed to ${recipient}.` : result.email === "not_queued" ? " The email could not be sent; share the link yourself, or use Re-send email later." : "";
+    if (!path) { setMessage(`The invitation was completed. Its link is not available again; create a replacement only if needed.${email}`); return; }
     setDisplayOnceUrl(path.startsWith("http") ? path : `${window.location.origin}${path}`);
-    setMessage("Copy the invitation link now. It will not be shown again after this response.");
+    setMessage(`Copy the invitation link now. It will not be shown again after this response.${email}`);
   }
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const formElement = event.currentTarget; const form = new FormData(formElement);
     const recipientEmail = String(form.get("recipientEmail") ?? "").trim(); const role = String(form.get("role") ?? "caretaker"); const expiresInHours = Number(form.get("expiresInHours") ?? 168);
+    const emailChoice = emailAvailable ? { sendEmail: form.get("sendEmail") === "on" } : {};
     if (!recipientEmail || !Number.isInteger(expiresInHours)) return;
     setBusy(true); setMessage(""); setDisplayOnceUrl("");
     try {
@@ -78,13 +82,14 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (reserve?.status === "sign_in_required") { setMessage(signInRequired); return; }
       if (reserve?.status !== "prepared") throw new Error("reserve");
       const intentFingerprint = await invitationFingerprint("manual-create-submit", { operationId, recipientEmail, role, expiresInHours });
-      const submit = await request("/api/invitations/manual/create", { action: "submit", operationId, openingFingerprint, intentFingerprint });
+      const submit = await request("/api/invitations/manual/create", { action: "submit", operationId, openingFingerprint, intentFingerprint, ...emailChoice });
       if (submit?.status === "sign_in_required") { saveRetained(null); setMessage(signInNothingChanged); return; }
       if (submit?.status !== "completed" && submit?.status !== "created") throw new Error("submit");
-      saveRetained(null); showDisplayOnce(submit); formElement.reset(); router.refresh();
+      saveRetained(null); showDisplayOnce(submit, recipientEmail); formElement.reset(); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
   }
-  async function replace(inviteId: string, event: MouseEvent<HTMLButtonElement>) {
+  /** Re-sending is a replacement link emailed to the same recipient: the old link cannot be shown or sent again. */
+  async function replace(inviteId: string, recipient: string, event: MouseEvent<HTMLButtonElement>, sendEmail = false) {
     returnFocus.current = event.currentTarget; setBusy(true); setMessage(""); setDisplayOnceUrl("");
     try {
       const operationId = retained?.kind === "replace" ? retained.operationId : invitationOperationId(); const expiresInHours = 168; const openingFingerprint = await invitationFingerprint("manual-replace", { operationId, inviteId, expiresInHours });
@@ -95,10 +100,10 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (reserve?.status === "sign_in_required") { setMessage(signInRequired); return; }
       if (reserve?.status !== "prepared") throw new Error("reserve");
       const intentFingerprint = await invitationFingerprint("manual-replace-submit", { operationId, inviteId, expiresInHours });
-      const submit = await request("/api/invitations/manual/replace", { action: "submit", operationId, inviteId, openingFingerprint, intentFingerprint });
+      const submit = await request("/api/invitations/manual/replace", { action: "submit", operationId, inviteId, openingFingerprint, intentFingerprint, ...(sendEmail ? { sendEmail: true } : {}) });
       if (submit?.status === "sign_in_required") { saveRetained(null); setMessage(signInNothingChanged); return; }
       if (submit?.status !== "completed" && submit?.status !== "replaced") throw new Error("submit");
-      saveRetained(null); showDisplayOnce(submit); router.refresh();
+      saveRetained(null); showDisplayOnce(submit, recipient); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
   }
   async function status() {
@@ -150,11 +155,11 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }
   return <section aria-labelledby="manual-invites-heading" className="space-y-4"><div><h2 id="manual-invites-heading" className="text-lg font-bold">Invite member</h2><p className="text-sm text-muted-foreground">Create a household invitation. The link is displayed once, only after completion.</p></div>
-    <form onSubmit={(event) => void create(event)} className="space-y-3"><label className="block text-sm font-semibold">Recipient email<Input name="recipientEmail" type="email" autoComplete="email" required /></label><label className="block text-sm font-semibold">Access level<select name="role" defaultValue="caretaker" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3 py-2 text-sm"><option value="caretaker">Caretaker</option><option value="parent">Parent</option><option value="read_only">Read only</option>{canInviteAdmin ? <option value="admin">Admin</option> : null}</select></label><label className="block text-sm font-semibold">Expires in<select name="expiresInHours" defaultValue="168" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3 py-2 text-sm"><option value="1">1 hour</option><option value="24">1 day</option><option value="168">7 days</option></select></label><Button type="submit" disabled={busy}>{busy ? "Working…" : "Create invitation"}</Button></form>
+    <form onSubmit={(event) => void create(event)} className="space-y-3"><label className="block text-sm font-semibold">Recipient email<Input name="recipientEmail" type="email" autoComplete="email" required /></label><label className="block text-sm font-semibold">Access level<select name="role" defaultValue="caretaker" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3 py-2 text-sm"><option value="caretaker">Caretaker</option><option value="parent">Parent</option><option value="read_only">Read only</option>{canInviteAdmin ? <option value="admin">Admin</option> : null}</select></label><label className="block text-sm font-semibold">Expires in<select name="expiresInHours" defaultValue="168" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3 py-2 text-sm"><option value="1">1 hour</option><option value="24">1 day</option><option value="168">7 days</option></select></label>{emailAvailable ? <label className="flex min-h-11 items-center gap-2 text-sm font-semibold"><input type="checkbox" name="sendEmail" defaultChecked className="h-5 w-5 accent-primary" />Also email this invitation</label> : null}<Button type="submit" disabled={busy}>{busy ? "Working…" : "Create invitation"}</Button></form>
     {message ? <p ref={errorSummary} role="alert" tabIndex={-1} className="text-sm text-muted-foreground">{message}</p> : null}
     {retained ? <div className="flex flex-wrap gap-2 rounded-lg border border-border p-3"><p className="w-full text-sm text-muted-foreground">A prepared invitation request is available for this browser tab.</p><Button type="button" variant="secondary" onClick={() => void status()} disabled={busy}>Check request status</Button><Button type="button" variant="ghost" onClick={() => void abandon()} disabled={busy}>Abandon request</Button></div> : null}
     {displayOnceUrl ? <div ref={displayOnceRegion} role="region" aria-label="Display-once invitation link" aria-live="off" tabIndex={-1} className="rounded-lg border border-border bg-muted p-3"><p className="font-semibold">Copy invitation link now</p><p className="mt-1 break-all text-sm text-muted-foreground">{displayOnceUrl}</p><Button type="button" variant="secondary" className="mt-3" onClick={() => void navigator.clipboard?.writeText(displayOnceUrl)}>Copy invitation link</Button><p className="mt-2 text-xs text-muted-foreground">This link is not retained in status or after remounting this screen.</p></div> : null}
-    <div className="space-y-2 border-t border-border pt-4"><h3 className="font-bold">Pending invitations</h3>{invites.length === 0 ? <p className="text-sm text-muted-foreground">No pending invitations.</p> : invites.map((invite) => <div key={invite.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"><div className="min-w-0"><p className="truncate font-semibold">{invite.email}</p><p className="text-sm text-muted-foreground">{invite.role} · expires {formatInstantDate(invite.expiresAt, timeZone)}</p></div><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={(event) => void replace(invite.id, event)} disabled={busy}>Replace link</Button><Button type="button" variant="danger" onClick={(event) => void revoke(invite.id, event)} disabled={busy}>Revoke</Button></div></div>)}</div>
+    <div className="space-y-2 border-t border-border pt-4"><h3 className="font-bold">Pending invitations</h3>{invites.length === 0 ? <p className="text-sm text-muted-foreground">No pending invitations.</p> : invites.map((invite) => <div key={invite.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"><div className="min-w-0"><p className="truncate font-semibold">{invite.email}</p><p className="text-sm text-muted-foreground">{invite.role} · expires {formatInstantDate(invite.expiresAt, timeZone)}{emailAvailable || (invite.emailStatus && invite.emailStatus !== "not_sent") ? ` · ${emailStatusLabels[invite.emailStatus ?? "not_sent"]}` : ""}</p></div><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={(event) => void replace(invite.id, invite.email, event)} disabled={busy}>Replace link</Button>{emailAvailable ? <Button type="button" variant="secondary" onClick={(event) => void replace(invite.id, invite.email, event, true)} disabled={busy}>Re-send email</Button> : null}<Button type="button" variant="danger" onClick={(event) => void revoke(invite.id, event)} disabled={busy}>Revoke</Button></div></div>)}</div>
     {isOwner && invites.length > 0 ? <form onSubmit={(event) => void revokeAll(event)} className="space-y-3 rounded-lg border border-danger/40 bg-danger/5 p-3"><h3 className="font-bold text-danger">Revoke every pending invitation</h3><label className="block text-sm font-semibold">Type <span className="font-mono">I_REVOKE_ALL_PENDING_INVITATIONS</span><Input name="acknowledgement" autoComplete="off" required /></label><Button type="submit" variant="danger" disabled={busy}>Revoke all pending invitations</Button></form> : null}
   </section>;
 }
