@@ -58,6 +58,10 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
     } finally { controllers.current.delete(controller); }
   }
   function saveRetained(next: Retained | null) { retain(next); setRetained(next); }
+  function mutationSignInRequired(retried: boolean) {
+    if (!retried) saveRetained(null);
+    setMessage(retried ? `${signInRequired} The earlier request may have completed; check its status before starting another request.` : signInNothingChanged);
+  }
   function showDisplayOnce(result: Record<string, unknown>) {
     const path = typeof result.displayOnceUrl === "string" ? result.displayOnceUrl : typeof result.acceptUrl === "string" ? result.acceptUrl : typeof result.inviteToken === "string" ? `/invite#c=${encodeURIComponent(result.inviteToken)}` : "";
     if (!path) { setMessage("The invitation was completed. Its link is not available again; create a replacement only if needed."); return; }
@@ -79,7 +83,7 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (reserve?.status !== "prepared") throw new Error("reserve");
       const intentFingerprint = await invitationFingerprint("manual-create-submit", { operationId, recipientEmail, role, expiresInHours });
       const submit = await request("/api/invitations/manual/create", { action: "submit", operationId, openingFingerprint, intentFingerprint });
-      if (submit?.status === "sign_in_required") { saveRetained(null); setMessage(signInNothingChanged); return; }
+      if (submit?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "create"); return; }
       if (submit?.status !== "completed" && submit?.status !== "created") throw new Error("submit");
       saveRetained(null); showDisplayOnce(submit); formElement.reset(); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
@@ -96,7 +100,7 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (reserve?.status !== "prepared") throw new Error("reserve");
       const intentFingerprint = await invitationFingerprint("manual-replace-submit", { operationId, inviteId, expiresInHours });
       const submit = await request("/api/invitations/manual/replace", { action: "submit", operationId, inviteId, openingFingerprint, intentFingerprint });
-      if (submit?.status === "sign_in_required") { saveRetained(null); setMessage(signInNothingChanged); return; }
+      if (submit?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "replace"); return; }
       if (submit?.status !== "completed" && submit?.status !== "replaced") throw new Error("submit");
       saveRetained(null); showDisplayOnce(submit); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
@@ -132,7 +136,7 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (retained?.kind === "revoke" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint || retained.inviteId !== inviteId)) { setMessage("This differs from the retained revocation request. Check its status before starting a new request."); return; }
       saveRetained({ operationId, openingFingerprint, intentFingerprint, inviteId, kind: "revoke" });
       const result = await request("/api/invitations/revoke", { inviteId, operationId, openingFingerprint, intentFingerprint });
-      if (result?.status === "sign_in_required") { saveRetained(null); setMessage(signInNothingChanged); return; }
+      if (result?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "revoke"); return; }
       if (result?.status !== "revoked") throw new Error("revoke"); saveRetained(null); setMessage("Invitation revoked."); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }
@@ -145,7 +149,7 @@ export function ManualInvitationManager({ invites, canInviteAdmin, isOwner, time
       if (retained?.kind === "revoke-all" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint || retained.acknowledgement !== acknowledgement)) { setMessage("This differs from the retained revocation request. Check its status before starting a new request."); return; }
       saveRetained({ operationId, openingFingerprint, intentFingerprint, acknowledgement, kind: "revoke-all" });
       const result = await request("/api/invitations/revoke-all", { operationId, acknowledgement, openingFingerprint, intentFingerprint });
-      if (result?.status === "sign_in_required") { saveRetained(null); setMessage(signInNothingChanged); return; }
+      if (result?.status === "sign_in_required") { mutationSignInRequired(retained?.kind === "revoke-all"); return; }
       if (result?.status !== "revoked") throw new Error("revoke-all"); saveRetained(null); setMessage("Pending invitations revoked."); router.refresh();
     } catch { setMessage(genericFailure); } finally { setBusy(false); }
   }

@@ -2592,17 +2592,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "5edd4ab287eb8b091438cf3c85f5b06cabdd85b0bcce112d9fb03a30109fc7f7",
+          "digest": "1aac72461a2d0e11fd2c03675e6b6dbfb4e98a2ee1d278d31ad6f06b63ff723f",
           "file": "src/components/invitations/manual-invitation-manager.tsx"
         }
       ],
       "declarationDigest": "ccbf5137d6a4898af04cc7e6464b9c0027ec1102032f83c1728f8226fb10cc58",
-      "fingerprint": "40d40369302c3d342ce185f79d8f06c86331729ed855c352b056ffa0c03c1db9",
+      "fingerprint": "404d25d1444ae3c5042278dea1b7b1d22eea4df38347874b18ddd21c5101289b",
       "id": "fingerprint:client_binding:src/components/invitations/manual-invitation-manager.tsx",
       "ownerId": "client_binding:src/components/invitations/manual-invitation-manager.tsx",
       "ownerModule": "src/components/invitations/manual-invitation-manager.tsx",
       "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts",
-      "sourceDigest": "4029caeec97ff153e57e9a4b3e69a1a564e394dbb00e6051173a28191863f92a",
+      "sourceDigest": "939773b44bf834c243bcfe460b97ee973a9434cf846b70e08e38966e4134391a",
       "status": "declared"
     },
     {
