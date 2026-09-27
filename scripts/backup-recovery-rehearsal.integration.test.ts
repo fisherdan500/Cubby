@@ -27,6 +27,13 @@ vi.mock("@/server/auth/context", () => ({
 }));
 
 vi.mock("@/server/auth/session", () => ({
+  getSession: vi.fn(async () => {
+    if (!auth.context) return null;
+    return {
+      user: { id: auth.context.userId },
+      session: { id: `rehearsal-session:${auth.context.userId}` }
+    };
+  }),
   requireUser: vi.fn(async () => {
     if (!auth.user) throw new Error("rehearsal_user_not_set");
     return auth.user;
