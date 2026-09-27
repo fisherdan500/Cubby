@@ -10,6 +10,8 @@ import { dispatchInvitationEmailDelivery } from "@/server/services/invitation-em
 // Runs only inside `verify:invitation-email-delivery`, against its throwaway PostgreSQL. Every effect goes
 // through the production role that owns it; the owner connection only seeds fixtures and inspects rows.
 const ownerUrl = process.env.DATABASE_URL ?? "";
+const destination = new URL(ownerUrl);
+if (destination.hostname !== "127.0.0.1" || destination.pathname !== "/cubby_invitation_email_acceptance") throw new Error("invitation_email_disposable_database_required");
 const owner = new PrismaClient({ datasourceUrl: ownerUrl });
 const attestationKey = randomBytes(32);
 const emailKey = randomBytes(32);
@@ -31,6 +33,7 @@ const smtp = { send: async (payload: { recipient: string; subject: string; text:
 
 let runtime: PrismaClient; let invitation: PrismaClient; let emailDelivery: PrismaClient;
 let services: ReturnType<typeof createInvitationServices>;
+let signer: ReturnType<typeof createInvitationAttestationSigner>;
 const cipher = createEmailDeliveryCipher(environment);
 const request = (intent: Buffer | null = null, opening = randomBytes(32)) => ({ ordinarySessionId: issuer.sessionId, subjectUserId: issuer.userId, issuerMembershipEpisodeId: issuer.memberId, subjectMembershipEpisodeId: null, openingFingerprint: opening, intentFingerprint: intent });
 const workerToken = () => randomBytes(16).toString("base64url");
@@ -52,6 +55,43 @@ async function drain() {
   for (;;) { const result = await dispatchInvitationEmailDelivery(emailDelivery, workerToken(), { cipher, smtp }); if (result.status === "idle") return results; results.push(result); }
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+const transactionServices = (tx: Prisma.TransactionClient) => createInvitationServices({ runtime: tx, expiry: tx, maintenance: tx, signer });
+const claim = (client: Prisma.TransactionClient, worker: string) => client.$queryRaw<Array<{ id: string; inviteId: string; attemptCount: number }>>(Prisma.sql`SELECT "id","inviteId","attemptCount" FROM "claim_invitation_email_delivery"(${worker})`);
+const backendPid = async (tx: Prisma.TransactionClient) => (await tx.$queryRaw<Array<{ pid: number }>>`SELECT pg_backend_pid() AS pid`)[0]!.pid;
+
+async function waitForBlock(waiter: number, blocker: number) {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const [row] = await owner.$queryRaw<Array<{ blocked: boolean }>>(Prisma.sql`SELECT ${blocker}::integer=ANY(pg_blocking_pids(${waiter}::integer)) AS blocked`);
+    if (row?.blocked) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("invitation_email_expected_lock_wait_missing");
+}
+
+// Accelerate only fixture time, never state/attempt count. The production transition guard deliberately
+// disallows same-state updates; disable only that guard inside a rollback-safe owner transaction.
+async function ageDelivery(inviteId: string, field: "leaseExpiresAt" | "nextAttemptAt") {
+  await owner.$transaction(async (tx) => {
+    await tx.$executeRaw`ALTER TABLE "InvitationEmailDelivery" DISABLE TRIGGER "InvitationEmailDelivery_transition_guard"`;
+    if (field === "leaseExpiresAt") await tx.$executeRaw`UPDATE "InvitationEmailDelivery" SET "leaseExpiresAt"=clock_timestamp()-INTERVAL '1 second' WHERE "inviteId"=${inviteId}`;
+    else await tx.$executeRaw`UPDATE "InvitationEmailDelivery" SET "nextAttemptAt"=clock_timestamp()-INTERVAL '1 second' WHERE "inviteId"=${inviteId}`;
+    await tx.$executeRaw`ALTER TABLE "InvitationEmailDelivery" ENABLE TRIGGER "InvitationEmailDelivery_transition_guard"`;
+  });
+}
+
+async function expectCleared(inviteId: string, failure: string) {
+  const [row] = await owner.$queryRaw<Array<Record<string, unknown>>>(Prisma.sql`SELECT "state"::text AS "state","lastFailureCode","ciphertext","iv","authTag","aadDigest","keyVersion","leaseOwner","leaseExpiresAt","nextAttemptAt" FROM "InvitationEmailDelivery" WHERE "inviteId"=${inviteId}`);
+  expect(row).toEqual({ state: "permanent_failed", lastFailureCode: failure, ciphertext: null, iv: null, authTag: null, aadDigest: null, keyVersion: null, leaseOwner: null, leaseExpiresAt: null, nextAttemptAt: null });
+}
+
 beforeAll(async () => {
   for (const [role, password] of Object.entries(passwords)) await owner.$executeRawUnsafe(`ALTER ROLE ${role} LOGIN PASSWORD '${password}'`);
   await owner.$executeRaw`INSERT INTO "FreshAuthAttestationKey" ("keyVersion","verificationKey","active") VALUES (1, ${attestationKey}, true)`;
@@ -63,13 +103,23 @@ beforeAll(async () => {
   await owner.household.create({ data: { id: issuer.householdId, name: "Acceptance Home", createdByUserId: issuer.userId, createdAt: now, updatedAt: now } });
   await owner.householdMember.create({ data: { id: issuer.memberId, householdId: issuer.householdId, userId: issuer.userId, role: "owner", joinedAt: now, createdAt: now, updatedAt: now } });
   runtime = connect("cubby_runtime"); invitation = connect("cubby_invitation_runtime"); emailDelivery = connect("cubby_email_delivery");
-  const signer = createInvitationAttestationSigner({ CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: `1:${attestationKey.toString("base64url")}`, CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "1" });
+  signer = createInvitationAttestationSigner({ CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: `1:${attestationKey.toString("base64url")}`, CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "1" });
   services = createInvitationServices({ runtime: invitation, expiry: invitation, maintenance: invitation, signer });
 });
 
 afterAll(async () => { await Promise.all(clients.map((client) => client.$disconnect())); });
 
 describe("invitation email delivery against real PostgreSQL and production roles", () => {
+  it("abandons a prepared creation with the exact SQL purpose and creates no invitation", async () => {
+    const operationId = randomUUID(); const opening = randomBytes(32);
+    const recipientEmail = `abandon-${randomUUID()}@acceptance.invalid`;
+    const input = { operationId, householdId: issuer.householdId, request: request(null, opening) };
+    expect(await services.manualCreate.reserve({ ...input, role: "caretaker", expiresInHours: 24, recipientEmail })).toMatchObject({ status: "prepared" });
+    expect(await services.manualCreate.abandon(input)).toMatchObject({ status: "abandoned" });
+    expect(await services.manualCreate.status(input)).toMatchObject({ state: "ABANDONED" });
+    expect(await owner.invite.count({ where: { householdId: issuer.householdId, email: recipientEmail } })).toBe(0);
+  });
+
   it("queues an encrypted invitation email, sends it once, and clears the ciphertext", async () => {
     const created = await createInvitation("first@acceptance.invalid");
     expect(created.email).toBe("queued");
@@ -147,4 +197,125 @@ describe("invitation email delivery against real PostgreSQL and production roles
     await owner.$executeRaw`DELETE FROM "Invite" WHERE "id"=${invite.id}`;
     expect(await deliveryFor(invite.id)).toEqual([]);
   });
+
+  it("allows a claimed in-flight delivery to finish while revoke waits on its row", async () => {
+    const created = await createInvitation("claim-first@acceptance.invalid");
+    const invite = await inviteByToken(created.token); const worker = workerToken();
+    const ready = deferred<{ pid: number; deliveryId: string }>(); const release = deferred<void>();
+    const waiterReady = deferred<number>();
+    const holder = emailDelivery.$transaction(async (tx) => {
+      const pid = await backendPid(tx); const rows = await claim(tx, worker);
+      expect(rows).toEqual([expect.objectContaining({ inviteId: invite.id, attemptCount: 1 })]);
+      ready.resolve({ pid, deliveryId: rows[0]!.id }); await release.promise;
+    }, { timeout: 30_000, isolationLevel: "Serializable" }).catch((error) => { ready.reject(error); throw error; });
+    void holder.catch(() => {});
+    let waiter: Promise<unknown> | undefined;
+    try {
+      const held = await ready.promise;
+      waiter = invitation.$transaction(async (tx) => {
+        waiterReady.resolve(await backendPid(tx));
+        return transactionServices(tx).revoke({ inviteId: invite.id, operationId: randomUUID(), request: request(randomBytes(32)) });
+      }, { timeout: 30_000 }).catch((error) => { waiterReady.reject(error); throw error; });
+      void waiter.catch(() => {});
+      await waitForBlock(await waiterReady.promise, held.pid);
+      release.resolve(); await holder; expect(await waiter).toMatchObject({ status: "revoked" });
+      expect((await inviteByToken(created.token)).status).toBe("revoked");
+      expect((await deliveryFor(invite.id))[0]).toMatchObject({ state: "dispatching" });
+      await emailDelivery.$executeRaw`SELECT "accept_invitation_email_delivery"(${held.deliveryId},${worker},250,${randomBytes(32)})`;
+      expect((await deliveryFor(invite.id))[0]).toEqual({ state: "accepted", lastFailureCode: null, ciphertext: null });
+    } finally { release.resolve(); await Promise.allSettled([holder, ...(waiter ? [waiter] : [])]); }
+  });
+
+  it("skips a delivery locked by revoke and never claims it after revocation commits", async () => {
+    const created = await createInvitation("revoke-first@acceptance.invalid"); const invite = await inviteByToken(created.token);
+    const ready = deferred<void>(); const release = deferred<void>();
+    const holder = invitation.$transaction(async (tx) => {
+      expect(await transactionServices(tx).revoke({ inviteId: invite.id, operationId: randomUUID(), request: request(randomBytes(32)) })).toMatchObject({ status: "revoked" });
+      ready.resolve(); await release.promise;
+    }, { timeout: 30_000 }).catch((error) => { ready.reject(error); throw error; });
+    void holder.catch(() => {});
+    try {
+      await ready.promise;
+      expect(await claim(emailDelivery, workerToken())).toEqual([]);
+      release.resolve(); await holder;
+      await expectCleared(invite.id, "cancelled");
+      expect(await claim(emailDelivery, workerToken())).toEqual([]);
+    } finally { release.resolve(); await Promise.allSettled([holder]); }
+  });
+
+  it("recovers expired leases, rejects stale receipts, and exhausts exactly eight attempts", async () => {
+    const created = await createInvitation("lease@acceptance.invalid"); const invite = await inviteByToken(created.token);
+    for (let attempt = 1; attempt <= 8; attempt += 1) {
+      const worker = workerToken(); const rows = await claim(emailDelivery, worker);
+      expect(rows).toEqual([expect.objectContaining({ inviteId: invite.id, attemptCount: attempt })]);
+      await ageDelivery(invite.id, "leaseExpiresAt");
+      await expect(emailDelivery.$executeRaw`SELECT "accept_invitation_email_delivery"(${rows[0]!.id},${worker},250,${randomBytes(32)})`).rejects.toThrow(/email_delivery_lease_lost/);
+      expect(await claim(emailDelivery, workerToken())).toEqual([]);
+      if (attempt < 8) {
+        const [row] = await owner.$queryRaw<Array<{ future: boolean; attemptCount: number; state: string }>>`SELECT "nextAttemptAt">clock_timestamp() AS future,"attemptCount","state"::text AS state FROM "InvitationEmailDelivery" WHERE "inviteId"=${invite.id}`;
+        expect(row).toEqual({ future: true, attemptCount: attempt, state: "retryable_failed" });
+        expect((await deliveryFor(invite.id))[0]!.ciphertext).not.toBeNull();
+        await ageDelivery(invite.id, "nextAttemptAt");
+      }
+    }
+    await expectCleared(invite.id, "attempts_exhausted");
+    expect(await claim(emailDelivery, workerToken())).toEqual([]);
+  });
+
+  it.each(["queued", "retryable_failed"] as const)("cancels %s ciphertext when the invitation expires before claim", async (state) => {
+    const created = await createInvitation(`${state}@acceptance.invalid`); const invite = await inviteByToken(created.token);
+    if (state === "retryable_failed") {
+      const worker = workerToken(); const [row] = await claim(emailDelivery, worker);
+      await emailDelivery.$executeRaw`SELECT "fail_invitation_email_delivery"(${row!.id},${worker},'smtp_connection')`;
+    }
+    await owner.invite.update({ where: { id: invite.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    expect(await claim(emailDelivery, workerToken())).toEqual([]);
+    await expectCleared(invite.id, "expired");
+  });
+
+  it.each(["accepted", "expired", "conflicted"] as const)("the database status trigger cancels unsent mail on %s", async (status) => {
+    const created = await createInvitation(`${status}@acceptance.invalid`); const invite = await inviteByToken(created.token);
+    // This is the database cancellation boundary, not browser acceptance or membership enrollment.
+    await owner.invite.update({ where: { id: invite.id }, data: { status } });
+    await expectCleared(invite.id, "cancelled");
+    expect(await claim(emailDelivery, workerToken())).toEqual([]);
+  });
+
+  it("permits removal of an encryption key after ciphertext clearance while terminal rows remain", async () => {
+    const created = await createInvitation("clear-key@acceptance.invalid"); const invite = await inviteByToken(created.token);
+    await expect(owner.$executeRaw`DELETE FROM "EmailDeliveryEncryptionKey" WHERE "keyVersion"=1`).rejects.toThrow(/email_delivery_key_still_referenced/);
+    await drain();
+    expect((await deliveryFor(invite.id))[0]).toEqual({ state: "accepted", lastFailureCode: null, ciphertext: null });
+    // Preserve the canonical exactly-one-active-key invariant while retiring the cleared old key.
+    await owner.$transaction(async (tx) => {
+      await tx.$executeRaw`UPDATE "EmailDeliveryEncryptionKey" SET "activeWrite"=false,"retiredAt"=clock_timestamp() WHERE "keyVersion"=1`;
+      await tx.$executeRaw`INSERT INTO "EmailDeliveryEncryptionKey" ("keyVersion","keyDigest","activeWrite") VALUES (2,${randomBytes(32)},true)`;
+    });
+    expect(await owner.$executeRaw`DELETE FROM "EmailDeliveryEncryptionKey" WHERE "keyVersion"=1`).toBe(1);
+    expect(await owner.$queryRaw`SELECT "keyVersion" FROM "EmailDeliveryEncryptionKey" WHERE "keyVersion"=1`).toEqual([]);
+    expect(await deliveryFor(invite.id)).toHaveLength(1);
+  });
+
+  it("preserves the existing fail-closed deletion boundary for households with protocol tombstones", async () => {
+    const [delivery] = await owner.$queryRaw<Array<{ inviteId: string }>>`SELECT "inviteId" FROM "InvitationEmailDelivery" WHERE "householdId"=${issuer.householdId} AND "state"='accepted' LIMIT 1`;
+    expect(delivery).toBeDefined();
+    await expect(owner.household.delete({ where: { id: issuer.householdId } })).rejects.toThrow(/invitation_tombstone_immutable/);
+    expect(await deliveryFor(delivery!.inviteId)).toHaveLength(1);
+    expect(await owner.household.count({ where: { id: issuer.householdId } })).toBe(1);
+  });
+
+  it("cascades the queue household FK in isolation without enabling protocol household deletion", async () => {
+    // Exercise this queue's FK using a minimal owner-seeded relation fixture with no protocol tombstone.
+    // The preceding test separately requires full protocol household deletion to remain forbidden.
+    const otherId = `iem_other_${randomUUID()}`;
+    await owner.household.create({ data: { id: otherId, name: "Other synthetic home", createdByUserId: issuer.userId } });
+    const invite = await owner.invite.create({ data: { householdId: otherId, invitedByUserId: issuer.userId, email: "cascade@acceptance.invalid", role: "caretaker", tokenHash: tokenHash(randomUUID()), expiresAt: new Date(Date.now() + 3600_000) } });
+    await owner.invitationEmailDelivery.create({ data: { id: `ied_${randomBytes(16).toString("hex")}`, householdId: otherId, inviteId: invite.id, operationId: randomUUID(), recipientDigest: createHash("sha256").update(invite.email).digest(), ciphertext: randomBytes(32), iv: randomBytes(12), authTag: randomBytes(16), aadDigest: randomBytes(32), keyVersion: 2 } });
+    expect(await deliveryFor(invite.id)).toHaveLength(1);
+    await owner.household.delete({ where: { id: otherId } });
+    expect(await deliveryFor(invite.id)).toEqual([]);
+    expect(await owner.invite.count({ where: { householdId: otherId } })).toBe(0);
+    expect(await owner.household.count({ where: { id: issuer.householdId } })).toBe(1);
+  });
+
 });
