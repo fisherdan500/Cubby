@@ -31,6 +31,7 @@ type ActivityOperationStatus = "open" | "prepared" | "pending" | "completed" | "
 type Partition = { version: 1; scope: "household"; partition: string };
 type Initial = Record<string, string | number | boolean | null | undefined>;
 type Slots = {
+  babyId: string;
   initial?: Initial;
   editing: boolean;
   lastFeeding?: LastFeeding | null;
@@ -99,6 +100,7 @@ export function ActivityForm({
   const [submitting, setSubmitting] = useState(false);
   const requestedBaby = String(initial?.babyId ?? selectedBabyId ?? "");
   const defaultBaby = babies.some((baby) => baby.id === requestedBaby) ? requestedBaby : String(babies[0]?.id ?? "");
+  const [babyId, setBabyId] = useState(defaultBaby);
   const cancelHref = activityFormCancelHref({ returnTo, babyId: defaultBaby, returnDate, allowActivityDestination });
   const timed = timerActivityTypes.includes(type as (typeof timerActivityTypes)[number]);
   const savedStart = textValue(initial?.startedAt);
@@ -241,10 +243,10 @@ export function ActivityForm({
   return (
     <form action={submit} className="space-y-4">
       {activityId && initial?.updatedAt ? <input type="hidden" name="expectedUpdatedAt" value={String(initial.updatedAt)} /> : null}
-      <BabyField babies={babies} defaultBaby={defaultBaby} />
+      <BabyField babies={babies} babyId={babyId} onChange={setBabyId} />
       <TypeFields
         type={type}
-        slots={{ initial, editing: Boolean(initial), lastFeeding, preferences: unitPreferences, medicineNames, supplementNames, when: whenSection, notes }}
+        slots={{ babyId, initial, editing: Boolean(initial), lastFeeding, preferences: unitPreferences, medicineNames, supplementNames, when: whenSection, notes }}
       />
 
       {/* Cancel and Save share the activity page's bar: FIXED just above the phone's bottom navigation, the
@@ -470,8 +472,13 @@ function FeedingFields({ slots }: { slots: Slots }) {
   const { initial } = slots;
   const [unit, setUnit] = useVolumeUnit(slots);
   // A new feed starts as the last one was: its kind, and the last bottle or formula amount.
-  const [start] = useState(() => (slots.editing ? null : feedingFormStart(slots.lastFeeding, unit)));
-  const [mode, setMode] = useState(String(initial?.mode ?? start?.mode ?? "bottle"));
+  const [opening] = useState(() => ({ babyId: slots.babyId, start: slots.editing ? null : feedingFormStart(slots.lastFeeding, unit) }));
+  const start = slots.babyId === opening.babyId ? opening.start : null;
+  // Only automatic values follow the baby. Deliberate input stays in the caregiver's draft.
+  const [chosenMode, setMode] = useState<string | null>(null);
+  const [enteredAmount, setAmount] = useState<string | null>(null);
+  const mode = chosenMode ?? String(initial?.mode ?? start?.mode ?? "bottle");
+  const amount = enteredAmount ?? String(initial?.amount ?? start?.amount ?? "");
   const liquid = mode === "bottle" || mode === "formula";
 
   return (
@@ -480,7 +487,7 @@ function FeedingFields({ slots }: { slots: Slots }) {
       main={
         <>
           <ChoiceField name="mode" label="Kind" options={["breast", "bottle", "formula", "solids"]} value={mode} onChange={setMode} />
-          {liquid || hasActivityDetail(initial, ["amount"]) ? <AmountStepper name="amount" label="Amount" defaultValue={initial?.amount ?? start?.amount} unit={unit} /> : null}
+          {liquid || hasActivityDetail(initial, ["amount"]) ? <AmountStepper name="amount" label="Amount" value={amount} onChange={setAmount} unit={unit} /> : null}
           {mode === "breast" || hasActivityDetail(initial, ["side"]) ? (
             <ChoiceInput name="side" label="Side" options={["left", "right", "both"]} defaultValue={String(initial?.side ?? "")} optional />
           ) : null}
@@ -609,9 +616,8 @@ function ItemDoseFields({
   );
 }
 
-function BabyField({ babies, defaultBaby }: { babies: BabyOption[]; defaultBaby: string }) {
-  const [babyId, setBabyId] = useState(defaultBaby);
-  if (babies.length <= 1) return <input type="hidden" name="babyId" value={defaultBaby} />;
+function BabyField({ babies, babyId, onChange }: { babies: BabyOption[]; babyId: string; onChange: (babyId: string) => void }) {
+  if (babies.length <= 1) return <input type="hidden" name="babyId" value={babyId} />;
   return (
     <ChoiceField
       name="babyId"
@@ -619,7 +625,7 @@ function BabyField({ babies, defaultBaby }: { babies: BabyOption[]; defaultBaby:
       options={babies.map((baby) => baby.id)}
       labels={Object.fromEntries(babies.map((baby) => [baby.id, baby.name]))}
       value={babyId}
-      onChange={setBabyId}
+      onChange={onChange}
     />
   );
 }
@@ -684,9 +690,11 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
 }
 
 /** Oz steps by half an ounce; mL by 5, so both units move by a similar, useful amount. */
-function AmountStepper({ name, label, defaultValue, unit }: { name: string; label: string; defaultValue?: unknown; unit: string }) {
+function AmountStepper({ name, label, defaultValue, unit, value: controlledValue, onChange }: { name: string; label: string; defaultValue?: unknown; unit: string; value?: string; onChange?: (value: string) => void }) {
   const id = useId();
-  const [value, setValue] = useState(defaultValue === null || defaultValue === undefined ? "" : String(defaultValue));
+  const [localValue, setLocalValue] = useState(defaultValue === null || defaultValue === undefined ? "" : String(defaultValue));
+  const value = controlledValue ?? localValue;
+  const setValue = onChange ?? setLocalValue;
   const step = normalizeVolumeUnit(unit) === "mL" ? 5 : 0.5;
   const current = Number.parseFloat(value);
 

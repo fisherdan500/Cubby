@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React, { createElement } from "react";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultUnitPreferences } from "@/domain/unit-preferences";
@@ -52,11 +52,56 @@ describe("a new feed", () => {
   const amount = () => (screen.getByRole("textbox", { name: "Amount" }) as HTMLInputElement).value;
   const chosenKind = () => screen.getAllByRole("radio").find((kind) => kind.getAttribute("aria-checked") === "true" && ["Breast", "Bottle", "Formula", "Solids"].includes(kind.textContent ?? ""))?.textContent;
 
+  it.each([
+    { historicalUnit: null, volume: "mL", expected: "120" },
+    { historicalUnit: "scoops", volume: "oz", expected: "" },
+    { historicalUnit: "scoops", volume: "mL", expected: "" }
+  ])("submits historical $historicalUnit amounts in $volume without relabeling", async ({ historicalUnit, volume, expected }) => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId: "bmo_0123456789abcdefghjkmnpqrs" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed" } }));
+    globalThis.fetch = fetchMock;
+    feedForm({ lastFeeding: { mode: "bottle", amount: "4", unit: historicalUnit }, unitPreferences: { ...defaultUnitPreferences, volume } });
+    const form = screen.getByRole("button", { name: "Log feeding" }).closest("form") as HTMLFormElement;
+    const key = Object.keys(form).find((value) => value.startsWith("__reactProps$"));
+    const props = (form as unknown as Record<string, { action: (data: FormData) => Promise<void> }>)[key!];
+    await act(async () => { await props.action(new FormData(form)); });
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toMatchObject({ babyId: "baby-1", amount: expected, unit: volume });
+  });
+
   it("starts as the last feed was, so the same bottle is not typed in every time", () => {
     feedForm({ lastFeeding: { mode: "formula", amount: "4.5", unit: "oz" } });
 
     expect(chosenKind()).toBe("Formula");
     expect(amount()).toBe("4.5");
+  });
+
+  it("clears another baby's automatic kind and amount before submitting for the selected baby", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId: "bmo_0123456789abcdefghjkmnpqrs" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed" } }));
+    globalThis.fetch = fetchMock;
+    feedForm({ babies: [{ id: "baby-1", name: "Avery" }, { id: "baby-2", name: "Blake" }], lastFeeding: { mode: "formula", amount: "4.5", unit: "oz" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Blake" }));
+    const form = screen.getByRole("button", { name: "Log feeding" }).closest("form") as HTMLFormElement;
+    const key = Object.keys(form).find((value) => value.startsWith("__reactProps$"));
+    const props = (form as unknown as Record<string, { action: (data: FormData) => Promise<void> }>)[key!];
+    await act(async () => { await props.action(new FormData(form)); });
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toMatchObject({ babyId: "baby-2", mode: "bottle", amount: "" });
+  });
+
+  it("keeps deliberately entered feeding fields when switching babies, but clears untouched defaults", () => {
+    feedForm({ babies: [{ id: "baby-1", name: "Avery" }, { id: "baby-2", name: "Blake" }], lastFeeding: { mode: "formula", amount: "4.5", unit: "oz" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Amount" }), { target: { value: "6" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Blake" }));
+    expect(amount()).toBe("6");
+    expect(chosenKind()).toBe("Bottle");
+    fireEvent.click(screen.getByRole("radio", { name: "Formula" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Avery" }));
+    expect(amount()).toBe("6");
+    expect(chosenKind()).toBe("Formula");
   });
 
   it("keeps the last bottle's amount ready after a breastfeed, for when a bottle is chosen", async () => {

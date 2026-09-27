@@ -1,6 +1,9 @@
 import { attachmentPolicy } from "@/domain/attachments";
 import { handleError, ok, readBoundedBytes } from "@/server/http";
 import { stageFeedPhoto } from "@/server/services/attachments";
+import { withPhotoUploadAdmission } from "@/server/services/photo-upload";
+
+import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +13,12 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
-    const upload = await readBoundedBytes(request, attachmentPolicy.feed_photo.maxInputBytes, "attachment_too_large");
-    const staged = await stageFeedPhoto(upload);
-    return ok(staged, { status: 201, headers: { "Cache-Control": "no-store" } });
+    requirePermission(await getEffectiveHouseholdContext(), "feed.post");
+    return await withPhotoUploadAdmission(async () => {
+      const upload = await readBoundedBytes(request, attachmentPolicy.feed_photo.maxInputBytes, "attachment_too_large");
+      const staged = await stageFeedPhoto(upload);
+      return ok(staged, { status: 201, headers: { "Cache-Control": "no-store" } });
+    });
   } catch (error) {
     return handleError(error);
   }

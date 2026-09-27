@@ -109,7 +109,7 @@ export async function runSystemBackupAcceptanceRehearsal() {
     run("docker", [...compose, "exec", "-T", "app", "sh", "-c", `mkdir -p "$(dirname '${photoPath}')" && cat > '${photoPath}'`], { cwd: checkout, input: photo });
 
     // The backup, then a copy of it off the server.
-    const backup = run("sh", ["scripts/system-backup.sh"], { cwd: checkout, env: scriptEnv, capture: true });
+    const backup = run("sh", ["scripts/system-backup.sh", "--maintenance"], { cwd: checkout, env: scriptEnv, capture: true });
     if (!/system_backup_created .* households=1 accounts=1 photos=1/.test(backup.stdout)) throw new Error(`system_backup_summary_unexpected:${backup.stdout}`);
     // The run is recorded for the platform page and the owner's backup alerts.
     const recorded = sql(`SELECT status || '|' || households || '|' || accounts || '|' || photos FROM "SystemBackupRun"`);
@@ -123,7 +123,7 @@ export async function runSystemBackupAcceptanceRehearsal() {
     run("docker", [...compose, "exec", "-T", "app", "sh", "-c", "rm -rf /var/lib/cubby/attachments/objects"], { cwd: checkout });
     run("docker", [...compose, "down", "--volumes", "--remove-orphans"], { cwd: checkout });
 
-    const restore = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install"], { cwd: checkout, env: scriptEnv, capture: true });
+    const restore = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install", "--maintenance"], { cwd: checkout, env: scriptEnv, capture: true });
     if (!/system_restore_complete households=1 accounts=1 photos=1/.test(restore.stdout)) {
       throw new Error(`system_restore_summary_unexpected:${restore.stdout}\n${restore.stderr}`);
     }
@@ -146,7 +146,7 @@ export async function runSystemBackupAcceptanceRehearsal() {
     if (owner === "0") throw new Error("system_backup_restored_photo_owned_by_root");
 
     // The install is no longer empty, so a second restore must refuse before changing anything.
-    const again = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install"], { cwd: checkout, env: scriptEnv, capture: true, allowFailure: true });
+    const again = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install", "--maintenance"], { cwd: checkout, env: scriptEnv, capture: true, allowFailure: true });
     if (again.status === 0 || !again.stderr.includes("restore only into a new, empty install")) throw new Error("system_backup_second_restore_not_refused");
 
     process.stdout.write("SYSTEM_BACKUP_ACCEPTANCE_PASS\n");

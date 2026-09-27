@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   tombstoneFindUnique: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn(),
+  writeAudit: vi.fn(),
   recordQualifyingUse: vi.fn()
 }));
 
@@ -50,6 +51,10 @@ import {
   executeBrowserOperation,
   executeHouseholdBrowserOperation
 } from "@/server/services/browser-operations";
+
+vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+
+import { submitFeedPostCreateBrowserOperation } from "./feed-posts";
 
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
 const ctx = {
@@ -155,6 +160,148 @@ beforeEach(() => {
       }
     })
   );
+});
+
+// Synthetic transaction state, not a PostgreSQL/Prisma semantics test. The real
+// wrappers, feed-post callback and staged-photo claim run against this adapter.
+function simulatedEffects(failure: "missing" | "second-claim" | "audit" | "none" = "none", sqlFailure?: string) {
+  const state = { posts: [] as string[], photos: [] as string[], audits: [] as string[], operation: null as Record<string, unknown> | null, binding: "open" };
+  let saved: typeof state | undefined;
+  const baseTransaction = mocks.transaction.getMockImplementation()!;
+  mocks.operationCreate.mockImplementation(async ({ data }) => {
+    state.operation = { ...data, status: "pending", outcomeCode: null, outcomeSnapshot: null };
+    return state.operation;
+  });
+  mocks.operationUpdate.mockImplementation(async ({ data }) => {
+    Object.assign(state.operation!, data);
+    return state.operation;
+  });
+  mocks.bindingUpdate.mockImplementation(async ({ data }) => {
+    state.binding = data.state;
+    return { id: "binding-1", state: data.state };
+  });
+  mocks.writeAudit.mockImplementation(async (_ctx, event) => {
+    state.audits.push(event.action);
+    if (failure === "audit") throw new Error("state_conflict");
+  });
+  mocks.transaction.mockImplementation(async (callback) => {
+    const initial = structuredClone(state);
+    try {
+      return await baseTransaction((tx: Record<string, unknown>) => callback({
+        ...tx,
+        $executeRaw: async (parts: TemplateStringsArray) => {
+          const sql = parts.join("").trim();
+          if (sqlFailure && sql.startsWith(sqlFailure)) throw new Error("sql_failure");
+          if (sql.startsWith("SAVEPOINT ")) saved = structuredClone(state);
+          if (sql.startsWith("ROLLBACK TO SAVEPOINT ")) {
+            if (!saved) throw new Error("missing_savepoint");
+            Object.assign(state, structuredClone(saved));
+          }
+          if (sql.startsWith("RELEASE SAVEPOINT ")) saved = undefined;
+          return 0;
+        },
+        feedPost: { create: async () => { state.posts.push("post-1"); return { id: "post-1" }; } },
+        attachment: {
+          findMany: async () => failure === "missing" ? [] : [{ id: "photo-1" }, { id: "photo-2" }],
+          updateMany: async ({ where }: { where: { id: string } }) => {
+            if (failure === "second-claim" && where.id === "photo-2") return { count: 0 };
+            state.photos.push(where.id);
+            return { count: 1 };
+          }
+        }
+      }));
+    } catch (error) {
+      Object.assign(state, initial);
+      throw error;
+    }
+  });
+  return state;
+}
+
+function photoBinding() {
+  return calendarBinding({}, {
+    operationKey: BrowserOperationKey.feedPostCreate,
+    targetKind: "post", targetId: null, babyId: null,
+    targetSnapshot: { kind: "feed-post-create", schemaVersion: 1 }
+  });
+}
+
+describe("caught mutation rollback", () => {
+  it("retains a successful photo post, both associations and audits", async () => {
+    const state = simulatedEffects();
+    mocks.bindingFindFirst.mockResolvedValue(photoBinding());
+    await expect(submitFeedPostCreateBrowserOperation({ operationId, body: "", attachmentIds: ["photo-1", "photo-2"] })).resolves.toMatchObject({ status: "completed" });
+    expect(state.posts).toEqual(["post-1"]);
+    expect(state.photos).toEqual(["photo-1", "photo-2"]);
+    expect(state.audits).toEqual(["attachment.activate", "feed_post.create"]);
+    expect(state.operation).toMatchObject({ status: "completed" });
+  });
+
+  it.each(["household", "baby"])("propagates savepoint SQL failures for %s instead of committing stale", async (scope) => {
+    for (const command of ["SAVEPOINT ", "ROLLBACK TO SAVEPOINT ", "RELEASE SAVEPOINT "]) {
+      // beforeEach does not run per loop, so restore the base transaction adapter.
+      const original = mocks.transaction.getMockImplementation()!;
+      const state = simulatedEffects("second-claim", command);
+      mocks.bindingFindFirst.mockResolvedValue(scope === "household" ? photoBinding() : calendarBinding({}));
+      const result = scope === "household"
+        ? submitFeedPostCreateBrowserOperation({ operationId, body: "", attachmentIds: ["photo-1", "photo-2"] })
+        : executeBrowserOperation({ ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent: {}, babyId: "baby-1", permission: "activity.create", execute: async () => { state.posts.push("effect"); throw new Error("not_found"); } });
+      await expect(result).rejects.toThrow("sql_failure");
+      expect(state.posts).toEqual([]);
+      expect(state.photos).toEqual([]);
+      expect(state.audits).toEqual([]);
+      expect(state.operation).toBeNull();
+      expect(state.binding).toBe("open");
+      mocks.transaction.mockImplementation(original);
+    }
+  });
+
+  it.each(["unexpected", "invalid-outcome"])("aborts the outer transaction on %s after effects", async (failure) => {
+    const state = simulatedEffects();
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding({}));
+    await expect(executeBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent: {}, babyId: "baby-1", permission: "activity.create",
+      execute: async () => {
+        state.posts.push("effect");
+        if (failure === "unexpected") throw new Error("infrastructure_failure");
+        return { kind: "wrong-outcome" };
+      }
+    })).rejects.toThrow();
+    expect(state.posts).toEqual([]);
+    expect(state.operation).toBeNull();
+    expect(state.binding).toBe("open");
+  });
+
+  it.each(["missing", "second-claim", "audit"] as const)("keeps terminal identity but no photo-post effects after %s failure", async (failure) => {
+    const state = simulatedEffects(failure);
+    mocks.bindingFindFirst.mockResolvedValue(photoBinding());
+    const result = await submitFeedPostCreateBrowserOperation({ operationId, body: "", attachmentIds: ["photo-1", "photo-2"] });
+    expect(result).toMatchObject({ status: "stale", operationId, code: failure === "audit" ? "state_conflict" : "stale_target" });
+    expect(state.posts).toEqual([]);
+    expect(state.photos).toEqual([]);
+    expect(state.audits).toEqual([]);
+    expect(state.binding).toBe("terminal");
+    expect(state.operation).toMatchObject({ operationId, status: "stale", intentFingerprint: expect.any(String) });
+    expect(mocks.recordQualifyingUse).not.toHaveBeenCalled();
+    mocks.bindingFindFirst.mockResolvedValue({ ...photoBinding(), state: "terminal", operation: state.operation });
+    await expect(submitFeedPostCreateBrowserOperation({ operationId, body: "", attachmentIds: ["photo-1", "photo-2"] })).resolves.toEqual(result);
+    expect(state.posts).toEqual([]);
+  });
+
+  it.each([false, true])("rolls back baby-scoped callback effects with existing pending identity: %s", async (pending) => {
+    const state = simulatedEffects();
+    const intent = { title: "event" };
+    if (pending) state.operation = calendarOperation({}, intent);
+    mocks.bindingFindFirst.mockResolvedValue(calendarBinding({}, pending ? { state: "submitted", operation: state.operation } : {}));
+    await expect(executeBrowserOperation({
+      ctx, operationId, operationKey: BrowserOperationKey.calendarEventCreate, intent, babyId: "baby-1", permission: "activity.create",
+      execute: async () => { state.posts.push("effect"); state.audits.push("audit"); throw new Error("not_found"); }
+    })).resolves.toMatchObject({ status: "stale", operationId, code: "stale_target" });
+    expect(state.posts).toEqual([]);
+    expect(state.audits).toEqual([]);
+    expect(state.binding).toBe("terminal");
+    expect(state.operation).toMatchObject({ operationId, status: "stale" });
+  });
 });
 
 describe("browser operation bindings", () => {

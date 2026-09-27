@@ -12,13 +12,13 @@ import { FeedResponses } from "@/components/feed/feed-responses";
 globalThis.React = React;
 const response = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body }) as Response;
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
-const partition = () => response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } });
+const partition = () => response(200, { ok: true, data: { version: 1, scope: "household", partition: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } });
 
-function operationFetch() {
+function operationFetch(outcome: object = { kind: "feed_comment", code: "created", commentId: "comment-1" }) {
   const fetchMock = vi.fn()
     .mockResolvedValueOnce(partition())
-    .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-    .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+    .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+    .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, ...outcome } } }));
   globalThis.fetch = fetchMock;
   return fetchMock;
 }
@@ -28,7 +28,7 @@ const sent = (fetchMock: ReturnType<typeof vi.fn>) =>
 
 const comment = (overrides: object = {}) => ({
   id: "comment-1", body: "So sweet", authorName: "Alex", createdAt: new Date("2026-09-27T10:00:00Z"),
-  edited: false, canEdit: false, canRemove: false, ...overrides
+  updatedAt: new Date("2026-09-27T10:00:00Z"), edited: false, canEdit: false, canRemove: false, ...overrides
 });
 
 function renderResponses(overrides: object = {}) {
@@ -70,7 +70,7 @@ describe("FeedResponses reactions", () => {
   });
 
   it("turns a reaction on through an operation bound to the post", async () => {
-    const fetchMock = operationFetch();
+    const fetchMock = operationFetch({ kind: "feed_reaction", code: "set", reaction: "celebrate", on: true });
     renderResponses();
     fireEvent.click(screen.getByRole("button", { name: "celebrate" }));
 
@@ -82,7 +82,7 @@ describe("FeedResponses reactions", () => {
   });
 
   it("turns off a reaction this member already chose", async () => {
-    const fetchMock = operationFetch();
+    const fetchMock = operationFetch({ kind: "feed_reaction", code: "set", reaction: "love", on: false });
     renderResponses({ parentKind: "activity", parentId: "activity-1" });
     fireEvent.click(screen.getByRole("button", { name: "love" }));
 
@@ -141,7 +141,7 @@ describe("FeedResponses comments", () => {
   });
 
   it("lets the author edit their comment in place", async () => {
-    const fetchMock = operationFetch();
+    const fetchMock = operationFetch({ kind: "feed_comment", code: "updated", commentId: "comment-1" });
     renderResponses({ comments: [comment({ canEdit: true, canRemove: true })] });
     fireEvent.click(screen.getByRole("button", { name: "Edit comment" }));
     const field = screen.getByLabelText("Edit your comment") as HTMLTextAreaElement;
@@ -151,13 +151,13 @@ describe("FeedResponses comments", () => {
 
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(1));
     expect(sent(fetchMock)).toEqual([
-      ["/api/feed/comments/comment-1?issue=1", "PATCH", {}],
-      ["/api/feed/comments/comment-1", "PATCH", { operationId, body: "So very sweet" }]
+      ["/api/feed/comments/comment-1?issue=1", "PATCH", { expectedUpdatedAt: "2026-09-27T10:00:00.000Z" }],
+      ["/api/feed/comments/comment-1", "PATCH", { operationId, body: "So very sweet", expectedUpdatedAt: "2026-09-27T10:00:00.000Z" }]
     ]);
   });
 
   it("asks before removing a comment", async () => {
-    const fetchMock = operationFetch();
+    const fetchMock = operationFetch({ kind: "feed_comment", code: "deleted", commentId: "comment-1" });
     renderResponses({ comments: [comment({ canRemove: true })] });
     fireEvent.click(screen.getByRole("button", { name: "Remove comment" }));
     expect(fetchMock).not.toHaveBeenCalled();

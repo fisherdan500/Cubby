@@ -48,6 +48,7 @@ vi.mock("@/components/app-shell", () => ({
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
 
 import FeedPage from "@/app/app/moments/page";
+import { parseMomentsCursor } from "@/lib/moments-pagination";
 
 function entry(id: string, occurredAt: string, type: string, detail: Record<string, unknown> = {}) {
   return {
@@ -133,10 +134,10 @@ describe("Feed page", () => {
 
     expect(body.querySelectorAll("article")).toHaveLength(25);
     const older = [...body.querySelectorAll("a")].find((link) => link.textContent === "Older entries");
-    // The next page continues from the last entry shown, so posts are neither skipped nor repeated.
-    // The 25th entry shown (a24) is 24 hours before the first: 15:00 on the 24th.
-    expect(older?.getAttribute("href")).toBe("/app/moments?babyId=baby-1&cursor=a24&before=2026-09-24T15%3A00%3A00.000Z");
-    expect(mocks.listFeedPosts).toHaveBeenCalledWith(expect.objectContaining({ from: new Date("2026-09-24T15:00:00Z"), to: undefined }));
+    const url = new URL(older!.getAttribute("href")!, "https://cubby.invalid");
+    expect(parseMomentsCursor(url.searchParams.get("cursor")!)).toEqual({ at: "2026-09-24T15:00:00.000Z", kind: "activity", id: "a24" });
+    expect(url.searchParams.has("before")).toBe(false);
+    expect(mocks.listFeedPosts).toHaveBeenCalledWith(expect.objectContaining({ page: { take: 26, orderBy: [{ occurredAt: "desc" }, { id: "desc" }] } }));
   });
 
   it("mixes posts among entries by time, each with its author, text, tags and remove where allowed", async () => {

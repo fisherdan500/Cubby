@@ -16,7 +16,8 @@ import {
   type PlannedScheduleItem,
   type PlannedScheduleKind
 } from "@/domain/planned-schedule";
-import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-terminal";
+import { clientOperationResponse, householdPartitionSchema, type OutcomeValidator } from "@/lib/client-operation-response";
+import { z } from "zod";
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 import { printSection } from "@/lib/print-section";
 import {
@@ -28,26 +29,29 @@ import {
 } from "@/lib/schedule-proposal";
 import type { PlannedScheduleView } from "@/server/services/planned-schedule";
 
-type OperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
+const retainedPlanIntents = new Map<string, { operationId: string; intent: string; validOutcome: OutcomeValidator }>();
+function planIntent(babyId: string, revision: number, items: PlannedScheduleItem[]) {
+  return JSON.stringify({ babyId, revision, items: parsePlannedScheduleItems(items) });
+}
+function planOutcomeValidator(babyId: string, revision?: number, itemCount?: number): OutcomeValidator {
+  const schema = z.object({ kind: z.literal("planned_schedule"), code: z.literal("ok"), babyId: z.literal(babyId),
+    revision: z.number().int().positive(), itemCount: z.number().int().nonnegative() }).strict();
+  return (outcome) => {
+    const parsed = schema.safeParse(outcome);
+    return parsed.success && (revision === undefined || parsed.data.revision === revision + 1) &&
+      (itemCount === undefined || parsed.data.itemCount === itemCount);
+  };
+}
 type Partition = { version: 1; scope: "household"; partition: string };
 type Draft = { key: number; kind: PlannedScheduleKind; label: string; mode: "exact" | "window"; at: string; from: string; to: string; note: string };
 
-const STALE_MESSAGE = "Someone changed this plan while you were editing. Reload the page to see their version before saving yours.";
+const STALE_MESSAGE = "Someone changed this plan while you were editing. Cancel or close this draft, then reopen the plan to review their version before saving.";
 
 async function householdPartition(): Promise<Partition> {
   const response = await fetch("/api/browser-operations/partition", { cache: "no-store" });
   const body = await response.json().catch(() => null) as { ok?: boolean; data?: Partition } | null;
-  if (!response.ok || !body?.ok || !body.data || body.data.scope !== "household") throw new Error("operation_partition_unavailable");
-  return body.data;
-}
-
-async function operationResponse(response: Response) {
-  const body = await response.json().catch(() => null) as {
-    ok?: boolean;
-    data?: { status?: OperationStatus; operationId?: string };
-    error?: { code?: string; message?: string };
-  } | null;
-  return { response, body, status: body?.ok ? body.data?.status : undefined };
+  if (!response.ok || body?.ok !== true || !householdPartitionSchema.safeParse(body.data).success) throw new Error("operation_partition_unavailable");
+  return householdPartitionSchema.parse(body.data);
 }
 
 function toDraft(item: PlannedScheduleItem, key: number): Draft {
@@ -88,30 +92,40 @@ function fromDrafts(drafts: Draft[]) {
  * routine that was observed and never mixed with it: this is what is meant to happen, not what did.
  * Saving replaces the whole plan, and only from the version the editor was opened on.
  */
-export function PlannedSchedulePanel({
-  babyName,
-  schedule,
-  routine
-}: {
+type PlannedSchedulePanelProps = {
   babyName: string;
   schedule: PlannedScheduleView;
   /** The observed routine shown beside the plan; when there is one, suggestions can be drawn from it. */
   routine?: ProposalRoutine;
-}) {
+};
+
+export function PlannedSchedulePanel(props: PlannedSchedulePanelProps) {
+  return <BabyPlannedSchedulePanel key={props.schedule.babyId} {...props} />;
+}
+
+function BabyPlannedSchedulePanel({ babyName, schedule, routine }: PlannedSchedulePanelProps) {
   const router = useRouter();
   const nextKey = useRef(0);
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
+  const currentDrafts = useRef(drafts);
+  currentDrafts.current = drafts;
   const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { babyId, items, canEdit, revision } = schedule;
+  const [opening, setOpening] = useState<{ revision: number; items: PlannedScheduleItem[]; routine?: ProposalRoutine } | null>(null);
+  const { babyId, items, canEdit } = schedule;
+  const revision = opening?.revision ?? schedule.revision;
+  const stale = opening !== null && revision !== schedule.revision;
+  const editorError = stale ? STALE_MESSAGE : error;
   const closeEditors = () => {
     setDrafts(null);
     setSuggesting(false);
+    setOpening(null);
   };
 
   function startEditing() {
     setError("");
+    setOpening({ revision: schedule.revision, items, routine });
     setDrafts(items.map((item) => toDraft(item, nextKey.current++)));
   }
 
@@ -121,29 +135,6 @@ export function PlannedSchedulePanel({
 
   function addItem() {
     setDrafts((current) => [...(current ?? []), { key: nextKey.current++, kind: "feeding", label: "", mode: "exact", at: "", from: "", to: "", note: "" }]);
-  }
-
-  async function submitReservation(operationId: string, storageKey: string, planned: PlannedScheduleItem[]) {
-    const result = await operationResponse(await fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ operationId, expectedRevision: revision, items: planned })
-    }));
-    if (isAuthorizedBrowserOperation410(result.response.status, result.body, operationId)) {
-      sessionStorage.removeItem(storageKey);
-      setError("This save expired. Save again to open a new request.");
-    } else if (result.status === "completed") {
-      sessionStorage.removeItem(storageKey);
-      closeEditors();
-      router.refresh();
-    } else if (result.status === "pending") {
-      setError("The save is still in progress. Try again in a moment to check whether it went through.");
-    } else if (result.status === "stale" || result.status === "rejected" || result.body?.error?.code === "stale_revision") {
-      sessionStorage.removeItem(storageKey);
-      setError(STALE_MESSAGE);
-    } else {
-      setError(result.body?.error?.message ?? "Could not save the plan. Try again.");
-    }
   }
 
   async function save() {
@@ -160,57 +151,76 @@ export function PlannedSchedulePanel({
       setError("Something in this plan cannot be saved. Check the names, times and notes.");
       return;
     }
-    await saveItems(planned);
+    await saveItems(planned, () => currentDrafts.current ? fromDrafts(currentDrafts.current) : null);
   }
 
   /** Save a whole plan, only from the revision it was opened on. */
-  async function saveItems(planned: PlannedScheduleItem[]) {
+  async function saveItems(planned: PlannedScheduleItem[], currentItems: () => PlannedScheduleItem[] | null) {
+    if (!opening || stale || !canEdit) return;
+    // Normalize and detach before the first await. The retained ID never owns later edits.
+    planned = parsePlannedScheduleItems(planned);
+    const intent = planIntent(babyId, revision, planned);
+    const validOutcome = planOutcomeValidator(babyId, revision, planned.length);
+    const stillCurrent = () => {
+      try {
+        const current = currentItems();
+        return current !== null && planIntent(babyId, revision, current) === intent;
+      } catch { return false; }
+    };
     setError("");
     setSubmitting(true);
     try {
       const { partition } = await householdPartition();
       const storageKey = await tabScopedBrowserOperationStorageKey(partition, `cubby:planned-schedule-operation:${partition}:${babyId}`);
+      const forget = () => { sessionStorage.removeItem(storageKey); retainedPlanIntents.delete(storageKey); };
+      const complete = (sameIntent: boolean) => {
+        forget();
+        if (sameIntent && stillCurrent()) { closeEditors(); router.refresh(); }
+        else setError("The previous plan was saved. Your current draft was not sent. Review it before saving again.");
+      };
+      const submitReservation = async (operationId: string) => {
+        const result = await clientOperationResponse(await fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule`, {
+          method: "PUT", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ operationId, expectedRevision: revision, items: planned })
+        }), validOutcome, operationId);
+        if (result.status === "completed") complete(true);
+        else if (result.status === "expired" || result.status === "stale" || result.status === "rejected") {
+          forget(); setError(result.status === "expired" ? "This save expired. Review the draft and save again." : STALE_MESSAGE);
+        } else setError("Could not confirm this save. Your draft is still here. Try again to check.");
+      };
       const retained = sessionStorage.getItem(storageKey);
       if (retained) {
-        const reconciled = await operationResponse(await fetch(`/api/browser-operations/${retained}`, { cache: "no-store" }));
-        if (isAuthorizedBrowserOperation410(reconciled.response.status, reconciled.body, retained)) {
-          sessionStorage.removeItem(storageKey);
-        } else if (reconciled.status === "completed") {
-          sessionStorage.removeItem(storageKey);
-          closeEditors();
-          router.refresh();
-          return;
-        } else if (reconciled.status === "prepared") {
-          await submitReservation(retained, storageKey, planned);
-          return;
-        } else if (reconciled.status === "pending") {
-          setError("The last save is still in progress. Try again in a moment.");
-          return;
-        } else {
-          sessionStorage.removeItem(storageKey);
-        }
-      }
-      const issued = await operationResponse(await fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule?issue=1`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ expectedRevision: revision })
-      }));
-      if (issued.body?.error?.code === "stale_revision") {
-        setError(STALE_MESSAGE);
+        const previous = retainedPlanIntents.get(storageKey);
+        const known = previous?.operationId === retained ? previous : undefined;
+        const sameIntent = known?.intent === intent;
+        const reconciled = await clientOperationResponse(await fetch(`/api/browser-operations/${retained}`, { cache: "no-store" }),
+          known?.validOutcome ?? planOutcomeValidator(babyId), retained);
+        if (reconciled.status === "completed") complete(sameIntent);
+        else if (reconciled.status === "prepared") {
+          if (sameIntent) await submitReservation(retained);
+          else setError("The previous plan save is unresolved. Restore its original draft to retry, or wait for its expiry; this draft has not been sent.");
+        } else if (reconciled.status === "expired" || reconciled.status === "stale" || reconciled.status === "rejected") {
+          forget(); setError("The previous save ended. Review your draft before saving again.");
+        } else setError("Could not confirm the last save. Your draft is still here. Try again to check.");
         return;
+      }
+      const issued = await clientOperationResponse(await fetch(`/api/babies/${encodeURIComponent(babyId)}/schedule?issue=1`, {
+        method: "PUT", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ expectedRevision: revision })
+      }), validOutcome);
+      if (issued.response.status === 409 && issued.body?.ok === false && issued.body.error?.code === "stale_revision") {
+        setError(STALE_MESSAGE); return;
       }
       const operationId = issued.body?.data?.operationId;
       if (!operationId || (issued.status !== "open" && issued.status !== "prepared")) {
-        setError(issued.body?.error?.message ?? "Could not start saving the plan. Try again.");
-        return;
+        setError("Could not start saving the plan. Try again."); return;
       }
       sessionStorage.setItem(storageKey, operationId);
-      await submitReservation(operationId, storageKey, planned);
+      retainedPlanIntents.set(storageKey, { operationId, intent, validOutcome });
+      await submitReservation(operationId);
     } catch {
       setError("Could not reach Cubby. Check your connection and try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   return (
@@ -235,7 +245,7 @@ export function PlannedSchedulePanel({
                 </Button>
               ) : null}
               {canEdit && routine?.enoughData ? (
-                <Button type="button" variant="secondary" onClick={() => { setError(""); setSuggesting(true); }}>
+                <Button type="button" variant="secondary" onClick={() => { setError(""); setOpening({ revision: schedule.revision, items, routine }); setSuggesting(true); }}>
                   <Sparkles className="h-4 w-4" aria-hidden="true" />
                   Suggest from routine
                 </Button>
@@ -249,14 +259,15 @@ export function PlannedSchedulePanel({
           ) : null}
         </div>
 
-        {suggesting && routine ? (
+        {suggesting && opening?.routine ? (
           <ScheduleSuggestions
-            routine={routine}
-            items={items}
-            error={error}
+            routine={opening.routine}
+            items={opening.items}
+            error={editorError}
+            saveBlocked={stale || !canEdit}
             submitting={submitting}
-            onSave={(planned) => void saveItems(planned)}
-            onClose={() => { setSuggesting(false); setError(""); }}
+            onSave={(planned, current) => void saveItems(planned, current)}
+            onClose={() => { closeEditors(); setError(""); }}
           />
         ) : drafts ? (
           <div className="space-y-3 print:hidden">
@@ -324,14 +335,14 @@ export function PlannedSchedulePanel({
                 </div>
               </fieldset>
             ))}
-            {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p> : null}
+            {editorError ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{editorError}</p> : null}
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="secondary" onClick={addItem} disabled={drafts.length >= PLANNED_SCHEDULE_MAX_ITEMS}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Add an item
               </Button>
-              <Button type="button" onClick={() => void save()} disabled={submitting}>{submitting ? "Saving..." : "Save plan"}</Button>
-              <Button type="button" variant="ghost" onClick={() => { setDrafts(null); setError(""); }} disabled={submitting}>Cancel</Button>
+              <Button type="button" onClick={() => void save()} disabled={submitting || stale || !canEdit}>{submitting ? "Saving..." : "Save plan"}</Button>
+              <Button type="button" variant="ghost" onClick={() => { closeEditors(); setError(""); }} disabled={submitting}>Cancel</Button>
             </div>
           </div>
         ) : items.length ? (
@@ -387,6 +398,7 @@ function ScheduleSuggestions({
   routine,
   items,
   error,
+  saveBlocked,
   submitting,
   onSave,
   onClose
@@ -394,14 +406,17 @@ function ScheduleSuggestions({
   routine: ProposalRoutine;
   items: PlannedScheduleItem[];
   error: string;
+  saveBlocked: boolean;
   submitting: boolean;
-  onSave: (planned: PlannedScheduleItem[]) => void;
+  onSave: (planned: PlannedScheduleItem[], current: () => PlannedScheduleItem[] | null) => void;
   onClose: () => void;
 }) {
   const [proposal] = useState(() => proposeScheduleFromRoutine(routine, items));
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const [edits, setEdits] = useState<Record<string, EditDraft>>({});
-  const [previewing, setPreviewing] = useState(false);
+  const [outcome, setOutcome] = useState<ReturnType<typeof applyProposalChoices> | null>(null);
+  const currentOutcome = useRef(outcome);
+  currentOutcome.current = outcome;
   const [problem, setProblem] = useState("");
 
   const chosen = (id: string) => choices[id] ?? "undecided";
@@ -424,10 +439,23 @@ function ScheduleSuggestions({
     return result;
   }
 
-  const decided = previewing ? decisions() : null;
-  const outcome = decided ? applyProposalChoices(items, proposal.items, decided) : null;
+  function reviewChanges() {
+    setProblem("");
+    const decided = decisions();
+    if (!decided) return;
+    const additions = proposal.items.filter((item) => item.change.type === "add" && (decided[item.id]?.choice === "accept" || decided[item.id]?.choice === "edit")).length;
+    if (items.length + additions > PLANNED_SCHEDULE_MAX_ITEMS) {
+      setProblem(`A plan can have at most ${PLANNED_SCHEDULE_MAX_ITEMS} items. Reject some additions, or close suggestions and remove items from the plan first.`);
+      return;
+    }
+    try {
+      setOutcome(applyProposalChoices(items, proposal.items, decided));
+    } catch {
+      setProblem("These changes cannot be saved. Check the suggested times and try again.");
+    }
+  }
 
-  if (previewing && outcome) {
+  if (outcome) {
     const { added, changed, rejected, undecided } = outcome.counts;
     return (
       <div className="space-y-3 print:hidden">
@@ -446,8 +474,8 @@ function ScheduleSuggestions({
         </ol>
         {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p> : null}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={() => onSave(outcome.items)} disabled={submitting}>{submitting ? "Saving..." : "Save to plan"}</Button>
-          <Button type="button" variant="ghost" onClick={() => setPreviewing(false)} disabled={submitting}>Back to suggestions</Button>
+          <Button type="button" onClick={() => onSave(outcome.items, () => currentOutcome.current?.items ?? null)} disabled={submitting || saveBlocked}>{submitting ? "Saving..." : "Save to plan"}</Button>
+          <Button type="button" variant="ghost" onClick={() => setOutcome(null)} disabled={submitting}>Back to suggestions</Button>
         </div>
       </div>
     );
@@ -545,8 +573,9 @@ function ScheduleSuggestions({
         </div>
       ) : null}
       {problem ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{problem}</p> : null}
+      {error ? <p role="alert" className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={!anyAccepted} onClick={() => { if (decisions()) setPreviewing(true); }}>Review changes</Button>
+        <Button type="button" disabled={!anyAccepted} onClick={reviewChanges}>Review changes</Button>
         <Button type="button" variant="ghost" onClick={onClose}>Close suggestions</Button>
       </div>
     </div>

@@ -43,6 +43,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "listMixedMoments",
+      target: "src/server/services/moments.ts#listMixedMoments"
+    },
+    {
+      kind: "server_value_import",
       symbol: "requireUserPage",
       target: "src/server/auth/session.ts#requireUserPage"
     }

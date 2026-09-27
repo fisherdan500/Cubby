@@ -4,7 +4,6 @@ import {
   attachmentPolicy,
   attachmentPurgeAfter,
   attachmentTypeEnabled,
-  newAttachmentStorageKey,
   type AttachmentTypeName
 } from "@/domain/attachments";
 import { prisma } from "@/lib/db/prisma";
@@ -19,6 +18,9 @@ import {
   writeAttachmentThumbnail
 } from "@/server/services/attachment-store";
 import { writeAudit } from "@/server/services/audit";
+import { getBrowserOperationContextForHousehold } from "@/server/services/browser-operations";
+import { lockPhotoWriteActor } from "@/server/services/photo-write-actor";
+import { withPhotoWriteOwnership, lockPhotoWriteIntent, transferPhotoWriteIntent, settledPhotoTransaction } from "@/server/services/attachment-write-intents";
 import { makeFeedPhotoThumbnail, processFeedPhoto } from "@/server/services/feed-photo-processing";
 
 /**
@@ -41,7 +43,7 @@ function rejectionReason(error: unknown) {
 
 /** Keep an uploaded photo, re-saved and verified, until a post claims it or it expires unclaimed. */
 export async function stageFeedPhoto(upload: Buffer, options: Options = {}) {
-  const ctx = await getEffectiveHouseholdContext();
+  const ctx = await getBrowserOperationContextForHousehold();
   requirePermission(ctx, "feed.post");
   if (!attachmentTypeEnabled(TYPE, options.enabled)) throw new Error("attachment_type_unavailable");
 
@@ -49,19 +51,26 @@ export async function stageFeedPhoto(upload: Buffer, options: Options = {}) {
   try {
     photo = await processFeedPhoto(upload);
   } catch (error) {
-    await writeAudit(ctx, {
-      action: "attachment.reject",
-      entityType: "attachment",
-      entityId: "upload",
-      after: { type: TYPE, reason: rejectionReason(error) }
+    await prisma.$transaction(async (tx) => {
+      const current = await lockPhotoWriteActor(tx, ctx);
+      requirePermission(current, "feed.post");
+      await writeAudit(current, {
+        action: "attachment.reject",
+        entityType: "attachment",
+        entityId: "upload",
+        after: { type: TYPE, reason: rejectionReason(error) }
+      }, tx);
     });
     throw error;
   }
 
-  const storageKey = newAttachmentStorageKey();
-  await writeAttachmentObject(directory(), storageKey, photo.bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
-  try {
-    return await prisma.$transaction(async (tx) => {
+  return withPhotoWriteOwnership(async (reserve) => {
+    const storageKey = await reserve(ctx, "photo_upload", photo);
+    return await settledPhotoTransaction(async (tx) => {
+      const current = await lockPhotoWriteActor(tx, ctx);
+      requirePermission(current, "feed.post");
+      await lockPhotoWriteIntent(tx, storageKey, current.householdId, photo);
+      await writeAttachmentObject(directory(), storageKey, photo.bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
       const attachment = await tx.attachment.create({
         data: {
           householdId: ctx.householdId,
@@ -76,14 +85,11 @@ export async function stageFeedPhoto(upload: Buffer, options: Options = {}) {
         },
         select: { id: true }
       });
-      await writeAudit(ctx, { action: "attachment.stage", entityType: "attachment", entityId: attachment.id, after: { type: TYPE } }, tx);
+      await writeAudit(current, { action: "attachment.stage", entityType: "attachment", entityId: attachment.id, after: { type: TYPE } }, tx);
+      await transferPhotoWriteIntent(tx, storageKey, current.householdId, photo);
       return { attachmentId: attachment.id, width: photo.width, height: photo.height };
     });
-  } catch (error) {
-    // Nothing refers to these bytes; leave no stray object behind.
-    await removeAttachmentObject(directory(), storageKey).catch(() => undefined);
-    throw error;
-  }
+  });
 }
 
 /**
@@ -179,6 +185,10 @@ export async function openAttachment(id: string, options: Options = {}) {
 
 type ServedAttachment = { id: string; type: AttachmentTypeName; storageKey: string; byteSize: number; sha256: string };
 
+function verifiedByteFailure(error: unknown) {
+  return error instanceof Error && ["attachment_bytes_missing", "attachment_bytes_mismatch"].includes(error.message);
+}
+
 /**
  * The stored photo, checked against its record - or, for a thumbnail, a small copy made from it and
  * kept for next time. Bytes that went missing or changed mark the photo unavailable from now on.
@@ -188,6 +198,7 @@ async function readVerifiedPhoto(ctx: HouseholdContext, attachment: ServedAttach
   try {
     photo = await readAttachmentObject(directory(), attachment.storageKey, { byteSize: attachment.byteSize, sha256: attachment.sha256 });
   } catch (error) {
+    if (!verifiedByteFailure(error)) throw error;
     const reason = error instanceof Error && error.message === "attachment_bytes_mismatch" ? "bytes_mismatch" : "bytes_missing";
     await prisma.$transaction(async (tx) => {
       const marked = await tx.attachment.updateMany({
@@ -236,7 +247,10 @@ export async function restorePostPhotos(tx: Prisma.TransactionClient, ctx: Actor
   let unavailableCount = 0;
   for (const attachment of removed) {
     const intact = await readAttachmentObject(directory(), attachment.storageKey, { byteSize: attachment.byteSize, sha256: attachment.sha256 })
-      .then(() => true, () => false);
+      .then(() => true, (error: unknown) => {
+        if (!verifiedByteFailure(error)) throw error;
+        return false;
+      });
     await tx.attachment.updateMany({
       where: { id: attachment.id, householdId: ctx.householdId, state: "deleted" },
       data: intact

@@ -14,7 +14,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
     const raw = await request.json() as Record<string, unknown>;
     operationId = raw.operationId;
-    const input = { operationId, postId: params.id, body: raw.body };
+    const input = { operationId, postId: params.id, body: raw.body, expectedUpdatedAt: raw.expectedUpdatedAt };
     const issued = await issueFeedPostUpdateBrowserOperation(input);
     if (new URL(request.url).searchParams.get("issue") === "1") {
       return ok(issued, { status: issued.status === "pending" || issued.status === "prepared" ? 202 : issued.status === "expired" ? 410 : 200 });

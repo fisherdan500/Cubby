@@ -11,14 +11,37 @@ import { openZipStore, withZipStoreSync, zipStoreStream, type ZipEntry } from "@
 
 export const BACKUP_JSON_NAME = "backup.json";
 export const MAX_BACKUP_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_BACKUP_ARCHIVE_ENTRIES = 60_001;
 
 type V2Backup = Extract<ParsedBackup, { version: 2 }>["backup"];
 type FeedPhoto = NonNullable<V2Backup["payload"]["feedPhotos"]>[number];
 
+/** Exact size of our STORE encoding, checked before recording/exporting success. */
+export function assertBackupArchiveCapacity(
+  manifestBytes: number,
+  photos: readonly FeedPhoto[],
+  limits = { maxArchiveBytes: MAX_BACKUP_ARCHIVE_BYTES, maxManifestBytes: MAX_BACKUP_BYTES, maxEntries: MAX_BACKUP_ARCHIVE_ENTRIES }
+) {
+  if (manifestBytes > limits.maxManifestBytes) throw new Error("backup_too_large");
+  if (photos.length + 1 > limits.maxEntries) throw new Error("archive_too_large");
+  // End record + local/central headers + each UTF-8 name twice + uncompressed payloads.
+  let bytes = 22 + 30 + 46 + 2 * Buffer.byteLength(BACKUP_JSON_NAME) + manifestBytes;
+  for (const photo of photos) bytes += 30 + 46 + 2 * Buffer.byteLength(feedPhotoArchiveName(photo.id)) + photo.byteSize;
+  if (!Number.isSafeInteger(bytes) || bytes > limits.maxArchiveBytes) throw new Error("archive_too_large");
+  return bytes;
+}
+
+export function serializeBackupManifest(snapshot: V2Backup) {
+  const manifest = Buffer.from(JSON.stringify(snapshot, null, 2), "utf8");
+  assertBackupArchiveCapacity(manifest.length, snapshot.payload.feedPhotos ?? []);
+  return manifest;
+}
+
 /** Stream a backup and its photos; `readPhoto` returns each photo's verified bytes. */
 export function backupArchiveStream(snapshot: V2Backup, readPhoto: (photoId: string, photo: FeedPhoto) => Promise<Buffer>) {
+  const manifest = serializeBackupManifest(snapshot);
   async function* entries(): AsyncGenerator<ZipEntry> {
-    yield { name: BACKUP_JSON_NAME, data: Buffer.from(JSON.stringify(snapshot, null, 2), "utf8") };
+    yield { name: BACKUP_JSON_NAME, data: manifest };
     for (const photo of snapshot.payload.feedPhotos ?? []) {
       yield { name: feedPhotoArchiveName(photo.id), data: await readPhoto(photo.id, photo) };
     }
@@ -77,6 +100,7 @@ export function readBackupArchiveSync(filePath: string) {
     }
     const parsed = parseArchivedBackupJson(json);
     const photos = parsed.backup.payload.feedPhotos ?? [];
+    assertBackupArchiveCapacity(json.length, photos);
     assertArchiveLayout(zip.names(), photos);
     for (const photo of photos) {
       let bytes: Buffer;
@@ -88,14 +112,14 @@ export function readBackupArchiveSync(filePath: string) {
       if (bytes.length !== photo.byteSize || sha256(bytes) !== photo.sha256) throw new Error("backup_photo_mismatch");
     }
     return parsed;
-  }, { maxEntries: 60_001 });
+  }, { maxEntries: MAX_BACKUP_ARCHIVE_ENTRIES, maxTotalBytes: MAX_BACKUP_ARCHIVE_BYTES, maxFileBytes: MAX_BACKUP_ARCHIVE_BYTES });
 }
 
 /** Open an uploaded backup archive. Its layout and backup.json are checked here; photos on demand. */
 export async function openBackupArchive(filePath: string): Promise<OpenedBackupArchive> {
   let zip;
   try {
-    zip = await openZipStore(filePath, { maxEntries: 60_001 });
+    zip = await openZipStore(filePath, { maxEntries: MAX_BACKUP_ARCHIVE_ENTRIES, maxTotalBytes: MAX_BACKUP_ARCHIVE_BYTES, maxFileBytes: MAX_BACKUP_ARCHIVE_BYTES });
   } catch {
     throw new Error("backup_invalid");
   }
@@ -110,6 +134,7 @@ export async function openBackupArchive(filePath: string): Promise<OpenedBackupA
     }
     const parsed = parseArchivedBackupJson(json);
     const photos = parsed.backup.payload.feedPhotos ?? [];
+    assertBackupArchiveCapacity(json.length, photos);
     assertArchiveLayout(names, photos);
     const byId = new Map(photos.map((photo) => [photo.id, photo]));
     const opened = zip;

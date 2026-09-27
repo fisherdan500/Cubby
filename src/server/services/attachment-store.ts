@@ -1,7 +1,8 @@
 import { constants as fsConstants } from "node:fs";
 import { createHash, randomBytes } from "node:crypto";
-import { link, lstat, mkdir, open, opendir, unlink } from "node:fs/promises";
+import { link, lstat, mkdir, open, opendir, rename, unlink } from "node:fs/promises";
 import path from "node:path";
+import { validFeedPhotoThumbnail } from "@/server/services/feed-photo-processing";
 import { attachmentPolicy, isAttachmentStorageKey } from "@/domain/attachments";
 
 /**
@@ -103,7 +104,7 @@ export async function writeAttachmentObject(root: string, key: string, bytes: Bu
     throw new Error("attachment_store_unavailable");
   }
   const finalPath = path.join(directory, key);
-  const tempPath = path.join(directory, `.${key}.${randomBytes(8).toString("hex")}.tmp`);
+  const tempPath = path.join(directory, `.${key}.write-v1.tmp`);
   let file;
   try {
     file = await open(tempPath, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
@@ -143,8 +144,7 @@ export async function readAttachmentObject(root: string, key: string, expected: 
   } catch (error) {
     if (isMissing(error)) throw new Error("attachment_bytes_missing");
     if (error instanceof Error && error.message === "attachment_bytes_mismatch") throw error;
-    if (error instanceof Error && error.message === "attachment_store_unavailable") throw error;
-    throw new Error("attachment_bytes_missing");
+    throw new Error("attachment_store_unavailable");
   } finally {
     await handle?.close().catch(() => undefined);
   }
@@ -161,7 +161,9 @@ export async function removeAttachmentObject(root: string, key: string) {
     throw new Error("attachment_store_unavailable");
   }
   try {
-    await unlink(path.join(directory, key));
+    for (const name of [key, `.${key}.write-v1.tmp`]) {
+      await unlink(path.join(directory, name)).catch((error: unknown) => { if (!isMissing(error)) throw error; });
+    }
     await syncDirectory(directory);
   } catch (error) {
     if (!isMissing(error)) throw new Error("attachment_store_write_failed");
@@ -178,16 +180,23 @@ export async function readAttachmentThumbnail(root: string, key: string): Promis
     if (!before.isFile() || before.isSymbolicLink() || before.size > MAX_THUMBNAIL_BYTES) return null;
     handle = await open(filePath, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
     const stats = await handle.stat();
-    if (stats.dev !== before.dev || stats.ino !== before.ino) return null;
-    return await handle.readFile();
-  } catch {
-    return null;
+    if (stats.dev !== before.dev || stats.ino !== before.ino || stats.size <= 0 || stats.size > MAX_THUMBNAIL_BYTES) return null;
+    const bytes = Buffer.alloc(stats.size);
+    const { bytesRead } = await handle.read(bytes, 0, bytes.length, 0);
+    if (bytesRead !== bytes.length) return null;
+    return await validFeedPhotoThumbnail(bytes) ? bytes : null;
+  } catch (error) {
+    // An unvalidated derivative is a cache miss, never permission to serve its bytes.
+    // The service falls back through the bounded size/digest-verified original read.
+    if (error instanceof Error && ["attachment_upload_busy", "upload_timeout"].includes(error.message)) return null;
+    if (isMissing(error)) return null;
+    throw new Error("attachment_store_unavailable");
   } finally {
     await handle?.close().catch(() => undefined);
   }
 }
 
-/** Keep a thumbnail for `key`. One already there - made by another viewer meanwhile - is left as it is. */
+/** Atomically replace the derivative, including a corrupt prior cache. Originals are never replaced. */
 export async function writeAttachmentThumbnail(root: string, key: string, bytes: Buffer) {
   assertKey(key);
   if (bytes.length === 0 || bytes.length > MAX_THUMBNAIL_BYTES) throw new Error("attachment_store_write_failed");
@@ -205,10 +214,8 @@ export async function writeAttachmentThumbnail(root: string, key: string, bytes:
     await file.sync();
     await file.close();
     file = undefined;
-    await link(tempPath, path.join(directory, key)).catch((error: unknown) => {
-      if (!(error && typeof error === "object" && "code" in error && error.code === "EEXIST")) throw error;
-    });
-    await unlink(tempPath);
+    await rename(tempPath, path.join(directory, key));
+    await syncDirectory(directory);
   } catch {
     await file?.close().catch(() => undefined);
     await unlink(tempPath).catch(() => undefined);

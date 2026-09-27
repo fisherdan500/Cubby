@@ -14,10 +14,12 @@ import { writeAudit } from "@/server/services/audit";
 import { readHouseholdAuditIntegrity } from "@/server/services/audit-checkpoints";
 import { lockActorForWrite, lockBabyForWrite } from "@/server/services/mutation-locks";
 import { backupSummary, createV2Backup, parseBackup, type ParsedBackup } from "@/server/services/backup-format";
-import { newAttachmentStorageKey } from "@/domain/attachments";
+import { getBrowserOperationContextForHousehold, type BrowserOperationContext } from "@/server/services/browser-operations";
+import { lockPhotoWriteActor } from "@/server/services/photo-write-actor";
+import { withPhotoWriteOwnership, settledPhotoTransaction, lockPhotoWriteIntent, transferPhotoWriteIntent } from "@/server/services/attachment-write-intents";
 import { attachmentConfig } from "@/lib/env";
-import { readAttachmentObject, removeAttachmentObject, writeAttachmentObject } from "@/server/services/attachment-store";
-import { backupArchiveStream, openBackupArchive } from "@/server/services/backup-archive";
+import { readAttachmentObject, writeAttachmentObject } from "@/server/services/attachment-store";
+import { backupArchiveStream, openBackupArchive, serializeBackupManifest } from "@/server/services/backup-archive";
 import {
   isLocalBackupFilename,
   readLocalBackup,
@@ -137,6 +139,11 @@ async function isFreshTarget(db: Pick<Prisma.TransactionClient, "$queryRaw">, ct
        (SELECT COUNT(*) FROM "MedicineCatalog" WHERE "householdId" = ${ctx.householdId}) +
        (SELECT COUNT(*) FROM "CalendarEvent" WHERE "householdId" = ${ctx.householdId}) +
        (SELECT COUNT(*) FROM "Reminder" WHERE "householdId" = ${ctx.householdId}) +
+       (SELECT COUNT(*) FROM "FeedPost" WHERE "householdId" = ${ctx.householdId}) +
+       (SELECT COUNT(*) FROM "FeedComment" WHERE "householdId" = ${ctx.householdId}) +
+       (SELECT COUNT(*) FROM "FeedReaction" WHERE "householdId" = ${ctx.householdId}) +
+       (SELECT COUNT(*) FROM "Attachment" WHERE "householdId" = ${ctx.householdId}) +
+       (SELECT COUNT(*) FROM "PlannedSchedule" WHERE "householdId" = ${ctx.householdId}) +
        (SELECT COUNT(*) FROM "Invite" WHERE "householdId" = ${ctx.householdId}) +
        (SELECT COUNT(*) FROM "ApiKey" WHERE "householdId" = ${ctx.householdId}) +
        (SELECT COUNT(*) FROM "WebhookEndpoint" WHERE "householdId" = ${ctx.householdId}) +
@@ -184,7 +191,6 @@ export async function previewBackupArchive(filePath: string) {
 
 export async function exportBackupJson() {
   const { snapshot } = await recordHouseholdExport();
-  refusePhotosWithoutArchive({ version: 2, legacyPartial: false, checksumVerified: true, backup: snapshot });
   return JSON.stringify(snapshot, null, 2);
 }
 
@@ -195,20 +201,33 @@ export type BackupDownload =
 /**
  * The household's backup to download: the same JSON file as always, or - once it has photos - one
  * archive of that JSON and every photo (DEC-PROD-422). Every photo is checked before any of the
- * archive is sent, so a download never ends half-written.
+ * archive is sent. Later storage or connection failures can still interrupt delivery.
  */
 export async function exportBackupForDownload(): Promise<BackupDownload> {
-  const { snapshot, householdId } = await recordHouseholdExport();
+  const { snapshot, readPhoto } = await recordHouseholdExport({ allowPhotos: true });
   const date = new Date().toISOString().slice(0, 10);
-  const photos = snapshot.payload.feedPhotos ?? [];
-  if (photos.length === 0) return { kind: "json", filename: `cubby-backup-${date}.json`, body: JSON.stringify(snapshot, null, 2) };
+  if (!snapshot.payload.feedPhotos?.length) return { kind: "json", filename: `cubby-backup-${date}.json`, body: JSON.stringify(snapshot, null, 2) };
+  return { kind: "archive", filename: `cubby-backup-${date}.zip`, stream: backupArchiveStream(snapshot, (_id, photo) => readPhoto(photo)) };
+}
 
-  const stored = await prisma.attachment.findMany({
-    where: { householdId, id: { in: photos.map((photo) => photo.id) } },
-    select: { id: true, storageKey: true }
-  });
-  const keys = new Map(stored.map((row) => [row.id, row.storageKey]));
-  const read = async (photo: (typeof photos)[number]) => {
+/** `complete` / backup.export record preparation, never confirmed download receipt. */
+async function recordHouseholdExport({ allowPhotos = false } = {}) {
+  const ctx = await getBrowserOperationContextForHousehold();
+  requirePermission(ctx, "backup.manage");
+  const { snapshot, keys } = await prisma.$transaction(
+    async (tx: Prisma.TransactionClient) => {
+      const snapshot = await buildHouseholdV2Snapshot(tx, ctx.householdId);
+      if (!allowPhotos) refusePhotosWithoutArchive({ version: 2, legacyPartial: false, checksumVerified: true, backup: snapshot });
+      const photos = snapshot.payload.feedPhotos ?? [];
+      const stored = photos.length ? await tx.attachment.findMany({
+        where: { householdId: ctx.householdId, id: { in: photos.map((photo) => photo.id) } },
+        select: { id: true, storageKey: true }
+      }) : [];
+      return { snapshot, keys: new Map(stored.map((row) => [row.id, row.storageKey])) };
+    },
+    { isolationLevel: "RepeatableRead" }
+  );
+  const readPhoto = async (photo: NonNullable<typeof snapshot.payload.feedPhotos>[number]) => {
     const key = keys.get(photo.id);
     if (!key) throw new Error("backup_photo_unavailable");
     try {
@@ -217,36 +236,28 @@ export async function exportBackupForDownload(): Promise<BackupDownload> {
       throw new Error("backup_photo_unavailable");
     }
   };
-  for (const photo of photos) await read(photo);
-  return { kind: "archive", filename: `cubby-backup-${date}.zip`, stream: backupArchiveStream(snapshot, (_id, photo) => read(photo)) };
-}
-
-async function recordHouseholdExport() {
-  const ctx = await getEffectiveHouseholdContext();
-  requirePermission(ctx, "backup.manage");
-  const snapshot = await prisma.$transaction(
-    async (tx: Prisma.TransactionClient) => {
-      const snapshot = await buildHouseholdV2Snapshot(tx, ctx.householdId);
-      await tx.backupRecord.create({
-        data: {
-          householdId: ctx.householdId,
-          actorUserId: ctx.userId,
-          kind: "export",
-          status: "complete",
-          itemCount: summarizeBackupItemCount(snapshot),
-          checksum: snapshot.checksum
-        }
-      });
-      await writeAudit(ctx, {
-        action: "backup.export",
-        entityType: "backup",
-        entityId: snapshot.checksum
-      }, tx);
-      return snapshot;
-    },
-    { isolationLevel: "RepeatableRead" }
-  );
-  return { snapshot, householdId: ctx.householdId };
+  // No transaction is held across full photo verification or subsequent archive streaming.
+  for (const photo of snapshot.payload.feedPhotos ?? []) await readPhoto(photo);
+  await prisma.$transaction(async (tx) => {
+    const current = await lockPhotoWriteActor(tx, ctx);
+    requirePermission(current, "backup.manage");
+    await tx.backupRecord.create({
+      data: {
+        householdId: current.householdId,
+        actorUserId: current.userId,
+        kind: "export",
+        status: "complete",
+        itemCount: summarizeBackupItemCount(snapshot),
+        checksum: snapshot.checksum
+      }
+    });
+    await writeAudit(current, {
+      action: "backup.export",
+      entityType: "backup",
+      entityId: snapshot.checksum
+    }, tx);
+  }, { isolationLevel: "Serializable" });
+  return { snapshot, readPhoto };
 }
 
 export async function exportHouseholdBackupJson(householdId: string, exportedAt = new Date().toISOString()) {
@@ -313,22 +324,23 @@ export async function buildHouseholdV2Snapshot(
       },
       orderBy: { createdAt: "asc" }
     }),
-    // Photos shown on the posts this backup carries (DEC-PROD-422). Their bytes travel beside it.
+    // Unresolved photos on carried posts must not disappear from a supposedly complete recovery point.
     tx.attachment.findMany({
       where: {
         householdId,
         type: "feed_photo",
-        state: "available",
+        state: { in: ["available", "unavailable"] },
         post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
       },
-      select: { id: true, postId: true, position: true, width: true, height: true, byteSize: true, sha256: true },
+      select: { id: true, state: true, postId: true, position: true, width: true, height: true, byteSize: true, sha256: true },
       orderBy: [{ postId: "asc" }, { position: "asc" }]
     })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
     throw new Error("backup_active_timer");
   }
-  return createV2Backup({
+  if (feedPhotos.some((photo) => photo.state === "unavailable")) throw new Error("backup_photo_unavailable");
+  const snapshot = createV2Backup({
     household: { name: household.name },
     settings: settings
       ? {
@@ -433,6 +445,9 @@ export async function buildHouseholdV2Snapshot(
         }
       : {})
   }, exportedAt);
+  // Shared by manual and automated exports; never record an unrestorable-size recovery point.
+  serializeBackupManifest(snapshot);
+  return snapshot;
 }
 
 export function summarizeBackupItemCount(snapshot: unknown) {
@@ -498,7 +513,7 @@ function compactDetail(source: Record<string, unknown>, keys: string[]) {
 
 type RestoreConfirmation = { confirmation?: string; previewChecksum?: string };
 
-type RecoveryContext = Awaited<ReturnType<typeof getEffectiveHouseholdContext>>;
+type RecoveryContext = BrowserOperationContext;
 type LockedRecoveryContext = Awaited<ReturnType<typeof lockActorForWrite>>;
 
 /** The one serializable transaction every restore runs in, with its confirmation and target checks. */
@@ -508,9 +523,9 @@ async function runRestoreTransaction<T>(
   work: (lockedCtx: LockedRecoveryContext, tx: Prisma.TransactionClient) => Promise<T>
 ) {
   try {
-    return await prisma.$transaction(
+    return await settledPhotoTransaction(
       async (tx) => {
-        const lockedCtx = await lockActorForWrite(tx, ctx);
+        const lockedCtx = await lockPhotoWriteActor(tx, ctx);
         requirePermission(lockedCtx, "backup.manage");
         const targetHousehold = await tx.household.findUniqueOrThrow({ where: { id: lockedCtx.householdId } });
         if (confirmation.confirmation !== undefined && confirmation.confirmation !== targetHousehold.name) {
@@ -532,7 +547,7 @@ async function runRestoreTransaction<T>(
 }
 
 export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfirmation = {}) {
-  const ctx = await getEffectiveHouseholdContext();
+  const ctx = await getBrowserOperationContextForHousehold();
   requirePermission(ctx, "backup.manage");
   const parsed = parseRecoveryBackup(raw);
   refusePhotosWithoutArchive(parsed);
@@ -550,10 +565,10 @@ export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfi
 /**
  * Restore an uploaded backup archive (DEC-PROD-145): each photo is checked against its listed digest
  * and stored under a new random name before the restore transaction, which then makes the data and
- * its photos visible together. If anything fails, the photos stored for it are removed again.
+ * its photos visible together. Failure leaves durable ownership for conservative cleanup retry.
  */
 export async function restoreBackupArchive(filePath: string, confirmation: RestoreConfirmation = {}) {
-  const ctx = await getEffectiveHouseholdContext();
+  const ctx = await getBrowserOperationContextForHousehold();
   requirePermission(ctx, "backup.manage");
   const archive = await openBackupArchive(filePath);
   try {
@@ -561,20 +576,30 @@ export async function restoreBackupArchive(filePath: string, confirmation: Resto
     // Checked again inside the transaction; this spares storing photos for a restore that cannot happen.
     await assertFreshTarget(prisma, ctx);
     const storedKeys = new Map<string, string>();
-    try {
+    return await withPhotoWriteOwnership(async (reserve) => {
       for (const photo of archive.photos) {
         const bytes = await archive.readPhoto(photo.id);
-        const storageKey = newAttachmentStorageKey();
-        await writeAttachmentObject(attachmentConfig.directory, storageKey, bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
+        const storageKey = await reserve(ctx, "restore_photo", photo);
+        await settledPhotoTransaction(async (tx) => {
+          const current = await lockPhotoWriteActor(tx, ctx);
+          requirePermission(current, "backup.manage");
+          await lockPhotoWriteIntent(tx, storageKey, current.householdId, photo);
+          await writeAttachmentObject(attachmentConfig.directory, storageKey, bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
+        });
         storedKeys.set(photo.id, storageKey);
       }
-      return await runRestoreTransaction(ctx, confirmation, (lockedCtx, tx) => restoreV2InTransaction(archive.parsed, lockedCtx, tx, storedKeys));
-    } catch (error) {
-      for (const storageKey of storedKeys.values()) {
-        await removeAttachmentObject(attachmentConfig.directory, storageKey).catch(() => undefined);
-      }
-      throw error;
-    }
+      return await runRestoreTransaction(ctx, confirmation, async (lockedCtx, tx) => {
+        // Stable lock order before domain effects; reservations are not household data.
+        for (const photo of [...archive.photos].sort((a, b) => storedKeys.get(a.id)!.localeCompare(storedKeys.get(b.id)!))) {
+          const key = storedKeys.get(photo.id)!;
+          await lockPhotoWriteIntent(tx, key, lockedCtx.householdId, photo);
+          await readAttachmentObject(attachmentConfig.directory, key, photo);
+        }
+        const result = await restoreV2InTransaction(archive.parsed, lockedCtx, tx, storedKeys);
+        for (const photo of archive.photos) await transferPhotoWriteIntent(tx, storedKeys.get(photo.id)!, lockedCtx.householdId, photo);
+        return result;
+      });
+    });
   } finally {
     await archive.close();
   }

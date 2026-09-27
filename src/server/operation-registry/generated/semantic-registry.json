@@ -8820,12 +8820,12 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "2ca0212be77029e574908bc0395562f1749e589962cb71c413e0a5ba8df7a15c",
+  "semanticArtifactDigest": "099b4c746c4c3ee1e06fc3364e2abb6baa641747bab089114be9a9f0b71758ab",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "2a1832f0b50a90046ee878a8c2065158e7fb443e66b34661229c54be54839d7b",
+  "semanticCoverageDigest": "90e95cd6a23c26cc973da88144090dbda6a77508929d0bd9e653487d4a36e773",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "9eb606bcb7a53babbcfa0be13cd831b1d6b5a76509c339b99cf2225216a23cbd",
+  "semanticFingerprint": "e74e567621c48806b7d4fc00ae24967fa72dcab78e4bac7f42c07c547bea195b",
   "semanticSidecars": [
     "src/app/api/activities/[id]/route.semantic.ts",
     "src/app/api/activities/route.semantic.ts",

@@ -29,6 +29,49 @@ async function* entries(list: Array<{ name: string; data: Buffer }>) {
 const photo = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 0xff, 0xd9]);
 
 describe("zip store archives", () => {
+  it("enforces the same inclusive physical-file allowance for synchronous and asynchronous readers", async () => {
+    const bytes = await collect(zipStoreStream(entries([{ name: "a", data: photo }])));
+    const file = await tempFile(bytes);
+    const exact = await openZipStore(file, { maxFileBytes: bytes.length });
+    await exact.close();
+    expect(withZipStoreSync(file, (reader) => reader.names(), { maxFileBytes: bytes.length })).toEqual(["a"]);
+    await expect(openZipStore(file, { maxFileBytes: bytes.length - 1 }).then(async (reader) => { await reader.close(); })).rejects.toThrow("archive_invalid");
+    expect(() => withZipStoreSync(file, () => undefined, { maxFileBytes: bytes.length - 1 })).toThrow("archive_invalid");
+  });
+
+  it("rejects nested overlapping entries with valid CRCs before exposing either reader", async () => {
+    const inner = await collect(zipStoreStream(entries([{ name: "b.bin", data: photo }])));
+    const innerDirectoryAt = inner.readUInt32LE(inner.length - 6);
+    const innerLocal = inner.subarray(0, innerDirectoryAt);
+    const outer = await collect(zipStoreStream(entries([{ name: "a.bin", data: innerLocal }])));
+    const outerDirectoryAt = outer.readUInt32LE(outer.length - 6);
+    const nestedDirectory = Buffer.from(inner.subarray(innerDirectoryAt, inner.length - 22));
+    nestedDirectory.writeUInt32LE(30 + Buffer.byteLength("a.bin"), 42);
+    const directory = Buffer.concat([outer.subarray(outerDirectoryAt, outer.length - 22), nestedDirectory]);
+    const end = Buffer.from(outer.subarray(outer.length - 22));
+    end.writeUInt16LE(2, 8);
+    end.writeUInt16LE(2, 10);
+    end.writeUInt32LE(directory.length, 12);
+    const file = await tempFile(Buffer.concat([outer.subarray(0, outerDirectoryAt), directory, end]));
+    await expect(openZipStore(file).then(async (reader) => { await reader.close(); })).rejects.toThrow("archive_invalid");
+    expect(() => withZipStoreSync(file, () => undefined)).toThrow("archive_invalid");
+  });
+
+  it.each([6, 14, 18, 22])("rejects local/central disagreement at header field %s before reading entries", async (offset) => {
+    const bytes = await collect(zipStoreStream(entries([{ name: "a.bin", data: photo }])));
+    bytes[offset] ^= 1;
+    const file = await tempFile(bytes);
+    await expect(openZipStore(file).then(async (reader) => { await reader.close(); })).rejects.toThrow("archive_invalid");
+    expect(() => withZipStoreSync(file, () => undefined)).toThrow("archive_invalid");
+  });
+
+  it("enforces aggregate materialization allowance before either reader exposes entries", async () => {
+    const bytes = await collect(zipStoreStream(entries([{ name: "a", data: Buffer.alloc(3) }, { name: "b", data: Buffer.alloc(3) }])));
+    const file = await tempFile(bytes);
+    await expect(openZipStore(file, { maxTotalBytes: 5 }).then(async (reader) => { await reader.close(); })).rejects.toThrow("archive_invalid");
+    expect(() => withZipStoreSync(file, () => undefined, { maxTotalBytes: 5 })).toThrow("archive_invalid");
+  });
+
   it("writes an archive its own reader and other tools can open", async () => {
     const bytes = await collect(zipStoreStream(entries([
       { name: "backup.json", data: Buffer.from('{"ok":true}') },

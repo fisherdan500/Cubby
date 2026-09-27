@@ -16,18 +16,33 @@ export async function readBoundedJson(request: Request, maxBytes = MAX_BACKUP_BY
   const declaredLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new Error("backup_too_large");
   if (!request.body) throw new Error("backup_invalid_json");
+  if (request.signal.aborted) throw new Error("backup_upload_aborted");
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > maxBytes) {
-      await reader.cancel();
-      throw new Error("backup_too_large");
+  let failure: Error | undefined;
+  let cancellation: Promise<void> | undefined;
+  const stop = (code: string) => {
+    failure ??= new Error(code);
+    cancellation ??= reader.cancel(failure).catch(() => undefined);
+  };
+  const onAbort = () => stop("backup_upload_aborted");
+  request.signal.addEventListener("abort", onAbort, { once: true });
+  const timer = setTimeout(() => stop("backup_upload_timeout"), 120_000);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (failure) throw failure;
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) throw new Error("backup_too_large");
+      chunks.push(value);
     }
-    chunks.push(value);
+  } finally {
+    clearTimeout(timer);
+    request.signal.removeEventListener("abort", onAbort);
+    await (cancellation ?? reader.cancel().catch(() => undefined));
+    reader.releaseLock();
   }
   const bytes = new Uint8Array(total);
   let offset = 0;
@@ -54,18 +69,33 @@ export async function readBoundedBytes(request: Request, maxBytes: number, tooLa
   const declaredLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new Error(tooLargeCode);
   if (!request.body) return Buffer.alloc(0);
+  if (request.signal.aborted) throw new Error("upload_aborted");
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > maxBytes) {
-      await reader.cancel();
-      throw new Error(tooLargeCode);
+  let failure: Error | undefined;
+  let cancellation: Promise<void> | undefined;
+  const stop = (code: string) => {
+    failure ??= new Error(code);
+    cancellation ??= reader.cancel(failure).catch(() => undefined);
+  };
+  const onAbort = () => stop("upload_aborted");
+  request.signal.addEventListener("abort", onAbort, { once: true });
+  const timer = setTimeout(() => stop("upload_timeout"), 120_000);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (failure) throw failure;
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) throw new Error(tooLargeCode);
+      chunks.push(value);
     }
-    chunks.push(value);
+  } finally {
+    clearTimeout(timer);
+    request.signal.removeEventListener("abort", onAbort);
+    await (cancellation ?? reader.cancel().catch(() => undefined));
+    reader.releaseLock();
   }
   return Buffer.concat(chunks, total);
 }
@@ -99,6 +129,9 @@ export function handleError(error: unknown) {
     if (error.message === "stale_revision") return fail("stale_revision", "This item changed before your request completed. Refresh and try again.", 409);
     if (error.message === "idempotency_conflict") return fail("idempotency_conflict", "This submission key belongs to a different activity request.", 409);
     if (error.message === "baby_has_active_timer") return fail("baby_has_active_timer", "Stop or end every running or paused timer before deactivating this baby.", 409);
+    if (error.message === "backup_upload_busy") return fail("backup_upload_busy", "Another backup upload is in progress. Try again when it finishes.", 429);
+    if (error.message === "backup_upload_timeout") return fail("backup_upload_timeout", "The backup upload took too long. Try again.", 408);
+    if (error.message === "backup_upload_aborted") return fail("backup_upload_aborted", "The backup upload was cancelled.", 408);
     if (error.message === "backup_active_timer") return fail("backup_active_timer", "This backup contains a running or paused timer. Stop it before exporting a new backup.", 409);
     if (error.message === "backup_invalid_timer") return fail("backup_invalid_timer", "This backup contains invalid timer history and cannot be restored.", 422);
     if (error.message === "backup_invalid_content_type") return fail("backup_invalid_content_type", "Upload a JSON backup with application/json content type.", 415);
@@ -126,6 +159,9 @@ export function handleError(error: unknown) {
     if (error.message === "backup_photo_unavailable") return fail("backup_photo_unavailable", "A photo could not be read, so the backup was not made. Run the integrity check, then try again.", 409);
     if (error.message === "archive_too_large") return fail("archive_too_large", "Cubby backup archives must be 2 GiB or smaller.", 413);
     if (error.message === "attachment_type_unavailable") return fail("not_found", "Not found.", 404);
+    if (error.message === "attachment_upload_busy") return fail("attachment_upload_busy", "Another photo is being processed. Try again shortly.", 429);
+    if (error.message === "upload_timeout" || error.message === "upload_aborted") return fail(error.message, "The upload stopped. Try again.", 408);
+    if (error.message === "attachment_staging_full") return fail("attachment_staging_full", "Photo staging is full. Share pending photos or try again after cleanup.", 429);
     if (error.message === "attachment_too_large") return fail("attachment_too_large", "Photos must be 25 MB or smaller.", 413);
     if (error.message === "attachment_unsupported_format") return fail("attachment_unsupported_format", "Choose a JPEG, PNG or WebP photo.", 415);
     if (error.message === "attachment_invalid_selection") return fail("attachment_invalid_selection", "A post can have up to 10 photos.", 422);

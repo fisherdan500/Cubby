@@ -38,7 +38,7 @@ const WAKE_FEED_LEAD = 30;
 export const otherRoutineTypes = ["bath", "pumping", "medicine", "supplement", "play"] as const;
 export type OtherRoutineType = (typeof otherRoutineTypes)[number];
 
-export type RoutineEvent = { type: string; start: Date; end: Date | null };
+export type RoutineEvent = { type: string; start: Date; end: Date | null; durationSeconds: number | null };
 
 export type RoutineSlot = {
   minutes: number;
@@ -69,7 +69,7 @@ export type RoutineTimelineEntry = {
 
 type Local = { key: string; minute: number };
 type Occurrence = { minute: number; durationSeconds: number | null };
-type Sleep = { start: Date; end: Date | null; s: Local; e: Local | null };
+type Sleep = { start: Date; end: Date | null; durationSeconds: number | null; s: Local; e: Local | null };
 
 export function buildObservedRoutine(
   events: readonly RoutineEvent[],
@@ -91,7 +91,7 @@ export function buildObservedRoutine(
 
   const sleeps: Sleep[] = events
     .filter((item) => item.type === "sleep")
-    .map((item) => ({ start: item.start, end: item.end, s: local(item.start), e: item.end ? local(item.end) : null }));
+    .map((item) => ({ start: item.start, end: item.end, durationSeconds: item.durationSeconds, s: local(item.start), e: item.end ? local(item.end) : null }));
   const feeds = events.filter((item) => item.type === "feeding").map((item) => ({ at: item.start, l: local(item.start) }));
 
   const wakeOn = (key: string) => {
@@ -124,7 +124,7 @@ export function buildObservedRoutine(
     const until = bedtimes.get(key)?.minute ?? NAP_FALLBACK_END;
     napsByDay.set(key, sleeps
       .filter((sleep) => sleep.s.key === key && sleep.s.minute >= from && sleep.s.minute < until)
-      .map((sleep) => ({ minute: sleep.s.minute, durationSeconds: sleep.end ? (sleep.end.getTime() - sleep.start.getTime()) / 1000 : null }))
+      .map((sleep) => ({ minute: sleep.s.minute, durationSeconds: sleep.durationSeconds }))
       .sort((left, right) => left.minute - right.minute));
   }
 
@@ -181,7 +181,7 @@ export function buildObservedRoutine(
       if (!inWindow.has(at.key)) continue;
       byDay.set(at.key, [...(byDay.get(at.key) ?? []), {
         minute: at.minute,
-        durationSeconds: item.end ? (item.end.getTime() - item.start.getTime()) / 1000 : null
+        durationSeconds: item.durationSeconds
       }].sort((left, right) => left.minute - right.minute));
     }
     const daysWithAny = keys.filter((key) => byDay.has(key));

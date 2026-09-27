@@ -12,7 +12,7 @@ import { FeedPostBody, FeedPostComposer, FeedPostRemoveButton, FeedPostRestoreBu
 globalThis.React = React;
 const response = (status: number, body: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body }) as Response;
 const operationId = "bmo_0123456789abcdefghjkmnpqrs";
-const partition = () => response(200, { ok: true, data: { version: 1, scope: "household", partition: "household-a" } });
+const partition = () => response(200, { ok: true, data: { version: 1, scope: "household", partition: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } });
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -38,8 +38,8 @@ describe("FeedPostComposer photos", () => {
       .mockResolvedValueOnce(uploaded("att-1"))
       .mockResolvedValueOnce(uploaded("att-2"))
       .mockResolvedValueOnce(partition())
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "feed_post", code: "created", postId: "post-1" } } }));
     globalThis.fetch = fetchMock;
     render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery", photosEnabled: true }));
     fireEvent.click(screen.getByRole("button", { name: "Share a moment" }));
@@ -99,8 +99,8 @@ describe("FeedPostRestoreButton", () => {
   it("brings a removed post back through an operation bound to it", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(partition())
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "feed_post", code: "restored", postId: "post-1" } } }));
     globalThis.fetch = fetchMock;
     render(createElement(FeedPostRestoreButton, { postId: "post-1" }));
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));
@@ -126,8 +126,8 @@ describe("FeedPostComposer", () => {
   it("posts through a server-issued operation, about the baby or the whole family", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(partition())
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "feed_post", code: "created", postId: "post-1" } } }));
     globalThis.fetch = fetchMock;
     render(createElement(FeedPostComposer, { babyId: "baby-1", babyName: "Avery" }));
 
@@ -141,7 +141,7 @@ describe("FeedPostComposer", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId, body: "Family walk #weekend", babyId: null });
     // Done: the composer closes, and nothing is left retained for a retry.
     expect(screen.queryByLabelText("What happened?")).toBeNull();
-    expect(sessionStorage.getItem("cubby:feed-post-create:household-a:tab:test")).toBeNull();
+    expect(sessionStorage.getItem("cubby:feed-post-create:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:tab:test")).toBeNull();
   });
 
   it("asks for words before sending anything", () => {
@@ -159,8 +159,8 @@ describe("FeedPostRemoveButton", () => {
   it("asks before removing, then removes through an operation bound to the post", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(partition())
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "feed_post", code: "deleted", postId: "post-1" } } }));
     globalThis.fetch = fetchMock;
     render(createElement(FeedPostRemoveButton, { postId: "post-1" }));
 
@@ -190,7 +190,7 @@ describe("FeedPostBody", () => {
   const linked = createElement("span", null, "First bath ", createElement("a", { href: "#" }, "#firsts"));
 
   it("shows the caption as written, and whether it was edited", () => {
-    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath #firsts", edited: true, canEdit: false }, linked));
+    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath #firsts", updatedAt: new Date("2026-09-25T10:00:00Z"), edited: true, canEdit: false }, linked));
     expect(screen.getByText("#firsts")).toBeTruthy();
     expect(screen.getByText("edited")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Edit post" })).toBeNull();
@@ -199,10 +199,10 @@ describe("FeedPostBody", () => {
   it("lets the author edit the caption through an operation bound to the post", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(partition())
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId } }))
-      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId } }));
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "open", operationId, bindingId: "binding" } }))
+      .mockResolvedValueOnce(response(200, { ok: true, data: { status: "completed", operationId, outcome: { operationId, kind: "feed_post", code: "updated", postId: "post-1" } } }));
     globalThis.fetch = fetchMock;
-    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath #firsts", edited: false, canEdit: true }, linked));
+    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath #firsts", updatedAt: new Date("2026-09-25T10:00:00Z"), edited: false, canEdit: true }, linked));
 
     fireEvent.click(screen.getByRole("button", { name: "Edit post" }));
     const field = screen.getByLabelText("Edit your post") as HTMLTextAreaElement;
@@ -215,13 +215,13 @@ describe("FeedPostBody", () => {
       ["/api/feed/posts/post-1?issue=1", "PATCH"],
       ["/api/feed/posts/post-1", "PATCH"]
     ]);
-    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId, body: "First bath #firsts #splash" });
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ operationId, body: "First bath #firsts #splash", expectedUpdatedAt: "2026-09-25T10:00:00.000Z" });
     expect(screen.queryByLabelText("Edit your post")).toBeNull();
   });
 
   it("can be backed out of without saving", () => {
     globalThis.fetch = vi.fn();
-    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath", edited: false, canEdit: true }, linked));
+    render(createElement(FeedPostBody, { postId: "post-1", body: "First bath", updatedAt: new Date("2026-09-25T10:00:00Z"), edited: false, canEdit: true }, linked));
     fireEvent.click(screen.getByRole("button", { name: "Edit post" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.getByText("#firsts")).toBeTruthy();

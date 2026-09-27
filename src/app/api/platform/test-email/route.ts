@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    return ok(await sendPlatformTestEmail());
+    const result = await sendPlatformTestEmail();
+    return ok(result, result.status === "throttled" ? { status: 429, headers: { "Retry-After": String(result.retryAfterSeconds) } } : undefined);
   } catch (error) {
     return handleError(error);
   }

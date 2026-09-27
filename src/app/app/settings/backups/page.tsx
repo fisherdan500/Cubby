@@ -53,11 +53,12 @@ export default async function BackupsSettingsPage() {
         </Card>
         <Card className="min-w-0 space-y-3">
           <h2 className="text-lg font-semibold">Backup records</h2>
+          <p className="text-sm text-muted-foreground">Manual export records describe preparation. Download receipt is not confirmed; a later storage or connection failure can interrupt it. Check that the file finished saving.</p>
           {records.length ? null : <p className="text-sm text-muted-foreground">No backup records yet.</p>}
           {records.map((record) => (
             <div key={record.id} className="rounded-md bg-muted p-3">
               <p className="break-words font-semibold">
-                {record.kind} - {record.status}
+                {record.kind === "export" && record.status === "complete" ? "Export prepared" : `${record.kind} - ${record.status}`}
               </p>
               <p className="text-sm text-muted-foreground">
                 {record.itemCount ?? 0} items - {formatInstant(record.createdAt, env.APP_TIMEZONE)}

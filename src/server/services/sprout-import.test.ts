@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import { dateKeyInTimeZone } from "@/lib/timezone";
-import { sproutImportTestUtils } from "@/server/services/sprout-import";
+import { normalizeSproutError, sproutImportTestUtils } from "@/server/services/sprout-import";
+
+it.each(["backup_upload_busy", "upload_timeout", "upload_aborted", "file_too_large"])("preserves the bounded ingestion error %s", (code) => {
+  expect(normalizeSproutError(new Error(code)).message).toBe(code);
+});
+it("does not expose arbitrary multipart/parser failure details", () => {
+  expect(normalizeSproutError(new Error("private parser details")).message).toBe("sprout_import_failed");
+});
 
 describe("sprout import parsing", () => {
   it("reads Sprout data.json and env metadata from a backup zip", async () => {

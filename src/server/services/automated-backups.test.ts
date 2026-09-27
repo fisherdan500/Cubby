@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   activityCount: vi.fn(),
   eventCount: vi.fn(),
   reminderCount: vi.fn(),
+  feedPostCount: vi.fn(),
   transaction: vi.fn(),
   queryRaw: vi.fn(),
   buildSnapshot: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock("@/lib/db/prisma", () => ({
     calendarEvent: { count: mocks.eventCount },
     reminder: { count: mocks.reminderCount },
     $queryRaw: mocks.queryRaw,
+    feedPost: { count: mocks.feedPostCount },
     $transaction: mocks.transaction
   }
 }));
@@ -84,6 +86,7 @@ beforeEach(() => {
       calendarEvent: { count: mocks.eventCount },
       reminder: { count: mocks.reminderCount },
       attachment: { findMany: mocks.attachmentFindMany },
+      feedPost: { count: mocks.feedPostCount },
       household: {}
     })
   );
@@ -96,6 +99,7 @@ beforeEach(() => {
   mocks.activityCount.mockResolvedValue(0);
   mocks.eventCount.mockResolvedValue(0);
   mocks.reminderCount.mockResolvedValue(0);
+  mocks.feedPostCount.mockResolvedValue(0);
   mocks.buildSnapshot.mockResolvedValue({ format: "cubby-household-backup", version: 2, exportedAt: "2026-07-15T21:50:13.000Z", payload: { household: { name: "Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [] }, checksum: "a".repeat(64) });
   mocks.publish.mockResolvedValue({ filename: "backup.json", checksum: "a".repeat(64), exportedAt: "2026-07-15T21:50:13.000Z", householdName: "Home", size: 100, absolutePath: "x" });
   mocks.read.mockRejectedValue(new Error("backup_invalid"));
@@ -104,6 +108,16 @@ beforeEach(() => {
 });
 
 describe("automated backups", () => {
+  it("backs up live whole-family Moments even with no babies or older-domain records", async () => {
+    mocks.babyCount.mockResolvedValue(0);
+    mocks.feedPostCount.mockResolvedValue(1);
+    await expect(runAutomatedBackupIfDue("household-1", new Date("2026-07-15T22:00:00.000Z"), config))
+      .resolves.toEqual({ completed: true, filename: "backup.json" });
+    expect(mocks.feedPostCount).toHaveBeenCalledWith({ where: {
+      householdId: "household-1", deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }]
+    } });
+  });
+
   it("skips all work when disabled", async () => {
     expect(await runAutomatedBackupIfDue("household-1", new Date("2026-07-15T22:00:00.000Z"), { ...config, enabled: false })).toEqual({ skipped: "disabled" });
     expect(mocks.transaction).not.toHaveBeenCalled();

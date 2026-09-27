@@ -42,7 +42,7 @@ export type SystemBackupRunView = {
   photos: number | null;
   failure: string | null;
 };
-export type DiskView = { label: string; freeBytes: number; totalBytes: number };
+export type DiskView = { label: string } & ({ freeBytes: number; totalBytes: number } | { freeBytes: null; totalBytes: null });
 export type PlatformHealthProblem = { key: string; message: string };
 export type PlatformHealth = {
   systemBackup: { lastRun: SystemBackupRunView | null; lastSuccess: SystemBackupRunView | null };
@@ -85,15 +85,15 @@ async function readDisks(deps: PlatformHealthDeps): Promise<DiskView[]> {
       const stats = await deps.statfs(path);
       return { label, freeBytes: stats.bavail * stats.bsize, totalBytes: stats.blocks * stats.bsize };
     } catch {
-      return null;
+      return { label, freeBytes: null, totalBytes: null };
     }
   };
   const [photos, backups] = await Promise.all([read("photos", deps.config.attachmentDirectory), read("backups", deps.config.backupDirectory)]);
   // The usual install keeps both on one disk: say so once rather than warn twice.
-  if (photos && backups && photos.totalBytes === backups.totalBytes && photos.freeBytes === backups.freeBytes) {
+  if (photos.freeBytes !== null && backups.freeBytes !== null && photos.totalBytes === backups.totalBytes && photos.freeBytes === backups.freeBytes) {
     return [{ ...photos, label: "photos and backups" }];
   }
-  return [photos, backups].filter((disk): disk is DiskView => disk !== null);
+  return [photos, backups];
 }
 
 function formatWhen(date: Date, timeZone: string) {
@@ -117,9 +117,20 @@ export async function readPlatformHealth(now: Date, deps: PlatformHealthDeps): P
 
   let householdBackups = { enabled: false, households: 0, stale: 0 };
   if (deps.config.householdBackupsEnabled) {
-    // A household with no baby yet, or made in the last day and a half, has nothing to be late with.
+    // Match automatic-export data roots; allow new households a day and a half.
     const households = await deps.db.household.findMany({
-      where: { deletedAt: null, createdAt: { lt: new Date(now.getTime() - BACKUP_STALE_MS) }, babies: { some: {} } },
+      where: {
+        deletedAt: null, createdAt: { lt: new Date(now.getTime() - BACKUP_STALE_MS) },
+        OR: [
+          { babies: { some: { deletedAt: null } } },
+          { contacts: { some: { deletedAt: null } } },
+          { medicineCatalog: { some: { deletedAt: null } } },
+          { activities: { some: { deletedAt: null } } },
+          { calendarEvents: { some: { deletedAt: null } } },
+          { reminders: { some: { deletedAt: null } } },
+          { feedPosts: { some: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } } }
+        ]
+      },
       select: {
         id: true,
         backupRecords: { where: { kind: "automated_export", status: "complete" }, orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } }
@@ -146,6 +157,10 @@ export async function readPlatformHealth(now: Date, deps: PlatformHealthDeps): P
     problems.push({ key: "household_backups_stale", message: `${count} ${count === 1 ? "household has" : "households have"} had no automatic backup for over 36 hours.` });
   }
   for (const disk of disks) {
+    if (disk.freeBytes === null) {
+      problems.push({ key: `disk_unavailable_${disk.label}`, message: `Storage holding ${disk.label} cannot be checked. Free space is unknown.` });
+      continue;
+    }
     const share = disk.totalBytes > 0 ? disk.freeBytes / disk.totalBytes : 0;
     if (share < LOW_DISK_SHARE) {
       problems.push({
@@ -169,8 +184,12 @@ export async function getPlatformHealth(now = new Date()) {
  * hour.
  */
 export async function runPlatformHealthCheck(now = new Date(), deps: PlatformHealthDeps = defaultDeps()) {
-  const { problems } = await readPlatformHealth(now, deps);
+  const { problems, disks } = await readPlatformHealth(now, deps);
   const activeKeys = problems.map((problem) => problem.key);
+  // Unknown capacity cannot resolve an earlier low-space claim, including the legacy merged key.
+  for (const disk of disks) {
+    if (disk.freeBytes === null) activeKeys.push(`disk_low_${disk.label}`, "disk_low_photos_and_backups");
+  }
   await deps.db.platformHealthAlert.deleteMany({ where: { key: { notIn: activeKeys } } });
   const known = await deps.db.platformHealthAlert.findMany();
   const knownByKey = new Map(known.map((alert) => [alert.key, alert]));

@@ -81,11 +81,11 @@ describe("reading comments and reactions", () => {
     mocks.findComments.mockResolvedValue([
       {
         id: "comment-1", postId: "post-1", activityId: null, authorMemberId: "member-1", externalAuthorName: null,
-        author: { displayName: "Sam", user: { name: "Sam P" } }, body: "So sweet", createdAt: edited, editedAt: null
+        author: { displayName: "Sam", user: { name: "Sam P" } }, body: "So sweet", createdAt: edited, updatedAt: edited, editedAt: null
       },
       {
         id: "comment-2", postId: null, activityId: "activity-1", authorMemberId: "member-2", externalAuthorName: null,
-        author: { displayName: null, user: { name: "Alex" } }, body: "Big one!", createdAt: edited, editedAt: edited
+        author: { displayName: null, user: { name: "Alex" } }, body: "Big one!", createdAt: edited, updatedAt: edited, editedAt: edited
       }
     ]);
     mocks.findReactions.mockResolvedValue([
@@ -98,11 +98,11 @@ describe("reading comments and reactions", () => {
     const where = mocks.findComments.mock.calls[0][0].where;
     expect(where).toEqual({ householdId: "household-1", deletedAt: null, OR: [{ postId: { in: ["post-1"] } }, { activityId: { in: ["activity-1"] } }] });
     expect(result.comments["post:post-1"]).toEqual([
-      { id: "comment-1", body: "So sweet", authorName: "Sam", createdAt: edited, edited: false, canEdit: true, canRemove: true }
+      { id: "comment-1", body: "So sweet", authorName: "Sam", createdAt: edited, updatedAt: edited, edited: false, canEdit: true, canRemove: true }
     ]);
     // A read-only member may neither edit nor remove someone else's comment.
     expect(result.comments["activity:activity-1"]).toEqual([
-      { id: "comment-2", body: "Big one!", authorName: "Alex", createdAt: edited, edited: true, canEdit: false, canRemove: false }
+      { id: "comment-2", body: "Big one!", authorName: "Alex", createdAt: edited, updatedAt: edited, edited: true, canEdit: false, canRemove: false }
     ]);
     expect(result.reactions["post:post-1"]).toEqual([{ key: "love", emoji: "❤️", label: "love", names: ["You", "Alex"], mine: true }]);
     expect(result.reactions["activity:activity-1"]).toBeUndefined();
@@ -167,7 +167,7 @@ describe("commenting", () => {
   });
 
   it("lets the author edit their comment, marked as edited, and refuses one changed meanwhile", async () => {
-    await issueFeedCommentUpdateBrowserOperation({ operationId, commentId: "comment-1" });
+    await issueFeedCommentUpdateBrowserOperation({ operationId, commentId: "comment-1", expectedUpdatedAt: edited.toISOString() });
     const call = mocks.issueHousehold.mock.calls[0][0];
     expect(call).toMatchObject({ operationKey: BrowserOperationKey.feedCommentUpdate, targetKind: "comment", targetId: "comment-1", permission: "feed.comment" });
     const snapshot = { kind: "feed-comment-update", schemaVersion: 1, commentId: "comment-1", updatedAt: edited.toISOString() };

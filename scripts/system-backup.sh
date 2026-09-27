@@ -9,13 +9,13 @@
 #   database.dump     the whole database, from PostgreSQL's own pg_dump (custom format)
 #   attachments.tar   every photo file, exactly as stored
 #
-# It runs on the server, from the Cubby checkout, while Cubby keeps running. The database is copied
-# first and the photos straight after, so a photo shared in between is simply left for the next
-# backup. The server's .env holds the keys the restored accounts and email depend on and is never
+# Requires explicit downtime: --maintenance stops the sole app (including retention and jobs)
+# across the database dump, originals and counts. No external writers may run in that window.
+# The server's .env holds the keys the restored accounts and email depend on and is never
 # put in the archive: keep a copy of it somewhere safe of its own, such as a password manager.
 # A stolen archive then still holds everyone's data but not the keys to sign in or read queued mail.
 #
-# Usage: sh scripts/system-backup.sh [--output-dir DIR] [--keep N]
+# Usage: sh scripts/system-backup.sh --maintenance [--output-dir DIR] [--keep N]
 #   --output-dir  where archives go (default ./docker-data/system-backups)
 #   --keep        how many archives to keep, oldest removed first (default 14)
 # See docs/recovery/system-backup.md for scheduling it and for scripts/system-restore.sh.
@@ -45,8 +45,10 @@ fail() {
 
 output_dir="./docker-data/system-backups"
 keep=14
+maintenance=false
 while [ $# -gt 0 ]; do
   case "$1" in
+    --maintenance) maintenance=true; shift ;;
     --output-dir) [ $# -ge 2 ] || fail "--output-dir needs a directory"; output_dir="$2"; shift 2 ;;
     --keep) [ $# -ge 2 ] || fail "--keep needs a number"; keep="$2"; shift 2 ;;
     -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
@@ -57,6 +59,12 @@ case "$keep" in ''|*[!0-9]*) fail "--keep must be a whole number of at least 1" 
 [ "$keep" -ge 1 ] || fail "--keep must be a whole number of at least 1"
 [ -f docker-compose.yml ] || fail "run this from the Cubby checkout, where docker-compose.yml is"
 
+[ "$maintenance" = true ] || fail "backup requires downtime; add --maintenance after excluding external writers"
+command -v node > /dev/null || fail "Node.js 22 or newer is required on the host"
+node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)' || fail "Node.js 22 or newer is required on the host"
+. ./scripts/system-maintenance.sh
+maintenance_acquire
+
 psql_value() {
   docker compose exec -T postgres psql -U cubby_migrator -d cubby -XAt -v ON_ERROR_STOP=1 -c "$1"
 }
@@ -64,12 +72,14 @@ psql_value() {
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$output_dir"
 chmod 700 "$output_dir"
-work="$output_dir/.cubby-system-$stamp.partial"
+candidate="$output_dir/.cubby-system-$stamp.partial"
 archive="$output_dir/cubby-system-$stamp.tar"
-[ ! -e "$work" ] && [ ! -e "$archive" ] || fail "a backup named $stamp already exists; try again in a second"
+[ ! -e "$candidate" ] && [ ! -e "$archive" ] && [ ! -e "$archive.partial" ] || fail "a backup named $stamp already exists; try again in a second"
+mkdir "$candidate" || fail "the private work directory could not be created"
+work="$candidate"
+partial="$archive.partial"
 started=true
-mkdir "$work"
-trap 'rm -rf "$work" "$archive.partial"' EXIT INT TERM
+maintenance_stop
 
 # The database: a consistent snapshot, taken by the database's own superuser inside its container.
 docker compose exec -T postgres pg_dump -U cubby_migrator -d cubby --format=custom > "$work/database.dump" \
@@ -78,14 +88,9 @@ docker compose exec -T postgres pg_dump -U cubby_migrator -d cubby --format=cust
 docker compose exec -T postgres pg_restore --list < "$work/database.dump" > /dev/null \
   || fail "the database dump does not read back"
 
-# The photos, read inside the app's container as the user that owns them.
-if docker compose ps --status running --services 2>/dev/null | grep -qx app; then
-  docker compose exec -T app tar -cf - -C /var/lib/cubby/attachments . > "$work/attachments.tar" \
-    || fail "the photos could not be read"
-else
-  docker compose run --rm --no-deps -T --entrypoint tar app -cf - -C /var/lib/cubby/attachments . > "$work/attachments.tar" \
-    || fail "the photos could not be read"
-fi
+# The app and its retention/jobs remain stopped through dump, bytes and counts.
+docker compose run --rm --no-deps -T --entrypoint tar app --hard-dereference --exclude=./thumbnails --exclude=./restore-staging -cf - -C /var/lib/cubby/attachments . > "$work/attachments.tar" \
+  || fail "the photos could not be read"
 tar -tf "$work/attachments.tar" > /dev/null || fail "the photo archive does not read back"
 
 migration=$(psql_value "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name DESC LIMIT 1") \
@@ -96,7 +101,7 @@ photos=$(psql_value "SELECT count(*) FROM \"Attachment\" WHERE state <> 'purged'
 revision=$(git rev-parse --short HEAD 2>/dev/null || printf 'unknown')
 
 {
-  printf 'format=cubby-system-backup-1\n'
+  printf 'format=cubby-system-backup-2\n'
   printf 'created=%s\n' "$stamp"
   printf 'revision=%s\n' "$revision"
   printf 'migration=%s\n' "$migration"
@@ -108,6 +113,7 @@ revision=$(git rev-parse --short HEAD 2>/dev/null || printf 'unknown')
 
 tar -cf "$archive.partial" -C "$work" manifest.txt checksums.sha256 database.dump attachments.tar \
   || fail "the archive could not be written"
+node scripts/system-archive.mjs check "$archive.partial" prisma/migrations || fail "the completed archive failed strict validation"
 mv "$archive.partial" "$archive"
 
 # Keep the newest --keep archives; only files this script names are ever removed.
@@ -118,5 +124,6 @@ done
 size=$(wc -c < "$archive" | tr -d ' ')
 # Recorded after the archive exists, so this backup is not in its own dump; older records go after 90 days.
 record_run "INSERT INTO \"SystemBackupRun\" (status, \"archiveName\", \"byteSize\", households, accounts, photos) VALUES ('succeeded', $(sql_text "$(basename "$archive")"), $size, $households, $accounts, $photos); DELETE FROM \"SystemBackupRun\" WHERE \"recordedAt\" < now() - interval '90 days'"
+maintenance_resume
 printf 'system_backup_created file=%s bytes=%s households=%s accounts=%s photos=%s\n' "$archive" "$size" "$households" "$accounts" "$photos"
 printf 'Copy it off this server: a backup on the same disk goes with the disk.\n'

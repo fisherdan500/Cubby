@@ -60,6 +60,19 @@ describe("browser operation retention", () => {
     expect(mocks.transaction).toHaveBeenCalledTimes(2);
   });
 
+  it.each([{ code: "P2034" }, { code: "P2010", meta: { code: "40001" } }])("propagates serialization exhaustion after exactly two attempts %#", async (conflict) => {
+    mocks.transaction.mockRejectedValue(conflict);
+    await expect(runBrowserOperationRetention({ batchSize: 25 })).rejects.toBe(conflict);
+    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry an unrelated transaction failure", async () => {
+    const failure = new Error("synthetic_unrelated_failure");
+    mocks.transaction.mockRejectedValue(failure);
+    await expect(runBrowserOperationRetention({ batchSize: 25 })).rejects.toBe(failure);
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+  });
+
   it("reports household and account unresolved work older than 24 hours without changing status", async () => {
     mocks.householdOperationCount.mockResolvedValue(3);
     mocks.accountOperationCount.mockResolvedValue(2);

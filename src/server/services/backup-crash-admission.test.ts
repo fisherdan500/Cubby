@@ -1,0 +1,20 @@
+import { mkdtemp, mkdir, writeFile, readdir, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+const state = vi.hoisted(() => ({ directory: "" }));
+vi.mock("@/lib/env", () => ({ attachmentConfig: { get directory() { return state.directory; } } }));
+import { withUploadedBackupArchive } from "./backup-upload";
+beforeEach(async () => { state.directory = await mkdtemp(path.join(os.tmpdir(), "crash-upload-")); await mkdir(path.join(state.directory, "restore-staging")); });
+afterEach(async () => { await rm(state.directory, { recursive: true, force: true }); });
+it.each(["a".repeat(32) + ".zip", "unowned-data"])("reserves the full crash-leftover allowance before reading without deleting %s", async (name) => {
+  const directory = path.join(state.directory, "restore-staging");
+  await writeFile(path.join(directory, name), "small synthetic leftover");
+  const request = new Request("https://cubby.test/restore", { method: "POST", body: "next" });
+  const reader = vi.spyOn(request.body!, "getReader");
+  const work = vi.fn();
+  await expect(withUploadedBackupArchive(request, work)).rejects.toThrow("backup_upload_busy");
+  expect(reader).not.toHaveBeenCalled();
+  expect(work).not.toHaveBeenCalled();
+  expect(await readdir(directory)).toEqual([name]);
+});

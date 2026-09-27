@@ -20,11 +20,14 @@ const mocks = vi.hoisted(() => ({
     updateMany: vi.fn()
   },
   auditFindFirst: vi.fn(),
+  intent: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
   queryRaw: vi.fn(),
-  transaction: vi.fn()
+  transaction: vi.fn(),
+  session: { findFirst: vi.fn() }, member: { findFirst: vi.fn() }
 }));
 
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext, requirePermission: mocks.requirePermission }));
+vi.mock("@/server/services/browser-operations", () => ({ getBrowserOperationContextForHousehold: mocks.getEffectiveHouseholdContext }));
 vi.mock("@/server/services/feed-photo-processing", () => ({ processFeedPhoto: mocks.processFeedPhoto, makeFeedPhotoThumbnail: mocks.makeThumbnail }));
 vi.mock("@/server/services/attachment-store", () => ({
   writeAttachmentObject: mocks.writeObject,
@@ -39,6 +42,7 @@ vi.mock("@/lib/env", () => ({ attachmentConfig: { directory: "/data/attachments"
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     attachment: mocks.attachment,
+    attachmentWriteIntent: mocks.intent,
     auditEvent: { findFirst: mocks.auditFindFirst },
     $queryRaw: mocks.queryRaw,
     $transaction: mocks.transaction
@@ -54,7 +58,7 @@ import {
   stageFeedPhoto
 } from "@/server/services/attachments";
 
-const ctx = { userId: "user-1", householdId: "household-1", memberId: "member-1", role: "caretaker" };
+const ctx = { userId: "user-1", householdId: "household-1", memberId: "member-1", role: "caretaker", sessionId: "session-1" };
 const enabled = { feed_photo: true };
 const now = new Date("2026-09-28T12:00:00Z");
 const processed = { bytes: Buffer.from("jpeg"), byteSize: 4, sha256: "a".repeat(64), mimeType: "image/jpeg", width: 2560, height: 1920 };
@@ -62,22 +66,72 @@ const row = (overrides: object = {}) => ({
   id: "att-1", householdId: "household-1", type: "feed_photo", state: "available", storageKey: "0".repeat(32),
   byteSize: 4, sha256: "a".repeat(64), mimeType: "image/jpeg", ...overrides
 });
-const tx = () => ({ attachment: mocks.attachment, $queryRaw: mocks.queryRaw });
+const tx = () => ({ attachment: mocks.attachment, attachmentWriteIntent: mocks.intent, $queryRaw: mocks.queryRaw, session: mocks.session, householdMember: mocks.member });
 
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.getEffectiveHouseholdContext.mockResolvedValue(ctx);
+  mocks.intent.create.mockImplementation(async ({ data }) => data);
+  mocks.intent.findUnique.mockImplementation(async ({ where }) => ({ storageKey: where.storageKey, householdId: ctx.householdId, state: "pending", byteSize: processed.byteSize, sha256: processed.sha256 }));
+  mocks.intent.updateMany.mockResolvedValue({ count: 1 });
+  mocks.session.findFirst.mockResolvedValue({ id: ctx.sessionId });
+  mocks.member.findFirst.mockResolvedValue(ctx);
   mocks.processFeedPhoto.mockResolvedValue(processed);
   mocks.attachment.create.mockResolvedValue({ id: "att-1" });
   mocks.attachment.updateMany.mockResolvedValue({ count: 1 });
   mocks.transaction.mockImplementation((work) => work(tx()));
-  mocks.queryRaw.mockResolvedValue([]);
+  mocks.queryRaw.mockResolvedValue([{ stagedBytes: 0n }]);
   // The store's writes and removals resolve, as the real ones do.
   mocks.writeThumbnail.mockResolvedValue(undefined);
+  mocks.removeObject.mockResolvedValue(undefined);
   mocks.removeThumbnail.mockResolvedValue(undefined);
 });
 
 describe("staging a feed photo", () => {
+  it("commits durable ownership before the first object write", async () => {
+    let reserved = false;
+    mocks.intent.create.mockImplementation(async ({ data }) => { reserved = true; return data; });
+    mocks.writeObject.mockImplementation(async () => { expect(reserved).toBe(true); });
+    await stageFeedPhoto(Buffer.from("upload"), { enabled });
+    expect(mocks.intent.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { state: "transferred" } }));
+  });
+
+  it("does not open a file if durable reservation fails", async () => {
+    mocks.intent.create.mockRejectedValue(new Error("reservation failed"));
+    await expect(stageFeedPhoto(Buffer.from("upload"), { enabled })).rejects.toThrow("reservation failed");
+    expect(mocks.writeObject).not.toHaveBeenCalled();
+  });
+
+  it("retains ownership when publication throws after linking", async () => {
+    mocks.writeObject.mockRejectedValue(new Error("attachment_store_write_failed"));
+    await expect(stageFeedPhoto(Buffer.from("upload"), { enabled })).rejects.toThrow("attachment_store_write_failed");
+    expect(mocks.intent.create).toHaveBeenCalledTimes(1);
+    expect(mocks.intent.updateMany).not.toHaveBeenCalled();
+    expect(mocks.removeObject).not.toHaveBeenCalled();
+  });
+  it.each(["session", "membership", "role"])("refuses a %s revoked during decoding before writing bytes or success audit", async (kind) => {
+    mocks.processFeedPhoto.mockImplementation(async () => {
+      if (kind === "session") mocks.session.findFirst.mockResolvedValue(null);
+      if (kind === "membership") mocks.member.findFirst.mockResolvedValue(null);
+      if (kind === "role") mocks.member.findFirst.mockResolvedValue({ ...ctx, role: "read_only" });
+      return processed;
+    });
+    mocks.requirePermission.mockImplementation((actor) => { if (actor.role === "read_only") throw new Error("forbidden"); });
+    await expect(stageFeedPhoto(Buffer.from("upload"), { enabled })).rejects.toThrow("forbidden");
+    expect(mocks.intent.create).not.toHaveBeenCalled();
+    expect(mocks.writeObject).not.toHaveBeenCalled();
+    expect(mocks.attachment.create).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("does not audit a rejected decode using a revoked session", async () => {
+    mocks.processFeedPhoto.mockImplementation(async () => {
+      mocks.session.findFirst.mockResolvedValue(null);
+      throw new Error("attachment_unsupported_format");
+    });
+    await expect(stageFeedPhoto(Buffer.from("bad"), { enabled })).rejects.toThrow();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
   it("does nothing while feed photos are switched off", async () => {
     await expect(stageFeedPhoto(Buffer.from("x"), { enabled: { feed_photo: false } })).rejects.toThrow("attachment_type_unavailable");
     expect(mocks.processFeedPhoto).not.toHaveBeenCalled();
@@ -109,13 +163,14 @@ describe("staging a feed photo", () => {
     expect(mocks.attachment.create).not.toHaveBeenCalled();
     expect(mocks.writeAudit).toHaveBeenCalledWith(ctx, expect.objectContaining({
       action: "attachment.reject", after: { type: "feed_photo", reason: "unsupported_format" }
-    }));
+    }), expect.anything());
   });
 
-  it("removes the stored bytes again if the record cannot be written", async () => {
+  it("leaves ambiguous database failure to ownership reconciliation, never eager unlink", async () => {
     mocks.attachment.create.mockRejectedValue(new Error("database down"));
     await expect(stageFeedPhoto(Buffer.from("upload"), { enabled })).rejects.toThrow();
-    expect(mocks.removeObject).toHaveBeenCalledWith("/data/attachments", mocks.writeObject.mock.calls[0][1]);
+    expect(mocks.intent.create).toHaveBeenCalledTimes(1);
+    expect(mocks.removeObject).not.toHaveBeenCalled();
   });
 });
 
@@ -146,6 +201,15 @@ describe("claiming staged photos for a post", () => {
 });
 
 describe("opening a photo", () => {
+  it("preserves available state during a storage outage and serves the next successful read", async () => {
+    mocks.attachment.findFirst.mockResolvedValue(row());
+    mocks.readObject.mockRejectedValueOnce(new Error("attachment_store_unavailable")).mockResolvedValueOnce(Buffer.from("jpeg"));
+    await expect(openAttachment("att-1", { enabled, now })).rejects.toThrow("attachment_store_unavailable");
+    expect(mocks.attachment.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+    await expect(openAttachment("att-1", { enabled, now })).resolves.toMatchObject({ bytes: Buffer.from("jpeg") });
+  });
+
   it("serves verified bytes only to a current member of the household, for a live post", async () => {
     mocks.attachment.findFirst.mockResolvedValue(row());
     mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
@@ -247,6 +311,14 @@ describe("opening a photo's thumbnail", () => {
 });
 
 describe("removing and restoring a post's photos", () => {
+  it("propagates transient storage failure during post restore without demoting the photo", async () => {
+    mocks.attachment.findMany.mockResolvedValue([row({ state: "deleted" })]);
+    mocks.readObject.mockRejectedValue(new Error("attachment_store_unavailable"));
+    await expect(restorePostPhotos(tx() as never, ctx as never, { postId: "post-1", now })).rejects.toThrow("attachment_store_unavailable");
+    expect(mocks.attachment.updateMany).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("makes them privately recoverable for thirty days", async () => {
     await removePostPhotos(tx() as never, ctx as never, { postId: "post-1", now });
     expect(mocks.attachment.updateMany).toHaveBeenCalledWith({

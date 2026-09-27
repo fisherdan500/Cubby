@@ -20,6 +20,14 @@ describe("POST /api/platform/test-email", () => {
     await expect(response.json()).resolves.toEqual({ ok: true, data: { status: "sent", recipient: "owner@example.test" } });
   });
 
+  it("returns a stable throttled response and retry hint", async () => {
+    mocks.sendPlatformTestEmail.mockResolvedValue({ status: "throttled", retryAfterSeconds: 60 });
+    const response = await POST();
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("60");
+    await expect(response.json()).resolves.toEqual({ ok: true, data: { status: "throttled", retryAfterSeconds: 60 } });
+  });
+
   it("refuses anyone else", async () => {
     mocks.sendPlatformTestEmail.mockRejectedValue(new Error("forbidden"));
 

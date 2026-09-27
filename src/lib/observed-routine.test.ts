@@ -9,9 +9,10 @@ const at = (key: string, time: string) => zonedDateTimeToDate(`${key}T${time}`, 
 const sleep = (startKey: string, start: string, endKey: string | null, end: string | null): RoutineEvent => ({
   type: "sleep",
   start: at(startKey, start),
-  end: endKey && end ? at(endKey, end) : null
+  end: endKey && end ? at(endKey, end) : null,
+  durationSeconds: endKey && end ? (at(endKey, end).getTime() - at(startKey, start).getTime()) / 1000 : null
 });
-const event = (type: string, key: string, time: string): RoutineEvent => ({ type, start: at(key, time), end: null });
+const event = (type: string, key: string, time: string): RoutineEvent => ({ type, start: at(key, time), end: null, durationSeconds: null });
 
 /**
  * One ordinary day: the night that ends this morning, naps, day feeds, a night feed after bedtime and

@@ -1,5 +1,6 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
+  "AttachmentWriteIntent",
   "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "AccountSecurityState", "ActivityLog", "ActivityTimerPauseInterval", "ApiKey", "Attachment", "AuditEvent", "AuditIntegrityCheckpoint", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedComment", "FeedPost", "FeedReaction", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
   "GlobalSecurityEvent", "GlobalSecurityIncident", "GlobalSecurityOperation", "GlobalSecurityOperationBinding", "GlobalSecurityOperationReservationTombstone", "GlobalSecurityOperationTombstone", "GlobalSecurityThrottleKey", "Household", "HouseholdDeletionRegistry", "HouseholdMember", "HouseholdSettings", "ImportBatch", "ImportedRecord", "Invite", "InvitationAccountSetup", "InvitationLineage", "InvitationOperationBinding", "InvitationOperationIdentity", "InvitationOperationResult", "InvitationOperationTombstone", "InvitationPresentationClaim", "InvitationRecoveryRehearsalChallenge", "InvitationSetupCorridorAttestationReceipt", "MeasurementLog",
@@ -24,6 +25,7 @@ export type TenantIsolationInventoryEntry = {
 };
 
 export const tenantIsolationInventory = [
+  { model: "AttachmentWriteIntent", ownership: "direct", operationClasses: ["photo_write_ownership", "photo_cleanup"], disposition: "service_guard" },
   { model: "Account", ownership: "global", operationClasses: ["auth_account"], disposition: "excluded" },
   { model: "AccountMutationOperation", ownership: "global", operationClasses: ["account_browser_operation"], disposition: "excluded" },
   { model: "AccountMutationOperationTombstone", ownership: "global", operationClasses: ["account_browser_operation_tombstone"], disposition: "excluded" },

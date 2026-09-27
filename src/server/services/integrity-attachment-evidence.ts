@@ -11,14 +11,22 @@ import type { IntegrityCheckOutcome } from "@/server/services/integrity";
 export type AttachmentInventoryRecord = { storageKey: string; byteSize: number; sha256: string; state: string };
 export type AttachmentObjectReader = (storageKey: string, expected: { byteSize: number; sha256: string }) => Promise<unknown>;
 
-const STATES = new Set(["staging", "available", "unavailable", "deleted"]);
+const STATES = new Set(["staging", "available", "unavailable", "deleted", "write_pending"]);
 // Photos known to be unavailable are already recorded as such; their bytes are not expected.
 const EXPECTS_BYTES = new Set(["staging", "available", "deleted"]);
 
-export const ATTACHMENT_INVENTORY_QUERY = `SELECT "storageKey", "byteSize", sha256, state::text AS state
+export const ATTACHMENT_INVENTORY_QUERY = `SELECT "storageKey", "byteSize", sha256, state FROM (
+  SELECT "storageKey", "byteSize", sha256, state::text AS state
   FROM "Attachment"
   WHERE state <> 'purged'
-  ORDER BY id
+  UNION ALL
+  SELECT intent."storageKey", intent."byteSize", intent.sha256, 'write_pending'::text AS state
+  FROM "AttachmentWriteIntent" intent
+  WHERE intent.state = 'pending' AND NOT EXISTS (
+    SELECT 1 FROM "Attachment" attachment WHERE attachment."storageKey" = intent."storageKey"
+  )
+  ) inventory
+  ORDER BY "storageKey"
   LIMIT 100001`;
 
 export function normalizeAttachmentInventoryRows(rows: readonly Record<string, unknown>[]): AttachmentInventoryRecord[] | null {
@@ -54,7 +62,8 @@ export async function checkAttachmentInventory(
   for (const key of storedKeys) {
     if (!recorded.has(key)) problems.push(`stray:${key}`);
   }
-  if (problems.length === 0) return { status: "clean" };
+  // A tracked in-flight/abandoned write is not an unknown orphan, nor verified Attachment bytes.
+  if (problems.length === 0) return { status: records.some((record) => record.state === "write_pending") ? "incomplete" : "clean" };
   return {
     status: "findings",
     count: problems.length,

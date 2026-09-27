@@ -177,9 +177,29 @@ describe("reports routine", () => {
       { type: "sleep", occurredAt, startedAt: occurredAt, endedAt: null, durationSeconds: null }
     ]);
 
-    expect(timed).toEqual({ type: "sleep", start: local("2026-06-19T19:10"), end: local("2026-06-20T06:30") });
-    expect(manual).toEqual({ type: "sleep", start: occurredAt, end: local("2026-06-19T20:00") });
-    expect(running).toEqual({ type: "sleep", start: occurredAt, end: null });
+    expect(timed).toEqual({ type: "sleep", start: local("2026-06-19T19:10"), end: local("2026-06-20T06:30"), durationSeconds: 999 });
+    expect(manual).toEqual({ type: "sleep", start: occurredAt, end: local("2026-06-19T20:00"), durationSeconds: 3600 });
+    expect(running).toEqual({ type: "sleep", start: occurredAt, end: null, durationSeconds: null });
+  });
+
+  it.each(["sleep", "pumping", "play"])("uses recorded active seconds for paused %s without moving the endpoint", (type) => {
+    const records = Array.from({ length: 3 }, (_, index) => {
+      const key = addDaysToDateKey("2026-06-13", index);
+      return { type, occurredAt: local(`${key}T12:00`), startedAt: local(`${key}T12:00`), endedAt: local(`${key}T13:00`), durationSeconds: 1200 };
+    });
+    const events = routineEventsFrom(records);
+    expect(events[0].end).toEqual(local("2026-06-13T13:00"));
+    const routine = buildRoutine(records, "2026-06-19", "1w", timeZone);
+    const slots = type === "sleep" ? routine.naps?.slots : routine.others.find((item) => item.type === type)?.slots;
+    expect(slots).toEqual([expect.objectContaining({ time: "12:00 PM", durationSeconds: 1200, duration: "20 min" })]);
+  });
+
+  it("preserves zero active duration and falls back to endpoints only for missing duration", () => {
+    const record = { type: "play", occurredAt: local("2026-06-13T12:00"), startedAt: local("2026-06-13T12:00"), endedAt: local("2026-06-13T13:00") };
+    expect(routineEventsFrom([{ ...record, durationSeconds: 0 }, { ...record, durationSeconds: null }])).toEqual([
+      { type: "play", start: record.startedAt, end: record.endedAt, durationSeconds: 0 },
+      { type: "play", start: record.startedAt, end: record.endedAt, durationSeconds: 3600 }
+    ]);
   });
 
   it("reads the window ending on the report's end date, with the night before it for the first morning", () => {

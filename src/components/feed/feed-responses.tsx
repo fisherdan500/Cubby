@@ -21,6 +21,7 @@ type FeedComment = {
   body: string;
   authorName: string;
   createdAt: Date;
+  updatedAt: Date;
   edited: boolean;
   canEdit: boolean;
   canRemove: boolean;
@@ -155,6 +156,8 @@ function FeedCommentComposer({
 }) {
   const router = useRouter();
   const [body, setBody] = useState("");
+  const currentBody = useRef(body);
+  currentBody.current = body;
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -170,6 +173,11 @@ function FeedCommentComposer({
     setSubmitting(false);
     if (!outcome.ok) {
       setError(outcome.message);
+      return;
+    }
+    if (currentBody.current !== body) {
+      setError("The previous draft was saved. Your newer changes have not been sent.");
+      router.refresh();
       return;
     }
     setBody("");
@@ -202,6 +210,9 @@ function FeedCommentItem({ comment, timeZone }: { comment: FeedComment; timeZone
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "edit" | "confirm-remove">("view");
   const [draft, setDraft] = useState(comment.body);
+  const [openingRevision, setOpeningRevision] = useState("");
+  const currentEdit = useRef(draft);
+  currentEdit.current = draft;
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const url = `/api/feed/comments/${encodeURIComponent(comment.id)}`;
@@ -210,10 +221,16 @@ function FeedCommentItem({ comment, timeZone }: { comment: FeedComment; timeZone
   async function run(storageName: string, method: "PATCH" | "DELETE", fields: Record<string, unknown>) {
     setError("");
     setSubmitting(true);
-    const outcome = await runFeedOperation(`${storageName}:${comment.id}`, url, method, fields);
+    const revision = method === "PATCH" ? { expectedUpdatedAt: openingRevision } : {};
+    const outcome = await runFeedOperation(`${storageName}:${comment.id}`, url, method, { ...fields, ...revision }, revision);
     setSubmitting(false);
     if (!outcome.ok) {
       setError(outcome.message);
+      return;
+    }
+    if (method === "PATCH" && currentEdit.current !== fields.body) {
+      setError("The previous draft was saved. Your newer changes have not been sent. Reopen the editor before saving them.");
+      router.refresh();
       return;
     }
     setMode("view");
@@ -258,7 +275,7 @@ function FeedCommentItem({ comment, timeZone }: { comment: FeedComment; timeZone
             <button
               type="button"
               aria-label="Edit comment"
-              onClick={() => { setDraft(comment.body); setMode("edit"); }}
+              onClick={() => { setDraft(comment.body); setOpeningRevision(comment.updatedAt.toISOString()); setMode("edit"); }}
               className="inline-flex min-h-11 items-center rounded-lg px-2 font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               Edit

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { ActivityType, BrowserOperationKey, FeedingKind, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { momentsAfter, type MomentsBoundary } from "@/lib/moments-pagination";
 import { durationSeconds } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { zonedDateTimeToDate } from "@/lib/timezone";
@@ -670,6 +671,7 @@ export async function listActivities(params?: {
   babyId?: string;
   type?: string;
   search?: string;
+  momentsAfter?: MomentsBoundary;
   page?: ActivityListPage;
 }) {
   const ctx = await getEffectiveHouseholdContext();
@@ -683,6 +685,7 @@ export async function listActivitiesForContext(
     babyId?: string;
     type?: string;
     search?: string;
+    momentsAfter?: MomentsBoundary;
     page?: ActivityListPage;
   }
 ) {
@@ -691,6 +694,7 @@ export async function listActivitiesForContext(
     where: {
       householdId: ctx.householdId,
       deletedAt: null,
+      ...(params?.momentsAfter ? { AND: [momentsAfter("activity", params.momentsAfter)] } : {}),
       ...(params?.babyId ? { babyId: params.babyId } : {}),
       ...(params?.type ? { type: params.type as ActivityType } : {}),
       ...(params?.search
@@ -1354,6 +1358,23 @@ async function findActivityUndoReplay(mutation: ReturnType<typeof timerMutationI
   });
 }
 
+function findSupersedingActivityAudit(
+  tx: Prisma.TransactionClient,
+  householdId: string,
+  latest: { id: string; entityId: string; createdAt: Date }
+) {
+  return tx.auditEvent.findFirst({
+    where: {
+      householdId,
+      entityType: "activity",
+      entityId: latest.entityId,
+      createdAt: { gte: latest.createdAt },
+      id: { not: latest.id }
+    },
+    select: { id: true }
+  });
+}
+
 export async function undoLastActivity(raw?: unknown) {
   const mutation = timerMutationInput(raw);
   const replay = await findActivityUndoReplay(mutation);
@@ -1390,16 +1411,7 @@ export async function undoLastActivity(raw?: unknown) {
       `;
       if (locked.length !== 1) throw new Error("not_found");
 
-      const superseding = await tx.auditEvent.findFirst({
-        where: {
-          householdId: lockedCtx.householdId,
-          entityType: "activity",
-          entityId: latest.entityId,
-          createdAt: { gte: latest.createdAt },
-          id: { not: latest.id }
-        },
-        select: { id: true }
-      });
+      const superseding = await findSupersedingActivityAudit(tx, lockedCtx.householdId, latest);
       if (superseding) throw new Error("not_found");
 
       const undoCreate = latest.action === "activity.create";
@@ -1576,7 +1588,9 @@ export async function issueActivityUndoLastBrowserOperation(raw: unknown): Promi
     targetSnapshot: async (tx, lockedCtx) => {
       const latest = await tx.auditEvent.findFirst({ where: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, entityType: "activity", action: { in: ["activity.create", "activity.delete"] } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, action: true, entityId: true, createdAt: true, after: true } });
       if (!latest || latest.id !== candidate.id || latest.entityId !== candidate.entityId) throw new Error("stale_revision");
-      return { latest: { id: latest.id, action: latest.action, entityId: latest.entityId, createdAt: latest.createdAt.toISOString(), state: auditActivityState(latest.after) }, binding: await activityBindingSnapshot(tx, lockedCtx, latest.entityId) };
+      const binding = await activityBindingSnapshot(tx, lockedCtx, latest.entityId);
+      if (await findSupersedingActivityAudit(tx, lockedCtx.householdId, latest)) throw new Error("stale_revision");
+      return { latest: { id: latest.id, action: latest.action, entityId: latest.entityId, createdAt: latest.createdAt.toISOString(), state: auditActivityState(latest.after) }, binding };
     }
   });
 }
@@ -1746,6 +1760,16 @@ async function undoLastBindingTarget(
   return binding.targetId;
 }
 
+async function assertCurrentActivityUndoBinding(tx: Prisma.TransactionClient, ctx: HouseholdContext, targetSnapshot: unknown, activityId: string) {
+  const snapshot = targetSnapshot as { latest?: { id?: string; entityId?: string; action?: string }; binding?: unknown };
+  if (!snapshot.latest || snapshot.latest.entityId !== activityId) throw new Error("not_found");
+  const latest = await tx.auditEvent.findFirst({ where: { householdId: ctx.householdId, actorMemberId: ctx.memberId, entityType: "activity", action: { in: ["activity.create", "activity.delete"] } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, action: true, entityId: true, createdAt: true } });
+  if (!latest || latest.id !== snapshot.latest.id || latest.entityId !== activityId || latest.action !== snapshot.latest.action) throw new Error("stale_revision");
+  const activity = await assertCurrentActivityBinding(tx, ctx, snapshot.binding, activityId);
+  if (await findSupersedingActivityAudit(tx, ctx.householdId, latest)) throw new Error("stale_revision");
+  return activity;
+}
+
 export async function submitActivityUndoLastBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
   const record = activityBrowserOpeningInput(raw);
   const ctx = await getBrowserOperationContextForHousehold();
@@ -1762,15 +1786,11 @@ export async function submitActivityUndoLastBrowserOperation(raw: unknown): Prom
   return executeHouseholdBrowserOperation({
     ctx, operationId: record.operationId, operationKey: BrowserOperationKey.activityUndoLast, intent: { activityId }, targetKind: "activity", targetId: activityId, permission: "activity.read",
     validate: async (tx, lockedCtx, binding) => {
-      const snapshot = binding.targetSnapshot as { latest?: { id?: string; entityId?: string; action?: string; state?: ReturnType<typeof auditActivityState> }; binding?: unknown };
-      if (!snapshot.latest || snapshot.latest.entityId !== activityId) throw new Error("not_found");
-      const latest = await tx.auditEvent.findFirst({ where: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, entityType: "activity", action: { in: ["activity.create", "activity.delete"] } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, action: true, entityId: true } });
-      if (!latest || latest.id !== snapshot.latest.id || latest.entityId !== activityId || latest.action !== snapshot.latest.action) throw new Error("stale_revision");
-      await assertCurrentActivityBinding(tx, lockedCtx, snapshot.binding, activityId);
+      await assertCurrentActivityUndoBinding(tx, lockedCtx, binding.targetSnapshot, activityId);
     },
     execute: async (tx, lockedCtx, binding) => {
       const snapshot = binding.targetSnapshot as { latest: { action: string; state: ReturnType<typeof auditActivityState> }; binding: unknown };
-      const before = await assertCurrentActivityBinding(tx, lockedCtx, snapshot.binding, activityId);
+      const before = await assertCurrentActivityUndoBinding(tx, lockedCtx, binding.targetSnapshot, activityId);
       const undoCreate = snapshot.latest.action === "activity.create";
       const expected = snapshot.latest.state;
       if (!expected || (undoCreate ? expected.deletedAt !== null : expected.deletedAt === null)) throw new Error("not_found");
