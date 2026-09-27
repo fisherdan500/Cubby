@@ -2592,17 +2592,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "19d5d43a6ebb0e7be2ed2f70393ea135bd1a0ff4bddeee424290ea07243b845d",
+          "digest": "9a91a133d452e2a4fb9f68fa4809be43e585e666fc7aa548efe38b1777d7ce95",
           "file": "src/components/invitations/manual-invitation-manager.tsx"
         }
       ],
       "declarationDigest": "ccbf5137d6a4898af04cc7e6464b9c0027ec1102032f83c1728f8226fb10cc58",
-      "fingerprint": "29c0a5f3ac1b86950df318ac7c160d12a017c904fe4a365c8910521ad8746811",
+      "fingerprint": "9c681e3e703ecbfaabfae6dd124fdfbd90f74622ef6e25eca86ae3cabddeae56",
       "id": "fingerprint:client_binding:src/components/invitations/manual-invitation-manager.tsx",
       "ownerId": "client_binding:src/components/invitations/manual-invitation-manager.tsx",
       "ownerModule": "src/components/invitations/manual-invitation-manager.tsx",
       "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts",
-      "sourceDigest": "8590b62de6af33ff3a88ec09edeac723abc417713f1b73a9b772b6c115ad0911",
+      "sourceDigest": "5f0154f09d94d257492c34f11657bc659d38708a34932f2562ffa0f14087f883",
       "status": "declared"
     },
     {
@@ -3264,17 +3264,17 @@
           "file": "package.json"
         },
         {
-          "digest": "1275bde909839582622963db1ce1185da36ac7454cd010ee0c1cb95a49300f88",
+          "digest": "6f4cf035433927da52c2281b5a74fefba26db089125ac4bebcffd2d86cf38e0a",
           "file": "scripts/invitation-email-delivery-rehearsal.ts"
         }
       ],
       "declarationDigest": "c1f64ccdc5134d631123a586710cb71a4064c6198f35587102423ec629fdaa1c",
-      "fingerprint": "6c13e2bb61df206467003eb54d259a2f73cd972e5cae31ac2f19d9d82d937c25",
+      "fingerprint": "599f17b9090b7891d1e5be2f9544771d4e4072ea9f206ce37543e1d20a5851dc",
       "id": "fingerprint:package_command:scripts/invitation-email-delivery-rehearsal.ts",
       "ownerId": "package_command:scripts/invitation-email-delivery-rehearsal.ts",
       "ownerModule": "scripts/invitation-email-delivery-rehearsal.ts",
       "sidecarPath": "scripts/invitation-email-delivery-rehearsal.operation.ts",
-      "sourceDigest": "f74ad030d8e4c3c3dd16838ae27a2536417d385ef07737c7b05362c6459aee4f",
+      "sourceDigest": "fa370da2c2e60f977e890ce745dfcc1708b67ffe007d402191d01f2ecedd6751",
       "status": "declared"
     },
     {

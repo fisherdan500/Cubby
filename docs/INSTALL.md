@@ -71,8 +71,16 @@ From the repository on the server:
    Cubby shows each new invitation link once for you to copy, and also emails it to the person
    (untick "Also email this invitation" to share it yourself). The email uses the same mail settings
    as the test email and links to your address from `--url`; no extra setting is needed. A pending
-   invitation shows whether its email was sent, and **Re-send email** replaces the link and emails
-   the new one, because Cubby never keeps a copy of a link it has shown.
+   invitation shows its email status. "Emailed" means the SMTP server accepted the message, not
+   that it reached the recipient's inbox. **Re-send email** replaces the link and emails the new
+   one; an old link cannot be recovered or shown again. The queue temporarily keeps an encrypted
+   copy for delivery and retries, then destroys it after acceptance, permanent failure or
+   cancellation. Revocation cancels queued/retryable mail; an already-dispatching message can
+   still arrive, but its revoked link cannot be used. Enter one bare mailbox, not a display name
+   or address list. Authentication and permanent recipient/server rejections end that delivery;
+   temporary SMTP replies and connection/timeouts use bounded retries. After correcting mail
+   settings, use **Re-send email** for a failed invitation. The owner's diagnostic cooldown does
+   not limit invitation creation or re-send; no dedicated invitation re-send throttle is implemented.
 
 ## 4. Backups
 

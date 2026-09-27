@@ -47,6 +47,18 @@ beforeEach(() => {
 });
 
 describe("issuer invitation routes", () => {
+  it.each(["first@example.test,second@example.test", "first@example.test <second@example.test>", "Group:first@example.test;", "first@example.test\r\nBcc:second@example.test", "first@example.test\n", "not-a-mailbox"])("rejects unsafe recipient syntax before reservation: %j", async (recipientEmail) => {
+    const result = await call("manual-create", { action: "reserve", operationId, recipientEmail, role: "caretaker", expiresInHours: 168, openingFingerprint });
+    expect(result.body.data.status).toBe("unavailable");
+    expect(mocks.services.manualCreate.reserve).not.toHaveBeenCalled();
+    expect(mocks.queueManualInvitationEmail).not.toHaveBeenCalled();
+  });
+
+  it("canonicalizes a single mailbox before reserving it", async () => {
+    await call("manual-create", { action: "reserve", operationId, recipientEmail: "  Member+tag@Example.TEST  ", role: "caretaker", expiresInHours: 168, openingFingerprint });
+    expect(mocks.services.manualCreate.reserve).toHaveBeenCalledWith(expect.objectContaining({ recipientEmail: "member+tag@example.test" }));
+  });
+
   it("reserves a manual invitation from the browser's reserve payload, which carries no intent yet", async () => {
     const result = await call("manual-create", { action: "reserve", operationId, recipientEmail: "member@example.test", role: "caretaker", expiresInHours: 168, openingFingerprint });
     expect(result.body.data.status).toBe("prepared");

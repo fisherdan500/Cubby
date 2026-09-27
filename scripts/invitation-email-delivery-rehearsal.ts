@@ -41,8 +41,13 @@ export function runInvitationEmailDeliveryRehearsal() {
     const vitestCli = resolve(root, "node_modules/vitest/vitest.mjs");
     run(process.execPath, [vitestCli, "run", "--config", "scripts/invitation-email-delivery.vitest.config.ts"], { ...env, DATABASE_URL: databaseUrl });
   } finally {
-    spawnSync("docker", [...compose, "down", "--volumes", "--remove-orphans"], { cwd: root, env, stdio: "ignore" });
-    rmSync(temp, { recursive: true, force: true });
+    let cleanupFailed = false;
+    try {
+      const result = spawnSync("docker", [...compose, "down", "--volumes", "--remove-orphans"], { cwd: root, env, stdio: "ignore" });
+      cleanupFailed = Boolean(result.error) || result.status !== 0;
+    } catch { cleanupFailed = true; }
+    try { rmSync(temp, { recursive: true, force: true }); } catch { cleanupFailed = true; }
+    if (cleanupFailed) throw new Error("invitation_email_delivery_cleanup_failed");
   }
 }
 

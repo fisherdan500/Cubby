@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { createEmailDeliveryCipher } from "@/server/services/email-change-delivery";
 import { smtpEmailDeliveryConfigured } from "@/server/services/smtp-email-delivery";
 import { formatInstant } from "@/lib/timezone";
+import { singleMailbox } from "@/lib/validation/email";
 
 type Environment = Record<string, string | undefined>;
 type Cipher = ReturnType<typeof createEmailDeliveryCipher>;
@@ -41,11 +42,13 @@ export function composeInvitationEmail(input: { recipient: string; householdName
     "",
     "If you were not expecting this invitation, you can ignore this email."
   ].join("\n");
-  return { recipient: input.recipient, subject: `${inviter} invited you to ${household} on Cubby`, text };
+  return { recipient: singleMailbox(input.recipient).toLowerCase(), subject: `${inviter} invited you to ${household} on Cubby`, text };
 }
 
 export function invitationEmailBinding(input: { deliveryId: string; inviteId: string; operationId: string; recipientDigest: Buffer }) {
-  return { deliveryId: input.deliveryId, userId: input.inviteId, operationId: input.operationId, kind: INVITATION_EMAIL_KIND, recipientDigest: input.recipientDigest };
+  if (input.operationId.length !== 36 || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.operationId)) throw new Error("invitation_operation_invalid");
+  // PostgreSQL UUID output is lowercase; authenticate the same bytes on both sides.
+  return { deliveryId: input.deliveryId, userId: input.inviteId, operationId: input.operationId.toLowerCase(), kind: INVITATION_EMAIL_KIND, recipientDigest: input.recipientDigest };
 }
 
 export function invitationEmailDeliveryId() {

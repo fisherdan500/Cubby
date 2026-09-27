@@ -33,9 +33,9 @@ export function classifySmtpFailure(error: unknown): { reason: SmtpFailureReason
   const responseCode = typeof details.responseCode === "number" && Number.isInteger(details.responseCode) ? details.responseCode : null;
   const code = typeof details.code === "string" ? details.code : "";
   const message = typeof details.message === "string" ? details.message : "";
-  if (code === "EAUTH" || responseCode === 530 || responseCode === 534 || responseCode === 535) return { reason: "authentication", responseCode };
-  if (CONNECTION_CODES.has(code)) return { reason: "connection", responseCode };
   if (message === "smtp_temporary" || (responseCode !== null && responseCode >= 400 && responseCode < 500)) return { reason: "temporary", responseCode };
+  if (message === "smtp_auth" || code === "EAUTH" || responseCode === 530 || responseCode === 534 || responseCode === 535) return { reason: "authentication", responseCode };
+  if (message === "smtp_connection" || message === "smtp_timeout" || CONNECTION_CODES.has(code)) return { reason: "connection", responseCode };
   if (message === "recipient_rejected" || message === "smtp_rejected" || code === "EENVELOPE" || (responseCode !== null && responseCode >= 500)) {
     return { reason: "rejected", responseCode };
   }

@@ -46,6 +46,10 @@ describe("invitation email content", () => {
 });
 
 describe("invitation email delivery payload", () => {
+  it.each(["not-a-uuid", "11111111-1111-4111-8111-111111111111\n", " 11111111-1111-4111-8111-111111111111", "11111111-1111-9111-8111-111111111111"])("rejects invalid operation identity without repairing it: %j", (operationId) => {
+    expect(() => invitationEmailBinding({ deliveryId: "ied_1", inviteId: "inv_1", operationId, recipientDigest: Buffer.alloc(32) })).toThrow("invitation_operation_invalid");
+  });
+
   it("digests the normalized recipient exactly as the database does", () => {
     expect(invitationRecipientDigest(" Member@Example.TEST ")).toEqual(createHash("sha256").update("member@example.test", "utf8").digest());
   });

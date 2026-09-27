@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: cubby_invitation_email_acceptance
       POSTGRES_PASSWORD: ${CUBBY_INVITATION_EMAIL_ACCEPTANCE_PASSWORD:?synthetic password required}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cubby_invitation_email_acceptance -d cubby_invitation_email_acceptance"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cubby_invitation_email_acceptance -d cubby_invitation_email_acceptance"]
       interval: 2s
       timeout: 2s
       retries: 30
