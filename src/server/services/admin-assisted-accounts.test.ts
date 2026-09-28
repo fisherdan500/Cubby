@@ -237,10 +237,25 @@ describe("attestation boundary cases", () => {
     const encoded = key.toString("base64url");
     for (const environment of [ {}, { ...env, CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "2" },
       ...["0", "-1", "2147483648", "01", "1e0", " 1"].map((version) => ({ CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: `${version}:${encoded}`, CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: version })),
-      ...[`1:${encoded},1:${encoded}`, `1:${encoded},2:${encoded},3:${encoded}`, `1:${encoded}:`, `1:${encoded.slice(0, -1)}J`].map((ring) => ({ ...env, CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: ring })) ]) {
+      ...[`1:${encoded},1:${encoded}`, `1:${encoded},2:${encoded},3:${encoded}`, `1:${encoded}:`].map((ring) => ({ ...env, CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: ring })) ]) {
       expect(() => createAssistedCredentialAttestationSigner(environment)).toThrow("assisted_attestation_keyring_invalid");
     }
   });
+  it("accepts a valid 32-byte key whose encoding is not the canonical re-encoding", () => {
+    // A real deployed keyring is shared with fresh-auth and invitation attestation, which validate
+    // charset and length only. The last base64url character of a 32-byte value carries 2 unused
+    // bits, so a generator may emit an encoding that Buffer.toString("base64url") would not
+    // reproduce. Rejecting it here broke assisted account creation on an install where every other
+    // feature using the same variable worked.
+    const noncanonical = `${key.toString("base64url").slice(0, -1)}J`;
+    expect(noncanonical).not.toBe(key.toString("base64url"));
+    expect(Buffer.from(noncanonical, "base64url")).toHaveLength(32);
+    expect(() => createAssistedCredentialAttestationSigner({
+      CUBBY_FRESH_AUTH_ATTESTATION_KEYRING: `1:${noncanonical}`,
+      CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION: "1"
+    })).not.toThrow();
+  });
+
   it("rejects invalid dates, null dates and wrong nonce sizes before signing", () => {
     for (const now of [() => new Date(NaN), () => null as unknown as Date]) {
       expect(() => createAssistedCredentialAttestationSigner(env, { now }).sign(input)).toThrow("assisted_attestation_input_invalid");
