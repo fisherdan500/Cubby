@@ -4060,17 +4060,17 @@
           "file": "package.json"
         },
         {
-          "digest": "37df981325a5fa99947f3756ee6512c3252e6fd8f77c2866acd2b5ddb03384cf",
+          "digest": "11ea461f707bdbc6dfea6488bccc8964e5d99385c862a03ef70df58eab00ffdc",
           "file": "scripts/verify-gates.ts"
         }
       ],
       "declarationDigest": "ec0fe874070abef8ab5668fab28962985d1cc51428c6369bab3f8d450c9d9641",
-      "fingerprint": "b20142b4abe8e2de63bc3729bd2da40b4f0a74829283a3a9ae8e78046fdfdf4a",
+      "fingerprint": "b059da95d64c3bfd317c6e7509b768ae6f830d31875142fa36cd1e1a4703e112",
       "id": "fingerprint:package_command:scripts/verify-gates.ts",
       "ownerId": "package_command:scripts/verify-gates.ts",
       "ownerModule": "scripts/verify-gates.ts",
       "sidecarPath": "scripts/verify-gates.operation.ts",
-      "sourceDigest": "78600505ada4541aeb4daa52443d2b58ae806a0ac49512e6343a646c8f3b2b0f",
+      "sourceDigest": "df6e5a8ff19c35061a617f0009361a0f17aafe6ee2058110b2f5d1c645128736",
       "status": "declared"
     }
   ],
