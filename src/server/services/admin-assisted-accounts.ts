@@ -73,7 +73,12 @@ export type AssistedPasswordIntent = z.infer<typeof intentSchema>;
 function decodeKey(encoded: unknown, error: string): Buffer {
   if (typeof encoded !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(encoded)) throw new Error(error);
   const bytes = Buffer.from(encoded, "base64url");
-  if (bytes.length !== 32 || bytes.toString("base64url") !== encoded) throw new Error(error);
+  // Length only, matching fresh-auth and invitation attestation, which share this keyring. A 32-byte
+  // base64url value has 2 unused bits in its last character, so several distinct encodings decode to
+  // the same key and re-encoding is not guaranteed to reproduce the configured text. Requiring that
+  // round trip rejected valid production keyrings that every other consumer of the same variable
+  // accepts.
+  if (bytes.length !== 32) throw new Error(error);
   return bytes;
 }
 function frame(value: Buffer | string): Buffer {

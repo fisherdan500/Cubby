@@ -100,7 +100,10 @@ export function runAdminAssistedAccountsRehearsal() {
     CUBBY_ASSISTED_REHEARSAL_INVITATION_RUNTIME_PASSWORD: randomBytes(24).toString("base64url"),
     CUBBY_ASSISTED_REHEARSAL_INVITATION_EXPIRY_PASSWORD: randomBytes(24).toString("base64url"),
     CUBBY_ASSISTED_REHEARSAL_INVITATION_MAINTENANCE_PASSWORD: randomBytes(24).toString("base64url"),
-    CUBBY_ASSISTED_REHEARSAL_FRESH_AUTH_KEYRING: `1:${randomBytes(32).toString("base64url")}`,
+    // Deliberately non-canonical: flip the final character's unused bits so the configured text is
+    // NOT what Buffer.toString("base64url") reproduces. Real generators emit such keys, and a
+    // canonical-only fixture cannot catch a decoder that demands an exact round trip.
+    CUBBY_ASSISTED_REHEARSAL_FRESH_AUTH_KEYRING: `1:${`${randomBytes(32).toString("base64url").slice(0, -1)}J`}`,
     CUBBY_ASSISTED_REHEARSAL_EMAIL_DELIVERY_KEYRING: `1:${randomBytes(32).toString("base64url")}`,
     CUBBY_ASSISTED_REHEARSAL_THROTTLE_KEY: randomBytes(32).toString("base64url"),
     CUBBY_ASSISTED_REHEARSAL_SMTP_PASSWORD: randomBytes(24).toString("base64url")
