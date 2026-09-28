@@ -16,6 +16,19 @@ const environment = {
 };
 
 describe("password session proof request scope", () => {
+  it("verifies without capturing a proof outside a proof request, and still refuses to mint a session proof", async () => {
+    // Recovery enrollment, email change, password change and the assisted first-login corridor all
+    // verify the current password outside a sign-in. They must succeed, but must never yield a
+    // session proof: only sign-in may do that.
+    const verify = vi.fn().mockResolvedValue(true);
+    await expect(verifyPasswordAndCaptureSessionProof(verify, {
+      hash: "stored-password-hash",
+      password: "correct-password"
+    })).resolves.toBe(true);
+    expect(verify).toHaveBeenCalledWith("stored-password-hash", "correct-password");
+    expect(() => createPasswordSessionProof({ userId: "user-1", token: "token-1" }, { environment })).toThrow("password_session_proof_missing");
+  });
+
   it("stores no proof after a failed password verification", async () => {
     const verify = vi.fn().mockResolvedValue(false);
 

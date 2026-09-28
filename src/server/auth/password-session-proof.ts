@@ -136,7 +136,11 @@ export async function verifyPasswordAndCaptureSessionProof(
   input: { hash: string; password: string }
 ) {
   const store = requestProofStorage.getStore();
-  if (!store) throw new Error("password_session_proof_missing");
+  // Only sign-in runs inside a proof request. Other legitimate callers verify the current password
+  // outside one (recovery enrollment, email change, password change, the assisted first-login
+  // corridor); they take no session proof, so verify normally rather than failing closed. Session
+  // creation still requires a captured proof, so a missing store cannot forge a session.
+  if (!store) return verify(input.hash, input.password);
   delete store.proof;
   const verified = await verify(input.hash, input.password);
   if (verified) {
