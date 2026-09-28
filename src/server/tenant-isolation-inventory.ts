@@ -1,5 +1,6 @@
 export type TenantOwnership = "direct" | "inherited" | "multi_parent" | "global";
 export const prismaModelNames = [
+  "AssistedAccountState", "AssistedCredentialMutation",
   "AttachmentWriteIntent",
   "Account", "AccountMutationOperation", "AccountMutationOperationTombstone", "AccountOperationBinding", "AccountOperationReservationTombstone", "AccountSecurityState", "ActivityLog", "ActivityTimerPauseInterval", "ApiKey", "Attachment", "AuditEvent", "AuditIntegrityCheckpoint", "Baby", "BackupRecord", "BathLog", "BrowserMutationOperation", "BrowserMutationOperationTombstone", "BrowserOperationBinding", "BrowserOperationReservationTombstone", "CalendarEvent",
   "CalendarEventBaby", "CalendarEventContact", "Contact", "DashboardWarningDismissal", "DiaperLog", "EmailChange", "EmailChangeDelivery", "EmailChangeIdentityMutation", "EmailChangeSessionRotation", "EmailDeliveryEncryptionKey", "FeedComment", "FeedPost", "FeedReaction", "FeedingLog", "FreshAuthAttestationKey", "FreshAuthGrant",
@@ -25,6 +26,9 @@ export type TenantIsolationInventoryEntry = {
 };
 
 export const tenantIsolationInventory = [
+  { model: "AssistedAccountState", ownership: "global", operationClasses: ["assisted_credential_requirement"], disposition: "excluded" },
+  // Household identifiers are retained evidence; definer authorization and deferred closure enforce scope.
+  { model: "AssistedCredentialMutation", ownership: "direct", operationClasses: ["assisted_credential_receipt"], disposition: "constraint_slice" },
   { model: "AttachmentWriteIntent", ownership: "direct", operationClasses: ["photo_write_ownership", "photo_cleanup"], disposition: "service_guard" },
   { model: "Account", ownership: "global", operationClasses: ["auth_account"], disposition: "excluded" },
   { model: "AccountMutationOperation", ownership: "global", operationClasses: ["account_browser_operation"], disposition: "excluded" },

@@ -147,6 +147,7 @@ export type StructuralIdentityAnchor = {
 };
 
 export const APPENDIX_A_SIDECAR_PATHS = [
+  "src/app/account/required-password-change/page.operation.ts",
   "src/app/account/security/page.operation.ts",
   "src/app/api/account/appearance/issue/route.operation.ts",
   "src/app/api/account/appearance/route.operation.ts",
@@ -158,6 +159,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/account/security/password/route.operation.ts",
   "src/app/api/account/security/password/status/route.operation.ts",
   "src/app/api/account/security/recovery/route.operation.ts",
+  "src/app/api/account/security/required-password-change/route.operation.ts",
   "src/app/api/account/security-history/export/route.operation.ts",
   "src/app/api/account/security-history/route.operation.ts",
   "src/app/api/account/sessions/revoke/route.operation.ts",
@@ -208,9 +210,11 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/invites/[token]/revoke/route.operation.ts",
   "src/app/api/invites/revoke-all/route.operation.ts",
   "src/app/api/invites/route.operation.ts",
+  "src/app/api/members/[id]/assisted-password/route.operation.ts",
   "src/app/api/members/[id]/restore/route.operation.ts",
   "src/app/api/members/[id]/route.operation.ts",
   "src/app/api/members/[id]/suspend/route.operation.ts",
+  "src/app/api/members/assisted-account/route.operation.ts",
   "src/app/api/notifications/preferences/issue/route.operation.ts",
   "src/app/api/notifications/preferences/route.operation.ts",
   "src/app/api/notifications/subscribe/route.operation.ts",
@@ -262,6 +266,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/setup/page.operation.ts",
 
   "src/components/account-security-panel.operation.ts",
+  "src/components/account/required-password-change-form.operation.ts",
   "src/components/actions/activity-actions.operation.ts",
   "src/components/actions/baby-lifecycle-button.operation.ts",
   "src/components/actions/confirmed-activity-delete.operation.ts",
@@ -287,6 +292,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/settings/appearance-form.operation.ts",
   "src/components/settings/backup-download-button.operation.ts",
   "src/components/settings/backup-restore-form.operation.ts",
+  "src/components/settings/assisted-account-manager.operation.ts",
   "src/components/settings/integration-forms.operation.ts",
   "src/components/settings/leave-household-form.operation.ts",
   "src/components/settings/member-access-manager.operation.ts",
@@ -313,6 +319,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/invitation-email-delivery-rehearsal.operation.ts",
   "scripts/backup-recovery-rehearsal.operation.ts",
   "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
+  "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts",
   "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts",

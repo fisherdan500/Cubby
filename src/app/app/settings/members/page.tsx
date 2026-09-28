@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { ManualInvitationManager } from "@/components/invitations/manual-invitation-manager";
 import { MemberAccessManager } from "@/components/settings/member-access-manager";
+import { AssistedAccountManager } from "@/components/settings/assisted-account-manager";
 import { Card } from "@/components/ui/card";
 import { env } from "@/lib/env";
 import { requireSettingsPage } from "@/server/auth/page-access";
@@ -17,6 +18,18 @@ export default async function MembersPage() {
           <Card>
             <h2 className="mb-3 text-lg font-bold">Household</h2>
             <p className="text-sm text-muted-foreground">{household.name}</p>
+          </Card>
+          <Card>
+            <AssistedAccountManager
+              viewerRole={household.viewerRole}
+              members={household.members.map((member) => ({
+                id: member.id,
+                name: member.displayName ?? member.user.name,
+                email: member.user.email,
+                role: member.role,
+                disabledAt: member.disabledAt?.toISOString() ?? null
+              }))}
+            />
           </Card>
           <Card>
             <MemberAccessManager

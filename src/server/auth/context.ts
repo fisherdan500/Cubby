@@ -2,7 +2,16 @@ import type { HouseholdRole } from "@prisma/client";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { requireInvitationSetupCorridor } from "@/server/services/invitation-setup-corridor";
+import { hasOutstandingRequiredChange } from "@/server/services/assisted-required-change-state";
 import { hasPermission, type Permission } from "@/domain/roles";
+
+/**
+ * Household scope is the shared choke point for ordinary household work, including services that
+ * call getSession() directly instead of requireUser(). Denying here closes those bypasses too.
+ */
+async function assertNoOutstandingRequiredChange(userId: string) {
+  if (await hasOutstandingRequiredChange(userId)) throw new Error("password_change_required");
+}
 
 export const SELECTED_HOUSEHOLD_MEMBER_COOKIE = "cubby_household_member";
 
@@ -28,6 +37,7 @@ export function readHouseholdMemberCandidate(): HouseholdMemberCandidate {
 export async function getHouseholdContext(memberId: string): Promise<HouseholdContext> {
   const current = await requireInvitationSetupCorridor("membership");
   if (!current) throw new Error("unauthenticated");
+  await assertNoOutstandingRequiredChange(current.user.id);
   if (!isValidMembershipEpisodeId(memberId)) throw new Error("not_found");
   return resolveHouseholdContext(current.user.id, memberId, "not_found");
 }
@@ -35,6 +45,7 @@ export async function getHouseholdContext(memberId: string): Promise<HouseholdCo
 export async function getEffectiveHouseholdContext(): Promise<HouseholdContext> {
   const current = await requireInvitationSetupCorridor("membership");
   if (!current) throw new Error("unauthenticated");
+  await assertNoOutstandingRequiredChange(current.user.id);
   const candidate = readHouseholdMemberCandidate();
   if (candidate.status === "missing") throw new Error("household_selection_required");
   if (candidate.status === "invalid") throw new Error("household_selection_stale");

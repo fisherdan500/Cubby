@@ -189,6 +189,8 @@ enum BrowserOperationKey {
   memberRemove               @map("member.remove")
   memberRoleUpdate           @map("member.role.update")
   memberSuspend              @map("member.suspend")
+  memberAccountCreate        @map("member.account.create")
+  memberPasswordReset        @map("member.password.reset")
   notificationPreferenceSave @map("notification.preference.save")
   settingsUnitsUpdate        @map("settings.units.update")
   calendarEventCreate        @map("calendar_event.create")
@@ -280,6 +282,8 @@ model User {
   globalSecurityOperationReservationTombstones GlobalSecurityOperationReservationTombstone[]
   passwordChangeCredentialMutations PasswordChangeCredentialMutation[]
   recoveryResetCredentialMutations RecoveryResetCredentialMutation[]
+  assistedAccountState AssistedAccountState?
+  assistedCredentialMutations AssistedCredentialMutation[]
 
   globalSecurityEvents GlobalSecurityEvent[]
   globalSecurityIncidents GlobalSecurityIncident[]
@@ -403,6 +407,12 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  credentialProofPurpose String?
+  credentialProofHashDigest Bytes?
+  credentialProofIssuedAt DateTime?
+  credentialProofNonce Bytes? @unique
+  credentialProofKeyVersion Int?
+  credentialProofMac Bytes?
 
   @@index([userId])
   @@index([expiresAt])
@@ -452,6 +462,50 @@ model RecoveryResetCredentialMutation {
   operation GlobalSecurityOperation @relation(fields: [userId, operationId], references: [userId, operationId], onDelete: Cascade)
   @@id([userId, operationId])
   @@index([accountId])
+}
+
+model AssistedCredentialMutation {
+  householdId String
+  operationId String
+  operationKey BrowserOperationKey
+  browserBindingId String @unique
+  actorUserId String
+  actorSessionId String
+  actorMemberId String
+  targetUserId String
+  targetMemberId String
+  accountId String
+  openingFingerprint String
+  intentFingerprint String
+  oldCredentialVersion Int?
+  newCredentialVersion Int
+  oldSessionSecurityVersion Int?
+  newSessionSecurityVersion Int
+  passwordHashDigest Bytes
+  requireFirstLoginPasswordChange Boolean
+  attestationNonce Bytes @unique
+  attestationKeyVersion Int
+  attestationIssuedAt DateTime
+  attestationMacDigest Bytes
+  createdAt DateTime @default(now())
+  targetUser User @relation(fields: [targetUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([householdId, operationId])
+  @@index([targetUserId, createdAt])
+  @@index([targetMemberId])
+}
+
+model AssistedAccountState {
+  userId String @id
+  assistedCreationHouseholdId String?
+  assistedCreationMemberId String?
+  assistedCreationOperationId String?
+  requiredChangeCredentialVersion Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([assistedCreationHouseholdId, assistedCreationOperationId])
 }
 
 model Verification {

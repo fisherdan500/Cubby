@@ -1,0 +1,558 @@
+import { z } from "zod";
+
+// Literal schema for the independently reviewed, finite phase-one contract.
+// Deliberately independent of the JSON loaded by the test: never derive expected
+// rules from the candidate at test runtime or regenerate this in a normal check.
+// Changes to these literals require the same design review as protocol changes.
+const reviewedContract = {
+  "identity": {"protocol": "cubby.admin-assisted-accounts.phase1", "version": 1, "branch": "feat/admin-assisted-accounts", "base": "76580f970b62890cd0792cc96e713dbc8a5f913d", "status": "design_only"},
+  "scope": {
+    "delivered": ["assisted_create", "assisted_reset", "required_first_password_change"],
+    "deferred": ["self_service_signup", "emailed_password_recovery", "phase2"],
+    "forbiddenExpansion": ["multi_household_account_recovery", "open_registration", "invitation_replacement", "offline_write_changes", "new_secret_configuration"]
+  },
+  "eligibility": {
+    "roleMatrix": {
+      "owner": ["admin", "parent", "caretaker", "read_only"],
+      "admin": ["parent", "caretaker", "read_only"],
+      "parent": [],
+      "caretaker": [],
+      "read_only": []
+    },
+    "denials": ["target_household_owner", "target_platform_owner", "target_is_actor_user_id", "actor_session_not_fresh_10_db_minutes", "actor_membership_not_current", "actor_role_not_permitted", "target_role_not_permitted", "reset_target_not_current_household_member", "reset_target_has_any_other_nondeleted_membership"],
+    "actorMembershipPredicate": {"householdId": "selected_household", "memberId": "selected_member_episode", "userId": "session_user", "disabledAt": null, "deletedAt": null, "householdDeletedAt": null},
+    "targetMembershipPredicate": {"householdId": "selected_household", "memberId": "submitted_target_member", "deletedAt": null, "disabledAt": "ignored_for_reset_eligibility"},
+    "otherMembershipPredicate": {"membershipDeletedAt": null, "householdId": "not_current_household", "ignoreMembershipDisabledAt": true, "ignoreHouseholdDeletedAt": true, "disclosure": "personal_recovery_unavailable"},
+    "freshness": {"clock": "database_clock_timestamp", "maximumAgeSeconds": 600, "comparison": "actor_session_createdAt_greater_than_clock_timestamp_minus_10_minutes", "recheckedAtCommit": true},
+    "existingEmailCreate": {"mutation": "none", "outcomeCode": "existing_account_invitation_required", "nextAction": "existing_invitation_flow"},
+    "foreignDisclosure": {"includeHouseholdId": false, "includeHouseholdName": false, "includeMembershipRole": false, "includeMembershipState": false, "includeCount": false}
+  },
+  "mutations": {
+    "create": {
+      "input": {
+        "name": "trimmed_nonempty_1_191",
+        "email": "single_mailbox_normalized_lowercase",
+        "password": "better_auth_8_128",
+        "passwordConfirmation": "exact_password_match",
+        "role": ["admin", "parent", "caretaker", "read_only"],
+        "requireFirstLoginPasswordChange": {"type": "boolean", "default": false}
+      },
+      "versionTransition": {
+        "credentialVersion": [null, 1],
+        "sessionSecurityVersion": [null, 1]
+      },
+      "writesInOneTransaction": ["User_emailVerified_false", "Account_credential_password_hash", "AccountSecurityState_1_1_with_both_last_operation_ids_assisted_bmo", "HouseholdMember_selected_role_active", "AssistedAccountState", "AssistedCredentialMutation", "AuditEvent_content_free", "BrowserMutationOperation_terminal", "BrowserOperationBinding_terminal"],
+      "doesNotWrite": ["InvitationAccountSetup", "Invite", "Session", "recovery_codes", "recovery_link"],
+      "emailVerified": false,
+      "emailVerificationRequirementAtLogin": false,
+      "verifiedMailboxGuardsRemainClosed": ["new_household_creation", "platform_owner_binding"],
+      "ordinaryLogin": true,
+      "ordinaryLoginDestination": "assisted_origin_membership_then_home"
+    },
+    "reset": {
+      "input": {
+        "targetMemberId": "current_household_nonremoved_member",
+        "password": "better_auth_8_128",
+        "passwordConfirmation": "exact_password_match",
+        "requireFirstLoginPasswordChange": {"type": "boolean", "default": false, "uncheckedEffect": "clear_requirement_for_replacement_credential"}
+      },
+      "versionTransition": {"credentialVersion": "old_plus_1", "sessionSecurityVersion": "old_plus_1"},
+      "revocations": ["all_target_sessions", "all_active_session_security_activity", "all_issued_fresh_auth_grants", "all_restricted_recovery_sessions"],
+      "versionAttribution": {
+        "lastCredentialOperationId": "assisted_bmo_operation_id",
+        "lastSessionSecurityOperationId": "same_assisted_bmo_operation_id",
+        "atomicWith": ["credential_hash_replacement", "both_version_increments", "required_change_selected_state", "session_and_grant_revocations", "recovery_session_closure", "receipt", "browser_terminal_result"]
+      },
+      "recoverySessionClosure": {
+        "appliesTo": "every_restricted_target_recovery_session",
+        "orderedPerSession": ["advance_versions_and_attribute_both_last_operation_ids_to_assisted_bmo", "terminalize_own_GlobalSecurityOperation_stale_stale_security_version", "terminalize_own_GlobalSecurityOperationBinding", "close_retained_RecoverySession", "write_own_content_free_operation_outcome_stale_security_version_event"],
+        "operationStatus": "stale",
+        "operationOutcomeCode": "stale_security_version",
+        "bindingState": "terminal",
+        "recoverySessionState": "closed",
+        "event": {
+          "eventType": "operation_outcome",
+          "outcome": "stale_security_version",
+          "safeProjection": {}
+        },
+        "codesAndHistory": "preserved",
+        "freshIssuedGrants": "revoked",
+        "failure": "entire_assisted_transaction_rollback"
+      },
+      "writesInOneTransaction": ["Account_password_hash", "AccountSecurityState_both_versions", "AssistedAccountState_requirement", "AssistedCredentialMutation", "AuditEvent_content_free", "BrowserMutationOperation_terminal", "BrowserOperationBinding_terminal", "session_and_grant_revocations"],
+      "doesNotWrite": ["User_name", "User_email", "HouseholdMember_role", "recovery_link"]
+    },
+    "audit": {
+      "actions": ["member.account.create", "member.password.reset"],
+      "entityType": "household_member",
+      "projectionKeys": ["operationId", "outcome"],
+      "forbidden": ["name", "email", "password", "passwordHash", "passwordHashDigest", "foreignHousehold", "sessionId"],
+      "exactlyOnce": true
+    }
+  },
+  "secrets": {
+    "plaintextLifetime": "request_memory_until_hash_then_drop",
+    "hashTiming": "before_lock_transaction",
+    "forbiddenPersistence": ["plaintext", "confirmation", "unkeyed_plaintext_digest", "browser_operation_payload", "logs", "audit", "receipt"],
+    "allowedPersistence": ["password_hash_in_Account", "sha256_password_hash_digest_in_receipt"]
+  },
+  "browserOperations": {
+    "substrate": "durable_browser_v2",
+    "keys": [
+      {"prisma": "memberAccountCreate", "database": "member.account.create", "targetKind": "household"},
+      {"prisma": "memberPasswordReset", "database": "member.password.reset", "targetKind": "member"}
+    ],
+    "enumMigration": {"separateAdditiveFile": true, "valuesOnly": true},
+    "operationId": "bmo_26_crockford_base32",
+    "leaseMinutes": 30,
+    "states": ["absent", "open", "submitted_pending", "submitted_unknown", "terminal_full", "compacted", "abandoned", "expired"],
+    "transitions": [
+      ["absent", "open", "reserve"],
+      ["open", "submitted_pending", "submit_identity"],
+      ["submitted_pending", "terminal_full", "atomic_commit"],
+      ["submitted_pending", "submitted_unknown", "ambiguous_transport"],
+      ["submitted_unknown", "terminal_full", "status_receipt_proof"],
+      ["open", "abandoned", "abandon"],
+      ["open", "expired", "lease_expiry"],
+      ["terminal_full", "compacted", "retention_30_days"]
+    ],
+    "openingSnapshots": {
+      "memberAccountCreate": ["schemaVersion", "householdId", "actorMemberId", "actorRole", "actorMembershipUpdatedAt", "platformAuthorityUpdatedAt"],
+      "memberPasswordReset": ["schemaVersion", "householdId", "actorMemberId", "actorRole", "actorMembershipUpdatedAt", "targetMemberId", "targetUserId", "targetRole", "targetMembershipUpdatedAt", "credentialVersion", "sessionSecurityVersion", "platformAuthorityUpdatedAt"]
+    },
+    "intentFingerprints": {
+      "memberAccountCreate": ["openingFingerprint", "stablePasswordIntentCommitment", "normalizedEmail", "exactDisplayName", "role", "requireFirstLoginPasswordChange"],
+      "memberPasswordReset": ["openingFingerprint", "stablePasswordIntentCommitment", "targetMemberId", "targetUserId", "requireFirstLoginPasswordChange"],
+      "passwordCommitment": {
+        "algorithm": "HMAC_SHA256",
+        "keySource": "configuredGlobalSecurityThrottleKey",
+        "keyConfiguration": "existing_CUBBY_THROTTLE_KEY_no_normal_rotation_path",
+        "keyAbsence": "fail_closed_before_operation_submission",
+        "domain": "cubby.admin-assisted-browser-intent.v1",
+        "domainMustDifferFrom": ["global_security_throttle_identifiers", "credential_hash_evidence", "fresh_auth_attestation"],
+        "encoding": "domain_then_u32be_length_prefixed_canonical_fields",
+        "commonFields": ["operationId", "householdId", "actorUserId", "actorSessionId", "actorMemberId", "operationKey"],
+        "memberAccountCreateFields": ["normalizedEmail_lowercase", "exactTrimmedDisplayName_UTF8", "role_database_literal", "requireFirstLoginPasswordChange_boolean_byte", "password_NFKC_UTF8_bytes"],
+        "memberPasswordResetFields": ["targetMemberId", "targetUserId", "requireFirstLoginPasswordChange_boolean_byte", "password_NFKC_UTF8_bytes"],
+        "passwordCanonicalization": "NFKC_UTF8_bytes",
+        "confirmationIncluded": false,
+        "browserFingerprintInput": "commitment_and_nonsecret_canonical_fields_only",
+        "forbiddenPersistence": ["plaintext_password", "password_confirmation", "unkeyed_password_digest", "commitment_as_password_verifier"],
+        "statusUse": "not_required_after_submission"
+      }
+    },
+    "terminalSchemas": {
+      "memberAccountCreate": {
+        "completed": {
+          "kind": "member_account",
+          "code": "created",
+          "fields": ["memberId"]
+        },
+        "rejected": ["existing_account_invitation_required"],
+        "stale": ["stale_context", "stale_target", "stale_revision"]
+      },
+      "memberPasswordReset": {
+        "completed": {
+          "kind": "member_password",
+          "code": "reset",
+          "fields": ["memberId"]
+        },
+        "rejected": ["personal_recovery_unavailable"],
+        "stale": ["stale_context", "stale_target", "stale_revision"]
+      },
+      "common": {"conflict": "idempotency_conflict", "pending": "operation_unknown", "compacted": "operation_result_expired", "abandoned": "operation_abandoned"}
+    },
+    "replay": {
+      "reauthorize": ["actor_session", "actor_membership", "actor_current_role", "target_scope", "protected_target_denials", "cross_household_reset_denial"],
+      "neverRequire": ["opening_credential_version_after_success", "old_password_hash_after_success", "current_target_credential_version", "current_target_credential_hash", "zero_current_target_sessions"],
+      "historicalSuccessProof": ["completed_binding", "terminal_operation", "matching_AssistedCredentialMutation_or_compaction_tombstone_relationship", "immutable_actor_target_origin_and_selected_flag_evidence"],
+      "commitClosureOnly": ["current_version_vector", "credential_hash_digest", "session_invalidation", "grant_and_recovery_closure"],
+      "subsequentTransitions": "must_not_invalidate_old_outcome_repeat_mutation_or_clear_newer_required_change",
+      "mutationCount": 0,
+      "auditCount": 0
+    },
+    "statusDisclosure": {"sameBindingSessionActorHouseholdOnly": true, "foreign": "not_found", "formerMember": "not_found"},
+    "clientRecovery": {
+      "reserveIdentityInSessionStorage": true,
+      "sessionStorageFields": ["operationId", "openingFingerprint", "nonsecretDraftIdentity"],
+      "sessionStorageForbidden": ["password", "passwordConfirmation", "passwordCommitment", "passwordHashDigest"],
+      "sameIdStatusBeforeReissue": true,
+      "unknownNeverAutoReissue": true,
+      "terminalReplaysWithoutPassword": true,
+      "passwordRetainedAcrossNavigation": false,
+      "missingPasswordAfterNavigation": "require_reentry_or_explicit_abandon_new_draft",
+      "sameOperationSameCanonicalFields": "same_stable_commitment",
+      "sameOperationChangedCanonicalFields": "idempotency_conflict_not_newer_edit_acknowledgement"
+    },
+    "statusProjection": {
+      "procedure": "get_assisted_account_operation_status_v1",
+      "security": "SECURITY_DEFINER_fixed_search_path_PUBLIC_revoked",
+      "runtimeGrant": "EXECUTE_only",
+      "directReceiptSelect": false,
+      "fields": ["operationId", "status", "outcomeCode", "outcomeKind", "targetMemberId", "terminalAt", "compacted"]
+    }
+  },
+  "concurrency": {
+    "earliestHook": {
+      "name": "preIdentityLock",
+      "appliesTo": ["reserve", "submit", "status", "abandon"],
+      "before": ["household_browser_operation_identity", "BrowserOperationBinding"],
+      "existingPreActorLockRetainedForOtherOperations": true
+    },
+    "fenceProcedure": "acquire_assisted_credential_fence_v1",
+    "lockOrder": ["global-security-transition:v1", "HouseholdMember_TABLE_EXCLUSIVE_NOWAIT", "PlatformAuthority_SHARE_NOWAIT", "PlatformSettings_SHARE_NOWAIT", "User_ids_ascending_NOWAIT", "AccountSecurityState_user_ids_ascending_NOWAIT", "Account_credential_ids_ascending_NOWAIT", "Session_via_restricted_assisted_NOWAIT_functions_ids_ascending", "SessionSecurityActivity_session_ids_ascending_NOWAIT", "FreshAuthGrant_ids_ascending_NOWAIT", "RecoverySession_ids_ascending_NOWAIT", "GlobalSecurityOperationBinding_ids_ascending_NOWAIT", "GlobalSecurityOperation_user_operation_ids_ascending_NOWAIT", "HouseholdMember_ids_ascending_NOWAIT", "Household_ids_ascending_NOWAIT", "browser_operation_identity_and_binding_NOWAIT", "AssistedCredentialMutation_insert"],
+    "retry": {
+      "wholeTransactionOnly": true,
+      "attempts": 3,
+      "sqlstates": ["55P03", "40001", "40P01"],
+      "backoffMilliseconds": [0, 25, 75],
+      "partialStatementRetry": false
+    },
+    "sessionLocks": ["lock_actor_session_for_assisted_operation_nowait", "lock_user_sessions_for_assisted_operation_nowait"],
+    "assistedFence": {
+      "tableFence": "LOCK_TABLE_HouseholdMember_EXCLUSIVE_NOWAIT",
+      "allPotentiallyConflictingRowLocks": "NOWAIT",
+      "ordinaryWriterOrder": "Session_then_SessionSecurityActivity_and_AccountSecurityState_then_HouseholdMember",
+      "ordinaryHelpersUnchangedFreshness": true,
+      "newSessionHelpers": ["lock_actor_session_for_assisted_operation_nowait", "lock_user_sessions_for_assisted_operation_nowait"],
+      "rawRuntimeSessionForUpdate": false,
+      "sqlWriteAndFkPrelocks": {"existingParents": "FOR_KEY_SHARE_NOWAIT_before_child_writes", "updatedOrDeletedRows": "FOR_UPDATE_NOWAIT_before_DML", "browserIdentityAndBinding": "advisory_identity_then_existing_rows_FOR_UPDATE_NOWAIT", "newCreateUser": "unique_email_constraint_plus_serializable_retry_no_absence_row_lock", "createdRows": "owned_by_current_transaction_no_second_lock"},
+      "conflictOutcome": "55P03_whole_transaction_rollback_and_retry",
+      "proof": "assisted_never_waits_on_a_row_owned_by_an_ordinary_writer_while_holding_member_table_fence"
+    },
+    "fenceGuarantee": {
+      "blockedExistingWriters": ["membership_insert", "membership_remove", "membership_reassign", "membership_suspend", "membership_restore", "membership_role_change", "membership_row_lock"],
+      "newWriterRule": "all_HouseholdMember_DML_remains_ordinary_PostgreSQL_DML_and_browser_writers_revalidate_session_before_member_lock",
+      "release": "transaction_end"
+    },
+    "hashInsideLock": false,
+    "statusAndAbandonMayInvert": false,
+    "statusAndAbandon": {"samePreIdentityFenceAndNowaitOrder": true, "terminalReplayUsesStaleMutableVersionPredicate": false, "abandonOpenOnly": true}
+  },
+  "persistence": {
+    "models": {
+      "AssistedCredentialMutation": {
+        "primaryKey": ["householdId", "operationId"],
+        "columns": [
+          {"name": "householdId", "sqlType": "TEXT", "nullable": false},
+          {"name": "operationId", "sqlType": "TEXT", "nullable": false},
+          {"name": "operationKey", "sqlType": "BrowserOperationKey", "nullable": false},
+          {"name": "browserBindingId", "sqlType": "TEXT", "nullable": false},
+          {"name": "actorUserId", "sqlType": "TEXT", "nullable": false},
+          {"name": "actorSessionId", "sqlType": "TEXT", "nullable": false},
+          {"name": "actorMemberId", "sqlType": "TEXT", "nullable": false},
+          {"name": "targetUserId", "sqlType": "TEXT", "nullable": false},
+          {"name": "targetMemberId", "sqlType": "TEXT", "nullable": false},
+          {"name": "accountId", "sqlType": "TEXT", "nullable": false},
+          {"name": "openingFingerprint", "sqlType": "TEXT", "nullable": false},
+          {"name": "intentFingerprint", "sqlType": "TEXT", "nullable": false},
+          {"name": "oldCredentialVersion", "sqlType": "INTEGER", "nullable": true},
+          {"name": "newCredentialVersion", "sqlType": "INTEGER", "nullable": false},
+          {"name": "oldSessionSecurityVersion", "sqlType": "INTEGER", "nullable": true},
+          {"name": "newSessionSecurityVersion", "sqlType": "INTEGER", "nullable": false},
+          {"name": "passwordHashDigest", "sqlType": "BYTEA", "nullable": false},
+          {"name": "requireFirstLoginPasswordChange", "sqlType": "BOOLEAN", "nullable": false},
+          {"name": "attestationNonce", "sqlType": "BYTEA", "nullable": false},
+          {"name": "attestationKeyVersion", "sqlType": "INTEGER", "nullable": false},
+          {"name": "attestationIssuedAt", "sqlType": "TIMESTAMP(3)", "nullable": false},
+          {"name": "attestationMacDigest", "sqlType": "BYTEA", "nullable": false},
+          {"name": "createdAt", "sqlType": "TIMESTAMP(3)", "nullable": false, "default": "clock_timestamp()"}
+        ],
+        "unique": [
+          ["browserBindingId"],
+          ["attestationNonce"]
+        ],
+        "checks": ["operationKey_in_member.account.create_member.password.reset", "operationId_canonical_bmo", "openingFingerprint_hex64", "intentFingerprint_hex64", "passwordHashDigest_32_bytes", "attestationNonce_32_bytes", "attestationMacDigest_32_bytes", "positive_versions", "create_old_versions_null_new_versions_1", "reset_old_versions_nonnull_new_versions_old_plus_1"],
+        "foreignKeys": [
+          {"column": "targetUserId", "references": "User(id)", "onDelete": "CASCADE", "onUpdate": "CASCADE"}
+        ],
+        "snapshotColumnsWithoutLiveForeignKeys": ["householdId", "browserBindingId", "actorUserId", "actorSessionId", "actorMemberId", "targetMemberId", "accountId"],
+        "guards": ["insert_only_by_definer", "immutable", "nonce_unique", "deferred_success_closure", "ordinary_update_delete_truncate_blocked"],
+        "shape": {"create": "old_versions_null_new_versions_1", "reset": "old_versions_nonnull_new_versions_exactly_old_plus_1", "digests": "exactly_32_bytes"},
+        "lifecycle": {"soleDeletePath": "target_User_hard_delete_FK_cascade", "targetDeleteProof": "BEFORE_DELETE_guard_allows_only_when_target_User_row_is_already_absent_during_FK_cascade", "actorSessionMemberHouseholdAccountDeletion": "does_not_delete_or_mutate_receipt", "browserFullCompaction": "receipt_survives", "truncate": "blocked", "newPurgeApi": false}
+      },
+      "AssistedAccountState": {
+        "columns": [
+          {"name": "userId", "sqlType": "TEXT", "nullable": false},
+          {"name": "assistedCreationHouseholdId", "sqlType": "TEXT", "nullable": true},
+          {"name": "assistedCreationMemberId", "sqlType": "TEXT", "nullable": true},
+          {"name": "assistedCreationOperationId", "sqlType": "TEXT", "nullable": true},
+          {"name": "requiredChangeCredentialVersion", "sqlType": "INTEGER", "nullable": true},
+          {"name": "createdAt", "sqlType": "TIMESTAMP(3)", "nullable": false, "default": "clock_timestamp()"},
+          {"name": "updatedAt", "sqlType": "TIMESTAMP(3)", "nullable": false, "default": "clock_timestamp()"}
+        ],
+        "primaryKey": ["userId"],
+        "unique": [
+          ["assistedCreationHouseholdId", "assistedCreationOperationId"]
+        ],
+        "checks": ["all_three_origin_fields_null_or_all_three_nonnull", "assistedCreationOperationId_canonical_bmo_when_nonnull", "requiredChangeCredentialVersion_positive_when_nonnull"],
+        "foreignKeys": [
+          {"column": "userId", "references": "User(id)", "onDelete": "CASCADE", "onUpdate": "CASCADE"}
+        ],
+        "snapshotColumnsWithoutLiveForeignKeys": ["assistedCreationHouseholdId", "assistedCreationMemberId", "assistedCreationOperationId"],
+        "creationOriginShape": "all_three_origin_fields_null_or_all_three_nonnull",
+        "dml": "definer_only",
+        "originMutation": "immutable_no_reassignment_or_adoption",
+        "removedOriginMembership": "snapshot_retained_bridge_reauthorization_fails_closed",
+        "clearRule": "closed_transition_matrix_only",
+        "lifecycle": {"soleDeletePath": "target_User_hard_delete_FK_cascade", "targetDeleteProof": "BEFORE_DELETE_guard_allows_only_when_User_row_is_already_absent_during_FK_cascade", "memberOrHouseholdDeletion": "does_not_delete_or_mutate_state", "truncate": "blocked", "newPurgeApi": false}
+      },
+      "SessionPrivateCredentialProof": {
+        "columns": [
+          {"name": "credentialProofPurpose", "sqlType": "TEXT", "nullable": true},
+          {"name": "credentialProofHashDigest", "sqlType": "BYTEA", "nullable": true},
+          {"name": "credentialProofIssuedAt", "sqlType": "TIMESTAMP(3)", "nullable": true},
+          {"name": "credentialProofNonce", "sqlType": "BYTEA", "nullable": true},
+          {"name": "credentialProofKeyVersion", "sqlType": "INTEGER", "nullable": true},
+          {"name": "credentialProofMac", "sqlType": "BYTEA", "nullable": true}
+        ],
+        "unique": [
+          ["credentialProofNonce"]
+        ],
+        "checks": ["all_six_null_or_all_six_nonnull", "hash_digest_nonce_mac_exactly_32_bytes_when_nonnull", "purpose_credential_sign_in_when_nonnull"],
+        "nullableFor": ["trusted_existing_sessions_present_before_migration", "trusted_email_rotation_definer_identity"],
+        "newCubbyAuthInsert": "all_six_required",
+        "returnedByBetterAuth": false,
+        "clientWritable": false,
+        "lifecycle": {"delete": "with_Session_delete", "update": "proof_fields_immutable", "truncate": "Session_existing_policy"}
+      }
+    },
+    "procedures": ["acquire_assisted_credential_fence_v1()", "lock_actor_session_for_assisted_operation_nowait(text,text)", "lock_user_sessions_for_assisted_operation_nowait(text)", "lock_actor_session_for_browser_write_v1(text,text)", "create_assisted_member_account_v1(text,text,text,text,text,text,text,text,text,HouseholdRole,text,bytea,boolean,integer,bytea,timestamp,bytea)", "reset_assisted_member_password_v1(text,text,text,text,text,text,text,text,integer,integer,text,bytea,boolean,integer,bytea,timestamp,bytea)", "get_assisted_account_operation_status_v1(text,text,text,text)", "sign_out_required_change_session_v1(text,text)"],
+    "procedureProperties": {"security": "SECURITY_DEFINER", "searchPath": "pg_catalog,public", "publicExecute": false, "runtimeExecuteAllowlistOnly": true, "dynamicSql": false, "allAuthorizationRecheckedInside": true},
+    "grants": {
+      "cubby_runtime": {
+        "tables": {
+          "AssistedAccountState": ["SELECT"],
+          "AssistedCredentialMutation": []
+        },
+        "execute": ["acquire_assisted_credential_fence_v1()", "lock_actor_session_for_assisted_operation_nowait(text,text)", "lock_user_sessions_for_assisted_operation_nowait(text)", "lock_actor_session_for_browser_write_v1(text,text)", "create_assisted_member_account_v1(text,text,text,text,text,text,text,text,text,HouseholdRole,text,bytea,boolean,integer,bytea,timestamp,bytea)", "reset_assisted_member_password_v1(text,text,text,text,text,text,text,text,integer,integer,text,bytea,boolean,integer,bytea,timestamp,bytea)", "get_assisted_account_operation_status_v1(text,text,text,text)", "sign_out_required_change_session_v1(text,text)"],
+        "denied": ["User_DML", "Account_DML", "Session_DML", "AssistedAccountState_DML", "AssistedCredentialMutation_DML", "FreshAuthAttestationKey_SELECT"]
+      },
+      "cubby_auth": {
+        "sessionProofColumns": ["INSERT", "SELECT", "UPDATE", "DELETE"],
+        "directCredentialMutation": false,
+        "freshAuthKeyRead": false
+      },
+      "PUBLIC": {
+        "tables": [],
+        "functions": []
+      }
+    },
+    "deferredSuccessClosure": {
+      "receiptTrigger": {
+        "name": "AssistedCredentialMutation_success_closure",
+        "function": "assert_assisted_credential_mutation_success_v1",
+        "timing": "AFTER_INSERT_CONSTRAINT_DEFERRABLE_INITIALLY_DEFERRED",
+        "events": ["INSERT"]
+      },
+      "operationConverseTrigger": {
+        "name": "BrowserMutationOperation_assisted_receipt_closure",
+        "function": "assert_completed_assisted_operation_has_receipt_v1",
+        "timing": "AFTER_INSERT_OR_UPDATE_CONSTRAINT_DEFERRABLE_INITIALLY_DEFERRED",
+        "events": ["INSERT", "UPDATE"],
+        "appliesWhen": "operationKey_in_two_assisted_keys_and_status_completed"
+      },
+      "mutableRelationGuards": ["AccountSecurityState_version_guard_requires_assisted_attribution_and_deferred_closure", "AssistedAccountState_transition_guard_enforces_origin_immutability_and_closed_requirement_matrix", "BrowserOperationBinding_existing_write_once_guard", "BrowserMutationOperation_existing_write_once_guard"],
+      "checks": ["binding_state_terminal_and_exact_receipt_identity", "operation_status_completed_and_exactly_one_receipt", "operation_outcome_matches_key", "actor_target_account_member_household_identity_matches_binding_and_receipt", "selected_required_flag_and_origin_exactly_match_receipt_and_assisted_state", "both_versions_and_both_last_operation_ids_match_assisted_bmo", "receipt_account_hash_digest_matches_current", "reset_has_zero_target_sessions", "reset_has_zero_active_target_session_security_activity", "reset_has_zero_issued_fresh_auth_grants", "reset_has_zero_restricted_recovery_sessions", "every_preexisting_restricted_recovery_session_has_own_stale_terminal_operation_terminal_binding_closed_session_and_event", "exactly_one_content_free_audit"],
+      "compactionException": {"procedure": "compact_household_browser_operations_existing_guarded_function_extended_for_assisted_receipts", "requires": "no_gap_transactional_insert_tombstone_then_delete_full_binding_and_operation", "matchingEvidence": "same_household_operation_key_operation_id_actor_member_intent_terminal_status_terminal_code", "receipt": "retained_and_not_a_foreign_key_to_full_or_tombstone_rows", "openBypass": false},
+      "directSqlNegativeCases": ["completed_operation_without_receipt", "receipt_without_completed_operation", "checkbox_mismatch", "member_or_actor_mismatch", "partial_reset_or_partial_recovery_closure", "duplicate_receipt_or_duplicate_audit"],
+      "failure": "transaction_rollback"
+    }
+  },
+  "attestation": {
+    "keySource": "CUBBY_FRESH_AUTH_ATTESTATION_KEYRING",
+    "activeVersionSource": "CUBBY_FRESH_AUTH_ATTESTATION_ACTIVE_KEY_VERSION",
+    "newSecretConfiguration": false,
+    "algorithm": "HMAC_SHA256",
+    "frame": {
+      "encoding": "domain_then_u32be_length_prefixed_fields_and_fixed_width_integers",
+      "domain": "cubby.admin-assisted-credential-mutation.v1",
+      "fields": ["purpose", "actorUserId", "actorSessionId", "actorMemberId", "householdId", "operationId", "openingFingerprint", "intentFingerprint", "replacementPasswordHashDigest", "newValuesDigest", "oldCredentialVersion", "oldSessionSecurityVersion", "issuedAt_timestamp3_microseconds_since_2000_i64be", "nonce", "keyVersion"]
+    },
+    "purposeValues": ["member_account_create", "member_password_reset"],
+    "fieldEncoding": {"text": "utf8_u32be_length_prefixed", "digest": "raw_32_bytes_u32be_length_prefixed", "nullableVersion": "signed_i64be_minus_1_for_null", "keyVersion": "signed_i32be", "nonce": "raw_32_bytes_u32be_length_prefixed", "issuedAt": "PostgreSQL_TIMESTAMP_3_UTC_encoded_as_signed_i64be_microseconds_since_2000_01_01"},
+    "newValuesDigest": {
+      "member_account_create": ["normalizedEmail", "exactDisplayName", "role", "requireFirstLoginPasswordChange"],
+      "member_password_reset": ["targetUserId", "targetMemberId", "requireFirstLoginPasswordChange"],
+      "canonicalization": "same_binary_field_framing_then_SHA256"
+    },
+    "rotation": {"active": "accepted", "prior": "accepted_only_when_rotatedAt_plus_10_db_minutes_is_future", "others": "rejected", "replay": "nonce_unique"},
+    "freshness": {"clock": "database_clock_timestamp", "maximumDatabaseAgeSeconds": 600, "maximumFutureSkewSeconds": 5, "nonceBytes": 32, "nonceUniqueness": "AssistedCredentialMutation_attestationNonce_unique", "timestampPrecision": "milliseconds_with_microsecond_encoding_low_three_digits_zero"},
+    "databaseValidation": ["all_bound_fields_equal", "password_hash_digest_recomputed", "new_values_digest_recomputed", "issuedAt_signed_and_within_database_freshness_window", "active_or_unexpired_prior_key", "constant_time_mac_equal", "nonce_unused"]
+  },
+  "signInRaceClosure": {
+    "betterAuthVersion": "1.6.19",
+    "sourceSequence": ["findUserByEmail_with_accounts", "password.verify_stored_hash_and_plaintext", "internalAdapter.createSession"],
+    "verifier": "wrap_better_auth_crypto_verifyPassword",
+    "requestIsolation": "AsyncLocalStorage_per_auth_request",
+    "capturedOnSuccessfulVerify": ["sha256_exact_stored_hash", "credential_sign_in_purpose"],
+    "capturedOnFailedVerify": [],
+    "sessionCreateBefore": {
+      "requiresCapturedProof": true,
+      "binds": ["session_userId", "sha256_session_token", "sha256_exact_stored_hash", "credential_sign_in_purpose", "issuedAt", "nonce", "keyVersion"],
+      "missingOrMismatched": "reject"
+    },
+    "sessionProofFrame": {
+      "encoding": "domain_then_u32be_length_prefixed_fields_and_fixed_width_integers",
+      "domain": "cubby.password-session-proof.v1",
+      "fields": ["purpose", "userId", "sessionTokenDigest", "credentialHashDigest", "issuedAt_timestamp3_microseconds_since_2000_i64be", "nonce", "keyVersion"]
+    },
+    "alsWiring": {
+      "routeWrapper": "wrap_complete_Better_Auth_route_handler_in_AsyncLocalStorage_run",
+      "oneStorePerRequest": true,
+      "verifierWrapper": "better_auth_crypto_verifyPassword",
+      "successfulVerifyStore": ["user_bound_by_following_session_create", "sha256_exact_stored_credential_hash", "credential_sign_in_purpose"],
+      "failedVerifyStore": "empty",
+      "sessionCreateBefore": "reads_only_current_request_store_and_returns_private_fields_in_data",
+      "generatedTokenTiming": "internalAdapter_generates_token_before_session_create_before_hook",
+      "hookMerge": "with_hooks_merges_returned_data_into_adapter_insert",
+      "responseFiltering": "parseSessionOutput_omits_returned_false_fields_and_email_signin_returns_token_plus_user_only",
+      "cleanup": "ALS_store_unreachable_after_route_completion"
+    },
+    "sessionAdditionalFields": {
+      "credentialProofPurpose": {"input": false, "returned": false},
+      "credentialProofHashDigest": {"input": false, "returned": false},
+      "credentialProofIssuedAt": {"input": false, "returned": false},
+      "credentialProofNonce": {"input": false, "returned": false},
+      "credentialProofKeyVersion": {"input": false, "returned": false},
+      "credentialProofMac": {"input": false, "returned": false}
+    },
+    "trigger": {
+      "name": "Session_00_credential_proof_guard",
+      "timing": "BEFORE INSERT",
+      "security": "SECURITY DEFINER fixed_search_path PUBLIC_revoked",
+      "firstLock": "global-security-transition:v1",
+      "requireWhen": "session_user_equals_cubby_auth",
+      "exemptWhen": "trusted_email_rotation_definer_identity_only",
+      "validates": ["purpose", "userId", "sha256_session_token", "sha256_current_stored_credential_hash", "issuedAt_not_more_than_5_seconds_future_and_within_10_db_minutes", "nonce", "keyVersion", "mac", "nonce_not_replayed"]
+    },
+    "triggerOrdering": ["Session_00_credential_proof_guard", "Session_require_active_membership", "Session_sign_in_succeeded_event"],
+    "keyRotation": {"active": "accepted", "prior": "accepted_only_when_rotatedAt_plus_10_db_minutes_is_future", "others": "rejected"},
+    "orderings": {"signInFirst": "session_insert_then_reset_deletes_session", "resetFirst": "stored_hash_digest_mismatch_rejects_session_insert"},
+    "atomicEffects": ["Session", "SessionSecurityActivity", "GlobalSecurityEvent_sign_in_succeeded"],
+    "atomicIntegration": {"afterInsertTrigger": "extend_write_global_security_session_sign_in_event_to_initialize_activity_at_current_sessionSecurityVersion", "applicationAfterHook": "retained_idempotent_compatibility_call", "globalLockHeldAcrossInsertAndAfterTriggers": true},
+    "legacySessions": {
+      "backfillProof": false,
+      "remainValidUnderExistingVersionRules": true,
+      "proofRequiredOnlyForNew_cubby_auth_inserts": true,
+      "nullProofAllowedFor": ["trusted_existing_session_rows", "trusted_email_rotation_definer_identity"],
+      "authRoleNullProof": "rejected"
+    },
+    "forbidden": ["plaintext_in_ALS_after_verify_returns", "raw_hash_in_Session", "proof_in_framework_response", "proof_client_input", "generic_auth_endpoint_reopen"]
+  },
+  "requiredChangeCorridor": {
+    "condition": "AssistedAccountState.requiredChangeCredentialVersion_is_nonnull",
+    "internalIdentityClassification": ["ordinary", "restricted", "unauthenticated"],
+    "sessionPolicy": {"ordinaryDefault": "deny_when_required_version_is_any_nonnull_value_including_invalid_or_mismatched", "publicGetSession": "restricted_returns_null", "privateIdentityHelper": "returns_ordinary_restricted_or_unauthenticated_without_household_data", "ordinaryApiError": "password_change_required", "purposeSource": "server_constant_only", "clientControlledPurpose": false, "themeBehavior": "DEFAULT_APPEARANCE_MODE_fallback"},
+    "serverPurposes": ["required_change_page", "required_change_submit", "required_change_status", "canonical_sign_out", "post_signin_dispatch", "assisted_post_signin_bridge"],
+    "allowlist": [
+      ["GET", "/account/required-password-change", "identity_only"],
+      ["POST", "/api/account/security/required-password-change", "identity_and_password_change"],
+      ["POST", "/api/account/security/required-password-change/status", "identity_and_status"],
+      ["POST", "/api/account/sign-out", "identity_and_current_session_delete"],
+      ["GET", "/invite/dispatch", "identity_and_route_only"],
+      ["POST", "/api/account/assisted-post-sign-in", "identity_and_origin_membership_selection"]
+    ],
+    "deniedSurfaces": ["requireUser", "getHouseholdContext", "invitation_corridor", "account_appearance", "platform", "history", "browser_operation_status", "all_app_routes"],
+    "passwordChange": {"engine": "existing_Global_Security_self_password_change", "requiresCurrentTemporaryPassword": true, "requiresNewPasswordConfirmation": true, "replacementMustDifferBy": "better_auth_verifyPassword_against_current_hash_NFKC_semantics", "sameNormalizedPasswordOutcome": "reject_and_keep_requirement", "wrongCurrentOrConfirmationMismatch": "reject_and_keep_requirement", "ordinarySelfChangeBehavior": "unchanged", "revokesAllSessions": true, "result": "signed_out", "next": "ordinary_sign_in"},
+    "clear": {"trigger": "AssistedAccountState_required_change_transition_guard_and_deferred_clear", "source": "closed_transition_matrix", "deferred": true, "uiSetter": false, "standaloneSetter": false},
+    "clearClosure": ["PasswordChangeCredentialMutation_matches_user_and_operation", "PasswordChangeCredentialMutation_existing_row_created_by_apply_password_change_credential_mutation", "GlobalSecurityOperation_passwordChange_completed_changed", "GlobalSecurityOperationBinding_terminal", "AccountSecurityState_lastCredentialOperationId_matches", "AccountSecurityState_credentialVersion_equals_rebound_required_version", "Account_current_credential_nonnull_and_receipt_account_matches"],
+    "transitionMatrix": {"assisted_create_checked": "set_to_credential_version_1", "assisted_create_unchecked": "null", "assisted_reset_checked": "set_to_new_credential_version", "assisted_reset_unchecked": "clear_after_success_closure", "canonical_self_password_change": "rebind_then_deferred_clear_after_existing_hash_mutation_receipt", "offline_recovery_reset": "preserve_and_rebind_to_new_credential_version", "future_canonical_credential_writer": "must_preserve_and_rebind_or_be_denied_by_guard", "standalone_or_app_flag_setter": "forbidden"},
+    "triggerOrdering": ["credential_version_advance_rebinds_any_nonnull_requirement_to_new_version_inside_same_canonical_transaction", "assisted_checked_or_unchecked_selection_applies_inside_assisted_definer", "canonical_self_password_change_deferred_clear_runs_after_terminal_binding_operation_version_attribution_and_existing_hash_mutation_receipt", "commit_requires_checkbox_state_equals_receipt"],
+    "canonicalSignOut": {"body": "empty_json_object", "sameOrigin": true, "mutation": "delete_exact_current_session_and_revoke_activity", "cookieClear": true, "otherSessions": "unchanged"},
+    "dispatchOrder": ["identity_only_session", "required_change_route_if_required", "existing_invitation_post_signin_bind_if_not_required", "assisted_post_signin_bridge_if_not_invitation_review", "neutral_root_fallback"],
+    "pageNavigation": {
+      "privateConsumers": ["requireUserPage", "root_page", "login_page", "app_layout"],
+      "restrictedDestination": "/account/required-password-change",
+      "pathsThatMustReachCorridor": ["direct_app_url", "settings_bookmark", "root", "login", "reload"],
+      "loginLoop": "forbidden",
+      "theme": "default_without_private_preference_read",
+      "householdContextBeforeClear": false,
+      "dispatchBeforeClear": "identity_only_origin_pointer_validation",
+      "originSelection": "only_after_requirement_clears_and_new_signin"
+    },
+    "assistedHomeBridge": {"selectedMembership": "AssistedAccountState.assistedCreationMemberId_only", "requireStillAuthorized": true, "arbitraryFirstMembershipFallback": false, "success": "/app", "unavailable": "/"}
+  },
+  "ordinaryWriteRevalidation": {
+    "contextTypes": {
+      "browser": {"type": "BrowserHouseholdWriteContext", "discriminant": "browser_session", "sessionId": "required_server_derived", "construction": "private_identity_helper_plus_selected_current_membership"},
+      "api_key": {"type": "ApiKeyHouseholdWriteContext", "discriminant": "api_key", "apiKeyId": "required_server_derived", "sessionId": "forbidden", "validator": "existing_api_key_scope_expiry_revocation_and_containment_checks"},
+      "system": {"type": "SystemHouseholdWriteContext", "discriminant": "system_capability", "sessionId": "forbidden", "construction": "closed_internal_background_maintenance_or_fixture_capability_not_exported_to_browser_routes"}
+    },
+    "householdContext": "read_only_shape_not_accepted_by_browser_transactional_writers",
+    "browserTransactionHelper": "lock_actor_session_for_browser_write_v1",
+    "browserTransactionLockOrder": ["Session_FOR_UPDATE_via_definer", "SessionSecurityActivity_FOR_UPDATE", "AccountSecurityState_FOR_SHARE", "AssistedAccountState_FOR_SHARE", "HouseholdMember_FOR_UPDATE"],
+    "browserTransactionCheck": ["Session_matches_user_and_is_unexpired", "SessionSecurityActivity_active", "issuanceSessionSecurityVersion_equals_current_sessionSecurityVersion", "no_nonnull_requiredChangeCredentialVersion", "membership_matches_household_user_and_is_active"],
+    "agedOrdinarySessionWrites": "allowed_when_all_version_and_restriction_checks_pass",
+    "passwordCorridorException": "canonical_self_password_change_only",
+    "lockActorForWriteCallers": ["src/server/services/activities.ts:direct_browser_activity_timer_delete_undo_and_replay", "src/server/services/activities.ts:api_key_branch_uses_api_key_discriminant", "src/server/services/audit-reader.ts:audited_exports_and_safety_mutations", "src/server/services/backups.ts:browser_restore", "src/server/services/export.ts:browser_export_audit", "src/server/services/integrations.ts:api_key_and_webhook_browser_mutations", "src/server/services/integrations.ts:savePushSubscription", "src/server/services/households.ts:addBaby_and_lifecycle", "src/server/services/sprout-import.ts:browser_preview_commit_and_failure_finalization"],
+    "otherOrdinaryBrowserWriterFamilies": ["src/server/services/browser-operations.ts:all_household_browser_operation_mutations_and_status", "src/server/services/appearance.ts:family_accent", "src/server/services/attachments.ts_and_attachment-write-intents.ts", "src/server/services/calendar.ts", "src/server/services/feed-posts.ts_and_feed-interactions.ts", "src/server/services/invites.ts_and_invitation-route-layer.ts", "src/server/services/member-access.ts_and_household-leave.ts", "src/server/services/planned-schedule.ts", "src/server/services/unit-preferences.ts", "src/server/services/account-appearance.ts_and_account-browser-operation-status.ts", "src/server/services/global-security.ts_global-session-security.ts_email-change.ts_recovery-lifecycle.ts"],
+    "integrationRules": {"householdBrowserWriters": "replace_plain_HouseholdContext_with_BrowserHouseholdWriteContext_and_call_shared_transaction_helper_before_first_business_write", "householdBrowserOperations": "lockCurrentActor_calls_same_session_security_and_requirement_assertion_before_member_lock", "accountAppearance": "lockCurrentAccountActor_revalidates_session_activity_current_session_security_version_and_no_requirement", "globalSecurity": "ordinary_entrypoints_revalidate_session_activity_and_version; restricted_entrypoint_exists_only_for_self_password_change", "pageAndRouteMutations": "derive_closed_carrier_server_side_and_never_accept_client_auth_discriminant", "apiKeyAndSystem": "retain_existing_capability_validator_and_never_fabricate_or_optionally_skip_browser_session"},
+    "pushSubscriptionRace": {"writeFirst": "session_helper_and_member_lock_then_upsert_commits_before_reset; reset_then_revokes_session", "resetFirst": "session_missing_or_security_version_or_requirement_check_rejects_before_upsert", "resurrection": "forbidden"}
+  },
+  "compatibility": {
+    "invitationFlow": "unchanged",
+    "invitationAccountSetupForAssistedCreate": "none",
+    "offlineData": "unchanged",
+    "ordinaryLoginDestination": "assisted_bridge_then_home",
+    "recoveryLink": "none",
+    "existingEmailRejection": "deterministic_terminal_browser_operation_with_zero_identity_credential_membership_assisted_state_or_audit_effects",
+    "crossHouseholdMessage": "For privacy, this password cannot be reset here. Personal emailed recovery is not available yet.",
+    "phase2": ["self_service_signup", "emailed_password_recovery"]
+  },
+  "retention": {"browserTerminalFullDays": 30, "browserTombstone": "lifetime_operation_identity_content_free", "browserCompactionHandoff": "single_guarded_transaction_inserts_exact_matching_tombstone_before_deleting_full_operation_and_binding", "browserCompactionReceiptEffect": "AssistedCredentialMutation_survives_and_neither_blocks_compaction_nor_disappears", "AssistedCredentialMutation": "until_target_user_hard_delete", "AssistedAccountState": "until_target_user_hard_delete", "historicalSnapshots": "actor_session_member_household_account_and_origin_identifiers_survive_their_normal_deletion_or_compaction", "ordinaryMutation": "UPDATE_DELETE_TRUNCATE_blocked", "targetUserHardDelete": "only_FK_cascade_delete_path_using_existing_disabled_user_delete_lifecycle_no_new_purge_API", "sessionCredentialProof": "until_session_delete", "householdBackup": "all_assisted_state_receipts_proofs_full_operations_and_tombstones_excluded", "fullSystemBackup": "all_assisted_state_receipts_proofs_full_operations_and_tombstones_included"},
+  "sourceIntegration": {
+    "browserOperations": {
+      "file": "src/server/services/browser-operations.ts",
+      "symbols": ["issueHouseholdBrowserOperation", "executeHouseholdBrowserOperation", "abandonHouseholdBrowserOperation"],
+      "change": "add_preIdentityLock_and_status_hook_registry_for_two_keys_with_NOWAIT_assisted_row_locks_and_immutable_terminal_projection"
+    },
+    "authConfiguration": {"file": "src/lib/auth/auth.ts", "change": "ALS_verifier_wrapper_private_session_fields_and_atomic_session_activity"},
+    "sessionGate": {"file": "src/server/auth/session.ts", "change": "default_deny_plus_closed_server_purpose_api"},
+    "householdContext": {"file": "src/server/auth/context.ts", "change": "add_closed_server_derived_BrowserHouseholdWriteContext_with_required_sessionId_keep_plain_HouseholdContext_for_reads_and_separate_api_key_system_discriminants"},
+    "invitationCorridor": {"file": "src/server/services/invitation-setup-corridor.ts", "change": "none_required_and_required_change_sessions_never_enter_it"},
+    "globalSecurity": {"file": "src/server/services/global-security.ts", "change": "reuse_self_password_change_and_deferred_receipt_closure"},
+    "attestation": {"file": "src/server/services/fresh-auth-attestation.ts", "change": "purpose_separated_signers_same_keyring"},
+    "restrictedSessionLocks": {"file": "prisma/migrations/20260916120000_actor_session_lock_function/migration.sql", "change": "retain_existing_blocking_helpers_add_narrow_assisted_NOWAIT_helpers_and_browser_write_revalidation_helper_never_raw_runtime_FOR_UPDATE"},
+    "betterAuthSignIn": {"file": "node_modules/better-auth/dist/api/routes/sign-in.mjs", "verifiedSequence": "password.verify_then_internalAdapter.createSession"},
+    "betterAuthHooks": {"file": "node_modules/better-auth/dist/db/with-hooks.mjs", "verifiedBehavior": "generated_token_exists_before_hook_session_create_before_returned_data_merges_into_adapter_insert_and_returned_false_fields_are_filtered"},
+    "ordinaryWriterBoundary": {
+      "files": ["src/server/services/mutation-locks.ts", "src/server/services/integrations.ts", "src/server/services/activities.ts", "src/server/services/backups.ts", "src/server/services/export.ts", "src/server/services/audit-reader.ts", "src/server/services/households.ts", "src/server/services/sprout-import.ts"],
+      "change": "thread_required_browser_session_carrier_into_transactional_writer_and_revalidate_session_activity_version_and_requirement_before_member_lock"
+    },
+    "passwordSemantics": {"file": "node_modules/@better-auth/utils/dist/password.node.mjs", "verifiedBehavior": "scrypt_generateKey_normalizes_password_with_NFKC_for_hash_and_verify"}
+  },
+  "acceptance": {
+    "required": ["focused_unit_TDD", "closed_schema_cross_field_validator", "negative_in_memory_security_section_deletion_and_contradiction_fixtures", "restricted_role_grants_and_denials", "transaction_rollback", "actor_role_race", "target_role_race", "target_email_race", "cross_household_active_membership", "cross_household_disabled_membership", "cross_household_deleted_household_membership", "reset_then_signin_race", "signin_then_reset_race", "ordinary_writer_session_lock_then_assisted_nowait_interleaving", "push_subscription_write_reset_interleavings", "concurrent_signin_ALS_isolation", "replay_and_unknown_outcome", "historical_replay_after_later_credential_and_requirement_transitions", "legacy_session_compatibility", "rendered_browser_default_home", "rendered_browser_required_change_corridor", "rendered_browser_self_change_signin_home", "rendered_browser_reset_old_sessions", "responsive_mobile_UI", "npm_run_typecheck", "npm_run_lint", "npm_run_test", "npm_run_verify_browser_operation_save_path", "npm_run_build", "frozen_independent_review", "exact_head_CI"],
+    "databaseCases": {
+      "create": ["owner_each_permitted_role", "admin_each_permitted_role", "admin_admin_denied", "existing_email_no_writes", "platform_owner_email_no_writes", "atomic_rollback_each_deferred_guard", "emailVerified_false_and_ordinary_signin_reaches_exact_origin_membership_home", "concurrent_identical_submit_uses_same_stable_intent_commitment", "lost_reply_same_fields_replays_without_password", "changed_password_checkbox_name_or_role_conflicts", "navigation_missing_password_never_auto_resets", "same_operation_replay_one_user_one_member_one_audit"],
+      "reset": ["owner_each_permitted_target_role", "admin_each_permitted_target_role", "owner_target_denied", "platform_owner_target_denied", "self_user_denied", "foreign_active_denied", "foreign_disabled_denied", "foreign_deleted_household_membership_denied", "all_sessions_and_grants_revoked", "every_restricted_recovery_operation_stale_terminal_binding_closed_event_preserved_codes", "pending_recovery_every_associated_guard_failure_rolls_back", "both_versions_increment_once", "same_operation_replay_no_second_reset_no_second_audit"],
+      "concurrency": ["foreign_membership_insert", "foreign_membership_remove", "foreign_membership_reassign", "foreign_membership_restore", "actor_role_change", "target_role_change", "email_collision", "status_abandon_submit_lock_order", "ordinary_writer_paused_after_session_lock_assisted_nowait_rolls_back_then_both_complete_without_deadlock", "no_unrelated_unhandled_deadlock"],
+      "signIn": ["old_password_verified_then_reset", "reset_then_old_password_session_insert", "new_password_signin", "ALS_two_users_parallel_no_proof_swap", "missing_proof_denied_for_cubby_auth", "copied_proof_other_user_denied", "copied_proof_other_token_denied", "expired_prior_key_denied", "trusted_email_rotation_unchanged", "attestation_signed_issuedAt_future_skew_expiry_nonce_and_prior_key_rotation"],
+      "requiredChange": ["checked_reset_then_unchecked_reset_clears_only_at_commit", "checked_reset_then_offline_recovery_signin_still_restricted", "self_change_after_rebind_clears", "failed_or_rolled_back_transition_does_not_clear", "checkbox_state_equals_receipt_and_state_at_commit", "wrong_current_confirmation_mismatch_and_same_NFKC_password_keep_requirement", "genuinely_different_password_clears_atomically", "subsequent_self_change_assisted_reset_or_new_session_does_not_invalidate_historical_status_or_clear_newer_requirement"],
+      "databaseClosure": ["direct_completed_operation_without_receipt_rolls_back", "direct_receipt_without_completed_operation_rolls_back", "direct_checkbox_mismatch_rolls_back", "direct_member_or_actor_mismatch_rolls_back", "direct_partial_reset_rolls_back", "compaction_no_gap_handoff_retains_receipt"],
+      "writes": ["push_subscription_write_first_succeeds_reset_first_rejects_without_upsert_resurrection", "every_browser_writer_family_requires_server_derived_session_carrier", "api_key_and_system_writers_use_own_capability_validators_without_fake_session", "aged_current_version_ordinary_browser_write_remains_allowed"],
+      "navigation": ["direct_app_settings_bookmark_root_login_reload_all_reach_corridor_without_login_loop", "default_theme_without_private_preference", "ordinary_apis_return_password_change_required_without_data", "no_household_context_before_clear"],
+      "replay": ["terminal_status_reauthorizes_current_actor_member_hierarchy_target_scope_and_cross_household", "terminal_status_ignores_current_target_hash_versions_and_session_count", "status_projection_contains_no_hash_mac_or_session_identifiers", "existing_email_rejection_terminal_zero_effects"]
+    },
+    "browserArtifactPolicy": {"screenshots": false, "headers": false, "cookies": false, "logs": false, "passwords": false, "fixturesOnly": true, "realSmtp": false}
+  }
+} as const;
+
+function closedLiteralSchema(value: unknown): z.ZodType {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return z.tuple([]);
+    return z.tuple(value.map(closedLiteralSchema) as [z.ZodType, ...z.ZodType[]]);
+  }
+  if (value !== null && typeof value === "object") {
+    return z.strictObject(Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, closedLiteralSchema(child)])
+    ));
+  }
+  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return z.literal(value);
+  }
+  throw new Error("admin_assisted_accounts_contract_schema_invalid");
+}
+
+export const adminAssistedAccountsDesignSchema = closedLiteralSchema(reviewedContract);

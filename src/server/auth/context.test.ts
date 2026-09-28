@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireInvitationSetupCorridor: vi.fn(),
   cookieGet: vi.fn(),
-  memberFindFirst: vi.fn()
+  memberFindFirst: vi.fn(),
+  assistedFindUnique: vi.fn().mockResolvedValue(null)
 }));
 
 vi.mock("next/headers", () => ({
@@ -11,7 +12,10 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/server/services/invitation-setup-corridor", () => ({ requireInvitationSetupCorridor: mocks.requireInvitationSetupCorridor }));
 vi.mock("@/lib/db/prisma", () => ({
-  prisma: { householdMember: { findFirst: mocks.memberFindFirst } }
+  prisma: {
+    householdMember: { findFirst: mocks.memberFindFirst },
+    assistedAccountState: { findUnique: mocks.assistedFindUnique }
+  }
 }));
 
 import {
