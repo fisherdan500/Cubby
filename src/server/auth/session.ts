@@ -4,6 +4,10 @@ import { auth, SESSION_FRESH_AGE_SECONDS } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
 import { captureGlobalSecurityContext } from "@/server/services/global-security";
 import { authorizeGlobalSessionSecurity } from "@/server/services/global-session-security";
+import {
+  REQUIRED_PASSWORD_CHANGE_PATH,
+  hasOutstandingRequiredChange
+} from "@/server/services/assisted-required-change-state";
 
 export async function getSession() {
   const session = await auth.api.getSession({
@@ -24,6 +28,7 @@ export async function getSession() {
 export async function requireUser() {
   const session = await getSession();
   if (!session?.user) throw new Error("unauthenticated");
+  if (await hasOutstandingRequiredChange(session.user.id)) throw new Error("password_change_required");
   return session.user;
 }
 
@@ -66,5 +71,6 @@ export async function requireFreshUser() {
 export async function requireUserPage() {
   const session = await getSession();
   if (!session?.user) redirect("/login");
+  if (await hasOutstandingRequiredChange(session.user.id)) redirect(REQUIRED_PASSWORD_CHANGE_PATH);
   return session.user;
 }

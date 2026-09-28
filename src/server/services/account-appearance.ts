@@ -8,6 +8,7 @@ import {
 } from "@/domain/appearance";
 import { prisma } from "@/lib/db/prisma";
 import { getSession } from "@/server/auth/session";
+import { hasOutstandingRequiredChange } from "@/server/services/assisted-required-change-state";
 import {
   assertBrowserOperationId,
   browserIntentFingerprint,
@@ -65,6 +66,9 @@ export async function getAccountAppearance() {
 export async function getCurrentAuthenticatedAppearanceMode(): Promise<AppearanceMode> {
   const session = await getSession();
   if (!session?.user) return DEFAULT_APPEARANCE_MODE;
+  // A restricted identity must not have its private preference read before the obligation clears;
+  // the root layout renders on every page, including the corridor itself.
+  if (await hasOutstandingRequiredChange(session.user.id)) return DEFAULT_APPEARANCE_MODE;
   const preference = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { appearanceMode: true }

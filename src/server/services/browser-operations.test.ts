@@ -49,7 +49,8 @@ import {
   issueHouseholdBrowserOperation,
   abandonHouseholdBrowserOperation,
   executeBrowserOperation,
-  executeHouseholdBrowserOperation
+  executeHouseholdBrowserOperation,
+  isAssistedBrowserOperationKey
 } from "@/server/services/browser-operations";
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
@@ -643,10 +644,12 @@ describe("browser operation bindings", () => {
     expect(mocks.recordQualifyingUse).not.toHaveBeenCalled();
   });
 
-  it.each(Object.values(BrowserOperationKey).map((operationKey, index) => ({
-    operationKey,
-    operationId: `bmo_${"0".repeat(25)}${"abcdefghjkmnpqrstvwxyz"[index % "abcdefghjkmnpqrstvwxyz".length]}`
-  })))("opens every registered ordinary adapter key", async ({ operationKey, operationId: adapterOperationId }) => {
+  it.each(Object.values(BrowserOperationKey)
+    .filter((operationKey) => !isAssistedBrowserOperationKey(operationKey))
+    .map((operationKey, index) => ({
+      operationKey,
+      operationId: `bmo_${"0".repeat(25)}${"abcdefghjkmnpqrstvwxyz"[index % "abcdefghjkmnpqrstvwxyz".length]}`
+    })))("opens every registered ordinary adapter key", async ({ operationKey, operationId: adapterOperationId }) => {
 
     await expect(issueHouseholdBrowserOperation({
       ctx,

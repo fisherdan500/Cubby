@@ -138,6 +138,16 @@ const terminalOutcomeSchemas: Partial<Record<BrowserOperationKey, z.ZodType<Reco
     reaction: z.enum(["love", "funny", "aww", "celebrate", "well_done"]),
     on: z.boolean()
   }).strict(),
+  [BrowserOperationKey.memberAccountCreate]: z.object({
+    kind: z.literal("member_account"),
+    code: z.literal("created"),
+    memberId: z.string().min(1)
+  }).strict(),
+  [BrowserOperationKey.memberPasswordReset]: z.object({
+    kind: z.literal("member_password"),
+    code: z.literal("reset"),
+    memberId: z.string().min(1)
+  }).strict(),
   [BrowserOperationKey.plannedScheduleSave]: z.object({
     kind: z.literal("planned_schedule"),
     code: z.literal("ok"),
@@ -151,6 +161,43 @@ function terminalOutcomeSchemaFor(operationKey: BrowserOperationKey) {
   const schema = terminalOutcomeSchemas[operationKey];
   if (!schema) throw new Error("browser_operation_adapter_unavailable");
   return schema;
+}
+
+/**
+ * The two admin-assisted keys must take their whole NOWAIT lock fence before any operation identity
+ * or binding access, which `preActorLock` cannot satisfy because it already runs after the identity
+ * lock. They therefore require the earlier `preIdentityLock` hook, and they are refused by the
+ * generic executor: their terminal result is written by the reviewed assisted SQL procedures.
+ */
+const assistedBrowserOperationKeys: readonly BrowserOperationKey[] = [
+  BrowserOperationKey.memberAccountCreate,
+  BrowserOperationKey.memberPasswordReset
+];
+
+export function isAssistedBrowserOperationKey(operationKey: BrowserOperationKey) {
+  return assistedBrowserOperationKeys.includes(operationKey);
+}
+
+function assertAssistedPreIdentityContract(operationKey: BrowserOperationKey, preIdentityLock: unknown) {
+  if (isAssistedBrowserOperationKey(operationKey) !== (preIdentityLock !== undefined)) {
+    throw new Error("browser_operation_adapter_unavailable");
+  }
+}
+
+export type AssistedBrowserOperationStatusHook = (operationId: string) => Promise<BrowserOperationResult>;
+
+const assistedStatusHooks = new Map<BrowserOperationKey, AssistedBrowserOperationStatusHook>();
+
+export function registerAssistedBrowserOperationStatusHook(
+  operationKey: BrowserOperationKey,
+  hook: AssistedBrowserOperationStatusHook
+) {
+  if (!isAssistedBrowserOperationKey(operationKey)) throw new Error("browser_operation_adapter_unavailable");
+  assistedStatusHooks.set(operationKey, hook);
+}
+
+export function assistedBrowserOperationStatusHook(operationKey: BrowserOperationKey) {
+  return assistedStatusHooks.get(operationKey);
 }
 
 export type BrowserOperationResult =
@@ -398,6 +445,7 @@ export async function issueHouseholdBrowserOperation(input: {
   targetKind: BrowserOperationTargetKind;
   targetId?: string;
   permission: Parameters<typeof requirePermission>[1];
+  preIdentityLock?: (tx: Prisma.TransactionClient) => Promise<void>;
   preActorLock?: (tx: Prisma.TransactionClient) => Promise<void>;
   reauthorize?: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<void>;
   targetSnapshot: (tx: Prisma.TransactionClient, ctx: BrowserOperationContext) => Promise<Record<string, unknown>> | Record<string, unknown>;
@@ -405,11 +453,13 @@ export async function issueHouseholdBrowserOperation(input: {
   const operationId = input.operationId === undefined ? createServerBrowserOperationId() : assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
   terminalOutcomeSchemaFor(operationKey);
+  assertAssistedPreIdentityContract(operationKey, input.preIdentityLock);
   const expiresAt = new Date(Date.now() + browserOperationLeaseMs);
   const openResult = (bindingId: string): Extract<BrowserOperationResult, { status: "open" }> => ({ status: "open", operationId, bindingId });
 
   const issueOrReplay = async (transaction: Prisma.TransactionClient, recoverOnly = false): Promise<BrowserOperationResult> => {
     const db = transaction as unknown as BrowserOperationTransaction;
+    await input.preIdentityLock?.(transaction);
     await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
     await input.preActorLock?.(transaction);
     const ctx = await lockCurrentActor(db, input.ctx);
@@ -483,12 +533,17 @@ export async function issueHouseholdBrowserOperation(input: {
 export async function abandonHouseholdBrowserOperation(input: {
   ctx: BrowserOperationContext;
   operationId: unknown;
+  operationKey?: BrowserOperationKey;
+  preIdentityLock?: (tx: Prisma.TransactionClient) => Promise<void>;
 }): Promise<Extract<BrowserOperationResult, { status: "expired" }>> {
   const operationId = assertBrowserOperationId(input.operationId);
+  if (input.operationKey !== undefined) assertAssistedPreIdentityContract(input.operationKey, input.preIdentityLock);
+  else if (input.preIdentityLock !== undefined) throw new Error("browser_operation_adapter_unavailable");
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       return await prisma.$transaction(async (transaction) => {
         const db = transaction as unknown as BrowserOperationTransaction;
+        await input.preIdentityLock?.(transaction);
         await db.$executeRaw`SELECT "lock_household_browser_operation_identity"(${input.ctx.householdId}, ${operationId})`;
         const lockedCtx = await lockCurrentActor(db, input.ctx);
         await db.$queryRaw`SELECT "id" FROM "BrowserOperationBinding" WHERE "householdId" = ${lockedCtx.householdId} AND "operationId" = ${operationId} FOR UPDATE`;
@@ -499,6 +554,7 @@ export async function abandonHouseholdBrowserOperation(input: {
         if (!binding || binding.actorUserId !== lockedCtx.userId || binding.actorMemberId !== lockedCtx.memberId || binding.sessionId !== lockedCtx.sessionId) {
           throw new Error("not_found");
         }
+        if (input.operationKey !== undefined && binding.operationKey !== input.operationKey) throw new Error("not_found");
         if (binding.operation || binding.state !== "open") throw new Error("not_found");
         await db.browserOperationReservationTombstone.create({
           data: {
@@ -737,6 +793,7 @@ export async function executeHouseholdBrowserOperation<T extends Record<string, 
 }): Promise<BrowserOperationResult> {
   const operationId = assertBrowserOperationId(input.operationId);
   const operationKey = browserOperationKeySchema.parse(input.operationKey);
+  if (isAssistedBrowserOperationKey(operationKey)) throw new Error("browser_operation_adapter_unavailable");
   const outcomeSchema = terminalOutcomeSchemaFor(operationKey);
   let committedThisInvocation = false;
 

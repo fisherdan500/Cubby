@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
   reservationTombstoneFindUnique: vi.fn(),
   operationCreate: vi.fn(),
   operationUpdate: vi.fn(),
-  tombstoneFindUnique: vi.fn()
+  tombstoneFindUnique: vi.fn(),
+  assistedFindUnique: vi.fn().mockResolvedValue(null)
 }));
 
 vi.mock("@/server/auth/session", () => ({
@@ -27,6 +28,7 @@ vi.mock("@/server/auth/session", () => ({
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     user: { findUnique: mocks.userFindUnique },
+    assistedAccountState: { findUnique: mocks.assistedFindUnique },
     $transaction: mocks.transaction
   }
 }));

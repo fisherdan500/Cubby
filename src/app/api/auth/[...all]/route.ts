@@ -15,6 +15,7 @@ import {
   type EmailSignInCarrierFailureStage
 } from "@/server/services/sign-in-email-throttle";
 import { runWithBetterAuthSignInRejectionScope, takeBetterAuthSignInRejection } from "@/server/auth/acceptance-sign-in-rejection";
+import { runWithPasswordSessionProofRequest } from "@/server/auth/password-session-proof";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
       if (eventUserId) await writeGlobalSecurityEvent(tx, eventUserId, "credential", "sign_in_failed");
       return result;
     }, { isolationLevel: "Serializable" }),
-    invoke: handlers.POST,
+    invoke: (authRequest) => runWithPasswordSessionProofRequest(() => handlers.POST(authRequest)),
     ...(observeFailureStage ? { observeFailureStage } : {})
   });
   // Acceptance observation keeps each sign-in request's rejection category in its own scope.

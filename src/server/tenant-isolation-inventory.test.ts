@@ -20,6 +20,7 @@ const directHouseholdModels = schema
 const expectedDirectHouseholdModels = [
   "ActivityLog",
   "ApiKey",
+  "AssistedCredentialMutation",
   "Attachment",
   "AttachmentWriteIntent",
   "AuditEvent",

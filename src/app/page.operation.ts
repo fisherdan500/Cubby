@@ -13,6 +13,16 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "hasOutstandingRequiredChange",
+      target: "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "REQUIRED_PASSWORD_CHANGE_PATH",
+      target: "src/server/services/assisted-required-change-state.ts#REQUIRED_PASSWORD_CHANGE_PATH"
+    },
+    {
+      kind: "server_value_import",
       symbol: "currentInvitationSetupCorridor",
       target: "src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor"
     }

@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 112,
-    "client_binding": 39,
+    "api_route": 115,
+    "client_binding": 41,
     "instrumentation": 1,
-    "package_command": 29,
+    "package_command": 30,
     "server_action": 1,
-    "server_loader": 29,
+    "server_loader": 30,
     "worker": 8
   },
-  "declarationDigest": "30da9ba4e7582adf940808886a5e4fe1ca12dcfa751c6b3ddee65119e6a788d4",
+  "declarationDigest": "1f4935a2eab614858d429bc2555787ae4cf05bddc5d687d736c6e13ab7c506cf",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -79,6 +79,40 @@
       },
       "id": "package_command:scripts/activity-update-safety-rehearsal.ts",
       "sidecarPath": "scripts/activity-update-safety-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:admin-assisted-accounts",
+            "target": "package.json#scripts.verify:admin-assisted-accounts"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -1256,6 +1290,41 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "hasOutstandingRequiredChange",
+            "target": "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getSession",
+            "target": "src/server/auth/session.ts#getSession"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "server_loader:src/app/account/required-password-change/page.tsx",
+        "ownerKind": "server_loader",
+        "ownerModule": "src/app/account/required-password-change/page.tsx",
+        "schemaVersion": 1
+      },
+      "id": "server_loader:src/app/account/required-password-change/page.tsx",
+      "sidecarPath": "src/app/account/required-password-change/page.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "server_value_import",
             "symbol": "requireUserPage",
             "target": "src/server/auth/session.ts#requireUserPage"
           }
@@ -1620,6 +1689,36 @@
       },
       "id": "api_route:src/app/api/account/security/recovery/route.ts",
       "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/account/security/required-password-change/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/account/security/required-password-change/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/account/security/required-password-change/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/account/security/required-password-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/required-password-change/route.operation.ts"
     },
     {
       "declaration": {
@@ -3957,6 +4056,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/members/[id]/assisted-password/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/members/[id]/assisted-password/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/members/[id]/assisted-password/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/members/[id]/assisted-password/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/assisted-password/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/members/[id]/restore/route.ts#POST"
           }
         ],
@@ -4045,6 +4174,36 @@
       },
       "id": "api_route:src/app/api/members/[id]/suspend/route.ts",
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
+            "target": "src/app/api/members/assisted-account/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/members/assisted-account/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/members/assisted-account/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/members/assisted-account/route.ts",
+      "sidecarPath": "src/app/api/members/assisted-account/route.operation.ts"
     },
     {
       "declaration": {
@@ -5826,6 +5985,16 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "hasOutstandingRequiredChange",
+            "target": "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "REQUIRED_PASSWORD_CHANGE_PATH",
+            "target": "src/server/services/assisted-required-change-state.ts#REQUIRED_PASSWORD_CHANGE_PATH"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "currentInvitationSetupCorridor",
             "target": "src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor"
           }
@@ -5995,6 +6164,36 @@
       },
       "id": "client_binding:src/components/account-security-panel.tsx",
       "sidecarPath": "src/components/account-security-panel.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/account/required-password-change-form.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/account/required-password-change-form.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/account/required-password-change-form.tsx",
+      "sidecarPath": "src/components/account/required-password-change-form.operation.ts"
     },
     {
       "declaration": {
@@ -6930,6 +7129,36 @@
       },
       "id": "client_binding:src/components/settings/appearance-form.tsx",
       "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/settings/assisted-account-manager.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/settings/assisted-account-manager.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/settings/assisted-account-manager.tsx",
+      "sidecarPath": "src/components/settings/assisted-account-manager.operation.ts"
     },
     {
       "declaration": {
@@ -7900,6 +8129,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "packageScripts": [
+        "verify:admin-assisted-accounts"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
       "packageScripts": [
         "verify:sprout-preview-commit"
@@ -7992,7 +8229,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "a910eab051fa8cb9bf7e45fc9e8f99b879f5d5440adf5e3bcc73432782b87310",
+  "generatorDigest": "3fdc8963ac209ad76b76f9f4222499423e1c61cb6e136136c75fb8654e2db1e1",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8225,6 +8462,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "0e082c3e0e7884392278dd679d2c2c3c1263b422a992c655b31db2425ffc63fa",
+          "anchorEnd": 1381,
+          "anchorFile": "src/app/api/account/security/required-password-change/route.ts",
+          "anchorStart": 804,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/required-password-change/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/account/security/required-password-change/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/required-password-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/required-password-change/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "543112329258dfdb983c6e9b89a39242464fb0d8f87dfd21f1e863e999091b6a",
           "anchorEnd": 1265,
           "anchorFile": "src/app/api/account/session-activity/route.ts",
@@ -8434,18 +8690,18 @@
       "bindings": [
         {
           "anchorDigest": "1611d1871a87b1a622c1866f0bea19b8ab8910f838d71038ebf273ec3828a8b2",
-          "anchorEnd": 2681,
+          "anchorEnd": 2772,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2564,
+          "anchorStart": 2655,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/auth/[...all]/route.ts#GET"
         },
         {
-          "anchorDigest": "7f8025c030e5c0f24bd6aa41a4a0fafc5003da277ce1d0abd0bc5959f058fa10",
-          "anchorEnd": 4209,
+          "anchorDigest": "7988a70242500d67faff94f8580e7667b6bfdf23ba39536e42aca227683e16a3",
+          "anchorEnd": 4372,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2683,
+          "anchorStart": 2774,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/auth/[...all]/route.ts#POST"
@@ -9759,6 +10015,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "223f5d3df5065b59ac4dcde80f4ca0d355a4017e8e07763c84549b6912018a09",
+          "anchorEnd": 1545,
+          "anchorFile": "src/app/api/members/[id]/assisted-password/route.ts",
+          "anchorStart": 569,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/members/[id]/assisted-password/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/members/[id]/assisted-password/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/[id]/assisted-password/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/assisted-password/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "df0d210dd90155a140be8ebc505db23638942889a326bfa91be2c6f8adbfbca5",
           "anchorEnd": 1490,
           "anchorFile": "src/app/api/members/[id]/restore/route.ts",
@@ -9821,6 +10096,25 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/members/[id]/suspend/route.ts",
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "9dbd5d8194abbfdb1715713517a4a275ea2d07579d40512409491949073d56ae",
+          "anchorEnd": 1455,
+          "anchorFile": "src/app/api/members/assisted-account/route.ts",
+          "anchorStart": 569,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/members/assisted-account/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/members/assisted-account/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/assisted-account/route.ts",
+      "sidecarPath": "src/app/api/members/assisted-account/route.operation.ts"
     },
     {
       "bindings": [
@@ -10348,6 +10642,34 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/account/appearance/page.tsx",
       "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "ade4b3a567adfbb26fd787be91ddce39dbc12e2bb5e03f298a3fa2a82e285b13",
+          "anchorEnd": 253,
+          "anchorFile": "src/app/account/required-password-change/page.tsx",
+          "anchorStart": 243,
+          "kind": "server_value_import",
+          "symbol": "getSession",
+          "target": "src/server/auth/session.ts#getSession"
+        },
+        {
+          "anchorDigest": "04d41047af83f62ef659b03edab6d9513c77fed52ec662985044070023bc187d",
+          "anchorEnd": 323,
+          "anchorFile": "src/app/account/required-password-change/page.tsx",
+          "anchorStart": 295,
+          "kind": "server_value_import",
+          "symbol": "hasOutstandingRequiredChange",
+          "target": "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "server_loader:src/app/account/required-password-change/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/required-password-change/page.tsx",
+      "sidecarPath": "src/app/account/required-password-change/page.operation.ts"
     },
     {
       "bindings": [
@@ -11072,18 +11394,18 @@
       "bindings": [
         {
           "anchorDigest": "af3501c25335a18230e78088970dcdcf41fb73ce9790ff93449a1653b4533fb5",
-          "anchorEnd": 401,
+          "anchorEnd": 490,
           "anchorFile": "src/app/app/settings/members/page.tsx",
-          "anchorStart": 380,
+          "anchorStart": 469,
           "kind": "server_value_import",
           "symbol": "listMembersAndInvites",
           "target": "src/server/services/invites.ts#listMembersAndInvites"
         },
         {
           "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 334,
+          "anchorEnd": 423,
           "anchorFile": "src/app/app/settings/members/page.tsx",
-          "anchorStart": 315,
+          "anchorStart": 404,
           "kind": "server_value_import",
           "symbol": "requireSettingsPage",
           "target": "src/server/auth/page-access.ts#requireSettingsPage"
@@ -11332,9 +11654,9 @@
       "bindings": [
         {
           "anchorDigest": "009ba0511ce8b55b4a5092eba6ed0b9d8390c80aff87e819f569b83b7f8f73b2",
-          "anchorEnd": 416,
+          "anchorEnd": 548,
           "anchorFile": "src/app/page.tsx",
-          "anchorStart": 386,
+          "anchorStart": 518,
           "kind": "server_value_import",
           "symbol": "currentInvitationSetupCorridor",
           "target": "src/server/services/invitation-setup-corridor.ts#currentInvitationSetupCorridor"
@@ -11347,6 +11669,24 @@
           "kind": "server_value_import",
           "symbol": "getSession",
           "target": "src/server/auth/session.ts#getSession"
+        },
+        {
+          "anchorDigest": "04d41047af83f62ef659b03edab6d9513c77fed52ec662985044070023bc187d",
+          "anchorEnd": 449,
+          "anchorFile": "src/app/page.tsx",
+          "anchorStart": 421,
+          "kind": "server_value_import",
+          "symbol": "hasOutstandingRequiredChange",
+          "target": "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+        },
+        {
+          "anchorDigest": "303ec998e893d3014a0c9e0328cc281da3a55d36610e8e355998c31f98a360cd",
+          "anchorEnd": 417,
+          "anchorFile": "src/app/page.tsx",
+          "anchorStart": 388,
+          "kind": "server_value_import",
+          "symbol": "REQUIRED_PASSWORD_CHANGE_PATH",
+          "target": "src/server/services/assisted-required-change-state.ts#REQUIRED_PASSWORD_CHANGE_PATH"
         }
       ],
       "disposition": "observed",
@@ -11495,6 +11835,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/account-security-panel.tsx",
       "sidecarPath": "src/components/account-security-panel.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "d5ead86dda92ec04d170b75d37324b3841fe157fbce297b6e3963f7cbcd9e742",
+          "anchorEnd": 1601,
+          "anchorFile": "src/components/account/required-password-change-form.tsx",
+          "anchorStart": 1153,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/account/required-password-change-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/account/required-password-change-form.tsx",
+      "sidecarPath": "src/components/account/required-password-change-form.operation.ts"
     },
     {
       "bindings": [
@@ -12338,6 +12697,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/appearance-form.tsx",
       "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "d9be9a16c08d3b9c04f501a4f741c05d10ab33ab254a09e2afb19a9adb6f0aa1",
+          "anchorEnd": 979,
+          "anchorFile": "src/components/settings/assisted-account-manager.tsx",
+          "anchorStart": 854,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/settings/assisted-account-manager.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/assisted-account-manager.tsx",
+      "sidecarPath": "src/components/settings/assisted-account-manager.operation.ts"
     },
     {
       "bindings": [
@@ -13265,9 +13643,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 5699,
+          "anchorEnd": 5800,
           "anchorFile": "package.json",
-          "anchorStart": 5690,
+          "anchorStart": 5791,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -13312,6 +13690,32 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
       "sidecarPath": "scripts/activity-update-safety-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
+          "anchorEnd": 4276,
+          "anchorFile": "package.json",
+          "anchorStart": 4244,
+          "kind": "package_script",
+          "symbol": "verify:admin-assisted-accounts",
+          "target": "package.json#scripts.verify:admin-assisted-accounts"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+        "packageScripts": [
+          "verify:admin-assisted-accounts"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -13496,9 +13900,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5800,
+          "anchorEnd": 5901,
           "anchorFile": "package.json",
-          "anchorStart": 5782,
+          "anchorStart": 5883,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -13515,9 +13919,9 @@
       "bindings": [
         {
           "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-          "anchorEnd": 4940,
+          "anchorEnd": 5041,
           "anchorFile": "package.json",
-          "anchorStart": 4916,
+          "anchorStart": 5017,
           "kind": "package_script",
           "symbol": "verify:integrity-suite",
           "target": "package.json#scripts.verify:integrity-suite"
@@ -13567,9 +13971,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 4745,
+          "anchorEnd": 4846,
           "anchorFile": "package.json",
-          "anchorStart": 4713,
+          "anchorStart": 4814,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -13593,9 +13997,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 4855,
+          "anchorEnd": 4956,
           "anchorFile": "package.json",
-          "anchorStart": 4820,
+          "anchorStart": 4921,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -13665,27 +14069,27 @@
       "bindings": [
         {
           "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-          "anchorEnd": 4364,
+          "anchorEnd": 4465,
           "anchorFile": "package.json",
-          "anchorStart": 4341,
+          "anchorStart": 4442,
           "kind": "package_script",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
           "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-          "anchorEnd": 4462,
+          "anchorEnd": 4563,
           "anchorFile": "package.json",
-          "anchorStart": 4439,
+          "anchorStart": 4540,
           "kind": "package_script",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
           "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-          "anchorEnd": 4563,
+          "anchorEnd": 4664,
           "anchorFile": "package.json",
-          "anchorStart": 4537,
+          "anchorStart": 4638,
           "kind": "package_script",
           "symbol": "verify:performance-input",
           "target": "package.json#scripts.verify:performance-input"
@@ -13711,9 +14115,9 @@
       "bindings": [
         {
           "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-          "anchorEnd": 5032,
+          "anchorEnd": 5133,
           "anchorFile": "package.json",
-          "anchorStart": 5001,
+          "anchorStart": 5102,
           "kind": "package_script",
           "symbol": "verify:platform-first-account",
           "target": "package.json#scripts.verify:platform-first-account"
@@ -13836,9 +14240,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 5743,
+          "anchorEnd": 5844,
           "anchorFile": "package.json",
-          "anchorStart": 5727,
+          "anchorStart": 5828,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -14177,9 +14581,9 @@
       "bindings": [
         {
           "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-          "anchorEnd": 5120,
+          "anchorEnd": 5221,
           "anchorFile": "package.json",
-          "anchorStart": 5100,
+          "anchorStart": 5201,
           "kind": "package_script",
           "symbol": "verify:quick-start",
           "target": "package.json#scripts.verify:quick-start"
@@ -14293,9 +14697,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 4274,
+          "anchorEnd": 4375,
           "anchorFile": "package.json",
-          "anchorStart": 4244,
+          "anchorStart": 4345,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -14319,9 +14723,9 @@
       "bindings": [
         {
           "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-          "anchorEnd": 5199,
+          "anchorEnd": 5300,
           "anchorFile": "package.json",
-          "anchorStart": 5177,
+          "anchorStart": 5278,
           "kind": "package_script",
           "symbol": "verify:system-backup",
           "target": "package.json#scripts.verify:system-backup"
@@ -14345,9 +14749,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 4673,
+          "anchorEnd": 4774,
           "anchorFile": "package.json",
-          "anchorStart": 4648,
+          "anchorStart": 4749,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -14364,36 +14768,36 @@
       "bindings": [
         {
           "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-          "anchorEnd": 5272,
+          "anchorEnd": 5373,
           "anchorFile": "package.json",
-          "anchorStart": 5258,
+          "anchorStart": 5359,
           "kind": "package_script",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
           "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-          "anchorEnd": 5327,
+          "anchorEnd": 5428,
           "anchorFile": "package.json",
-          "anchorStart": 5309,
+          "anchorStart": 5410,
           "kind": "package_script",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
           "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-          "anchorEnd": 5395,
+          "anchorEnd": 5496,
           "anchorFile": "package.json",
-          "anchorStart": 5370,
+          "anchorStart": 5471,
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
           "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-          "anchorEnd": 5465,
+          "anchorEnd": 5566,
           "anchorFile": "package.json",
-          "anchorStart": 5445,
+          "anchorStart": 5546,
           "kind": "package_script",
           "symbol": "verify:gates:image",
           "target": "package.json#scripts.verify:gates:image"
@@ -14417,8 +14821,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 219,
-  "observationDigest": "0ef100dd3756bfca19d47a114fa0779928d5d0ec18ddf32563ad70a0a05dc088",
+  "observationCount": 226,
+  "observationDigest": "3756c4be0f97ffd8aa7f0c0b6ef0019ec0677c8d2304e835d792f30323f9a61d",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -14641,6 +15045,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1381,
+          "anchorFile": "src/app/api/account/security/required-password-change/route.ts",
+          "anchorStart": 804,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/account/security/required-password-change/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/account/security/required-password-change/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/account/security/required-password-change/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/required-password-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/required-password-change/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1265,
           "anchorFile": "src/app/api/account/session-activity/route.ts",
           "anchorStart": 315,
@@ -14839,18 +15261,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2681,
+          "anchorEnd": 2772,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2564,
+          "anchorStart": 2655,
           "kind": "route_method",
           "ownerModule": "src/app/api/auth/[...all]/route.ts",
           "symbol": "GET",
           "target": "src/app/api/auth/[...all]/route.ts#GET"
         },
         {
-          "anchorEnd": 4209,
+          "anchorEnd": 4372,
           "anchorFile": "src/app/api/auth/[...all]/route.ts",
-          "anchorStart": 2683,
+          "anchorStart": 2774,
           "kind": "route_method",
           "ownerModule": "src/app/api/auth/[...all]/route.ts",
           "symbol": "POST",
@@ -16099,6 +16521,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1545,
+          "anchorFile": "src/app/api/members/[id]/assisted-password/route.ts",
+          "anchorStart": 569,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/members/[id]/assisted-password/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/members/[id]/assisted-password/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/members/[id]/assisted-password/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/[id]/assisted-password/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/assisted-password/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1490,
           "anchorFile": "src/app/api/members/[id]/restore/route.ts",
           "anchorStart": 260,
@@ -16158,6 +16598,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/members/[id]/suspend/route.ts",
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1455,
+          "anchorFile": "src/app/api/members/assisted-account/route.ts",
+          "anchorStart": 569,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/members/assisted-account/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/members/assisted-account/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/members/assisted-account/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/assisted-account/route.ts",
+      "sidecarPath": "src/app/api/members/assisted-account/route.operation.ts"
     },
     {
       "bindings": [
@@ -16662,6 +17120,33 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/account/appearance/page.tsx",
       "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 253,
+          "anchorFile": "src/app/account/required-password-change/page.tsx",
+          "anchorStart": 243,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/account/required-password-change/page.tsx",
+          "symbol": "getSession",
+          "target": "src/server/auth/session.ts#getSession"
+        },
+        {
+          "anchorEnd": 323,
+          "anchorFile": "src/app/account/required-password-change/page.tsx",
+          "anchorStart": 295,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/account/required-password-change/page.tsx",
+          "symbol": "hasOutstandingRequiredChange",
+          "target": "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+        }
+      ],
+      "disposition": "observed",
+      "id": "server_loader:src/app/account/required-password-change/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/required-password-change/page.tsx",
+      "sidecarPath": "src/app/account/required-password-change/page.operation.ts"
     },
     {
       "bindings": [
@@ -17368,18 +17853,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 401,
+          "anchorEnd": 490,
           "anchorFile": "src/app/app/settings/members/page.tsx",
-          "anchorStart": 380,
+          "anchorStart": 469,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/members/page.tsx",
           "symbol": "listMembersAndInvites",
           "target": "src/server/services/invites.ts#listMembersAndInvites"
         },
         {
-          "anchorEnd": 334,
+          "anchorEnd": 423,
           "anchorFile": "src/app/app/settings/members/page.tsx",
-          "anchorStart": 315,
+          "anchorStart": 404,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/settings/members/page.tsx",
           "symbol": "requireSettingsPage",
@@ -17620,9 +18105,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 416,
+          "anchorEnd": 548,
           "anchorFile": "src/app/page.tsx",
-          "anchorStart": 386,
+          "anchorStart": 518,
           "kind": "server_value_import",
           "ownerModule": "src/app/page.tsx",
           "symbol": "currentInvitationSetupCorridor",
@@ -17636,6 +18121,24 @@
           "ownerModule": "src/app/page.tsx",
           "symbol": "getSession",
           "target": "src/server/auth/session.ts#getSession"
+        },
+        {
+          "anchorEnd": 449,
+          "anchorFile": "src/app/page.tsx",
+          "anchorStart": 421,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/page.tsx",
+          "symbol": "hasOutstandingRequiredChange",
+          "target": "src/server/services/assisted-required-change-state.ts#hasOutstandingRequiredChange"
+        },
+        {
+          "anchorEnd": 417,
+          "anchorFile": "src/app/page.tsx",
+          "anchorStart": 388,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/page.tsx",
+          "symbol": "REQUIRED_PASSWORD_CHANGE_PATH",
+          "target": "src/server/services/assisted-required-change-state.ts#REQUIRED_PASSWORD_CHANGE_PATH"
         }
       ],
       "disposition": "observed",
@@ -17778,6 +18281,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/account-security-panel.tsx",
       "sidecarPath": "src/components/account-security-panel.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1601,
+          "anchorFile": "src/components/account/required-password-change-form.tsx",
+          "anchorStart": 1153,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/account/required-password-change-form.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/account/required-password-change-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/account/required-password-change-form.tsx",
+      "sidecarPath": "src/components/account/required-password-change-form.operation.ts"
     },
     {
       "bindings": [
@@ -18597,6 +19118,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/appearance-form.tsx",
       "sidecarPath": "src/components/settings/appearance-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 979,
+          "anchorFile": "src/components/settings/assisted-account-manager.tsx",
+          "anchorStart": 854,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/settings/assisted-account-manager.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/settings/assisted-account-manager.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/assisted-account-manager.tsx",
+      "sidecarPath": "src/components/settings/assisted-account-manager.operation.ts"
     },
     {
       "bindings": [
@@ -19501,9 +20040,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5699,
+          "anchorEnd": 5800,
           "anchorFile": "package.json",
-          "anchorStart": 5690,
+          "anchorStart": 5791,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -19533,6 +20072,24 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
       "sidecarPath": "scripts/activity-update-safety-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 4276,
+          "anchorFile": "package.json",
+          "anchorStart": 4244,
+          "kind": "package_script",
+          "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+          "symbol": "verify:admin-assisted-accounts",
+          "target": "package.json#scripts.verify:admin-assisted-accounts"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -19690,9 +20247,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5800,
+          "anchorEnd": 5901,
           "anchorFile": "package.json",
-          "anchorStart": 5782,
+          "anchorStart": 5883,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -19708,9 +20265,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4940,
+          "anchorEnd": 5041,
           "anchorFile": "package.json",
-          "anchorStart": 4916,
+          "anchorStart": 5017,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
           "symbol": "verify:integrity-suite",
@@ -19744,9 +20301,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4745,
+          "anchorEnd": 4846,
           "anchorFile": "package.json",
-          "anchorStart": 4713,
+          "anchorStart": 4814,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -19762,9 +20319,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4855,
+          "anchorEnd": 4956,
           "anchorFile": "package.json",
-          "anchorStart": 4820,
+          "anchorStart": 4921,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -19825,27 +20382,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4364,
+          "anchorEnd": 4465,
           "anchorFile": "package.json",
-          "anchorStart": 4341,
+          "anchorStart": 4442,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
-          "anchorEnd": 4462,
+          "anchorEnd": 4563,
           "anchorFile": "package.json",
-          "anchorStart": 4439,
+          "anchorStart": 4540,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
-          "anchorEnd": 4563,
+          "anchorEnd": 4664,
           "anchorFile": "package.json",
-          "anchorStart": 4537,
+          "anchorStart": 4638,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-input",
@@ -19861,9 +20418,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5032,
+          "anchorEnd": 5133,
           "anchorFile": "package.json",
-          "anchorStart": 5001,
+          "anchorStart": 5102,
           "kind": "package_script",
           "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
           "symbol": "verify:platform-first-account",
@@ -19978,9 +20535,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 5743,
+          "anchorEnd": 5844,
           "anchorFile": "package.json",
-          "anchorStart": 5727,
+          "anchorStart": 5828,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -20311,9 +20868,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5120,
+          "anchorEnd": 5221,
           "anchorFile": "package.json",
-          "anchorStart": 5100,
+          "anchorStart": 5201,
           "kind": "package_script",
           "ownerModule": "scripts/quick-start.acceptance-rehearsal.ts",
           "symbol": "verify:quick-start",
@@ -20410,9 +20967,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4274,
+          "anchorEnd": 4375,
           "anchorFile": "package.json",
-          "anchorStart": 4244,
+          "anchorStart": 4345,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -20428,9 +20985,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5199,
+          "anchorEnd": 5300,
           "anchorFile": "package.json",
-          "anchorStart": 5177,
+          "anchorStart": 5278,
           "kind": "package_script",
           "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
           "symbol": "verify:system-backup",
@@ -20446,9 +21003,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4673,
+          "anchorEnd": 4774,
           "anchorFile": "package.json",
-          "anchorStart": 4648,
+          "anchorStart": 4749,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -20464,36 +21021,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5272,
+          "anchorEnd": 5373,
           "anchorFile": "package.json",
-          "anchorStart": 5258,
+          "anchorStart": 5359,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
-          "anchorEnd": 5327,
+          "anchorEnd": 5428,
           "anchorFile": "package.json",
-          "anchorStart": 5309,
+          "anchorStart": 5410,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
-          "anchorEnd": 5395,
+          "anchorEnd": 5496,
           "anchorFile": "package.json",
-          "anchorStart": 5370,
+          "anchorStart": 5471,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
-          "anchorEnd": 5465,
+          "anchorEnd": 5566,
           "anchorFile": "package.json",
-          "anchorStart": 5445,
+          "anchorStart": 5546,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:image",
@@ -20573,6 +21130,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/account/security/recovery/route.ts",
       "sidecarPath": "src/app/api/account/security/recovery/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/account/security/required-password-change/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/account/security/required-password-change/route.ts",
+      "sidecarPath": "src/app/api/account/security/required-password-change/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/account/session-activity/route.ts",
@@ -21031,6 +21594,12 @@
       "sidecarPath": "src/app/api/invites/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/members/[id]/assisted-password/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/[id]/assisted-password/route.ts",
+      "sidecarPath": "src/app/api/members/[id]/assisted-password/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/members/[id]/restore/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/members/[id]/restore/route.ts",
@@ -21047,6 +21616,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/members/[id]/suspend/route.ts",
       "sidecarPath": "src/app/api/members/[id]/suspend/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/members/assisted-account/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/assisted-account/route.ts",
+      "sidecarPath": "src/app/api/members/assisted-account/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
@@ -21185,6 +21760,12 @@
       "ownerKind": "server_loader",
       "ownerModule": "src/app/account/appearance/page.tsx",
       "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "id": "server_loader:src/app/account/required-password-change/page.tsx",
+      "ownerKind": "server_loader",
+      "ownerModule": "src/app/account/required-password-change/page.tsx",
+      "sidecarPath": "src/app/account/required-password-change/page.operation.ts"
     },
     {
       "id": "server_loader:src/app/account/security/page.tsx",
@@ -21373,6 +21954,12 @@
       "sidecarPath": "src/components/account-security-panel.operation.ts"
     },
     {
+      "id": "client_binding:src/components/account/required-password-change-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/account/required-password-change-form.tsx",
+      "sidecarPath": "src/components/account/required-password-change-form.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/actions/activity-actions.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/actions/activity-actions.tsx",
@@ -21517,6 +22104,12 @@
       "sidecarPath": "src/components/settings/appearance-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/settings/assisted-account-manager.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/settings/assisted-account-manager.tsx",
+      "sidecarPath": "src/components/settings/assisted-account-manager.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/settings/backup-download-button.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/backup-download-button.tsx",
@@ -21659,6 +22252,12 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/activity-update-safety-rehearsal.ts",
       "sidecarPath": "scripts/activity-update-safety-rehearsal.operation.ts"
+    },
+    {
+      "id": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
     },
     {
       "id": "package_command:scripts/backup-recovery-rehearsal.ts",
@@ -21823,9 +22422,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "2ff08ff9aee9ecda35e65192082de4fee598a2ddd15676008c4aad44f8db5bd6",
+  "ownerSetDigest": "5b3176161c07053d6b8c9bfefdfd1da52d71f564027b402a38e983e70f83b726",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "da7037565ca79598ff985f2414a5ce4086d84fc65eaa742b08fb3562a078cf01",
+  "registryDigest": "18b8a159c55d51e86f68830cb37e8a5c3a62243669a52d05cefed357b84cc309",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
@@ -22058,6 +22657,23 @@
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
+      "anchorEnd": 4911,
+      "anchorFile": "scripts/admin-assisted-accounts.acceptance.compose.yml",
+      "anchorStart": 4781,
+      "codeOption": "-e",
+      "disposition": "structural_exclusion",
+      "exclusion": {
+        "category": "healthcheck_probe_runtime",
+        "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
+      },
+      "fingerprint": "9f3dc4d72c3c056b7f9e18bf367f802f859b05878dca158d10e5ebc55b98f5bc",
+      "id": "runtime:scripts/admin-assisted-accounts.acceptance.compose.yml:4781:main:eval",
+      "ownerModule": null,
+      "path": null,
+      "role": "main"
+    },
+    {
+      "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
       "anchorEnd": 4825,
       "anchorFile": "scripts/backup-recovery-rehearsal.compose.yml",
       "anchorStart": 4695,
@@ -22108,7 +22724,7 @@
       "role": "main"
     }
   ],
-  "runtimeInvocationLedgerDigest": "112a93cb807ec5297c1a3fe320ef5cae7213e89923a2fc96be30cff8488e0b8f",
+  "runtimeInvocationLedgerDigest": "bdfcbd7869e494397fec451c85229e1be66fd7c8a668f999ac2bc075089988ed",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1,
@@ -22119,6 +22735,14 @@
       "file": "docker-compose.yml",
       "kind": "container_build_selector",
       "start": 1257,
+      "targetFile": "Dockerfile"
+    },
+    {
+      "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
+      "end": 623,
+      "file": "scripts/admin-assisted-accounts.acceptance.compose.yml",
+      "kind": "container_build_selector",
+      "start": 566,
       "targetFile": "Dockerfile"
     },
     {

@@ -104,6 +104,7 @@ export function handleError(error: unknown) {
   if (error instanceof ZodError) return fail("validation_error", "Please check the highlighted fields.", 422, error.flatten());
   if (error instanceof Error) {
     if (error.message === "unauthenticated") return fail("unauthenticated", "Please sign in.", 401);
+    if (error.message === "password_change_required") return fail("password_change_required", "Choose your own password before continuing.", 403);
     if (error.message === "validation_error") return fail("validation_error", "Please check the submitted request.", 422);
     if (error.message === "forbidden") return fail("forbidden", "You do not have access.", 403);
     if (error.message === "fresh_authentication_required") return fail("fresh_authentication_required", "Sign in again to continue.", 403);

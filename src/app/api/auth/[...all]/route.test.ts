@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => ({
   queryRaw: vi.fn(),
   transaction: vi.fn(),
   takeRejection: vi.fn(),
-  runRejectionScope: vi.fn()
+  runRejectionScope: vi.fn(),
+  runPasswordProofScope: vi.fn()
 }));
 
 const fsMocks = vi.hoisted(() => ({ writeFileSync: vi.fn() }));
@@ -37,6 +38,9 @@ vi.mock("@/server/auth/acceptance-sign-in-rejection", () => ({
   takeBetterAuthSignInRejection: mocks.takeRejection,
   runWithBetterAuthSignInRejectionScope: mocks.runRejectionScope
 }));
+vi.mock("@/server/auth/password-session-proof", () => ({
+  runWithPasswordSessionProofRequest: mocks.runPasswordProofScope
+}));
 vi.mock("node:fs", () => fsMocks);
 import { GET, POST } from "@/app/api/auth/[...all]/route";
 
@@ -52,6 +56,7 @@ beforeEach(() => {
   mocks.configuredKey.mockReturnValue(Buffer.alloc(32, 1).toString("base64url"));
   mocks.runCarrier.mockResolvedValue(new Response(null, { status: 200 }));
   mocks.runRejectionScope.mockImplementation((action: () => unknown) => action());
+  mocks.runPasswordProofScope.mockImplementation((action: () => unknown) => action());
 });
 
 afterAll(() => {
@@ -86,6 +91,18 @@ describe("global auth route boundary", () => {
       invoke: expect.any(Function)
     }));
     expect(mocks.authHandler).not.toHaveBeenCalled();
+  });
+
+  it("opens one password-proof scope around the real Better Auth sign-in handler only", async () => {
+    mocks.runCarrier.mockImplementation(async (request: Request, dependencies: { invoke: (request: Request) => Promise<Response> }) => dependencies.invoke(request));
+    const request = new Request("http://localhost/api/auth/sign-in/email", { method: "POST" });
+
+    await POST(request);
+
+    expect(mocks.runPasswordProofScope).toHaveBeenCalledOnce();
+    expect(mocks.authHandler).toHaveBeenCalledOnce();
+    expect(mocks.runCarrier.mock.invocationCallOrder[0]).toBeLessThan(mocks.runPasswordProofScope.mock.invocationCallOrder[0]!);
+    expect(mocks.runPasswordProofScope.mock.invocationCallOrder[0]).toBeLessThan(mocks.authHandler.mock.invocationCallOrder[0]!);
   });
 
   it("enables a fixed content-free carrier observer only behind the exact disposable-acceptance guards", async () => {

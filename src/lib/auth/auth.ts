@@ -8,6 +8,12 @@ import { assertUserCanStartSession } from "@/server/auth/member-status";
 import { withSuspendedSessionErrorTranslation } from "@/server/auth/session-adapter";
 import { initializeGlobalSessionSecurityActivity } from "@/server/services/global-session-security";
 import { acceptanceBetterAuthLoggerOptions } from "@/server/auth/acceptance-sign-in-rejection";
+import { verifyPassword } from "@better-auth/utils/password";
+import {
+  createPasswordSessionProof,
+  passwordSessionProofAdditionalFields,
+  verifyPasswordAndCaptureSessionProof
+} from "@/server/auth/password-session-proof";
 
 export const SESSION_FRESH_AGE_SECONDS = 60 * 10;
 
@@ -25,12 +31,18 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    revokeSessionsOnPasswordReset: true
+    revokeSessionsOnPasswordReset: true,
+    password: {
+      verify: (input) => verifyPasswordAndCaptureSessionProof(verifyPassword, input)
+    }
   },
   databaseHooks: {
     session: {
       create: {
-        before: assertUserCanStartSession,
+        before: async (session) => {
+          await assertUserCanStartSession(session);
+          return { data: { ...session, ...createPasswordSessionProof(session) } };
+        },
         after: async (session) => {
           await initializeGlobalSessionSecurityActivity(prisma, {
             userId: session.userId,
@@ -41,6 +53,7 @@ export const auth = betterAuth({
     }
   },
   session: {
+    additionalFields: passwordSessionProofAdditionalFields,
     expiresIn: 60 * 60 * 24 * 60,
     updateAge: 60 * 60 * 24,
     freshAge: SESSION_FRESH_AGE_SECONDS,

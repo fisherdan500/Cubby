@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand";
 import { getSession } from "@/server/auth/session";
+import {
+  REQUIRED_PASSWORD_CHANGE_PATH,
+  hasOutstandingRequiredChange
+} from "@/server/services/assisted-required-change-state";
 import { currentInvitationSetupCorridor } from "@/server/services/invitation-setup-corridor";
 
 const featureCards: Array<[string, React.ElementType, string]> = [
@@ -18,6 +22,9 @@ const featureCards: Array<[string, React.ElementType, string]> = [
 
 export default async function HomePage() {
   const session = await getSession();
+  if (session?.user && await hasOutstandingRequiredChange(session.user.id)) {
+    redirect(REQUIRED_PASSWORD_CHANGE_PATH);
+  }
   const corridor = session?.user ? await currentInvitationSetupCorridor("neutral_landing") : null;
   if (corridor?.result === "setup_required") redirect("/invite");
   if (corridor?.result === "ordinary") redirect("/app");

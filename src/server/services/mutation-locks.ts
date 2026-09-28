@@ -6,6 +6,14 @@ export async function lockHouseholdCreation(tx: Prisma.TransactionClient) {
 }
 
 export async function lockActorForWrite(tx: Prisma.TransactionClient, ctx: HouseholdContext) {
+  // A browser-carried write must revalidate its Session, activity, security version and required-change
+  // state inside this transaction, so a concurrently committed assisted reset cannot be outrun by an
+  // already-authorized request. Non-browser capabilities (API key, worker, recovery) carry no
+  // sessionId and keep their own distinct authorization.
+  const sessionId = (ctx as HouseholdContext & { sessionId?: string }).sessionId;
+  if (sessionId) {
+    await tx.$queryRaw`SELECT "lock_actor_session_for_browser_write_v1"(${ctx.userId}, ${sessionId})`;
+  }
   await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "HouseholdMember" WHERE "id" = ${ctx.memberId} FOR UPDATE`;
   const actor = await tx.householdMember.findUnique({ where: { id: ctx.memberId } });
   if (!actor || actor.householdId !== ctx.householdId || actor.deletedAt || actor.disabledAt) throw new Error("forbidden");
