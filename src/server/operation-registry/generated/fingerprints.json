@@ -3196,17 +3196,17 @@
           "file": "package.json"
         },
         {
-          "digest": "3949441b66fb36fd4945745ce6ce4da9e73e1130fd70c0d035693a8d138979da",
+          "digest": "99f834e48efee7f2c5aa0f3c43527e220edbe3608cdb960425a7743ff6bf3ae8",
           "file": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "7096e961ae5a8f2cf0966dce1eca96e9fa78506c30fc12eb0c1e672a344230f3",
-      "fingerprint": "fc0dafba4ac884c8bac53c104b8d35aa0b61884246295f1bc78af23625b81396",
+      "fingerprint": "dcbd3f31e395783d0f0063d0013d2b7ef8f182d2d3efea1451e84ca455365656",
       "id": "fingerprint:package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "9d7f93bcdfa143d791fbafae762a6118d8cdfbb1b13e03778c3bb685b203e957",
+      "sourceDigest": "2d43a12a817c882a3d44e6674afb42380910ca01b6d49e4c6184e77091be2bcd",
       "status": "declared"
     },
     {
