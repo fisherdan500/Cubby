@@ -36,7 +36,21 @@ describe("RecoveryPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Reset password" }));
     await waitFor(() => expect(sessionStorage.getItem("cubby:global-security:recovery-reset-operation")).toBeTruthy());
     const retained = sessionStorage.getItem("cubby:global-security:recovery-reset-operation")!;
-    expect(retained).not.toMatch(/person@example|ABCD|new password/i);
+    // Assert the SHAPE, not the absence of substrings. The retained blob is an operation id plus two hex
+    // digests, so a literal like /ABCD/i also matches hex that legitimately contains "abcd" — roughly one
+    // run in 500 failed this on a correct implementation, and a flaky security assertion is worse than
+    // none because it trains people to re-run it. Exactly these three keys, each in its own exact format,
+    // leaves no room for an email, a recovery code or a password to hide.
+    expect(Object.keys(JSON.parse(retained)).sort()).toEqual([
+      "intentFingerprint",
+      "openingFingerprint",
+      "operationId"
+    ]);
+    expect(JSON.parse(retained)).toEqual({
+      operationId: expect.stringMatching(/^gso_[0-9abcdefghjkmnpqrstvwxyz]{26}$/),
+      openingFingerprint: expect.stringMatching(/^[0-9a-f]{64}$/),
+      intentFingerprint: expect.stringMatching(/^[0-9a-f]{64}$/)
+    });
     await userEvent.type(screen.getByLabelText("Email address"), "person@example.test");
     await userEvent.type(screen.getByLabelText("Recovery code"), "ABCD-EFGH-JKMN-PQRS-TVWX-YZ01");
     await userEvent.type(screen.getByLabelText("New password"), "new password");
