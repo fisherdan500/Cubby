@@ -25,6 +25,13 @@ export async function getSession() {
   return session;
 }
 
+/**
+ * `getSession` is deliberately NOT gated on the assisted first-login obligation: the corridor route
+ * and corridor page must stay reachable while an obligation is outstanding, and they authorize
+ * themselves through this function. Every helper below that authorizes authority-bearing work gates
+ * on it instead, so a corralled identity cannot route around the corridor by calling an API route
+ * directly rather than navigating `/app`.
+ */
 export async function requireUser() {
   const session = await getSession();
   if (!session?.user) throw new Error("unauthenticated");
@@ -35,12 +42,14 @@ export async function requireUser() {
 export async function requireGlobalSecurityContext() {
   const session = await getSession();
   if (!session?.user?.id || !session.session?.id) throw new Error("unauthenticated");
+  if (await hasOutstandingRequiredChange(session.user.id)) throw new Error("password_change_required");
   return captureGlobalSecurityContext(prisma, { userId: session.user.id, sessionId: session.session.id });
 }
 
 export async function requireGlobalSecuritySessionCredential() {
   const session = await getSession();
   if (!session?.user?.id || !session.session?.id || !session.session.token) throw new Error("unauthenticated");
+  if (await hasOutstandingRequiredChange(session.user.id)) throw new Error("password_change_required");
   const context = await captureGlobalSecurityContext(prisma, { userId: session.user.id, sessionId: session.session.id });
   return { ...context, sessionToken: session.session.token };
 }
@@ -61,7 +70,9 @@ export function assertFreshSession(session: Awaited<ReturnType<typeof getSession
 }
 
 export async function requireFreshSession() {
-  return assertFreshSession(await getSession());
+  const session = assertFreshSession(await getSession());
+  if (await hasOutstandingRequiredChange(session.user.id)) throw new Error("password_change_required");
+  return session;
 }
 
 export async function requireFreshUser() {

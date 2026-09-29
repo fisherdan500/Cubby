@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
   deleteCookie: vi.fn(),
   getSession: vi.fn(),
   captureGlobalSecurityContext: vi.fn(),
-  authorizeGlobalSessionSecurity: vi.fn()
+  authorizeGlobalSessionSecurity: vi.fn(),
+  hasOutstandingRequiredChange: vi.fn()
 }));
 
 vi.mock("next/headers", () => ({ headers: mocks.headers, cookies: mocks.cookies }));
@@ -26,6 +27,10 @@ vi.mock("@/lib/auth/auth", () => ({
 vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
 vi.mock("@/server/services/global-security", () => ({ captureGlobalSecurityContext: mocks.captureGlobalSecurityContext }));
 vi.mock("@/server/services/global-session-security", () => ({ authorizeGlobalSessionSecurity: mocks.authorizeGlobalSessionSecurity }));
+vi.mock("@/server/services/assisted-required-change-state", () => ({
+  hasOutstandingRequiredChange: mocks.hasOutstandingRequiredChange,
+  REQUIRED_PASSWORD_CHANGE_PATH: "/account/required-password-change"
+}));
 
 import { assertFreshSession, clearBetterAuthSessionCookies, getSession, requireFreshSession, requireFreshUser, requireGlobalSecurityContext, requireGlobalSecuritySessionCredential } from "@/server/auth/session";
 
@@ -35,6 +40,7 @@ describe("server session lookup", () => {
     mocks.headers.mockResolvedValue(new Headers({ cookie: "session=value" }));
     mocks.getSession.mockResolvedValue(null);
     mocks.authorizeGlobalSessionSecurity.mockResolvedValue(undefined);
+    mocks.hasOutstandingRequiredChange.mockResolvedValue(false);
   });
 
   afterEach(() => {
@@ -111,6 +117,31 @@ describe("server session lookup", () => {
 
     await expect(requireGlobalSecurityContext()).rejects.toThrow("unauthenticated");
     expect(mocks.captureGlobalSecurityContext).not.toHaveBeenCalled();
+  });
+
+  it("refuses global security capture while an assisted first-login obligation is outstanding", async () => {
+    // The corridor gate lived only on requireUser/requireUserPage, so a corralled identity that was
+    // refused /app could still POST directly to the account-security routes, which authorize
+    // themselves through these helpers.
+    mocks.getSession.mockResolvedValue({ user: { id: "user-1" }, session: { id: "session-1", token: "token" } });
+    mocks.hasOutstandingRequiredChange.mockResolvedValue(true);
+
+    await expect(requireGlobalSecurityContext()).rejects.toThrow("password_change_required");
+    await expect(requireGlobalSecuritySessionCredential()).rejects.toThrow("password_change_required");
+    expect(mocks.captureGlobalSecurityContext).not.toHaveBeenCalled();
+  });
+
+  it("refuses a fresh-session helper while an assisted first-login obligation is outstanding", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    mocks.getSession.mockResolvedValue({
+      user: { id: "user-1" },
+      session: { id: "session-1", createdAt: new Date("2026-01-01T00:00:00.000Z") }
+    });
+    mocks.hasOutstandingRequiredChange.mockResolvedValue(true);
+
+    await expect(requireFreshSession()).rejects.toThrow("password_change_required");
+    await expect(requireFreshUser()).rejects.toThrow("password_change_required");
   });
 
   it("clears every configured Better Auth session and cache cookie", async () => {

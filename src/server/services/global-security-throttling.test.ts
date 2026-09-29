@@ -79,10 +79,11 @@ describe("global security throttle core", () => {
     expect(deploymentKey).toBeNull();
   });
 
-  it("gates an unauthenticated account-neutral request on nothing at all while still recording its evidence", async () => {
+  it("falls back to the deployment bucket when no discriminating layer can gate, so an account-less request still has a brake", async () => {
     const $queryRaw = vi.fn().mockResolvedValue([{ quiet: false, deadline: null }]);
     const database = { $transaction: vi.fn(async (action) => action({ $queryRaw })) } as never;
-    // The unknown-address branch: no account resolved, shared client bucket.
+    // The unknown-address branch: no account resolved, shared client bucket. Without the fallback
+    // this request reaches the password hash with no gate at all, which is unbounded free CPU.
     const input = { key: testKey, client: "unknown_client" };
 
     await precheckGlobalSecurityThrottle(database, input);
@@ -90,7 +91,7 @@ describe("global security throttle core", () => {
     expect(userId).toBeNull();
     expect(accountKey).toBeNull();
     expect(clientKey).toBeNull();
-    expect(deploymentKey).toBeNull();
+    expect(deploymentKey).not.toBeNull();
 
     await recordGlobalSecurityThrottleFailure(database, input);
     const [, , , , evidenceClient, evidenceDeployment] = $queryRaw.mock.calls[1]!;

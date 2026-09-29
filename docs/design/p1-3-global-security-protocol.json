@@ -1585,7 +1585,7 @@
     "layerGatingMatrix": {
       "account_identifier": "always_gates",
       "client": "gates_only_when_client_identity_discriminates",
-      "deployment": "never_gates_evidence_only"
+      "deployment": "gates_only_as_last_resort_when_no_discriminating_layer_keyed_otherwise_evidence_only"
     },
     "sharedBucketQuietMayNotRejectCredentialProof": true,
     "accountExistenceNeutral": true,
