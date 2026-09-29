@@ -7,6 +7,7 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { BrandLockup } from "@/components/brand";
 import { BrowserOperationRecovery } from "@/components/browser-operation-recovery";
 import { ActiveTimerBar } from "@/components/active-timer-bar";
+import { NavLink, NavPendingProvider } from "@/components/nav-progress";
 import { SavedEntryUndo } from "@/components/saved-entry-undo";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
@@ -46,6 +47,7 @@ export function AppShell({
   const selectedBabyId = babySelector?.selectedBabyId;
 
   return (
+    <NavPendingProvider>
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-card/94 backdrop-blur md:flex md:flex-col print:hidden">
         <Link href="/app" className="flex h-20 items-center gap-3 border-b border-border px-5">
@@ -53,14 +55,15 @@ export function AppShell({
         </Link>
         <nav className="flex-1 space-y-2 px-4 py-6">
           {primaryNav.map((item) => (
-            <Link
+            <NavLink
               key={item.href}
               href={withBabyId(item.href, selectedBabyId)}
               className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-foreground/90 hover:bg-muted hover:text-foreground"
+              pendingClassName="bg-muted text-foreground"
             >
               <item.icon className="h-5 w-5 text-primary" />
               {item.label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
         <div className="space-y-3 border-t border-border p-4">
@@ -72,13 +75,14 @@ export function AppShell({
             </div>
             <ThemeToggle />
           </div>
-          <Link
+          <NavLink
             href="/app/settings"
             className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold text-foreground/90 hover:bg-muted hover:text-foreground"
+            pendingClassName="bg-muted text-foreground"
           >
             <Settings className="h-5 w-5 text-primary" />
             Settings
-          </Link>
+          </NavLink>
           <SignOutButton />
         </div>
       </aside>
@@ -131,6 +135,7 @@ export function AppShell({
       <SavedEntryUndo />
       <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
     </div>
+    </NavPendingProvider>
   );
 }
 
