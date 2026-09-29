@@ -360,3 +360,50 @@ describe("backup v2 members", () => {
     expect(() => createV2Backup({ ...emptyPayload(), members: [{ ...member, password: "x" }] } as never, exportedAt)).toThrow();
   });
 });
+
+describe("backup v2 notification preferences", () => {
+  const member = { email: "dad@example.com", name: "Dad", role: "parent" as const, displayName: null, joinedAt: exportedAt, disabledAt: null };
+  const baby = { id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null };
+  const pref = {
+    email: "dad@example.com", categories: ["reminder_due" as const], quietHoursStart: "21:00", quietHoursEnd: "07:00",
+    interruptionLevel: "normal" as const, babyScope: { mode: "all" as const }
+  };
+
+  it("still reads a backup made before preferences were carried", () => {
+    const backup = createV2Backup(emptyPayload(), exportedAt);
+    expect(backup.payload).not.toHaveProperty("notificationPreferences");
+    expect(parseBackup(backup)).toMatchObject({ version: 2, checksumVerified: true });
+  });
+
+  it("carries what a person chose, and no device handles", () => {
+    const backup = createV2Backup({ ...emptyPayload(), members: [member], notificationPreferences: [pref] }, exportedAt);
+
+    expect(backup.payload.notificationPreferences).toEqual([pref]);
+    // channels/destinationIds name push subscriptions, which are device-and-server specific and are
+    // never in a backup. Carrying them would restore rows that can never deliver.
+    expect(canonicalJson(backup.payload)).not.toMatch(/destinationIds|endpoint|p256dh|browser_push/);
+  });
+
+  it("refuses a preference for someone who is not a member in this backup", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), members: [member], notificationPreferences: [{ ...pref, email: "ghost@example.com" }] }, exportedAt))
+      .toThrow("backup_dangling_reference");
+  });
+
+  it("refuses two preferences for one person", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), members: [member], notificationPreferences: [pref, pref] }, exportedAt))
+      .toThrow("backup_duplicate_source_id");
+  });
+
+  it("refuses a selected-baby scope naming a baby the backup does not carry", () => {
+    const scoped = { ...pref, babyScope: { mode: "selected" as const, babyIds: ["baby-9"] } };
+    expect(() => createV2Backup({ ...emptyPayload(), babies: [baby], members: [member], notificationPreferences: [scoped] }, exportedAt))
+      .toThrow("backup_dangling_reference");
+    const ok = { ...pref, babyScope: { mode: "selected" as const, babyIds: ["baby-1"] } };
+    expect(() => createV2Backup({ ...emptyPayload(), babies: [baby], members: [member], notificationPreferences: [ok] }, exportedAt)).not.toThrow();
+  });
+
+  it("refuses quiet hours given as only one end", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), members: [member], notificationPreferences: [{ ...pref, quietHoursEnd: undefined }] }, exportedAt))
+      .toThrow();
+  });
+});

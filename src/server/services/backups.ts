@@ -50,7 +50,8 @@ const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"])
 type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
-  "household" | "householdSettings" | "householdMember" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder"
+  "household" | "householdSettings" | "householdMember" | "notificationPreference" | "baby" | "contact" | "medicineCatalog" | "activityLog"
+  | "calendarEvent" | "reminder"
   | "plannedSchedule" | "feedPost" | "feedComment" | "feedReaction" | "attachment"
 >;
 
@@ -280,8 +281,8 @@ export async function buildHouseholdV2Snapshot(
     ]
   };
   const [
-    household, settings, members, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments,
-    feedReactions, feedPhotos
+    household, settings, members, notificationPreferences, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules,
+    feedPosts, feedComments, feedReactions, feedPhotos
   ] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
@@ -289,8 +290,18 @@ export async function buildHouseholdV2Snapshot(
     // Session, so no credential material can travel in the file even if this shape is extended later.
     tx.householdMember.findMany({
       where: { householdId, deletedAt: null },
-      select: { role: true, displayName: true, joinedAt: true, disabledAt: true, user: { select: { email: true, name: true } } },
+      select: { id: true, role: true, displayName: true, joinedAt: true, disabledAt: true, user: { select: { email: true, name: true } } },
       orderBy: { joinedAt: "asc" }
+    }),
+    // What each person chose about being notified. `channels`/`destinationIds` are deliberately not
+    // selected: they name device-specific push subscriptions that no backup carries.
+    tx.notificationPreference.findMany({
+      where: { householdId, status: "active" },
+      select: {
+        memberId: true, categories: true, quietHoursStart: true, quietHoursEnd: true, interruptionLevel: true,
+        babyScope: true, selectedBabies: { select: { babyId: true }, orderBy: { babyId: "asc" } }
+      },
+      orderBy: { memberId: "asc" }
     }),
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.contact.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
@@ -374,6 +385,25 @@ export async function buildHouseholdV2Snapshot(
       joinedAt: member.joinedAt.toISOString(),
       disabledAt: member.disabledAt?.toISOString() ?? null
     })),
+    notificationPreferences: notificationPreferences.flatMap((preference) => {
+      // Keyed to the member's email, so a preference whose member is not carried is dropped rather
+      // than restored against nobody.
+      const owner = members.find((member) => member.id === preference.memberId);
+      if (!owner) return [];
+      const selectedBabyIds = preference.selectedBabies.map((selected) => selected.babyId);
+      return [{
+        email: owner.user.email.toLowerCase(),
+        categories: preference.categories as Array<"timer_overdue" | "activity_created" | "reminder_due">,
+        ...(preference.quietHoursStart === null ? {} : { quietHoursStart: preference.quietHoursStart }),
+        ...(preference.quietHoursEnd === null ? {} : { quietHoursEnd: preference.quietHoursEnd }),
+        interruptionLevel: preference.interruptionLevel === "timeSensitive"
+          ? ("time_sensitive" as const)
+          : preference.interruptionLevel === "passive" ? ("passive" as const) : ("normal" as const),
+        babyScope: preference.babyScope === "selected"
+          ? { mode: "selected" as const, babyIds: selectedBabyIds }
+          : { mode: "all" as const }
+      }];
+    }),
     babies: babies.map((baby) => ({
       id: baby.id,
       name: baby.name,
@@ -683,15 +713,25 @@ function prepareLegacyRestore(parsed: Extract<ParsedBackup, { version: 1 }>) {
  */
 async function restoreMembers(
   entries: ReadonlyArray<{ email: string; role: string; displayName: string | null; joinedAt: string; disabledAt: string | null }>,
+  preferences: ReadonlyArray<{
+    email: string;
+    categories: string[];
+    quietHoursStart?: string;
+    quietHoursEnd?: string;
+    interruptionLevel: "passive" | "normal" | "time_sensitive";
+    babyScope: { mode: "all" } | { mode: "selected"; babyIds: string[] };
+  }>,
+  babyMap: ReadonlyMap<string, string>,
   lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
   tx: Prisma.TransactionClient
 ) {
-  if (!entries.length) return { restored: 0, needInvite: [] as string[] };
+  if (!entries.length) return { restored: 0, needInvite: [] as string[], preferencesRestored: 0 };
   const wanted = entries.map((entry) => entry.email.toLowerCase());
   const existing = await tx.user.findMany({ where: { email: { in: wanted } }, select: { id: true, email: true } });
   const byEmail = new Map(existing.map((user) => [user.email.toLowerCase(), user.id]));
 
   const needInvite: string[] = [];
+  const memberIdByEmail = new Map<string, string>();
   let restored = 0;
   for (const entry of entries) {
     const email = entry.email.toLowerCase();
@@ -701,7 +741,7 @@ async function restoreMembers(
       continue;
     }
     if (userId === lockedCtx.userId) continue;
-    await tx.householdMember.create({
+    const saved = await tx.householdMember.create({
       data: {
         householdId: lockedCtx.householdId,
         userId,
@@ -709,11 +749,44 @@ async function restoreMembers(
         displayName: entry.displayName,
         joinedAt: new Date(entry.joinedAt),
         disabledAt: entry.disabledAt === null ? null : new Date(entry.disabledAt)
-      }
+      },
+      select: { id: true }
     });
+    memberIdByEmail.set(email, saved.id);
     restored += 1;
   }
-  return { restored, needInvite };
+
+  // Notification rules follow their member. Someone with no account here has no membership to hang
+  // them on, so their preferences are dropped rather than held for a person who may never arrive.
+  let preferencesRestored = 0;
+  for (const preference of preferences) {
+    const memberId = memberIdByEmail.get(preference.email.toLowerCase());
+    if (!memberId) continue;
+    const selectedBabyIds = preference.babyScope.mode === "selected"
+      ? preference.babyScope.babyIds.map((babyId) => babyMap.get(babyId)).filter((babyId): babyId is string => babyId !== undefined)
+      : [];
+    await tx.notificationPreference.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        memberId,
+        revision: 1,
+        categories: preference.categories,
+        quietHoursStart: preference.quietHoursStart ?? null,
+        quietHoursEnd: preference.quietHoursEnd ?? null,
+        interruptionLevel: preference.interruptionLevel === "time_sensitive"
+          ? "timeSensitive"
+          : preference.interruptionLevel === "passive" ? "passive" : "normal",
+        babyScope: preference.babyScope.mode,
+        // Empty by design: channels and destinations name push subscriptions on devices registered
+        // with another server. The person re-enables push on the browser they are now using.
+        channels: [],
+        destinationIds: [],
+        ...(selectedBabyIds.length ? { selectedBabies: { create: selectedBabyIds.map((babyId) => ({ householdId: lockedCtx.householdId, babyId })) } } : {})
+      }
+    });
+    preferencesRestored += 1;
+  }
+  return { restored, needInvite, preferencesRestored };
 }
 
 async function restoreV2InTransaction(
@@ -745,8 +818,6 @@ async function restoreV2InTransaction(
     update: settings,
     create: { householdId: lockedCtx.householdId, ...settings }
   });
-
-  const members = await restoreMembers(payload.members ?? [], lockedCtx, tx);
 
   const contactMap = new Map<string, string>();
   for (const contact of payload.contacts) {
@@ -789,6 +860,9 @@ async function restoreV2InTransaction(
     babyMap.set(baby.id, saved.id);
     createdBabies.set(saved.id, saved as Awaited<ReturnType<typeof lockBabyForWrite>>);
   }
+
+  // After babies exist, so a preference scoped to selected babies maps onto the rows just created.
+  const members = await restoreMembers(payload.members ?? [], payload.notificationPreferences ?? [], babyMap, lockedCtx, tx);
 
   const activityMap = new Map<string, string>();
   for (const activity of payload.activities) {
@@ -994,7 +1068,7 @@ async function restoreLegacyInTransaction(
   const restored = counts.babies + counts.activities;
   await writeRestoreCompletion(lockedCtx, tx, restored, undefined, counts);
   // A v1 file predates members entirely, so none can be restored from one.
-  return { restored, counts, members: { restored: 0, needInvite: [] as string[] } };
+  return { restored, counts, members: { restored: 0, needInvite: [] as string[], preferencesRestored: 0 } };
 }
 
 async function writeRestoreCompletion(

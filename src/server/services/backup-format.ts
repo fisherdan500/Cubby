@@ -6,9 +6,10 @@ import { singleMailbox } from "@/lib/validation/email";
 export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 export const BACKUP_EXCLUSIONS = [
   "Credentials and sessions (members are carried by email, and arrive unable to sign in)",
+  "Push subscriptions, so notification rules come back but each device re-enables push",
   "Invitations and registration policy",
-  "API keys, webhooks, and push/notification state",
-  "Audit, import, backup history, warning dismissals, and vaccine attachments",
+  "API keys, webhooks, and notification delivery history",
+  "Audit, import, backup history, and warning dismissals",
   "Audit integrity checkpoints and household deletion registry receipts",
   "Browser operation bindings, receipts, tombstones, and integrity state"
 ] as const;
@@ -240,11 +241,45 @@ const memberSchema = z
   })
   .strict();
 
+/**
+ * What a person chose about being notified — never how a device is reached.
+ *
+ * `channels` and `destinationIds` are deliberately absent. Both name push subscriptions: browser and
+ * server specific handles (`endpoint`, `p256dh`, `auth`) issued by one browser on one device, which
+ * are not in a backup and are meaningless on another server. Carrying them would restore rows that
+ * can never deliver, so a restored preference keeps its rules and the person re-enables push on
+ * whatever browser they are now using.
+ *
+ * Keyed by member email for the same reason memberships are: preference and member ids are local to
+ * the install that issued them.
+ */
+const notificationPreferenceSchema = z
+  .object({
+    email: z.string().min(3).max(320),
+    categories: z.array(z.enum(["timer_overdue", "activity_created", "reminder_due"])).max(20),
+    quietHoursStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+    quietHoursEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+    interruptionLevel: z.enum(["passive", "normal", "time_sensitive"]),
+    babyScope: z.discriminatedUnion("mode", [
+      z.object({ mode: z.literal("all") }).strict(),
+      z.object({ mode: z.literal("selected"), babyIds: z.array(id).max(10_000) }).strict()
+    ])
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    // Half a quiet-hours range would silence notifications from a start with no end, so the pair is
+    // required together, matching the rule the application itself enforces.
+    if ((value.quietHoursStart === undefined) !== (value.quietHoursEnd === undefined)) {
+      ctx.addIssue({ code: "custom", message: "backup_quiet_hours_pair_required" });
+    }
+  });
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
     settings: settingsSchema,
     members: z.array(memberSchema).max(1_000).optional(),
+    notificationPreferences: z.array(notificationPreferenceSchema).max(1_000).optional(),
     babies: z.array(babySchema).max(10_000),
     contacts: z.array(contactSchema).max(10_000),
     catalogs: z.array(catalogSchema).max(10_000),
@@ -273,6 +308,20 @@ const v2PayloadSchema = z
     if (new Set(memberEmails).size !== memberEmails.length) {
       ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
     }
+    // A preference belongs to exactly one member, and its selected babies must be babies this
+    // backup carries; otherwise it would restore rules pointing at people or children not here.
+    const prefs = payload.notificationPreferences ?? [];
+    const prefEmails = prefs.map((entry) => entry.email.toLowerCase());
+    if (new Set(prefEmails).size !== prefEmails.length) {
+      ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
+    }
+    const memberEmailSet = new Set(memberEmails);
+    const babyIds = new Set(payload.babies.map((baby) => baby.id));
+    const danglingPreference = prefs.some((entry) =>
+      !memberEmailSet.has(entry.email.toLowerCase())
+      || (entry.babyScope.mode === "selected" && entry.babyScope.babyIds.some((babyId) => !babyIds.has(babyId)))
+    );
+    if (danglingPreference) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const group of groups) {
       if (new Set(group.map((item) => item.id)).size !== group.length) {
         ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });

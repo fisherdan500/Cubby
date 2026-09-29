@@ -52,6 +52,8 @@ const mocks = vi.hoisted(() => ({
   memberCreate: vi.fn(),
   memberFindMany: vi.fn(),
   userFindMany: vi.fn(),
+  notificationPreferenceFindMany: vi.fn(),
+  notificationPreferenceCreate: vi.fn(),
   memberFindFirst: vi.fn(),
   memberUpdate: vi.fn(),
   memberUpdateMany: vi.fn(),
@@ -99,6 +101,7 @@ vi.mock("@/lib/db/prisma", () => ({
     $queryRaw: mocks.freshState,
     $transaction: mocks.transaction,
     user: { findMany: mocks.userFindMany },
+    notificationPreference: { findMany: mocks.notificationPreferenceFindMany, create: mocks.notificationPreferenceCreate },
     householdMember: {
       findMany: mocks.memberFindMany,
       findFirst: mocks.memberFindFirst,
@@ -230,6 +233,8 @@ beforeEach(() => {
   mocks.readHouseholdAuditIntegrity.mockResolvedValue({ status: "valid" });
   mocks.memberFindMany.mockResolvedValue([]);
   mocks.userFindMany.mockResolvedValue([]);
+  mocks.notificationPreferenceFindMany.mockResolvedValue([]);
+  mocks.notificationPreferenceCreate.mockResolvedValue({ id: "saved-pref-1" });
   mocks.memberCreate.mockResolvedValue({ id: "saved-member-1" });
   mocks.memberFindFirst.mockResolvedValue(null);
 });
@@ -926,7 +931,7 @@ describe("backup unit preferences", () => {
       settings: { accentTheme: "sage", unitPreferences },
       babies: [],
       activities: []
-    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } , members: { restored: 0, needInvite: [] } });
+    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } , members: { restored: 0, needInvite: [], preferencesRestored: 0 } });
 
     expect(mocks.settingsUpsert).toHaveBeenCalledWith({
       where: { householdId: "household-1" },
@@ -947,7 +952,7 @@ describe("backup unit preferences", () => {
         members: [{ id: "member-1", role: "owner", disabledAt: null }]
       },
       disabledAt: null
-    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } , members: { restored: 0, needInvite: [] } });
+    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } , members: { restored: 0, needInvite: [], preferencesRestored: 0 } });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
     expect(mocks.memberUpdate).not.toHaveBeenCalled();
@@ -960,7 +965,7 @@ describe("backup unit preferences", () => {
     await expect(restoreBackupJson({ version: 1, babies: [], activities: [] })).resolves.toEqual({
       restored: 0,
       counts: { babies: 0, activities: 0 }
-    , members: { restored: 0, needInvite: [] } });
+    , members: { restored: 0, needInvite: [], preferencesRestored: 0 } });
     expect(mocks.settingsUpsert).not.toHaveBeenCalled();
   });
 
@@ -979,7 +984,7 @@ describe("backup unit preferences", () => {
         { babyId: "source-baby-1", type: "note", occurredAt: "2026-07-14T10:00:00.000Z", text: "First" },
         { babyId: "source-baby-2", type: "note", occurredAt: "2026-07-14T11:00:00.000Z", text: "Second" }
       ]
-    })).resolves.toEqual({ restored: 4, counts: { babies: 2, activities: 2 } , members: { restored: 0, needInvite: [] } });
+    })).resolves.toEqual({ restored: 4, counts: { babies: 2, activities: 2 } , members: { restored: 0, needInvite: [], preferencesRestored: 0 } });
 
     expect(mocks.babyCreate).toHaveBeenCalledTimes(2);
     expect(mocks.restoreActivity.mock.calls.map(([activity]) => activity.babyId)).toEqual(["saved-baby-1", "saved-baby-2"]);
@@ -1002,7 +1007,7 @@ describe("backup unit preferences", () => {
         contactId: "legacy-contact",
         documentUrl: "/legacy/private.pdf"
       }]
-    })).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } , members: { restored: 0, needInvite: [] } });
+    })).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } , members: { restored: 0, needInvite: [], preferencesRestored: 0 } });
 
     const restoredInput = mocks.restoreActivity.mock.calls[0][0];
     expect(restoredInput).toMatchObject({ babyId: "saved-baby-1", name: "Vitamin D" });
@@ -1278,7 +1283,7 @@ describe("backup unit preferences", () => {
         ],
         activities: [{ babyId: "backup-baby-1", type: "note", occurredAt: "2026-07-14T11:00:00.000Z", text: "nap note" }]
       })
-    ).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } , members: { restored: 0, needInvite: [] } });
+    ).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } , members: { restored: 0, needInvite: [], preferencesRestored: 0 } });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
     expect(mocks.restoreActivity).toHaveBeenCalledOnce();
@@ -1390,6 +1395,7 @@ function transactionClient() {
     household: { findUniqueOrThrow: mocks.householdFind, update: mocks.householdUpdate },
     householdSettings: { findUnique: mocks.settingsFind, upsert: mocks.settingsUpsert },
     user: { findMany: mocks.userFindMany },
+    notificationPreference: { findMany: mocks.notificationPreferenceFindMany, create: mocks.notificationPreferenceCreate },
     householdMember: { findUnique: vi.fn(), findFirst: mocks.memberFind, findMany: mocks.memberFindMany, create: mocks.memberCreate },
     session: { findFirst: mocks.sessionFind },
     baby: {
@@ -1671,7 +1677,7 @@ describe("restoring members", () => {
     expect(mocks.memberCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ userId: "user-dad", role: "parent", displayName: "Dad" })
     }));
-    expect(result.members).toEqual({ restored: 1, needInvite: [] });
+    expect(result.members).toEqual({ restored: 1, needInvite: [], preferencesRestored: 0 });
   });
 
   it("creates no account for an unknown email, and reports who still needs inviting", async () => {
@@ -1683,7 +1689,7 @@ describe("restoring members", () => {
     // The DB owns account creation. A restore must never become a second way accounts are born, so
     // an unknown email must produce no member row at all, not a row attached to an invented user.
     expect(mocks.memberCreate).not.toHaveBeenCalled();
-    expect(result.members).toEqual({ restored: 0, needInvite: ["dad@example.com"] });
+    expect(result.members).toEqual({ restored: 0, needInvite: ["dad@example.com"], preferencesRestored: 0 });
   });
 
   it("does not give the restoring owner a second membership from the file", async () => {
@@ -1693,7 +1699,7 @@ describe("restoring members", () => {
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
-    expect(result.members).toEqual({ restored: 0, needInvite: [] });
+    expect(result.members).toEqual({ restored: 0, needInvite: [], preferencesRestored: 0 });
   });
 
   it("never restores a membership as owner, so a file cannot hand over the household", async () => {
@@ -1713,5 +1719,104 @@ describe("restoring members", () => {
     await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberCreate.mock.calls[0]?.[0]?.data?.disabledAt).toEqual(new Date("2026-03-04T05:06:07.000Z"));
+  });
+});
+
+describe("backup notification preferences", () => {
+  const memberRow = {
+    role: "parent", displayName: "Dad", joinedAt: new Date("2026-02-03T04:05:06.000Z"), disabledAt: null,
+    user: { email: "dad@example.com", name: "Dad Smith" }
+  };
+
+  it("carries each member's notification rules, without any device handle", async () => {
+    mocks.memberFindMany.mockResolvedValue([{ ...memberRow, id: "member-dad" }]);
+    mocks.notificationPreferenceFindMany.mockResolvedValue([{
+      memberId: "member-dad", categories: ["reminder_due"], quietHoursStart: "21:00", quietHoursEnd: "07:00",
+      interruptionLevel: "timeSensitive", babyScope: "all", selectedBabies: [],
+      channels: ["browser_push"], destinationIds: ["push-abc"]
+    }]);
+
+    const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1");
+
+    expect(snapshot.payload.notificationPreferences).toEqual([{
+      email: "dad@example.com", categories: ["reminder_due"], quietHoursStart: "21:00", quietHoursEnd: "07:00",
+      interruptionLevel: "time_sensitive", babyScope: { mode: "all" }
+    }]);
+    // Asserting only the emitted shape is too weak: the mapper drops unknown keys, so a query that
+    // SELECTS a device handle would still produce a clean payload while reading it into memory.
+    // Pin the query, so channels/destinationIds cannot be fetched at all.
+    const selected = JSON.stringify(mocks.notificationPreferenceFindMany.mock.calls[0]?.[0]?.select ?? {});
+    expect(selected).not.toMatch(/destinationIds|channels/);
+  });
+
+  it("carries a selected-baby scope as the babies themselves", async () => {
+    mocks.memberFindMany.mockResolvedValue([{ ...memberRow, id: "member-dad" }]);
+    mocks.babyFindMany.mockResolvedValue([
+      { id: "baby-1", name: "Finley", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null, deletedAt: null }
+    ]);
+    mocks.notificationPreferenceFindMany.mockResolvedValue([{
+      memberId: "member-dad", categories: [], quietHoursStart: null, quietHoursEnd: null,
+      interruptionLevel: "normal", babyScope: "selected", selectedBabies: [{ babyId: "baby-1" }],
+      channels: [], destinationIds: []
+    }]);
+
+    const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1");
+
+    expect(snapshot.payload.notificationPreferences?.[0]?.babyScope).toEqual({ mode: "selected", babyIds: ["baby-1"] });
+  });
+
+  it("leaves out a preference belonging to a member the backup does not carry", async () => {
+    mocks.memberFindMany.mockResolvedValue([]);
+    mocks.notificationPreferenceFindMany.mockResolvedValue([{
+      memberId: "member-gone", categories: [], quietHoursStart: null, quietHoursEnd: null,
+      interruptionLevel: "normal", babyScope: "all", selectedBabies: [], channels: [], destinationIds: []
+    }]);
+
+    const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1");
+
+    expect(snapshot.payload.notificationPreferences).toEqual([]);
+  });
+});
+
+describe("restoring notification preferences", () => {
+  const member = {
+    email: "dad@example.com", name: "Dad", role: "parent" as const, displayName: "Dad",
+    joinedAt: "2026-02-03T04:05:06.000Z", disabledAt: null
+  };
+  const pref = {
+    email: "dad@example.com", categories: ["reminder_due"], quietHoursStart: "21:00", quietHoursEnd: "07:00",
+    interruptionLevel: "time_sensitive" as const, babyScope: { mode: "all" as const }
+  };
+  const payloadWith = (members: unknown[], notificationPreferences: unknown[], babies: unknown[] = []) => createV2Backup({
+    household: { name: "Home" }, settings: {}, babies, contacts: [], catalogs: [],
+    activities: [], calendarEvents: [], reminders: [], members, notificationPreferences
+  } as never, "2026-07-15T18:00:00.000Z");
+
+  it("restores the rules a matched member chose, with no channel to deliver on yet", async () => {
+    mocks.userFindMany.mockResolvedValue([{ id: "user-dad", email: "dad@example.com" }]);
+    mocks.memberCreate.mockResolvedValue({ id: "member-new" });
+    const backup = payloadWith([member], [pref]);
+
+    const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    const data = mocks.notificationPreferenceCreate.mock.calls[0]?.[0]?.data;
+    expect(data).toMatchObject({
+      memberId: "member-new", categories: ["reminder_due"], quietHoursStart: "21:00", quietHoursEnd: "07:00",
+      interruptionLevel: "timeSensitive", babyScope: "all"
+    });
+    // The devices these rules used to reach are on another server and are never carried.
+    expect(data.channels).toEqual([]);
+    expect(data.destinationIds).toEqual([]);
+    expect(result.members).toMatchObject({ preferencesRestored: 1 });
+  });
+
+  it("drops the preference of someone who has no account here to restore it onto", async () => {
+    mocks.userFindMany.mockResolvedValue([]);
+    const backup = payloadWith([member], [pref]);
+
+    const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    expect(mocks.notificationPreferenceCreate).not.toHaveBeenCalled();
+    expect(result.members).toMatchObject({ needInvite: ["dad@example.com"], preferencesRestored: 0 });
   });
 });
