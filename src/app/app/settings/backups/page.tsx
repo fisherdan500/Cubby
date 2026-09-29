@@ -40,7 +40,25 @@ export default async function BackupsSettingsPage() {
             <p className="mb-3 text-sm text-muted-foreground">
               Download an existing local version below, then upload it here to preview and restore into a fresh owner household.
             </p>
+            <p className="mb-3 text-sm text-muted-foreground">
+              A household backup carries this household&apos;s data, and each member&apos;s name so its history stays correctly
+              attributed. It deliberately carries no passwords and cannot add anyone to a Cubby, so anyone who is not already
+              a member of the Cubby you restore into is listed for you to invite again.
+            </p>
             <BackupRestoreForm targetHouseholdName={targetHouseholdName} timeZone={env.APP_TIMEZONE} />
+          </Card>
+          <Card>
+            <h2 className="mb-3 text-lg font-semibold">Moving to a new server</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              To move a whole Cubby — every household, account and photo, with everyone signing in exactly as before — use a
+              whole-system backup. It runs on the server rather than here, because Cubby is stopped while it is made.
+            </p>
+            <pre className="mb-3 overflow-x-auto rounded-md bg-muted p-3 text-xs">sh scripts/system-backup.sh --maintenance</pre>
+            <p className="text-sm text-muted-foreground">
+              Keep a copy of the server&apos;s <code>.env</code> somewhere safe of its own: it holds the keys the restored accounts and
+              sign-ins depend on, and it is deliberately not inside the archive. Full instructions, including nightly scheduling and
+              restoring onto a new server, are in <code>docs/recovery/system-backup.md</code> in the Cubby checkout.
+            </p>
           </Card>
           <Card>
             <h2 className="mb-3 text-lg font-semibold">Restore from Sprout Track</h2>

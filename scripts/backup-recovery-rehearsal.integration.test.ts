@@ -155,6 +155,14 @@ function normalizedPayload(backup: V2Envelope) {
   payload.reminders = payload.reminders
     .map(({ id: _id, babyId, ...reminder }: any) => ({ ...reminder, babyId: babyIds.get(babyId) }))
     .sort((a: any, b: any) => a.title.localeCompare(b.title));
+  // Members and their notification rules are household-local IDENTITY, not portable data, so they are
+  // compared separately rather than here. A restore never grants membership: it recognises people who
+  // are already in the target household and reports the rest for invitation. The target household has a
+  // different owner with a different email, so its re-export legitimately carries that owner instead of
+  // the source's, and no preference survives because no member matched. Comparing them as if they were
+  // data would demand that a backup move accounts between servers, which is exactly what it must not do.
+  delete payload.members;
+  delete payload.notificationPreferences;
   return payload;
 }
 
@@ -880,6 +888,49 @@ describe("disposable PostgreSQL backup recovery rehearsal", () => {
 
     const targetBackup = JSON.parse(await exportBackupJson()) as V2Envelope;
     expect(normalizedPayload(targetBackup)).toEqual(normalizedPayload(sourceBackup));
+    // Identity is asserted here instead of inside normalizedPayload, which drops it. The restore
+    // recognised nobody (the target owner's email differs from the source owner's), so the target still
+    // has exactly its own owner and no membership arrived from the file.
+    expect(targetBackup.payload.members).toEqual([
+      expect.objectContaining({ email: targetUser.email, role: "owner" })
+    ]);
+    expect(sourceBackup.payload.members).toEqual([
+      expect.objectContaining({ email: source.user.email, role: "owner" })
+    ]);
+    // Against a real database, not a mock: a file naming an account that EXISTS on this server but is
+    // not a member of the target household must not pull that account in. This is the boundary the
+    // unit tests can only assert through vi.fn(), so it is proven here with real row counts.
+    const outsiderBackup = structuredClone(sourceBackup);
+    outsiderBackup.payload.members = [
+      ...(outsiderBackup.payload.members ?? []),
+      {
+        email: staleTarget.user.email,
+        name: "Outsider",
+        role: "owner",
+        displayName: "Outsider",
+        joinedAt: "2026-06-01T00:00:00.000Z",
+        disabledAt: null
+      }
+    ];
+    const membersBefore = await prisma.householdMember.count({ where: { householdId: target.household.id } });
+    const outsiderMembershipsBefore = await prisma.householdMember.count({ where: { userId: staleTarget.user.id } });
+    const outsiderUserBefore = await prisma.user.findUniqueOrThrow({ where: { id: staleTarget.user.id } });
+
+    const outsiderAttempt = await restoreBackupJson(outsiderBackup, {
+      confirmation: target.household.name
+    }).then(() => "resolved" as const, (error: Error) => error.message);
+
+    // Whether it is refused for a non-fresh target or accepted, the invariant is the same: no membership
+    // is created for an account that was not already in this household, and the outsider's own account
+    // is untouched.
+    expect(await prisma.householdMember.count({ where: { householdId: target.household.id } })).toBe(membersBefore);
+    expect(await prisma.householdMember.count({ where: { userId: staleTarget.user.id } })).toBe(outsiderMembershipsBefore);
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: staleTarget.user.id } })).toEqual(outsiderUserBefore);
+    expect(outsiderAttempt).toBeDefined();
+    // The source's notification preference belonged to the source owner, who is not a member here, so it
+    // was discarded rather than attached to the target's owner.
+    expect(targetBackup.payload.notificationPreferences ?? []).toEqual([]);
+    expect(sourceBackup.payload.notificationPreferences?.length).toBe(1);
     await expect(refreshHouseholdAuditCheckpoint(target.household.id, prisma)).resolves.toMatchObject({ eventCount: 4 });
     await expect(
       restoreBackupJson(sourceBackup, { confirmation: "Source Nursery", previewChecksum: sourceBackup.checksum })

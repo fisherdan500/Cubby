@@ -1,13 +1,16 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { plannedScheduleItemsSchema } from "@/domain/planned-schedule";
+import { singleMailbox } from "@/lib/validation/email";
 
 export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 export const BACKUP_EXCLUSIONS = [
-  "Users, credentials, sessions, and household memberships",
+  "Credentials and sessions (a backup never grants a login)",
+  "Memberships — people already in the household are recognised; anyone else must be invited",
+  "Push subscriptions, so notification rules come back but each device re-enables push",
   "Invitations and registration policy",
-  "API keys, webhooks, and push/notification state",
-  "Audit, import, backup history, warning dismissals, and vaccine attachments",
+  "API keys, webhooks, and notification delivery history",
+  "Audit, import, backup history, and warning dismissals",
   "Audit integrity checkpoints and household deletion registry receipts",
   "Browser operation bindings, receipts, tombstones, and integrity state"
 ] as const;
@@ -208,10 +211,83 @@ export function feedPhotoArchiveName(photoId: string) {
   return `photos/${photoId}.jpg`;
 }
 
+/**
+ * Who was in the household when the backup was taken, as a record — never as an instruction.
+ *
+ * There is deliberately no password, hash, token, session or verification field here, and the schema
+ * is `.strict()` so a hand-edited file cannot introduce one. The export query cannot reach `Account`
+ * or `Session` either, so a backup file can never grant a login.
+ *
+ * Restore reads `email` ONLY, to recognise people who are ALREADY members of the target household so
+ * history and notification rules attach to the right person. `email` is the identity that survives the
+ * trip between servers, because member and user ids are local to the install that issued them, and it
+ * is validated as a single mailbox so one entry cannot expand into several recipients.
+ *
+ * `role`, `name`, `displayName`, `joinedAt` and `disabledAt` are carried so the file stays a faithful,
+ * human-readable account of the household, and are deliberately NOT applied. A backup is untrusted
+ * input: letting it set a role or create a membership would move authority and household entry outside
+ * the invitation flow, which is the only place consent is obtained.
+ */
+const memberSchema = z
+  .object({
+    email: z
+      .string()
+      .min(3)
+      .max(320)
+      .refine((value) => {
+        try {
+          return singleMailbox(value) === value;
+        } catch {
+          return false;
+        }
+      }, "backup_member_email_invalid"),
+    name: z.string().min(1).max(200),
+    role: z.enum(["owner", "admin", "parent", "caretaker", "read_only"]),
+    displayName: z.string().max(200).nullable(),
+    joinedAt: isoDateTime,
+    disabledAt: nullableDate
+  })
+  .strict();
+
+/**
+ * What a person chose about being notified — never how a device is reached.
+ *
+ * `channels` and `destinationIds` are deliberately absent. Both name push subscriptions: browser and
+ * server specific handles (`endpoint`, `p256dh`, `auth`) issued by one browser on one device, which
+ * are not in a backup and are meaningless on another server. Carrying them would restore rows that
+ * can never deliver, so a restored preference keeps its rules and the person re-enables push on
+ * whatever browser they are now using.
+ *
+ * Keyed by member email for the same reason memberships are: preference and member ids are local to
+ * the install that issued them.
+ */
+const notificationPreferenceSchema = z
+  .object({
+    email: z.string().min(3).max(320),
+    categories: z.array(z.enum(["timer_overdue", "activity_created", "reminder_due"])).max(20),
+    quietHoursStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+    quietHoursEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+    interruptionLevel: z.enum(["passive", "normal", "time_sensitive"]),
+    babyScope: z.discriminatedUnion("mode", [
+      z.object({ mode: z.literal("all") }).strict(),
+      z.object({ mode: z.literal("selected"), babyIds: z.array(id).max(10_000) }).strict()
+    ])
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    // Half a quiet-hours range would silence notifications from a start with no end, so the pair is
+    // required together, matching the rule the application itself enforces.
+    if ((value.quietHoursStart === undefined) !== (value.quietHoursEnd === undefined)) {
+      ctx.addIssue({ code: "custom", message: "backup_quiet_hours_pair_required" });
+    }
+  });
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
     settings: settingsSchema,
+    members: z.array(memberSchema).max(1_000).optional(),
+    notificationPreferences: z.array(notificationPreferenceSchema).max(1_000).optional(),
     babies: z.array(babySchema).max(10_000),
     contacts: z.array(contactSchema).max(10_000),
     catalogs: z.array(catalogSchema).max(10_000),
@@ -234,6 +310,26 @@ const v2PayloadSchema = z
     if (new Set(photoPlaces).size !== photoPlaces.length) {
       ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
     }
+    // Email is the identity members restore onto, so two entries sharing one would collapse two
+    // people's history onto a single account. Compared case-insensitively, as mailboxes are matched.
+    const memberEmails = (payload.members ?? []).map((entry) => entry.email.toLowerCase());
+    if (new Set(memberEmails).size !== memberEmails.length) {
+      ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
+    }
+    // A preference belongs to exactly one member, and its selected babies must be babies this
+    // backup carries; otherwise it would restore rules pointing at people or children not here.
+    const prefs = payload.notificationPreferences ?? [];
+    const prefEmails = prefs.map((entry) => entry.email.toLowerCase());
+    if (new Set(prefEmails).size !== prefEmails.length) {
+      ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
+    }
+    const memberEmailSet = new Set(memberEmails);
+    const babyIds = new Set(payload.babies.map((baby) => baby.id));
+    const danglingPreference = prefs.some((entry) =>
+      !memberEmailSet.has(entry.email.toLowerCase())
+      || (entry.babyScope.mode === "selected" && entry.babyScope.babyIds.some((babyId) => !babyIds.has(babyId)))
+    );
+    if (danglingPreference) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const group of groups) {
       if (new Set(group.map((item) => item.id)).size !== group.length) {
         ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });

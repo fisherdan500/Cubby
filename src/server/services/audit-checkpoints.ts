@@ -95,6 +95,16 @@ async function householdEvents(householdId: string, database: AuditCheckpointDat
   });
 }
 
+/**
+ * `missing` means there is no checkpoint for this household, and it stays refused wherever an
+ * untampered chain is required. An absent checkpoint is indistinguishable from one deleted to hide a
+ * rewritten chain, so it must not be treated as benign on the theory that the household looks empty:
+ * creating a household writes `household.create` and `baby.create` immediately, so "no events" is not
+ * a state a real household passes through, and anything presenting that way has had rows removed.
+ *
+ * A brand-new household is instead given its checkpoint at creation, so it reports `valid` from its
+ * first moment rather than waiting for the scheduled sweep.
+ */
 export async function readHouseholdAuditIntegrity(householdId: string, database: AuditCheckpointDatabase) {
   const [events, checkpoint] = await Promise.all([
     householdEvents(householdId, database),

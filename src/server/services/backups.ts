@@ -50,8 +50,9 @@ const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"])
 type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
-  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
-  | "feedComment" | "feedReaction" | "attachment"
+  "household" | "householdSettings" | "householdMember" | "notificationPreference" | "baby" | "contact" | "medicineCatalog" | "activityLog"
+  | "calendarEvent" | "reminder"
+  | "plannedSchedule" | "feedPost" | "feedComment" | "feedReaction" | "attachment"
 >;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
@@ -280,11 +281,28 @@ export async function buildHouseholdV2Snapshot(
     ]
   };
   const [
-    household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments, feedReactions,
-    feedPhotos
+    household, settings, members, notificationPreferences, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules,
+    feedPosts, feedComments, feedReactions, feedPhotos
   ] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
+    // Identity and standing only. `select` is exhaustive on purpose: it cannot reach Account or
+    // Session, so no credential material can travel in the file even if this shape is extended later.
+    tx.householdMember.findMany({
+      where: { householdId, deletedAt: null },
+      select: { id: true, role: true, displayName: true, joinedAt: true, disabledAt: true, user: { select: { email: true, name: true } } },
+      orderBy: { joinedAt: "asc" }
+    }),
+    // What each person chose about being notified. `channels`/`destinationIds` are deliberately not
+    // selected: they name device-specific push subscriptions that no backup carries.
+    tx.notificationPreference.findMany({
+      where: { householdId, status: "active" },
+      select: {
+        memberId: true, categories: true, quietHoursStart: true, quietHoursEnd: true, interruptionLevel: true,
+        babyScope: true, selectedBabies: { select: { babyId: true }, orderBy: { babyId: "asc" } }
+      },
+      orderBy: { memberId: "asc" }
+    }),
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.contact.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.medicineCatalog.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
@@ -357,6 +375,35 @@ export async function buildHouseholdV2Snapshot(
           accentTheme: parseAccentTheme(settings.accentTheme)
         }
       : {},
+    members: members.map((member) => ({
+      // Lowercased because email is the identity a restore matches on, and mailboxes are matched
+      // case-insensitively; storing the display casing would let two files disagree about one person.
+      email: member.user.email.toLowerCase(),
+      name: member.user.name,
+      role: member.role,
+      displayName: member.displayName,
+      joinedAt: member.joinedAt.toISOString(),
+      disabledAt: member.disabledAt?.toISOString() ?? null
+    })),
+    notificationPreferences: notificationPreferences.flatMap((preference) => {
+      // Keyed to the member's email, so a preference whose member is not carried is dropped rather
+      // than restored against nobody.
+      const owner = members.find((member) => member.id === preference.memberId);
+      if (!owner) return [];
+      const selectedBabyIds = preference.selectedBabies.map((selected) => selected.babyId);
+      return [{
+        email: owner.user.email.toLowerCase(),
+        categories: preference.categories as Array<"timer_overdue" | "activity_created" | "reminder_due">,
+        ...(preference.quietHoursStart === null ? {} : { quietHoursStart: preference.quietHoursStart }),
+        ...(preference.quietHoursEnd === null ? {} : { quietHoursEnd: preference.quietHoursEnd }),
+        interruptionLevel: preference.interruptionLevel === "timeSensitive"
+          ? ("time_sensitive" as const)
+          : preference.interruptionLevel === "passive" ? ("passive" as const) : ("normal" as const),
+        babyScope: preference.babyScope === "selected"
+          ? { mode: "selected" as const, babyIds: selectedBabyIds }
+          : { mode: "all" as const }
+      }];
+    }),
     babies: babies.map((baby) => ({
       id: baby.id,
       name: baby.name,
@@ -532,7 +579,12 @@ async function runRestoreTransaction<T>(
           throw new Error("backup_confirmation_mismatch");
         }
         const auditIntegrity = await readHouseholdAuditIntegrity(lockedCtx.householdId, tx);
-        if (auditIntegrity.status !== "valid") throw new Error("backup_audit_integrity_unavailable");
+        // Only a verified chain may receive a restore. A fresh household qualifies because it is given
+        // its checkpoint when it is created, rather than waiting for the scheduled sweep - which is
+        // what previously made restoring onto a new server impossible.
+        if (auditIntegrity.status !== "valid") {
+          throw new Error("backup_audit_integrity_unavailable");
+        }
         await assertFreshTarget(tx, lockedCtx);
         return work(lockedCtx, tx);
       },
@@ -642,6 +694,98 @@ function prepareLegacyRestore(parsed: Extract<ParsedBackup, { version: 1 }>) {
   return { input, activities };
 }
 
+/**
+ * Recognise the household's existing members so restored history attaches to the right people.
+ *
+ * A restore GRANTS NO MEMBERSHIP and CREATES NO ACCOUNTS. It reads the memberships this household
+ * already has, matches them by email, and reports every other address in the file as needing an
+ * ordinary invitation. Nothing about a person's presence or authority comes from the file:
+ * - no `HouseholdMember` row is created or updated, so a file cannot put anyone into a household. Entry
+ *   is granted by the invitation flow, which is the only place the recipient's consent is obtained.
+ * - `role` is never applied. An `owner` entry in a file is inert rather than downgraded, because the
+ *   membership it would apply to is never written.
+ * - no account is created. Every account in Cubby is born inside a `SECURITY DEFINER` database function
+ *   that demands a credential fence, row locks across the credential tables, and a MAC-verified
+ *   fresh-auth attestation. That is the single chokepoint for account genesis, and a backup file — which
+ *   anyone holding it can edit — must not become a second one.
+ *
+ * The only rows written here are notification preferences, and only for a member who was matched.
+ */
+async function restoreMembers(
+  entries: ReadonlyArray<{ email: string; role: string; displayName: string | null; joinedAt: string; disabledAt: string | null }>,
+  preferences: ReadonlyArray<{
+    email: string;
+    categories: string[];
+    quietHoursStart?: string;
+    quietHoursEnd?: string;
+    interruptionLevel: "passive" | "normal" | "time_sensitive";
+    babyScope: { mode: "all" } | { mode: "selected"; babyIds: string[] };
+  }>,
+  babyMap: ReadonlyMap<string, string>,
+  lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
+  tx: Prisma.TransactionClient
+) {
+  if (!entries.length) return { matched: 0, needInvite: [] as string[], preferencesRestored: 0 };
+  const wanted = new Set(entries.map((entry) => entry.email.toLowerCase()));
+  // Matched against the memberships THIS household already has - never against users globally. A
+  // backup file is untrusted input, so resolving an email to any account on the server and creating a
+  // membership from it would let a crafted file put someone else's account into this household without
+  // them ever accepting an invitation. Membership is granted by the invitation flow and nothing else;
+  // a restore only recognises people who are already here.
+  //
+  // The household's own members are read and compared in code rather than filtered with `email: { in }`:
+  // User.email is a plain column with no citext or lower() index, so a database `in` would be
+  // case-sensitive and a member stored as "Dad@example.com" would be reported as needing an invitation
+  // they do not need. A household has a handful of members, so this read is bounded.
+  const existing = await tx.householdMember.findMany({
+    where: { householdId: lockedCtx.householdId, deletedAt: null },
+    select: { id: true, user: { select: { email: true } } }
+  });
+  const memberIdByEmail = new Map(
+    existing
+      .map((member) => [member.user.email.toLowerCase(), member.id] as const)
+      .filter(([email]) => wanted.has(email))
+  );
+  const needInvite = [...wanted].filter((email) => !memberIdByEmail.has(email));
+
+  // Notification rules follow their member. Someone with no membership here has nothing to hang them
+  // on, so their preferences are dropped rather than held for a person who may never arrive.
+  let preferencesRestored = 0;
+  for (const preference of preferences) {
+    const memberId = memberIdByEmail.get(preference.email.toLowerCase());
+    if (!memberId) continue;
+    const selectedBabyIds = preference.babyScope.mode === "selected"
+      ? preference.babyScope.babyIds.map((babyId) => babyMap.get(babyId)).filter((babyId): babyId is string => babyId !== undefined)
+      : [];
+    await tx.notificationPreference.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        memberId,
+        revision: 1,
+        // Set explicitly rather than inherited from Prisma defaults: the export only reads `active`
+        // preferences, so a restored row must land in the same state the live notification service
+        // writes. If either default ever changed, silently diverging here would be hard to notice.
+        status: "active",
+        schemaVersion: 1,
+        categories: preference.categories,
+        quietHoursStart: preference.quietHoursStart ?? null,
+        quietHoursEnd: preference.quietHoursEnd ?? null,
+        interruptionLevel: preference.interruptionLevel === "time_sensitive"
+          ? "timeSensitive"
+          : preference.interruptionLevel === "passive" ? "passive" : "normal",
+        babyScope: preference.babyScope.mode,
+        // Empty by design: channels and destinations name push subscriptions on devices registered
+        // with another server. The person re-enables push on the browser they are now using.
+        channels: [],
+        destinationIds: [],
+        ...(selectedBabyIds.length ? { selectedBabies: { create: selectedBabyIds.map((babyId) => ({ householdId: lockedCtx.householdId, babyId })) } } : {})
+      }
+    });
+    preferencesRestored += 1;
+  }
+  return { matched: memberIdByEmail.size, needInvite, preferencesRestored };
+}
+
 async function restoreV2InTransaction(
   parsed: Extract<ParsedBackup, { version: 2 }>,
   lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
@@ -713,6 +857,9 @@ async function restoreV2InTransaction(
     babyMap.set(baby.id, saved.id);
     createdBabies.set(saved.id, saved as Awaited<ReturnType<typeof lockBabyForWrite>>);
   }
+
+  // After babies exist, so a preference scoped to selected babies maps onto the rows just created.
+  const members = await restoreMembers(payload.members ?? [], payload.notificationPreferences ?? [], babyMap, lockedCtx, tx);
 
   const activityMap = new Map<string, string>();
   for (const activity of payload.activities) {
@@ -878,7 +1025,7 @@ async function restoreV2InTransaction(
   const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders
     + counts.plannedSchedules + counts.feedPosts + counts.feedComments + counts.feedReactions + counts.feedPhotos;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
-  return { restored, counts, legacyPartial: false };
+  return { restored, counts, members, legacyPartial: false };
 }
 
 async function restoreLegacyInTransaction(
@@ -917,7 +1064,8 @@ async function restoreLegacyInTransaction(
   const counts = { babies: input.babies.length, activities: activities.length };
   const restored = counts.babies + counts.activities;
   await writeRestoreCompletion(lockedCtx, tx, restored, undefined, counts);
-  return { restored, counts };
+  // A v1 file predates members entirely, so none can be restored from one.
+  return { restored, counts, members: { matched: 0, needInvite: [] as string[], preferencesRestored: 0 } };
 }
 
 async function writeRestoreCompletion(

@@ -158,6 +158,8 @@ export function handleError(error: unknown) {
     if (error.message === "backup_photos_missing") return fail("backup_photos_missing", "This backup lists photos that are not in the file. Choose the .zip backup, which includes them.", 422);
     if (error.message === "backup_photo_mismatch") return fail("backup_photo_mismatch", "A photo in this backup does not match what the backup lists, so the file is damaged. Try another backup.", 422);
     if (error.message === "backup_photo_unavailable") return fail("backup_photo_unavailable", "A photo could not be read, so the backup was not made. Run the integrity check, then try again.", 409);
+    if (error.message === "backup_audit_integrity_unavailable") return fail("backup_audit_integrity_unavailable", "This household's audit history could not be verified, so restoring into it was refused. Run the integrity check to see why, then try again.", 409);
+    if (error.message === "backup_invalid_pause_intervals" || error.message === "pause_interval_state_invalid") return fail("backup_invalid_pause_intervals", "This backup contains a timer whose pause history is incomplete and cannot be restored.", 422);
     if (error.message === "archive_too_large") return fail("archive_too_large", "Cubby backup archives must be 2 GiB or smaller.", 413);
     if (error.message === "attachment_type_unavailable") return fail("not_found", "Not found.", 404);
     if (error.message === "attachment_upload_busy") return fail("attachment_upload_busy", "Another photo is being processed. Try again shortly.", 429);

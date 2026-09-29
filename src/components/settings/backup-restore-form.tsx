@@ -30,12 +30,14 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
   const [confirmation, setConfirmation] = useState("");
   const [pending, setPending] = useState<"preview" | "restore" | null>(null);
   const [message, setMessage] = useState("");
+  const [needInvite, setNeedInvite] = useState<string[]>([]);
 
   async function selectFile(file: File | null) {
     setSelectedFile(file);
     setPreview(null);
     setConfirmation("");
     setMessage("");
+    setNeedInvite([]);
     if (!file) return;
     setPending("preview");
     try {
@@ -72,8 +74,15 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
         },
         body: selectedFile
       });
-      const result = await response.json() as ApiResult<{ restored: number; counts?: Record<string, number> }>;
+      const result = await response.json() as ApiResult<{
+        restored: number;
+        counts?: Record<string, number>;
+        members?: { matched: number; needInvite: string[]; preferencesRestored: number };
+      }>;
       if (!result.ok) throw new Error(result.error.message);
+      // A restore never grants membership, so anyone in the file who is not already a member did not
+      // come across. This list is the only place the operator finds out who to invite.
+      setNeedInvite(result.data.members?.needInvite ?? []);
       setMessage(`Restore complete. Recovered ${result.data.restored} records. Refreshing Cubby…`);
       router.refresh();
     } catch (error) {
@@ -121,6 +130,18 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
         </section>
       ) : null}
       {message ? <p aria-live="polite" className="rounded-md bg-muted p-3 text-sm">{message}</p> : null}
+      {needInvite.length > 0 ? (
+        <section aria-label="People to invite" className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+          <p className="font-bold">Invite these people again</p>
+          <p className="mb-2 text-muted-foreground">
+            A backup carries no passwords, so it cannot add anyone to this Cubby. Their history was restored;
+            invite them and it will be waiting under their name.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 break-words">
+            {needInvite.map((email) => <li key={email}>{email}</li>)}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
