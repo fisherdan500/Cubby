@@ -312,17 +312,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "488004f832e4d4bcc147aedd515932239ae3720c61af5b7b5d869b9205848fb2",
+          "digest": "07729416ed2793892eb87c805d7c519e4501dc8a75ebcef04f609704780b431c",
           "file": "src/app/api/attachments/[id]/route.ts"
         }
       ],
       "declarationDigest": "e3552c16da1b3559a3e29c4f775c351b24013d5c2e59f1bcbb61cc4f9c7f7476",
-      "fingerprint": "d764ba564dddda206a80d65054b1a885541db6f155ce012e3c6803c617f700c9",
+      "fingerprint": "13a06e3203be396bb514196b5e688026f7e2ead93e198da6ad77a9011bb78da3",
       "id": "fingerprint:api_route:src/app/api/attachments/[id]/route.ts",
       "ownerId": "api_route:src/app/api/attachments/[id]/route.ts",
       "ownerModule": "src/app/api/attachments/[id]/route.ts",
       "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts",
-      "sourceDigest": "a861b513345c9391493f671b5e34bfb23176c12d8e26187e1a48cc80b90d3283",
+      "sourceDigest": "a981c122e0c3ea9c5d72c40f4dce8ed7b947b79ed875ff436708e67d5caba255",
       "status": "declared"
     },
     {
@@ -4144,11 +4144,11 @@
   ],
   "generatorDigest": "b6afe64c12c2a41452ed28ec973ec6ad03325f07ec0d10f59e344409cf5ca88e",
   "generatorVersion": "r0.1",
-  "observationDigest": "61a9d6b60b222d266c184854123fe898370650a5bdfa0a7d77620aebf4ae9004",
+  "observationDigest": "b3e12e445435440ca4e27a824a5c867ac81a1098bdf8ca0b1760d042b17f7e0f",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "a046c0a1c0ae42373331a82ac659cd0b096a9d9742de15d33cd3bcdc2532fc49",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "1333dd131d8962fd64e9c8d97a786321981e7f004bc6f5ef20fa01842b881ae8",
+  "registryDigest": "4d95e34cc791449feed0aece1e339daac014b385b974309a83be13fbcf0a9fec",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

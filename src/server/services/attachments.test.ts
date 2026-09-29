@@ -214,7 +214,7 @@ describe("opening a photo", () => {
     mocks.attachment.findFirst.mockResolvedValue(row());
     mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
 
-    await expect(openAttachment("att-1", { enabled, now })).resolves.toEqual({ bytes: Buffer.from("jpeg"), mimeType: "image/jpeg" });
+    await expect(openAttachment("att-1", { enabled, now })).resolves.toEqual({ bytes: Buffer.from("jpeg"), mimeType: "image/jpeg", digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", notModified: false });
     expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "activity.read");
     expect(mocks.attachment.findFirst.mock.calls[0][0].where).toEqual({
       id: "att-1", householdId: "household-1", state: "available",
@@ -269,7 +269,7 @@ describe("opening a photo's thumbnail", () => {
     mocks.attachment.findFirst.mockResolvedValue(row());
     mocks.readThumbnail.mockResolvedValue(Buffer.from("small"));
 
-    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toEqual({ bytes: Buffer.from("small"), mimeType: "image/jpeg" });
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toEqual({ bytes: Buffer.from("small"), mimeType: "image/jpeg", digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-thumbnail", notModified: false });
     expect(mocks.attachment.findFirst.mock.calls[0][0].where).toMatchObject({ id: "att-1", householdId: "household-1", state: "available" });
     expect(mocks.readThumbnail).toHaveBeenCalledWith("/data/attachments", "0".repeat(32));
     expect(mocks.readObject).not.toHaveBeenCalled();
@@ -281,7 +281,7 @@ describe("opening a photo's thumbnail", () => {
     mocks.readObject.mockResolvedValue(Buffer.from("jpeg"));
     mocks.makeThumbnail.mockResolvedValue(Buffer.from("small"));
 
-    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toEqual({ bytes: Buffer.from("small"), mimeType: "image/jpeg" });
+    await expect(openAttachment("att-1", { enabled, now, size: "thumbnail" })).resolves.toEqual({ bytes: Buffer.from("small"), mimeType: "image/jpeg", digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-thumbnail", notModified: false });
     expect(mocks.makeThumbnail).toHaveBeenCalledWith(Buffer.from("jpeg"));
     expect(mocks.writeThumbnail).toHaveBeenCalledWith("/data/attachments", "0".repeat(32), Buffer.from("small"));
   });

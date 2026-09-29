@@ -71,6 +71,10 @@ it("rebuilds corrupt cached pixels from the verified original and reuses the per
     await writeAttachmentThumbnail(m.directory, key, Buffer.from("corrupt"));
     m.findFirst.mockResolvedValue({ id: "photo", type: "feed_photo", storageKey: key, ...expected, mimeType: "image/jpeg" });
     const first = await openAttachment("photo", { size: "thumbnail" });
+    // No version was offered, so bytes are always served. Asserting that rather than casting keeps the
+    // test honest about which branch of the conditional delivery it is exercising.
+    expect(first.notModified).toBe(false);
+    if (!first.bytes) throw new Error("expected thumbnail bytes");
     expect((await sharp(first.bytes).metadata()).width).toBe(800);
     expect(await readFile(path.join(m.directory, "thumbnails", "01", key))).toEqual(first.bytes);
     expect(await readFile(path.join(m.directory, "objects", "01", key))).toEqual(original);

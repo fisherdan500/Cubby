@@ -8674,10 +8674,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "be4f5a6e9f92aba6f408c482cd035466e7d8b5b7df647f6495fdbd4ffbb4a206",
-          "anchorEnd": 1586,
+          "anchorDigest": "4188a7bc6d2344bedca13916604c6453e08e8decb70b96297bf471e38f4409a5",
+          "anchorEnd": 3122,
           "anchorFile": "src/app/api/attachments/[id]/route.ts",
-          "anchorStart": 762,
+          "anchorStart": 1872,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/attachments/[id]/route.ts#GET"
@@ -14890,7 +14890,7 @@
     }
   ],
   "observationCount": 227,
-  "observationDigest": "61a9d6b60b222d266c184854123fe898370650a5bdfa0a7d77620aebf4ae9004",
+  "observationDigest": "b3e12e445435440ca4e27a824a5c867ac81a1098bdf8ca0b1760d042b17f7e0f",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15275,9 +15275,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1586,
+          "anchorEnd": 3122,
           "anchorFile": "src/app/api/attachments/[id]/route.ts",
-          "anchorStart": 762,
+          "anchorStart": 1872,
           "kind": "route_method",
           "ownerModule": "src/app/api/attachments/[id]/route.ts",
           "symbol": "GET",
@@ -22516,7 +22516,7 @@
   ],
   "ownerSetDigest": "a046c0a1c0ae42373331a82ac659cd0b096a9d9742de15d33cd3bcdc2532fc49",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "1333dd131d8962fd64e9c8d97a786321981e7f004bc6f5ef20fa01842b881ae8",
+  "registryDigest": "4d95e34cc791449feed0aece1e339daac014b385b974309a83be13fbcf0a9fec",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

@@ -53,14 +53,15 @@ describe("POST /api/attachments/feed-photos", () => {
 
 describe("GET /api/attachments/[id]", () => {
   it("serves the photo privately, never cached, sniffed or run as a page", async () => {
-    mocks.openAttachment.mockResolvedValue({ bytes: Buffer.from("jpeg"), mimeType: "image/jpeg" });
+    mocks.openAttachment.mockResolvedValue({ bytes: Buffer.from("jpeg"), mimeType: "image/jpeg", digest: "d".repeat(64), notModified: false });
     const response = await GET(new Request(`https://cubby.test/api/attachments/${photoId}`), { params: { id: photoId } });
 
     expect(response.status).toBe(200);
     expect(Buffer.from(await response.arrayBuffer()).toString()).toBe("jpeg");
     expect(Object.fromEntries(response.headers)).toMatchObject({
       "content-type": "image/jpeg",
-      "cache-control": "private, no-store",
+      "cache-control": "private, no-cache",
+      "etag": `"${"d".repeat(64)}"`,
       "x-content-type-options": "nosniff",
       "content-security-policy": "default-src 'none'; sandbox",
       "content-disposition": 'inline; filename="photo.jpg"',
@@ -68,21 +69,21 @@ describe("GET /api/attachments/[id]", () => {
       "referrer-policy": "no-referrer",
       "content-length": "4"
     });
-    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId);
+    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId, { knownDigests: [] });
   });
 
   it("serves a thumbnail for ?size=thumbnail with the same private headers, and the full photo otherwise", async () => {
-    mocks.openAttachment.mockResolvedValue({ bytes: Buffer.from("small"), mimeType: "image/jpeg" });
+    mocks.openAttachment.mockResolvedValue({ bytes: Buffer.from("small"), mimeType: "image/jpeg", digest: "d".repeat(64), notModified: false });
     const response = await GET(new Request(`https://cubby.test/api/attachments/${photoId}?size=thumbnail`), { params: { id: photoId } });
 
     expect(response.status).toBe(200);
-    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId, { size: "thumbnail" });
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId, { size: "thumbnail", knownDigests: [] });
+    expect(response.headers.get("cache-control")).toBe("private, no-cache");
     expect(response.headers.get("content-security-policy")).toBe("default-src 'none'; sandbox");
 
     mocks.openAttachment.mockClear();
     await GET(new Request(`https://cubby.test/api/attachments/${photoId}?size=huge`), { params: { id: photoId } });
-    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId);
+    expect(mocks.openAttachment).toHaveBeenCalledWith(photoId, { knownDigests: [] });
   });
 
   it("answers the same way whenever the photo cannot be shown to this person", async () => {
