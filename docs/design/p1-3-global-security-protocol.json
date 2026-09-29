@@ -1581,6 +1581,13 @@
       "client": "user_id_forbidden_account_neutral",
       "deployment": "user_id_forbidden_account_neutral"
     },
+    "gatingLayers": "discriminating_only",
+    "layerGatingMatrix": {
+      "account_identifier": "always_gates",
+      "client": "gates_only_when_client_identity_discriminates",
+      "deployment": "never_gates_evidence_only"
+    },
+    "sharedBucketQuietMayNotRejectCredentialProof": true,
     "accountExistenceNeutral": true,
     "failures": 5,
     "windowMinutes": 15,

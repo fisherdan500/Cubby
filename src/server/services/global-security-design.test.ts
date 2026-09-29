@@ -74,7 +74,7 @@ describe("P1-3 global security design gate", () => {
       sqlProtocol: { advisoryLock: { function: string; sql: string; writers: string[] }; transitionSerialization: { function: string; triggerNamePrefix: string; scope: string; tables: string[]; proof: string }; liveIdentityTables: string[]; uniqueIndexes: string[]; insertGuards: Array<{ trigger: string; event: string; requires: string[] }>; transitionGuards: Array<{ trigger: string; event: string; states: string }>; retentionProtection: { directDelete: string; truncate: string; accountDeletion: string }; compaction: { policy: string; bindingLeaseMinutes: number; deleteAuthorization: string; futureGate: string } };
       routeCutover: { phase: string; phase1Boundary: string; denyOrWrap: string[]; directAllowlist: string[]; wrappedAllowlist: string[]; callbackAllowlist: string[]; fallback: string };
       sessionPolicy: { idleDays: number; absoluteDays: number; qualifyingUse: string[]; excludedUse: string[]; lifetime: Record<string, unknown> };
-      throttling: { layers: string[]; failures: number; windowMinutes: number; recoveryAtLeastAsStrong: boolean; layerOwnerMatrix: Record<string, string> };
+      throttling: { layers: string[]; failures: number; windowMinutes: number; recoveryAtLeastAsStrong: boolean; layerOwnerMatrix: Record<string, string>; gatingLayers: string; layerGatingMatrix: Record<string, string>; sharedBucketQuietMayNotRejectCredentialProof: boolean };
       privateHistory: { phase1InsertMatrix: string[]; phase1Projection: string; reservedEventClasses: string[] };
       recovery: { codeCount: number; entropyBits: number; format: { alphabet: string; groups: number[]; normalization: string }; enrollmentState: string[]; kdf: Record<string, unknown>; restrictedSession: boolean; restrictedSessionMinutes: number; normalSignInRequired: boolean; everyUserRehearsalRequired: boolean; setIssuanceSerialization: string };
       recoveryPersistence: { setStates: string[]; codeOrdinalRange: [number, number]; codeConsumptionPurposes: string[]; readiness: string; sessionCarrier: string; kdfStorage: { saltBytes: number; derivedKeyBytes: number; plaintext: string } };
@@ -192,6 +192,11 @@ describe("P1-3 global security design gate", () => {
     ]));
     expect(design.throttling).toMatchObject({ layers: ["account_identifier", "client", "deployment"], failures: 5, windowMinutes: 15, recoveryAtLeastAsStrong: true });
     expect(design.throttling.layerOwnerMatrix).toEqual({ account_identifier: "user_id_required", client: "user_id_forbidden_account_neutral", deployment: "user_id_forbidden_account_neutral" });
+    // A quiet layer whose key cannot tell two callers apart must not reject a credential proof: it would
+    // make a correct password verify as wrong for every account. Such layers still collect evidence.
+    expect(design.throttling.gatingLayers).toBe("discriminating_only");
+    expect(design.throttling.layerGatingMatrix).toEqual({ account_identifier: "always_gates", client: "gates_only_when_client_identity_discriminates", deployment: "never_gates_evidence_only" });
+    expect(design.throttling.sharedBucketQuietMayNotRejectCredentialProof).toBe(true);
     expect(design.privateHistory.phase1InsertMatrix).toEqual(["operation_outcome|rejected", "operation_outcome|stale_security_version"]);
     expect(design.privateHistory.phase1Projection).toBe("empty_object_only");
     expect(design.privateHistory.reservedEventClasses).toEqual(["credential", "grant", "recovery", "email_change", "session", "throttle"]);
