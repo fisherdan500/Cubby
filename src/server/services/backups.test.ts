@@ -1711,6 +1711,28 @@ describe("restoring members", () => {
     expect(where.householdId).toBe("household-1");
   });
 
+  it("never writes a user, account, session, or membership on a restore", async () => {
+    // The strongest available negative: the mocked transaction client exposes NO write function on
+    // user/account/session, so any attempt to create one throws rather than passing silently, and
+    // householdMember exposes create/update which must stay uncalled. This is what the integration
+    // rehearsal proves against a real database with row counts; here it is pinned at the call level.
+    mocks.memberFindMany.mockResolvedValue([{ id: "member-dad", user: { email: "dad@example.com" } }]);
+    const client = transactionClient() as unknown as Record<string, Record<string, unknown> | undefined>;
+    expect(client.user?.create).toBeUndefined();
+    expect(client.user?.update).toBeUndefined();
+    expect(client.user?.upsert).toBeUndefined();
+    expect(client.account).toBeUndefined();
+    expect(client.session?.create).toBeUndefined();
+    const backup = payloadWith([member]);
+
+    await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    expect(mocks.memberCreate).not.toHaveBeenCalled();
+    expect(mocks.memberUpdate).not.toHaveBeenCalled();
+    expect(mocks.memberUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.memberDelete).not.toHaveBeenCalled();
+  });
+
   it("recognises a member whose stored email differs in case", async () => {
     // User.email has no citext or lower() index, so a database `in` filter would be case-sensitive and
     // would tell the operator to re-invite somebody who is already a member.

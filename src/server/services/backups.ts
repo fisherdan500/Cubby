@@ -1,4 +1,4 @@
-import { TimerState, type HouseholdRole, type Prisma } from "@prisma/client";
+import { TimerState, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { automatedBackupStatusConfig } from "@/lib/automated-backup-config";
 import { prisma } from "@/lib/db/prisma";
@@ -695,20 +695,21 @@ function prepareLegacyRestore(parsed: Extract<ParsedBackup, { version: 1 }>) {
 }
 
 /**
- * Reattach the household's members to the accounts that already exist on this server.
+ * Recognise the household's existing members so restored history attaches to the right people.
  *
- * A restore deliberately CREATES NO ACCOUNTS. Every account in Cubby is born inside a
- * `SECURITY DEFINER` database function that demands a credential fence, row locks across the
- * credential tables, and a MAC-verified fresh-auth attestation. That is the single chokepoint for
- * account genesis, and a backup file — which anyone holding it can edit — must not become a second
- * one. So members are matched by email, and anyone with no account here is reported back for an
- * ordinary invitation instead.
+ * A restore GRANTS NO MEMBERSHIP and CREATES NO ACCOUNTS. It reads the memberships this household
+ * already has, matches them by email, and reports every other address in the file as needing an
+ * ordinary invitation. Nothing about a person's presence or authority comes from the file:
+ * - no `HouseholdMember` row is created or updated, so a file cannot put anyone into a household. Entry
+ *   is granted by the invitation flow, which is the only place the recipient's consent is obtained.
+ * - `role` is never applied. An `owner` entry in a file is inert rather than downgraded, because the
+ *   membership it would apply to is never written.
+ * - no account is created. Every account in Cubby is born inside a `SECURITY DEFINER` database function
+ *   that demands a credential fence, row locks across the credential tables, and a MAC-verified
+ *   fresh-auth attestation. That is the single chokepoint for account genesis, and a backup file — which
+ *   anyone holding it can edit — must not become a second one.
  *
- * Two further limits, because the file is untrusted input:
- * - no membership is ever restored as `owner`; a file cannot hand over the household. Owners in the
- *   file land as `admin`, which is the closest authority that is not household ownership.
- * - the restoring user is skipped entirely. They already hold their own membership, and a second row
- *   would duplicate their authority.
+ * The only rows written here are notification preferences, and only for a member who was matched.
  */
 async function restoreMembers(
   entries: ReadonlyArray<{ email: string; role: string; displayName: string | null; joinedAt: string; disabledAt: string | null }>,

@@ -6,7 +6,6 @@ import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
-import { refreshHouseholdAuditCheckpoint } from "@/server/services/audit-checkpoints";
 import { lockActorAndBabyForWrite, lockActorForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
@@ -106,12 +105,6 @@ export async function createOnboardingHousehold(raw: unknown) {
       babyId: initialBaby.id,
       after: {}
     }, tx);
-    // Checkpoint the chain these two events just started, in the same transaction that wrote them.
-    // Checkpoints are otherwise only written by the scheduled integrity sweep, so until it next ran a
-    // brand-new household had none, read as `missing`, and could not receive a backup restore - the
-    // state every migration onto a new server begins in. Excusing an absent checkpoint instead would
-    // make it indistinguishable from one deleted to hide a rewritten chain.
-    await refreshHouseholdAuditCheckpoint(created.id, tx);
     const { members: _members, babies: _babies, ...household } = created;
     return household;
   });
