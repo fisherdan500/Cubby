@@ -87,13 +87,32 @@ export function canonicalizeTrustedClient(trustedProxyHops: number, forwardedFor
   return UNKNOWN_CLIENT;
 }
 
-function deriveThrottleKeys(input: GlobalSecurityThrottleInput) {
+/**
+ * A throttle layer may gate a credential proof only if its key distinguishes one actor from another.
+ *
+ * The account layer always does: it is keyed on a specific account identifier. The client layer does
+ * only when a trusted proxy hop supplied a real client identity; with CUBBY_TRUSTED_PROXY_HOPS=0 it
+ * collapses to the UNKNOWN_CLIENT constant and every caller shares one bucket. The deployment layer
+ * never does: its key is a fixed constant, so it is one bucket for the whole deployment.
+ *
+ * Letting a shared-bucket layer gate proofs means any caller who trips it makes a CORRECT password
+ * verify as wrong for everyone else, which is a denial-of-service switch rather than a brake. Gating
+ * therefore consults discriminating layers only. Evidence is unaffected: recording a failure still
+ * increments every layer, so incident history, operator aggregates and abuse state are unchanged.
+ */
+function deriveThrottleKeys(input: GlobalSecurityThrottleInput, purpose: "gate" | "evidence") {
   if ((input.userId === undefined) !== (input.accountIdentifier === undefined)) throw new Error("global_security_throttle_input_invalid");
+  const client = input.client || UNKNOWN_CLIENT;
+  const clientDiscriminates = client !== UNKNOWN_CLIENT;
   const accountKey = input.accountIdentifier === undefined
     ? null
     : deriveThrottleIdentity(input.key, ACCOUNT_DOMAIN, `account_identifier_v1\0${normalizeThrottleAccountIdentifier(input.accountIdentifier)}`);
-  const clientKey = deriveThrottleIdentity(input.key, CLIENT_DOMAIN, `client_v1\0${input.client || UNKNOWN_CLIENT}`);
-  const deploymentKey = deriveThrottleIdentity(input.key, DEPLOYMENT_DOMAIN, DEPLOYMENT_VALUE);
+  const clientKey = purpose === "gate" && !clientDiscriminates
+    ? null
+    : deriveThrottleIdentity(input.key, CLIENT_DOMAIN, `client_v1\0${client}`);
+  const deploymentKey = purpose === "gate"
+    ? null
+    : deriveThrottleIdentity(input.key, DEPLOYMENT_DOMAIN, DEPLOYMENT_VALUE);
   return { accountKey, clientKey, deploymentKey };
 }
 
@@ -124,7 +143,7 @@ async function callThrottleProcedure(
   procedure: "global_security_throttle_precheck" | "global_security_throttle_failure",
   input: GlobalSecurityThrottleInput
 ): Promise<GlobalSecurityThrottleResult> {
-  const keys = deriveThrottleKeys(input);
+  const keys = deriveThrottleKeys(input, procedure === "global_security_throttle_precheck" ? "gate" : "evidence");
   const rows = await tx.$queryRaw<Array<{ quiet: boolean; deadline: Date | null }>>`
     SELECT "quiet", "deadline" FROM ${Prisma.raw(`"${procedure}"`)}(${input.userId ?? null},${keys.accountKey},${keys.clientKey},${keys.deploymentKey})
   `;
