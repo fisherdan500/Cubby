@@ -90,7 +90,8 @@ export const tenantIsolationInventory = [
   { model: "NotificationPreferenceBaby", ownership: "direct", operationClasses: ["notification_preference_selection"], disposition: "constraint_slice" },
   // Both references are composite (householdId, babyId / authorMemberId), so a post cannot cross households.
   // Its post and creator references are composite with householdId, and its bytes are served only
-  // after the viewer's household is checked again (DEC-PROD-144).
+  // after the viewer's household is checked again (DEC-PROD-144) — including when the caller offers a
+  // version it already holds, which is compared only after that check and never in place of it.
   { model: "Attachment", ownership: "direct", operationClasses: ["attachment_lifecycle", "attachment_delivery"], disposition: "constraint_slice" },
   { model: "FeedPost", ownership: "direct", operationClasses: ["feed_post_write", "restore"], disposition: "constraint_slice" },
   // Every reference - post or entry, and author or reactor - is composite with householdId.

@@ -30,7 +30,17 @@ import { makeFeedPhotoThumbnail, processFeedPhoto } from "@/server/services/feed
  * tombstone. Audit records say what happened to which attachment, never its name or content.
  */
 
-type Options = { enabled?: Partial<Record<AttachmentTypeName, boolean>>; now?: Date; size?: "full" | "thumbnail" };
+type Options = {
+  enabled?: Partial<Record<AttachmentTypeName, boolean>>;
+  now?: Date;
+  size?: "full" | "thumbnail";
+  /**
+   * Versions the caller already holds. When one matches, no bytes are read, hashed or returned.
+   * Authorization is unaffected: they are compared only after the viewer, household, post and baby have
+   * all been checked, so holding a correct version is never a way past a check (DEC-PROD-144).
+   */
+  knownDigests?: string[];
+};
 type Actor = Pick<HouseholdContext, "householdId" | "userId" | "memberId" | "role">;
 
 const TYPE = "feed_photo" as const;
@@ -146,6 +156,10 @@ function startOfUtcDay(date: Date) {
  *
  * With `size: "thumbnail"`, a small copy for grids after exactly the same checks: the one kept, or
  * one made from the verified photo and kept for next time.
+ *
+ * Returns a `digest` identifying the exact bytes, so a caller can say what it already holds. Passing that
+ * back as `knownDigest` skips reading and hashing the file when it still matches - but only AFTER every
+ * check above has passed, so a held version never substitutes for authorization (DEC-PROD-144).
  */
 export async function openAttachment(id: string, options: Options = {}) {
   const ctx = await getEffectiveHouseholdContext();
@@ -163,8 +177,20 @@ export async function openAttachment(id: string, options: Options = {}) {
   if (!attachment || !attachmentTypeEnabled(attachment.type, options.enabled)) throw new Error("not_found");
 
   const thumbnail = options.size === "thumbnail";
-  let bytes: Buffer | null = thumbnail ? await readAttachmentThumbnail(directory(), attachment.storageKey) : null;
-  if (!bytes) bytes = await readVerifiedPhoto(ctx, attachment, now, thumbnail);
+  // The small copy is derived from the photo but is not the same bytes, so it carries its own version.
+  // Sharing one would let a caller reuse the thumbnail as the full photo, or the reverse.
+  const digest = thumbnail ? `${attachment.sha256}-thumbnail` : attachment.sha256;
+
+  // Authorization is complete by here: viewer, permission, household, post and baby have all been
+  // checked, and a photo this household may not see has already thrown. Only now can a held version
+  // stand in for the bytes.
+  const notModified = (options.knownDigests ?? []).includes(digest);
+
+  let bytes: Buffer | null = null;
+  if (!notModified) {
+    bytes = thumbnail ? await readAttachmentThumbnail(directory(), attachment.storageKey) : null;
+    if (!bytes) bytes = await readVerifiedPhoto(ctx, attachment, now, thumbnail);
+  }
 
   const viewedToday = await prisma.auditEvent.findFirst({
     where: {
@@ -178,9 +204,12 @@ export async function openAttachment(id: string, options: Options = {}) {
     select: { id: true }
   });
   if (!viewedToday) {
+    // The photo was looked at. That it came from the caller's own store does not make it unviewed.
     await writeAudit(ctx, { action: "attachment.view", entityType: "attachment", entityId: attachment.id, after: { type: attachment.type } });
   }
-  return { bytes, mimeType: attachment.mimeType };
+  return notModified
+    ? { bytes: null, mimeType: attachment.mimeType, digest, notModified: true }
+    : { bytes, mimeType: attachment.mimeType, digest, notModified: false };
 }
 
 type ServedAttachment = { id: string; type: AttachmentTypeName; storageKey: string; byteSize: number; sha256: string };
