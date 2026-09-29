@@ -433,6 +433,40 @@ export async function finalizePasswordChange(
   }
 }
 
+/**
+ * Rejects a replacement that merely re-sets the current password whenever the caller carries an
+ * outstanding assisted first-login obligation.
+ *
+ * This lives in the canonical engine rather than only in the corridor route because completing ANY
+ * `password_change` operation fires the deferred trigger that clears the obligation. A check that
+ * sat only in the corridor could be routed around by posting the same replacement to the ordinary
+ * password route, which would clear the obligation while leaving the administrator in knowledge of
+ * the live credential — exactly the state the obligation exists to end.
+ *
+ * `verifier` is the same one used for the current-password proof, so this applies the identical
+ * normalization and therefore also rejects a different encoding of the same password. The obligation
+ * and the credential are read in one transaction so the decision cannot straddle a concurrent write.
+ */
+async function assertNotRequiredChangeReuse(
+  database: GlobalSecurityDatabase,
+  expected: GlobalSecurityContext,
+  newPassword: string,
+  verifier: { verify: (input: { hash: string; password: string }) => Promise<boolean> }
+) {
+  const reuse = await database.$transaction(async (tx) => {
+    const state = await tx.assistedAccountState.findUnique({
+      where: { userId: expected.userId },
+      select: { requiredChangeCredentialVersion: true }
+    });
+    // Fail closed on ANY nonnull obligation, matching hasOutstandingRequiredChange: version equality
+    // is deliberately not used, because another credential writer can advance the version while the
+    // obligation is rebound.
+    if (state?.requiredChangeCredentialVersion === null || state?.requiredChangeCredentialVersion === undefined) return false;
+    return verifyCurrentPassword(tx, expected, newPassword, verifier);
+  });
+  if (reuse) throw new Error("required_password_change_reuse");
+}
+
 export async function changePasswordWithCurrentPassword(
   database: GlobalSecurityDatabase,
   expected: GlobalSecurityContext,
@@ -444,6 +478,7 @@ export async function changePasswordWithCurrentPassword(
   signer: ReturnType<typeof createFreshAuthAttestationSigner> = createFreshAuthAttestationSigner(),
   throttleContext?: FreshAuthThrottleContext
 ) {
+  await assertNotRequiredChangeReuse(database, expected, newPassword, verifier);
   const replacementPasswordHash = await hasher.hash(newPassword);
   await issueFreshAuthGrantForCurrentPassword(database, expected, { ...input, purpose: "password_change" }, currentPassword, verifier, { replacementPasswordHash, signer }, undefined, throttleContext);
   return finalizePasswordChange(database, expected, input, newPassword, hasher, replacementPasswordHash);

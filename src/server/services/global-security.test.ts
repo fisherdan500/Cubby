@@ -26,7 +26,7 @@ afterEach(() => {
 
 const mocks = vi.hoisted(() => ({ queryRaw: vi.fn(), executeRaw: vi.fn(), stateUpsert: vi.fn(), stateUpdate: vi.fn(), transaction: vi.fn(), accountFindFirst: vi.fn(), accountUpdate: vi.fn(), passwordVerify: vi.fn(), passwordHash: vi.fn(), bindingFindFirst: vi.fn(), bindingCreate: vi.fn(), bindingUpdate: vi.fn(), operationFindFirst: vi.fn(), operationCreate: vi.fn(), operationUpdate: vi.fn(), grantCreate: vi.fn(), grantFindFirst: vi.fn(), grantUpdate: vi.fn(), grantUpdateMany: vi.fn(), sessionDeleteMany: vi.fn(), activityUpdateMany: vi.fn(), eventCreate: vi.fn(), userFindUnique: vi.fn() }));
 
-import { assertGlobalSecurityOperationId, captureGlobalSecurityContext, consumeFreshAuthGrantForCurrentContext, finalizePasswordChange, finalizeStalePasswordChange, getFreshAuthGrantStatus, getPasswordChangeStatus, issueFreshAuthGrant, issueFreshAuthGrantForCurrentPassword, lockGlobalSecurityContext, preauthorizeFreshAuthThrottle, reauthorizeGlobalSecurityContext, verifyCurrentPassword, withGlobalSecurityTransaction } from "@/server/services/global-security";
+import { assertGlobalSecurityOperationId, captureGlobalSecurityContext, changePasswordWithCurrentPassword, consumeFreshAuthGrantForCurrentContext, finalizePasswordChange, finalizeStalePasswordChange, getFreshAuthGrantStatus, getPasswordChangeStatus, issueFreshAuthGrant, issueFreshAuthGrantForCurrentPassword, lockGlobalSecurityContext, preauthorizeFreshAuthThrottle, reauthorizeGlobalSecurityContext, verifyCurrentPassword, withGlobalSecurityTransaction } from "@/server/services/global-security";
 
 const baseQueryRaw = async (query: { join: (separator: string) => string }) => query.join(" ").includes('AS "createdAt"')
   ? [{ createdAt: new Date("2026-08-24T16:00:00.000Z"), expiresAt: new Date("2026-08-24T16:10:00.000Z") }]
@@ -489,6 +489,68 @@ describe("fresh-auth grants", () => {
     expect(mocks.operationUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "stale", outcomeCode: "stale_security_version" }) }));
     expect(mocks.bindingUpdate).toHaveBeenCalledWith({ where: { id: "binding-1" }, data: { state: "terminal" } });
     expect(mocks.executeRaw.mock.calls.map(([query]) => query.join(" ")).some((sql) => sql.includes("write_global_security_event"))).toBe(true);
+  });
+});
+
+describe("assisted first-login reuse rejection", () => {
+  const reuseInput = { operationId: "gso_00000000000000000000000000", openingFingerprint: "open-1", intentFingerprint: "intent-1" };
+  const reuseContext = { userId: "user-1", sessionId: "session-1", credentialVersion: 2, sessionSecurityVersion: 3 } as never;
+  // Supplied explicitly: the real default signer loads the attestation keyring at call time, which is
+  // not configured in unit tests and would mask the rejection under a keyring error.
+  const stubSigner = () => ({
+    digestReplacementPasswordHash: vi.fn(() => Buffer.alloc(32, 7)),
+    sign: vi.fn(() => ({ keyVersion: 1, nonce: "A".repeat(43), mac: Buffer.alloc(32, 8) })),
+    signRecoveryReset: vi.fn(),
+    signSessionRevoke: vi.fn()
+  }) as never;
+
+  it("rejects re-setting the same password while an assisted obligation is outstanding, on the canonical engine", async () => {
+    // The corridor route had this check, but the ordinary password route reaches the same engine and
+    // completing ANY password_change clears the obligation. Without the check here, the member could
+    // "change" to the administrator-known value and clear the obligation, leaving the administrator
+    // in knowledge of the live credential.
+    mocks.transaction.mockImplementation(async (callback) => callback({
+      assistedAccountState: { findUnique: vi.fn().mockResolvedValue({ requiredChangeCredentialVersion: 2 }) },
+      account: { findFirst: vi.fn().mockResolvedValue({ password: "stored-hash" }) }
+    }));
+    mocks.passwordVerify.mockResolvedValue(true);
+    mocks.passwordHash.mockClear();
+
+    await expect(changePasswordWithCurrentPassword(
+      { $transaction: mocks.transaction } as never,
+      reuseContext,
+      reuseInput,
+      "administrator-set-value",
+      "administrator-set-value",
+      { verify: mocks.passwordVerify },
+      { hash: mocks.passwordHash },
+      stubSigner()
+    )).rejects.toThrow("required_password_change_reuse");
+    // Rejected before any replacement hash is computed or any operation row is written.
+    expect(mocks.passwordHash).not.toHaveBeenCalled();
+  });
+
+  it("does not consult the credential when no obligation is outstanding", async () => {
+    const accountFindFirst = vi.fn();
+    mocks.transaction.mockImplementation(async (callback) => callback({
+      assistedAccountState: { findUnique: vi.fn().mockResolvedValue({ requiredChangeCredentialVersion: null }) },
+      account: { findFirst: accountFindFirst }
+    }));
+
+    // The reuse gate returns early; the call then proceeds into the ordinary grant path, which this
+    // narrow transaction mock does not serve. Asserting the gate's own effect is the point.
+    await changePasswordWithCurrentPassword(
+      { $transaction: mocks.transaction } as never,
+      reuseContext,
+      reuseInput,
+      "current",
+      "replacement",
+      { verify: mocks.passwordVerify },
+      { hash: mocks.passwordHash },
+      stubSigner()
+    ).catch(() => undefined);
+
+    expect(accountFindFirst).not.toHaveBeenCalled();
   });
 });
 

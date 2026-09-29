@@ -195,7 +195,7 @@ describe("P1-3 global security design gate", () => {
     // A quiet layer whose key cannot tell two callers apart must not reject a credential proof: it would
     // make a correct password verify as wrong for every account. Such layers still collect evidence.
     expect(design.throttling.gatingLayers).toBe("discriminating_only");
-    expect(design.throttling.layerGatingMatrix).toEqual({ account_identifier: "always_gates", client: "gates_only_when_client_identity_discriminates", deployment: "never_gates_evidence_only" });
+    expect(design.throttling.layerGatingMatrix).toEqual({ account_identifier: "always_gates", client: "gates_only_when_client_identity_discriminates", deployment: "gates_only_as_last_resort_when_no_discriminating_layer_keyed_otherwise_evidence_only" });
     expect(design.throttling.sharedBucketQuietMayNotRejectCredentialProof).toBe(true);
     expect(design.privateHistory.phase1InsertMatrix).toEqual(["operation_outcome|rejected", "operation_outcome|stale_security_version"]);
     expect(design.privateHistory.phase1Projection).toBe("empty_object_only");

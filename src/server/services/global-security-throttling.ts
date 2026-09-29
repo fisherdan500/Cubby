@@ -99,6 +99,16 @@ export function canonicalizeTrustedClient(trustedProxyHops: number, forwardedFor
  * verify as wrong for everyone else, which is a denial-of-service switch rather than a brake. Gating
  * therefore consults discriminating layers only. Evidence is unaffected: recording a failure still
  * increments every layer, so incident history, operator aggregates and abuse state are unchanged.
+ *
+ * ONE EXCEPTION, and it is what makes this a brake rather than an open door. When NEITHER
+ * discriminating layer yields a key, suppressing the deployment layer too would leave the request
+ * with no gate whatsoever. That is reachable from an unauthenticated caller: a sign-in attempt for an
+ * email with no account derives no account key (there is no user to key on), and at the shipped
+ * CUBBY_TRUSTED_PROXY_HOPS=0 it derives no client key either, so an unbounded number of such requests
+ * would each drive a full password hash with nothing to stop them. In that all-null case the
+ * deployment layer gates as a last resort. This cannot cause the cross-account denial of service
+ * described above, because whenever an account key EXISTS the deployment layer stays suppressed — a
+ * request that can be gated precisely is never gated by the shared bucket.
  */
 function deriveThrottleKeys(input: GlobalSecurityThrottleInput, purpose: "gate" | "evidence") {
   if ((input.userId === undefined) !== (input.accountIdentifier === undefined)) throw new Error("global_security_throttle_input_invalid");
@@ -110,7 +120,7 @@ function deriveThrottleKeys(input: GlobalSecurityThrottleInput, purpose: "gate" 
   const clientKey = purpose === "gate" && !clientDiscriminates
     ? null
     : deriveThrottleIdentity(input.key, CLIENT_DOMAIN, `client_v1\0${client}`);
-  const deploymentKey = purpose === "gate"
+  const deploymentKey = purpose === "gate" && (accountKey !== null || clientKey !== null)
     ? null
     : deriveThrottleIdentity(input.key, DEPLOYMENT_DOMAIN, DEPLOYMENT_VALUE);
   return { accountKey, clientKey, deploymentKey };
