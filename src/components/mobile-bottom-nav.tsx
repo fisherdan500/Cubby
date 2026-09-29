@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, ClipboardList, LineChart, Menu, PlusCircle, Settings, Sparkles } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NavLink } from "@/components/nav-progress";
 import { cn } from "@/lib/utils";
 
 // Moments (the family feed) holds the tab the Full Log had: it is meant to replace it in time
@@ -85,14 +85,14 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
           className="fixed inset-x-3 bottom-[4.75rem] z-40 space-y-0.5 rounded-xl border border-border bg-card p-2 text-card-foreground shadow-xl"
         >
           <p className="truncate px-3 py-2 text-xs font-bold text-muted-foreground">Signed in as {userName}</p>
-          <Link href={withBabyId("/app/history", selectedBabyId)} className={sheetRow} onClick={() => setOpen(false)}>
+          <NavLink href={withBabyId("/app/history", selectedBabyId)} className={sheetRow} onNavigate={() => setOpen(false)}>
             <ClipboardList className="h-5 w-5 text-primary" />
             Full Log
-          </Link>
-          <Link href="/app/settings" className={sheetRow} onClick={() => setOpen(false)}>
+          </NavLink>
+          <NavLink href="/app/settings" className={sheetRow} onNavigate={() => setOpen(false)}>
             <Settings className="h-5 w-5 text-primary" />
             Settings
-          </Link>
+          </NavLink>
           <div className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-3 text-sm font-bold">
             <span>Appearance</span>
             <ThemeToggle />
@@ -106,15 +106,16 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
           {mobileNav.map((item) => {
             const active = isActivePath(pathname, item.href);
             return (
-              <Link
+              <NavLink
                 key={item.href}
                 href={withBabyId(item.href, selectedBabyId)}
                 className={cn(tab, active ? tabOn : tabOff)}
-                aria-current={active ? "page" : undefined}
+                pendingClassName="bg-primary/14 text-primary ring-1 ring-primary/20"
+                active={active}
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
-              </Link>
+              </NavLink>
             );
           })}
           <button
