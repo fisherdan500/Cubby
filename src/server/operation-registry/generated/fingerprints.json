@@ -2528,17 +2528,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "10add42f762b1f5d88c5a8f8a95a0f387ee3c303c0928ebe2c83528cd090d44e",
+          "digest": "653ae8f224c61809baa497c8ad92972b4be143ba17036ec725839dc3a0f24978",
           "file": "src/components/feed/feed-photo-gallery.tsx"
         }
       ],
       "declarationDigest": "3e3bef8ff066b181f3171fea8442f2b992219c675f6bdc6fbcb727e5fd1d159d",
-      "fingerprint": "7171ed037ae118dc064f701d66279dcab707982fa2e018b3b974895ec9432a3d",
+      "fingerprint": "706d607090752dddc3d79db2cc12a7df4f09cc9ef195bb6e6e30aa035b07a1c4",
       "id": "fingerprint:client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerId": "client_binding:src/components/feed/feed-photo-gallery.tsx",
       "ownerModule": "src/components/feed/feed-photo-gallery.tsx",
       "sidecarPath": "src/components/feed/feed-photo-gallery.operation.ts",
-      "sourceDigest": "2d84c1c76bc4caad3feae20d814b012625297a9e2032f349c7254013443d9413",
+      "sourceDigest": "0a819b198b66b04659f822b35d43095337fbb1240c7216ec3c7132d58da354f4",
       "status": "declared"
     },
     {

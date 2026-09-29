@@ -205,6 +205,19 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
   // Known only in the browser, so decided after the first render to match the server's.
   useEffect(() => setSharing(sharingMode()), []);
 
+  // The full photo fades in over its thumbnail, so a step shows the right picture immediately instead of
+  // black. Keyed by the shown id: changing photo must return to the placeholder rather than leave the
+  // previous photo's pixels on screen under the new one's thumbnail.
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const fullRef = useRef<HTMLImageElement | null>(null);
+  const shownIdForLoad = open === null ? undefined : photos[open]?.id;
+  useEffect(() => {
+    setLoaded(null);
+    // A photo the browser already has can finish before React attaches onLoad, and then no load event
+    // ever fires. Without this check such a photo would stay invisible behind its thumbnail forever.
+    if (shownIdForLoad && fullRef.current?.complete) setLoaded(shownIdForLoad);
+  }, [shownIdForLoad]);
+
   const fetchFile = useCallback((photo: Photo) => {
     let pending = requests.current.get(photo.id);
     if (!pending) {
@@ -284,6 +297,12 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
   const shown = open === null ? null : photos[open];
   const first = open === 0;
   const last = open === photos.length - 1;
+  // The photos immediately either side of the open one, so stepping usually finds the download already
+  // started. Only the immediate neighbours: preloading the whole post would compete with the photo the
+  // person is actually looking at.
+  const neighbours = open === null
+    ? []
+    : [photos[open - 1], photos[open + 1]].filter((photo): photo is Photo => Boolean(photo));
 
   function onTouchStart(event: ReactTouchEvent) {
     const touch = event.touches[0];
@@ -400,19 +419,42 @@ export function FeedPhotoGallery({ photos, layout = "post" }: { photos: Photo[];
           className="fixed inset-0 z-50 flex touch-pinch-zoom select-none items-center justify-center bg-black"
           style={{ backgroundColor: drag?.y ? `rgb(0 0 0 / ${Math.max(0.4, 1 - drag.y / 600)})` : undefined }}
         >
+          {/* The thumbnail the grid already loaded, standing in until the full photo arrives. Decoration
+              only: aria-hidden keeps it from being announced as a second image. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={photoSrc(shown)}
-            width={shown.width}
-            height={shown.height}
-            alt={`Photo ${open + 1} of ${photos.length}`}
+            src={thumbnailSrc(shown)}
+            alt=""
+            aria-hidden="true"
             draggable={false}
-            className="relative max-h-full max-w-full object-contain"
+            className="absolute max-h-full max-w-full object-contain"
             style={{
               transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(${1 - Math.min(drag.y, 400) / 1600})` : undefined,
               transition: drag ? "none" : "transform 150ms ease-out"
             }}
           />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={fullRef}
+            key={shown.id}
+            src={photoSrc(shown)}
+            width={shown.width}
+            height={shown.height}
+            alt={`Photo ${open + 1} of ${photos.length}`}
+            draggable={false}
+            onLoad={() => setLoaded(shown.id)}
+            className="relative max-h-full max-w-full object-contain"
+            style={{
+              opacity: loaded === shown.id ? 1 : 0,
+              transition: drag ? "none" : "opacity 150ms ease-out, transform 150ms ease-out",
+              transform: drag ? `translate(${drag.x}px, ${drag.y}px) scale(${1 - Math.min(drag.y, 400) / 1600})` : undefined
+            }}
+          />
+          {/* Starts the neighbours downloading so a step usually has one already in flight. The open
+              photo is not listed: its own request is already running. */}
+          {neighbours.map((photo) => (
+            <link key={photo.id} rel="preload" as="image" href={photoSrc(photo)} />
+          ))}
           <div className={`absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex gap-2 ${controlsClass}`}>
             {sharing === "button" ? (
               <button tabIndex={controls ? 0 : -1} type="button" aria-label="Share photo" disabled={saving} onClick={() => void keep(shown, "share")} className={viewerButton}>
