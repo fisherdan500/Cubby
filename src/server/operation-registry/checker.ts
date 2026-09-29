@@ -320,6 +320,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/backup-recovery-rehearsal.operation.ts",
   "scripts/browser-operation-pilot.acceptance-rehearsal.operation.ts",
   "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts",
+  "scripts/simplified-signup.acceptance-rehearsal.operation.ts",
   "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts",

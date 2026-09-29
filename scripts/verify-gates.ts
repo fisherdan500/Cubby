@@ -41,6 +41,7 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "backup-recovery", group: "image", script: "verify:backup-recovery", what: "backup, restore, and container replacement against a built application image" },
   { id: "browser-operation-save-path", group: "image", script: "verify:browser-operation-save-path", what: "the end-to-end save path against a built application image" },
   { id: "admin-assisted-accounts", group: "image", script: "verify:admin-assisted-accounts", what: "admin-assisted account creation, password reset and the first-login corridor against a built application image" },
+  { id: "simplified-signup", group: "image", script: "verify:simplified-signup", what: "an invited user completing signup over real HTTP with no recovery codes, no typed household name and no admin acknowledgement" },
   { id: "quick-start", group: "image", script: "verify:quick-start", what: "the documented fresh-server quick start, from an empty checkout to a signed-in owner" },
   { id: "system-backup", group: "image", script: "verify:system-backup", what: "a whole-server backup, the server lost, and everything restored onto a fresh install" }
 ];

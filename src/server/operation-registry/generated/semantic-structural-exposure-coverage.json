@@ -2334,9 +2334,9 @@
     {
       "anchorBytes": "fetch(\"/api/invitations/post-signin-bind\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({}), cache: \"no-store\", signal: controller.signal })",
       "anchorDigest": "151925b662fadfa06ab92fcb6acb3744dfee6d4516414a188fe59c143f236f16",
-      "anchorEnd": 619,
+      "anchorEnd": 725,
       "anchorFile": "src/app/invite/dispatch/page.tsx",
-      "anchorStart": 436,
+      "anchorStart": 542,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3218,9 +3218,9 @@
     {
       "anchorBytes": "fetch(path, {\n        method,\n        cache: \"no-store\",\n        signal: controller.signal,\n        ...(payload ? { headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(payload) } : {})\n      })",
       "anchorDigest": "400ebc88fd67a711da0a3826e31f5315e873397b961cd054bb795116d3e49a2f",
-      "anchorEnd": 8366,
+      "anchorEnd": 8132,
       "anchorFile": "src/components/invitations/invitation-workflow.tsx",
-      "anchorStart": 8155,
+      "anchorStart": 7921,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -4442,9 +4442,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 5800,
+      "anchorEnd": 5889,
       "anchorFile": "package.json",
-      "anchorStart": 5791,
+      "anchorStart": 5880,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -4714,9 +4714,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 5901,
+      "anchorEnd": 5990,
       "anchorFile": "package.json",
-      "anchorStart": 5883,
+      "anchorStart": 5972,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -4731,9 +4731,9 @@
     {
       "anchorBytes": "\"verify:integrity-suite\"",
       "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-      "anchorEnd": 5041,
+      "anchorEnd": 5130,
       "anchorFile": "package.json",
-      "anchorStart": 5017,
+      "anchorStart": 5106,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity-suite",
@@ -4765,9 +4765,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 4846,
+      "anchorEnd": 4935,
       "anchorFile": "package.json",
-      "anchorStart": 4814,
+      "anchorStart": 4903,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -4782,9 +4782,9 @@
     {
       "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
       "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-      "anchorEnd": 4956,
+      "anchorEnd": 5045,
       "anchorFile": "package.json",
-      "anchorStart": 4921,
+      "anchorStart": 5010,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-invitation-acceptance",
@@ -4867,9 +4867,9 @@
     {
       "anchorBytes": "\"verify:performance-1y\"",
       "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-      "anchorEnd": 4465,
+      "anchorEnd": 4554,
       "anchorFile": "package.json",
-      "anchorStart": 4442,
+      "anchorStart": 4531,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-1y",
@@ -4884,9 +4884,9 @@
     {
       "anchorBytes": "\"verify:performance-5y\"",
       "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-      "anchorEnd": 4563,
+      "anchorEnd": 4652,
       "anchorFile": "package.json",
-      "anchorStart": 4540,
+      "anchorStart": 4629,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-5y",
@@ -4901,9 +4901,9 @@
     {
       "anchorBytes": "\"verify:performance-input\"",
       "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-      "anchorEnd": 4664,
+      "anchorEnd": 4753,
       "anchorFile": "package.json",
-      "anchorStart": 4638,
+      "anchorStart": 4727,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-input",
@@ -4918,9 +4918,9 @@
     {
       "anchorBytes": "\"verify:platform-first-account\"",
       "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-      "anchorEnd": 5133,
+      "anchorEnd": 5222,
       "anchorFile": "package.json",
-      "anchorStart": 5102,
+      "anchorStart": 5191,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:platform-first-account",
@@ -5122,9 +5122,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 5844,
+      "anchorEnd": 5933,
       "anchorFile": "package.json",
-      "anchorStart": 5828,
+      "anchorStart": 5917,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -5615,9 +5615,9 @@
     {
       "anchorBytes": "\"verify:quick-start\"",
       "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-      "anchorEnd": 5221,
+      "anchorEnd": 5310,
       "anchorFile": "package.json",
-      "anchorStart": 5201,
+      "anchorStart": 5290,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:quick-start",
@@ -5749,11 +5749,28 @@
       "sidecarPath": "scripts/security-operator.operation.ts"
     },
     {
-      "anchorBytes": "\"verify:sprout-preview-commit\"",
-      "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 4375,
+      "anchorBytes": "\"verify:simplified-signup\"",
+      "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
+      "anchorEnd": 4371,
       "anchorFile": "package.json",
       "anchorStart": 4345,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:simplified-signup",
+        "target": "package.json#scripts.verify:simplified-signup"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/simplified-signup.acceptance-rehearsal.ts:package_script:verify:simplified-signup:package.json#scripts.verify:simplified-signup",
+      "ownerId": "package_command:scripts/simplified-signup.acceptance-rehearsal.ts",
+      "ownerModule": "scripts/simplified-signup.acceptance-rehearsal.ts",
+      "sidecarPath": "scripts/simplified-signup.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:sprout-preview-commit\"",
+      "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
+      "anchorEnd": 4464,
+      "anchorFile": "package.json",
+      "anchorStart": 4434,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -5768,9 +5785,9 @@
     {
       "anchorBytes": "\"verify:system-backup\"",
       "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-      "anchorEnd": 5300,
+      "anchorEnd": 5389,
       "anchorFile": "package.json",
-      "anchorStart": 5278,
+      "anchorStart": 5367,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:system-backup",
@@ -5785,9 +5802,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 4774,
+      "anchorEnd": 4863,
       "anchorFile": "package.json",
-      "anchorStart": 4749,
+      "anchorStart": 4838,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -5802,9 +5819,9 @@
     {
       "anchorBytes": "\"verify:gates:all\"",
       "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-      "anchorEnd": 5428,
+      "anchorEnd": 5517,
       "anchorFile": "package.json",
-      "anchorStart": 5410,
+      "anchorStart": 5499,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:all",
@@ -5819,9 +5836,9 @@
     {
       "anchorBytes": "\"verify:gates:disposable\"",
       "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-      "anchorEnd": 5496,
+      "anchorEnd": 5585,
       "anchorFile": "package.json",
-      "anchorStart": 5471,
+      "anchorStart": 5560,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:disposable",
@@ -5836,9 +5853,9 @@
     {
       "anchorBytes": "\"verify:gates:image\"",
       "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-      "anchorEnd": 5566,
+      "anchorEnd": 5655,
       "anchorFile": "package.json",
-      "anchorStart": 5546,
+      "anchorStart": 5635,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:image",
@@ -5853,9 +5870,9 @@
     {
       "anchorBytes": "\"verify:gates\"",
       "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-      "anchorEnd": 5373,
+      "anchorEnd": 5462,
       "anchorFile": "package.json",
-      "anchorStart": 5359,
+      "anchorStart": 5448,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates",
@@ -7948,10 +7965,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "fbc017e8b41b03c674cc7094c32b81b07cc5e13d43780b28b2095efb23cf1c90",
+  "semanticArtifactDigest": "a12f21c9a0474dc1a103d254c95834d174e1c8f57815ca68d83396dbab6b4e78",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "80f2a736b665154a132954b9e65a7cca848a95bc8a569d5d187073c392007b9f",
+  "semanticCoverageDigest": "5b0485612f9b2952952c27244be09d6483928d302c02e57736e8a21f5d004b2a",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "fb5b03978acdbf6cd25d002c628c1ecccc42608c561e0eb76d6935463ed2226f"
+  "semanticFingerprint": "6f97b392540e6e718234d771f9307ccfc80bf5b4ba5636beba0dc194f5fd5ee1"
 }
