@@ -272,6 +272,17 @@ describe("backup unit preferences", () => {
     expect(mocks.backupCreate).not.toHaveBeenCalled();
   });
 
+  it("accepts a pristine household, which is the fresh install a restore is meant to land on", async () => {
+    // A household that has never written an audit event has no chain to verify, so there is nothing
+    // to have been tampered with. Refusing it made restoring onto a new server impossible. `missing`
+    // (events present, checkpoint gone) stays refused by the case above.
+    mocks.readHouseholdAuditIntegrity.mockResolvedValue({ status: "pristine" });
+
+    await expect(restoreBackupJson({ version: 1, babies: [], activities: [] })).resolves.toBeDefined();
+
+    expect(mocks.backupCreate).toHaveBeenCalled();
+  });
+
   it.each(["FeedPost", "FeedComment", "FeedReaction", "Attachment", "PlannedSchedule"])("refuses a target containing only newer %s domain data", async (table) => {
     mocks.freshState.mockImplementation(async (sql: TemplateStringsArray) => [{
       actorIsSoleOwner: true, operationalCount: sql.join("").includes(`FROM "${table}"`) ? 1n : 0n

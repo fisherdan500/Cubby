@@ -33,6 +33,23 @@ describe("audit checkpoint reader", () => {
     await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "invalid" });
   });
 
+  it("separates a never-audited household from one whose checkpoint went missing", async () => {
+    // These are the same absent checkpoint but opposite meanings. With no events there is no chain,
+    // so nothing could have been tampered with (`pristine`). With events present, an absent
+    // checkpoint is what deleting it to hide a rewritten chain looks like (`missing`), so callers
+    // that accept `pristine` must keep refusing `missing`.
+    const database = {
+      auditEvent: { findMany: async () => [] as typeof events },
+      auditIntegrityCheckpoint: { findUnique: async () => null }
+    };
+    const events = [{ ...base, previousHash: null, eventHash }];
+
+    await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "pristine" });
+
+    database.auditEvent.findMany = async () => events;
+    await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "missing" });
+  });
+
   it("hashes only the canonical audit envelope when database rows include attribution columns", async () => {
     const events = [{
       ...base,

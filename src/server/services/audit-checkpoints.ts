@@ -95,12 +95,22 @@ async function householdEvents(householdId: string, database: AuditCheckpointDat
   });
 }
 
+/**
+ * A household that has never written an audit event has no checkpoint, because checkpoints are only
+ * written as a side effect of writing events. That is `pristine`: there is no chain, so there is
+ * nothing that could have been tampered with, and callers that merely require an untampered chain may
+ * proceed.
+ *
+ * It is reported separately from `missing`, which means the chain HAS events but its checkpoint is
+ * gone — exactly what deleting a checkpoint to hide a rewritten chain would look like. Collapsing the
+ * two would let that case pass anywhere `pristine` is accepted, so they must stay distinct.
+ */
 export async function readHouseholdAuditIntegrity(householdId: string, database: AuditCheckpointDatabase) {
   const [events, checkpoint] = await Promise.all([
     householdEvents(householdId, database),
     database.auditIntegrityCheckpoint.findUnique({ where: { scope: `household:${householdId}` } })
   ]);
-  if (!checkpoint) return { status: "missing" as const };
+  if (!checkpoint) return { status: events.length === 0 ? ("pristine" as const) : ("missing" as const) };
   if (events.some((event) => !event.eventHash)) return { status: "invalid" as const };
   if (events.length && !verifyAuditChain(toChain(events)).valid) return { status: "invalid" as const };
   const headHash = events.at(-1)?.eventHash ?? AUDIT_GENESIS_HASH;

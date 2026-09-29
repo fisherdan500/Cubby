@@ -532,7 +532,13 @@ async function runRestoreTransaction<T>(
           throw new Error("backup_confirmation_mismatch");
         }
         const auditIntegrity = await readHouseholdAuditIntegrity(lockedCtx.householdId, tx);
-        if (auditIntegrity.status !== "valid") throw new Error("backup_audit_integrity_unavailable");
+        // `pristine` means the household has never written an audit event, so there is no chain to be
+        // tampered with. That is the ordinary state of the fresh install a restore is meant to land
+        // on, and refusing it made restoring onto a new server impossible. `missing` stays refused:
+        // there ARE events but no checkpoint, which is what hiding a rewritten chain looks like.
+        if (auditIntegrity.status !== "valid" && auditIntegrity.status !== "pristine") {
+          throw new Error("backup_audit_integrity_unavailable");
+        }
         await assertFreshTarget(tx, lockedCtx);
         return work(lockedCtx, tx);
       },
