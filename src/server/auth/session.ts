@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { auth, SESSION_FRESH_AGE_SECONDS } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
 import { captureGlobalSecurityContext } from "@/server/services/global-security";
@@ -9,7 +10,36 @@ import {
   hasOutstandingRequiredChange
 } from "@/server/services/assisted-required-change-state";
 
-export async function getSession() {
+/**
+ * Per-request memoization, where the runtime provides it.
+ *
+ * `cache` is exported only under React's `react-server` condition. The real server build resolves it; a
+ * plain CommonJS resolution (Vitest, and any non-server consumer) gets `undefined`, and calling that
+ * throws at import time and takes every module downstream with it.
+ *
+ * So it is used when present and skipped when not. Skipping is safe by construction: without memoization
+ * every caller resolves the session for itself, which is exactly the behaviour this replaced. The failure
+ * mode is a slower request, never a staler session.
+ */
+const perRequest: <A extends unknown[], R>(fn: (...args: A) => R) => (...args: A) => R =
+  typeof cache === "function" ? cache : (fn) => fn;
+
+/**
+ * The session for THIS request, resolved once however many callers ask.
+ *
+ * Rendering one `/app` screen asked four times over: the layout's three independent awaits each resolved
+ * it for themselves and the page did it again. With `disableCookieCache: true` every one of those is a
+ * real round trip that re-runs `authorizeGlobalSessionSecurity`, and they are the bulk of the delay before
+ * a navigation can render anything.
+ *
+ * Memoization is scoped to a single request: nothing is shared between requests or users, and a revoked
+ * session is seen by the very next navigation. Deduplicating within a request is also more consistent than
+ * not, because four separate lookups could in principle disagree mid-render.
+ *
+ * Safe to memoize because it only reads: it derives handles with crypto `.update()` calls, then either
+ * returns the session or rejects it. Nothing here writes, so no write is skipped by reusing the answer.
+ */
+export const getSession = perRequest(async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
     query: { disableCookieCache: true }
@@ -23,7 +53,7 @@ export async function getSession() {
     }
   }
   return session;
-}
+});
 
 /**
  * `getSession` is deliberately NOT gated on the assisted first-login obligation: the corridor route
