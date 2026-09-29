@@ -2,7 +2,7 @@ import { BrowserOperationKey, BrowserOperationTargetKind, HouseholdRole, TimerSt
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
-import { onboardingSchema, babySchema } from "@/lib/validation/onboarding";
+import { onboardingSchema, babySchema, babyUpdateSchema, babyDeleteSchema, babyDeleteConfirmationPhrase } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
@@ -312,6 +312,186 @@ export async function reactivateBaby(babyId: string) {
     );
     return updated;
   });
+}
+
+/**
+ * Change an existing baby's details. Only the fields present are touched, so two people editing
+ * different things do not overwrite each other's work.
+ */
+export async function updateBaby(babyId: string, raw: unknown) {
+  const requestContext = await getEffectiveHouseholdContext();
+  requirePermission(requestContext, "baby.manage");
+  const input = babyUpdateSchema.parse(raw);
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, baby } = await lockActorAndBabyForWrite(tx, requestContext, babyId);
+    requirePermission(ctx, "baby.manage");
+
+    const data: Prisma.BabyUpdateInput = {};
+    const changed: string[] = [];
+    if (input.name !== undefined && input.name !== baby.name) {
+      data.name = input.name;
+      changed.push("name");
+    }
+    if (input.birthDate !== undefined) {
+      const birthDate = input.birthDate ? new Date(input.birthDate) : null;
+      if (Number.isNaN(birthDate?.getTime() ?? 0)) throw new Error("baby_birth_date_invalid");
+      if ((birthDate?.toISOString() ?? null) !== (baby.birthDate?.toISOString() ?? null)) {
+        data.birthDate = birthDate;
+        changed.push("birthDate");
+      }
+    }
+    if (input.notes !== undefined && (input.notes || null) !== baby.notes) {
+      data.notes = input.notes || null;
+      changed.push("notes");
+    }
+    for (const field of ["feedingWarningMinutes", "diaperWarningMinutes", "sleepWarningMinutes"] as const) {
+      const next = input[field] ?? null;
+      if (input[field] !== undefined && next !== baby[field]) {
+        data[field] = next;
+        changed.push(field);
+      }
+    }
+
+    // Nothing actually changed: leave the row, and the audit trail, alone.
+    if (changed.length === 0) return baby;
+
+    const updated = await tx.baby.update({ where: { id: baby.id }, data });
+    // Which details changed, never what they became: names and notes are household content.
+    await writeAudit(ctx, {
+      action: "baby.update",
+      entityType: "baby",
+      entityId: baby.id,
+      babyId: baby.id,
+      after: { changed }
+    }, tx);
+    return updated;
+  });
+}
+
+/** Every relation that would either block a row deletion or silently lose history with it. */
+async function countBabyReferences(
+  tx: Pick<Prisma.TransactionClient,
+    "activityLog" | "feedPost" | "reminder" | "plannedSchedule" | "calendarEventBaby"
+    | "auditEvent" | "browserOperationBinding" | "browserMutationOperation" | "notificationPreferenceBaby">,
+  householdId: string,
+  babyId: string
+) {
+  const [
+    activities, feedPosts, reminders, plannedSchedules, calendarLinks,
+    auditEvents, bindings, operations, preferences
+  ] = await Promise.all([
+    tx.activityLog.count({ where: { householdId, babyId } }),
+    tx.feedPost.count({ where: { householdId, babyId } }),
+    tx.reminder.count({ where: { householdId, babyId } }),
+    tx.plannedSchedule.count({ where: { householdId, babyId } }),
+    tx.calendarEventBaby.count({ where: { householdId, babyId } }),
+    tx.auditEvent.count({ where: { householdId, babyId } }),
+    tx.browserOperationBinding.count({ where: { householdId, babyId } }),
+    tx.browserMutationOperation.count({ where: { householdId, babyId } }),
+    tx.notificationPreferenceBaby.count({ where: { householdId, babyId } })
+  ]);
+  return { activities, feedPosts, reminders, plannedSchedules, calendarLinks, auditEvents, bindings, operations, preferences };
+}
+
+/**
+ * The typed phrase, checked against the name this transaction just read from the database. A name
+ * sent by the caller is ignored: only the stored one can make the phrase match.
+ */
+function assertDeleteConfirmation(confirmation: unknown, storedName: string) {
+  const { confirmation: typed } = babyDeleteSchema.parse({ confirmation });
+  if (typed !== babyDeleteConfirmationPhrase(storedName)) throw new Error("confirmation_mismatch");
+}
+
+/**
+ * Remove a baby that was never used - the row itself, not a flag. Refused the moment anything
+ * references it, because its audit events are hashed into a chain that a deletion would break.
+ */
+export async function removeBabyProfile(babyId: string, input: { confirmation: unknown } & Record<string, unknown>) {
+  const requestContext = await getEffectiveHouseholdContext();
+  requirePermission(requestContext, "baby.manage");
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, baby } = await lockActorAndBabyForWrite(tx, requestContext, babyId);
+    requirePermission(ctx, "baby.manage");
+    assertDeleteConfirmation(input.confirmation, baby.name);
+
+    // Counted after the lock: an activity committed a moment ago must not slip past this check.
+    const references = await countBabyReferences(tx, ctx.householdId, baby.id);
+    if (Object.values(references).some((count) => count > 0)) throw new Error("baby_has_history");
+
+    await tx.baby.delete({ where: { id: baby.id } });
+    // Audited with no babyId: the row is gone, so a reference would dangle - and a referencing
+    // event written before the delete would have tripped the reference check above.
+    await writeAudit(ctx, {
+      action: "baby.remove",
+      entityType: "baby",
+      entityId: baby.id,
+      after: {}
+    }, tx);
+    return baby;
+  });
+}
+
+/**
+ * Hide a baby and everything recorded for it. Nothing is erased: the audit chain hashes each
+ * event's babyId, so removing those rows would invalidate the household's own integrity check.
+ */
+export async function deleteBaby(babyId: string, input: { confirmation: unknown }, deletedAt = new Date()) {
+  const requestContext = await getEffectiveHouseholdContext();
+  requirePermission(requestContext, "baby.manage");
+
+  return prisma.$transaction(async (tx) => {
+    const { ctx, baby } = await lockActorAndBabyForWrite(tx, requestContext, babyId);
+    requirePermission(ctx, "baby.manage");
+    assertDeleteConfirmation(input.confirmation, baby.name);
+    if (baby.deletedAt) return baby;
+
+    // A timer still counting would keep running against a baby nobody can see.
+    const activeTimer = await tx.activityLog.count({
+      where: {
+        householdId: ctx.householdId,
+        babyId: baby.id,
+        deletedAt: null,
+        timerState: { in: [TimerState.running, TimerState.paused] }
+      }
+    });
+    if (activeTimer > 0) throw new Error("baby_has_active_timer");
+
+    const activities = await tx.activityLog.updateMany({
+      where: { householdId: ctx.householdId, babyId: baby.id, deletedAt: null },
+      data: { deletedAt }
+    });
+    const feedPosts = await tx.feedPost.updateMany({
+      where: { householdId: ctx.householdId, babyId: baby.id, deletedAt: null },
+      data: { deletedAt }
+    });
+    const updated = await tx.baby.update({ where: { id: baby.id }, data: { deletedAt } });
+    await writeAudit(ctx, {
+      action: "baby.delete",
+      entityType: "baby",
+      entityId: baby.id,
+      babyId: baby.id,
+      after: { deletedAt: deletedAt.toISOString(), activityCount: activities.count, feedPostCount: feedPosts.count }
+    }, tx);
+    return updated;
+  });
+}
+
+/**
+ * Which of these babies could be removed outright, decided by the same reference counts the
+ * deletion itself uses. Advisory only: the service counts again inside its write transaction, so a
+ * baby that gains history in between is still refused.
+ */
+export async function listRemovableBabyIds(babyIds: string[]) {
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "baby.manage");
+  if (babyIds.length === 0) return [];
+  const removable = await Promise.all(babyIds.map(async (babyId) => {
+    const references = await countBabyReferences(prisma, ctx.householdId, babyId);
+    return Object.values(references).some((count) => count > 0) ? null : babyId;
+  }));
+  return removable.filter((id): id is string => id !== null);
 }
 
 const browserLifecycleInputSchema = z.object({ babyId: z.string().min(1) });

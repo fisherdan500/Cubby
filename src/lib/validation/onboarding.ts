@@ -15,6 +15,32 @@ export const babySchema = z.object({
   sleepWarningMinutes: z.coerce.number().int().positive().optional()
 });
 
+/**
+ * Editing an existing baby. Every field is optional so a caller may change one thing without
+ * resending the rest, but an empty name is still refused: `.optional()` permits absence, not blankness.
+ */
+export const babyUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  birthDate: z.string().optional(),
+  notes: z.string().trim().max(2000).optional(),
+  feedingWarningMinutes: z.coerce.number().int().positive().nullable().optional(),
+  diaperWarningMinutes: z.coerce.number().int().positive().nullable().optional(),
+  sleepWarningMinutes: z.coerce.number().int().positive().nullable().optional()
+}).strict();
+
+/**
+ * What must be typed to delete a baby. The phrase includes the baby's own name so the action cannot
+ * be completed by muscle memory, and the server compares it against the name it reads from the
+ * database - never a name supplied alongside the confirmation.
+ */
+export function babyDeleteConfirmationPhrase(name: string) {
+  return `Yes Delete Baby ${name}`;
+}
+
+export const babyDeleteSchema = z.object({
+  confirmation: z.string()
+}).passthrough();
+
 export const inviteSchema = z.object({
   email: z.string().trim().email(),
   role: z.enum(["admin", "parent", "caretaker", "read_only"]),

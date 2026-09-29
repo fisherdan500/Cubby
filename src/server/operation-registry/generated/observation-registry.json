@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 115,
-    "client_binding": 41,
+    "api_route": 116,
+    "client_binding": 43,
     "instrumentation": 1,
-    "package_command": 31,
+    "package_command": 32,
     "server_action": 1,
     "server_loader": 30,
     "worker": 8
   },
-  "declarationDigest": "184e5ae3d0fb533514a31f9751fb40e153adc87fefb15f751985bc52a9fb0f27",
+  "declarationDigest": "b8c3e5daf9b006e9cb86f5c966792001a3a923f88acebf724dcafbb42e80cbbb",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -113,6 +113,40 @@
       },
       "id": "package_command:scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:baby-edit-delete",
+            "target": "package.json#scripts.verify:baby-edit-delete"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/baby-edit-delete-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/baby-edit-delete-rehearsal.ts",
+      "sidecarPath": "scripts/baby-edit-delete-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -2158,6 +2192,41 @@
       },
       "id": "api_route:src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "PATCH",
+            "target": "src/app/api/babies/[id]/route.ts#PATCH"
+          },
+          {
+            "kind": "route_method",
+            "symbol": "DELETE",
+            "target": "src/app/api/babies/[id]/route.ts#DELETE"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/babies/[id]/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/babies/[id]/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/babies/[id]/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/route.operation.ts"
     },
     {
       "declaration": {
@@ -5039,6 +5108,11 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "listRemovableBabyIds",
+            "target": "src/server/services/households.ts#listRemovableBabyIds"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "requireSettingsPage",
             "target": "src/server/auth/page-access.ts#requireSettingsPage"
           }
@@ -6281,6 +6355,36 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/actions/baby-delete-dialog.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/actions/baby-delete-dialog.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/actions/baby-delete-dialog.tsx",
+      "sidecarPath": "src/components/actions/baby-delete-dialog.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
             "kind": "global_fetch",
@@ -6673,6 +6777,41 @@
       },
       "id": "client_binding:src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          },
+          {
+            "kind": "form_action",
+            "symbol": "onSubmit",
+            "target": "src/components/forms/baby-edit-form.tsx#onSubmit"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/forms/baby-edit-form.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/forms/baby-edit-form.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/forms/baby-edit-form.tsx",
+      "sidecarPath": "src/components/forms/baby-edit-form.operation.ts"
     },
     {
       "declaration": {
@@ -8139,6 +8278,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+      "packageScripts": [
+        "verify:baby-edit-delete"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/invitation-email-delivery-rehearsal.ts",
       "packageScripts": [
         "verify:invitation-email-delivery"
@@ -8271,7 +8418,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "b6afe64c12c2a41452ed28ec973ec6ad03325f07ec0d10f59e344409cf5ca88e",
+  "generatorDigest": "c7c88a2ebca67d8fc30089d04b62a8cbaf0943ad38c82aefa9077c2003de0456",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8793,6 +8940,34 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "781fc536ec439ceab600cbde153fbe8a1d19005980f9ea3dfac3cc4a96bed2b1",
+          "anchorEnd": 1189,
+          "anchorFile": "src/app/api/babies/[id]/route.ts",
+          "anchorStart": 786,
+          "kind": "route_method",
+          "symbol": "DELETE",
+          "target": "src/app/api/babies/[id]/route.ts#DELETE"
+        },
+        {
+          "anchorDigest": "9b6295c39c64ec7b1c0e1d58b1f748c841052fd2c40d048a86a96d46aec8a310",
+          "anchorEnd": 489,
+          "anchorFile": "src/app/api/babies/[id]/route.ts",
+          "anchorStart": 223,
+          "kind": "route_method",
+          "symbol": "PATCH",
+          "target": "src/app/api/babies/[id]/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/babies/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/route.operation.ts"
     },
     {
       "bindings": [
@@ -10819,18 +10994,27 @@
       "bindings": [
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 422,
+          "anchorEnd": 564,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 406,
+          "anchorStart": 548,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 360,
+          "anchorDigest": "fa43e3aee96acb4f538b5bb5333b8e8eb7999c16b4dc7890d2ffe54c51a292be",
+          "anchorEnd": 586,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 341,
+          "anchorStart": 566,
+          "kind": "server_value_import",
+          "symbol": "listRemovableBabyIds",
+          "target": "src/server/services/households.ts#listRemovableBabyIds"
+        },
+        {
+          "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
+          "anchorEnd": 502,
+          "anchorFile": "src/app/app/babies/page.tsx",
+          "anchorStart": 483,
           "kind": "server_value_import",
           "symbol": "requireSettingsPage",
           "target": "src/server/auth/page-access.ts#requireSettingsPage"
@@ -11946,6 +12130,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "cfb41e8fd9ae87bf364320007453c490b5303ae72da05dc5566d80bb0be70dcb",
+          "anchorEnd": 1437,
+          "anchorFile": "src/components/actions/baby-delete-dialog.tsx",
+          "anchorStart": 1222,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/actions/baby-delete-dialog.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/actions/baby-delete-dialog.tsx",
+      "sidecarPath": "src/components/actions/baby-delete-dialog.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
           "anchorEnd": 805,
           "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
@@ -12312,6 +12515,34 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
+          "anchorEnd": 2603,
+          "anchorFile": "src/components/forms/baby-edit-form.tsx",
+          "anchorStart": 2586,
+          "kind": "form_action",
+          "symbol": "onSubmit",
+          "target": "src/components/forms/baby-edit-form.tsx#onSubmit"
+        },
+        {
+          "anchorDigest": "6a813574c243c86f279aa92853091dcf1d88ea7c93e9049fe1c4b02101ed3002",
+          "anchorEnd": 2044,
+          "anchorFile": "src/components/forms/baby-edit-form.tsx",
+          "anchorStart": 1882,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/forms/baby-edit-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/forms/baby-edit-form.tsx",
+      "sidecarPath": "src/components/forms/baby-edit-form.operation.ts"
     },
     {
       "bindings": [
@@ -13685,9 +13916,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 5889,
+          "anchorEnd": 5965,
           "anchorFile": "package.json",
-          "anchorStart": 5880,
+          "anchorStart": 5956,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -13737,9 +13968,9 @@
       "bindings": [
         {
           "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
-          "anchorEnd": 4276,
+          "anchorEnd": 4352,
           "anchorFile": "package.json",
-          "anchorStart": 4244,
+          "anchorStart": 4320,
           "kind": "package_script",
           "symbol": "verify:admin-assisted-accounts",
           "target": "package.json#scripts.verify:admin-assisted-accounts"
@@ -13758,6 +13989,32 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "fefbb3411e52d64bf9a01582fe54d42041ee89ef648ea312ff6ee7efdb2d4fbe",
+          "anchorEnd": 3965,
+          "anchorFile": "package.json",
+          "anchorStart": 3940,
+          "kind": "package_script",
+          "symbol": "verify:baby-edit-delete",
+          "target": "package.json#scripts.verify:baby-edit-delete"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+        "packageScripts": [
+          "verify:baby-edit-delete"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/baby-edit-delete-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+      "sidecarPath": "scripts/baby-edit-delete-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -13799,9 +14056,9 @@
       "bindings": [
         {
           "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-          "anchorEnd": 4066,
+          "anchorEnd": 4142,
           "anchorFile": "package.json",
-          "anchorStart": 4034,
+          "anchorStart": 4110,
           "kind": "package_script",
           "symbol": "verify:browser-operation-pilot",
           "target": "package.json#scripts.verify:browser-operation-pilot"
@@ -13825,9 +14082,9 @@
       "bindings": [
         {
           "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
-          "anchorEnd": 4171,
+          "anchorEnd": 4247,
           "anchorFile": "package.json",
-          "anchorStart": 4135,
+          "anchorStart": 4211,
           "kind": "package_script",
           "symbol": "verify:browser-operation-save-path",
           "target": "package.json#scripts.verify:browser-operation-save-path"
@@ -13942,9 +14199,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 5990,
+          "anchorEnd": 6066,
           "anchorFile": "package.json",
-          "anchorStart": 5972,
+          "anchorStart": 6048,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -13961,9 +14218,9 @@
       "bindings": [
         {
           "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-          "anchorEnd": 5130,
+          "anchorEnd": 5206,
           "anchorFile": "package.json",
-          "anchorStart": 5106,
+          "anchorStart": 5182,
           "kind": "package_script",
           "symbol": "verify:integrity-suite",
           "target": "package.json#scripts.verify:integrity-suite"
@@ -13987,9 +14244,9 @@
       "bindings": [
         {
           "anchorDigest": "1cbe53df7a178f5cc2daae7244d809f07856279d11c3eaa1c6fd9d3f6fdaa0d1",
-          "anchorEnd": 3974,
+          "anchorEnd": 4050,
           "anchorFile": "package.json",
-          "anchorStart": 3940,
+          "anchorStart": 4016,
           "kind": "package_script",
           "symbol": "verify:invitation-email-delivery",
           "target": "package.json#scripts.verify:invitation-email-delivery"
@@ -14013,9 +14270,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 4935,
+          "anchorEnd": 5011,
           "anchorFile": "package.json",
-          "anchorStart": 4903,
+          "anchorStart": 4979,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -14039,9 +14296,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 5045,
+          "anchorEnd": 5121,
           "anchorFile": "package.json",
-          "anchorStart": 5010,
+          "anchorStart": 5086,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -14111,27 +14368,27 @@
       "bindings": [
         {
           "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-          "anchorEnd": 4554,
+          "anchorEnd": 4630,
           "anchorFile": "package.json",
-          "anchorStart": 4531,
+          "anchorStart": 4607,
           "kind": "package_script",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
           "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-          "anchorEnd": 4652,
+          "anchorEnd": 4728,
           "anchorFile": "package.json",
-          "anchorStart": 4629,
+          "anchorStart": 4705,
           "kind": "package_script",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
           "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-          "anchorEnd": 4753,
+          "anchorEnd": 4829,
           "anchorFile": "package.json",
-          "anchorStart": 4727,
+          "anchorStart": 4803,
           "kind": "package_script",
           "symbol": "verify:performance-input",
           "target": "package.json#scripts.verify:performance-input"
@@ -14157,9 +14414,9 @@
       "bindings": [
         {
           "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-          "anchorEnd": 5222,
+          "anchorEnd": 5298,
           "anchorFile": "package.json",
-          "anchorStart": 5191,
+          "anchorStart": 5267,
           "kind": "package_script",
           "symbol": "verify:platform-first-account",
           "target": "package.json#scripts.verify:platform-first-account"
@@ -14282,9 +14539,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 5933,
+          "anchorEnd": 6009,
           "anchorFile": "package.json",
-          "anchorStart": 5917,
+          "anchorStart": 5993,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -14623,9 +14880,9 @@
       "bindings": [
         {
           "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-          "anchorEnd": 5310,
+          "anchorEnd": 5386,
           "anchorFile": "package.json",
-          "anchorStart": 5290,
+          "anchorStart": 5366,
           "kind": "package_script",
           "symbol": "verify:quick-start",
           "target": "package.json#scripts.verify:quick-start"
@@ -14739,9 +14996,9 @@
       "bindings": [
         {
           "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
-          "anchorEnd": 4371,
+          "anchorEnd": 4447,
           "anchorFile": "package.json",
-          "anchorStart": 4345,
+          "anchorStart": 4421,
           "kind": "package_script",
           "symbol": "verify:simplified-signup",
           "target": "package.json#scripts.verify:simplified-signup"
@@ -14765,9 +15022,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 4464,
+          "anchorEnd": 4540,
           "anchorFile": "package.json",
-          "anchorStart": 4434,
+          "anchorStart": 4510,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -14791,9 +15048,9 @@
       "bindings": [
         {
           "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-          "anchorEnd": 5389,
+          "anchorEnd": 5465,
           "anchorFile": "package.json",
-          "anchorStart": 5367,
+          "anchorStart": 5443,
           "kind": "package_script",
           "symbol": "verify:system-backup",
           "target": "package.json#scripts.verify:system-backup"
@@ -14817,9 +15074,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 4863,
+          "anchorEnd": 4939,
           "anchorFile": "package.json",
-          "anchorStart": 4838,
+          "anchorStart": 4914,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -14836,36 +15093,36 @@
       "bindings": [
         {
           "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-          "anchorEnd": 5462,
+          "anchorEnd": 5538,
           "anchorFile": "package.json",
-          "anchorStart": 5448,
+          "anchorStart": 5524,
           "kind": "package_script",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
           "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-          "anchorEnd": 5517,
+          "anchorEnd": 5593,
           "anchorFile": "package.json",
-          "anchorStart": 5499,
+          "anchorStart": 5575,
           "kind": "package_script",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
           "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-          "anchorEnd": 5585,
+          "anchorEnd": 5661,
           "anchorFile": "package.json",
-          "anchorStart": 5560,
+          "anchorStart": 5636,
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
           "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-          "anchorEnd": 5655,
+          "anchorEnd": 5731,
           "anchorFile": "package.json",
-          "anchorStart": 5635,
+          "anchorStart": 5711,
           "kind": "package_script",
           "symbol": "verify:gates:image",
           "target": "package.json#scripts.verify:gates:image"
@@ -14889,8 +15146,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 227,
-  "observationDigest": "b3e12e445435440ca4e27a824a5c867ac81a1098bdf8ca0b1760d042b17f7e0f",
+  "observationCount": 231,
+  "observationDigest": "23e04f85624cf7b736cec119fbcbd691d142b0ab5d0b3b9e475af3bcf6e27176",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15388,6 +15645,33 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1189,
+          "anchorFile": "src/app/api/babies/[id]/route.ts",
+          "anchorStart": 786,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/babies/[id]/route.ts",
+          "symbol": "DELETE",
+          "target": "src/app/api/babies/[id]/route.ts#DELETE"
+        },
+        {
+          "anchorEnd": 489,
+          "anchorFile": "src/app/api/babies/[id]/route.ts",
+          "anchorStart": 223,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/babies/[id]/route.ts",
+          "symbol": "PATCH",
+          "target": "src/app/api/babies/[id]/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/babies/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/route.operation.ts"
     },
     {
       "bindings": [
@@ -17318,18 +17602,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 422,
+          "anchorEnd": 564,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 406,
+          "anchorStart": 548,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/babies/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 360,
+          "anchorEnd": 586,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 341,
+          "anchorStart": 566,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/babies/page.tsx",
+          "symbol": "listRemovableBabyIds",
+          "target": "src/server/services/households.ts#listRemovableBabyIds"
+        },
+        {
+          "anchorEnd": 502,
+          "anchorFile": "src/app/app/babies/page.tsx",
+          "anchorStart": 483,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/babies/page.tsx",
           "symbol": "requireSettingsPage",
@@ -18416,6 +18709,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1437,
+          "anchorFile": "src/components/actions/baby-delete-dialog.tsx",
+          "anchorStart": 1222,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/actions/baby-delete-dialog.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/actions/baby-delete-dialog.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/actions/baby-delete-dialog.tsx",
+      "sidecarPath": "src/components/actions/baby-delete-dialog.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 805,
           "anchorFile": "src/components/actions/baby-lifecycle-button.tsx",
           "anchorStart": 740,
@@ -18772,6 +19083,33 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 2603,
+          "anchorFile": "src/components/forms/baby-edit-form.tsx",
+          "anchorStart": 2586,
+          "kind": "form_action",
+          "ownerModule": "src/components/forms/baby-edit-form.tsx",
+          "symbol": "onSubmit",
+          "target": "src/components/forms/baby-edit-form.tsx#onSubmit"
+        },
+        {
+          "anchorEnd": 2044,
+          "anchorFile": "src/components/forms/baby-edit-form.tsx",
+          "anchorStart": 1882,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/baby-edit-form.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/forms/baby-edit-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/forms/baby-edit-form.tsx",
+      "sidecarPath": "src/components/forms/baby-edit-form.operation.ts"
     },
     {
       "bindings": [
@@ -20108,9 +20446,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5889,
+          "anchorEnd": 5965,
           "anchorFile": "package.json",
-          "anchorStart": 5880,
+          "anchorStart": 5956,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -20144,9 +20482,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4276,
+          "anchorEnd": 4352,
           "anchorFile": "package.json",
-          "anchorStart": 4244,
+          "anchorStart": 4320,
           "kind": "package_script",
           "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
           "symbol": "verify:admin-assisted-accounts",
@@ -20158,6 +20496,24 @@
       "ownerKind": "package_command",
       "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 3965,
+          "anchorFile": "package.json",
+          "anchorStart": 3940,
+          "kind": "package_script",
+          "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+          "symbol": "verify:baby-edit-delete",
+          "target": "package.json#scripts.verify:baby-edit-delete"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/baby-edit-delete-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+      "sidecarPath": "scripts/baby-edit-delete-rehearsal.operation.ts"
     },
     {
       "bindings": [
@@ -20189,9 +20545,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4066,
+          "anchorEnd": 4142,
           "anchorFile": "package.json",
-          "anchorStart": 4034,
+          "anchorStart": 4110,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-pilot",
@@ -20207,9 +20563,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4171,
+          "anchorEnd": 4247,
           "anchorFile": "package.json",
-          "anchorStart": 4135,
+          "anchorStart": 4211,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-save-path",
@@ -20315,9 +20671,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 5990,
+          "anchorEnd": 6066,
           "anchorFile": "package.json",
-          "anchorStart": 5972,
+          "anchorStart": 6048,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -20333,9 +20689,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5130,
+          "anchorEnd": 5206,
           "anchorFile": "package.json",
-          "anchorStart": 5106,
+          "anchorStart": 5182,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
           "symbol": "verify:integrity-suite",
@@ -20351,9 +20707,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 3974,
+          "anchorEnd": 4050,
           "anchorFile": "package.json",
-          "anchorStart": 3940,
+          "anchorStart": 4016,
           "kind": "package_script",
           "ownerModule": "scripts/invitation-email-delivery-rehearsal.ts",
           "symbol": "verify:invitation-email-delivery",
@@ -20369,9 +20725,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4935,
+          "anchorEnd": 5011,
           "anchorFile": "package.json",
-          "anchorStart": 4903,
+          "anchorStart": 4979,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -20387,9 +20743,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5045,
+          "anchorEnd": 5121,
           "anchorFile": "package.json",
-          "anchorStart": 5010,
+          "anchorStart": 5086,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -20450,27 +20806,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4554,
+          "anchorEnd": 4630,
           "anchorFile": "package.json",
-          "anchorStart": 4531,
+          "anchorStart": 4607,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
-          "anchorEnd": 4652,
+          "anchorEnd": 4728,
           "anchorFile": "package.json",
-          "anchorStart": 4629,
+          "anchorStart": 4705,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
-          "anchorEnd": 4753,
+          "anchorEnd": 4829,
           "anchorFile": "package.json",
-          "anchorStart": 4727,
+          "anchorStart": 4803,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-input",
@@ -20486,9 +20842,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5222,
+          "anchorEnd": 5298,
           "anchorFile": "package.json",
-          "anchorStart": 5191,
+          "anchorStart": 5267,
           "kind": "package_script",
           "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
           "symbol": "verify:platform-first-account",
@@ -20603,9 +20959,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 5933,
+          "anchorEnd": 6009,
           "anchorFile": "package.json",
-          "anchorStart": 5917,
+          "anchorStart": 5993,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -20936,9 +21292,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5310,
+          "anchorEnd": 5386,
           "anchorFile": "package.json",
-          "anchorStart": 5290,
+          "anchorStart": 5366,
           "kind": "package_script",
           "ownerModule": "scripts/quick-start.acceptance-rehearsal.ts",
           "symbol": "verify:quick-start",
@@ -21035,9 +21391,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4371,
+          "anchorEnd": 4447,
           "anchorFile": "package.json",
-          "anchorStart": 4345,
+          "anchorStart": 4421,
           "kind": "package_script",
           "ownerModule": "scripts/simplified-signup.acceptance-rehearsal.ts",
           "symbol": "verify:simplified-signup",
@@ -21053,9 +21409,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4464,
+          "anchorEnd": 4540,
           "anchorFile": "package.json",
-          "anchorStart": 4434,
+          "anchorStart": 4510,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -21071,9 +21427,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5389,
+          "anchorEnd": 5465,
           "anchorFile": "package.json",
-          "anchorStart": 5367,
+          "anchorStart": 5443,
           "kind": "package_script",
           "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
           "symbol": "verify:system-backup",
@@ -21089,9 +21445,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4863,
+          "anchorEnd": 4939,
           "anchorFile": "package.json",
-          "anchorStart": 4838,
+          "anchorStart": 4914,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -21107,36 +21463,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5462,
+          "anchorEnd": 5538,
           "anchorFile": "package.json",
-          "anchorStart": 5448,
+          "anchorStart": 5524,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
-          "anchorEnd": 5517,
+          "anchorEnd": 5593,
           "anchorFile": "package.json",
-          "anchorStart": 5499,
+          "anchorStart": 5575,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
-          "anchorEnd": 5585,
+          "anchorEnd": 5661,
           "anchorFile": "package.json",
-          "anchorStart": 5560,
+          "anchorStart": 5636,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
-          "anchorEnd": 5655,
+          "anchorEnd": 5731,
           "anchorFile": "package.json",
-          "anchorStart": 5635,
+          "anchorStart": 5711,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:image",
@@ -21300,6 +21656,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/reactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/reactivate/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/babies/[id]/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/babies/[id]/schedule/route.ts",
@@ -22052,6 +22414,12 @@
       "sidecarPath": "src/components/actions/activity-actions.operation.ts"
     },
     {
+      "id": "client_binding:src/components/actions/baby-delete-dialog.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/actions/baby-delete-dialog.tsx",
+      "sidecarPath": "src/components/actions/baby-delete-dialog.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/actions/baby-lifecycle-button.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/actions/baby-lifecycle-button.tsx",
@@ -22110,6 +22478,12 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "id": "client_binding:src/components/forms/baby-edit-form.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/forms/baby-edit-form.tsx",
+      "sidecarPath": "src/components/forms/baby-edit-form.operation.ts"
     },
     {
       "id": "client_binding:src/components/forms/baby-form.tsx",
@@ -22346,6 +22720,12 @@
       "sidecarPath": "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts"
     },
     {
+      "id": "package_command:scripts/baby-edit-delete-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
+      "sidecarPath": "scripts/baby-edit-delete-rehearsal.operation.ts"
+    },
+    {
       "id": "package_command:scripts/backup-recovery-rehearsal.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/backup-recovery-rehearsal.ts",
@@ -22514,9 +22894,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "a046c0a1c0ae42373331a82ac659cd0b096a9d9742de15d33cd3bcdc2532fc49",
+  "ownerSetDigest": "c1705da38acd88071110743543980e13508e676c80efa7e2cf187827ec650006",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "4d95e34cc791449feed0aece1e339daac014b385b974309a83be13fbcf0a9fec",
+  "registryDigest": "a70d6c9f1fbdc28fb61392784bf93cfde0fc54de09d34775944793efca2551da",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
