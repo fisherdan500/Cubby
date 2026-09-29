@@ -1,4 +1,4 @@
-import { TimerState, type Prisma } from "@prisma/client";
+import { TimerState, type HouseholdRole, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { automatedBackupStatusConfig } from "@/lib/automated-backup-config";
 import { prisma } from "@/lib/db/prisma";
@@ -50,8 +50,8 @@ const timerCapableBackupTypes = new Set(["feeding", "sleep", "pumping", "play"])
 type BackupActivityInput = z.infer<typeof activityRestoreSchema>;
 type BackupSnapshotTransaction = Pick<
   Prisma.TransactionClient,
-  "household" | "householdSettings" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder" | "plannedSchedule" | "feedPost"
-  | "feedComment" | "feedReaction" | "attachment"
+  "household" | "householdSettings" | "householdMember" | "baby" | "contact" | "medicineCatalog" | "activityLog" | "calendarEvent" | "reminder"
+  | "plannedSchedule" | "feedPost" | "feedComment" | "feedReaction" | "attachment"
 >;
 
 function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, activity: BackupActivityInput) {
@@ -280,11 +280,18 @@ export async function buildHouseholdV2Snapshot(
     ]
   };
   const [
-    household, settings, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments, feedReactions,
-    feedPhotos
+    household, settings, members, babies, contacts, catalogs, activities, calendarEvents, reminders, plannedSchedules, feedPosts, feedComments,
+    feedReactions, feedPhotos
   ] = await Promise.all([
     tx.household.findUniqueOrThrow({ where: { id: householdId } }),
     tx.householdSettings.findUnique({ where: { householdId } }),
+    // Identity and standing only. `select` is exhaustive on purpose: it cannot reach Account or
+    // Session, so no credential material can travel in the file even if this shape is extended later.
+    tx.householdMember.findMany({
+      where: { householdId, deletedAt: null },
+      select: { role: true, displayName: true, joinedAt: true, disabledAt: true, user: { select: { email: true, name: true } } },
+      orderBy: { joinedAt: "asc" }
+    }),
     tx.baby.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.contact.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
     tx.medicineCatalog.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
@@ -357,6 +364,16 @@ export async function buildHouseholdV2Snapshot(
           accentTheme: parseAccentTheme(settings.accentTheme)
         }
       : {},
+    members: members.map((member) => ({
+      // Lowercased because email is the identity a restore matches on, and mailboxes are matched
+      // case-insensitively; storing the display casing would let two files disagree about one person.
+      email: member.user.email.toLowerCase(),
+      name: member.user.name,
+      role: member.role,
+      displayName: member.displayName,
+      joinedAt: member.joinedAt.toISOString(),
+      disabledAt: member.disabledAt?.toISOString() ?? null
+    })),
     babies: babies.map((baby) => ({
       id: baby.id,
       name: baby.name,
@@ -648,6 +665,57 @@ function prepareLegacyRestore(parsed: Extract<ParsedBackup, { version: 1 }>) {
   return { input, activities };
 }
 
+/**
+ * Reattach the household's members to the accounts that already exist on this server.
+ *
+ * A restore deliberately CREATES NO ACCOUNTS. Every account in Cubby is born inside a
+ * `SECURITY DEFINER` database function that demands a credential fence, row locks across the
+ * credential tables, and a MAC-verified fresh-auth attestation. That is the single chokepoint for
+ * account genesis, and a backup file — which anyone holding it can edit — must not become a second
+ * one. So members are matched by email, and anyone with no account here is reported back for an
+ * ordinary invitation instead.
+ *
+ * Two further limits, because the file is untrusted input:
+ * - no membership is ever restored as `owner`; a file cannot hand over the household. Owners in the
+ *   file land as `admin`, which is the closest authority that is not household ownership.
+ * - the restoring user is skipped entirely. They already hold their own membership, and a second row
+ *   would duplicate their authority.
+ */
+async function restoreMembers(
+  entries: ReadonlyArray<{ email: string; role: string; displayName: string | null; joinedAt: string; disabledAt: string | null }>,
+  lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
+  tx: Prisma.TransactionClient
+) {
+  if (!entries.length) return { restored: 0, needInvite: [] as string[] };
+  const wanted = entries.map((entry) => entry.email.toLowerCase());
+  const existing = await tx.user.findMany({ where: { email: { in: wanted } }, select: { id: true, email: true } });
+  const byEmail = new Map(existing.map((user) => [user.email.toLowerCase(), user.id]));
+
+  const needInvite: string[] = [];
+  let restored = 0;
+  for (const entry of entries) {
+    const email = entry.email.toLowerCase();
+    const userId = byEmail.get(email);
+    if (!userId) {
+      needInvite.push(email);
+      continue;
+    }
+    if (userId === lockedCtx.userId) continue;
+    await tx.householdMember.create({
+      data: {
+        householdId: lockedCtx.householdId,
+        userId,
+        role: entry.role === "owner" ? "admin" : (entry.role as HouseholdRole),
+        displayName: entry.displayName,
+        joinedAt: new Date(entry.joinedAt),
+        disabledAt: entry.disabledAt === null ? null : new Date(entry.disabledAt)
+      }
+    });
+    restored += 1;
+  }
+  return { restored, needInvite };
+}
+
 async function restoreV2InTransaction(
   parsed: Extract<ParsedBackup, { version: 2 }>,
   lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
@@ -677,6 +745,8 @@ async function restoreV2InTransaction(
     update: settings,
     create: { householdId: lockedCtx.householdId, ...settings }
   });
+
+  const members = await restoreMembers(payload.members ?? [], lockedCtx, tx);
 
   const contactMap = new Map<string, string>();
   for (const contact of payload.contacts) {
@@ -884,7 +954,7 @@ async function restoreV2InTransaction(
   const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders
     + counts.plannedSchedules + counts.feedPosts + counts.feedComments + counts.feedReactions + counts.feedPhotos;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
-  return { restored, counts, legacyPartial: false };
+  return { restored, counts, members, legacyPartial: false };
 }
 
 async function restoreLegacyInTransaction(
@@ -923,7 +993,8 @@ async function restoreLegacyInTransaction(
   const counts = { babies: input.babies.length, activities: activities.length };
   const restored = counts.babies + counts.activities;
   await writeRestoreCompletion(lockedCtx, tx, restored, undefined, counts);
-  return { restored, counts };
+  // A v1 file predates members entirely, so none can be restored from one.
+  return { restored, counts, members: { restored: 0, needInvite: [] as string[] } };
 }
 
 async function writeRestoreCompletion(

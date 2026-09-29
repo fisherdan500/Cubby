@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { plannedScheduleItemsSchema } from "@/domain/planned-schedule";
+import { singleMailbox } from "@/lib/validation/email";
 
 export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 export const BACKUP_EXCLUSIONS = [
-  "Users, credentials, sessions, and household memberships",
+  "Credentials and sessions (members are carried by email, and arrive unable to sign in)",
   "Invitations and registration policy",
   "API keys, webhooks, and push/notification state",
   "Audit, import, backup history, warning dismissals, and vaccine attachments",
@@ -208,10 +209,42 @@ export function feedPhotoArchiveName(photoId: string) {
   return `photos/${photoId}.jpg`;
 }
 
+/**
+ * A member carries who someone is and what they may do — never how they sign in. There is
+ * deliberately no password, hash, token, session or verification field here, and the schema is
+ * `.strict()` so a hand-edited file cannot introduce one: a backup file must never be able to grant
+ * a login. Accounts created from these entries are inert until their owner completes ordinary setup.
+ *
+ * `email` is the identity that survives the trip between servers, because member and user ids are
+ * local to the install that issued them. It is validated as a single mailbox so one entry cannot
+ * expand into several recipients.
+ */
+const memberSchema = z
+  .object({
+    email: z
+      .string()
+      .min(3)
+      .max(320)
+      .refine((value) => {
+        try {
+          return singleMailbox(value) === value;
+        } catch {
+          return false;
+        }
+      }, "backup_member_email_invalid"),
+    name: z.string().min(1).max(200),
+    role: z.enum(["owner", "admin", "parent", "caretaker", "read_only"]),
+    displayName: z.string().max(200).nullable(),
+    joinedAt: isoDateTime,
+    disabledAt: nullableDate
+  })
+  .strict();
+
 const v2PayloadSchema = z
   .object({
     household: z.object({ name: z.string().min(1).max(200) }).strict(),
     settings: settingsSchema,
+    members: z.array(memberSchema).max(1_000).optional(),
     babies: z.array(babySchema).max(10_000),
     contacts: z.array(contactSchema).max(10_000),
     catalogs: z.array(catalogSchema).max(10_000),
@@ -232,6 +265,12 @@ const v2PayloadSchema = z
     ];
     const photoPlaces = (payload.feedPhotos ?? []).map((photo) => `${photo.postId}:${photo.position}`);
     if (new Set(photoPlaces).size !== photoPlaces.length) {
+      ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
+    }
+    // Email is the identity members restore onto, so two entries sharing one would collapse two
+    // people's history onto a single account. Compared case-insensitively, as mailboxes are matched.
+    const memberEmails = (payload.members ?? []).map((entry) => entry.email.toLowerCase());
+    if (new Set(memberEmails).size !== memberEmails.length) {
       ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
     }
     for (const group of groups) {

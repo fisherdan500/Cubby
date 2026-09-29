@@ -50,6 +50,9 @@ const mocks = vi.hoisted(() => ({
   lockBaby: vi.fn(),
   writeAudit: vi.fn(),
   memberCreate: vi.fn(),
+  memberFindMany: vi.fn(),
+  userFindMany: vi.fn(),
+  memberFindFirst: vi.fn(),
   memberUpdate: vi.fn(),
   memberUpdateMany: vi.fn(),
   memberDelete: vi.fn(),
@@ -95,7 +98,10 @@ vi.mock("@/lib/db/prisma", () => ({
     },
     $queryRaw: mocks.freshState,
     $transaction: mocks.transaction,
+    user: { findMany: mocks.userFindMany },
     householdMember: {
+      findMany: mocks.memberFindMany,
+      findFirst: mocks.memberFindFirst,
       create: mocks.memberCreate,
       update: mocks.memberUpdate,
       updateMany: mocks.memberUpdateMany,
@@ -222,6 +228,10 @@ beforeEach(() => {
     body: Buffer.from("{}")
   });
   mocks.readHouseholdAuditIntegrity.mockResolvedValue({ status: "valid" });
+  mocks.memberFindMany.mockResolvedValue([]);
+  mocks.userFindMany.mockResolvedValue([]);
+  mocks.memberCreate.mockResolvedValue({ id: "saved-member-1" });
+  mocks.memberFindFirst.mockResolvedValue(null);
 });
 
 describe("backup unit preferences", () => {
@@ -916,7 +926,7 @@ describe("backup unit preferences", () => {
       settings: { accentTheme: "sage", unitPreferences },
       babies: [],
       activities: []
-    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } });
+    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } , members: { restored: 0, needInvite: [] } });
 
     expect(mocks.settingsUpsert).toHaveBeenCalledWith({
       where: { householdId: "household-1" },
@@ -937,7 +947,7 @@ describe("backup unit preferences", () => {
         members: [{ id: "member-1", role: "owner", disabledAt: null }]
       },
       disabledAt: null
-    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } });
+    })).resolves.toEqual({ restored: 0, counts: { babies: 0, activities: 0 } , members: { restored: 0, needInvite: [] } });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
     expect(mocks.memberUpdate).not.toHaveBeenCalled();
@@ -950,7 +960,7 @@ describe("backup unit preferences", () => {
     await expect(restoreBackupJson({ version: 1, babies: [], activities: [] })).resolves.toEqual({
       restored: 0,
       counts: { babies: 0, activities: 0 }
-    });
+    , members: { restored: 0, needInvite: [] } });
     expect(mocks.settingsUpsert).not.toHaveBeenCalled();
   });
 
@@ -969,7 +979,7 @@ describe("backup unit preferences", () => {
         { babyId: "source-baby-1", type: "note", occurredAt: "2026-07-14T10:00:00.000Z", text: "First" },
         { babyId: "source-baby-2", type: "note", occurredAt: "2026-07-14T11:00:00.000Z", text: "Second" }
       ]
-    })).resolves.toEqual({ restored: 4, counts: { babies: 2, activities: 2 } });
+    })).resolves.toEqual({ restored: 4, counts: { babies: 2, activities: 2 } , members: { restored: 0, needInvite: [] } });
 
     expect(mocks.babyCreate).toHaveBeenCalledTimes(2);
     expect(mocks.restoreActivity.mock.calls.map(([activity]) => activity.babyId)).toEqual(["saved-baby-1", "saved-baby-2"]);
@@ -992,7 +1002,7 @@ describe("backup unit preferences", () => {
         contactId: "legacy-contact",
         documentUrl: "/legacy/private.pdf"
       }]
-    })).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } });
+    })).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } , members: { restored: 0, needInvite: [] } });
 
     const restoredInput = mocks.restoreActivity.mock.calls[0][0];
     expect(restoredInput).toMatchObject({ babyId: "saved-baby-1", name: "Vitamin D" });
@@ -1268,7 +1278,7 @@ describe("backup unit preferences", () => {
         ],
         activities: [{ babyId: "backup-baby-1", type: "note", occurredAt: "2026-07-14T11:00:00.000Z", text: "nap note" }]
       })
-    ).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } });
+    ).resolves.toEqual({ restored: 2, counts: { babies: 1, activities: 1 } , members: { restored: 0, needInvite: [] } });
 
     expect(mocks.transaction).toHaveBeenCalledOnce();
     expect(mocks.restoreActivity).toHaveBeenCalledOnce();
@@ -1379,7 +1389,8 @@ function transactionClient() {
       ? Promise.resolve([{ stagedBytes: 0n }]) : mocks.freshState(sql, ...args),
     household: { findUniqueOrThrow: mocks.householdFind, update: mocks.householdUpdate },
     householdSettings: { findUnique: mocks.settingsFind, upsert: mocks.settingsUpsert },
-    householdMember: { findUnique: vi.fn(), findFirst: mocks.memberFind },
+    user: { findMany: mocks.userFindMany },
+    householdMember: { findUnique: vi.fn(), findFirst: mocks.memberFind, findMany: mocks.memberFindMany, create: mocks.memberCreate },
     session: { findFirst: mocks.sessionFind },
     baby: {
       findMany: mocks.babyFindMany,
@@ -1600,5 +1611,107 @@ describe("backups with photos", () => {
     expect(mocks.intent.create).toHaveBeenCalledTimes(1);
     expect(mocks.removeObject).not.toHaveBeenCalled();
     expect(archive.close).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("backup members", () => {
+  const rows = [
+    {
+      role: "owner", displayName: null, joinedAt: new Date("2026-01-02T03:04:05.000Z"), disabledAt: null,
+      user: { email: "Owner@Example.com", name: "Owner" }
+    },
+    {
+      role: "parent", displayName: "Dad", joinedAt: new Date("2026-02-03T04:05:06.000Z"), disabledAt: new Date("2026-03-04T05:06:07.000Z"),
+      user: { email: "dad@example.com", name: "Dad Smith" }
+    }
+  ];
+
+  it("carries each member's identity, role and standing, and no credential material", async () => {
+    mocks.memberFindMany.mockResolvedValue(rows);
+
+    const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1");
+
+    expect(snapshot.payload.members).toEqual([
+      { email: "owner@example.com", name: "Owner", role: "owner", displayName: null, joinedAt: "2026-01-02T03:04:05.000Z", disabledAt: null },
+      {
+        email: "dad@example.com", name: "Dad Smith", role: "parent", displayName: "Dad",
+        joinedAt: "2026-02-03T04:05:06.000Z", disabledAt: "2026-03-04T05:06:07.000Z"
+      }
+    ]);
+    // The file must never be able to carry a login, so the query may not even select credentials.
+    const selected = JSON.stringify(mocks.memberFindMany.mock.calls[0]?.[0] ?? {});
+    expect(selected).not.toMatch(/password|accounts|sessions/i);
+  });
+
+  it("leaves out members whose membership was deleted", async () => {
+    mocks.memberFindMany.mockResolvedValue([]);
+
+    await buildHouseholdV2Snapshot(transactionClient() as never, "household-1");
+
+    expect(mocks.memberFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: { householdId: "household-1", deletedAt: null } }));
+  });
+});
+
+describe("restoring members", () => {
+  const member = {
+    email: "dad@example.com", name: "Dad", role: "parent" as const, displayName: "Dad",
+    joinedAt: "2026-02-03T04:05:06.000Z", disabledAt: null
+  };
+  const payloadWith = (members: unknown[]) => createV2Backup({
+    household: { name: "Home" }, settings: {}, babies: [], contacts: [], catalogs: [],
+    activities: [], calendarEvents: [], reminders: [], members
+  } as never, "2026-07-15T18:00:00.000Z");
+
+  it("restores a membership for someone who already has an account here", async () => {
+    mocks.userFindMany.mockResolvedValue([{ id: "user-dad", email: "dad@example.com" }]);
+    const backup = payloadWith([member]);
+
+    const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    expect(mocks.memberCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: "user-dad", role: "parent", displayName: "Dad" })
+    }));
+    expect(result.members).toEqual({ restored: 1, needInvite: [] });
+  });
+
+  it("creates no account for an unknown email, and reports who still needs inviting", async () => {
+    mocks.userFindMany.mockResolvedValue([]);
+    const backup = payloadWith([member]);
+
+    const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    // The DB owns account creation. A restore must never become a second way accounts are born, so
+    // an unknown email must produce no member row at all, not a row attached to an invented user.
+    expect(mocks.memberCreate).not.toHaveBeenCalled();
+    expect(result.members).toEqual({ restored: 0, needInvite: ["dad@example.com"] });
+  });
+
+  it("does not give the restoring owner a second membership from the file", async () => {
+    mocks.userFindMany.mockResolvedValue([{ id: "user-1", email: "owner@example.com" }]);
+    const backup = payloadWith([{ ...member, email: "owner@example.com", role: "owner" }]);
+
+    const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    expect(mocks.memberCreate).not.toHaveBeenCalled();
+    expect(result.members).toEqual({ restored: 0, needInvite: [] });
+  });
+
+  it("never restores a membership as owner, so a file cannot hand over the household", async () => {
+    mocks.userFindMany.mockResolvedValue([{ id: "user-dad", email: "dad@example.com" }]);
+    const backup = payloadWith([{ ...member, role: "owner" }]);
+
+    await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    const role = mocks.memberCreate.mock.calls[0]?.[0]?.data?.role;
+    expect(role).toBe("admin");
+  });
+
+  it("carries a member's disabled standing rather than silently activating them", async () => {
+    mocks.userFindMany.mockResolvedValue([{ id: "user-dad", email: "dad@example.com" }]);
+    const backup = payloadWith([{ ...member, disabledAt: "2026-03-04T05:06:07.000Z" }]);
+
+    await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    expect(mocks.memberCreate.mock.calls[0]?.[0]?.data?.disabledAt).toEqual(new Date("2026-03-04T05:06:07.000Z"));
   });
 });

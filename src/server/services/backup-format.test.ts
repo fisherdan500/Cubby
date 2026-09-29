@@ -328,3 +328,35 @@ describe("backup v2 format", () => {
     expect(() => createV2Backup(payload, exportedAt)).toThrow("backup_invalid_pause_intervals");
   });
 });
+
+describe("backup v2 members", () => {
+  const member = { email: "dad@example.com", name: "Dad", role: "parent" as const, displayName: null, joinedAt: exportedAt, disabledAt: null };
+
+  it("still reads a backup made before members were carried", () => {
+    const backup = createV2Backup(emptyPayload(), exportedAt);
+    expect(backup.payload).not.toHaveProperty("members");
+    expect(parseBackup(backup)).toMatchObject({ version: 2, checksumVerified: true });
+  });
+
+  it("carries a member's identity and role, and no credential material", () => {
+    const backup = createV2Backup({ ...emptyPayload(), members: [member] }, exportedAt);
+
+    expect(backup.payload.members).toEqual([member]);
+    // The whole point of the shape: a backup file must never be able to carry a login.
+    expect(canonicalJson(backup.payload)).not.toMatch(/password|passwordHash|token|secret|session/i);
+  });
+
+  it("refuses two members with the same email, because they would restore onto one account", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), members: [member, { ...member, name: "Other" }] }, exportedAt))
+      .toThrow("backup_duplicate_source_id");
+  });
+
+  it("refuses a member whose email is not a single mailbox", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), members: [{ ...member, email: "dad@example.com, sneak@example.com" }] }, exportedAt)).toThrow();
+    expect(() => createV2Backup({ ...emptyPayload(), members: [{ ...member, email: "not-an-email" }] }, exportedAt)).toThrow();
+  });
+
+  it("refuses a credential field smuggled into a member", () => {
+    expect(() => createV2Backup({ ...emptyPayload(), members: [{ ...member, password: "x" }] } as never, exportedAt)).toThrow();
+  });
+});
