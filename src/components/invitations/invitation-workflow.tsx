@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { invitationBrowserPartitionDigest, invitationDigest, invitationFingerprint, invitationOperationId } from "@/components/invitations/invitation-browser";
 
 type Review = Record<string, unknown> & { household_name?: string; offered_role?: string; reviewVersion?: number; reviewSnapshotDigest?: string; remainingActiveCount?: number; hasPriorRecoveryCodes?: boolean; status?: string };
-type CodeEntry = { codeId: string; code: string };
 type OperationKind = "credential" | "recovery-enrollment" | "recovery-rehearsal" | "accept";
 type RetainedOperation = { kind: OperationKind; operationId: string; openingFingerprint: string; intentFingerprint?: string; recipientEmailDigest?: string; browserPartitionDigest?: string; selectedRecoveryCodeId?: string };
 const retainedKey = "cubby:invitation-workflow-operation:v1";
@@ -73,9 +72,6 @@ export function InvitationWorkflow() {
   const [review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [codes, setCodes] = useState<CodeEntry[]>([]);
-  const [rehearsal, setRehearsal] = useState<CodeEntry | null>(null);
-  const [freshPassword, setFreshPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [retained, setRetained] = useState<RetainedOperation | null>(null);
   const errorSummary = useRef<HTMLParagraphElement>(null);
@@ -162,64 +158,25 @@ export function InvitationWorkflow() {
     } catch { setMessage(safeFailure); } finally { setBusy(false); }
   }
 
-  async function generateCodes(event: MouseEvent<HTMLButtonElement>) {
-    if (!freshPassword) { setMessage("Re-enter your new password before generating recovery codes."); return; }
-    returnFocus.current = event.currentTarget; setBusy(true); setMessage("");
-    try {
-      const operationId = retained?.kind === "recovery-enrollment" ? retained.operationId : invitationOperationId();
-      const openingFingerprint = await invitationFingerprint("recovery-enrollment", { operationId });
-      const intentFingerprint = await invitationFingerprint("recovery-enrollment-submit", { operationId });
-      if (retained?.kind === "recovery-enrollment" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint)) { setMessage("This differs from the retained recovery request. Check its status before starting a new request."); return; }
-      const operation: RetainedOperation = { kind: "recovery-enrollment", operationId, openingFingerprint, intentFingerprint };
-      retain(operation);
-      const reserved = await request("/api/invitations/recovery/enrollment/reserve", "POST", { operationId, openingFingerprint });
-      if (reserved?.status !== "prepared" || typeof reserved.globalSecurityOperationId !== "string") throw new Error("reserve");
-      const freshAuth = await request("/api/invitations/recovery/enrollment/fresh-auth", "POST", { operationId, openingFingerprint, intentFingerprint, globalSecurityOperationId: reserved.globalSecurityOperationId, currentPassword: freshPassword });
-      if (freshAuth?.status !== "fresh_auth_bound") throw new Error("fresh-auth");
-      const submitted = await request("/api/invitations/recovery/enrollment/submit", "POST", { operationId, openingFingerprint, intentFingerprint });
-      const entries = Array.isArray(submitted?.codeEntries) ? submitted.codeEntries : [];
-      if ((submitted?.status !== "generated" && submitted?.status !== "completed") || entries.length !== 10 || !entries.every((entry) => entry && typeof (entry as CodeEntry).codeId === "string" && typeof (entry as CodeEntry).code === "string")) throw new Error("codes");
-      retain(null); setFreshPassword(""); setCodes(entries as CodeEntry[]);
-    } catch { setMessage(safeFailure); } finally { setBusy(false); }
-  }
-
-  async function rehearse(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!rehearsal) return;
-    const recoveryCode = String(new FormData(event.currentTarget).get("recoveryCode") ?? "");
-    const acknowledgement = String(new FormData(event.currentTarget).get("acknowledgement") ?? "");
-    if (acknowledgement !== "I SAVED MY RECOVERY CODES") { setMessage("Type the acknowledgement exactly before rehearsing one code."); return; }
-    setBusy(true); setMessage("");
-    try {
-      const operationId = retained?.kind === "recovery-rehearsal" ? retained.operationId : invitationOperationId();
-      const openingFingerprint = await invitationFingerprint("recovery-rehearsal", { operationId, selectedRecoveryCodeId: rehearsal.codeId });
-      const intentFingerprint = await invitationFingerprint("recovery-rehearsal-submit", { operationId, selectedRecoveryCodeId: rehearsal.codeId });
-      if (retained?.kind === "recovery-rehearsal" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint || retained.selectedRecoveryCodeId !== rehearsal.codeId)) { setMessage("This differs from the retained rehearsal request. Check its status before starting a new request."); return; }
-      retain({ kind: "recovery-rehearsal", operationId, openingFingerprint, intentFingerprint, selectedRecoveryCodeId: rehearsal.codeId });
-      const reserved = await request("/api/invitations/recovery/rehearsal/reserve", "POST", { operationId, selectedRecoveryCodeId: rehearsal.codeId, acknowledgement, recoveryCode, openingFingerprint });
-      if (reserved?.status !== "prepared" || typeof reserved.nonce !== "string" || !reserved.attestation || typeof (reserved.attestation as Record<string, unknown>).keyVersion !== "number" || typeof (reserved.attestation as Record<string, unknown>).mac !== "string") throw new Error("reserve");
-      const attestation = reserved.attestation as { keyVersion: number; mac: string };
-      const submitted = await request("/api/invitations/recovery/rehearsal/submit", "POST", { operationId, selectedRecoveryCodeId: rehearsal.codeId, openingFingerprint, intentFingerprint, nonce: reserved.nonce, attestationKeyVersion: attestation.keyVersion, attestationMac: attestation.mac });
-      if (submitted?.status !== "rehearsed" && submitted?.status !== "completed") throw new Error("submit");
-      retain(null); setCodes([]); setRehearsal(null); setReview((current) => current ? { ...current, remainingActiveCount: 9 } : current); setMessage("Recovery readiness confirmed: nine unused codes remain.");
-    } catch { setMessage(safeFailure); } finally { setBusy(false); returnFocus.current?.focus(); }
-  }
 
   async function accept(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!review?.household_name || !review.reviewVersion || !review.reviewSnapshotDigest) return;
-    const form = new FormData(event.currentTarget); const typedHouseholdName = String(form.get("householdName") ?? "");
-    const adminAcknowledgement = review.offered_role === "admin" ? String(form.get("adminAcknowledgement") ?? "") : null;
     setBusy(true); setMessage("");
     try {
       const operationId = retained?.kind === "accept" ? retained.operationId : invitationOperationId();
       const openingFingerprint = await invitationFingerprint("accept", { operationId, reviewVersion: review.reviewVersion, reviewSnapshotDigest: review.reviewSnapshotDigest });
-      const intentFingerprint = await invitationFingerprint("accept-submit", { operationId, typedHouseholdName, adminAcknowledgement });
+      // Simplified signup (DEC-PROD-426): the typed household name and admin acknowledgement are no
+      // longer collected, so the intent fingerprint covers the operation id alone. Replay and
+      // cross-invitation confusion remain blocked server-side: operationId is a random UUID and the
+      // identity primary key, the value must equal the carrier's own field, the attestation nonce is
+      // single-use, and the granted role comes from the invite lineage rather than this fingerprint.
+      const intentFingerprint = await invitationFingerprint("accept-submit", { operationId });
       if (retained?.kind === "accept" && (retained.openingFingerprint !== openingFingerprint || retained.intentFingerprint !== intentFingerprint)) { setMessage("This differs from the retained acceptance request. Check its status before starting a new request."); return; }
       const base = { operationId, reviewVersion: review.reviewVersion, reviewSnapshotDigest: review.reviewSnapshotDigest, openingFingerprint };
       retain({ kind: "accept", operationId, openingFingerprint, intentFingerprint });
       const reserved = await request("/api/invitations/accept/reserve", "POST", base);
       if (reserved?.status !== "prepared") throw new Error("reserve");
-      const submitted = await request("/api/invitations/accept/submit", "POST", { ...base, intentFingerprint, typedHouseholdName, adminAcknowledgement });
+      const submitted = await request("/api/invitations/accept/submit", "POST", { ...base, intentFingerprint });
       if (submitted?.status !== "accepted" && submitted?.status !== "completed") throw new Error("submit");
       retain(null); window.location.assign("/app");
     } catch { setMessage(safeFailure); } finally { setBusy(false); }
@@ -262,13 +219,9 @@ export function InvitationWorkflow() {
   );
 
   return <section aria-labelledby="invite-review-heading" className="space-y-5">
-    <div><h1 ref={heading} tabIndex={-1} id="invite-review-heading" className="font-editorial text-3xl font-bold">Review your invitation</h1><p className="mt-1 text-sm text-muted-foreground">Read the fourteen invitation disclosures before joining.</p></div>
+    <div><h1 ref={heading} tabIndex={-1} id="invite-review-heading" className="font-editorial text-3xl font-bold">Review your invitation</h1><p className="mt-1 text-sm text-muted-foreground">Check the details below, then join.</p></div>
     <dl aria-label="Invitation disclosures" className="grid gap-3 text-sm sm:grid-cols-2">{disclosureLabels.map(([key, label]) => <div key={key} className="min-w-0 rounded-lg border border-border bg-muted/50 p-3"><dt className="font-semibold">{label}</dt><dd className="mt-1 break-words text-muted-foreground">{String(review[key] ?? "Not available")}</dd></div>)}</dl>
-    {review.remainingActiveCount === 9 ? <p className="rounded-lg bg-muted p-3 text-sm font-semibold" role="status" aria-live="polite">Recovery readiness complete: exactly nine unused codes remain.</p> : null}
-    {review.remainingActiveCount !== 9 && codes.length === 0 ? <div className="space-y-2 rounded-lg border border-border p-3"><label className="block text-sm font-semibold">Re-enter your new password<Input value={freshPassword} onChange={(event) => setFreshPassword(event.target.value)} type="password" autoComplete="current-password" required /></label><p className="text-sm text-muted-foreground">This fresh authentication is required before recovery codes can be generated.</p>{review.hasPriorRecoveryCodes ? <p className="text-sm font-semibold text-muted-foreground" role="status">Completing this will invalidate any previously issued recovery codes.</p> : null}<Button type="button" onClick={(event) => void generateCodes(event)} disabled={busy}>Generate recovery codes</Button></div> : null}
-    {codes.length > 0 ? <section role="region" aria-label="Display-once recovery codes" aria-live="off" tabIndex={-1} ref={(node) => { if (node) node.focus(); }} className="space-y-3 rounded-lg border border-border p-3"><h2 id="recovery-codes-heading" className="text-lg font-bold">Save these ten recovery codes now</h2><p className="text-sm text-muted-foreground">They are displayed only in this response. Save them before selecting one for the required rehearsal.</p><ol className="grid gap-2 text-sm sm:grid-cols-2">{codes.map((entry) => <li key={entry.codeId}><Button type="button" variant="secondary" className="w-full justify-start break-all font-mono" onClick={(event) => { returnFocus.current = event.currentTarget; setRehearsal(entry); }}>{entry.code}</Button></li>)}</ol></section> : null}
-    {rehearsal ? <form onSubmit={(event) => void rehearse(event)} className="space-y-3 rounded-lg border border-border p-3" aria-labelledby="rehearsal-heading"><h2 id="rehearsal-heading" className="text-lg font-bold">Rehearse one saved code</h2><label className="block text-sm font-semibold">Type the selected code<Input name="recoveryCode" autoComplete="one-time-code" required /></label><label className="block text-sm font-semibold">Type <span className="font-mono">I SAVED MY RECOVERY CODES</span><Input name="acknowledgement" autoComplete="off" required /></label><Button type="submit" disabled={busy}>Confirm recovery readiness</Button></form> : null}
-    {review.remainingActiveCount === 9 ? <form onSubmit={(event) => void accept(event)} className="space-y-3 border-t border-border pt-5" aria-labelledby="accept-heading"><h2 id="accept-heading" className="text-lg font-bold">Join {review.household_name}</h2><label className="block text-sm font-semibold">Type the household name exactly<Input name="householdName" autoComplete="off" required /></label>{review.offered_role === "admin" ? <label className="block text-sm font-semibold">Type <span className="font-mono">I UNDERSTAND ADMIN ACCESS</span><Input name="adminAcknowledgement" autoComplete="off" required /></label> : null}<div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy}>Accept invitation</Button><Link href="/" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-muted-foreground underline-offset-4 hover:underline">Decline and leave</Link></div></form> : null}
+    <form onSubmit={(event) => void accept(event)} className="space-y-3 border-t border-border pt-5" aria-labelledby="accept-heading"><h2 id="accept-heading" className="text-lg font-bold">Join {review.household_name}</h2><p className="text-sm text-muted-foreground">You will join as {String(review.offered_role ?? "a member")}.</p><div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy}>{busy ? "Working…" : "Join household"}</Button><Link href="/" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-muted-foreground underline-offset-4 hover:underline">Decline and leave</Link></div></form>
     {retainedOperation}
     {message ? <p ref={errorSummary} role="alert" tabIndex={-1} className="text-sm text-muted-foreground">{message}</p> : null}
   </section>;

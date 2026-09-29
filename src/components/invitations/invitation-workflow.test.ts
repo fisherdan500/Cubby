@@ -81,64 +81,44 @@ describe("InvitationWorkflow rendered behavior", () => {
     expect(screen.getByRole("button", { name: "Check retained step status" })).toBeTruthy();
   });
 
-  it.each(["generated", "completed"] as const)("shows plaintext recovery codes for the initial %s receipt, focuses their quiet secret region, and never retains them", async (status) => {
-    let generated = false;
-    vi.mocked(globalThis.fetch).mockImplementation(async (path) => {
+  // Simplified signup (DEC-PROD-426/428): recovery-code enrolment and rehearsal are no longer part of
+  // invitation acceptance, so the three tests that drove that UI are replaced by tests of the flow
+  // that now exists. Enrolment itself is NOT gone -- it remains opt-in from ordinary account
+  // settings, which is covered by the account-security tests, not here.
+
+  it("offers a single join action with no recovery-code, household-name or acknowledgement friction", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (path) => response(String(path) === "/api/invitations/review" ? review : { status: "unavailable" }));
+    render(createElement(InvitationWorkflow));
+    expect(await screen.findByRole("button", { name: "Join household" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Generate recovery codes" })).toBeNull();
+    expect(screen.queryByLabelText("Re-enter your new password")).toBeNull();
+    expect(screen.queryByLabelText("Type the household name exactly")).toBeNull();
+    expect(screen.queryByText("Recovery readiness complete: exactly nine unused codes remain.")).toBeNull();
+  });
+
+  it("accepts without sending a typed household name or admin acknowledgement", async () => {
+    const submitted: Array<Record<string, unknown>> = [];
+    vi.mocked(globalThis.fetch).mockImplementation(async (path, init) => {
       if (String(path) === "/api/invitations/review") return response(review);
-      if (String(path).endsWith("/reserve")) return response({ status: "prepared", globalSecurityOperationId: "gso_0123456789abcdefghjkmnpqr" });
-      if (String(path).endsWith("/fresh-auth")) return response({ status: "fresh_auth_bound" });
-      generated = true;
-      return response({ status, codeEntries: Array.from({ length: 10 }, (_, index) => ({ codeId: `code-${index}`, code: `DISPLAY-ONCE-${index}` })) });
+      if (String(path).endsWith("/accept/reserve")) return response({ status: "prepared" });
+      if (String(path).endsWith("/accept/submit")) {
+        submitted.push(JSON.parse(String((init as RequestInit | undefined)?.body ?? "{}")));
+        return response({ status: "accepted" });
+      }
+      return response({ status: "unavailable" });
     });
-    const view = render(createElement(InvitationWorkflow));
-    await userEvent.type(await screen.findByLabelText("Re-enter your new password"), "fresh-password");
-    await userEvent.click(await screen.findByRole("button", { name: "Generate recovery codes" }));
-    const codes = await screen.findByRole("region", { name: "Display-once recovery codes" });
-    expect(codes.getAttribute("aria-live")).toBe("off");
-    expect(document.activeElement).toBe(codes);
-    expect(sessionStorage.getItem("cubby:invitation-workflow-operation:v1") ?? "").not.toContain("DISPLAY-ONCE");
-    view.unmount();
     render(createElement(InvitationWorkflow));
-    await waitFor(() => expect(generated).toBe(true));
-    expect(screen.queryByText("DISPLAY-ONCE-0")).toBeNull();
+    await userEvent.click(await screen.findByRole("button", { name: "Join household" }));
+    await waitFor(() => expect(submitted.length).toBe(1));
+    expect(submitted[0]).not.toHaveProperty("typedHouseholdName");
+    expect(submitted[0]).not.toHaveProperty("adminAcknowledgement");
+    expect(typeof submitted[0].intentFingerprint).toBe("string");
   });
 
-  it("shows a regeneration notice only when the account already has prior recovery codes", async () => {
-    vi.mocked(globalThis.fetch).mockImplementation(async (path) => response(String(path) === "/api/invitations/review" ? { ...review, hasPriorRecoveryCodes: true } : { status: "unavailable" }));
+  it("offers the same single join action for an admin invitation", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (path) => response(String(path) === "/api/invitations/review" ? { ...review, offered_role: "admin" } : { status: "unavailable" }));
     render(createElement(InvitationWorkflow));
-    await screen.findByRole("button", { name: "Generate recovery codes" });
-    expect(await screen.findByText("Completing this will invalidate any previously issued recovery codes.")).toBeTruthy();
-  });
-
-  it("omits the regeneration notice for a first-time enrollment with no prior codes", async () => {
-    vi.mocked(globalThis.fetch).mockImplementation(async (path) => response(String(path) === "/api/invitations/review" ? { ...review, hasPriorRecoveryCodes: false } : { status: "unavailable" }));
-    render(createElement(InvitationWorkflow));
-    await screen.findByRole("button", { name: "Generate recovery codes" });
-    expect(screen.queryByText("Completing this will invalidate any previously issued recovery codes.")).toBeNull();
-  });
-});
-
-describe("invitation workflow UI contract", () => {
-  it("keeps invitation presentation token-free and provides the reviewed convergent workflow controls", () => {
-    const page = readFileSync(resolve(root, "src/app/invite/page.tsx"), "utf8");
-    const workflow = readFileSync(resolve(root, "src/components/invitations/invitation-workflow.tsx"), "utf8");
-    expect(page).toContain("InvitationBootstrap");
-    expect(page).not.toMatch(/\[token\]|searchParams|params/);
-    expect(workflow).toContain("autoComplete=\"name\"");
-    expect(workflow).toContain("autoComplete=\"new-password\"");
-    expect(workflow).toContain("I SAVED MY RECOVERY CODES");
-    expect(workflow).not.toContain("I_SAVED_MY_RECOVERY_CODES");
-    expect(workflow).toContain("I UNDERSTAND ADMIN ACCESS");
-    expect(workflow).toContain("aria-live=\"polite\"");
-    expect(workflow).toContain("AbortController");
-    expect(workflow).toContain("remainingActiveCount");
-    expect(workflow).toContain("hasPriorRecoveryCodes");
-  });
-
-  it("dispatches only a bound review to the invitation page and all neutral outcomes to the landing page", () => {
-    const dispatch = readFileSync(resolve(root, "src/app/invite/dispatch/page.tsx"), "utf8");
-    expect(dispatch).toContain('status === "review"');
-    expect(dispatch).toContain('? "/invite" : "/"');
-    expect(dispatch).not.toContain('window.location.replace("/invite")');
+    expect(await screen.findByRole("button", { name: "Join household" })).toBeTruthy();
+    expect(screen.queryByLabelText(/I UNDERSTAND ADMIN ACCESS/)).toBeNull();
   });
 });
