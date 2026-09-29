@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   executeRaw: vi.fn(),
   queryRaw: vi.fn(),
   lockHouseholdCreation: vi.fn(),
-  writeAudit: vi.fn()
+  writeAudit: vi.fn(),
+  refreshHouseholdAuditCheckpoint: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -23,6 +24,9 @@ vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "America/New_York" } }));
 vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: vi.fn(), requirePermission: vi.fn() }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/audit-checkpoints", () => ({
+  refreshHouseholdAuditCheckpoint: mocks.refreshHouseholdAuditCheckpoint
+}));
 vi.mock("@/server/services/mutation-locks", () => ({
   lockActorAndBabyForWrite: vi.fn(),
   lockHouseholdCreation: mocks.lockHouseholdCreation
@@ -133,6 +137,14 @@ describe("platform-governed household creation", () => {
       expect.objectContaining({ householdId: "household-new", userId: "user-without-household" }),
       expect.objectContaining({ action: "baby.create", entityType: "baby", entityId: "baby-new", babyId: "baby-new" }),
       expect.anything()
+    );
+    // Checkpointed inside the same transaction, after both events. Checkpoints are otherwise only
+    // written by the scheduled integrity sweep, so without this a household created a minute ago has
+    // no checkpoint, reads as `missing`, and cannot receive a backup restore — the state every
+    // migration onto a new server begins in.
+    expect(mocks.refreshHouseholdAuditCheckpoint).toHaveBeenCalledWith("household-new", expect.anything());
+    expect(mocks.writeAudit.mock.invocationCallOrder[1]).toBeLessThan(
+      mocks.refreshHouseholdAuditCheckpoint.mock.invocationCallOrder[0]
     );
   });
 

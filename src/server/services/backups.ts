@@ -579,11 +579,10 @@ async function runRestoreTransaction<T>(
           throw new Error("backup_confirmation_mismatch");
         }
         const auditIntegrity = await readHouseholdAuditIntegrity(lockedCtx.householdId, tx);
-        // `pristine` means the household has never written an audit event, so there is no chain to be
-        // tampered with. That is the ordinary state of the fresh install a restore is meant to land
-        // on, and refusing it made restoring onto a new server impossible. `missing` stays refused:
-        // there ARE events but no checkpoint, which is what hiding a rewritten chain looks like.
-        if (auditIntegrity.status !== "valid" && auditIntegrity.status !== "pristine") {
+        // Only a verified chain may receive a restore. A fresh household qualifies because it is given
+        // its checkpoint when it is created, rather than waiting for the scheduled sweep - which is
+        // what previously made restoring onto a new server impossible.
+        if (auditIntegrity.status !== "valid") {
           throw new Error("backup_audit_integrity_unavailable");
         }
         await assertFreshTarget(tx, lockedCtx);
@@ -725,39 +724,22 @@ async function restoreMembers(
   lockedCtx: Awaited<ReturnType<typeof lockActorForWrite>>,
   tx: Prisma.TransactionClient
 ) {
-  if (!entries.length) return { restored: 0, needInvite: [] as string[], preferencesRestored: 0 };
+  if (!entries.length) return { matched: 0, needInvite: [] as string[], preferencesRestored: 0 };
   const wanted = entries.map((entry) => entry.email.toLowerCase());
-  const existing = await tx.user.findMany({ where: { email: { in: wanted } }, select: { id: true, email: true } });
-  const byEmail = new Map(existing.map((user) => [user.email.toLowerCase(), user.id]));
+  // Matched against the memberships THIS household already has - never against users globally. A
+  // backup file is untrusted input, so resolving an email to any account on the server and creating a
+  // membership from it would let a crafted file put someone else's account into this household without
+  // them ever accepting an invitation. Membership is granted by the invitation flow and nothing else;
+  // a restore only recognises people who are already here.
+  const existing = await tx.householdMember.findMany({
+    where: { householdId: lockedCtx.householdId, deletedAt: null, user: { email: { in: wanted } } },
+    select: { id: true, user: { select: { email: true } } }
+  });
+  const memberIdByEmail = new Map(existing.map((member) => [member.user.email.toLowerCase(), member.id]));
+  const needInvite = wanted.filter((email) => !memberIdByEmail.has(email));
 
-  const needInvite: string[] = [];
-  const memberIdByEmail = new Map<string, string>();
-  let restored = 0;
-  for (const entry of entries) {
-    const email = entry.email.toLowerCase();
-    const userId = byEmail.get(email);
-    if (!userId) {
-      needInvite.push(email);
-      continue;
-    }
-    if (userId === lockedCtx.userId) continue;
-    const saved = await tx.householdMember.create({
-      data: {
-        householdId: lockedCtx.householdId,
-        userId,
-        role: entry.role === "owner" ? "admin" : (entry.role as HouseholdRole),
-        displayName: entry.displayName,
-        joinedAt: new Date(entry.joinedAt),
-        disabledAt: entry.disabledAt === null ? null : new Date(entry.disabledAt)
-      },
-      select: { id: true }
-    });
-    memberIdByEmail.set(email, saved.id);
-    restored += 1;
-  }
-
-  // Notification rules follow their member. Someone with no account here has no membership to hang
-  // them on, so their preferences are dropped rather than held for a person who may never arrive.
+  // Notification rules follow their member. Someone with no membership here has nothing to hang them
+  // on, so their preferences are dropped rather than held for a person who may never arrive.
   let preferencesRestored = 0;
   for (const preference of preferences) {
     const memberId = memberIdByEmail.get(preference.email.toLowerCase());
@@ -786,7 +768,7 @@ async function restoreMembers(
     });
     preferencesRestored += 1;
   }
-  return { restored, needInvite, preferencesRestored };
+  return { matched: memberIdByEmail.size, needInvite, preferencesRestored };
 }
 
 async function restoreV2InTransaction(
@@ -1068,7 +1050,7 @@ async function restoreLegacyInTransaction(
   const restored = counts.babies + counts.activities;
   await writeRestoreCompletion(lockedCtx, tx, restored, undefined, counts);
   // A v1 file predates members entirely, so none can be restored from one.
-  return { restored, counts, members: { restored: 0, needInvite: [] as string[], preferencesRestored: 0 } };
+  return { restored, counts, members: { matched: 0, needInvite: [] as string[], preferencesRestored: 0 } };
 }
 
 async function writeRestoreCompletion(

@@ -5,7 +5,8 @@ import { singleMailbox } from "@/lib/validation/email";
 
 export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 export const BACKUP_EXCLUSIONS = [
-  "Credentials and sessions (members are carried by email, and arrive unable to sign in)",
+  "Credentials and sessions (a backup never grants a login)",
+  "Memberships — people already in the household are recognised; anyone else must be invited",
   "Push subscriptions, so notification rules come back but each device re-enables push",
   "Invitations and registration policy",
   "API keys, webhooks, and notification delivery history",
@@ -211,14 +212,21 @@ export function feedPhotoArchiveName(photoId: string) {
 }
 
 /**
- * A member carries who someone is and what they may do — never how they sign in. There is
- * deliberately no password, hash, token, session or verification field here, and the schema is
- * `.strict()` so a hand-edited file cannot introduce one: a backup file must never be able to grant
- * a login. Accounts created from these entries are inert until their owner completes ordinary setup.
+ * Who was in the household when the backup was taken, as a record — never as an instruction.
  *
- * `email` is the identity that survives the trip between servers, because member and user ids are
- * local to the install that issued them. It is validated as a single mailbox so one entry cannot
- * expand into several recipients.
+ * There is deliberately no password, hash, token, session or verification field here, and the schema
+ * is `.strict()` so a hand-edited file cannot introduce one. The export query cannot reach `Account`
+ * or `Session` either, so a backup file can never grant a login.
+ *
+ * Restore reads `email` ONLY, to recognise people who are ALREADY members of the target household so
+ * history and notification rules attach to the right person. `email` is the identity that survives the
+ * trip between servers, because member and user ids are local to the install that issued them, and it
+ * is validated as a single mailbox so one entry cannot expand into several recipients.
+ *
+ * `role`, `name`, `displayName`, `joinedAt` and `disabledAt` are carried so the file stays a faithful,
+ * human-readable account of the household, and are deliberately NOT applied. A backup is untrusted
+ * input: letting it set a role or create a membership would move authority and household entry outside
+ * the invitation flow, which is the only place consent is obtained.
  */
 const memberSchema = z
   .object({

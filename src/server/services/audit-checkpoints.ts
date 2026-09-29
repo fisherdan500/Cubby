@@ -96,21 +96,21 @@ async function householdEvents(householdId: string, database: AuditCheckpointDat
 }
 
 /**
- * A household that has never written an audit event has no checkpoint, because checkpoints are only
- * written as a side effect of writing events. That is `pristine`: there is no chain, so there is
- * nothing that could have been tampered with, and callers that merely require an untampered chain may
- * proceed.
+ * `missing` means there is no checkpoint for this household, and it stays refused wherever an
+ * untampered chain is required. An absent checkpoint is indistinguishable from one deleted to hide a
+ * rewritten chain, so it must not be treated as benign on the theory that the household looks empty:
+ * creating a household writes `household.create` and `baby.create` immediately, so "no events" is not
+ * a state a real household passes through, and anything presenting that way has had rows removed.
  *
- * It is reported separately from `missing`, which means the chain HAS events but its checkpoint is
- * gone — exactly what deleting a checkpoint to hide a rewritten chain would look like. Collapsing the
- * two would let that case pass anywhere `pristine` is accepted, so they must stay distinct.
+ * A brand-new household is instead given its checkpoint at creation, so it reports `valid` from its
+ * first moment rather than waiting for the scheduled sweep.
  */
 export async function readHouseholdAuditIntegrity(householdId: string, database: AuditCheckpointDatabase) {
   const [events, checkpoint] = await Promise.all([
     householdEvents(householdId, database),
     database.auditIntegrityCheckpoint.findUnique({ where: { scope: `household:${householdId}` } })
   ]);
-  if (!checkpoint) return { status: events.length === 0 ? ("pristine" as const) : ("missing" as const) };
+  if (!checkpoint) return { status: "missing" as const };
   if (events.some((event) => !event.eventHash)) return { status: "invalid" as const };
   if (events.length && !verifyAuditChain(toChain(events)).valid) return { status: "invalid" as const };
   const headHash = events.at(-1)?.eventHash ?? AUDIT_GENESIS_HASH;

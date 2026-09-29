@@ -33,18 +33,18 @@ describe("audit checkpoint reader", () => {
     await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "invalid" });
   });
 
-  it("separates a never-audited household from one whose checkpoint went missing", async () => {
-    // These are the same absent checkpoint but opposite meanings. With no events there is no chain,
-    // so nothing could have been tampered with (`pristine`). With events present, an absent
-    // checkpoint is what deleting it to hide a rewritten chain looks like (`missing`), so callers
-    // that accept `pristine` must keep refusing `missing`.
+  it("refuses an absent checkpoint whether or not events remain", async () => {
+    // An absent checkpoint cannot be distinguished from one deleted to hide a rewritten chain, so it
+    // must NOT be excused on the grounds that the household looks empty. Creating a household writes
+    // household.create and baby.create immediately, so a real household is never eventless: a
+    // household presenting that way has had rows removed, which is precisely the case to refuse.
     const database = {
       auditEvent: { findMany: async () => [] as typeof events },
       auditIntegrityCheckpoint: { findUnique: async () => null }
     };
     const events = [{ ...base, previousHash: null, eventHash }];
 
-    await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "pristine" });
+    await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "missing" });
 
     database.auditEvent.findMany = async () => events;
     await expect(readHouseholdAuditIntegrity("household-1", database)).resolves.toEqual({ status: "missing" });
