@@ -1703,12 +1703,23 @@ describe("restoring members", () => {
     await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberFindMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        householdId: "household-1",
-        deletedAt: null,
-        user: { email: { in: ["stranger@example.com"] } }
-      })
+      where: expect.objectContaining({ householdId: "household-1", deletedAt: null })
     }));
+    // The household scope must be in the QUERY, not applied afterwards in code: a query that read
+    // memberships beyond this household could match one of them before any later filtering.
+    const where = mocks.memberFindMany.mock.calls[0][0].where as Record<string, unknown>;
+    expect(where.householdId).toBe("household-1");
+  });
+
+  it("recognises a member whose stored email differs in case", async () => {
+    // User.email has no citext or lower() index, so a database `in` filter would be case-sensitive and
+    // would tell the operator to re-invite somebody who is already a member.
+    mocks.memberFindMany.mockResolvedValue([{ id: "member-dad", user: { email: "Dad@Example.com" } }]);
+    const backup = payloadWith([{ ...member, email: "dad@example.com" }]);
+
+    const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
+
+    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0 });
   });
 
   it("carries no role from the file, so a backup cannot change anyone's authority", async () => {
@@ -1808,6 +1819,10 @@ describe("restoring notification preferences", () => {
     // The devices these rules used to reach are on another server and are never carried.
     expect(data.channels).toEqual([]);
     expect(data.destinationIds).toEqual([]);
+    // Pinned explicitly, not inherited from a Prisma default: the export only reads `active`
+    // preferences, so a restored row must land in the state the live notification service writes.
+    expect(data.status).toBe("active");
+    expect(data.schemaVersion).toBe(1);
     expect(result.members).toMatchObject({ matched: 1, preferencesRestored: 1 });
   });
 

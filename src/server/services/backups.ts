@@ -725,18 +725,27 @@ async function restoreMembers(
   tx: Prisma.TransactionClient
 ) {
   if (!entries.length) return { matched: 0, needInvite: [] as string[], preferencesRestored: 0 };
-  const wanted = entries.map((entry) => entry.email.toLowerCase());
+  const wanted = new Set(entries.map((entry) => entry.email.toLowerCase()));
   // Matched against the memberships THIS household already has - never against users globally. A
   // backup file is untrusted input, so resolving an email to any account on the server and creating a
   // membership from it would let a crafted file put someone else's account into this household without
   // them ever accepting an invitation. Membership is granted by the invitation flow and nothing else;
   // a restore only recognises people who are already here.
+  //
+  // The household's own members are read and compared in code rather than filtered with `email: { in }`:
+  // User.email is a plain column with no citext or lower() index, so a database `in` would be
+  // case-sensitive and a member stored as "Dad@example.com" would be reported as needing an invitation
+  // they do not need. A household has a handful of members, so this read is bounded.
   const existing = await tx.householdMember.findMany({
-    where: { householdId: lockedCtx.householdId, deletedAt: null, user: { email: { in: wanted } } },
+    where: { householdId: lockedCtx.householdId, deletedAt: null },
     select: { id: true, user: { select: { email: true } } }
   });
-  const memberIdByEmail = new Map(existing.map((member) => [member.user.email.toLowerCase(), member.id]));
-  const needInvite = wanted.filter((email) => !memberIdByEmail.has(email));
+  const memberIdByEmail = new Map(
+    existing
+      .map((member) => [member.user.email.toLowerCase(), member.id] as const)
+      .filter(([email]) => wanted.has(email))
+  );
+  const needInvite = [...wanted].filter((email) => !memberIdByEmail.has(email));
 
   // Notification rules follow their member. Someone with no membership here has nothing to hang them
   // on, so their preferences are dropped rather than held for a person who may never arrive.
@@ -752,6 +761,11 @@ async function restoreMembers(
         householdId: lockedCtx.householdId,
         memberId,
         revision: 1,
+        // Set explicitly rather than inherited from Prisma defaults: the export only reads `active`
+        // preferences, so a restored row must land in the same state the live notification service
+        // writes. If either default ever changed, silently diverging here would be hard to notice.
+        status: "active",
+        schemaVersion: 1,
         categories: preference.categories,
         quietHoursStart: preference.quietHoursStart ?? null,
         quietHoursEnd: preference.quietHoursEnd ?? null,

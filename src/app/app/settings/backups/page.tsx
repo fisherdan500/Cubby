@@ -41,9 +41,9 @@ export default async function BackupsSettingsPage() {
               Download an existing local version below, then upload it here to preview and restore into a fresh owner household.
             </p>
             <p className="mb-3 text-sm text-muted-foreground">
-              A household backup carries this household&apos;s data, and each member&apos;s name and role so its history stays correctly
-              attributed. It deliberately carries no passwords, so anyone without an account on the Cubby you restore into is listed
-              for you to invite again.
+              A household backup carries this household&apos;s data, and each member&apos;s name so its history stays correctly
+              attributed. It deliberately carries no passwords and cannot add anyone to a Cubby, so anyone who is not already
+              a member of the Cubby you restore into is listed for you to invite again.
             </p>
             <BackupRestoreForm targetHouseholdName={targetHouseholdName} timeZone={env.APP_TIMEZONE} />
           </Card>
