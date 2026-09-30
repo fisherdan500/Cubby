@@ -373,13 +373,14 @@ export async function updateBaby(babyId: string, raw: unknown) {
 async function countBabyReferences(
   tx: Pick<Prisma.TransactionClient,
     "activityLog" | "feedPost" | "reminder" | "plannedSchedule" | "calendarEventBaby"
-    | "auditEvent" | "browserOperationBinding" | "browserMutationOperation" | "notificationPreferenceBaby">,
+    | "auditEvent" | "browserOperationBinding" | "browserMutationOperation" | "notificationPreferenceBaby"
+    | "attachment">,
   householdId: string,
   babyId: string
 ) {
   const [
     activities, feedPosts, reminders, plannedSchedules, calendarLinks,
-    auditEvents, bindings, operations, preferences
+    auditEvents, bindings, operations, preferences, attachments
   ] = await Promise.all([
     tx.activityLog.count({ where: { householdId, babyId } }),
     tx.feedPost.count({ where: { householdId, babyId } }),
@@ -389,9 +390,16 @@ async function countBabyReferences(
     tx.auditEvent.count({ where: { householdId, babyId } }),
     tx.browserOperationBinding.count({ where: { householdId, babyId } }),
     tx.browserMutationOperation.count({ where: { householdId, babyId } }),
-    tx.notificationPreferenceBaby.count({ where: { householdId, babyId } })
+    tx.notificationPreferenceBaby.count({ where: { householdId, babyId } }),
+    // Attachment.baby is onDelete: Cascade, so deleting the baby row would remove the photo row
+    // and orphan its bytes on disk: no purge path ever visits a row that no longer exists. Counting
+    // it here turns that silent file leak into a clear refusal.
+    tx.attachment.count({ where: { householdId, babyId } })
   ]);
-  return { activities, feedPosts, reminders, plannedSchedules, calendarLinks, auditEvents, bindings, operations, preferences };
+  return {
+    activities, feedPosts, reminders, plannedSchedules, calendarLinks,
+    auditEvents, bindings, operations, preferences, attachments
+  };
 }
 
 /**

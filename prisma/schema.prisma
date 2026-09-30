@@ -808,6 +808,7 @@ model Baby {
   browserMutationOperations BrowserMutationOperation[]
   plannedSchedule          PlannedSchedule?
   feedPosts                FeedPost[]
+  attachments              Attachment[]
 
   @@index([householdId])
   @@unique([householdId, id])
@@ -1126,6 +1127,7 @@ model FeedPost {
 
 enum AttachmentType {
   feed_photo
+  baby_photo
 }
 
 // staging: stored and verified, claimed by nothing yet. available: attached and served.
@@ -1169,6 +1171,7 @@ model Attachment {
   height            Int
   postId            String?
   position          Int?
+  babyId            String?
   createdByMemberId String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
@@ -1180,10 +1183,12 @@ model Attachment {
   purgedAt          DateTime?
   household         Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
   post              FeedPost?        @relation(fields: [householdId, postId], references: [householdId, id], onDelete: Cascade)
+  baby              Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
   createdBy         HouseholdMember? @relation(fields: [householdId, createdByMemberId], references: [householdId, id], onDelete: Restrict)
 
   @@unique([householdId, id])
   @@unique([householdId, postId, position])
+  @@index([householdId, babyId])
   @@index([state, purgeAfter])
   @@index([state, createdAt])
 }

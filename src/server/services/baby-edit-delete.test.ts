@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   bindingCount: vi.fn(),
   operationCount: vi.fn(),
   preferenceCount: vi.fn(),
+  attachmentCount: vi.fn(),
   memberFindUnique: vi.fn(),
   lockRaw: vi.fn(),
   transaction: vi.fn(),
@@ -64,6 +65,7 @@ function zeroReferences() {
   mocks.bindingCount.mockResolvedValue(0);
   mocks.operationCount.mockResolvedValue(0);
   mocks.preferenceCount.mockResolvedValue(0);
+  mocks.attachmentCount.mockResolvedValue(0);
 }
 
 describe("editing a baby", () => {
@@ -102,6 +104,7 @@ describe("editing a baby", () => {
         browserOperationBinding: { count: mocks.bindingCount },
         browserMutationOperation: { count: mocks.operationCount },
         notificationPreferenceBaby: { count: mocks.preferenceCount },
+        attachment: { count: mocks.attachmentCount },
         householdMember: { findUnique: mocks.memberFindUnique }
       })
     );
@@ -274,6 +277,7 @@ describe("removing a baby profile entirely", () => {
         browserOperationBinding: { count: mocks.bindingCount },
         browserMutationOperation: { count: mocks.operationCount },
         notificationPreferenceBaby: { count: mocks.preferenceCount },
+        attachment: { count: mocks.attachmentCount },
         householdMember: { findUnique: mocks.memberFindUnique }
       })
     );
@@ -324,7 +328,8 @@ describe("removing a baby profile entirely", () => {
     ["auditEventCount", "baby_has_history"],
     ["bindingCount", "baby_has_history"],
     ["operationCount", "baby_has_history"],
-    ["preferenceCount", "baby_has_history"]
+    ["preferenceCount", "baby_has_history"],
+    ["attachmentCount", "baby_has_history"]
   ])("refuses a real deletion when %s is non-zero", async (mockName, expected) => {
     (mocks as unknown as Record<string, { mockResolvedValue: (value: number) => void }>)[mockName]
       .mockResolvedValue(1);
@@ -334,6 +339,29 @@ describe("removing a baby profile entirely", () => {
     ).rejects.toThrow(expected);
 
     expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("refuses a real deletion when a baby photo would be cascaded away with its file left behind", async () => {
+    // Attachment.baby is onDelete: Cascade, so deleting the baby row would delete the photo ROW
+    // and leave its bytes on disk forever - no purge path ever visits a row that no longer exists.
+    // The count must therefore refuse the deletion rather than let the cascade run silently.
+    mocks.attachmentCount.mockResolvedValue(1);
+
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).rejects.toThrow("baby_has_history");
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("scopes the attachment count to this baby in this household", async () => {
+    await removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" });
+
+    // A count missing babyId would refuse every deletion as soon as the household had any
+    // attachment at all; one missing householdId would read another tenant's rows.
+    expect(mocks.attachmentCount).toHaveBeenCalledWith({
+      where: { householdId: "household-1", babyId: "baby-1" }
+    });
   });
 
   it("counts references inside the write transaction, after locking the baby", async () => {
@@ -420,6 +448,7 @@ describe("deleting a baby along with its history", () => {
         browserOperationBinding: { count: mocks.bindingCount },
         browserMutationOperation: { count: mocks.operationCount },
         notificationPreferenceBaby: { count: mocks.preferenceCount },
+        attachment: { count: mocks.attachmentCount },
         householdMember: { findUnique: mocks.memberFindUnique }
       })
     );

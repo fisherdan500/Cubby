@@ -4527,9 +4527,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 5965,
+      "anchorEnd": 6115,
       "anchorFile": "package.json",
-      "anchorStart": 5956,
+      "anchorStart": 6106,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -4561,9 +4561,9 @@
     {
       "anchorBytes": "\"verify:admin-assisted-accounts\"",
       "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
-      "anchorEnd": 4352,
+      "anchorEnd": 4502,
       "anchorFile": "package.json",
-      "anchorStart": 4320,
+      "anchorStart": 4470,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:admin-assisted-accounts",
@@ -4591,6 +4591,40 @@
       "ownerId": "package_command:scripts/baby-edit-delete-rehearsal.ts",
       "ownerModule": "scripts/baby-edit-delete-rehearsal.ts",
       "sidecarPath": "scripts/baby-edit-delete-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:baby-photo-gate-proof\"",
+      "anchorDigest": "a83dcbf495d056e8bd1934bfdf8b91fd41e29c52ec3be5bb548a1e398f0c73f4",
+      "anchorEnd": 4110,
+      "anchorFile": "package.json",
+      "anchorStart": 4080,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:baby-photo-gate-proof",
+        "target": "package.json#scripts.verify:baby-photo-gate-proof"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/baby-photo-rehearsal-gate-proof.ts:package_script:verify:baby-photo-gate-proof:package.json#scripts.verify:baby-photo-gate-proof",
+      "ownerId": "package_command:scripts/baby-photo-rehearsal-gate-proof.ts",
+      "ownerModule": "scripts/baby-photo-rehearsal-gate-proof.ts",
+      "sidecarPath": "scripts/baby-photo-rehearsal-gate-proof.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:baby-photo\"",
+      "anchorDigest": "7e3cf27611f874205720deed818df52e089dafafdde12827609c23ce1662e171",
+      "anchorEnd": 4035,
+      "anchorFile": "package.json",
+      "anchorStart": 4016,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:baby-photo",
+        "target": "package.json#scripts.verify:baby-photo"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/baby-photo-rehearsal.ts:package_script:verify:baby-photo:package.json#scripts.verify:baby-photo",
+      "ownerId": "package_command:scripts/baby-photo-rehearsal.ts",
+      "ownerModule": "scripts/baby-photo-rehearsal.ts",
+      "sidecarPath": "scripts/baby-photo-rehearsal.operation.ts"
     },
     {
       "anchorBytes": "\"verify:backup-recovery\"",
@@ -4629,9 +4663,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-pilot\"",
       "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-      "anchorEnd": 4142,
+      "anchorEnd": 4292,
       "anchorFile": "package.json",
-      "anchorStart": 4110,
+      "anchorStart": 4260,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-pilot",
@@ -4646,9 +4680,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-save-path\"",
       "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
-      "anchorEnd": 4247,
+      "anchorEnd": 4397,
       "anchorFile": "package.json",
-      "anchorStart": 4211,
+      "anchorStart": 4361,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-save-path",
@@ -4816,9 +4850,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 6066,
+      "anchorEnd": 6216,
       "anchorFile": "package.json",
-      "anchorStart": 6048,
+      "anchorStart": 6198,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -4833,9 +4867,9 @@
     {
       "anchorBytes": "\"verify:integrity-suite\"",
       "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-      "anchorEnd": 5206,
+      "anchorEnd": 5356,
       "anchorFile": "package.json",
-      "anchorStart": 5182,
+      "anchorStart": 5332,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity-suite",
@@ -4850,9 +4884,9 @@
     {
       "anchorBytes": "\"verify:invitation-email-delivery\"",
       "anchorDigest": "1cbe53df7a178f5cc2daae7244d809f07856279d11c3eaa1c6fd9d3f6fdaa0d1",
-      "anchorEnd": 4050,
+      "anchorEnd": 4200,
       "anchorFile": "package.json",
-      "anchorStart": 4016,
+      "anchorStart": 4166,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:invitation-email-delivery",
@@ -4867,9 +4901,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 5011,
+      "anchorEnd": 5161,
       "anchorFile": "package.json",
-      "anchorStart": 4979,
+      "anchorStart": 5129,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -4884,9 +4918,9 @@
     {
       "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
       "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-      "anchorEnd": 5121,
+      "anchorEnd": 5271,
       "anchorFile": "package.json",
-      "anchorStart": 5086,
+      "anchorStart": 5236,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-invitation-acceptance",
@@ -4969,9 +5003,9 @@
     {
       "anchorBytes": "\"verify:performance-1y\"",
       "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-      "anchorEnd": 4630,
+      "anchorEnd": 4780,
       "anchorFile": "package.json",
-      "anchorStart": 4607,
+      "anchorStart": 4757,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-1y",
@@ -4986,9 +5020,9 @@
     {
       "anchorBytes": "\"verify:performance-5y\"",
       "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-      "anchorEnd": 4728,
+      "anchorEnd": 4878,
       "anchorFile": "package.json",
-      "anchorStart": 4705,
+      "anchorStart": 4855,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-5y",
@@ -5003,9 +5037,9 @@
     {
       "anchorBytes": "\"verify:performance-input\"",
       "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-      "anchorEnd": 4829,
+      "anchorEnd": 4979,
       "anchorFile": "package.json",
-      "anchorStart": 4803,
+      "anchorStart": 4953,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-input",
@@ -5020,9 +5054,9 @@
     {
       "anchorBytes": "\"verify:platform-first-account\"",
       "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-      "anchorEnd": 5298,
+      "anchorEnd": 5448,
       "anchorFile": "package.json",
-      "anchorStart": 5267,
+      "anchorStart": 5417,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:platform-first-account",
@@ -5224,9 +5258,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 6009,
+      "anchorEnd": 6159,
       "anchorFile": "package.json",
-      "anchorStart": 5993,
+      "anchorStart": 6143,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -5717,9 +5751,9 @@
     {
       "anchorBytes": "\"verify:quick-start\"",
       "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-      "anchorEnd": 5386,
+      "anchorEnd": 5536,
       "anchorFile": "package.json",
-      "anchorStart": 5366,
+      "anchorStart": 5516,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:quick-start",
@@ -5853,9 +5887,9 @@
     {
       "anchorBytes": "\"verify:simplified-signup\"",
       "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
-      "anchorEnd": 4447,
+      "anchorEnd": 4597,
       "anchorFile": "package.json",
-      "anchorStart": 4421,
+      "anchorStart": 4571,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:simplified-signup",
@@ -5870,9 +5904,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 4540,
+      "anchorEnd": 4690,
       "anchorFile": "package.json",
-      "anchorStart": 4510,
+      "anchorStart": 4660,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -5887,9 +5921,9 @@
     {
       "anchorBytes": "\"verify:system-backup\"",
       "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-      "anchorEnd": 5465,
+      "anchorEnd": 5615,
       "anchorFile": "package.json",
-      "anchorStart": 5443,
+      "anchorStart": 5593,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:system-backup",
@@ -5904,9 +5938,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 4939,
+      "anchorEnd": 5089,
       "anchorFile": "package.json",
-      "anchorStart": 4914,
+      "anchorStart": 5064,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -5921,9 +5955,9 @@
     {
       "anchorBytes": "\"verify:gates:all\"",
       "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-      "anchorEnd": 5593,
+      "anchorEnd": 5743,
       "anchorFile": "package.json",
-      "anchorStart": 5575,
+      "anchorStart": 5725,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:all",
@@ -5938,9 +5972,9 @@
     {
       "anchorBytes": "\"verify:gates:disposable\"",
       "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-      "anchorEnd": 5661,
+      "anchorEnd": 5811,
       "anchorFile": "package.json",
-      "anchorStart": 5636,
+      "anchorStart": 5786,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:disposable",
@@ -5955,9 +5989,9 @@
     {
       "anchorBytes": "\"verify:gates:image\"",
       "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-      "anchorEnd": 5731,
+      "anchorEnd": 5881,
       "anchorFile": "package.json",
-      "anchorStart": 5711,
+      "anchorStart": 5861,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:image",
@@ -5972,9 +6006,9 @@
     {
       "anchorBytes": "\"verify:gates\"",
       "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-      "anchorEnd": 5538,
+      "anchorEnd": 5688,
       "anchorFile": "package.json",
-      "anchorStart": 5524,
+      "anchorStart": 5674,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates",
@@ -8084,10 +8118,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "7ec96d1646b7f4f34d790f25fc7190ee9dfacf7706552ca35e15160bd5b156ed",
+  "semanticArtifactDigest": "51f63e3062269218ce42fee42c64de4042679dca58cf240d80a1502d4704f61c",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "c497b2696c3a1e92ae97957267405e89e91843ca20a37874e8fe30d92ea439be",
+  "semanticCoverageDigest": "80e4fa7f54bef977edea0f512f2a20cb4b64f47bde9a1a4279bc9c562770e359",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "a67ea0b3db117ae69a66ee6e1b27e3837214f40101165b26226cfd20b67c1a83"
+  "semanticFingerprint": "2761a6bf5719eea8e5367e07289137961c176cf14d65c393b993bc405646edda"
 }

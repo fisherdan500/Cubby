@@ -32,6 +32,8 @@
     "verify:update-rehearsal": "tsx scripts/backup-recovery-rehearsal.ts",
     "verify:activity-update-safety": "tsx scripts/activity-update-safety-rehearsal.ts",
     "verify:baby-edit-delete": "tsx scripts/baby-edit-delete-rehearsal.ts",
+    "verify:baby-photo": "tsx scripts/baby-photo-rehearsal.ts",
+    "verify:baby-photo-gate-proof": "tsx scripts/baby-photo-rehearsal-gate-proof.ts",
     "verify:invitation-email-delivery": "tsx scripts/invitation-email-delivery-rehearsal.ts",
     "verify:browser-operation-pilot": "tsx scripts/browser-operation-pilot.acceptance-rehearsal.ts",
     "verify:browser-operation-save-path": "tsx scripts/browser-operation-save-path.acceptance-rehearsal.ts",
