@@ -3031,9 +3031,9 @@
     {
       "anchorBytes": "action={onSubmit}",
       "anchorDigest": "6a13de578525f792b616766303b9e27730d33de1974e5788428d3c60e750a357",
-      "anchorEnd": 2603,
+      "anchorEnd": 2811,
       "anchorFile": "src/components/forms/baby-edit-form.tsx",
-      "anchorStart": 2586,
+      "anchorStart": 2794,
       "binding": {
         "kind": "form_action",
         "symbol": "onSubmit",
@@ -3048,9 +3048,9 @@
     {
       "anchorBytes": "fetch(`/api/babies/${baby.id}`, {\n        method: \"PATCH\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify(changed)\n      })",
       "anchorDigest": "6a813574c243c86f279aa92853091dcf1d88ea7c93e9049fe1c4b02101ed3002",
-      "anchorEnd": 2044,
+      "anchorEnd": 2252,
       "anchorFile": "src/components/forms/baby-edit-form.tsx",
-      "anchorStart": 1882,
+      "anchorStart": 2090,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -8084,9 +8084,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "c038371c710b755dc56d3ae70e09028af215bb3056c0a2d20131af54a9799f32",
+  "semanticArtifactDigest": "cd0adef14506de3b39435a6179d116e32f5d1d49831815cd7bbf34f7e6ebb025",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "ec8a4683f6e95e5d75f39352a849ae3b5bf31522eeab03b044ed5b5b68923a4a",
+  "semanticCoverageDigest": "6c9bcc6fba8a6db0e7b7e379d915a7e9ef6e78b316d5474d4edc6f5acb14374a",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "a67ea0b3db117ae69a66ee6e1b27e3837214f40101165b26226cfd20b67c1a83"

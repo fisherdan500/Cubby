@@ -79,9 +79,14 @@ async function expectRejection(operation: Promise<unknown>, message: string) {
   expect((error as Error).message).toBe(message);
 }
 
-/** The household's real integrity state, refreshed first so a valid chain is not merely `stale`. */
+/**
+ * The household's integrity state against the checkpoint taken at creation. Deliberately does NOT
+ * refresh first: refreshing rewrites headHash and eventCount from whatever rows exist at that
+ * moment, which erases the very difference `stale` reports, so a chain with rows DELETED off its
+ * tail would still read `valid`. Reading against the original checkpoint is what makes a dropped
+ * audit row detectable.
+ */
 async function auditIntegrity(householdId: string) {
-  await refreshHouseholdAuditCheckpoint(householdId, prisma);
   return readHouseholdAuditIntegrity(householdId, prisma);
 }
 
@@ -197,16 +202,47 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     // Switch the request context to a different household; the baby id is now foreign.
     await createHousehold("Tenant B");
 
-    await expect(updateBaby(strangerBaby.id, { name: "Taken Over" })).rejects.toThrow();
-    await expect(
-      deleteBaby(strangerBaby.id, { confirmation: "Yes Delete Baby Stranger" })
-    ).rejects.toThrow();
-    await expect(
-      removeBabyProfile(strangerBaby.id, { confirmation: "Yes Delete Baby Stranger" })
-    ).rejects.toThrow();
+    await expectRejection(updateBaby(strangerBaby.id, { name: "Taken Over" }), "not_found");
+    await expectRejection(
+      deleteBaby(strangerBaby.id, { confirmation: "Yes Delete Baby Stranger" }), "not_found"
+    );
+    await expectRejection(
+      removeBabyProfile(strangerBaby.id, { confirmation: "Yes Delete Baby Stranger" }), "not_found"
+    );
 
     const stored = await prisma.baby.findUniqueOrThrow({ where: { id: strangerBaby.id } });
     expect(stored.name).toBe("Stranger");
     expect(stored.deletedAt).toBeNull();
+  });
+  it("NEGATIVE CONTROL: audit rows cannot be deleted, and the reader notices a rewritten one", async () => {
+    // Every other test asserts `valid`. Without a control, an instrument that ALWAYS returned
+    // valid would satisfy them all and the audit-chain assertions would prove nothing.
+    const { household } = await createHousehold("Control");
+    const throwaway = await createBaby(household.id, "Throwaway");
+    await removeBabyProfile(throwaway.id, { confirmation: "Yes Delete Baby Throwaway" });
+    expect(await auditIntegrity(household.id)).toMatchObject({ status: "valid" });
+
+    const target = await prisma.auditEvent.findFirstOrThrow({
+      where: { householdId: household.id, babyId: null, action: "baby.remove" }
+    });
+
+    // A database trigger makes AuditEvent append-only, so deletion is refused outright - a
+    // stronger guarantee than the application-level Restrict this feature relies on.
+    const deletion = await prisma
+      .$executeRaw`DELETE FROM "AuditEvent" WHERE "id" = ${target.id}`
+      .then(() => null, (reason: unknown) => reason);
+    expect(deletion).not.toBeNull();
+    expect(String(deletion)).toContain("audit_event_append_only");
+    expect(await prisma.auditEvent.count({ where: { id: target.id } })).toBe(1);
+
+    // Rewriting a hash is the damage the reader must catch. UPDATE is also trigger-guarded, so
+    // corrupt the CHECKPOINT instead: the reader compares the chain against it and must not
+    // report `valid` when they disagree.
+    await prisma.auditIntegrityCheckpoint.update({
+      where: { scope: `household:${household.id}` },
+      data: { eventCount: 999 }
+    });
+    const damaged = await auditIntegrity(household.id);
+    expect(damaged.status).not.toBe("valid");
   });
 });

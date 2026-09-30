@@ -130,6 +130,9 @@ export function handleError(error: unknown) {
     if (error.message === "stale_revision") return fail("stale_revision", "This item changed before your request completed. Refresh and try again.", 409);
     if (error.message === "idempotency_conflict") return fail("idempotency_conflict", "This submission key belongs to a different activity request.", 409);
     if (error.message === "baby_has_active_timer") return fail("baby_has_active_timer", "Stop or end every running or paused timer before deactivating this baby.", 409);
+    if (error.message === "confirmation_mismatch") return fail("confirmation_mismatch", "Type the confirmation phrase exactly as shown.", 422);
+    if (error.message === "baby_has_history") return fail("baby_has_history", "This baby now has history, so it can no longer be removed outright. Hide it instead to keep its history.", 409);
+    if (error.message === "baby_birth_date_invalid") return fail("baby_birth_date_invalid", "Enter a valid birth date.", 422);
     if (error.message === "backup_upload_busy") return fail("backup_upload_busy", "Another backup upload is in progress. Try again when it finishes.", 429);
     if (error.message === "backup_upload_timeout") return fail("backup_upload_timeout", "The backup upload took too long. Try again.", 408);
     if (error.message === "backup_upload_aborted") return fail("backup_upload_aborted", "The backup upload was cancelled.", 408);

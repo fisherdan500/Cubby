@@ -127,6 +127,41 @@ describe("editing a baby", () => {
     );
   });
 
+  it("writes nothing when every supplied detail already matches", async () => {
+    // The point of the change detection: a no-op save must not touch the row or the audit chain,
+    // so two people editing different details cannot overwrite each other.
+    await expect(
+      updateBaby("baby-1", { name: ACTIVE_BABY.name, notes: ACTIVE_BABY.notes ?? undefined })
+    ).resolves.toMatchObject({ id: "baby-1" });
+
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("records only the detail that actually changed", async () => {
+    // notes is resent UNCHANGED alongside a changed name: if the diff check is dropped, `changed`
+    // becomes ["name","notes"] and this fails. Sending a new value for both would not detect that.
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY, notes: "same note" });
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, name: "Rosie", notes: "same note" });
+
+    await updateBaby("baby-1", { name: "Rosie", notes: "same note" });
+
+    const [, event] = mocks.writeAudit.mock.calls[0] as [unknown, { after: { changed: string[] } }];
+    expect(event.after.changed).toEqual(["name"]);
+  });
+
+  it("clears a warning threshold that currently has a value", async () => {
+    // The fixture's threshold must START set, or sending null is a no-op and proves nothing.
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY, feedingWarningMinutes: 180 });
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, feedingWarningMinutes: null });
+
+    await updateBaby("baby-1", { feedingWarningMinutes: null });
+
+    expect(mocks.babyUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ feedingWarningMinutes: null }) })
+    );
+  });
+
   it("records which details changed but never their values", async () => {
     mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, name: "Rosie", notes: "loves naps" });
 

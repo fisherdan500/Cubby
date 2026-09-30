@@ -17,7 +17,7 @@ export type EditableBaby = {
 
 /** Only the fields that changed are sent, so two people editing different details do not collide. */
 function changedFields(form: FormData, baby: EditableBaby) {
-  const next: Record<string, string> = {};
+  const next: Record<string, string | null> = {};
   const name = String(form.get("name") ?? "").trim();
   if (name && name !== baby.name) next.name = name;
   const birthDate = String(form.get("birthDate") ?? "");
@@ -30,7 +30,9 @@ function changedFields(form: FormData, baby: EditableBaby) {
     ["sleepWarningMinutes", baby.sleepWarningMinutes]
   ] as const) {
     const value = String(form.get(field) ?? "").trim();
-    if (value !== (current === null ? "" : String(current))) next[field] = value;
+    // An emptied threshold means "no warning". The schema clears on null and rejects "", so an
+    // emptied box must be sent as null or the field could be set but never unset.
+    if (value !== (current === null ? "" : String(current))) next[field] = value === "" ? null : value;
   }
   return next;
 }
