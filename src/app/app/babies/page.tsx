@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { BabyDeleteDialog } from "@/components/actions/baby-delete-dialog";
 import { BabyLifecycleButton } from "@/components/actions/baby-lifecycle-button";
+import { BabyPhotoControl } from "@/components/babies/baby-photo-control";
 import { BabyEditForm } from "@/components/forms/baby-edit-form";
 import { BabyForm } from "@/components/forms/baby-form";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,9 @@ export default async function BabiesPage() {
               </p>
               {isInactive ? <p className="mt-1 text-sm font-bold text-muted-foreground">Inactive</p> : null}
               {baby.notes ? <p className="mt-2 text-sm">{baby.notes}</p> : null}
+              <div className="mt-3">
+                <BabyPhotoControl babyId={baby.id} babyName={baby.name} photoAttachmentId={baby.photoAttachmentId} />
+              </div>
               <details className="mt-3">
                 <summary className="cursor-pointer text-sm font-bold">Edit details</summary>
                 <div className="mt-3">
