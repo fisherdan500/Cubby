@@ -273,6 +273,138 @@ export async function claimStagedBabyPhoto(attachmentId: string, babyId: string,
   });
 }
 
+const USER_TYPE = "user_photo" as const;
+
+/**
+ * Keep an uploaded profile picture of the person themselves, re-saved and verified, until they claim
+ * it or it expires unclaimed.
+ *
+ * Deliberately NOT gated on a new permission. A baby's picture is household data, so it is gated on
+ * baby.manage; a person's own picture is self-service, and every role down to read_only may set
+ * their own. Requiring baby.manage or member.manage here would lock out exactly the people the
+ * feature is for, and requiring nothing extra is safe because the claim can only ever target the
+ * acting member's own membership row.
+ */
+export async function stageUserPhoto(upload: Buffer, options: Options = {}) {
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (!attachmentTypeEnabled(USER_TYPE, options.enabled)) throw new Error("attachment_type_unavailable");
+
+  let photo;
+  try {
+    photo = await processAttachmentPhoto(upload, USER_TYPE);
+  } catch (error) {
+    await prisma.$transaction(async (tx) => {
+      const current = await lockPhotoWriteActor(tx, ctx);
+      await writeAudit(current, {
+        action: "attachment.reject",
+        entityType: "attachment",
+        entityId: "upload",
+        after: { type: USER_TYPE, reason: rejectionReason(error) }
+      }, tx);
+    });
+    throw error;
+  }
+
+  return withPhotoWriteOwnership(async (reserve) => {
+    const storageKey = await reserve(ctx, "photo_upload", photo);
+    return await settledPhotoTransaction(async (tx) => {
+      // Re-read the actor's locked row: a membership disabled between the request and the commit
+      // must not have their upload land anyway.
+      const current = await lockPhotoWriteActor(tx, ctx);
+      await lockPhotoWriteIntent(tx, storageKey, current.householdId, photo);
+      await writeAttachmentObject(directory(), storageKey, photo.bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
+      const attachment = await tx.attachment.create({
+        data: {
+          householdId: ctx.householdId,
+          type: USER_TYPE,
+          storageKey,
+          byteSize: photo.byteSize,
+          sha256: photo.sha256,
+          mimeType: photo.mimeType,
+          width: photo.width,
+          height: photo.height,
+          createdByMemberId: ctx.memberId
+        },
+        select: { id: true }
+      });
+      await writeAudit(current, { action: "attachment.stage", entityType: "attachment", entityId: attachment.id, after: { type: USER_TYPE } }, tx);
+      await transferPhotoWriteIntent(tx, storageKey, current.householdId, photo);
+      return { attachmentId: attachment.id, width: photo.width, height: photo.height };
+    });
+  });
+}
+
+/**
+ * Make this member's own staged picture their profile picture, retiring the previous one in the same
+ * transaction.
+ *
+ * There is no member argument on purpose. The owner is the acting membership from the session, so
+ * "your own picture" is enforced by construction rather than by checking an id a caller supplied -
+ * no request body can redirect this at somebody else.
+ *
+ * Both writes have to be one transaction: the partial unique index permits only one picture per
+ * membership in the served state, so activating before retiring would be refused, and retiring
+ * without activating would leave the person with no picture. The old row keeps its thirty-day
+ * recovery window rather than being erased.
+ */
+export async function claimStagedUserPhoto(attachmentId: string, options: Options = {}) {
+  // The browser-operation context, not the plain household one: lockPhotoWriteActor pins the actor's
+  // session row as well as their membership, so it needs the session this request arrived on.
+  const ctx = await getBrowserOperationContextForHousehold();
+  if (!attachmentTypeEnabled(USER_TYPE, options.enabled)) throw new Error("attachment_type_unavailable");
+  const now = options.now ?? new Date();
+  const memberId = ctx.memberId;
+
+  return prisma.$transaction(async (tx) => {
+    const current = await lockPhotoWriteActor(tx, ctx);
+
+    // A disabled or removed membership must not gain a new picture, even though the session that
+    // reached here was valid when it started.
+    const member = await tx.householdMember.findFirst({
+      where: { id: memberId, householdId: ctx.householdId, disabledAt: null, deletedAt: null },
+      select: { id: true }
+    });
+    if (!member) throw new Error("not_found");
+
+    // Lock this member's photo rows before reading them, or two concurrent replacements each see no
+    // predecessor, each activate, and the second fails on the unique index instead of replacing.
+    await tx.$queryRaw`SELECT "id" FROM "Attachment" WHERE "householdId" = ${ctx.householdId} AND "memberId" = ${memberId} FOR UPDATE`;
+
+    const previous = await tx.attachment.findMany({
+      where: { householdId: ctx.householdId, memberId, type: USER_TYPE, state: "available" },
+      select: { id: true }
+    });
+    for (const row of previous) {
+      await tx.attachment.updateMany({
+        where: { id: row.id, householdId: ctx.householdId, state: "available" },
+        data: { state: "deleted", deletedAt: now, purgeAfter: attachmentPurgeAfter(now), deletedByMemberId: memberId }
+      });
+    }
+
+    const claimed = await tx.attachment.updateMany({
+      where: {
+        id: attachmentId,
+        householdId: ctx.householdId,
+        type: USER_TYPE,
+        state: "staging",
+        // Only the member who staged these bytes may claim them.
+        createdByMemberId: memberId
+      },
+      data: { state: "available", memberId, activatedAt: now }
+    });
+    if (claimed.count !== 1) throw new Error("not_found");
+
+    await writeAudit(current, {
+      action: "attachment.activate",
+      entityType: "member",
+      entityId: memberId,
+      after: { type: USER_TYPE }
+    }, tx);
+
+    return { attachmentId, memberId };
+  });
+}
+
 function startOfUtcDay(date: Date) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
@@ -298,7 +430,12 @@ export function servableAttachmentWhere(householdId: string, id: string): Prisma
       // Feed photos: unchanged behaviour, still gated on a live post and a visible baby.
       { postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
       // Baby photos: no post at all, and the owning baby must still be visible.
-      { postId: null, type: "baby_photo", baby: { deletedAt: null } }
+      { postId: null, type: "baby_photo", baby: { deletedAt: null } },
+      // Profile pictures of people: no post, and the owning membership must still be a live, enabled
+      // member of this household. A removed or suspended person's picture stops being served - there
+      // is no "hidden" flag to lean on as there is for a baby, so the membership's own deletedAt and
+      // disabledAt are what decide it.
+      { postId: null, type: "user_photo", member: { deletedAt: null, disabledAt: null } }
     ]
   };
 }

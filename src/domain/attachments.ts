@@ -8,7 +8,7 @@ import { randomBytes } from "node:crypto";
  * being switched on so the database and policy can land before staging, delivery and backup do.
  */
 
-export const attachmentTypes = ["feed_photo", "baby_photo"] as const;
+export const attachmentTypes = ["feed_photo", "baby_photo", "user_photo"] as const;
 export type AttachmentTypeName = (typeof attachmentTypes)[number];
 
 export const attachmentPolicy = {
@@ -35,6 +35,19 @@ export const attachmentPolicy = {
     acceptedFormats: ["jpeg", "png", "webp"],
     outputMimeType: "image/jpeg",
     outputQuality: 82
+  },
+  user_photo: {
+    // One current picture per membership, enforced in the database by the partial unique index
+    // "Attachment_one_available_user_photo" for the same reason as a baby's.
+    maxPerParent: 1,
+    maxInputBytes: 25 * 1024 * 1024,
+    maxInputPixels: 100_000_000,
+    // Shown at the same small sizes as a baby's picture, so stored the same way. Re-encoding to
+    // JPEG also strips EXIF, which on a self-taken photo routinely carries a home location.
+    maxDimension: 512,
+    acceptedFormats: ["jpeg", "png", "webp"],
+    outputMimeType: "image/jpeg",
+    outputQuality: 82
   }
 } as const satisfies Record<AttachmentTypeName, unknown>;
 
@@ -45,7 +58,10 @@ export const attachmentPolicy = {
 // Both types are on. baby_photo was held false until all four of its policy gates passed - storage,
 // private delivery, recovery, and backup - because enabling it earlier would have let a household
 // store a picture that no backup contained and no restore returned.
-const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true, baby_photo: true };
+// user_photo stays false until storage, private delivery, recovery, and backup have all passed
+// its own gates, exactly as baby_photo did. Enabling it earlier would let a household store a
+// picture that no backup contains and no restore returns.
+const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true, baby_photo: true, user_photo: false };
 
 export function attachmentTypeEnabled(type: AttachmentTypeName, overrides?: Partial<Record<AttachmentTypeName, boolean>>) {
   return overrides?.[type] ?? enabledTypes[type];

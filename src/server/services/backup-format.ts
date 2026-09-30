@@ -203,6 +203,10 @@ const feedPhotoSchema = z
     postId: id.nullable(),
     position: z.number().int().min(0).max(9).nullable(),
     babyId: id.nullable().optional(),
+    // Email, not an id: memberSchema carries no id, because a restore MATCHES the household's
+    // existing members by email rather than recreating them. A member id from the source database
+    // would be meaningless on the restoring side.
+    memberEmail: z.string().min(3).max(320).nullable().optional(),
     width: z.number().int().positive().max(100_000),
     height: z.number().int().positive().max(100_000),
     byteSize: z.number().int().positive().max(25 * 1024 * 1024),
@@ -212,9 +216,13 @@ const feedPhotoSchema = z
   .superRefine((photo, ctx) => {
     const postOwned = photo.postId !== null;
     const babyOwned = (photo.babyId ?? null) !== null;
-    // Exactly one owner, and a post-owned photo must keep its position: the pair is what orders a
-    // post's photos and what makes them unique within it.
-    if (postOwned === babyOwned || (postOwned && photo.position === null) || (babyOwned && photo.position !== null)) {
+    const memberOwned = (photo.memberEmail ?? null) !== null;
+    // EXACTLY one owner of three, counted rather than compared: with three kinds a pairwise check
+    // would pass a photo owned by all three. A post-owned photo must keep its position, because the
+    // pair is what orders a post's photos and makes them unique within it; the parentless kinds must
+    // not carry one, where it would be meaningless.
+    const owners = [postOwned, babyOwned, memberOwned].filter(Boolean).length;
+    if (owners !== 1 || (postOwned && photo.position === null) || (!postOwned && photo.position !== null)) {
       ctx.addIssue({ code: "custom", message: "backup_photo_ownership" });
     }
   });
@@ -321,7 +329,12 @@ const v2PayloadSchema = z
     // Keyed by owner: post-owned photos are unique by place within their post, baby-owned photos by
     // baby. Keying every photo on postId:position would collide all baby photos on "null:null".
     const photoPlaces = (payload.feedPhotos ?? []).map((photo) =>
-      photo.postId !== null ? `post:${photo.postId}:${photo.position}` : `baby:${photo.babyId}`
+      // Keyed by owner kind: every parentless photo has postId and position null, so a key built
+      // from that pair would collide on "null:null" and reject the second person's picture as a
+      // duplicate.
+      photo.postId !== null
+        ? `post:${photo.postId}:${photo.position}`
+        : photo.babyId != null ? `baby:${photo.babyId}` : `member:${(photo.memberEmail ?? "").toLowerCase()}`
     );
     if (new Set(photoPlaces).size !== photoPlaces.length) {
       ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
@@ -359,6 +372,7 @@ const v2PayloadSchema = z
     const contacts = new Set(payload.contacts.map((item) => item.id));
     const activities = new Set(payload.activities.map((item) => item.id));
     const posts = new Set((payload.feedPosts ?? []).map((item) => item.id));
+    const members = new Set((payload.members ?? []).map((item) => item.email.toLowerCase()));
     const onCarriedParent = (item: { postId: string | null; activityId: string | null }) =>
       item.postId !== null ? posts.has(item.postId) : activities.has(item.activityId!);
     const dangling =
@@ -369,9 +383,12 @@ const v2PayloadSchema = z
       (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId)) ||
       (payload.feedComments ?? []).some((item) => !onCarriedParent(item)) ||
       (payload.feedReactions ?? []).some((item) => !onCarriedParent(item)) ||
-      (payload.feedPhotos ?? []).some((item) =>
-        item.postId !== null ? !posts.has(item.postId) : !babies.has(item.babyId ?? "")
-      );
+      (payload.feedPhotos ?? []).some((item) => {
+        if (item.postId !== null) return !posts.has(item.postId);
+        if (item.babyId != null) return !babies.has(item.babyId);
+        // A profile picture whose member the backup does not carry would restore onto nobody.
+        return !members.has((item.memberEmail ?? "").toLowerCase());
+      });
     if (dangling) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const activity of payload.activities) {
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {

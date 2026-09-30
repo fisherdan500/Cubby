@@ -365,11 +365,19 @@ export async function buildHouseholdV2Snapshot(
         // omitted them would restore a household whose babies had lost their pictures.
         OR: [
           { type: "feed_photo", postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
-          { type: "baby_photo", postId: null, baby: { deletedAt: null } }
+          { type: "baby_photo", postId: null, baby: { deletedAt: null } },
+          // A person's own picture, for a membership still live and enabled. A backup that omitted
+          // these would restore a household whose people had lost their pictures.
+          { type: "user_photo", postId: null, member: { deletedAt: null, disabledAt: null } }
         ]
       },
-      select: { id: true, state: true, postId: true, position: true, babyId: true, width: true, height: true, byteSize: true, sha256: true },
-      orderBy: [{ postId: "asc" }, { position: "asc" }, { babyId: "asc" }]
+      select: {
+        id: true, state: true, postId: true, position: true, babyId: true,
+        // The owning member travels as an email, because that is what a restore can match on.
+        member: { select: { user: { select: { email: true } } } },
+        width: true, height: true, byteSize: true, sha256: true
+      },
+      orderBy: [{ postId: "asc" }, { position: "asc" }, { babyId: "asc" }, { memberId: "asc" }]
     })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
@@ -509,10 +517,14 @@ export async function buildHouseholdV2Snapshot(
       ? {
           feedPhotos: feedPhotos.map((photo) => ({
             id: photo.id,
-            // Nullable by ownership: a baby photo has no post or position, a feed photo has both.
+            // Nullable by ownership: a baby or member photo has no post or position, a feed photo
+            // has both.
             postId: photo.postId,
             position: photo.position,
             babyId: photo.babyId,
+            // Lowercased for the same reason members are: email is the identity a restore matches
+            // on, case-insensitively.
+            memberEmail: photo.member?.user.email.toLowerCase() ?? null,
             width: photo.width,
             height: photo.height,
             byteSize: photo.byteSize,
@@ -812,7 +824,9 @@ async function restoreMembers(
     });
     preferencesRestored += 1;
   }
-  return { matched: memberIdByEmail.size, needInvite, preferencesRestored };
+  // memberIdByEmail is returned, not just its size: the photo loop resolves a profile picture's
+  // owner through exactly the members this restore recognised.
+  return { matched: memberIdByEmail.size, needInvite, preferencesRestored, memberIdByEmail };
 }
 
 async function restoreV2InTransaction(
@@ -889,6 +903,10 @@ async function restoreV2InTransaction(
 
   // After babies exist, so a preference scoped to selected babies maps onto the rows just created.
   const members = await restoreMembers(payload.members ?? [], payload.notificationPreferences ?? [], babyMap, lockedCtx, tx);
+  // Profile pictures resolve their owner through exactly the members this restore recognised.
+  // Defaulted rather than asserted: restoreMembers is shared with a legacy path whose narrower
+  // result has no map, and an empty map correctly means "no member can be resolved".
+  const memberIdByEmail = members.memberIdByEmail ?? new Map<string, string>();
 
   const activityMap = new Map<string, string>();
   for (const activity of payload.activities) {
@@ -1017,13 +1035,18 @@ async function restoreV2InTransaction(
     // Ownership decides the type and which id map applies. Both are resolved through the restore's
     // own maps, so a photo can only ever land on a row this restore created.
     const babyOwned = (photo.babyId ?? null) !== null;
+    const memberOwned = (photo.memberEmail ?? null) !== null;
     const postId = photo.postId !== null ? postMap.get(photo.postId) ?? null : null;
     const babyId = babyOwned ? babyMap.get(photo.babyId!) ?? null : null;
-    if (babyOwned ? !babyId : !postId) throw new Error("backup_dangling_reference");
+    // Matched against the members this restore actually recognised, not against the source id: a
+    // picture whose person is not in this household must fail rather than land on somebody else.
+    const memberId = memberOwned ? memberIdByEmail.get(photo.memberEmail!.toLowerCase()) ?? null : null;
+    const owner = memberOwned ? memberId : babyOwned ? babyId : postId;
+    if (!owner) throw new Error("backup_dangling_reference");
     await tx.attachment.create({
       data: {
         householdId: lockedCtx.householdId,
-        type: babyOwned ? "baby_photo" : "feed_photo",
+        type: memberOwned ? "user_photo" : babyOwned ? "baby_photo" : "feed_photo",
         state: "available",
         storageKey,
         byteSize: photo.byteSize,
@@ -1034,6 +1057,7 @@ async function restoreV2InTransaction(
         postId,
         position: photo.position,
         babyId,
+        memberId,
         activatedAt
       }
     });

@@ -223,7 +223,9 @@ describe("opening a photo", () => {
       // visible baby and no post, so it cannot serve feed photos or an unclaimed staged upload.
       OR: [
         { postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
-        { postId: null, type: "baby_photo", baby: { deletedAt: null } }
+        { postId: null, type: "baby_photo", baby: { deletedAt: null } },
+        // A person's own picture: no post, and the membership must still be live and enabled.
+        { postId: null, type: "user_photo", member: { deletedAt: null, disabledAt: null } }
       ]
     });
     expect(mocks.readObject).toHaveBeenCalledWith("/data/attachments", "0".repeat(32), { byteSize: 4, sha256: "a".repeat(64) });

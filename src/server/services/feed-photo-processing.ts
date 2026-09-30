@@ -9,7 +9,8 @@ const accepted = new Set<string>(policy.acceptedFormats);
 /** Each type re-saves through the same path under its own limits; the set is built once per type. */
 const acceptedByType: Record<AttachmentTypeName, ReadonlySet<string>> = {
   feed_photo: new Set<string>(attachmentPolicy.feed_photo.acceptedFormats),
-  baby_photo: new Set<string>(attachmentPolicy.baby_photo.acceptedFormats)
+  baby_photo: new Set<string>(attachmentPolicy.baby_photo.acceptedFormats),
+  user_photo: new Set<string>(attachmentPolicy.user_photo.acceptedFormats)
 };
 const admission = globalThis as typeof globalThis & { cubbyPhotoDecodeActive?: boolean };
 
