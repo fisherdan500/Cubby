@@ -120,11 +120,17 @@ describe("editing a baby", () => {
       where: { id: "baby-1" },
       data: { name: "Rosie", notes: "loves naps" }
     });
-    expect(mocks.writeAudit).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ action: "baby.update", entityId: "baby-1", babyId: "baby-1" }),
-      expect.anything()
-    );
+    // The whole event, exactly: containment here left entityType unasserted anywhere in the
+    // suite, so the audit record could have been filed against the wrong entity kind.
+    expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
+    const [, event] = mocks.writeAudit.mock.calls[0] as [unknown, Record<string, unknown>];
+    expect(event).toEqual({
+      action: "baby.update",
+      entityType: "baby",
+      entityId: "baby-1",
+      babyId: "baby-1",
+      after: { changed: ["name", "notes"] }
+    });
   });
 
   it("writes nothing when every supplied detail already matches", async () => {
@@ -172,9 +178,13 @@ describe("editing a baby", () => {
 
     const [, event] = mocks.writeAudit.mock.calls[0] as [unknown, { after?: Record<string, unknown> }];
     expect(event.after).toEqual({ changed: ["name", "notes"] });
-    // A baby's name and notes are household content, which audit evidence must exclude.
-    expect(JSON.stringify(event)).not.toContain("Rosie");
-    expect(JSON.stringify(event)).not.toContain("loves naps");
+    // A baby's name and notes are household content, which audit evidence must exclude - the
+    // PRIOR values as much as the new ones, since a `before` snapshot would leak the same
+    // content. ACTIVE_BABY is named "Sprout" with notes "likes the swing".
+    const serialized = JSON.stringify(event);
+    for (const value of ["Rosie", "loves naps", ACTIVE_BABY.name, ACTIVE_BABY.notes]) {
+      if (value) expect(serialized).not.toContain(value);
+    }
   });
 
   it("refuses an edit from someone without baby.manage", async () => {

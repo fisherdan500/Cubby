@@ -83,9 +83,10 @@ async function expectRejection(operation: Promise<unknown>, message: string) {
 /**
  * The household's integrity state against the checkpoint taken at creation. Deliberately does NOT
  * refresh first: refreshing rewrites headHash and eventCount from whatever rows exist at that
- * moment, which erases the very difference `stale` reports, so a chain with rows DELETED off its
- * tail would still read `valid`. Reading against the original checkpoint is what makes a dropped
- * audit row detectable.
+ * moment, which erases the very difference `stale` reports. Stated exactly, because the honest
+ * scope is narrow: this makes the reader able to report CHECKPOINT/CHAIN DISAGREEMENT. It does
+ * not demonstrate detection of dropped audit rows - the database refuses both DELETE and UPDATE
+ * on AuditEvent outright, so that scenario is unreachable here. See the NEGATIVE CONTROL below.
  */
 async function auditIntegrity(householdId: string) {
   return readHouseholdAuditIntegrity(householdId, prisma);
@@ -109,10 +110,13 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     // changed list that picked up birthDate as well. The leak checks below stay as scans,
     // because there the whole point is that the value appears NOWHERE in the payload.
     expect(event.after).toEqual({ changed: ["name", "notes"] });
-    const after = JSON.stringify(event.after);
-    // The audit records WHICH details changed, never the child's details themselves.
-    expect(after).not.toContain("Corrected Name");
-    expect(after).not.toContain("blue blanket");
+    // Scan the WHOLE row, not just `after`: a leak into any other column - a `before`
+    // snapshot, a description - is the same disclosure, and scoping the scan to one column
+    // cannot see it. Prior values are household content too, so they are scanned as well.
+    const serialized = JSON.stringify(event);
+    for (const value of ["Corrected Name", "blue blanket", "Original Name"]) {
+      expect(serialized).not.toContain(value);
+    }
     expect(await auditIntegrity(household.id)).toMatchObject({ status: "valid" });
   });
 
