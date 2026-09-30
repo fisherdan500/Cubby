@@ -35,6 +35,7 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "integrity-suite", group: "disposable", script: "verify:integrity-suite", what: "every integrity check against real PostgreSQL" },
   { id: "activity-update-safety", group: "disposable", script: "verify:activity-update-safety", what: "activity update reauthorization and replay against real PostgreSQL" },
   { id: "baby-edit-delete", group: "disposable", script: "verify:baby-edit-delete", what: "baby edit, permanent removal and history-preserving deletion against real PostgreSQL" },
+  { id: "baby-photo", group: "disposable", script: "verify:baby-photo", what: "baby photo attachment type, composite foreign key, one-served-photo-per-baby and ownership checks against real PostgreSQL" },
   { id: "invitation-email-delivery", group: "disposable", script: "verify:invitation-email-delivery", what: "invitation email queue, grants, sending and cancellation against real PostgreSQL" },
   { id: "browser-operation-pilot", group: "disposable", script: "verify:browser-operation-pilot", what: "browser-operation constraints against real PostgreSQL" },
   { id: "sprout-preview-commit", group: "disposable", script: "verify:sprout-preview-commit", what: "Sprout preview and commit against real PostgreSQL" },
@@ -60,7 +61,8 @@ export const GATES_RUN_BY_HAND: Readonly<Record<string, string>> = {
   "verify:performance-5y": "a wall-clock budget, and a shared CI runner's timings do not mean anything",
   "verify:performance-input": "a wall-clock budget, and it drives a real local Chrome over CDP",
   "verify:p1-3-migrator-bootstrap": "it inspects an existing local `cubby-app` image rather than building one",
-  "verify:p1-3-invitation-acceptance": "it drives a real local Chrome over CDP and wants roughly 12 GB free"
+  "verify:p1-3-invitation-acceptance": "it drives a real local Chrome over CDP and wants roughly 12 GB free",
+  "verify:baby-photo-gate-proof": "it edits the tracked baby-photo migration in place to prove each constraint is load-bearing, so it must never run against a shared checkout"
 };
 
 /**
