@@ -4284,17 +4284,17 @@
           "file": "package.json"
         },
         {
-          "digest": "8ccc3e30994ac5ab0dc63851c4c6a951f36e29c851ddc53faaa2045c29b100c5",
+          "digest": "c4d42b1591c8487f4d1a17770cf290f053b0281e37643281c053e721e701f889",
           "file": "scripts/user-photo-rehearsal-gate-proof.ts"
         }
       ],
       "declarationDigest": "8921adc62fdd9085f743c2e66dac01bac9e66cc2fe0a9145b6cdb1af3f3addaf",
-      "fingerprint": "e9013eef50a146352dad7921360057fb2701a00c615ff48041f4a84e739c7de2",
+      "fingerprint": "9ef68916f5de4a4c7a551749a0102532346beb5471e89ff8424554db2801e641",
       "id": "fingerprint:package_command:scripts/user-photo-rehearsal-gate-proof.ts",
       "ownerId": "package_command:scripts/user-photo-rehearsal-gate-proof.ts",
       "ownerModule": "scripts/user-photo-rehearsal-gate-proof.ts",
       "sidecarPath": "scripts/user-photo-rehearsal-gate-proof.operation.ts",
-      "sourceDigest": "4dda689f5e2a71fb10481a65387b66e6a2c2a3a129bc79d4ed281aaeefc4bdc5",
+      "sourceDigest": "b6196026e295e4b10fb5b8961750c8b34561937067f72be50aa79e5eae0fc320",
       "status": "declared"
     },
     {

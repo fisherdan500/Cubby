@@ -61,7 +61,7 @@ export const attachmentPolicy = {
 // user_photo stays false until storage, private delivery, recovery, and backup have all passed
 // its own gates, exactly as baby_photo did. Enabling it earlier would let a household store a
 // picture that no backup contains and no restore returns.
-const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true, baby_photo: true, user_photo: false };
+const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true, baby_photo: true, user_photo: true };
 
 export function attachmentTypeEnabled(type: AttachmentTypeName, overrides?: Partial<Record<AttachmentTypeName, boolean>>) {
   return overrides?.[type] ?? enabledTypes[type];

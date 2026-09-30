@@ -9,8 +9,20 @@ import { describe, expect, it } from "vitest";
 import { attachmentPolicy, attachmentTypeEnabled } from "./attachments";
 
 describe("the policy for a person's profile picture", () => {
-  it("ships switched off, so no half-built path can accept a real photo", () => {
-    expect(attachmentTypeEnabled("user_photo")).toBe(false);
+  it("is switched on now that its whole gate has passed", () => {
+    // DEC-PROD-070: a type is enabled only once storage, private delivery, recovery and backup have
+    // all passed. All four are built and proven for user photos, so the type ships on. If any of
+    // those paths is ever regressed, this flag is what must go back to false.
+    expect(attachmentTypeEnabled("user_photo")).toBe(true);
+  });
+
+  it("can still be switched off by an override, so a regression can be contained", () => {
+    // The kill switch has to work in the on direction too: if a delivery or backup defect is found,
+    // turning the type off must stop staging and serving without a code change to every call site.
+    expect(attachmentTypeEnabled("user_photo", { user_photo: false })).toBe(false);
+    // Turning one type off must not disturb the others.
+    expect(attachmentTypeEnabled("baby_photo", { user_photo: false })).toBe(true);
+    expect(attachmentTypeEnabled("feed_photo", { user_photo: false })).toBe(true);
   });
 
   it("keeps one picture per person", () => {

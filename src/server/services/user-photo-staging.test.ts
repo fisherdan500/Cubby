@@ -104,8 +104,10 @@ beforeEach(() => {
 });
 
 describe("staging your own profile picture", () => {
-  it("refuses while the type is switched off", async () => {
-    await expect(stageUserPhoto(Buffer.from("x"))).rejects.toThrow("attachment_type_unavailable");
+  it("refuses when the type is switched off, so a regression can be contained", async () => {
+    // The type ships on. What must keep working is the kill switch: turning it off has to stop the
+    // upload before any bytes are written, without a code change at the call site.
+    await expect(stageUserPhoto(Buffer.from("x"), { enabled: { user_photo: false } })).rejects.toThrow("attachment_type_unavailable");
     expect(mocks.attachmentCreate).not.toHaveBeenCalled();
     expect(mocks.writeAttachmentObject).not.toHaveBeenCalled();
   });
@@ -139,8 +141,8 @@ describe("staging your own profile picture", () => {
 });
 
 describe("claiming your own profile picture", () => {
-  it("refuses while the type is switched off", async () => {
-    await expect(claimStagedUserPhoto("att-1")).rejects.toThrow("attachment_type_unavailable");
+  it("refuses when the type is switched off, so a regression can be contained", async () => {
+    await expect(claimStagedUserPhoto("att-1", { enabled: { user_photo: false } })).rejects.toThrow("attachment_type_unavailable");
     expect(mocks.attachmentUpdateMany).not.toHaveBeenCalled();
   });
 

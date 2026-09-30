@@ -103,10 +103,10 @@ const sabotages: Sabotage[] = [
     to: '{ type: "user_photo", postId: null, member: { deletedAt: null, disabledAt: null }, id: "never" }'
   },
   {
-    what: "kill switch: ship the type switched on before its gates pass",
+    what: "kill switch: stop honouring an override that turns the type off",
     file: POL,
-    from: "user_photo: false",
-    to: "user_photo: true"
+    from: "user_photo: true",
+    to: "user_photo: false"
   }
 ];
 
