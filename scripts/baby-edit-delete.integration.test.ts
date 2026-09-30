@@ -293,8 +293,9 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     expect(payload.babies.map((row) => row.id)).not.toContain(baby.id);
     expect(payload.calendarEvents.length).toBeGreaterThan(0);
     for (const item of payload.calendarEvents) expect(item.babyIds ?? []).not.toContain(baby.id);
-    for (const pref of payload.notificationPreferences) {
-      expect(pref.babyIds ?? []).not.toContain(baby.id);
+    for (const pref of payload.notificationPreferences ?? []) {
+      // babyIds lives inside the discriminated babyScope union, not at the top level.
+      expect(pref.babyScope.mode === "selected" ? pref.babyScope.babyIds : []).not.toContain(baby.id);
     }
   });
 });
