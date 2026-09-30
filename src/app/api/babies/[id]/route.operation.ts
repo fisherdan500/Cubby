@@ -2,24 +2,19 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/babies/page.tsx",
-  ownerModule: "src/app/app/babies/page.tsx",
-  ownerKind: "server_loader",
+  id: "api_route:src/app/api/babies/[id]/route.ts",
+  ownerModule: "src/app/api/babies/[id]/route.ts",
+  ownerKind: "api_route",
   bindings: [
     {
-      kind: "server_value_import",
-      symbol: "getHouseholdHome",
-      target: "src/server/services/households.ts#getHouseholdHome"
+      kind: "route_method",
+      symbol: "PATCH",
+      target: "src/app/api/babies/[id]/route.ts#PATCH"
     },
     {
-      kind: "server_value_import",
-      symbol: "listRemovableBabyIds",
-      target: "src/server/services/households.ts#listRemovableBabyIds"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "requireSettingsPage",
-      target: "src/server/auth/page-access.ts#requireSettingsPage"
+      kind: "route_method",
+      symbol: "DELETE",
+      target: "src/app/api/babies/[id]/route.ts#DELETE"
     }
   ],
   disposition: "observed",

@@ -544,6 +544,11 @@ Consequential activity receipt/replay changes are covered by
 runs against generated credentials in a loopback-only project and never reads
 `.env` or targets the normal Compose project.
 
+Baby edit and deletion are covered by `npm run verify:baby-edit-delete`, also a
+disposable gate. It proves that an unreferenced baby row is removed outright,
+that a referenced one is refused, that a baby with history is hidden rather than
+erased, and that the audit chain stays valid in every case.
+
 Query, index, schema or page-data changes on the everyday workflows additionally
 require the disposable performance rehearsal, which measures the `DEC-PROD-225`
 budgets over the deterministic `DEC-PROD-226` datasets:

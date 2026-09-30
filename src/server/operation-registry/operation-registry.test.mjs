@@ -2335,6 +2335,7 @@ test("declares representative instrumentation and backup-worker sidecars", () =>
 test("[slow] discovers TypeScript package owners and exact CLI command variants", () => {
   const packageOwners = [
     "scripts/activity-update-safety-rehearsal.ts",
+    "scripts/baby-edit-delete-rehearsal.ts",
     "scripts/backup-recovery-rehearsal.ts",
     "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
     "scripts/browser-operation-save-path.acceptance-rehearsal.ts",

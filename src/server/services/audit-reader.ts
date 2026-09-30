@@ -14,7 +14,10 @@ const babySafetyActions = [
   "activity.update",
   "baby.create",
   "baby.deactivate",
-  "baby.reactivate"
+  "baby.delete",
+  "baby.reactivate",
+  "baby.remove",
+  "baby.update"
 ];
 
 type AuditPageOptions = { limit?: number; cursor?: string };

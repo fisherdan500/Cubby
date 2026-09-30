@@ -27,7 +27,10 @@ const auditActionSchema = z.enum([
   "api_key.revoke",
   "baby.create",
   "baby.deactivate",
+  "baby.delete",
   "baby.reactivate",
+  "baby.remove",
+  "baby.update",
   "backup.recovery.authorize",
   "backup.recovery.target.provision",
   "backup.export",
@@ -128,6 +131,21 @@ const memberAfterSchema = z.object({
   revokedApiKeyCount: z.number().int().nonnegative().optional()
 }).strict();
 const babyLifecycleSchema = z.object({ inactiveAt: auditTimestampSchema.nullable().optional() }).strict();
+/**
+ * An edit records WHICH details changed, never their values: a baby's name, notes and birth date are
+ * exactly the household content audit evidence is required to exclude (DEC-PROD-144 minimization).
+ */
+const babyUpdateAuditSchema = z.object({
+  changed: z.array(z.enum([
+    "name", "birthDate", "notes", "feedingWarningMinutes", "diaperWarningMinutes", "sleepWarningMinutes"
+  ])).max(6).optional()
+}).strict();
+/** A deletion records how much was hidden, and whether the row itself was removed. */
+const babyDeletionAuditSchema = z.object({
+  deletedAt: auditTimestampSchema.nullable().optional(),
+  activityCount: z.number().int().nonnegative().optional(),
+  feedPostCount: z.number().int().nonnegative().optional()
+}).strict();
 const appearanceSchema = z.object({ accentTheme: z.string().min(1).max(80).nullable().optional() }).strict();
 const calendarCreateSchema = z.object({
   babyId: z.string().min(1).max(200),
@@ -195,6 +213,12 @@ function minimizeAuditPayload(
   }
   if (action === "baby.create" || action === "baby.deactivate" || action === "baby.reactivate") {
     return babyLifecycleSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "baby.update") {
+    return babyUpdateAuditSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "baby.delete" || action === "baby.remove") {
+    return babyDeletionAuditSchema.parse(payload) as Prisma.InputJsonValue;
   }
   if (action === "settings.appearance.update") {
     return appearanceSchema.parse(payload) as Prisma.InputJsonValue;

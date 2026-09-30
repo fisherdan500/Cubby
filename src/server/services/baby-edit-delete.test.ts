@@ -1,0 +1,433 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { hasPermission } from "@/domain/roles";
+
+const mocks = vi.hoisted(() => ({
+  getEffectiveHouseholdContext: vi.fn(),
+  requirePermission: vi.fn(),
+  babyFindFirst: vi.fn(),
+  babyUpdate: vi.fn(),
+  babyDelete: vi.fn(),
+  activityCount: vi.fn(),
+  activityUpdateMany: vi.fn(),
+  feedPostCount: vi.fn(),
+  feedPostUpdateMany: vi.fn(),
+  reminderCount: vi.fn(),
+  plannedScheduleCount: vi.fn(),
+  calendarLinkCount: vi.fn(),
+  auditEventCount: vi.fn(),
+  bindingCount: vi.fn(),
+  operationCount: vi.fn(),
+  preferenceCount: vi.fn(),
+  memberFindUnique: vi.fn(),
+  lockRaw: vi.fn(),
+  transaction: vi.fn(),
+  writeAudit: vi.fn()
+}));
+
+vi.mock("@/lib/db/prisma", () => ({
+  prisma: {
+    baby: { findFirst: mocks.babyFindFirst, update: mocks.babyUpdate, delete: mocks.babyDelete },
+    $transaction: mocks.transaction
+  }
+}));
+
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
+  requirePermission: mocks.requirePermission
+}));
+
+vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+
+import { deleteBaby, removeBabyProfile, updateBaby } from "@/server/services/households";
+
+const ACTIVE_BABY = {
+  id: "baby-1",
+  householdId: "household-1",
+  name: "Sprout",
+  birthDate: null,
+  notes: null,
+  feedingWarningMinutes: null,
+  diaperWarningMinutes: null,
+  sleepWarningMinutes: null,
+  inactiveAt: null,
+  deletedAt: null,
+  updatedAt: new Date("2026-09-29T10:00:00.000Z")
+};
+
+function zeroReferences() {
+  mocks.activityCount.mockResolvedValue(0);
+  mocks.feedPostCount.mockResolvedValue(0);
+  mocks.reminderCount.mockResolvedValue(0);
+  mocks.plannedScheduleCount.mockResolvedValue(0);
+  mocks.calendarLinkCount.mockResolvedValue(0);
+  mocks.auditEventCount.mockResolvedValue(0);
+  mocks.bindingCount.mockResolvedValue(0);
+  mocks.operationCount.mockResolvedValue(0);
+  mocks.preferenceCount.mockResolvedValue(0);
+}
+
+describe("editing a baby", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
+      userId: "user-owner",
+      householdId: "household-1",
+      memberId: "member-owner",
+      role: "owner"
+    });
+    mocks.requirePermission.mockImplementation((ctx, permission) => {
+      if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
+    });
+    mocks.lockRaw.mockImplementation((strings: TemplateStringsArray) =>
+      Promise.resolve([{ id: strings.join("").includes('"HouseholdMember"') ? "member-owner" : "baby-1" }])
+    );
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "owner",
+      disabledAt: null,
+      deletedAt: null
+    });
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY });
+    mocks.transaction.mockImplementation((operation) =>
+      operation({
+        $queryRaw: mocks.lockRaw,
+        baby: { findFirst: mocks.babyFindFirst, update: mocks.babyUpdate, delete: mocks.babyDelete },
+        activityLog: { count: mocks.activityCount, updateMany: mocks.activityUpdateMany },
+        feedPost: { count: mocks.feedPostCount, updateMany: mocks.feedPostUpdateMany },
+        reminder: { count: mocks.reminderCount },
+        plannedSchedule: { count: mocks.plannedScheduleCount },
+        calendarEventBaby: { count: mocks.calendarLinkCount },
+        auditEvent: { count: mocks.auditEventCount },
+        browserOperationBinding: { count: mocks.bindingCount },
+        browserMutationOperation: { count: mocks.operationCount },
+        notificationPreferenceBaby: { count: mocks.preferenceCount },
+        householdMember: { findUnique: mocks.memberFindUnique }
+      })
+    );
+  });
+
+  it("saves the changed details and records what changed", async () => {
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, name: "Rosie", notes: "loves naps" });
+
+    await expect(
+      updateBaby("baby-1", { name: "Rosie", notes: "loves naps" })
+    ).resolves.toMatchObject({ name: "Rosie" });
+
+    expect(mocks.babyUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "baby-1" },
+        data: expect.objectContaining({ name: "Rosie", notes: "loves naps" })
+      })
+    );
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: "baby.update", entityId: "baby-1", babyId: "baby-1" }),
+      expect.anything()
+    );
+  });
+
+  it("records which details changed but never their values", async () => {
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, name: "Rosie", notes: "loves naps" });
+
+    await updateBaby("baby-1", { name: "Rosie", notes: "loves naps" });
+
+    const [, event] = mocks.writeAudit.mock.calls[0] as [unknown, { after?: Record<string, unknown> }];
+    expect(event.after).toEqual({ changed: ["name", "notes"] });
+    // A baby's name and notes are household content, which audit evidence must exclude.
+    expect(JSON.stringify(event)).not.toContain("Rosie");
+    expect(JSON.stringify(event)).not.toContain("loves naps");
+  });
+
+  it("refuses an edit from someone without baby.manage", async () => {
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
+      userId: "user-read",
+      householdId: "household-1",
+      memberId: "member-read",
+      role: "read_only"
+    });
+
+    await expect(updateBaby("baby-1", { name: "Rosie" })).rejects.toThrow("forbidden");
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rechecks the actor inside the transaction, so a just-suspended member cannot edit", async () => {
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "owner",
+      disabledAt: new Date(),
+      deletedAt: null
+    });
+
+    await expect(updateBaby("baby-1", { name: "Rosie" })).rejects.toThrow("forbidden");
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("does not edit a baby from another household", async () => {
+    mocks.babyFindFirst.mockResolvedValue(null);
+
+    await expect(updateBaby("baby-elsewhere", { name: "Rosie" })).rejects.toThrow("not_found");
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("removing a baby profile entirely", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
+      userId: "user-owner",
+      householdId: "household-1",
+      memberId: "member-owner",
+      role: "owner"
+    });
+    mocks.requirePermission.mockImplementation((ctx, permission) => {
+      if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
+    });
+    mocks.lockRaw.mockImplementation((strings: TemplateStringsArray) =>
+      Promise.resolve([{ id: strings.join("").includes('"HouseholdMember"') ? "member-owner" : "baby-1" }])
+    );
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "owner",
+      disabledAt: null,
+      deletedAt: null
+    });
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY });
+    mocks.babyDelete.mockResolvedValue({ ...ACTIVE_BABY });
+    mocks.transaction.mockImplementation((operation) =>
+      operation({
+        $queryRaw: mocks.lockRaw,
+        baby: { findFirst: mocks.babyFindFirst, update: mocks.babyUpdate, delete: mocks.babyDelete },
+        activityLog: { count: mocks.activityCount, updateMany: mocks.activityUpdateMany },
+        feedPost: { count: mocks.feedPostCount, updateMany: mocks.feedPostUpdateMany },
+        reminder: { count: mocks.reminderCount },
+        plannedSchedule: { count: mocks.plannedScheduleCount },
+        calendarEventBaby: { count: mocks.calendarLinkCount },
+        auditEvent: { count: mocks.auditEventCount },
+        browserOperationBinding: { count: mocks.bindingCount },
+        browserMutationOperation: { count: mocks.operationCount },
+        notificationPreferenceBaby: { count: mocks.preferenceCount },
+        householdMember: { findUnique: mocks.memberFindUnique }
+      })
+    );
+    zeroReferences();
+  });
+
+  it("removes an untouched profile for real", async () => {
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).resolves.toMatchObject({ id: "baby-1" });
+
+    expect(mocks.babyDelete).toHaveBeenCalledWith({ where: { id: "baby-1" } });
+  });
+
+  it("refuses when the typed confirmation does not match the stored name", async () => {
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Rosie" })
+    ).rejects.toThrow("confirmation_mismatch");
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("refuses a confirmation that differs only by case, so it cannot be typed absent-mindedly", async () => {
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "yes delete baby sprout" })
+    ).rejects.toThrow("confirmation_mismatch");
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("checks the confirmation against the name in the database, not one supplied by the caller", async () => {
+    // A caller that renamed the baby in its own payload must not be able to satisfy the check.
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY, name: "Rosie" });
+
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout", name: "Sprout" })
+    ).rejects.toThrow("confirmation_mismatch");
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["activityCount", "baby_has_history"],
+    ["feedPostCount", "baby_has_history"],
+    ["reminderCount", "baby_has_history"],
+    ["plannedScheduleCount", "baby_has_history"],
+    ["calendarLinkCount", "baby_has_history"],
+    ["auditEventCount", "baby_has_history"],
+    ["bindingCount", "baby_has_history"],
+    ["operationCount", "baby_has_history"],
+    ["preferenceCount", "baby_has_history"]
+  ])("refuses a real deletion when %s is non-zero", async (mockName, expected) => {
+    (mocks as unknown as Record<string, { mockResolvedValue: (value: number) => void }>)[mockName]
+      .mockResolvedValue(1);
+
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).rejects.toThrow(expected);
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("counts references inside the write transaction, after locking the baby", async () => {
+    await removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" });
+
+    // The lock must precede the counts, or a concurrent insert could slip past the precondition.
+    expect(mocks.lockRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.activityCount.mock.invocationCallOrder[0]
+    );
+    expect(mocks.activityCount.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.babyDelete.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("refuses a real deletion from someone without baby.manage", async () => {
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
+      userId: "user-parent",
+      householdId: "household-1",
+      memberId: "member-parent",
+      role: "read_only"
+    });
+
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).rejects.toThrow("forbidden");
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("rechecks authority inside the transaction, so a member demoted mid-request cannot delete", async () => {
+    // Permitted when the request arrived, demoted by the time the write transaction locks the actor.
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(
+      removeBabyProfile("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).rejects.toThrow("forbidden");
+
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleting a baby along with its history", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.getEffectiveHouseholdContext.mockResolvedValue({
+      userId: "user-owner",
+      householdId: "household-1",
+      memberId: "member-owner",
+      role: "owner"
+    });
+    mocks.requirePermission.mockImplementation((ctx, permission) => {
+      if (!hasPermission(ctx.role, permission)) throw new Error("forbidden");
+    });
+    mocks.lockRaw.mockImplementation((strings: TemplateStringsArray) =>
+      Promise.resolve([{ id: strings.join("").includes('"HouseholdMember"') ? "member-owner" : "baby-1" }])
+    );
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "owner",
+      disabledAt: null,
+      deletedAt: null
+    });
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY });
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, deletedAt: new Date() });
+    mocks.activityUpdateMany.mockResolvedValue({ count: 3 });
+    mocks.feedPostUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.transaction.mockImplementation((operation) =>
+      operation({
+        $queryRaw: mocks.lockRaw,
+        baby: { findFirst: mocks.babyFindFirst, update: mocks.babyUpdate, delete: mocks.babyDelete },
+        activityLog: { count: mocks.activityCount, updateMany: mocks.activityUpdateMany },
+        feedPost: { count: mocks.feedPostCount, updateMany: mocks.feedPostUpdateMany },
+        reminder: { count: mocks.reminderCount },
+        plannedSchedule: { count: mocks.plannedScheduleCount },
+        calendarEventBaby: { count: mocks.calendarLinkCount },
+        auditEvent: { count: mocks.auditEventCount },
+        browserOperationBinding: { count: mocks.bindingCount },
+        browserMutationOperation: { count: mocks.operationCount },
+        notificationPreferenceBaby: { count: mocks.preferenceCount },
+        householdMember: { findUnique: mocks.memberFindUnique }
+      })
+    );
+  });
+
+  it("hides the baby and its history without removing any row", async () => {
+    await expect(
+      deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).resolves.toMatchObject({ id: "baby-1" });
+
+    expect(mocks.babyUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "baby-1" }, data: expect.objectContaining({ deletedAt: expect.any(Date) }) })
+    );
+    expect(mocks.activityUpdateMany).toHaveBeenCalled();
+    // The audit chain hashes babyId, so removing rows would invalidate it.
+    expect(mocks.babyDelete).not.toHaveBeenCalled();
+  });
+
+  it("requires the same typed confirmation", async () => {
+    await expect(
+      deleteBaby("baby-1", { confirmation: "Yes Delete Baby Rosie" })
+    ).rejects.toThrow("confirmation_mismatch");
+
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("records the deletion with the counts it hid", async () => {
+    await deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" });
+
+    expect(mocks.writeAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: "baby.delete", entityId: "baby-1", babyId: "baby-1" }),
+      expect.anything()
+    );
+  });
+
+  it("is idempotent: deleting an already-deleted baby changes nothing further", async () => {
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY, deletedAt: new Date("2026-09-01T00:00:00.000Z") });
+
+    await expect(
+      deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).resolves.toMatchObject({ id: "baby-1" });
+
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the baby has a running timer, matching deactivation", async () => {
+    mocks.activityCount.mockResolvedValue(1);
+
+    await expect(
+      deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).rejects.toThrow("baby_has_active_timer");
+
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rechecks authority inside the transaction, so a member demoted mid-request cannot delete", async () => {
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(
+      deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" })
+    ).rejects.toThrow("forbidden");
+
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+});

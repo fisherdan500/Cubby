@@ -2,24 +2,19 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "server_loader:src/app/app/babies/page.tsx",
-  ownerModule: "src/app/app/babies/page.tsx",
-  ownerKind: "server_loader",
+  id: "client_binding:src/components/forms/baby-edit-form.tsx",
+  ownerModule: "src/components/forms/baby-edit-form.tsx",
+  ownerKind: "client_binding",
   bindings: [
     {
-      kind: "server_value_import",
-      symbol: "getHouseholdHome",
-      target: "src/server/services/households.ts#getHouseholdHome"
+      kind: "global_fetch",
+      symbol: "fetch[1]",
+      target: "globalThis.fetch"
     },
     {
-      kind: "server_value_import",
-      symbol: "listRemovableBabyIds",
-      target: "src/server/services/households.ts#listRemovableBabyIds"
-    },
-    {
-      kind: "server_value_import",
-      symbol: "requireSettingsPage",
-      target: "src/server/auth/page-access.ts#requireSettingsPage"
+      kind: "form_action",
+      symbol: "onSubmit",
+      target: "src/components/forms/baby-edit-form.tsx#onSubmit"
     }
   ],
   disposition: "observed",
