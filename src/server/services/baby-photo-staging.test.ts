@@ -104,11 +104,13 @@ describe("staging a baby photo", () => {
   });
 
   it("refuses while the type is switched off", async () => {
-    // The shipped default is off until the whole gate passes; staging must honour that.
-    await expect(stageBabyPhoto(Buffer.from("x")))
+    // The type ships enabled now that all four gates pass, so the switch is exercised explicitly:
+    // turning it off must stop staging, which is how a delivery or backup regression gets contained.
+    await expect(stageBabyPhoto(Buffer.from("x"), { enabled: { baby_photo: false } }))
       .rejects.toThrow("attachment_type_unavailable");
 
     expect(mocks.attachmentCreate).not.toHaveBeenCalled();
+    expect(mocks.writeObject).not.toHaveBeenCalled();
   });
 
   it("stages with no parent, because the claim step sets it", async () => {

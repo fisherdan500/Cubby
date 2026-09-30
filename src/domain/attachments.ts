@@ -42,9 +42,10 @@ export const attachmentPolicy = {
 // delivery, 30-day recovery, and manual and automated backup and restore that carry them (#148-#151).
 // Setting a type back to false switches it off again: uploads refuse and nothing is served.
 //
-// Baby photos stay false until their own gate passes. Enabling the type before backup carries it
-// would let a household store a picture that no backup contains and no restore returns.
-const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true, baby_photo: false };
+// Both types are on. baby_photo was held false until all four of its policy gates passed - storage,
+// private delivery, recovery, and backup - because enabling it earlier would have let a household
+// store a picture that no backup contained and no restore returned.
+const enabledTypes: Record<AttachmentTypeName, boolean> = { feed_photo: true, baby_photo: true };
 
 export function attachmentTypeEnabled(type: AttachmentTypeName, overrides?: Partial<Record<AttachmentTypeName, boolean>>) {
   return overrides?.[type] ?? enabledTypes[type];

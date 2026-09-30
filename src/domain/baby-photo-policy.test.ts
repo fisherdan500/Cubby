@@ -12,12 +12,19 @@ describe("baby photo attachment policy", () => {
     expect(attachmentTypes).toContain("baby_photo");
   });
 
-  it("stays switched off until its whole gate has passed", () => {
-    // DEC-PROD-070: a type is enabled only once storage, private delivery, recovery and backup
-    // have all passed. Staging, delivery and backup for baby photos are not built yet, so this
-    // must remain false. Flipping it early would serve and stage a type whose backup path drops it.
-    expect(attachmentTypeEnabled("baby_photo")).toBe(false);
+  it("is switched on now that its whole gate has passed", () => {
+    // DEC-PROD-070: a type is enabled only once storage, private delivery, recovery and backup have
+    // all passed. All four are built and proven for baby photos, so the type ships on. If any of
+    // those paths is ever regressed, this flag is what must go back to false.
+    expect(attachmentTypeEnabled("baby_photo")).toBe(true);
     expect(attachmentTypeEnabled("feed_photo")).toBe(true);
+  });
+
+  it("can still be switched off by an override, so a regression can be contained", () => {
+    // The kill switch has to work in the on direction too: if a delivery or backup defect is found,
+    // turning the type off must stop staging and serving without a code change to every call site.
+    expect(attachmentTypeEnabled("baby_photo", { baby_photo: false })).toBe(false);
+    expect(attachmentTypeEnabled("feed_photo", { baby_photo: false })).toBe(true);
   });
 
   it("keeps a profile picture to one per baby, smaller than a feed photo", () => {
@@ -60,9 +67,8 @@ describe("baby photo attachment policy", () => {
     }
   });
 
-  it("lets an override switch the type on without changing the shipped default", () => {
-    // Slices 2-4 and their gates need to exercise the type before it ships enabled.
+  it("honours an explicit override in either direction", () => {
     expect(attachmentTypeEnabled("baby_photo", { baby_photo: true })).toBe(true);
-    expect(attachmentTypeEnabled("baby_photo")).toBe(false);
+    expect(attachmentTypeEnabled("baby_photo", {})).toBe(true);
   });
 });
