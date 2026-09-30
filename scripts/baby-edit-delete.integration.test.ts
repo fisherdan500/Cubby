@@ -24,6 +24,7 @@ vi.mock("@/server/auth/context", async (importOriginal) => {
 import { prisma } from "@/lib/db/prisma";
 import { readHouseholdAuditIntegrity, refreshHouseholdAuditCheckpoint } from "@/server/services/audit-checkpoints";
 import { deleteBaby, removeBabyProfile, updateBaby } from "@/server/services/households";
+import { buildHouseholdV2Snapshot } from "@/server/services/backups";
 
 afterAll(async () => {
   await prisma.$disconnect();
@@ -244,5 +245,56 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     });
     const damaged = await auditIntegrity(household.id);
     expect(damaged.status).not.toBe("valid");
+  });
+  it("can still produce a backup after a baby with a calendar event is hidden", async () => {
+    // The regression this guards: the exporter drops hidden babies but kept their calendar links
+    // and notification selections, so the payload named a baby it did not carry and the format's
+    // own dangling-reference check refused EVERY future export for that household.
+    const { household, member } = await createHousehold("Backup");
+    const baby = await createBaby(household.id, "Hidden");
+
+    const event = await prisma.calendarEvent.create({
+      data: {
+        householdId: household.id,
+        title: "Checkup",
+        startTime: new Date("2026-02-01T10:00:00.000Z")
+      }
+    });
+    await prisma.calendarEventBaby.create({
+      data: { householdId: household.id, babyId: baby.id, eventId: event.id }
+    });
+    const preference = await prisma.notificationPreference.create({
+      data: { householdId: household.id, memberId: member.id, babyScope: "selected" }
+    });
+    await prisma.notificationPreferenceBaby.create({
+      data: { householdId: household.id, preferenceId: preference.id, babyId: baby.id }
+    });
+
+    // Give it history so it takes the hide path rather than permanent removal.
+    await prisma.activityLog.create({
+      data: {
+        householdId: household.id,
+        babyId: baby.id,
+        actorMemberId: member.id,
+        type: ActivityType.diaper,
+        occurredAt: new Date("2026-02-01T09:00:00.000Z"),
+        timezone: "UTC",
+        diaper: { create: { kind: DiaperKind.wet } }
+      }
+    });
+    await deleteBaby(baby.id, { confirmation: "Yes Delete Baby Hidden" });
+
+    // Reaching a result at all is half the proof: buildHouseholdV2Snapshot runs the payload
+    // through v2PayloadSchema, whose superRefine throws backup_dangling_reference when anything
+    // names a baby the payload does not carry. Before the fix this call threw, and kept throwing
+    // for every future export of this household.
+    const { payload } = await buildHouseholdV2Snapshot(prisma, household.id);
+
+    expect(payload.babies.map((row) => row.id)).not.toContain(baby.id);
+    expect(payload.calendarEvents.length).toBeGreaterThan(0);
+    for (const item of payload.calendarEvents) expect(item.babyIds ?? []).not.toContain(baby.id);
+    for (const pref of payload.notificationPreferences) {
+      expect(pref.babyIds ?? []).not.toContain(baby.id);
+    }
   });
 });
