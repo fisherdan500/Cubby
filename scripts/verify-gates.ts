@@ -37,6 +37,7 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "baby-edit-delete", group: "disposable", script: "verify:baby-edit-delete", what: "baby edit, permanent removal and history-preserving deletion against real PostgreSQL" },
   { id: "baby-photo", group: "disposable", script: "verify:baby-photo", what: "baby photo attachment type, composite foreign key, one-served-photo-per-baby and ownership checks against real PostgreSQL" },
   { id: "user-photo", group: "disposable", script: "verify:user-photo", what: "user photo attachment type, composite member foreign key, one-current-picture-per-membership and ownership checks against real PostgreSQL" },
+  { id: "photo-upload", group: "disposable", script: "verify:photo-upload", what: "a real photo upload through the real service, including the audit event it writes, against real PostgreSQL" },
   { id: "invitation-email-delivery", group: "disposable", script: "verify:invitation-email-delivery", what: "invitation email queue, grants, sending and cancellation against real PostgreSQL" },
   { id: "browser-operation-pilot", group: "disposable", script: "verify:browser-operation-pilot", what: "browser-operation constraints against real PostgreSQL" },
   { id: "sprout-preview-commit", group: "disposable", script: "verify:sprout-preview-commit", what: "Sprout preview and commit against real PostgreSQL" },

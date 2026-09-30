@@ -4,12 +4,12 @@
     "api_route": 118,
     "client_binding": 44,
     "instrumentation": 1,
-    "package_command": 36,
+    "package_command": 37,
     "server_action": 1,
     "server_loader": 30,
     "worker": 8
   },
-  "declarationDigest": "4e7e7438fc00757422e886023dfc4bb8db3cecc06736f7f49ffff82e6cb3651f",
+  "declarationDigest": "d034abe775a1e6696157e0ac20ecd30742acbc5c84d6f4f7fc78aa3b402e2403",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -647,6 +647,40 @@
       },
       "id": "package_command:scripts/performance-budgets.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/performance-budgets.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:photo-upload",
+            "target": "package.json#scripts.verify:photo-upload"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/photo-upload-rehearsal.ts",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/photo-upload-rehearsal.ts",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/photo-upload-rehearsal.ts",
+      "sidecarPath": "scripts/photo-upload-rehearsal.operation.ts"
     },
     {
       "declaration": {
@@ -8533,6 +8567,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/photo-upload-rehearsal.ts",
+      "packageScripts": [
+        "verify:photo-upload"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/user-photo-rehearsal-gate-proof.ts",
       "packageScripts": [
         "verify:user-photo-gate-proof"
@@ -8681,7 +8723,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "6dcf623e1cc32ba415d46a4c8f25b4dfbe79a12575436d1a7222bb749459b3f0",
+  "generatorDigest": "0ba76d3885f5b13e68f28d839d5b1b42ad031c77b8a3865101fca3060547bbec",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -14245,9 +14287,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 6265,
+          "anchorEnd": 6333,
           "anchorFile": "package.json",
-          "anchorStart": 6256,
+          "anchorStart": 6324,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -14297,9 +14339,9 @@
       "bindings": [
         {
           "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
-          "anchorEnd": 4652,
+          "anchorEnd": 4720,
           "anchorFile": "package.json",
-          "anchorStart": 4620,
+          "anchorStart": 4688,
           "kind": "package_script",
           "symbol": "verify:admin-assisted-accounts",
           "target": "package.json#scripts.verify:admin-assisted-accounts"
@@ -14349,9 +14391,9 @@
       "bindings": [
         {
           "anchorDigest": "a83dcbf495d056e8bd1934bfdf8b91fd41e29c52ec3be5bb548a1e398f0c73f4",
-          "anchorEnd": 4260,
+          "anchorEnd": 4328,
           "anchorFile": "package.json",
-          "anchorStart": 4230,
+          "anchorStart": 4298,
           "kind": "package_script",
           "symbol": "verify:baby-photo-gate-proof",
           "target": "package.json#scripts.verify:baby-photo-gate-proof"
@@ -14437,9 +14479,9 @@
       "bindings": [
         {
           "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-          "anchorEnd": 4442,
+          "anchorEnd": 4510,
           "anchorFile": "package.json",
-          "anchorStart": 4410,
+          "anchorStart": 4478,
           "kind": "package_script",
           "symbol": "verify:browser-operation-pilot",
           "target": "package.json#scripts.verify:browser-operation-pilot"
@@ -14463,9 +14505,9 @@
       "bindings": [
         {
           "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
-          "anchorEnd": 4547,
+          "anchorEnd": 4615,
           "anchorFile": "package.json",
-          "anchorStart": 4511,
+          "anchorStart": 4579,
           "kind": "package_script",
           "symbol": "verify:browser-operation-save-path",
           "target": "package.json#scripts.verify:browser-operation-save-path"
@@ -14580,9 +14622,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 6366,
+          "anchorEnd": 6434,
           "anchorFile": "package.json",
-          "anchorStart": 6348,
+          "anchorStart": 6416,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -14599,9 +14641,9 @@
       "bindings": [
         {
           "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-          "anchorEnd": 5506,
+          "anchorEnd": 5574,
           "anchorFile": "package.json",
-          "anchorStart": 5482,
+          "anchorStart": 5550,
           "kind": "package_script",
           "symbol": "verify:integrity-suite",
           "target": "package.json#scripts.verify:integrity-suite"
@@ -14625,9 +14667,9 @@
       "bindings": [
         {
           "anchorDigest": "1cbe53df7a178f5cc2daae7244d809f07856279d11c3eaa1c6fd9d3f6fdaa0d1",
-          "anchorEnd": 4350,
+          "anchorEnd": 4418,
           "anchorFile": "package.json",
-          "anchorStart": 4316,
+          "anchorStart": 4384,
           "kind": "package_script",
           "symbol": "verify:invitation-email-delivery",
           "target": "package.json#scripts.verify:invitation-email-delivery"
@@ -14651,9 +14693,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 5311,
+          "anchorEnd": 5379,
           "anchorFile": "package.json",
-          "anchorStart": 5279,
+          "anchorStart": 5347,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -14677,9 +14719,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 5421,
+          "anchorEnd": 5489,
           "anchorFile": "package.json",
-          "anchorStart": 5386,
+          "anchorStart": 5454,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -14749,27 +14791,27 @@
       "bindings": [
         {
           "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-          "anchorEnd": 4930,
+          "anchorEnd": 4998,
           "anchorFile": "package.json",
-          "anchorStart": 4907,
+          "anchorStart": 4975,
           "kind": "package_script",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
           "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-          "anchorEnd": 5028,
+          "anchorEnd": 5096,
           "anchorFile": "package.json",
-          "anchorStart": 5005,
+          "anchorStart": 5073,
           "kind": "package_script",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
           "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-          "anchorEnd": 5129,
+          "anchorEnd": 5197,
           "anchorFile": "package.json",
-          "anchorStart": 5103,
+          "anchorStart": 5171,
           "kind": "package_script",
           "symbol": "verify:performance-input",
           "target": "package.json#scripts.verify:performance-input"
@@ -14794,10 +14836,36 @@
     {
       "bindings": [
         {
-          "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-          "anchorEnd": 5598,
+          "anchorDigest": "f16317649db7c289cfd7103d67774cb7b79ffb51a25290e24f64f6c66d8937ac",
+          "anchorEnd": 4165,
           "anchorFile": "package.json",
-          "anchorStart": 5567,
+          "anchorStart": 4144,
+          "kind": "package_script",
+          "symbol": "verify:photo-upload",
+          "target": "package.json#scripts.verify:photo-upload"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/photo-upload-rehearsal.ts",
+        "packageScripts": [
+          "verify:photo-upload"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/photo-upload-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/photo-upload-rehearsal.ts",
+      "sidecarPath": "scripts/photo-upload-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
+          "anchorEnd": 5666,
+          "anchorFile": "package.json",
+          "anchorStart": 5635,
           "kind": "package_script",
           "symbol": "verify:platform-first-account",
           "target": "package.json#scripts.verify:platform-first-account"
@@ -14920,9 +14988,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 6309,
+          "anchorEnd": 6377,
           "anchorFile": "package.json",
-          "anchorStart": 6293,
+          "anchorStart": 6361,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -15261,9 +15329,9 @@
       "bindings": [
         {
           "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-          "anchorEnd": 5686,
+          "anchorEnd": 5754,
           "anchorFile": "package.json",
-          "anchorStart": 5666,
+          "anchorStart": 5734,
           "kind": "package_script",
           "symbol": "verify:quick-start",
           "target": "package.json#scripts.verify:quick-start"
@@ -15377,9 +15445,9 @@
       "bindings": [
         {
           "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
-          "anchorEnd": 4747,
+          "anchorEnd": 4815,
           "anchorFile": "package.json",
-          "anchorStart": 4721,
+          "anchorStart": 4789,
           "kind": "package_script",
           "symbol": "verify:simplified-signup",
           "target": "package.json#scripts.verify:simplified-signup"
@@ -15403,9 +15471,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 4840,
+          "anchorEnd": 4908,
           "anchorFile": "package.json",
-          "anchorStart": 4810,
+          "anchorStart": 4878,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -15429,9 +15497,9 @@
       "bindings": [
         {
           "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-          "anchorEnd": 5765,
+          "anchorEnd": 5833,
           "anchorFile": "package.json",
-          "anchorStart": 5743,
+          "anchorStart": 5811,
           "kind": "package_script",
           "symbol": "verify:system-backup",
           "target": "package.json#scripts.verify:system-backup"
@@ -15455,9 +15523,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 5239,
+          "anchorEnd": 5307,
           "anchorFile": "package.json",
-          "anchorStart": 5214,
+          "anchorStart": 5282,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -15474,9 +15542,9 @@
       "bindings": [
         {
           "anchorDigest": "2f3c7d20ad61237ef05fbeadf598c407e55bf2789382d7eb610ac925a054ef42",
-          "anchorEnd": 4174,
+          "anchorEnd": 4242,
           "anchorFile": "package.json",
-          "anchorStart": 4144,
+          "anchorStart": 4212,
           "kind": "package_script",
           "symbol": "verify:user-photo-gate-proof",
           "target": "package.json#scripts.verify:user-photo-gate-proof"
@@ -15526,36 +15594,36 @@
       "bindings": [
         {
           "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-          "anchorEnd": 5838,
+          "anchorEnd": 5906,
           "anchorFile": "package.json",
-          "anchorStart": 5824,
+          "anchorStart": 5892,
           "kind": "package_script",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
           "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-          "anchorEnd": 5893,
+          "anchorEnd": 5961,
           "anchorFile": "package.json",
-          "anchorStart": 5875,
+          "anchorStart": 5943,
           "kind": "package_script",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
           "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-          "anchorEnd": 5961,
+          "anchorEnd": 6029,
           "anchorFile": "package.json",
-          "anchorStart": 5936,
+          "anchorStart": 6004,
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
           "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-          "anchorEnd": 6031,
+          "anchorEnd": 6099,
           "anchorFile": "package.json",
-          "anchorStart": 6011,
+          "anchorStart": 6079,
           "kind": "package_script",
           "symbol": "verify:gates:image",
           "target": "package.json#scripts.verify:gates:image"
@@ -15579,8 +15647,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 238,
-  "observationDigest": "f6308a1143c095ce482937c0f719042d3d9191955c1b6c77b6e36320e0b0668f",
+  "observationCount": 239,
+  "observationDigest": "7c3ebc7c1413c2298d971480310a3e0938bbe0722235161f43aa36337c47ed2b",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -20942,9 +21010,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 6265,
+          "anchorEnd": 6333,
           "anchorFile": "package.json",
-          "anchorStart": 6256,
+          "anchorStart": 6324,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -20978,9 +21046,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4652,
+          "anchorEnd": 4720,
           "anchorFile": "package.json",
-          "anchorStart": 4620,
+          "anchorStart": 4688,
           "kind": "package_script",
           "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
           "symbol": "verify:admin-assisted-accounts",
@@ -21014,9 +21082,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4260,
+          "anchorEnd": 4328,
           "anchorFile": "package.json",
-          "anchorStart": 4230,
+          "anchorStart": 4298,
           "kind": "package_script",
           "ownerModule": "scripts/baby-photo-rehearsal-gate-proof.ts",
           "symbol": "verify:baby-photo-gate-proof",
@@ -21077,9 +21145,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4442,
+          "anchorEnd": 4510,
           "anchorFile": "package.json",
-          "anchorStart": 4410,
+          "anchorStart": 4478,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-pilot.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-pilot",
@@ -21095,9 +21163,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4547,
+          "anchorEnd": 4615,
           "anchorFile": "package.json",
-          "anchorStart": 4511,
+          "anchorStart": 4579,
           "kind": "package_script",
           "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
           "symbol": "verify:browser-operation-save-path",
@@ -21203,9 +21271,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 6366,
+          "anchorEnd": 6434,
           "anchorFile": "package.json",
-          "anchorStart": 6348,
+          "anchorStart": 6416,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -21221,9 +21289,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5506,
+          "anchorEnd": 5574,
           "anchorFile": "package.json",
-          "anchorStart": 5482,
+          "anchorStart": 5550,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
           "symbol": "verify:integrity-suite",
@@ -21239,9 +21307,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4350,
+          "anchorEnd": 4418,
           "anchorFile": "package.json",
-          "anchorStart": 4316,
+          "anchorStart": 4384,
           "kind": "package_script",
           "ownerModule": "scripts/invitation-email-delivery-rehearsal.ts",
           "symbol": "verify:invitation-email-delivery",
@@ -21257,9 +21325,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5311,
+          "anchorEnd": 5379,
           "anchorFile": "package.json",
-          "anchorStart": 5279,
+          "anchorStart": 5347,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -21275,9 +21343,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5421,
+          "anchorEnd": 5489,
           "anchorFile": "package.json",
-          "anchorStart": 5386,
+          "anchorStart": 5454,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -21338,27 +21406,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4930,
+          "anchorEnd": 4998,
           "anchorFile": "package.json",
-          "anchorStart": 4907,
+          "anchorStart": 4975,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
-          "anchorEnd": 5028,
+          "anchorEnd": 5096,
           "anchorFile": "package.json",
-          "anchorStart": 5005,
+          "anchorStart": 5073,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
-          "anchorEnd": 5129,
+          "anchorEnd": 5197,
           "anchorFile": "package.json",
-          "anchorStart": 5103,
+          "anchorStart": 5171,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-input",
@@ -21374,9 +21442,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5598,
+          "anchorEnd": 4165,
           "anchorFile": "package.json",
-          "anchorStart": 5567,
+          "anchorStart": 4144,
+          "kind": "package_script",
+          "ownerModule": "scripts/photo-upload-rehearsal.ts",
+          "symbol": "verify:photo-upload",
+          "target": "package.json#scripts.verify:photo-upload"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/photo-upload-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/photo-upload-rehearsal.ts",
+      "sidecarPath": "scripts/photo-upload-rehearsal.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 5666,
+          "anchorFile": "package.json",
+          "anchorStart": 5635,
           "kind": "package_script",
           "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
           "symbol": "verify:platform-first-account",
@@ -21491,9 +21577,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 6309,
+          "anchorEnd": 6377,
           "anchorFile": "package.json",
-          "anchorStart": 6293,
+          "anchorStart": 6361,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -21824,9 +21910,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5686,
+          "anchorEnd": 5754,
           "anchorFile": "package.json",
-          "anchorStart": 5666,
+          "anchorStart": 5734,
           "kind": "package_script",
           "ownerModule": "scripts/quick-start.acceptance-rehearsal.ts",
           "symbol": "verify:quick-start",
@@ -21923,9 +22009,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4747,
+          "anchorEnd": 4815,
           "anchorFile": "package.json",
-          "anchorStart": 4721,
+          "anchorStart": 4789,
           "kind": "package_script",
           "ownerModule": "scripts/simplified-signup.acceptance-rehearsal.ts",
           "symbol": "verify:simplified-signup",
@@ -21941,9 +22027,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4840,
+          "anchorEnd": 4908,
           "anchorFile": "package.json",
-          "anchorStart": 4810,
+          "anchorStart": 4878,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -21959,9 +22045,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5765,
+          "anchorEnd": 5833,
           "anchorFile": "package.json",
-          "anchorStart": 5743,
+          "anchorStart": 5811,
           "kind": "package_script",
           "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
           "symbol": "verify:system-backup",
@@ -21977,9 +22063,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5239,
+          "anchorEnd": 5307,
           "anchorFile": "package.json",
-          "anchorStart": 5214,
+          "anchorStart": 5282,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -21995,9 +22081,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4174,
+          "anchorEnd": 4242,
           "anchorFile": "package.json",
-          "anchorStart": 4144,
+          "anchorStart": 4212,
           "kind": "package_script",
           "ownerModule": "scripts/user-photo-rehearsal-gate-proof.ts",
           "symbol": "verify:user-photo-gate-proof",
@@ -22031,36 +22117,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5838,
+          "anchorEnd": 5906,
           "anchorFile": "package.json",
-          "anchorStart": 5824,
+          "anchorStart": 5892,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
-          "anchorEnd": 5893,
+          "anchorEnd": 5961,
           "anchorFile": "package.json",
-          "anchorStart": 5875,
+          "anchorStart": 5943,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
-          "anchorEnd": 5961,
+          "anchorEnd": 6029,
           "anchorFile": "package.json",
-          "anchorStart": 5936,
+          "anchorStart": 6004,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
-          "anchorEnd": 6031,
+          "anchorEnd": 6099,
           "anchorFile": "package.json",
-          "anchorStart": 6011,
+          "anchorStart": 6079,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:image",
@@ -23390,6 +23476,12 @@
       "sidecarPath": "scripts/performance-budgets.acceptance-rehearsal.operation.ts"
     },
     {
+      "id": "package_command:scripts/photo-upload-rehearsal.ts",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/photo-upload-rehearsal.ts",
+      "sidecarPath": "scripts/photo-upload-rehearsal.operation.ts"
+    },
+    {
       "id": "package_command:scripts/platform-first-account.acceptance-rehearsal.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
@@ -23504,9 +23596,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "05ce029810eabf5b7e1c751dcaa2bfcc1859451340ef5f641080e4d65325fb1a",
+  "ownerSetDigest": "6eb97ccf90db502fdc0e3aadee05da3e1734a535861ca266a4883dfe447af76b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "3635039814149dac9db689d372058433cbde03add1fc694df49759978e7d8c94",
+  "registryDigest": "264e3ddb3498825804152d54214170b1f4e8fdd6ecb416864af6a43663f2818e",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
