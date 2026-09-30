@@ -200,6 +200,22 @@ describe("editing a baby", () => {
     expect(mocks.writeAudit).not.toHaveBeenCalled();
   });
 
+  it("rechecks permission inside the transaction, so a member demoted mid-request cannot edit", async () => {
+    // Distinct from the suspension test above: disabledAt is refused by the actor lock, whereas a
+    // role downgrade is only caught by the permission recheck inside the transaction.
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
+      deletedAt: null
+    });
+
+    await expect(updateBaby("baby-1", { name: "Rosie" })).rejects.toThrow("forbidden");
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
   it("does not edit a baby from another household", async () => {
     mocks.babyFindFirst.mockResolvedValue(null);
 

@@ -311,11 +311,22 @@ export async function buildHouseholdV2Snapshot(
     tx.activityLog.findMany({ where: { householdId, deletedAt: null }, include: backupActivityInclude, orderBy: { occurredAt: "asc" } }),
     tx.calendarEvent.findMany({
       where: { householdId, deletedAt: null },
-      // Same reason as the notification selections above: a link to a hidden baby would dangle.
-      include: { babies: { where: { baby: { deletedAt: null } }, select: { babyId: true } }, contacts: { select: { contactId: true } } },
+      // A link to a hidden baby would dangle, but silently dropping every link is worse than
+      // dangling: calendar.ts treats an event with no links as applying to EVERY baby, so a
+      // baby-specific event would come back household-wide. Read the links with their state
+      // and decide per event below.
+      include: {
+        babies: { select: { babyId: true, baby: { select: { deletedAt: true } } } },
+        contacts: { select: { contactId: true } }
+      },
       orderBy: { startTime: "asc" }
     }),
-    tx.reminder.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),
+    tx.reminder.findMany({
+      // Reminder.babyId is required and soft-deleting a baby leaves the reminder behind,
+      // so an unfiltered read would name a baby the payload omits and fail every export.
+      where: { householdId, deletedAt: null, baby: { deletedAt: null } },
+      orderBy: { createdAt: "asc" }
+    }),
     tx.plannedSchedule.findMany({
       where: { householdId, baby: { deletedAt: null } },
       select: { babyId: true, document: true },
@@ -424,7 +435,11 @@ export async function buildHouseholdV2Snapshot(
       id, name, typicalDoseSize: typicalDoseSize == null ? null : String(typicalDoseSize), unit, doseMinTime, notes, active, isSupplement
     })),
     activities: activities.map(activityToInput),
-    calendarEvents: calendarEvents.map((event) => ({
+    calendarEvents: calendarEvents
+      // An event whose only babies are hidden is omitted outright. Exporting it with an empty
+      // baby list would widen it to the whole household on restore; see the include above.
+      .filter((event) => event.babies.length === 0 || event.babies.some((link) => link.baby.deletedAt === null))
+      .map((event) => ({
       id: event.id,
       title: event.title,
       description: event.description,
@@ -441,7 +456,7 @@ export async function buildHouseholdV2Snapshot(
       reminderMinutes: event.reminderMinutes,
       source: event.source,
       externalCaretakerNames: event.externalCaretakerNames,
-      babyIds: event.babies.map((link) => link.babyId),
+      babyIds: event.babies.filter((link) => link.baby.deletedAt === null).map((link) => link.babyId),
       contactIds: event.contacts.map((link) => link.contactId)
     })),
     reminders: reminders.map((reminder) => ({

@@ -133,8 +133,25 @@ describe("the baby delete dialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByRole("alert").textContent).toMatch(/no longer be removed outright/);
+    expect(screen.getByRole("alert").textContent).toMatch(/Close this and try again to hide it instead/);
     // Nothing disappears on a failure: the caller must not think it worked.
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("explains a running timer rather than failing generically", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: { code: "baby_has_active_timer", message: "Stop the running timer for this baby first." }
+      })
+    });
+    open({ canRemove: false });
+    type("Yes Delete Baby Sprout");
+    fireEvent.click(screen.getByRole("button", { name: /Delete baby/ }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Stop this baby's running timer first.")
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 

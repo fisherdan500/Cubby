@@ -63,6 +63,8 @@ export function BabyEditForm({ baby }: { baby: EditableBaby }) {
         | { ok: false; error?: { message?: string } }
         | null;
       if (!response.ok || !result?.ok) {
+        // Deliberately `message`, not `code`: this form shows the human sentence and never
+        // branches on a token. The delete dialog reads `code` because it does branch.
         setError(result && !result.ok ? result.error?.message ?? "Could not save these details." : "Could not save these details.");
         return;
       }

@@ -136,13 +136,20 @@ describe("the baby edit form", () => {
   it("reports a refusal and does not claim to have saved", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({ ok: false, error: { message: "baby_name_required" } })
+      // The real envelope from fail(): a human sentence in `message`, machine token in `code`.
+      // This form surfaces the sentence and must not print the token at a parent.
+      json: async () => ({
+        ok: false,
+        error: { code: "validation_error", message: "Please check the highlighted fields." }
+      })
     });
     render(<BabyEditForm baby={BABY} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Rosie" } });
     await save();
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Please check the highlighted fields.")
+    );
     expect(screen.queryByRole("status")).toBeNull();
     expect(refresh).not.toHaveBeenCalled();
   });

@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { ActivityType, DiaperKind, HouseholdRole } from "@prisma/client";
+import { ActivityType, DiaperKind, HouseholdRole, ReminderKind } from "@prisma/client";
 
 const auth = vi.hoisted(() => {
   const state = {
@@ -215,7 +215,11 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     expect(stored.name).toBe("Stranger");
     expect(stored.deletedAt).toBeNull();
   });
-  it("NEGATIVE CONTROL: audit rows cannot be deleted, and the reader notices a rewritten one", async () => {
+  // Scope, stated exactly: this establishes (a) audit rows cannot be deleted at all, and (b) the
+  // integrity reader is not a constant - it reports `stale` when the stored checkpoint
+  // disagrees with the chain. It does NOT establish detection of dropped rows, which is
+  // untestable here precisely because the database refuses both DELETE and UPDATE.
+  it("NEGATIVE CONTROL: audit rows cannot be deleted, and the reader is not a constant", async () => {
     // Every other test asserts `valid`. Without a control, an instrument that ALWAYS returned
     // valid would satisfy them all and the audit-chain assertions would prove nothing.
     const { household } = await createHousehold("Control");
@@ -233,7 +237,10 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
       .$executeRaw`DELETE FROM "AuditEvent" WHERE "id" = ${target.id}`
       .then(() => null, (reason: unknown) => reason);
     expect(deletion).not.toBeNull();
-    expect(String(deletion)).toContain("audit_event_append_only");
+    // Assert the raised constraint, not the rendered sentence: a substring scan of Prisma error
+    // text is the exact hazard the helper above documents.
+    expect(deletion).toBeInstanceOf(Error);
+    expect(/\baudit_event_append_only\b/.test((deletion as Error).message)).toBe(true);
     expect(await prisma.auditEvent.count({ where: { id: target.id } })).toBe(1);
 
     // Rewriting a hash is the damage the reader must catch. UPDATE is also trigger-guarded, so
@@ -244,37 +251,66 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
       data: { eventCount: 999 }
     });
     const damaged = await auditIntegrity(household.id);
-    expect(damaged.status).not.toBe("valid");
+    // Exact, not a negation: "missing" would also satisfy not.toBe("valid") and would mean
+    // the checkpoint row vanished rather than the reader detecting disagreement.
+    expect(damaged.status).toBe("stale");
   });
-  it("can still produce a backup after a baby with a calendar event is hidden", async () => {
-    // The regression this guards: the exporter drops hidden babies but kept their calendar links
-    // and notification selections, so the payload named a baby it did not carry and the format's
-    // own dangling-reference check refused EVERY future export for that household.
+  it("can still produce a backup after a baby with links is hidden, without changing what the survivors mean", async () => {
+    // The regression this guards: the exporter drops hidden babies but kept their calendar links,
+    // notification selections and reminders, so the payload named a baby it did not carry and the
+    // format's own dangling-reference check refused EVERY future export for that household.
     const { household, member } = await createHousehold("Backup");
-    const baby = await createBaby(household.id, "Hidden");
+    const hidden = await createBaby(household.id, "Hidden");
+    const kept = await createBaby(household.id, "Kept");
 
-    const event = await prisma.calendarEvent.create({
-      data: {
-        householdId: household.id,
-        title: "Checkup",
-        startTime: new Date("2026-02-01T10:00:00.000Z")
-      }
+    // An event linked ONLY to the baby being hidden. It must be omitted entirely: exporting it
+    // with an empty baby list would make it household-wide on restore, because the calendar
+    // reader treats "no baby links" as "applies to every baby".
+    const soloEvent = await prisma.calendarEvent.create({
+      data: { householdId: household.id, title: "Hidden only", startTime: new Date("2026-02-01T10:00:00.000Z") }
     });
     await prisma.calendarEventBaby.create({
-      data: { householdId: household.id, babyId: baby.id, eventId: event.id }
+      data: { householdId: household.id, babyId: hidden.id, eventId: soloEvent.id }
     });
+
+    // An event shared with a baby that stays. It must survive, still scoped to that baby alone.
+    const sharedEvent = await prisma.calendarEvent.create({
+      data: { householdId: household.id, title: "Shared", startTime: new Date("2026-02-02T10:00:00.000Z") }
+    });
+    for (const babyId of [hidden.id, kept.id]) {
+      await prisma.calendarEventBaby.create({
+        data: { householdId: household.id, babyId, eventId: sharedEvent.id }
+      });
+    }
+
+    // A truly household-wide event, which legitimately carries no baby links at all.
+    const wideEvent = await prisma.calendarEvent.create({
+      data: { householdId: household.id, title: "Everyone", startTime: new Date("2026-02-03T10:00:00.000Z") }
+    });
+
     const preference = await prisma.notificationPreference.create({
       data: { householdId: household.id, memberId: member.id, babyScope: "selected" }
     });
-    await prisma.notificationPreferenceBaby.create({
-      data: { householdId: household.id, preferenceId: preference.id, babyId: baby.id }
+    for (const babyId of [hidden.id, kept.id]) {
+      await prisma.notificationPreferenceBaby.create({
+        data: { householdId: household.id, preferenceId: preference.id, babyId }
+      });
+    }
+
+    // Reminder.babyId is required and the hide path does not touch reminders, so an unfiltered
+    // read dangles exactly like the calendar links did.
+    await prisma.reminder.create({
+      data: { householdId: household.id, babyId: hidden.id, kind: ReminderKind.feeding, title: "Feed Hidden" }
+    });
+    await prisma.reminder.create({
+      data: { householdId: household.id, babyId: kept.id, kind: ReminderKind.feeding, title: "Feed Kept" }
     });
 
     // Give it history so it takes the hide path rather than permanent removal.
     await prisma.activityLog.create({
       data: {
         householdId: household.id,
-        babyId: baby.id,
+        babyId: hidden.id,
         actorMemberId: member.id,
         type: ActivityType.diaper,
         occurredAt: new Date("2026-02-01T09:00:00.000Z"),
@@ -282,7 +318,7 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
         diaper: { create: { kind: DiaperKind.wet } }
       }
     });
-    await deleteBaby(baby.id, { confirmation: "Yes Delete Baby Hidden" });
+    await deleteBaby(hidden.id, { confirmation: "Yes Delete Baby Hidden" });
 
     // Reaching a result at all is half the proof: buildHouseholdV2Snapshot runs the payload
     // through v2PayloadSchema, whose superRefine throws backup_dangling_reference when anything
@@ -290,12 +326,21 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     // for every future export of this household.
     const { payload } = await buildHouseholdV2Snapshot(prisma, household.id);
 
-    expect(payload.babies.map((row) => row.id)).not.toContain(baby.id);
-    expect(payload.calendarEvents.length).toBeGreaterThan(0);
-    for (const item of payload.calendarEvents) expect(item.babyIds ?? []).not.toContain(baby.id);
-    for (const pref of payload.notificationPreferences ?? []) {
-      // babyIds lives inside the discriminated babyScope union, not at the top level.
-      expect(pref.babyScope.mode === "selected" ? pref.babyScope.babyIds : []).not.toContain(baby.id);
-    }
+    expect(payload.babies.map((row) => row.id)).toEqual([kept.id]);
+
+    // The hidden-only event is gone; the shared one survives scoped to the surviving baby only;
+    // the genuinely household-wide one keeps its empty list.
+    const exported = new Map(payload.calendarEvents.map((item) => [item.id, item]));
+    expect(exported.has(soloEvent.id)).toBe(false);
+    expect(exported.get(sharedEvent.id)?.babyIds).toEqual([kept.id]);
+    expect(exported.get(wideEvent.id)?.babyIds).toEqual([]);
+
+    // The reminder for the hidden baby is dropped, the other is kept.
+    expect(payload.reminders.map((item) => item.babyId)).toEqual([kept.id]);
+
+    // The selection keeps its surviving baby, so the member's rules still mean what they meant.
+    const preferences = payload.notificationPreferences ?? [];
+    expect(preferences).toHaveLength(1);
+    expect(preferences[0].babyScope).toEqual({ mode: "selected", babyIds: [kept.id] });
   });
 });
