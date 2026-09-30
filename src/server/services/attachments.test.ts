@@ -218,7 +218,13 @@ describe("opening a photo", () => {
     expect(mocks.requirePermission).toHaveBeenCalledWith(ctx, "activity.read");
     expect(mocks.attachment.findFirst.mock.calls[0][0].where).toEqual({
       id: "att-1", householdId: "household-1", state: "available",
-      post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
+      // Two ownership branches. The feed branch is the original predicate plus an explicit
+      // `postId: not null`, so it still cannot match a parentless row; the baby branch requires a
+      // visible baby and no post, so it cannot serve feed photos or an unclaimed staged upload.
+      OR: [
+        { postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+        { postId: null, type: "baby_photo", baby: { deletedAt: null } }
+      ]
     });
     expect(mocks.readObject).toHaveBeenCalledWith("/data/attachments", "0".repeat(32), { byteSize: 4, sha256: "a".repeat(64) });
   });

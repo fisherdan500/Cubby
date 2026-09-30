@@ -278,6 +278,32 @@ function startOfUtcDay(date: Date) {
 }
 
 /**
+ * Which stored photos this household may be served.
+ *
+ * Exported so acceptance tests can run the real predicate against real rows: a mocked Prisma call
+ * returns whatever the mock says and proves nothing about what the database would exclude.
+ *
+ * The two branches are disjoint by ownership and each carries its own liveness rule. A feed photo is
+ * readable while its post is live and that post's baby is not hidden; a baby photo is readable while
+ * the baby it belongs to is not hidden. Neither branch can serve the other's rows, so widening
+ * delivery for profile pictures cannot loosen the feed path: `postId: null` excludes every feed photo
+ * from the baby branch, and requiring `baby` excludes an unclaimed staged upload.
+ */
+export function servableAttachmentWhere(householdId: string, id: string): Prisma.AttachmentWhereInput {
+  return {
+    id,
+    householdId,
+    state: "available",
+    OR: [
+      // Feed photos: unchanged behaviour, still gated on a live post and a visible baby.
+      { postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+      // Baby photos: no post at all, and the owning baby must still be visible.
+      { postId: null, type: "baby_photo", baby: { deletedAt: null } }
+    ]
+  };
+}
+
+/**
  * The bytes of an available photo, for a current household member, on a live post - checked again
  * on every request. Missing, foreign, removed or switched-off photos all answer alike. Bytes that
  * went missing or changed stop being served from that moment.
@@ -294,12 +320,7 @@ export async function openAttachment(id: string, options: Options = {}) {
   requirePermission(ctx, "activity.read");
   const now = options.now ?? new Date();
   const attachment = await prisma.attachment.findFirst({
-    where: {
-      id,
-      householdId: ctx.householdId,
-      state: "available",
-      post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
-    },
+    where: servableAttachmentWhere(ctx.householdId, id),
     select: { id: true, type: true, storageKey: true, byteSize: true, sha256: true, mimeType: true }
   });
   if (!attachment || !attachmentTypeEnabled(attachment.type, options.enabled)) throw new Error("not_found");

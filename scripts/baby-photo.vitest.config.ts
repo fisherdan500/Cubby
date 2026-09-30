@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["scripts/baby-photo.integration.test.ts"],
+    include: ["scripts/baby-photo.integration.test.ts", "scripts/baby-photo-delivery.integration.test.ts"],
     testTimeout: 120_000,
     hookTimeout: 120_000,
     pool: "forks",
