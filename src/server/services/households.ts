@@ -211,13 +211,34 @@ function nestedBabyWhereClause(options?: BabyQueryOptions) {
   };
 }
 
+/**
+ * Each baby carries the id of its current profile picture, or null.
+ *
+ * Only the served picture is asked for: `available` excludes a staged upload nobody claimed and a
+ * retired one still inside its recovery window. The relation itself is stripped from the result so
+ * storage details never reach the browser - the id is all a caller needs to build a URL.
+ */
+const currentPhoto = {
+  attachments: {
+    where: { type: "baby_photo" as const, state: "available" as const },
+    select: { id: true }
+  }
+};
+
+function withPhotoId<T extends { attachments?: { id: string }[] }>(baby: T) {
+  const { attachments, ...rest } = baby;
+  return { ...rest, photoAttachmentId: attachments?.[0]?.id ?? null };
+}
+
 export async function listBabies(options?: BabyQueryOptions) {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
-  return prisma.baby.findMany({
+  const babies = await prisma.baby.findMany({
     where: babyWhereClause(ctx.householdId, options),
+    include: currentPhoto,
     orderBy: { createdAt: "asc" }
   });
+  return babies.map(withPhotoId);
 }
 
 export async function getHouseholdHome(options?: BabyQueryOptions) {
@@ -236,13 +257,16 @@ export async function getHouseholdHome(options?: BabyQueryOptions) {
           settings: true,
           babies: {
             where: nestedBabyWhereClause(options),
+            include: currentPhoto,
             orderBy: { createdAt: "asc" }
           }
         }
       }
     }
   });
-  return member;
+  if (!member) return member;
+  // Same shape as listBabies: the home screen renders the same babies and needs the same ids.
+  return { ...member, household: { ...member.household, babies: member.household.babies.map(withPhotoId) } };
 }
 
 export async function deactivateBaby(babyId: string, inactiveAt = new Date()) {
