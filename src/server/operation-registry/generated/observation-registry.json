@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 116,
-    "client_binding": 43,
+    "api_route": 118,
+    "client_binding": 44,
     "instrumentation": 1,
     "package_command": 34,
     "server_action": 1,
     "server_loader": 30,
     "worker": 8
   },
-  "declarationDigest": "02811d8b467666c498a8f7f4ea4cff2984d487790c9435cc35b27731f91303fc",
+  "declarationDigest": "9758d628f6a2688cb9af7b724f279d4ddfdeaef3316d527a0028952a6a46eb47",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -2112,6 +2112,36 @@
           {
             "kind": "route_method",
             "symbol": "POST",
+            "target": "src/app/api/attachments/baby-photos/route.ts#POST"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/attachments/baby-photos/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/attachments/baby-photos/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/attachments/baby-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/baby-photos/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "POST",
             "target": "src/app/api/attachments/feed-photos/route.ts#POST"
           }
         ],
@@ -2230,6 +2260,36 @@
       },
       "id": "api_route:src/app/api/babies/[id]/deactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
+            "symbol": "PUT",
+            "target": "src/app/api/babies/[id]/photo/route.ts#PUT"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/babies/[id]/photo/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/babies/[id]/photo/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/babies/[id]/photo/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/photo/route.operation.ts"
     },
     {
       "declaration": {
@@ -6603,6 +6663,41 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          },
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[2]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/babies/baby-photo-control.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/babies/baby-photo-control.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/babies/baby-photo-control.tsx",
+      "sidecarPath": "src/components/babies/baby-photo-control.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           }
         ],
         "deferredGateIds": [
@@ -8502,7 +8597,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "6b95828fa5732bf351805d71737cff6461fbde274860fd1afd27b1d6edad4659",
+  "generatorDigest": "29786201f481ca7c9ca154af29f9af8abba356f6740d9a643967314683426b60",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -8924,6 +9019,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "c972e8c512c08d8a3c7085862360a1a9938169a2999d71afa00bcb87e6aed920",
+          "anchorEnd": 1377,
+          "anchorFile": "src/app/api/attachments/baby-photos/route.ts",
+          "anchorStart": 870,
+          "kind": "route_method",
+          "symbol": "POST",
+          "target": "src/app/api/attachments/baby-photos/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/attachments/baby-photos/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/baby-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/baby-photos/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "515cbc8b7e034733298bef99e059462dbca5901bc5ccebd02b38055177213e05",
           "anchorEnd": 1097,
           "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
@@ -9005,6 +9119,25 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/deactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "46bf0b2744ff3efa641303ee28776f6520add1f9098ac05f0e8171387205b50c",
+          "anchorEnd": 1137,
+          "anchorFile": "src/app/api/babies/[id]/photo/route.ts",
+          "anchorStart": 621,
+          "kind": "route_method",
+          "symbol": "PUT",
+          "target": "src/app/api/babies/[id]/photo/route.ts#PUT"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/babies/[id]/photo/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/photo/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/photo/route.operation.ts"
     },
     {
       "bindings": [
@@ -11078,27 +11211,27 @@
       "bindings": [
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 564,
+          "anchorEnd": 639,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 548,
+          "anchorStart": 623,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "fa43e3aee96acb4f538b5bb5333b8e8eb7999c16b4dc7890d2ffe54c51a292be",
-          "anchorEnd": 586,
+          "anchorEnd": 661,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 566,
+          "anchorStart": 641,
           "kind": "server_value_import",
           "symbol": "listRemovableBabyIds",
           "target": "src/server/services/households.ts#listRemovableBabyIds"
         },
         {
           "anchorDigest": "ced2abb84fd8d5290270145816a83c96b38a13ea678653637085c0e24ca2ccec",
-          "anchorEnd": 502,
+          "anchorEnd": 577,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 483,
+          "anchorStart": 558,
           "kind": "server_value_import",
           "symbol": "requireSettingsPage",
           "target": "src/server/auth/page-access.ts#requireSettingsPage"
@@ -12359,6 +12492,34 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/auth/auth-form.tsx",
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "cd7cdc83a9719c35331b18b0a40db3405b6de6916e5d7717d26e77e5e1a80ace",
+          "anchorEnd": 1176,
+          "anchorFile": "src/components/babies/baby-photo-control.tsx",
+          "anchorStart": 1015,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorDigest": "c9baf2876c8ecd0ebda2dfff4050290d97c1f8464e760cd46fdc06c447b5b5d0",
+          "anchorEnd": 1730,
+          "anchorFile": "src/components/babies/baby-photo-control.tsx",
+          "anchorStart": 1564,
+          "kind": "global_fetch",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/babies/baby-photo-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/babies/baby-photo-control.tsx",
+      "sidecarPath": "src/components/babies/baby-photo-control.operation.ts"
     },
     {
       "bindings": [
@@ -15282,8 +15443,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 233,
-  "observationDigest": "ea20370c028ade086666ea4a11a4c5568406cc9106c6f617159257167e4a029c",
+  "observationCount": 236,
+  "observationDigest": "794e018d6487ca0021f7b890d8c4aedf492b5924a33ea818d0d13eedc1887f51",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -15686,6 +15847,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 1377,
+          "anchorFile": "src/app/api/attachments/baby-photos/route.ts",
+          "anchorStart": 870,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/attachments/baby-photos/route.ts",
+          "symbol": "POST",
+          "target": "src/app/api/attachments/baby-photos/route.ts#POST"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/attachments/baby-photos/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/baby-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/baby-photos/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1097,
           "anchorFile": "src/app/api/attachments/feed-photos/route.ts",
           "anchorStart": 592,
@@ -15763,6 +15942,24 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/deactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1137,
+          "anchorFile": "src/app/api/babies/[id]/photo/route.ts",
+          "anchorStart": 621,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/babies/[id]/photo/route.ts",
+          "symbol": "PUT",
+          "target": "src/app/api/babies/[id]/photo/route.ts#PUT"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/babies/[id]/photo/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/photo/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/photo/route.operation.ts"
     },
     {
       "bindings": [
@@ -17738,27 +17935,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 564,
+          "anchorEnd": 639,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 548,
+          "anchorStart": 623,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/babies/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 586,
+          "anchorEnd": 661,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 566,
+          "anchorStart": 641,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/babies/page.tsx",
           "symbol": "listRemovableBabyIds",
           "target": "src/server/services/households.ts#listRemovableBabyIds"
         },
         {
-          "anchorEnd": 502,
+          "anchorEnd": 577,
           "anchorFile": "src/app/app/babies/page.tsx",
-          "anchorStart": 483,
+          "anchorStart": 558,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/babies/page.tsx",
           "symbol": "requireSettingsPage",
@@ -18985,6 +19182,33 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/auth/auth-form.tsx",
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1176,
+          "anchorFile": "src/components/babies/baby-photo-control.tsx",
+          "anchorStart": 1015,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/babies/baby-photo-control.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        },
+        {
+          "anchorEnd": 1730,
+          "anchorFile": "src/components/babies/baby-photo-control.tsx",
+          "anchorStart": 1564,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/babies/baby-photo-control.tsx",
+          "symbol": "fetch[2]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/babies/baby-photo-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/babies/baby-photo-control.tsx",
+      "sidecarPath": "src/components/babies/baby-photo-control.operation.ts"
     },
     {
       "bindings": [
@@ -21800,6 +22024,12 @@
       "sidecarPath": "src/app/api/attachments/[id]/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/attachments/baby-photos/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/attachments/baby-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/baby-photos/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/attachments/feed-photos/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/attachments/feed-photos/route.ts",
@@ -21822,6 +22052,12 @@
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/babies/[id]/deactivate/route.ts",
       "sidecarPath": "src/app/api/babies/[id]/deactivate/route.operation.ts"
+    },
+    {
+      "id": "api_route:src/app/api/babies/[id]/photo/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/babies/[id]/photo/route.ts",
+      "sidecarPath": "src/app/api/babies/[id]/photo/route.operation.ts"
     },
     {
       "id": "api_route:src/app/api/babies/[id]/reactivate/route.ts",
@@ -22616,6 +22852,12 @@
       "sidecarPath": "src/components/auth/auth-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/babies/baby-photo-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/babies/baby-photo-control.tsx",
+      "sidecarPath": "src/components/babies/baby-photo-control.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/browser-operation-recovery.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/browser-operation-recovery.tsx",
@@ -23078,9 +23320,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "f6055af6e367f42a2a992bb2a615bb302ed62df80cf1d3758e89245c700e2e84",
+  "ownerSetDigest": "831a7a4d8272e684db870aea2ffe6ea428c26a73bc44e51c9cabe88836760095",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "e0c24ab9a048744433b7bf112bc0e6aeeb0adec80e4109e7864c652c554ca27e",
+  "registryDigest": "6900ad8639d148d31e924d0cc83ef15c192516fe92a66c1d01ea2942bcf9e7fb",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
