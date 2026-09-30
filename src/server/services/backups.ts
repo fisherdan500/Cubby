@@ -360,12 +360,16 @@ export async function buildHouseholdV2Snapshot(
     tx.attachment.findMany({
       where: {
         householdId,
-        type: "feed_photo",
         state: { in: ["available", "unavailable"] },
-        post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
+        // Split by ownership, so a baby's profile picture is carried too. A backup that silently
+        // omitted them would restore a household whose babies had lost their pictures.
+        OR: [
+          { type: "feed_photo", postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+          { type: "baby_photo", postId: null, baby: { deletedAt: null } }
+        ]
       },
-      select: { id: true, state: true, postId: true, position: true, width: true, height: true, byteSize: true, sha256: true },
-      orderBy: [{ postId: "asc" }, { position: "asc" }]
+      select: { id: true, state: true, postId: true, position: true, babyId: true, width: true, height: true, byteSize: true, sha256: true },
+      orderBy: [{ postId: "asc" }, { position: "asc" }, { babyId: "asc" }]
     })
   ]);
   if (activities.some((activity) => activity.timerState === TimerState.running || activity.timerState === TimerState.paused)) {
@@ -505,8 +509,10 @@ export async function buildHouseholdV2Snapshot(
       ? {
           feedPhotos: feedPhotos.map((photo) => ({
             id: photo.id,
-            postId: photo.postId!,
-            position: photo.position!,
+            // Nullable by ownership: a baby photo has no post or position, a feed photo has both.
+            postId: photo.postId,
+            position: photo.position,
+            babyId: photo.babyId,
             width: photo.width,
             height: photo.height,
             byteSize: photo.byteSize,
@@ -1008,10 +1014,16 @@ async function restoreV2InTransaction(
   for (const photo of payload.feedPhotos ?? []) {
     const storageKey = photoStorageKeys.get(photo.id);
     if (!storageKey) throw new Error("backup_photos_missing");
+    // Ownership decides the type and which id map applies. Both are resolved through the restore's
+    // own maps, so a photo can only ever land on a row this restore created.
+    const babyOwned = (photo.babyId ?? null) !== null;
+    const postId = photo.postId !== null ? postMap.get(photo.postId) ?? null : null;
+    const babyId = babyOwned ? babyMap.get(photo.babyId!) ?? null : null;
+    if (babyOwned ? !babyId : !postId) throw new Error("backup_dangling_reference");
     await tx.attachment.create({
       data: {
         householdId: lockedCtx.householdId,
-        type: "feed_photo",
+        type: babyOwned ? "baby_photo" : "feed_photo",
         state: "available",
         storageKey,
         byteSize: photo.byteSize,
@@ -1019,8 +1031,9 @@ async function restoreV2InTransaction(
         mimeType: "image/jpeg",
         width: photo.width,
         height: photo.height,
-        postId: postMap.get(photo.postId)!,
+        postId,
         position: photo.position,
+        babyId,
         activatedAt
       }
     });

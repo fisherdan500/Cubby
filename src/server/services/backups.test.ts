@@ -621,7 +621,15 @@ describe("backup unit preferences", () => {
     const result = kind === "manual" ? exportBackupForDownload() : exportHouseholdBackupJson("household-1");
     await expect(result).rejects.toThrow("backup_photo_unavailable");
     expect(mocks.attachmentFindMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ householdId: "household-1", post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } })
+      where: expect.objectContaining({
+        householdId: "household-1",
+        // Ownership split: the feed branch keeps its live-post and visible-baby rules, and the baby
+        // branch carries profile pictures of visible babies.
+        OR: [
+          { type: "feed_photo", postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+          { type: "baby_photo", postId: null, baby: { deletedAt: null } }
+        ]
+      })
     }));
     expect(mocks.backupCreate).not.toHaveBeenCalled();
     expect(mocks.writeAudit).not.toHaveBeenCalled();
@@ -1427,8 +1435,8 @@ describe("backups with photos", () => {
     id: "post-1", babyId: null, body: "", tags: [], occurredAt: new Date("2026-09-29T10:00:00Z"), externalAuthorName: null,
     author: { displayName: "Sam", user: { name: "Sam P" } }
   };
-  const photoRow = { id: "ph-1", state: "available", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
-  const listed = { id: "ph-1", postId: "post-1", position: 0, width: 800, height: 600, byteSize: 4, sha256: sha };
+  const photoRow = { id: "ph-1", state: "available", postId: "post-1", position: 0, babyId: null, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
+  const listed = { id: "ph-1", postId: "post-1", position: 0, babyId: null, width: 800, height: 600, byteSize: 4, sha256: sha };
 
   function photoBackup() {
     return createV2Backup({
@@ -1454,8 +1462,12 @@ describe("backups with photos", () => {
     const snapshot = await buildHouseholdV2Snapshot(transactionClient() as never, "household-1", "2026-09-30T10:00:00.000Z");
 
     expect(mocks.attachmentFindMany.mock.calls[0][0].where).toEqual({
-      householdId: "household-1", type: "feed_photo", state: { in: ["available", "unavailable"] },
-      post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] }
+      householdId: "household-1", state: { in: ["available", "unavailable"] },
+      // Split by ownership so profile pictures are carried too; the feed branch is unchanged.
+      OR: [
+        { type: "feed_photo", postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
+        { type: "baby_photo", postId: null, baby: { deletedAt: null } }
+      ]
     });
     expect(snapshot.payload.feedPhotos).toEqual([listed]);
 
@@ -1592,11 +1604,52 @@ describe("backups with photos", () => {
     expect(mocks.attachmentCreate).toHaveBeenCalledWith({
       data: {
         householdId: "household-1", type: "feed_photo", state: "available", storageKey, byteSize: 4, sha256: sha,
-        mimeType: "image/jpeg", width: 800, height: 600, postId: "saved-", position: 0, activatedAt: expect.any(Date)
+        mimeType: "image/jpeg", width: 800, height: 600, postId: "saved-", position: 0, babyId: null, activatedAt: expect.any(Date)
       }
     });
     expect(archive.close).toHaveBeenCalled();
     expect(mocks.removeObject).not.toHaveBeenCalled();
+  });
+
+  it("restores a baby's profile picture as a baby photo, onto the restored baby", async () => {
+    // The mutation that forced every restored photo to feed_photo survived all other coverage: a
+    // profile picture would come back as a feed photo owned by a post it never belonged to.
+    const babyPhoto = { id: "ph-2", postId: null, position: null, babyId: "baby-1", width: 512, height: 512, byteSize: 4, sha256: sha };
+    const backup = createV2Backup({
+      household: { name: "Recovered Home" }, settings: {},
+      babies: [{ id: "baby-1", name: "One", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+      feedPhotos: [babyPhoto]
+    }, "2026-09-30T10:00:00.000Z");
+    const archive = fakeArchive(backup);
+    mocks.openBackupArchive.mockResolvedValue(archive);
+    mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", inactiveAt: null });
+
+    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: backup.checksum }))
+      .resolves.toMatchObject({ counts: { feedPhotos: 1 } });
+
+    const [, storageKey] = mocks.writeObject.mock.calls[0];
+    expect(mocks.attachmentCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "baby_photo",
+        babyId: "saved-baby-1",
+        postId: null,
+        position: null,
+        storageKey
+      })
+    });
+  });
+
+  it("refuses a restore payload whose photo names a baby the backup does not carry", async () => {
+    // The format rejects this before any bytes are written, so an orphaned profile picture can never
+    // reach the restore transaction. The in-transaction guard remains the backstop for the same class.
+    expect(() =>
+      createV2Backup({
+        household: { name: "Recovered Home" }, settings: {},
+        babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+        feedPhotos: [{ id: "ph-3", postId: null, position: null, babyId: "baby-missing", width: 512, height: 512, byteSize: 4, sha256: sha }]
+      }, "2026-09-30T10:00:00.000Z")
+    ).toThrow("backup_dangling_reference");
   });
 
   it("retains owned photos for reconciliation on ambiguous failure, and refuses a stale preview first", async () => {

@@ -198,14 +198,26 @@ const feedReactionSchema = z
 const feedPhotoSchema = z
   .object({
     id: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
-    postId: id,
-    position: z.number().int().min(0).max(9),
+    // A photo is owned by a post (feed) or by a baby (profile picture), never both and never neither.
+    // The post-shaped fields are genuinely absent on a baby photo rather than placeholder values.
+    postId: id.nullable(),
+    position: z.number().int().min(0).max(9).nullable(),
+    babyId: id.nullable().optional(),
     width: z.number().int().positive().max(100_000),
     height: z.number().int().positive().max(100_000),
     byteSize: z.number().int().positive().max(25 * 1024 * 1024),
     sha256: z.string().regex(/^[a-f0-9]{64}$/)
   })
-  .strict();
+  .strict()
+  .superRefine((photo, ctx) => {
+    const postOwned = photo.postId !== null;
+    const babyOwned = (photo.babyId ?? null) !== null;
+    // Exactly one owner, and a post-owned photo must keep its position: the pair is what orders a
+    // post's photos and what makes them unique within it.
+    if (postOwned === babyOwned || (postOwned && photo.position === null) || (babyOwned && photo.position !== null)) {
+      ctx.addIssue({ code: "custom", message: "backup_photo_ownership" });
+    }
+  });
 
 export function feedPhotoArchiveName(photoId: string) {
   return `photos/${photoId}.jpg`;
@@ -306,7 +318,11 @@ const v2PayloadSchema = z
       payload.babies, payload.contacts, payload.catalogs, payload.activities, payload.calendarEvents, payload.reminders,
       payload.feedPosts ?? [], payload.feedComments ?? [], payload.feedPhotos ?? []
     ];
-    const photoPlaces = (payload.feedPhotos ?? []).map((photo) => `${photo.postId}:${photo.position}`);
+    // Keyed by owner: post-owned photos are unique by place within their post, baby-owned photos by
+    // baby. Keying every photo on postId:position would collide all baby photos on "null:null".
+    const photoPlaces = (payload.feedPhotos ?? []).map((photo) =>
+      photo.postId !== null ? `post:${photo.postId}:${photo.position}` : `baby:${photo.babyId}`
+    );
     if (new Set(photoPlaces).size !== photoPlaces.length) {
       ctx.addIssue({ code: "custom", message: "backup_duplicate_source_id" });
     }
@@ -353,7 +369,9 @@ const v2PayloadSchema = z
       (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId)) ||
       (payload.feedComments ?? []).some((item) => !onCarriedParent(item)) ||
       (payload.feedReactions ?? []).some((item) => !onCarriedParent(item)) ||
-      (payload.feedPhotos ?? []).some((item) => !posts.has(item.postId));
+      (payload.feedPhotos ?? []).some((item) =>
+        item.postId !== null ? !posts.has(item.postId) : !babies.has(item.babyId ?? "")
+      );
     if (dangling) ctx.addIssue({ code: "custom", message: "backup_dangling_reference" });
     for (const activity of payload.activities) {
       if (Object.keys(activity.detail).some((key) => reservedActivityDetailKeys.has(key))) {
