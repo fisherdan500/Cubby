@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { attachmentTypes } from "@/domain/attachments";
 import { prisma } from "@/lib/db/prisma";
 import type { HouseholdContext } from "@/server/auth/context";
 import { hashAuditEvent } from "@/server/services/audit-integrity";
@@ -168,7 +169,10 @@ const feedPostCreateSchema = z.object({
 // Attachment events (DEC-PROD-147) carry the type, safe counts and a fixed reason - never a filename,
 // path, checksum, size, bytes or anything the uploader supplied.
 const attachmentAuditSchema = z.object({
-  type: z.enum(["feed_photo"]),
+  // Every enabled attachment type, taken from the domain list rather than restated here: when this
+  // was a hand-written ["feed_photo"] it silently rejected every baby and user photo, and the family
+  // saw a validation error with nothing highlighted.
+  type: z.enum(attachmentTypes),
   count: z.number().int().nonnegative().optional(),
   unavailableCount: z.number().int().nonnegative().optional(),
   reason: z.enum(["unsupported_format", "too_large", "bytes_missing", "bytes_mismatch", "expired", "unclaimed"]).optional()
@@ -190,7 +194,12 @@ type AuditWriteDb = Pick<Prisma.TransactionClient, "auditEvent"> & {
   $executeRaw?: Prisma.TransactionClient["$executeRaw"];
 };
 
-function minimizeAuditPayload(
+/**
+ * Exported for tests only. The audit payload rules are a privacy contract and a correctness
+ * contract at once, and mocking writeAudit hides both; a test must be able to run the real
+ * validator.
+ */
+export function minimizeAuditPayload(
   action: z.infer<typeof auditActionSchema>,
   payload: Prisma.InputJsonValue | undefined,
   phase: "before" | "after"

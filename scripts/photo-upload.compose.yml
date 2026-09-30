@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cubby_photo_upload_acceptance
+      POSTGRES_USER: cubby_photo_upload_acceptance
+      POSTGRES_PASSWORD: ${CUBBY_PHOTO_UPLOAD_ACCEPTANCE_PASSWORD:?synthetic password required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cubby_photo_upload_acceptance -d cubby_photo_upload_acceptance"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports:
+      - "127.0.0.1::5432"
+    volumes:
+      - photo_upload_acceptance_data:/var/lib/postgresql/data
+
+volumes:
+  photo_upload_acceptance_data:
