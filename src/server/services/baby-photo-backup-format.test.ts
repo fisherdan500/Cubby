@@ -131,3 +131,30 @@ describe("baby photo bytes in the archive", () => {
     expect(feedPhotoArchiveName(parsed.backup.payload.feedPhotos![0].id)).toBe("photos/photo-1.jpg");
   });
 });
+
+describe("backups written before baby photos existed", () => {
+  it("still parses and still verifies its checksum", () => {
+    // The household already holds backups whose photos carry no babyId key at all. Making the
+    // ownership fields nullable must not strand them: if the recomputed canonical payload differed
+    // by even an added null, the stored checksum would no longer match and the file would be
+    // unrestorable. This is the regression that would quietly cost a household its recovery points.
+    const legacy = createV2Backup({
+      household: { name: "Home" }, settings: {},
+      babies: [{ id: "baby-1", name: "One", birthDate: null, timezone: "UTC", notes: null, inactiveAt: null }],
+      contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+      feedPosts: [POST],
+      // Exactly the shape the old exporter wrote: a post, a position, and no babyId key.
+      feedPhotos: [{ id: "photo-1", postId: "post-1", position: 0, width: 512, height: 512, byteSize: 2048, sha256: "a".repeat(64) }]
+    } as unknown as V2BackupPayload, exportedAt);
+
+    const parsed = parseBackup(legacy);
+
+    expect(parsed.version).toBe(2);
+    if (parsed.version !== 2) throw new Error("expected v2");
+    expect(parsed.checksumVerified).toBe(true);
+    const photo = parsed.backup.payload.feedPhotos![0];
+    expect(photo).toMatchObject({ postId: "post-1", position: 0 });
+    // No babyId was invented, so the payload still canonicalizes to what the checksum covered.
+    expect(Object.prototype.hasOwnProperty.call(photo, "babyId")).toBe(false);
+  });
+});
