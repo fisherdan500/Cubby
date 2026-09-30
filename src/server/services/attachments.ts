@@ -21,7 +21,7 @@ import { writeAudit } from "@/server/services/audit";
 import { getBrowserOperationContextForHousehold } from "@/server/services/browser-operations";
 import { lockPhotoWriteActor } from "@/server/services/photo-write-actor";
 import { withPhotoWriteOwnership, lockPhotoWriteIntent, transferPhotoWriteIntent, settledPhotoTransaction } from "@/server/services/attachment-write-intents";
-import { makeFeedPhotoThumbnail, processFeedPhoto } from "@/server/services/feed-photo-processing";
+import { makeFeedPhotoThumbnail, processAttachmentPhoto, processFeedPhoto } from "@/server/services/feed-photo-processing";
 
 /**
  * The attachment lifecycle (DEC-PROD-141-147) for its first type, feed photos (DEC-PROD-422):
@@ -143,6 +143,134 @@ export async function claimStagedFeedPhotos(
     entityId: params.postId,
     after: { type: TYPE, count: ids.length }
   }, tx);
+}
+
+const BABY_TYPE = "baby_photo" as const;
+
+/**
+ * Keep an uploaded baby profile picture, re-saved and verified, until a baby claims it or it expires
+ * unclaimed.
+ *
+ * Gated on `baby.manage`, NOT on `feed.post`. A caretaker may post to the family feed but may not
+ * manage a baby, and a child's profile picture is part of that child's identity rather than feed
+ * content - so the permission that guards renaming a baby is the one that guards their picture.
+ */
+export async function stageBabyPhoto(upload: Buffer, options: Options = {}) {
+  const ctx = await getBrowserOperationContextForHousehold();
+  requirePermission(ctx, "baby.manage");
+  if (!attachmentTypeEnabled(BABY_TYPE, options.enabled)) throw new Error("attachment_type_unavailable");
+
+  let photo;
+  try {
+    photo = await processAttachmentPhoto(upload, BABY_TYPE);
+  } catch (error) {
+    await prisma.$transaction(async (tx) => {
+      const current = await lockPhotoWriteActor(tx, ctx);
+      requirePermission(current, "baby.manage");
+      await writeAudit(current, {
+        action: "attachment.reject",
+        entityType: "attachment",
+        entityId: "upload",
+        after: { type: BABY_TYPE, reason: rejectionReason(error) }
+      }, tx);
+    });
+    throw error;
+  }
+
+  return withPhotoWriteOwnership(async (reserve) => {
+    const storageKey = await reserve(ctx, "photo_upload", photo);
+    return await settledPhotoTransaction(async (tx) => {
+      // Re-checked against the locked actor row: a member demoted between the request and the
+      // commit must not have their upload land anyway.
+      const current = await lockPhotoWriteActor(tx, ctx);
+      requirePermission(current, "baby.manage");
+      await lockPhotoWriteIntent(tx, storageKey, current.householdId, photo);
+      await writeAttachmentObject(directory(), storageKey, photo.bytes, { byteSize: photo.byteSize, sha256: photo.sha256 });
+      const attachment = await tx.attachment.create({
+        data: {
+          householdId: ctx.householdId,
+          type: BABY_TYPE,
+          storageKey,
+          byteSize: photo.byteSize,
+          sha256: photo.sha256,
+          mimeType: photo.mimeType,
+          width: photo.width,
+          height: photo.height,
+          createdByMemberId: ctx.memberId
+        },
+        select: { id: true }
+      });
+      await writeAudit(current, { action: "attachment.stage", entityType: "attachment", entityId: attachment.id, after: { type: BABY_TYPE } }, tx);
+      await transferPhotoWriteIntent(tx, storageKey, current.householdId, photo);
+      return { attachmentId: attachment.id, width: photo.width, height: photo.height };
+    });
+  });
+}
+
+/**
+ * Make this member's own staged photo the baby's current picture, retiring the previous one in the
+ * same transaction.
+ *
+ * Both writes have to be one transaction: the partial unique index permits only one photo per baby
+ * in the served state, so activating before retiring would be refused, and retiring without
+ * activating would leave the baby with no picture. The old row keeps its thirty-day recovery window
+ * rather than being erased.
+ */
+export async function claimStagedBabyPhoto(attachmentId: string, babyId: string, options: Options = {}) {
+  // The browser-operation context, not the plain household one: lockPhotoWriteActor pins the actor's
+  // session row as well as their membership, so it needs the session this request arrived on.
+  const ctx = await getBrowserOperationContextForHousehold();
+  requirePermission(ctx, "baby.manage");
+  if (!attachmentTypeEnabled(BABY_TYPE, options.enabled)) throw new Error("attachment_type_unavailable");
+  const now = options.now ?? new Date();
+
+  return prisma.$transaction(async (tx) => {
+    const current = await lockPhotoWriteActor(tx, ctx);
+    requirePermission(current, "baby.manage");
+
+    // Hidden babies are excluded: a soft-deleted baby must not gain a new picture.
+    const baby = await tx.baby.findFirst({
+      where: { id: babyId, householdId: ctx.householdId, deletedAt: null },
+      select: { id: true }
+    });
+    if (!baby) throw new Error("not_found");
+
+    // Lock this baby's photo rows before reading them, or two concurrent replacements each see no
+    // predecessor, each activate, and the second fails on the unique index instead of replacing.
+    await tx.$queryRaw`SELECT "id" FROM "Attachment" WHERE "householdId" = ${ctx.householdId} AND "babyId" = ${babyId} FOR UPDATE`;
+
+    const previous = await tx.attachment.findMany({
+      where: { householdId: ctx.householdId, babyId, type: BABY_TYPE, state: "available" },
+      select: { id: true }
+    });
+    for (const row of previous) {
+      await tx.attachment.updateMany({
+        where: { id: row.id, householdId: ctx.householdId, state: "available" },
+        data: { state: "deleted", deletedAt: now, purgeAfter: attachmentPurgeAfter(now), deletedByMemberId: ctx.memberId }
+      });
+    }
+
+    const claimed = await tx.attachment.updateMany({
+      where: {
+        id: attachmentId,
+        householdId: ctx.householdId,
+        type: BABY_TYPE,
+        state: "staging",
+        createdByMemberId: ctx.memberId
+      },
+      data: { state: "available", babyId, activatedAt: now }
+    });
+    if (claimed.count !== 1) throw new Error("not_found");
+
+    await writeAudit(current, {
+      action: "attachment.activate",
+      entityType: "baby",
+      entityId: babyId,
+      after: { type: BABY_TYPE }
+    }, tx);
+
+    return { attachmentId, babyId };
+  });
 }
 
 function startOfUtcDay(date: Date) {
