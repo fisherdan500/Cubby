@@ -95,7 +95,7 @@ describe("the baby delete dialog", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const body = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body)) as { mode: string };
-    expect(body.mode).toBe("hide");
+    expect(body).toEqual({ confirmation: "Yes Delete Baby Sprout", mode: "hide" });
   });
 
   it("says plainly that history is kept, so nobody expects an erase", () => {
@@ -133,7 +133,7 @@ describe("the baby delete dialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByRole("alert").textContent).toMatch(/Close this and try again to hide it instead/);
+    expect(screen.getByRole("alert").textContent).toBe("This baby now has history, so it can no longer be removed outright. Close this and try again to hide it instead.");
     // Nothing disappears on a failure: the caller must not think it worked.
     expect(refresh).not.toHaveBeenCalled();
   });
@@ -168,7 +168,7 @@ describe("the baby delete dialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByRole("alert").textContent).toMatch(/does not match/);
+    expect(screen.getByRole("alert").textContent).toBe("That phrase does not match.");
   });
 
   it("survives an unreachable server without claiming success", async () => {
@@ -177,7 +177,9 @@ describe("the baby delete dialog", () => {
     type("Yes Delete Baby Sprout");
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Could not reach Cubby. Try again.")
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 

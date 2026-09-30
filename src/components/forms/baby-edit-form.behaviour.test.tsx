@@ -160,7 +160,9 @@ describe("the baby edit form", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Rosie" } });
     await save();
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Could not reach Cubby. Try again.")
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 });

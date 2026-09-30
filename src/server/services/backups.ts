@@ -413,6 +413,11 @@ export async function buildHouseholdV2Snapshot(
         interruptionLevel: preference.interruptionLevel === "timeSensitive"
           ? ("time_sensitive" as const)
           : preference.interruptionLevel === "passive" ? ("passive" as const) : ("normal" as const),
+        // A selection whose babies are all hidden exports as an EMPTY selected list, not as
+        // mode "all". Both alternatives widen who gets told about which child: "all" sends
+        // every activity, and dropping the row lets the schema default (all) take over on the
+        // next write. An empty selection matches nothing, which is what the member already
+        // experiences live, since no activity can be created for a hidden baby.
         babyScope: preference.babyScope === "selected"
           ? { mode: "selected" as const, babyIds: selectedBabyIds }
           : { mode: "all" as const }

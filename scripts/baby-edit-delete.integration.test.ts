@@ -105,9 +105,11 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     const event = await prisma.auditEvent.findFirstOrThrow({
       where: { householdId: household.id, babyId: baby.id, action: "baby.update" }
     });
+    // Exact, not a substring scan: toContain("name") also passes for ["names"] or for a
+    // changed list that picked up birthDate as well. The leak checks below stay as scans,
+    // because there the whole point is that the value appears NOWHERE in the payload.
+    expect(event.after).toEqual({ changed: ["name", "notes"] });
     const after = JSON.stringify(event.after);
-    expect(after).toContain("name");
-    expect(after).toContain("notes");
     // The audit records WHICH details changed, never the child's details themselves.
     expect(after).not.toContain("Corrected Name");
     expect(after).not.toContain("blue blanket");
@@ -168,7 +170,9 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     expect(stored.deletedAt).not.toBeNull();
     // Nothing is erased: the history survives, which is what makes this reversible.
     const storedActivity = await prisma.activityLog.findUniqueOrThrow({ where: { id: activity.id } });
-    expect(storedActivity.deletedAt).not.toBeNull();
+    // One instant for the baby and its history: the service passes a single deletedAt to all
+    // three writes, so a per-write new Date() would show up here as a mismatch.
+    expect(storedActivity.deletedAt).toEqual(stored.deletedAt);
     expect(await prisma.diaperLog.findUnique({ where: { activityId: activity.id } })).not.toBeNull();
     expect(await auditIntegrity(household.id)).toMatchObject({ status: "valid" });
   });
@@ -342,5 +346,40 @@ describe("baby edit and delete disposable PostgreSQL acceptance", () => {
     const preferences = payload.notificationPreferences ?? [];
     expect(preferences).toHaveLength(1);
     expect(preferences[0].babyScope).toEqual({ mode: "selected", babyIds: [kept.id] });
+  });
+
+  it("exports a selection whose only baby is hidden as an empty selection, not as everyone", async () => {
+    // The degenerate case the partially-hidden test above cannot reach. Two things must hold:
+    // the payload still validates (there is deliberately no .min(1) on the selected list), and
+    // the scope stays "selected" with nothing in it. Normalising this to mode "all" would be a
+    // silent widening - the member would start receiving notifications for every child.
+    const { household, member } = await createHousehold("Degenerate");
+    const hidden = await createBaby(household.id, "Solo");
+    await createBaby(household.id, "Other");
+
+    const preference = await prisma.notificationPreference.create({
+      data: { householdId: household.id, memberId: member.id, babyScope: "selected" }
+    });
+    await prisma.notificationPreferenceBaby.create({
+      data: { householdId: household.id, preferenceId: preference.id, babyId: hidden.id }
+    });
+
+    await prisma.activityLog.create({
+      data: {
+        householdId: household.id,
+        babyId: hidden.id,
+        actorMemberId: member.id,
+        type: ActivityType.diaper,
+        occurredAt: new Date("2026-03-01T09:00:00.000Z"),
+        timezone: "UTC",
+        diaper: { create: { kind: DiaperKind.wet } }
+      }
+    });
+    await deleteBaby(hidden.id, { confirmation: "Yes Delete Baby Solo" });
+
+    const { payload } = await buildHouseholdV2Snapshot(prisma, household.id);
+    const preferences = payload.notificationPreferences ?? [];
+    expect(preferences).toHaveLength(1);
+    expect(preferences[0].babyScope).toEqual({ mode: "selected", babyIds: [] });
   });
 });
