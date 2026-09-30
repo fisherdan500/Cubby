@@ -67,6 +67,17 @@ describe("the baby edit form", () => {
     expect((screen.getByLabelText(/Timer warning/) as HTMLInputElement).value).toBe("");
   });
 
+  it("clears a threshold by sending null, not an empty string", async () => {
+    // The schema clears on null and REJECTS "", so sending the emptied box verbatim made a
+    // threshold settable but never unsettable. BABY.feedingWarningMinutes starts at 180.
+    render(<BabyEditForm baby={BABY} />);
+    fireEvent.change(screen.getByLabelText("Feed warning (min)"), { target: { value: "" } });
+    await save();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(sentBody()).toEqual({ feedingWarningMinutes: null });
+  });
+
   it("sends only the field that changed", async () => {
     render(<BabyEditForm baby={BABY} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Rosie" } });
@@ -125,13 +136,20 @@ describe("the baby edit form", () => {
   it("reports a refusal and does not claim to have saved", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({ ok: false, error: { message: "baby_name_required" } })
+      // The real envelope from fail(): a human sentence in `message`, machine token in `code`.
+      // This form surfaces the sentence and must not print the token at a parent.
+      json: async () => ({
+        ok: false,
+        error: { code: "validation_error", message: "Please check the highlighted fields." }
+      })
     });
     render(<BabyEditForm baby={BABY} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Rosie" } });
     await save();
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Please check the highlighted fields.")
+    );
     expect(screen.queryByRole("status")).toBeNull();
     expect(refresh).not.toHaveBeenCalled();
   });
@@ -142,7 +160,9 @@ describe("the baby edit form", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Rosie" } });
     await save();
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Could not reach Cubby. Try again.")
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 });

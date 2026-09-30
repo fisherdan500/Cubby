@@ -114,17 +114,55 @@ describe("editing a baby", () => {
       updateBaby("baby-1", { name: "Rosie", notes: "loves naps" })
     ).resolves.toMatchObject({ name: "Rosie" });
 
-    expect(mocks.babyUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "baby-1" },
-        data: expect.objectContaining({ name: "Rosie", notes: "loves naps" })
-      })
-    );
+    // Exact, not objectContaining: a mutation leaking an extra column (inactiveAt, deletedAt)
+    // into the same update would satisfy a containment check.
+    expect(mocks.babyUpdate).toHaveBeenCalledWith({
+      where: { id: "baby-1" },
+      data: { name: "Rosie", notes: "loves naps" }
+    });
     expect(mocks.writeAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ action: "baby.update", entityId: "baby-1", babyId: "baby-1" }),
       expect.anything()
     );
+  });
+
+  it("writes nothing when every supplied detail already matches", async () => {
+    // The point of the change detection: a no-op save must not touch the row or the audit chain,
+    // so two people editing different details cannot overwrite each other.
+    await expect(
+      updateBaby("baby-1", { name: ACTIVE_BABY.name, notes: ACTIVE_BABY.notes ?? undefined })
+    ).resolves.toMatchObject({ id: "baby-1" });
+
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("records only the detail that actually changed", async () => {
+    // notes is resent UNCHANGED alongside a changed name: if the diff check is dropped, `changed`
+    // becomes ["name","notes"] and this fails. Sending a new value for both would not detect that.
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY, notes: "same note" });
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, name: "Rosie", notes: "same note" });
+
+    await updateBaby("baby-1", { name: "Rosie", notes: "same note" });
+
+    const [, event] = mocks.writeAudit.mock.calls[0] as [unknown, { after: { changed: string[] } }];
+    expect(event.after.changed).toEqual(["name"]);
+  });
+
+  it("clears a warning threshold that currently has a value", async () => {
+    // The fixture's threshold must START set, or sending null is a no-op and proves nothing.
+    mocks.babyFindFirst.mockResolvedValue({ ...ACTIVE_BABY, feedingWarningMinutes: 180 });
+    mocks.babyUpdate.mockResolvedValue({ ...ACTIVE_BABY, feedingWarningMinutes: null });
+
+    await updateBaby("baby-1", { feedingWarningMinutes: null });
+
+    expect(mocks.babyUpdate).toHaveBeenCalledWith({
+      where: { id: "baby-1" },
+      data: { feedingWarningMinutes: null }
+    });
+    const [, cleared] = mocks.writeAudit.mock.calls[0] as [unknown, { after: { changed: string[] } }];
+    expect(cleared.after.changed).toEqual(["feedingWarningMinutes"]);
   });
 
   it("records which details changed but never their values", async () => {
@@ -157,6 +195,22 @@ describe("editing a baby", () => {
       householdId: "household-1",
       role: "owner",
       disabledAt: new Date(),
+      deletedAt: null
+    });
+
+    await expect(updateBaby("baby-1", { name: "Rosie" })).rejects.toThrow("forbidden");
+    expect(mocks.babyUpdate).not.toHaveBeenCalled();
+    expect(mocks.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it("rechecks permission inside the transaction, so a member demoted mid-request cannot edit", async () => {
+    // Distinct from the suspension test above: disabledAt is refused by the actor lock, whereas a
+    // role downgrade is only caught by the permission recheck inside the transaction.
+    mocks.memberFindUnique.mockResolvedValue({
+      id: "member-owner",
+      householdId: "household-1",
+      role: "read_only",
+      disabledAt: null,
       deletedAt: null
     });
 
@@ -366,10 +420,29 @@ describe("deleting a baby along with its history", () => {
       deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" })
     ).resolves.toMatchObject({ id: "baby-1" });
 
-    expect(mocks.babyUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "baby-1" }, data: expect.objectContaining({ deletedAt: expect.any(Date) }) })
-    );
-    expect(mocks.activityUpdateMany).toHaveBeenCalled();
+    expect(mocks.babyUpdate).toHaveBeenCalledWith({
+      where: { id: "baby-1" },
+      data: { deletedAt: expect.any(Date) }
+    });
+    // Scoped to THIS baby. A bare toHaveBeenCalled() here was blind to the where-clause, so
+    // dropping babyId - which would hide every baby's history in the household - passed.
+    expect(mocks.activityUpdateMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", babyId: "baby-1", deletedAt: null },
+      data: { deletedAt: expect.any(Date) }
+    });
+    expect(mocks.feedPostUpdateMany).toHaveBeenCalledWith({
+      where: { householdId: "household-1", babyId: "baby-1", deletedAt: null },
+      data: { deletedAt: expect.any(Date) }
+    });
+    // Only running or paused timers block a hide; ordinary history must not.
+    expect(mocks.activityCount).toHaveBeenCalledWith({
+      where: {
+        householdId: "household-1",
+        babyId: "baby-1",
+        deletedAt: null,
+        timerState: { in: ["running", "paused"] }
+      }
+    });
     // The audit chain hashes babyId, so removing rows would invalidate it.
     expect(mocks.babyDelete).not.toHaveBeenCalled();
   });
@@ -386,11 +459,23 @@ describe("deleting a baby along with its history", () => {
   it("records the deletion with the counts it hid", async () => {
     await deleteBaby("baby-1", { confirmation: "Yes Delete Baby Sprout" });
 
-    expect(mocks.writeAudit).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ action: "baby.delete", entityId: "baby-1", babyId: "baby-1" }),
-      expect.anything()
-    );
+    expect(mocks.writeAudit).toHaveBeenCalledTimes(1);
+    const [, event] = mocks.writeAudit.mock.calls[0] as [unknown, {
+      action: string;
+      entityId: string;
+      babyId: string;
+      after: Record<string, unknown>;
+    }];
+    expect(event.action).toBe("baby.delete");
+    expect(event.entityId).toBe("baby-1");
+    expect(event.babyId).toBe("baby-1");
+    // The fixtures set 3 activities and 1 feed post precisely so the counts can be checked;
+    // asserting the shape only would let the two be swapped.
+    expect(event.after).toEqual({
+      deletedAt: expect.any(String),
+      activityCount: 3,
+      feedPostCount: 1
+    });
   });
 
   it("is idempotent: deleting an already-deleted baby changes nothing further", async () => {

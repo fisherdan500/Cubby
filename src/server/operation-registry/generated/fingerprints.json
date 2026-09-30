@@ -2432,17 +2432,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "23da09ee14bcd7f7d21533bb24631d9dd331c152359539f07d4ab7cc15b0961f",
+          "digest": "232eeb04dcd7df98f6185a094ccff3eeb72b45e735e566e31708f566dec1aaa0",
           "file": "src/components/actions/baby-delete-dialog.tsx"
         }
       ],
       "declarationDigest": "718f7c0be52ba97a091ee844bd3832e696399a2300421f0a5552bb1087cfb142",
-      "fingerprint": "16de2ba991bce9da4209aeae9460e2ddacb9b0e07e9411f795fdcf2a85c9709a",
+      "fingerprint": "04653b63b0e841136b33dc02f437ec2f6424122c71961e50fcb429d60de70997",
       "id": "fingerprint:client_binding:src/components/actions/baby-delete-dialog.tsx",
       "ownerId": "client_binding:src/components/actions/baby-delete-dialog.tsx",
       "ownerModule": "src/components/actions/baby-delete-dialog.tsx",
       "sidecarPath": "src/components/actions/baby-delete-dialog.operation.ts",
-      "sourceDigest": "fabb487988c882e699f53b71b4c69b6347db84d678a110a82b24f7298521b64c",
+      "sourceDigest": "b87b335814f99daefcead193f422e56a4914c02a35efe8982e16dfb12a33a58b",
       "status": "declared"
     },
     {
@@ -2608,17 +2608,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "bc0444ed2f609b4d24d7a112cb2a39456e1615f80581d4a5b5d65839e9541a90",
+          "digest": "5833ccc8c55bce9935dd63bf9695f76e36b9d3eff7f9052021eb91c07d9b7ff9",
           "file": "src/components/forms/baby-edit-form.tsx"
         }
       ],
       "declarationDigest": "006d280aae711e34c1e792f5ea61d7c3f4b5132826b8c261a0bfe08d98306b3c",
-      "fingerprint": "e8cc8a6a4ae0dc7f4347b56fff22425710fe37181bbc9c3cc74e27a3779dcebb",
+      "fingerprint": "8b1f9a1deaea6f6b959b0033b0186cb657a85f1887b01ff10a5c5fdc75ac4523",
       "id": "fingerprint:client_binding:src/components/forms/baby-edit-form.tsx",
       "ownerId": "client_binding:src/components/forms/baby-edit-form.tsx",
       "ownerModule": "src/components/forms/baby-edit-form.tsx",
       "sidecarPath": "src/components/forms/baby-edit-form.operation.ts",
-      "sourceDigest": "cfa4788c286baed1c5f0bc3cfbaa9361ecfeb12687cad735be2e4abd66fc5709",
+      "sourceDigest": "8408c5676a1f34743eae0a0fe62f5900f14e1dd370f58b8fc8ae58b949b0482d",
       "status": "declared"
     },
     {
@@ -4212,11 +4212,11 @@
   ],
   "generatorDigest": "c7c88a2ebca67d8fc30089d04b62a8cbaf0943ad38c82aefa9077c2003de0456",
   "generatorVersion": "r0.1",
-  "observationDigest": "23e04f85624cf7b736cec119fbcbd691d142b0ab5d0b3b9e475af3bcf6e27176",
+  "observationDigest": "d9f6a00f6395947be0b0ff11455e0e52b7caa93b5b56e8b2dd6f77b43350990a",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "c1705da38acd88071110743543980e13508e676c80efa7e2cf187827ec650006",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a70d6c9f1fbdc28fb61392784bf93cfde0fc54de09d34775944793efca2551da",
+  "registryDigest": "6e2e2c9e3014b4ae528963b347b53044bce516b3dc7b9807d6204cdd574cf2d1",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

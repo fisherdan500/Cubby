@@ -95,7 +95,7 @@ describe("the baby delete dialog", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const body = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body)) as { mode: string };
-    expect(body.mode).toBe("hide");
+    expect(body).toEqual({ confirmation: "Yes Delete Baby Sprout", mode: "hide" });
   });
 
   it("says plainly that history is kept, so nobody expects an erase", () => {
@@ -119,29 +119,56 @@ describe("the baby delete dialog", () => {
   it("keeps the baby visible and explains itself when the server refuses", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({ ok: false, error: { message: "baby_has_history" } })
+      // The real envelope from fail(): token in `code`, human sentence in `message`.
+      json: async () => ({
+        ok: false,
+        error: {
+          code: "baby_has_history",
+          message: "This baby now has history, so it can no longer be removed outright. Hide it instead to keep its history."
+        }
+      })
     });
     open({ canRemove: true });
     type("Yes Delete Baby Sprout");
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByRole("alert").textContent).toMatch(/no longer be removed outright/);
+    expect(screen.getByRole("alert").textContent).toBe("This baby now has history, so it can no longer be removed outright. Close this and try again to hide it instead.");
     // Nothing disappears on a failure: the caller must not think it worked.
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("explains a running timer rather than failing generically", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: { code: "baby_has_active_timer", message: "Stop the running timer for this baby first." }
+      })
+    });
+    open({ canRemove: false });
+    type("Yes Delete Baby Sprout");
+    fireEvent.click(screen.getByRole("button", { name: /Delete baby/ }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Stop this baby's running timer first.")
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 
   it("explains a rejected phrase without inventing a reason", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({ ok: false, error: { message: "confirmation_mismatch" } })
+      json: async () => ({
+        ok: false,
+        error: { code: "confirmation_mismatch", message: "Type the confirmation phrase exactly as shown." }
+      })
     });
     open({ canRemove: true });
     type("Yes Delete Baby Sprout");
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByRole("alert").textContent).toMatch(/does not match/);
+    expect(screen.getByRole("alert").textContent).toBe("That phrase does not match.");
   });
 
   it("survives an unreachable server without claiming success", async () => {
@@ -150,7 +177,9 @@ describe("the baby delete dialog", () => {
     type("Yes Delete Baby Sprout");
     fireEvent.click(screen.getByRole("button", { name: /Remove profile/ }));
 
-    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe("Could not reach Cubby. Try again.")
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 

@@ -43,16 +43,18 @@ export function BabyDeleteDialog({
       });
       const result = await response.json().catch(() => null) as
         | { ok: true }
-        | { ok: false; error?: { message?: string } }
+        | { ok: false; error?: { code?: string } }
         | null;
       if (!response.ok || !result?.ok) {
-        const message = result && !result.ok ? result.error?.message : undefined;
+        // The envelope carries the machine token in `code`; `message` is the human sentence, which
+        // never equals the token. Reading `message` here made every branch below dead code.
+        const code = result && !result.ok ? result.error?.code : undefined;
         setError(
-          message === "baby_has_history"
+          code === "baby_has_history"
             ? "This baby now has history, so it can no longer be removed outright. Close this and try again to hide it instead."
-            : message === "confirmation_mismatch"
+            : code === "confirmation_mismatch"
               ? "That phrase does not match."
-              : message === "baby_has_active_timer"
+              : code === "baby_has_active_timer"
                 ? "Stop this baby's running timer first."
                 : "Could not delete this baby."
         );
