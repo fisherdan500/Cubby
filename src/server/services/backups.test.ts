@@ -627,7 +627,9 @@ describe("backup unit preferences", () => {
         // branch carries profile pictures of visible babies.
         OR: [
           { type: "feed_photo", postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
-          { type: "baby_photo", postId: null, baby: { deletedAt: null } }
+          { type: "baby_photo", postId: null, baby: { deletedAt: null } },
+          // A person's own picture, for a live enabled membership.
+          { type: "user_photo", postId: null, member: { deletedAt: null, disabledAt: null } }
         ]
       })
     }));
@@ -1435,8 +1437,9 @@ describe("backups with photos", () => {
     id: "post-1", babyId: null, body: "", tags: [], occurredAt: new Date("2026-09-29T10:00:00Z"), externalAuthorName: null,
     author: { displayName: "Sam", user: { name: "Sam P" } }
   };
-  const photoRow = { id: "ph-1", state: "available", postId: "post-1", position: 0, babyId: null, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
-  const listed = { id: "ph-1", postId: "post-1", position: 0, babyId: null, width: 800, height: 600, byteSize: 4, sha256: sha };
+  const photoRow = { id: "ph-1", state: "available", postId: "post-1", position: 0, babyId: null, member: null, width: 800, height: 600, byteSize: 4, sha256: sha, storageKey: "1".repeat(32) };
+  // A feed photo has no owning member, so memberEmail travels as null.
+  const listed = { id: "ph-1", postId: "post-1", position: 0, babyId: null, memberEmail: null, width: 800, height: 600, byteSize: 4, sha256: sha };
 
   function photoBackup() {
     return createV2Backup({
@@ -1466,7 +1469,9 @@ describe("backups with photos", () => {
       // Split by ownership so profile pictures are carried too; the feed branch is unchanged.
       OR: [
         { type: "feed_photo", postId: { not: null }, post: { deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] } },
-        { type: "baby_photo", postId: null, baby: { deletedAt: null } }
+        { type: "baby_photo", postId: null, baby: { deletedAt: null } },
+        // A person's own picture, for a live enabled membership.
+        { type: "user_photo", postId: null, member: { deletedAt: null, disabledAt: null } }
       ]
     });
     expect(snapshot.payload.feedPhotos).toEqual([listed]);
@@ -1574,6 +1579,44 @@ describe("backups with photos", () => {
     expect(mocks.readObject).toHaveBeenCalledWith(expect.any(String), "1".repeat(32), { byteSize: 4, sha256: sha });
   });
 
+  it("restores a person's own picture onto that person, not as a feed photo", async () => {
+    // The restore direction is where ownership mistakes do silent damage: a picture landing with the
+    // wrong type or a null owner is corruption that a format test cannot see.
+    const memberPhoto = { id: "ph-2", postId: null, position: null, babyId: null, memberEmail: "sam@example.test", width: 512, height: 512, byteSize: 4, sha256: sha };
+    const backup = createV2Backup({
+      household: { name: "Recovered Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+      members: [{ email: "sam@example.test", name: "Sam", role: "parent", displayName: null, joinedAt: "2026-09-29T10:00:00.000Z", disabledAt: null }],
+      feedPhotos: [memberPhoto]
+    }, "2026-09-30T10:00:00.000Z");
+    const archive = fakeArchive(backup);
+    mocks.openBackupArchive.mockResolvedValue(archive);
+    // The household already has this person, so the restore matches them by email.
+    mocks.memberFindMany.mockResolvedValue([{ id: "member-sam", userId: "user-sam", user: { email: "sam@example.test" } }]);
+
+    await restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: backup.checksum });
+
+    expect(mocks.attachmentCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ type: "user_photo", memberId: "member-sam", postId: null, position: null, babyId: null })
+    });
+  });
+
+  it("refuses a picture naming a person this household does not have", async () => {
+    // Otherwise the picture would restore onto nobody, or worse onto whoever happened to match.
+    const memberPhoto = { id: "ph-3", postId: null, position: null, babyId: null, memberEmail: "ghost@example.test", width: 512, height: 512, byteSize: 4, sha256: sha };
+    const backup = createV2Backup({
+      household: { name: "Recovered Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
+      members: [{ email: "ghost@example.test", name: "Ghost", role: "parent", displayName: null, joinedAt: "2026-09-29T10:00:00.000Z", disabledAt: null }],
+      feedPhotos: [memberPhoto]
+    }, "2026-09-30T10:00:00.000Z");
+    const archive = fakeArchive(backup);
+    mocks.openBackupArchive.mockResolvedValue(archive);
+    // Nobody in this household has that address, so there is no one to own the picture.
+    mocks.memberFindMany.mockResolvedValue([]);
+
+    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: backup.checksum }))
+      .rejects.toThrow("backup_dangling_reference");
+  });
+
   it("refuses to restore a backup that lists photos from its JSON alone", async () => {
     const backup = photoBackup();
     await expect(previewBackupJson(backup)).rejects.toThrow("backup_photos_missing");
@@ -1604,7 +1647,7 @@ describe("backups with photos", () => {
     expect(mocks.attachmentCreate).toHaveBeenCalledWith({
       data: {
         householdId: "household-1", type: "feed_photo", state: "available", storageKey, byteSize: 4, sha256: sha,
-        mimeType: "image/jpeg", width: 800, height: 600, postId: "saved-", position: 0, babyId: null, activatedAt: expect.any(Date)
+        mimeType: "image/jpeg", width: 800, height: 600, postId: "saved-", position: 0, babyId: null, memberId: null, activatedAt: expect.any(Date)
       }
     });
     expect(archive.close).toHaveBeenCalled();
@@ -1734,7 +1777,7 @@ describe("restoring members", () => {
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
-    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0 });
+    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0, memberIdByEmail: expect.any(Map) });
   });
 
   it("reports an email that is not already a member as needing an invitation", async () => {
@@ -1744,7 +1787,7 @@ describe("restoring members", () => {
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
-    expect(result.members).toEqual({ matched: 0, needInvite: ["dad@example.com"], preferencesRestored: 0 });
+    expect(result.members).toEqual({ matched: 0, needInvite: ["dad@example.com"], preferencesRestored: 0, memberIdByEmail: expect.any(Map) });
   });
 
   it("scopes the match to this household, so a file cannot name an account from elsewhere", async () => {
@@ -1794,7 +1837,7 @@ describe("restoring members", () => {
 
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
-    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0 });
+    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0, memberIdByEmail: expect.any(Map) });
   });
 
   it("carries no role from the file, so a backup cannot change anyone's authority", async () => {

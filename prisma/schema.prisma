@@ -589,6 +589,7 @@ model HouseholdMember {
   feedComments FeedComment[]
   feedReactions FeedReaction[]
   attachments Attachment[]
+  profilePhotos Attachment[] @relation("MemberProfilePhoto")
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -1128,6 +1129,7 @@ model FeedPost {
 enum AttachmentType {
   feed_photo
   baby_photo
+  user_photo
 }
 
 // staging: stored and verified, claimed by nothing yet. available: attached and served.
@@ -1172,6 +1174,7 @@ model Attachment {
   postId            String?
   position          Int?
   babyId            String?
+  memberId          String?
   createdByMemberId String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
@@ -1185,10 +1188,12 @@ model Attachment {
   post              FeedPost?        @relation(fields: [householdId, postId], references: [householdId, id], onDelete: Cascade)
   baby              Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
   createdBy         HouseholdMember? @relation(fields: [householdId, createdByMemberId], references: [householdId, id], onDelete: Restrict)
+  member            HouseholdMember? @relation("MemberProfilePhoto", fields: [householdId, memberId], references: [householdId, id], onDelete: Restrict)
 
   @@unique([householdId, id])
   @@unique([householdId, postId, position])
   @@index([householdId, babyId])
+  @@index([householdId, memberId])
   @@index([state, purgeAfter])
   @@index([state, createdAt])
 }

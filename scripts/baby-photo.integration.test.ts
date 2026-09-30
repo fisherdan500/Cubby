@@ -91,7 +91,9 @@ describe("baby photo attachment foundation, against real PostgreSQL", () => {
       FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
       WHERE t.typname = 'AttachmentType'
     `;
-    expect(enumValues.values).toEqual(["feed_photo", "baby_photo"]);
+    // The full list, in declaration order. It grows as attachment types are added; what this pins
+    // is that baby_photo is present and that no type was silently removed or reordered.
+    expect(enumValues.values).toEqual(["feed_photo", "baby_photo", "user_photo"]);
 
     const columns = await prisma.$queryRaw<{ column_name: string; is_nullable: string; column_default: string | null }[]>`
       SELECT column_name, is_nullable, column_default
