@@ -299,7 +299,9 @@ export async function buildHouseholdV2Snapshot(
       where: { householdId, status: "active" },
       select: {
         memberId: true, categories: true, quietHoursStart: true, quietHoursEnd: true, interruptionLevel: true,
-        babyScope: true, selectedBabies: { select: { babyId: true }, orderBy: { babyId: "asc" } }
+        // Hidden babies are excluded from `babies` below, so a selection naming one would be a
+        // dangling reference and the payload schema would refuse to export the household at all.
+        babyScope: true, selectedBabies: { where: { baby: { deletedAt: null } }, select: { babyId: true }, orderBy: { babyId: "asc" } }
       },
       orderBy: { memberId: "asc" }
     }),
@@ -309,7 +311,8 @@ export async function buildHouseholdV2Snapshot(
     tx.activityLog.findMany({ where: { householdId, deletedAt: null }, include: backupActivityInclude, orderBy: { occurredAt: "asc" } }),
     tx.calendarEvent.findMany({
       where: { householdId, deletedAt: null },
-      include: { babies: { select: { babyId: true } }, contacts: { select: { contactId: true } } },
+      // Same reason as the notification selections above: a link to a hidden baby would dangle.
+      include: { babies: { where: { baby: { deletedAt: null } }, select: { babyId: true } }, contacts: { select: { contactId: true } } },
       orderBy: { startTime: "asc" }
     }),
     tx.reminder.findMany({ where: { householdId, deletedAt: null }, orderBy: { createdAt: "asc" } }),

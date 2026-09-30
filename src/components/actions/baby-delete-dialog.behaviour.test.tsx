@@ -119,7 +119,14 @@ describe("the baby delete dialog", () => {
   it("keeps the baby visible and explains itself when the server refuses", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({ ok: false, error: { message: "baby_has_history" } })
+      // The real envelope from fail(): token in `code`, human sentence in `message`.
+      json: async () => ({
+        ok: false,
+        error: {
+          code: "baby_has_history",
+          message: "This baby now has history, so it can no longer be removed outright. Hide it instead to keep its history."
+        }
+      })
     });
     open({ canRemove: true });
     type("Yes Delete Baby Sprout");
@@ -134,7 +141,10 @@ describe("the baby delete dialog", () => {
   it("explains a rejected phrase without inventing a reason", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
-      json: async () => ({ ok: false, error: { message: "confirmation_mismatch" } })
+      json: async () => ({
+        ok: false,
+        error: { code: "confirmation_mismatch", message: "Type the confirmation phrase exactly as shown." }
+      })
     });
     open({ canRemove: true });
     type("Yes Delete Baby Sprout");

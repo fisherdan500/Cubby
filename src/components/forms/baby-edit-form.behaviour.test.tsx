@@ -67,6 +67,17 @@ describe("the baby edit form", () => {
     expect((screen.getByLabelText(/Timer warning/) as HTMLInputElement).value).toBe("");
   });
 
+  it("clears a threshold by sending null, not an empty string", async () => {
+    // The schema clears on null and REJECTS "", so sending the emptied box verbatim made a
+    // threshold settable but never unsettable. BABY.feedingWarningMinutes starts at 180.
+    render(<BabyEditForm baby={BABY} />);
+    fireEvent.change(screen.getByLabelText("Feed warning (min)"), { target: { value: "" } });
+    await save();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(sentBody()).toEqual({ feedingWarningMinutes: null });
+  });
+
   it("sends only the field that changed", async () => {
     render(<BabyEditForm baby={BABY} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Rosie" } });

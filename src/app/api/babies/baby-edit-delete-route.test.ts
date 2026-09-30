@@ -68,7 +68,9 @@ describe("baby edit and delete route", () => {
 
     const response = await DELETE(request({ confirmation: "wrong" }), { params: { id: "baby-1" } });
 
-    expect(response.status).toBeGreaterThanOrEqual(400);
+    // Exact status and code: a range check is satisfied by the 500 that means the code is unmapped.
+    expect(response.status).toBe(422);
+    expect((await response.json()).error.code).toBe("confirmation_mismatch");
   });
 
   it("reports a refused removal when the baby has history", async () => {
@@ -79,6 +81,7 @@ describe("baby edit and delete route", () => {
       { params: { id: "baby-1" } }
     );
 
-    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("baby_has_history");
   });
 });
