@@ -40,6 +40,7 @@ export const VERIFY_GATES: readonly VerifyGate[] = [
   { id: "photo-upload", group: "disposable", script: "verify:photo-upload", what: "a real photo upload through the real service, including the audit event it writes, against real PostgreSQL" },
   { id: "profile-photo", group: "disposable", script: "verify:profile-photo", what: "a member sets their own profile picture through the real service, against real PostgreSQL" },
   { id: "overnight-log", group: "disposable", script: "verify:overnight-log", what: "an activity that crosses midnight appears on both days, against real PostgreSQL" },
+  { id: "activity-photo", group: "disposable", script: "verify:activity-photo", what: "a photo on a logged entry stays a feed photo on a real post, and cannot link across households" },
   { id: "invitation-email-delivery", group: "disposable", script: "verify:invitation-email-delivery", what: "invitation email queue, grants, sending and cancellation against real PostgreSQL" },
   { id: "browser-operation-pilot", group: "disposable", script: "verify:browser-operation-pilot", what: "browser-operation constraints against real PostgreSQL" },
   { id: "sprout-preview-commit", group: "disposable", script: "verify:sprout-preview-commit", what: "Sprout preview and commit against real PostgreSQL" },

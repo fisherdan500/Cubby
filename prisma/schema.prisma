@@ -864,6 +864,7 @@ model ActivityLog {
   notificationLogs  NotificationLog[]
   pauseIntervals    ActivityTimerPauseInterval[]
   feedComments      FeedComment[]
+  photoPosts        FeedPost[]
   feedReactions     FeedReaction[]
 
   @@index([householdId])
@@ -1104,6 +1105,7 @@ model FeedPost {
   id                 String           @id @default(cuid())
   householdId        String
   babyId             String?
+  activityId         String?
   authorMemberId     String?
   externalAuthorName String?
   body               String
@@ -1117,6 +1119,7 @@ model FeedPost {
   household          Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
   baby               Baby?            @relation(fields: [householdId, babyId], references: [householdId, id], onDelete: Cascade)
   author             HouseholdMember? @relation(fields: [householdId, authorMemberId], references: [householdId, id], onDelete: Restrict)
+  activity           ActivityLog?     @relation(fields: [householdId, activityId], references: [householdId, id], onDelete: Cascade)
   comments           FeedComment[]
   reactions          FeedReaction[]
   photos             Attachment[]
@@ -1124,6 +1127,7 @@ model FeedPost {
   @@unique([householdId, id])
   @@index([householdId, babyId, occurredAt])
   @@index([householdId, occurredAt])
+  @@index([householdId, activityId])
 }
 
 enum AttachmentType {

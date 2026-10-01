@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ActivityArtwork } from "@/components/activity-artwork";
+import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import type { VolumeUnit } from "@/domain/units";
 import { describeActivity } from "@/lib/activity-format";
@@ -20,12 +21,18 @@ export function FeedActivityCard({
   returnTo,
   timeZone,
   volume,
+  photos,
   footer
 }: {
   activity: FeedActivity;
   returnTo: string;
   timeZone: string;
   volume: VolumeUnit;
+  /**
+   * Photos added to this entry. They live on the entry's own photo post, so they are delivered and
+   * backed up exactly like any other feed photo; the entry only presents them.
+   */
+  photos?: { id: string; width: number; height: number }[];
   footer?: React.ReactNode;
 }) {
   const type = activity.type as ActivityTypeName;
@@ -60,6 +67,7 @@ export function FeedActivityCard({
           <p className={milestone ? "font-editorial text-lg font-semibold" : "text-sm text-foreground/90"}>{summary}</p>
         ) : null}
       </Link>
+      {photos?.length ? <FeedPhotoGallery photos={photos} /> : null}
       {footer}
     </article>
   );

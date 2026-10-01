@@ -9,11 +9,12 @@ import {
   parseFeedPostEdit,
   parseFeedPostInput
 } from "@/domain/feed-post";
-import { hasPermission } from "@/domain/roles";
+import { hasPermission, canMutateOwnOrAny } from "@/domain/roles";
 import { prisma } from "@/lib/db/prisma";
 import { momentsAfter, type MomentsBoundary } from "@/lib/moments-pagination";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { claimStagedFeedPhotos, removePostPhotos, restorePostPhotos } from "@/server/services/attachments";
+import { parseFeedPostActivityLink } from "@/domain/feed-post-activity";
 import { writeAudit } from "@/server/services/audit";
 import {
   executeHouseholdBrowserOperation,
@@ -149,6 +150,8 @@ export async function issueFeedPostCreateBrowserOperation(raw: Record<string, un
 
 export async function submitFeedPostCreateBrowserOperation(raw: Record<string, unknown>, options: PhotoOptions = {}) {
   const input = parseFeedPostInput({ body: raw.body ?? "", babyId: raw.babyId ?? null, attachmentIds: raw.attachmentIds ?? [] });
+  // A post created by adding a photo to a logged entry records that entry; an ordinary post has none.
+  const activityId = parseFeedPostActivityLink(raw.activityId);
   if (input.attachmentIds.length > 0 && !attachmentTypeEnabled("feed_photo", options.enabled)) throw new Error("attachment_type_unavailable");
   const ctx = await getBrowserOperationContextForHousehold();
   return executeHouseholdBrowserOperation({
@@ -163,8 +166,24 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
         const baby = await tx.baby.findFirst({ where: { id: input.babyId, householdId: lockedCtx.householdId, deletedAt: null }, select: { id: true } });
         if (!baby) throw new Error("not_found");
       }
+      // Checked against the locked household inside the transaction: a post can never be linked to
+      // an entry in another household, or to one deleted while this request was in flight. The
+      // composite foreign key enforces the same thing in the database.
+      if (activityId) {
+        const activity = await tx.activityLog.findFirst({
+          where: { id: activityId, householdId: lockedCtx.householdId, deletedAt: null },
+          select: { id: true, actorMemberId: true }
+        });
+        if (!activity) throw new Error("not_found");
+        // Adding a photo to an entry changes that entry, so it needs the same authority editing it
+        // needs. The entry screen hides the control on the same rule; without this the screen would
+        // promise a restriction the server did not keep.
+        if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) {
+          throw new Error("forbidden");
+        }
+      }
       const post = await tx.feedPost.create({
-        data: { householdId: lockedCtx.householdId, babyId: input.babyId, authorMemberId: lockedCtx.memberId, body: input.body, tags: input.tags },
+        data: { householdId: lockedCtx.householdId, babyId: input.babyId, authorMemberId: lockedCtx.memberId, body: input.body, tags: input.tags, activityId },
         select: { id: true }
       });
       // The photos become visible exactly when the post does, or not at all.

@@ -58,7 +58,8 @@ export default async function FeedPage({
     nextCursor = page.nextCursor;
   } else {
     const page = paginateHistoryItems(await listActivities({ babyId, type: filter.type, page: historyPageQuery(searchParams.cursor) }));
-    items = page.items.map((activity) => ({ kind: "activity", at: activity.occurredAt, activity }));
+    // A single-type view lists entries only, so there is no photo post to fold into them here.
+    items = page.items.map((activity) => ({ kind: "activity", at: activity.occurredAt, activity, photos: [], photoPostId: null }));
     nextCursor = page.nextCursor;
   }
 
@@ -156,6 +157,7 @@ export default async function FeedPage({
                       returnTo={returnTo}
                       timeZone={env.APP_TIMEZONE}
                       volume={unitSettings.preferences.volume}
+                      photos={item.photos}
                       footer={responses("activity", item.activity.id)}
                     />
                   )}

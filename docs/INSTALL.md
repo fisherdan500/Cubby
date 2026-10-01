@@ -90,7 +90,9 @@ Set these up before the family relies on Cubby. There are two kinds, and you wan
   photo. It is how you bring everything back if the server dies. See
   [Whole-System Backup](recovery/system-backup.md).
 - **Household backups**, each household owner's: one household's data and photos, for moving a
-  household to another Cubby. Settings → Backups makes one on demand.
+  household to another Cubby. Settings → Backups makes one on demand. A photo added to a logged
+  entry stays attached to that entry through a backup and restore, so the entry and its picture
+  come back as one moment rather than two separate ones.
 
 Whole-system scripts require **Node.js 22+ on the host**, GNU tar/coreutils, and a planned
 maintenance window. `--maintenance` explicitly permits downtime: the sole app and its jobs

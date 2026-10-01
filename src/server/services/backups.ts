@@ -335,7 +335,7 @@ export async function buildHouseholdV2Snapshot(
     tx.feedPost.findMany({
       where: { householdId, deletedAt: null, OR: [{ babyId: null }, { baby: { deletedAt: null } }] },
       select: {
-        id: true, babyId: true, body: true, tags: true, occurredAt: true, externalAuthorName: true,
+        id: true, babyId: true, body: true, tags: true, occurredAt: true, activityId: true, externalAuthorName: true,
         author: { select: { displayName: true, user: { select: { name: true } } } }
       },
       orderBy: { occurredAt: "asc" }
@@ -384,6 +384,9 @@ export async function buildHouseholdV2Snapshot(
     throw new Error("backup_active_timer");
   }
   if (feedPhotos.some((photo) => photo.state === "unavailable")) throw new Error("backup_photo_unavailable");
+  // A photo post's entry link travels only when that entry is itself carried here. Derived from the
+  // exported rows rather than by repeating the export predicate, so the two cannot drift apart.
+  const exportedActivityIds = new Set(activities.map((activity) => activity.id));
   const snapshot = createV2Backup({
     household: { name: household.name },
     settings: settings
@@ -495,6 +498,9 @@ export async function buildHouseholdV2Snapshot(
       body: post.body,
       tags: post.tags,
       occurredAt: post.occurredAt.toISOString(),
+      // Only when that entry travels in this backup. A photo post outlives its entry's deletion, and
+      // naming an absent entry would make the payload dangle and the whole backup be refused.
+      activityId: post.activityId !== null && exportedActivityIds.has(post.activityId) ? post.activityId : null,
       authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone"
     })),
     feedComments: feedComments.map((comment) => ({
@@ -1000,7 +1006,10 @@ async function restoreV2InTransaction(
         externalAuthorName: post.authorName,
         body: post.body,
         tags: post.tags,
-        occurredAt: new Date(post.occurredAt)
+        occurredAt: new Date(post.occurredAt),
+        // Remapped to the restored entry, so an entry and its photo stay one moment. Entries are
+        // restored before posts, so the mapping is already complete here.
+        activityId: post.activityId ? activityMap.get(post.activityId)! : null
       }
     });
     postMap.set(post.id, saved.id);

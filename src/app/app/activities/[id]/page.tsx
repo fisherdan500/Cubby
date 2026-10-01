@@ -4,6 +4,9 @@ import { AppShell } from "@/components/app-shell";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { ConfirmedActivityDelete } from "@/components/actions/confirmed-activity-delete";
+import { ActivityPhotoControl } from "@/components/activities/activity-photo-control";
+import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
+import { FeedResponses } from "@/components/feed/feed-responses";
 import { TimerDot, TimerElapsed } from "@/components/timer-elapsed";
 import { Card } from "@/components/ui/card";
 import { activityLabels, type ActivityTypeName } from "@/domain/activity";
@@ -14,6 +17,8 @@ import { env } from "@/lib/env";
 import { normalizeTimeZone } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getActivityView } from "@/server/services/activities";
+import { activityResponsesQuery, listActivityPhotos } from "@/server/services/activity-responses";
+import { feedInteractionKey, listFeedInteractions } from "@/server/services/feed-interactions";
 import { getHouseholdHome } from "@/server/services/households";
 
 export default async function ActivityDetailPage({
@@ -35,6 +40,12 @@ export default async function ActivityDetailPage({
     safeActivityReturnTo(searchParams.returnTo) ??
     activityFallbackHref({ babyId: activity.babyId, occurredAt: activity.occurredAt, timeZone: env.APP_TIMEZONE });
   const presentation = buildActivityDetailSections(activity, env.APP_TIMEZONE);
+  // The same thread Moments shows for this entry, keyed by the activity so a reply left here is the
+  // reply seen there. Comments on an entry already existed; they were only ever visible in the feed.
+  const interactions = await listFeedInteractions(activityResponsesQuery(activity.id));
+  const responseKey = feedInteractionKey("activity", activity.id);
+  // The entry's own photos, which live on its photo posts.
+  const entryPhotos = await listActivityPhotos(activity.id);
   const actorName = activity.actorMember.displayName || activity.actorMember.user.name;
   const isInactiveBaby = Boolean((activity.baby as { inactiveAt?: Date | null }).inactiveAt);
   // Pause lives here rather than on the dashboard: it is far rarer than stop, and this is the screen
@@ -108,6 +119,29 @@ export default async function ActivityDetailPage({
             <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">{presentation.notes}</p>
           </Card>
         ) : null}
+
+        {/* What the family said about this entry. The same conversation as in Moments, not a second
+            one, so a reply here appears there and the other way round. */}
+        {/* A photo added here becomes this entry's own photo post, so Moments shows the entry and
+            its picture as one moment. The photo is an ordinary feed photo on that post, which is
+            what keeps private delivery and backups working. */}
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-muted-foreground">Photos</h2>
+          {entryPhotos.length ? <FeedPhotoGallery photos={entryPhotos} /> : null}
+          {canUpdate ? <ActivityPhotoControl activityId={activity.id} babyId={activity.babyId} /> : null}
+        </Card>
+
+        <Card className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-muted-foreground">Responses</h2>
+          <FeedResponses
+            parentKind="activity"
+            parentId={activity.id}
+            reactions={interactions.reactions[responseKey] ?? []}
+            comments={interactions.comments[responseKey] ?? []}
+            canRespond={interactions.canRespond}
+            timeZone={env.APP_TIMEZONE}
+          />
+        </Card>
 
         {/* Every action lives in one bar FIXED just above the phone's bottom navigation - not sticky,
             which only pinned once an activity was long enough and otherwise left the bar halfway up
