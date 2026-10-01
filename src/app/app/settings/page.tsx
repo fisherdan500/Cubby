@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Bell, DatabaseBackup, Download, KeyRound, LockKeyhole, LogOut, Palette, Ruler, Shield, SunMoon, UserRoundCog, Users } from "lucide-react";
+import { Baby, Bell, DatabaseBackup, Download, KeyRound, LockKeyhole, LogOut, Palette, Ruler, Shield, SunMoon, UserRound, UserRoundCog, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
@@ -24,7 +24,8 @@ const sections = [
 // These belong to the person rather than to a household role, so every signed-in member sees them.
 const accountSections = [
   { href: "/account/security", label: "Account security", description: "Change your password or email, set up recovery codes, and see your security history.", icon: LockKeyhole },
-  { href: "/account/appearance", label: "Personal appearance", description: "Your own light, dark or system theme, kept across your devices.", icon: SunMoon }
+  { href: "/account/appearance", label: "Personal appearance", description: "Your own light, dark or system theme, kept across your devices.", icon: SunMoon },
+  { href: "/account/profile", label: "Your picture", description: "The picture shown beside the moments you post.", icon: UserRound }
 ] satisfies Array<{ href: string; label: string; description: string; icon: typeof Shield }>;
 
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {

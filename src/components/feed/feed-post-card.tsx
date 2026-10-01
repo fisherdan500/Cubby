@@ -1,5 +1,5 @@
+import { MemberAvatar } from "@/components/members/member-avatar";
 import Link from "next/link";
-import { PenLine } from "lucide-react";
 import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
 import { FeedPostBody, FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
 import { feedHref } from "@/lib/feed";
@@ -11,6 +11,7 @@ type FeedPost = {
   occurredAt: Date;
   updatedAt: Date;
   authorName: string;
+  authorPhotoAttachmentId?: string | null;
   canRemove: boolean;
   canEdit?: boolean;
   edited?: boolean;
@@ -45,9 +46,8 @@ export function FeedPostCard({
   return (
     <article aria-label="Post" className="space-y-2 rounded-xl border border-border bg-card p-3.5">
       <header className="flex items-center gap-3">
-        <span aria-hidden="true" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <PenLine className="h-4 w-4" />
-        </span>
+        {/* The person who wrote it, not a generic pen: a household feed is people. */}
+        <MemberAvatar name={post.authorName} photoAttachmentId={post.authorPhotoAttachmentId ?? null} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{post.authorName}</p>
           <p className="text-xs text-muted-foreground">

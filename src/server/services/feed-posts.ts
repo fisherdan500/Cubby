@@ -78,7 +78,13 @@ export async function listFeedPosts(params: {
       ...(params.withPhotos ? { photos: { some: { state: "available" as const } } } : {})
     },
     include: {
-      author: { select: { displayName: true, user: { select: { name: true } } } },
+      author: {
+        select: {
+          displayName: true,
+          user: { select: { name: true } },
+          attachments: { where: { type: "user_photo", state: "available" }, select: { id: true }, take: 1 }
+        }
+      },
       photos: shownPhotos,
       _count: { select: { photos: { where: { householdId: ctx.householdId, state: { in: ["available", "unavailable"] } } } } }
     },
@@ -88,6 +94,7 @@ export async function listFeedPosts(params: {
     ...post,
     hasRetainedPhotos: (_count?.photos ?? 0) > 0,
     authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone",
+    authorPhotoAttachmentId: post.author?.attachments?.[0]?.id ?? null,
     edited: post.editedAt !== null,
     canEdit: canEditFeedPost(ctx.role, post.authorMemberId === ctx.memberId),
     canRemove: canRemoveFeedPost(ctx.role, post.authorMemberId === ctx.memberId)

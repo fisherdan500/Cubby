@@ -445,6 +445,23 @@
       "sidecarPath": "src/app/api/attachments/feed-photos/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    requirePermission(await getEffectiveHouseholdContext(), \"session.manage\");\n    return await withPhotoUploadAdmission(async () => {\n      const upload = await readBoundedBytes(request, attachmentPolicy.user_photo.maxInputBytes, \"attachment_too_large\");\n      const staged = await stageUserPhoto(upload);\n      return ok(staged, { status: 201, headers: { \"Cache-Control\": \"no-store\" } });\n    });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "3994cd154e4e2dd62e123b9696f6ae913951f77d7ad35e87f624268881f0bcc9",
+      "anchorEnd": 1410,
+      "anchorFile": "src/app/api/attachments/user-photos/route.ts",
+      "anchorStart": 900,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/attachments/user-photos/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/attachments/user-photos/route.ts:route_method:POST:src/app/api/attachments/user-photos/route.ts#POST",
+      "ownerId": "api_route:src/app/api/attachments/user-photos/route.ts",
+      "ownerModule": "src/app/api/attachments/user-photos/route.ts",
+      "sidecarPath": "src/app/api/attachments/user-photos/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const search = new URL(request.url).searchParams;\n    const babyId = search.get(\"babyId\");\n    if (babyId) return ok(await listBabySafetyHistory(babyId));\n    if (search.get(\"format\") === \"csv\") {\n      return new Response(await exportHouseholdAuditCsv(), {\n        headers: {\n          \"content-type\": \"text/csv; charset=utf-8\",\n          \"content-disposition\": 'attachment; filename=\"cubby-audit.csv\"'\n        }\n      });\n    }\n    const rawLimit = search.get(\"limit\");\n    const limit = rawLimit === null ? undefined : Number(rawLimit);\n    return ok(await listHouseholdAuditEvents({ limit, cursor: search.get(\"cursor\") ?? undefined }));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "6a19a6713c90c0c1092316d186321e75871d859fe1f5adea8046aa47340c8ab2",
       "anchorEnd": 969,
@@ -1871,6 +1888,23 @@
       "ownerId": "api_route:src/app/api/members/assisted-account/route.ts",
       "ownerModule": "src/app/api/members/assisted-account/route.ts",
       "sidecarPath": "src/app/api/members/assisted-account/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function PUT(request: Request) {\n  try {\n    const body = (await request.json().catch(() => null)) as { attachmentId?: unknown } | null;\n    const attachmentId = typeof body?.attachmentId === \"string\" ? body.attachmentId : \"\";\n    if (!attachmentId) throw new Error(\"attachment_not_found\");\n    const claimed = await claimStagedUserPhoto(attachmentId);\n    return ok(claimed, { headers: { \"Cache-Control\": \"no-store\" } });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "930cc5def3de431ed4b0b5bf284bdf958c8bd9ef27d18b5ede5900809fad5d60",
+      "anchorEnd": 1010,
+      "anchorFile": "src/app/api/members/me/photo/route.ts",
+      "anchorStart": 518,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "PUT",
+        "target": "src/app/api/members/me/photo/route.ts#PUT"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/members/me/photo/route.ts:route_method:PUT:src/app/api/members/me/photo/route.ts#PUT",
+      "ownerId": "api_route:src/app/api/members/me/photo/route.ts",
+      "ownerModule": "src/app/api/members/me/photo/route.ts",
+      "sidecarPath": "src/app/api/members/me/photo/route.operation.ts"
     },
     {
       "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const result = await issueNotificationPreferenceBrowserOperation(await request.json() as { operationId?: unknown });\n    return ok(result, { status: result.status === \"pending\" ? 202 : result.status === \"expired\" ? 410 : 200 });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
@@ -3403,6 +3437,40 @@
       "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts"
     },
     {
+      "anchorBytes": "fetch(\"/api/attachments/user-photos\", {\n      method: \"POST\",\n      headers: { \"content-type\": file.type || \"application/octet-stream\" },\n      body: file\n    })",
+      "anchorDigest": "1e4c077934c68a1d0fafc752726b0bfa8a44731c904ea701a73c708343dd3ef7",
+      "anchorEnd": 1316,
+      "anchorFile": "src/components/members/profile-photo-control.tsx",
+      "anchorStart": 1155,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/members/profile-photo-control.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/members/profile-photo-control.tsx",
+      "ownerModule": "src/components/members/profile-photo-control.tsx",
+      "sidecarPath": "src/components/members/profile-photo-control.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/members/me/photo\", {\n      method: \"PUT\",\n      headers: { \"content-type\": \"application/json\" },\n      body: JSON.stringify({ attachmentId })\n    })",
+      "anchorDigest": "fca827b54002113a43b613db06aedfc02b621b7366bce2ee73a960ec3d1951e3",
+      "anchorEnd": 1864,
+      "anchorFile": "src/components/members/profile-photo-control.tsx",
+      "anchorStart": 1704,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/members/profile-photo-control.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/members/profile-photo-control.tsx",
+      "ownerModule": "src/components/members/profile-photo-control.tsx",
+      "sidecarPath": "src/components/members/profile-photo-control.operation.ts"
+    },
+    {
       "anchorBytes": "fetch(\"/api/account/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "8c160fa57e73ca5990932149bf8f9a2be47bb2c34437d02ed517954c43131ca9",
       "anchorEnd": 1347,
@@ -4595,9 +4663,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 6403,
+      "anchorEnd": 6473,
       "anchorFile": "package.json",
-      "anchorStart": 6394,
+      "anchorStart": 6464,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -4629,9 +4697,9 @@
     {
       "anchorBytes": "\"verify:admin-assisted-accounts\"",
       "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
-      "anchorEnd": 4790,
+      "anchorEnd": 4860,
       "anchorFile": "package.json",
-      "anchorStart": 4758,
+      "anchorStart": 4828,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:admin-assisted-accounts",
@@ -4663,9 +4731,9 @@
     {
       "anchorBytes": "\"verify:baby-photo-gate-proof\"",
       "anchorDigest": "a83dcbf495d056e8bd1934bfdf8b91fd41e29c52ec3be5bb548a1e398f0c73f4",
-      "anchorEnd": 4398,
+      "anchorEnd": 4468,
       "anchorFile": "package.json",
-      "anchorStart": 4368,
+      "anchorStart": 4438,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:baby-photo-gate-proof",
@@ -4731,9 +4799,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-pilot\"",
       "anchorDigest": "11526cb615ad2a157ec94eb8247060782d035f27e58c715f713d38e6fd95b0fd",
-      "anchorEnd": 4580,
+      "anchorEnd": 4650,
       "anchorFile": "package.json",
-      "anchorStart": 4548,
+      "anchorStart": 4618,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-pilot",
@@ -4748,9 +4816,9 @@
     {
       "anchorBytes": "\"verify:browser-operation-save-path\"",
       "anchorDigest": "70acdd6014157a800a49c4a0a9e31eb360b898c693a7e45928062ab2e1cd57fa",
-      "anchorEnd": 4685,
+      "anchorEnd": 4755,
       "anchorFile": "package.json",
-      "anchorStart": 4649,
+      "anchorStart": 4719,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:browser-operation-save-path",
@@ -4918,9 +4986,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 6504,
+      "anchorEnd": 6574,
       "anchorFile": "package.json",
-      "anchorStart": 6486,
+      "anchorStart": 6556,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -4935,9 +5003,9 @@
     {
       "anchorBytes": "\"verify:integrity-suite\"",
       "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-      "anchorEnd": 5644,
+      "anchorEnd": 5714,
       "anchorFile": "package.json",
-      "anchorStart": 5620,
+      "anchorStart": 5690,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity-suite",
@@ -4952,9 +5020,9 @@
     {
       "anchorBytes": "\"verify:invitation-email-delivery\"",
       "anchorDigest": "1cbe53df7a178f5cc2daae7244d809f07856279d11c3eaa1c6fd9d3f6fdaa0d1",
-      "anchorEnd": 4488,
+      "anchorEnd": 4558,
       "anchorFile": "package.json",
-      "anchorStart": 4454,
+      "anchorStart": 4524,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:invitation-email-delivery",
@@ -4969,9 +5037,9 @@
     {
       "anchorBytes": "\"verify:overnight-log\"",
       "anchorDigest": "08f1c7a9464661759b4e7d05e5bdf99e65901ed7eec6791804964a37ab5e5416",
-      "anchorEnd": 4234,
+      "anchorEnd": 4304,
       "anchorFile": "package.json",
-      "anchorStart": 4212,
+      "anchorStart": 4282,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:overnight-log",
@@ -4986,9 +5054,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 5449,
+      "anchorEnd": 5519,
       "anchorFile": "package.json",
-      "anchorStart": 5417,
+      "anchorStart": 5487,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -5003,9 +5071,9 @@
     {
       "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
       "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-      "anchorEnd": 5559,
+      "anchorEnd": 5629,
       "anchorFile": "package.json",
-      "anchorStart": 5524,
+      "anchorStart": 5594,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-invitation-acceptance",
@@ -5088,9 +5156,9 @@
     {
       "anchorBytes": "\"verify:performance-1y\"",
       "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-      "anchorEnd": 5068,
+      "anchorEnd": 5138,
       "anchorFile": "package.json",
-      "anchorStart": 5045,
+      "anchorStart": 5115,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-1y",
@@ -5105,9 +5173,9 @@
     {
       "anchorBytes": "\"verify:performance-5y\"",
       "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-      "anchorEnd": 5166,
+      "anchorEnd": 5236,
       "anchorFile": "package.json",
-      "anchorStart": 5143,
+      "anchorStart": 5213,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-5y",
@@ -5122,9 +5190,9 @@
     {
       "anchorBytes": "\"verify:performance-input\"",
       "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-      "anchorEnd": 5267,
+      "anchorEnd": 5337,
       "anchorFile": "package.json",
-      "anchorStart": 5241,
+      "anchorStart": 5311,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-input",
@@ -5156,9 +5224,9 @@
     {
       "anchorBytes": "\"verify:platform-first-account\"",
       "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-      "anchorEnd": 5736,
+      "anchorEnd": 5806,
       "anchorFile": "package.json",
-      "anchorStart": 5705,
+      "anchorStart": 5775,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:platform-first-account",
@@ -5360,9 +5428,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 6447,
+      "anchorEnd": 6517,
       "anchorFile": "package.json",
-      "anchorStart": 6431,
+      "anchorStart": 6501,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -5373,6 +5441,23 @@
       "ownerId": "package_command:scripts/platform-owner.ts",
       "ownerModule": "scripts/platform-owner.ts",
       "sidecarPath": "scripts/platform-owner.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:profile-photo\"",
+      "anchorDigest": "8659c167de0689c99eb0c0f5b34e45448cc516b564c8e9fe1f4618ec3d38580d",
+      "anchorEnd": 4234,
+      "anchorFile": "package.json",
+      "anchorStart": 4212,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:profile-photo",
+        "target": "package.json#scripts.verify:profile-photo"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/profile-photo-rehearsal.ts:package_script:verify:profile-photo:package.json#scripts.verify:profile-photo",
+      "ownerId": "package_command:scripts/profile-photo-rehearsal.ts",
+      "ownerModule": "scripts/profile-photo-rehearsal.ts",
+      "sidecarPath": "scripts/profile-photo-rehearsal.operation.ts"
     },
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/provision-database-timezone.mjs ./provision-database-timezone.mjs",
@@ -5853,9 +5938,9 @@
     {
       "anchorBytes": "\"verify:quick-start\"",
       "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-      "anchorEnd": 5824,
+      "anchorEnd": 5894,
       "anchorFile": "package.json",
-      "anchorStart": 5804,
+      "anchorStart": 5874,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:quick-start",
@@ -5989,9 +6074,9 @@
     {
       "anchorBytes": "\"verify:simplified-signup\"",
       "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
-      "anchorEnd": 4885,
+      "anchorEnd": 4955,
       "anchorFile": "package.json",
-      "anchorStart": 4859,
+      "anchorStart": 4929,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:simplified-signup",
@@ -6006,9 +6091,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 4978,
+      "anchorEnd": 5048,
       "anchorFile": "package.json",
-      "anchorStart": 4948,
+      "anchorStart": 5018,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -6023,9 +6108,9 @@
     {
       "anchorBytes": "\"verify:system-backup\"",
       "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-      "anchorEnd": 5903,
+      "anchorEnd": 5973,
       "anchorFile": "package.json",
-      "anchorStart": 5881,
+      "anchorStart": 5951,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:system-backup",
@@ -6040,9 +6125,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 5377,
+      "anchorEnd": 5447,
       "anchorFile": "package.json",
-      "anchorStart": 5352,
+      "anchorStart": 5422,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -6057,9 +6142,9 @@
     {
       "anchorBytes": "\"verify:user-photo-gate-proof\"",
       "anchorDigest": "2f3c7d20ad61237ef05fbeadf598c407e55bf2789382d7eb610ac925a054ef42",
-      "anchorEnd": 4312,
+      "anchorEnd": 4382,
       "anchorFile": "package.json",
-      "anchorStart": 4282,
+      "anchorStart": 4352,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:user-photo-gate-proof",
@@ -6091,9 +6176,9 @@
     {
       "anchorBytes": "\"verify:gates:all\"",
       "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-      "anchorEnd": 6031,
+      "anchorEnd": 6101,
       "anchorFile": "package.json",
-      "anchorStart": 6013,
+      "anchorStart": 6083,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:all",
@@ -6108,9 +6193,9 @@
     {
       "anchorBytes": "\"verify:gates:disposable\"",
       "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-      "anchorEnd": 6099,
+      "anchorEnd": 6169,
       "anchorFile": "package.json",
-      "anchorStart": 6074,
+      "anchorStart": 6144,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:disposable",
@@ -6125,9 +6210,9 @@
     {
       "anchorBytes": "\"verify:gates:image\"",
       "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-      "anchorEnd": 6169,
+      "anchorEnd": 6239,
       "anchorFile": "package.json",
-      "anchorStart": 6149,
+      "anchorStart": 6219,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:image",
@@ -6142,9 +6227,9 @@
     {
       "anchorBytes": "\"verify:gates\"",
       "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-      "anchorEnd": 5976,
+      "anchorEnd": 6046,
       "anchorFile": "package.json",
-      "anchorStart": 5962,
+      "anchorStart": 6032,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates",
@@ -6223,6 +6308,40 @@
       "ownerId": "server_loader:src/app/account/appearance/page.tsx",
       "ownerModule": "src/app/account/appearance/page.tsx",
       "sidecarPath": "src/app/account/appearance/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getOwnProfilePhoto",
+      "anchorDigest": "0f45d7c6b9a825d98662dc14f0b48f59b5dbfe45f8d018fe6f0165428c5dff86",
+      "anchorEnd": 326,
+      "anchorFile": "src/app/account/profile/page.tsx",
+      "anchorStart": 308,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getOwnProfilePhoto",
+        "target": "src/server/services/profile-photo.ts#getOwnProfilePhoto"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/profile/page.tsx:server_value_import:getOwnProfilePhoto:src/server/services/profile-photo.ts#getOwnProfilePhoto",
+      "ownerId": "server_loader:src/app/account/profile/page.tsx",
+      "ownerModule": "src/app/account/profile/page.tsx",
+      "sidecarPath": "src/app/account/profile/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 266,
+      "anchorFile": "src/app/account/profile/page.tsx",
+      "anchorStart": 251,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/account/profile/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/account/profile/page.tsx",
+      "ownerModule": "src/app/account/profile/page.tsx",
+      "sidecarPath": "src/app/account/profile/page.operation.ts"
     },
     {
       "anchorBytes": "getSession",
@@ -7400,9 +7519,9 @@
     {
       "anchorBytes": "getAppRegistrationPolicy",
       "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 577,
+      "anchorEnd": 588,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 553,
+      "anchorStart": 564,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getAppRegistrationPolicy",
@@ -7417,9 +7536,9 @@
     {
       "anchorBytes": "getEffectiveHouseholdContext",
       "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
-      "anchorEnd": 382,
+      "anchorEnd": 393,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 354,
+      "anchorStart": 365,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getEffectiveHouseholdContext",
@@ -7434,9 +7553,9 @@
     {
       "anchorBytes": "isPlatformOwner",
       "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-      "anchorEnd": 496,
+      "anchorEnd": 507,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 481,
+      "anchorStart": 492,
       "binding": {
         "kind": "server_value_import",
         "symbol": "isPlatformOwner",
@@ -7451,9 +7570,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 439,
+      "anchorEnd": 450,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 424,
+      "anchorStart": 435,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8254,10 +8373,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "f59f62e8d234b84b74c5d3b289189f95f85515d06f65737050020611a4e27e02",
+  "semanticArtifactDigest": "4ce063bb1a53f184f181026eac12bd82fe34c10e77206f9798fc084e8659628a",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "7deb023f1caeb205f48c01ad1dc215a0978ca427d4475de7776bdf1f4a721ead",
+  "semanticCoverageDigest": "61b3650af92f5daf9191d40dab05b5689c50aa8be40e3411d5c87c1f9f2e9a0e",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "f9c9c956efbeefe00aa7f3b0e30b5c1634dc0934596a1ec22ecd73e8120dc638"
+  "semanticFingerprint": "922cf74ab8b3b39fa814c70b3dbde8c77ae199e26da21ca466aa0bb8b353e741"
 }
