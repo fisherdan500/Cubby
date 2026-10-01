@@ -203,6 +203,33 @@ async function currentCalendarContacts(tx: Prisma.TransactionClient, householdId
   return contacts;
 }
 
+/**
+ * Every calendar day an activity belongs to.
+ *
+ * An activity that crossed midnight is on each day it touches, matching the log: tapping the
+ * morning in the calendar has to show the sleep the family woke up from, not an empty sheet. A
+ * still-running activity has no end yet, so it stays on the day it began.
+ */
+export function calendarDayKeysForActivity(
+  activity: { occurredAt: Date; startedAt: Date | null; endedAt: Date | null },
+  timeZone: string
+): string[] {
+  const startKey = dateKeyInTimeZone(activity.startedAt ?? activity.occurredAt, timeZone);
+  if (!activity.endedAt) return [startKey];
+
+  // A day boundary is exclusive: an activity ending exactly at midnight belongs to the day closing.
+  const endMs = activity.endedAt.getTime();
+  const lastKey = dateKeyInTimeZone(
+    new Date(endMs - (endMs === zonedDateStart(dateKeyInTimeZone(activity.endedAt, timeZone), timeZone).getTime() ? 1 : 0)),
+    timeZone
+  );
+  if (lastKey <= startKey) return [startKey];
+
+  const keys: string[] = [];
+  for (let key = startKey; key <= lastKey; key = addDaysToDateKey(key, 1)) keys.push(key);
+  return keys;
+}
+
 export async function getCalendar(
   userId: string,
   input?: { babyId?: string; month?: string; date?: string; eventId?: string }
@@ -237,7 +264,12 @@ export async function getCalendar(
       householdId: ctx.householdId,
       babyId: baby.id,
       deletedAt: null,
-      occurredAt: { gte: rangeStart, lt: rangeEnd }
+      // Also anything spanning into the range, so a sleep begun before it still reaches the day
+      // sheet it ended on.
+      OR: [
+        { occurredAt: { gte: rangeStart, lt: rangeEnd } },
+        { startedAt: { lt: rangeEnd }, endedAt: { gt: rangeStart } }
+      ]
     },
     include: activityInclude,
     orderBy: { occurredAt: "asc" }
@@ -261,8 +293,9 @@ export async function getCalendar(
 
   const byDate = new Map<string, typeof activities>();
   for (const activity of activities) {
-    const key = dateKeyInTimeZone(activity.occurredAt, env.APP_TIMEZONE);
-    byDate.set(key, [...(byDate.get(key) ?? []), activity]);
+    for (const key of calendarDayKeysForActivity(activity, env.APP_TIMEZONE)) {
+      byDate.set(key, [...(byDate.get(key) ?? []), activity]);
+    }
   }
 
   const days = [];
@@ -281,7 +314,9 @@ export async function getCalendar(
       ),
       total: items.length + dayEvents.length,
       activities: items,
-      events: dayEvents
+      events: dayEvents,
+      // The day's own window, so a row can tell that an activity crossed into or out of it.
+      window: { start: dayStart, end: dayEnd }
     });
   }
 
@@ -294,6 +329,10 @@ export async function getCalendar(
         inMonth: selectedKey.slice(0, 7) === monthKey,
         counts: {},
         total: 0,
+        window: {
+          start: zonedDateStart(selectedKey, env.APP_TIMEZONE),
+          end: zonedDateStart(addDaysToDateKey(selectedKey, 1), env.APP_TIMEZONE)
+        },
         activities: [],
         events: events.filter((event) =>
           eventOverlapsDay(event, zonedDateStart(selectedKey, env.APP_TIMEZONE), zonedDateStart(addDaysToDateKey(selectedKey, 1), env.APP_TIMEZONE))
