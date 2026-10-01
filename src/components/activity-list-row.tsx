@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { SwipeRowActions } from "@/components/swipe-row-actions";
-import { activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { activityDayTimeLabel, activityLabels, type ActivityTypeName } from "@/domain/activity";
 import type { VolumeUnit } from "@/domain/units";
 import { describeActivity } from "@/lib/activity-format";
 import { activityDetailHref, activityEditHref } from "@/lib/activity-navigation";
 import type { ActivityRowActions } from "@/lib/activity-row-actions";
 
-export type ActivityListItem = Parameters<typeof describeActivity>[0] & { id: string; occurredAt: Date; type: string };
+export type ActivityListItem = Parameters<typeof describeActivity>[0] & {
+  id: string;
+  occurredAt: Date;
+  type: string;
+  // Carried so a row that crosses midnight can say so; absent on older callers.
+  startedAt?: Date | null;
+  endedAt?: Date | null;
+};
 
 /**
  * One activity as a row: the artwork is the only visual anchor, then the name and a one-line summary,
@@ -17,13 +24,26 @@ export type ActivityListItem = Parameters<typeof describeActivity>[0] & { id: st
  * Opening the activity replaces the list's history entry: the activity page's Back returns to the exact
  * list (returnTo), and the browser's own back does not bounce between the two.
  */
+function dayTimeLabel(
+  activity: ActivityListItem,
+  day: { start: Date; end: Date } | undefined,
+  timeZone: string
+) {
+  const startedAt = activity.startedAt ?? null;
+  if (!day || !startedAt) {
+    return new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt);
+  }
+  return activityDayTimeLabel({ startedAt, endedAt: activity.endedAt ?? null }, day, timeZone).text;
+}
+
 export function ActivityListRow({
   activity,
   returnTo,
   timeZone,
   volume,
   meta,
-  actions
+  actions,
+  day
 }: {
   activity: ActivityListItem;
   returnTo: string;
@@ -31,6 +51,9 @@ export function ActivityListRow({
   volume: VolumeUnit;
   // A short line under the time, such as who recorded it. Omitted where it would only repeat context.
   meta?: string;
+  // The day being viewed. Given it, an activity crossing midnight shows both ends with their dates;
+  // without it the row falls back to the single recorded time.
+  day?: { start: Date; end: Date };
   // What this member may do to the entry; a row with nothing allowed stays a plain link.
   actions?: ActivityRowActions;
 }) {
@@ -49,7 +72,7 @@ export function ActivityListRow({
       </div>
       <div className="shrink-0 text-right">
         <p className="text-xs font-semibold tabular-nums text-muted-foreground">
-          {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt)}
+          {dayTimeLabel(activity, day, timeZone)}
         </p>
         {meta ? <p className="max-w-24 truncate text-[0.6875rem] text-muted-foreground">{meta}</p> : null}
       </div>

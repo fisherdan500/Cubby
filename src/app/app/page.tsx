@@ -10,6 +10,7 @@ import { RunningTimerRow, RunningTimerTile } from "@/components/dashboard/runnin
 import { ZeroActiveBabies } from "@/components/dashboard/zero-active-babies";
 import { Button } from "@/components/ui/button";
 import {
+  activityDayAnchor,
   activityLabels,
   filterActivitiesBySummaryType,
   isDailySummaryActivityType,
@@ -98,6 +99,7 @@ export default async function DashboardPage({
                 returnTo={dashboardReturnTo(baby.id, currentDashboard.selectedDate.key, selectedSummaryType)}
                 volume={parseUnitPreferences(currentDashboard.home.household.settings?.unitPreferences).volume}
                 viewer={{ memberId: currentDashboard.home.id, role: currentDashboard.home.role }}
+                day={{ start: currentDashboard.selectedDate.start, end: currentDashboard.selectedDate.end }}
               />
             )}
           </section>
@@ -463,18 +465,32 @@ function Timeline({
   timeZone,
   returnTo,
   volume,
-  viewer
+  viewer,
+  day
 }: {
   activities: Array<ActivityListItem & { actorMemberId: string | null }>;
   timeZone: string;
   returnTo: string;
+  day: { start: Date; end: Date };
   volume: VolumeUnit;
   viewer: ActivityRowViewer;
 }) {
-  const groups = activities.reduce<Record<string, typeof activities>>((acc, activity) => {
-    const label = periodLabel(activity.occurredAt, timeZone);
+  // An activity that crosses midnight is filed by the moment it touches this day: its start on the
+  // evening it began, its end on the morning it ended. So a night sleep sits with the morning
+  // entries on the day the family woke up, which is where they look for when the baby woke.
+  const anchored = activities
+    .map((activity) => ({
+      activity,
+      anchor:
+        activityDayAnchor({ startedAt: activity.startedAt ?? activity.occurredAt, endedAt: activity.endedAt ?? null }, day) ??
+        activity.occurredAt
+    }))
+    .sort((a, b) => b.anchor.getTime() - a.anchor.getTime());
+
+  const groups = anchored.reduce<Record<string, typeof anchored>>((acc, entry) => {
+    const label = periodLabel(entry.anchor, timeZone);
     acc[label] = acc[label] ?? [];
-    acc[label].push(activity);
+    acc[label].push(entry);
     return acc;
   }, {});
 
@@ -488,10 +504,11 @@ function Timeline({
             {label}
           </p>
           <div className="space-y-1.5">
-            {items.map((activity) => (
+            {items.map(({ activity }) => (
               <ActivityListRow
                 key={activity.id}
                 activity={activity}
+                day={day}
                 returnTo={returnTo}
                 timeZone={timeZone}
                 volume={volume}
