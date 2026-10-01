@@ -88,3 +88,22 @@ export function formatRelative(value: string, now: string) {
   if (diff === 0) return "Right now";
   return diff > 0 ? `${formatMinutes(diff)} ago` : `In ${formatMinutes(diff)}`;
 }
+
+/**
+ * The length implied by an end time, or null when the value cannot be one.
+ *
+ * A caregiver knows when the baby woke, not how many minutes that was from bedtime. Across
+ * midnight the arithmetic is worse, which is the case this exists for. An end before the start is
+ * refused rather than clamped: it means the date is wrong, and silently shortening the activity
+ * would hide that.
+ */
+export function endWallTimeToMinutes(start: string, end: string): number | null {
+  if (!isWallTime(start) || !isWallTime(end)) return null;
+  const minutes = minutesBetween(start, end);
+  return minutes < 0 ? null : minutes;
+}
+
+/** The end time a length implies, so the picker opens on the activity's current end. */
+export function minutesToEndWallTime(start: string, minutes: number): string {
+  return addMinutes(start, minutes);
+}

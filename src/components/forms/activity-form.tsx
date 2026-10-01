@@ -24,7 +24,7 @@ import { isAuthorizedBrowserOperation410 } from "@/lib/browser-operation-termina
 import { tabScopedBrowserOperationStorageKey } from "@/lib/browser-operation-tab-scope";
 import { createdActivityId, rememberSavedEntry } from "@/lib/saved-entry-undo";
 import { cn } from "@/lib/utils";
-import { addMinutes, formatClock, formatMinutes, isWallTime, minutesBetween, nowWallTime } from "@/lib/wall-time";
+import { addMinutes, endWallTimeToMinutes, formatClock, formatMinutes, isWallTime, minutesBetween, minutesToEndWallTime, nowWallTime } from "@/lib/wall-time";
 
 type BabyOption = { id: string; name: string };
 type ActivityOperationStatus = "open" | "prepared" | "pending" | "completed" | "rejected" | "stale" | "expired";
@@ -631,6 +631,17 @@ function BabyField({ babies, babyId, onChange }: { babies: BabyOption[]; babyId:
 }
 
 const lengthPresets = [5, 10, 15, 20, 30, 45, 60];
+
+/** "7:20 AM" on the same day; "Sep 28, 7:20 AM" when the activity ran into another one. */
+function formatEndWithDay(start: string, minutes: number) {
+  const end = addMinutes(start, minutes);
+  if (end.slice(0, 10) === start.slice(0, 10)) return formatClock(end);
+  const [year, month, day] = end.slice(0, 10).split("-").map(Number);
+  const label = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" }).format(
+    new Date(Date.UTC(year, month - 1, day))
+  );
+  return `${label}, ${formatClock(end)}`;
+}
 const pill = "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors";
 const pillOn = "border-primary bg-primary text-primary-foreground";
 const pillOff = "border-control bg-card hover:bg-muted";
@@ -638,6 +649,18 @@ const pillOff = "border-control bg-card hover:bg-muted";
 function LengthField({ minutes, onChange, start }: { minutes: number | null; onChange: (minutes: number | null) => void; start: string }) {
   const custom = minutes !== null && !lengthPresets.includes(minutes);
   const [showCustom, setShowCustom] = useState(custom);
+  // Saying when it ended is how a caregiver actually knows the length, especially for a sleep that
+  // crossed midnight: working the minutes out by hand is the thing this avoids.
+  const [showEnd, setShowEnd] = useState(false);
+  const endValue = minutes !== null && isWallTime(start) ? minutesToEndWallTime(start, minutes) : "";
+  const [endDraft, setEndDraft] = useState(endValue);
+  const endInvalid = endDraft !== "" && endWallTimeToMinutes(start, endDraft) === null;
+
+  function commitEnd(next: string) {
+    setEndDraft(next);
+    const nextMinutes = endWallTimeToMinutes(start, next);
+    if (nextMinutes !== null) onChange(nextMinutes === 0 ? null : nextMinutes);
+  }
 
   return (
     <div role="group" aria-label="How long" className="space-y-2">
@@ -662,7 +685,38 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
         <button type="button" aria-pressed={showCustom} onClick={() => setShowCustom(!showCustom)} className={cn(pill, showCustom ? pillOn : pillOff)}>
           Other
         </button>
+        <button
+          type="button"
+          aria-pressed={showEnd}
+          onClick={() => {
+            setEndDraft(endValue);
+            setShowEnd(!showEnd);
+          }}
+          className={cn(pill, showEnd ? pillOn : pillOff)}
+        >
+          Ends at
+        </button>
       </div>
+      {showEnd ? (
+        <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+          Ended
+          {/* A date as well as a time, so a sleep that ran overnight is one entry rather than a
+              number the caregiver had to work out. */}
+          <Input
+            type="datetime-local"
+            value={endDraft}
+            min={isWallTime(start) ? start : undefined}
+            aria-invalid={endInvalid || undefined}
+            onChange={(event) => commitEnd(event.target.value)}
+            className="w-56"
+          />
+          {endInvalid ? (
+            <span role="alert" className="text-xs font-semibold text-destructive">
+              Ends before it started — check the date.
+            </span>
+          ) : null}
+        </label>
+      ) : null}
       {showCustom ? (
         <label className="flex items-center gap-2 text-sm font-semibold">
           Minutes
@@ -682,7 +736,9 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
       ) : null}
       {minutes ? (
         <p className="text-xs font-semibold text-muted-foreground" aria-live="polite">
-          Ends {formatClock(addMinutes(start, minutes))} · {formatMinutes(minutes)}
+          {/* The day is named only when it is not the day it started, so an overnight sleep cannot
+              read as if it ended the same morning it began. */}
+          Ends {formatEndWithDay(start, minutes)} · {formatMinutes(minutes)}
         </p>
       ) : null}
     </div>
