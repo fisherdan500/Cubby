@@ -1004,7 +1004,7 @@ async function restoreV2InTransaction(
         occurredAt: new Date(post.occurredAt),
         // Remapped to the restored entry, so an entry and its photo stay one moment. Entries are
         // restored before posts, so the mapping is already complete here.
-        activityId: post.activityId ? activityMap.get(post.activityId) ?? null : null
+        activityId: post.activityId ? activityMap.get(post.activityId)! : null
       }
     });
     postMap.set(post.id, saved.id);

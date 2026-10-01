@@ -31,11 +31,6 @@ export async function listMixedMoments({ babyId, cursor }: { babyId?: string; cu
   // A photo added to an entry is stored as a feed photo on a real post, which is what keeps private
   // delivery and backups working. The family should still see one moment rather than the entry and
   // its photo side by side, so such a post is folded into its entry here, for presentation only.
-  // Whether more history exists is decided by what the SOURCES returned, before any folding. Folding
-  // changes presentation only; counting after it let a family who added photos to a few entries lose
-  // the whole older half of their timeline, with nothing to tell them it had gone.
-  const sourceHasMore = activities.length > HISTORY_PAGE_SIZE || posts.length > HISTORY_PAGE_SIZE;
-
   // Page the two sources together FIRST, exactly as they were paged before combining existed, so the
   // rows that make up this page are settled independently of folding.
   const rows: MomentRow[] = [
@@ -44,6 +39,12 @@ export async function listMixedMoments({ babyId, cursor }: { babyId?: string; cu
   ];
   // Stable sort retains the database's id order within each source (including its collation).
   rows.sort((a, b) => b.at.getTime() - a.at.getTime() || (a.kind === b.kind ? 0 : a.kind === "post" ? -1 : 1));
+
+  // Whether more history exists is decided by the MERGED rows, before any folding. Both halves matter:
+  // counting after folding let a family who added photos lose their older timeline, and counting each
+  // source separately lost rows whenever the two together overflowed a page while neither did alone.
+  // The page is built from the merge, so the merge is what must be counted.
+  const sourceHasMore = rows.length > HISTORY_PAGE_SIZE;
 
   // The boundary is the last row of the page, and it must be a row the next page can continue from.
   // A folded post is not shown in its own right, so it must never become the boundary.
@@ -69,8 +70,9 @@ export async function listMixedMoments({ babyId, cursor }: { babyId?: string; cu
       items.push({ kind: "post", at: row.at, post: row.post });
       continue;
     }
-    // Oldest post first, so an entry's pictures read in the order they were added, matching the
-    // entry's own screen.
+    // Oldest post first, so an entry's pictures read in the order they were added. This orders by
+    // occurredAt; the entry's own screen orders by createdAt, which coincides for a photo added
+    // through the app but can differ for a restored or backdated post.
     const own = [...(foldedByActivity.get(row.activity.id) ?? [])].sort(
       (a, b) => a.occurredAt.getTime() - b.occurredAt.getTime()
     );

@@ -2576,17 +2576,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "2c43223289624da8da525f259b8abca1b37a05099bec2361c5ce692d68b2c743",
+          "digest": "b39bdb97b0c6445206b8ba539766acd56636ba7045b1fa5af9e575f4f3ec2d18",
           "file": "src/components/activities/activity-photo-control.tsx"
         }
       ],
       "declarationDigest": "ffe4ec210ff8947ed2e40a7d38fca0224851607cef4f095f6f636879f0a448bf",
-      "fingerprint": "50f906abf2a4e8708f45e983d1bfa877e23871789ebe6f69fda3a5244b27cd20",
+      "fingerprint": "2cdc58f2ea9eb62a5568dda684ef87537dc3a6473cfc9927b5dece03acb8a99f",
       "id": "fingerprint:client_binding:src/components/activities/activity-photo-control.tsx",
       "ownerId": "client_binding:src/components/activities/activity-photo-control.tsx",
       "ownerModule": "src/components/activities/activity-photo-control.tsx",
       "sidecarPath": "src/components/activities/activity-photo-control.operation.ts",
-      "sourceDigest": "7fe5a48e820f25184ee2c6cc2226f576fe89ed0eb058e7cd76c5b01a1e807ecd",
+      "sourceDigest": "de5f41ccd0c35975c9fe6fbcd329b851d7e2397168ab7b2e8886f6bad3eb3711",
       "status": "declared"
     },
     {
@@ -4500,11 +4500,11 @@
   ],
   "generatorDigest": "8254c6e23f54125d849174bc454e86570d7073372eb077a199371d1bd9c6f672",
   "generatorVersion": "r0.1",
-  "observationDigest": "67a2c18464790b562d0de0fbaecda22176be0b282bba95c9d9c79d031170c6e8",
+  "observationDigest": "76cfd259cdb4809c844fcf05341b397addf8f848c94fc02a32002068844ddff7",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "d1a65fa1d81c1bec26589034b790ad2214af93cc862fd4824645ec69077cdd00",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "832dfc075776fcec77df5002433d261a5deb234425ddee8b86ee9436db5e1674",
+  "registryDigest": "6d60bcd5f2f863e1de5d04a51d0fa20fc340c83925610b10aa30ab90815a35b8",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

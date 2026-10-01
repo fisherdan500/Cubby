@@ -68,6 +68,12 @@ const deliberatelyNotCarried: Record<string, string> = {
 };
 
 describe("a feed post in a backup", () => {
+  it("reads the real schema, so this guard cannot quietly check nothing", () => {
+    // The key list is parsed from source. If that parse ever truncated, the guard would pass
+    // while checking almost nothing, so pin keys that must always be there.
+    expect(carried).toEqual(expect.arrayContaining(["id", "body", "occurredAt", "authorName"]));
+  });
+
   it("carries every stored column, or documents why not", () => {
     const missing = storedColumns("FeedPost")
       .filter((column) => !carried.includes(column))

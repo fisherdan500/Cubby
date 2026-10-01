@@ -18,7 +18,7 @@ vi.mock("@/server/services/activities", () => ({ listActivities: mocks.listActiv
 vi.mock("@/server/services/feed-posts", () => ({ listFeedPosts: mocks.listFeedPosts }));
 
 import { HISTORY_PAGE_SIZE } from "@/lib/history-pagination";
-import { parseMomentsCursor } from "@/lib/moments-pagination";
+import { parseMomentsCursor, type MomentsBoundary } from "@/lib/moments-pagination";
 
 const base = Date.parse("2026-10-01T12:00:00.000Z");
 
@@ -45,6 +45,27 @@ beforeEach(() => {
   mocks.listActivities.mockReset();
   mocks.listFeedPosts.mockReset();
 });
+
+/**
+ * Filters a fixture list the way the real source does: each source receives the shared boundary and
+ * applies momentsAfter with ITS OWN kind, so the two halves of the total order are exercised.
+ */
+function applyBoundary<T extends { id: string; occurredAt: Date }>(
+  rows: T[],
+  kind: "activity" | "post",
+  boundary?: MomentsBoundary
+): T[] {
+  if (!boundary) return rows;
+  const at = new Date(boundary.at).getTime();
+  if (kind !== boundary.kind) {
+    return kind === "activity"
+      ? rows.filter((row) => row.occurredAt.getTime() <= at)
+      : rows.filter((row) => row.occurredAt.getTime() < at);
+  }
+  return rows.filter(
+    (row) => row.occurredAt.getTime() < at || (row.occurredAt.getTime() === at && row.id < boundary.id)
+  );
+}
 
 /** Every photo the page actually shows, however it is rendered. */
 function photosOn(items: { kind: string; photos?: { id: string }[]; post?: { photos: { id: string }[] } }[]) {
@@ -105,6 +126,44 @@ describe("paging a timeline that combines entries with their photos", () => {
     const boundary = parseMomentsCursor(nextCursor);
     expect(boundary).toBeDefined();
     expect(boundary!.id).not.toBe("post-99");
+  });
+
+  it("still offers more when the two sources together overflow the page, though neither does alone", async () => {
+    // 13 entries and 13 posts is 26 rows: a full page plus one. Asking each source separately whether
+    // it had more says no, yet the page is built from both together -- so the 26th row and all the
+    // history behind it would never be shown, and no 'load more' would hint that it existed.
+    mocks.listActivities.mockResolvedValue(Array.from({ length: 13 }, (_, i) => activity(i * 2)));
+    mocks.listFeedPosts.mockResolvedValue(Array.from({ length: 13 }, (_, i) => post(i * 2 + 1)));
+    const { listMixedMoments } = await import("./moments");
+
+    const { items, nextCursor } = await listMixedMoments({});
+
+    expect(items).toHaveLength(HISTORY_PAGE_SIZE);
+    expect(nextCursor).toBeDefined();
+  });
+
+  it("shows every entry and every post across the whole walk", async () => {
+    // The requirement behind every paging rule: each stored row appears on exactly one page. Driven by
+    // following the real cursor through both sources, so it holds whatever the mechanism is.
+    const entries = Array.from({ length: 20 }, (_, i) => activity(i * 2));
+    const posts = Array.from({ length: 20 }, (_, i) => post(i * 2 + 1));
+    mocks.listActivities.mockImplementation(async ({ momentsAfter: boundary }: { momentsAfter?: MomentsBoundary }) =>
+      applyBoundary(entries, "activity", boundary).slice(0, HISTORY_PAGE_SIZE + 1));
+    mocks.listFeedPosts.mockImplementation(async ({ momentsAfter: boundary }: { momentsAfter?: MomentsBoundary }) =>
+      applyBoundary(posts, "post", boundary).slice(0, HISTORY_PAGE_SIZE + 1));
+    const { listMixedMoments } = await import("./moments");
+
+    const shown = new Set<string>();
+    let cursor: string | undefined;
+    let pages = 0;
+    do {
+      const result = await listMixedMoments({ cursor });
+      for (const item of result.items) shown.add(item.kind === "activity" ? item.activity.id : item.post.id);
+      cursor = result.nextCursor;
+      pages += 1;
+    } while (cursor && pages < 20);
+
+    expect(shown.size).toBe(entries.length + posts.length);
   });
 
   it("stops offering more when both sources are exhausted", async () => {

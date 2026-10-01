@@ -32,7 +32,12 @@ export function ActivityPhotoControl({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  // Re-armed on setup, not only cleared on cleanup: React's development double-mount would
+  // otherwise leave this false forever and the control permanently stuck on "Adding…".
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   async function add(file: File) {
     if (inFlight.current) return;
