@@ -3,235 +3,235 @@
   "complete": false,
   "fingerprints": [
     {
-      "digest": "d56116fd5df118e0e9d8a293e36620cd23381e271d5864431ac9ee0526eb7ec8",
+      "digest": "306228c74506d6c00b966ae2163ed6a1f130187570778341e4cc94c8ec010551",
       "id": "semantic-exposure:src/app/api/activities/[id]/route.ts#DELETE"
     },
     {
-      "digest": "2c3705cec2c017ece0f0d173997fd6db76cc32fdb4d92a496045a965d36a6fc4",
+      "digest": "f44b6147aa7d30d2309e6b719b5a0c77531b5add6d15b95b6bccdf85690a00f1",
       "id": "semantic-exposure:src/app/api/activities/[id]/route.ts#PATCH"
     },
     {
-      "digest": "c7a658bc769caddbe2ce79a60a9b40bb074c0824854615695cb373d5acb63821",
+      "digest": "ac3f14b20e86a7c5afb89954c317cd8c95d466805d87edb2ed5b2cb664ea18f6",
       "id": "semantic-exposure:src/app/api/activities/route.ts#POST"
     },
     {
-      "digest": "00142fd87fd8a02044eda845904ed8dc9c4759eb788cc4ca885dd4f9950de4a9",
+      "digest": "0364089e54852a20ae2874f6a1bb688562cb39beab6f31e91f9eac76b1558abc",
       "id": "semantic-exposure:src/app/api/activities/undo-last/route.ts#POST"
     },
     {
-      "digest": "8e0d1232a15071357914ae5532ea1b4bd0fdbe5a2d88fd661bfa9b2af949d49f",
+      "digest": "98786a9c1792de1e5616cc7d385ba5490ddf546a59a594af02ac3aca0376f7df",
       "id": "semantic-exposure:src/app/api/babies/[id]/deactivate/route.ts#POST"
     },
     {
-      "digest": "05e74f215d2eff1b2bc43343641080aa9bad4b7016287bcb6ffc1f57a54b9417",
+      "digest": "8ed3bdbae3b9a0cc6808ffeae7765796f6f627c9f577939799670e60e2e3ce38",
       "id": "semantic-exposure:src/app/api/babies/[id]/reactivate/route.ts#POST"
     },
     {
-      "digest": "3453faa572ea825fe2417deab75a6b84f946f6a68d65ddb27c32370f6f1557d0",
+      "digest": "c096a1460e78782aeea2a8dae471bd012ee04ea340dbba035683277e7a285741",
       "id": "semantic-exposure:src/app/api/babies/route.ts#POST"
     },
     {
-      "digest": "2492dfdc652675088910e523773538f92b6c9bc302a290d13b0f01ba97819841",
+      "digest": "eb8f7e54e0fc0de4838488b133f92f25137f969f92687e51b7e07bbb53b2d06e",
       "id": "semantic-exposure:src/app/api/dashboard/warnings/dismiss/route.ts#POST"
     },
     {
-      "digest": "a35fe0728537124c17a6d892e8dcce1795c869b8c85f2c5324b14840e053d975",
+      "digest": "390076f760070c760d284b111dbea666e89a6222c193e8a0037500abbf90f549",
       "id": "semantic-exposure:src/app/api/invites/[token]/revoke/route.ts#POST"
     },
     {
-      "digest": "b746102a6ec0fd20fedbd759ce22afa60c3725a5497c5ead4c377e51c647e788",
+      "digest": "19903610edb76474da92197267d75e7080b8af905a33ae59cdc82f7a6ce2145d",
       "id": "semantic-exposure:src/app/api/invites/revoke-all/route.ts#POST"
     },
     {
-      "digest": "6241bf690bcd91661c6bcd1bf6873a56a88b51702412c41500896e21eff8cedb",
+      "digest": "86c3034e813fdd267f92a7bf103d071636f2f95fc91e02cec970bff75363524e",
       "id": "semantic-exposure:src/app/api/invites/route.ts#POST"
     },
     {
-      "digest": "780d35b57679fd382d5382613a4d74295d982e8b5e58c05314aca6ca7192ae04",
+      "digest": "41f39b557ed7881da14d5e2dbf40c8ce3512d19dfd965cc106f791b3bbfe4d31",
       "id": "semantic-exposure:src/app/api/members/[id]/restore/route.ts#POST"
     },
     {
-      "digest": "f587ad666df050e312e4c7541892f7f4a7ee5d5166787c87b2dddf1cfb3b7c1f",
+      "digest": "ba9e87f88d854d4f7f7170b56d2971607b596c630c82108477e0bc1a12db574f",
       "id": "semantic-exposure:src/app/api/members/[id]/route.ts#DELETE"
     },
     {
-      "digest": "30136b81fe9e4ed73471f0d290c480bef16cf2c7729d709d0c490df01c56bd9e",
+      "digest": "f138ba704e1eda6411492d432ed0f4cd952bdfc1d0caf80361f507174b3527a8",
       "id": "semantic-exposure:src/app/api/members/[id]/route.ts#PATCH"
     },
     {
-      "digest": "47c1d2a3b80ad8ab98a6f3c53387a5e9079b20961ed9b9d00bdee637fdd22867",
+      "digest": "8763fcfa323bcfca3e17e43e282d2c3d834e978eafbcf32dd2776bdc885e4550",
       "id": "semantic-exposure:src/app/api/members/[id]/suspend/route.ts#POST"
     },
     {
-      "digest": "5cd1cef49218774c5cc85976bd29434a7f0520247542bf90d8b8981884cf1b06",
+      "digest": "488f01725315628d837b0639033fa0200ac4c0b510926a3b19b053380978424f",
       "id": "semantic-exposure:src/app/api/notifications/preferences/route.ts#POST"
     },
     {
-      "digest": "c15432f7ece5b51b36fd0cdc9452df719cd4e13237c2ea59542b9e6db77e1748",
+      "digest": "9d2092ba0235532c9264c5737dbbf77ff87fb00a42b20c0dfe77942f71f47301",
       "id": "semantic-exposure:src/app/api/platform/registration/route.ts#GET"
     },
     {
-      "digest": "d392072d478bdd5f6e337f2f48c8152a3d7034569a7f86e92ac149aa8f3370e8",
+      "digest": "70540f9d34f84b922bb8f64b8144327ebf94dbd8367de5fbe7f77314854f6e27",
       "id": "semantic-exposure:src/app/api/platform/registration/route.ts#GET@operation-status"
     },
     {
-      "digest": "e5d9d2b76cf91d0057f9f643120fce9c28524e29f3d9df12c9d104acc4252f2d",
+      "digest": "bba361be6f75b87f61ca68ad65bfecfff7cf4891c2556ff226ff59b0ffbd5cdc",
       "id": "semantic-exposure:src/app/api/platform/registration/route.ts#POST"
     },
     {
-      "digest": "0dd3aaa50e4beb8317b0390d217601b5dbec0273296460f9cbd0d22070a10e30",
+      "digest": "4ff5576e249b56022dbd4ff140f28678723bdaa89c434f5b5557827b3163c679",
       "id": "semantic-exposure:src/app/api/platform/registration/route.ts#PUT"
     },
     {
-      "digest": "b6557e059bc439215ef7e73defbf536a9d0621fcdaa0cff5a49289ac872e02cf",
+      "digest": "4d656fa2af9589276414720e26d2fd95f6469dc35951780b2f05e13f230bb2b1",
       "id": "semantic-exposure:src/app/api/settings/appearance/route.ts#PATCH"
     },
     {
-      "digest": "56620f163627b1aea01c4779003a1114c48392baa36cc7125770cd84a4364719",
+      "digest": "9c4b1cbc21b1a42d286896b2efbdf5d44b0c8c5c13d3c58bb4c300217f85e63a",
       "id": "semantic-exposure:src/app/api/settings/registration/route.ts#GET"
     },
     {
-      "digest": "505480e32383cf6285973eafbdd2699977e026e71113f4a440d052ceab405b03",
+      "digest": "63d2df7d884c68c6b8f1a9f5c35b58bac6273025435ab97f645275cc76697c65",
       "id": "semantic-exposure:src/app/api/settings/registration/route.ts#GET@operation-status"
     },
     {
-      "digest": "b4b645b68c253315654aa4979ccc706051932d083ed3c9014ee765f37b56812a",
+      "digest": "7f3caa049ae729b76a4b5286d9105ca9ae4d1a44b0d0e19f07d8427c6a8d4552",
       "id": "semantic-exposure:src/app/api/settings/registration/route.ts#POST"
     },
     {
-      "digest": "1f9fb12e7fd9e3099ca48543e7ef16a06379098532efdd846996eb8a40808232",
+      "digest": "3612986a8922b0c3951eb7061aa60064b57a511d0e70f4f8a1925a608681ff5f",
       "id": "semantic-exposure:src/app/api/settings/registration/route.ts#PUT"
     },
     {
-      "digest": "b7eb3f146052dcc48760ddf8f9c18a43b6cce0f57886b451c8dd9dce116dc31d",
+      "digest": "b15e1f35d2fe2ef54556be7aa0b05ad5d2981b16839469954105971c904bec9f",
       "id": "semantic-exposure:src/app/api/settings/units/route.ts#PATCH"
     },
     {
-      "digest": "6f6de434feaea52696e08cdfb2aa256a071458d686155a22e38058bd90a9d4a3",
+      "digest": "c0de3aad77efc840895963e433d6d939fdaa84190db7bb03f56183e5f31db58f",
       "id": "semantic-exposure:src/app/api/timers/[id]/pause/route.ts#POST"
     },
     {
-      "digest": "0204a2776805584bc54c5e723fd6bd024c496b97d01fca6d022d9e4929d92759",
+      "digest": "6f341b0e618585bfe55e02d19d7056a1a2cfd32b635a27412deaf80f5d8d9c92",
       "id": "semantic-exposure:src/app/api/timers/[id]/resume/route.ts#POST"
     },
     {
-      "digest": "3070e13b3387d5ec58d2c636eea46fc60b55b8a02337f43b5def2c72ebfeffea",
+      "digest": "691deb741d684305d603658032f96997103ac13bca408e4b9b3be81329427a8f",
       "id": "semantic-exposure:src/app/api/timers/[id]/stop/route.ts#POST"
     },
     {
-      "digest": "f1f751de5164bb83290f3528e8e9b695a33cabeca6c06d85e3ab83576568765f",
+      "digest": "0caae5812a43f02056197d3bc9e54f6d06d3e4314ec90d67cf3d63c71f2c1fb1",
       "id": "semantic-exposure:src/app/app/calendar/actions.ts#createCalendarEventAction"
     },
     {
-      "digest": "19259292b677d52fe9e81f76286f62e6f6ea4e076b762b807c3dc973a3e259b8",
+      "digest": "d8c1a516147b066b524f3e1e7366c5b018057c5f096c916d2321c4dedd14189a",
       "id": "semantic-service:activity.create"
     },
     {
-      "digest": "d764567529e35714a32d465c720049c49ca07d2367beba640313d1f8c6cd40dc",
+      "digest": "713f427db0303351540ebf5afabb73ba34295c62381a48ca80957f490301a5ac",
       "id": "semantic-service:activity.delete"
     },
     {
-      "digest": "735dec8ad84f8b98c05decfbeaad22de3eebfa146cfa43a9e06806b0bacb7f22",
+      "digest": "7fb29b84295e05f3e2fbc867e48aa9c299a5d3dce88d44d7bdc3d882d3619298",
       "id": "semantic-service:activity.timer.pause"
     },
     {
-      "digest": "e6ba1bb48aae37a19093562ecdb3feed2eeddd7fd5a5526364d6bc3a2032c9f0",
+      "digest": "4b6c78a0a29ae28bb5fe99336782c214a54fdf94d28b5340dffce4b3070bacc5",
       "id": "semantic-service:activity.timer.resume"
     },
     {
-      "digest": "41f76b86d32e7d4291dd02f305e58dc8131e2316750421527d24d4ff3a6f6d64",
+      "digest": "0aedbb1a0d0ef9c1afdd416f9bcc05045e04b47bea69c5b1eeecd1fa19aee318",
       "id": "semantic-service:activity.timer.stop"
     },
     {
-      "digest": "3f97c640b932757b05d7bc895cdf7008b3a1009e1ed4cb5e66181c91928fe212",
+      "digest": "47f7e69ebfbe660870a488e37e7618a47467968800bac400aa47402cbf158e96",
       "id": "semantic-service:activity.undo_last"
     },
     {
-      "digest": "3f27bb60846285a936f838dcd979a809ab6c50a533aef9d47663aa5d4c20f28f",
+      "digest": "7874700034029f1eb42974bb36aed6bed52705b7432e9b464bfdff96fc98ddcf",
       "id": "semantic-service:activity.update"
     },
     {
-      "digest": "589f9a7815e33cdece1b6204a2517f28293a346e991e2e44a398d11385658c62",
+      "digest": "af9060c65b44838488a8d508f93123605ccd8a2daff94d405fd94644bbcd28d3",
       "id": "semantic-service:baby.create"
     },
     {
-      "digest": "a0daf711c9fcf9d5bcb1791cbb5c8f91ab81e9b184103b98e00e4b1477ad5fa2",
+      "digest": "85a11c1579e9bc8a121cf5a47b486467385c5edf8c572fb4bb2251453c290ba5",
       "id": "semantic-service:baby.deactivate"
     },
     {
-      "digest": "9e8337982238d7dba425d22083f2217328df1d257e4dfd33ba80713cff4cb1ca",
+      "digest": "1370d9b0d5d864e197792a13db8030525bbbbcf9be86685be5704334d2916d30",
       "id": "semantic-service:baby.reactivate"
     },
     {
-      "digest": "d67b66af1a4cf04c8ff0164243e9fa7d81b1ceb31178dc2d8639a43e49e5dc21",
+      "digest": "2ecf3434c46c6dc9bdca35787fd8f320d96afa694770d209b4cb557ce8cf66c9",
       "id": "semantic-service:calendar_event.create"
     },
     {
-      "digest": "af7296675b3d805d53010612c0d9169d238f50292ef28efc9c54a077f3283dce",
+      "digest": "cd5ec896e562c46f771f61d6a440c83f9ad96acd9c135d9bf357bab24597025d",
       "id": "semantic-service:dashboard.warning.dismiss"
     },
     {
-      "digest": "b2a36cfbf6bf799c8143c20e6f45f225e113ba3673dbc20a8349309e8c9fa72d",
+      "digest": "805360964397a070657b613fd2910e8654e0fb88ecd2da695b14e0d0d8e4083b",
       "id": "semantic-service:household.accent.update"
     },
     {
-      "digest": "08de055c151c9e0045938b87382545e288289a4d979982d9ac47f697f660e5f7",
+      "digest": "7539a133115a9b1db50cfc452944c15b156da7d4fa25c0f8a3d6872d62e639b9",
       "id": "semantic-service:invite.create"
     },
     {
-      "digest": "bed5494fadca5b6bd2cdcda6303d84cc96fb4597baf4a382d3865cb5cb008bb1",
+      "digest": "c74afe64dcef1e012db5f42fdc4b413e4c9f80624c8ee19be0b3880183770187",
       "id": "semantic-service:invite.revoke"
     },
     {
-      "digest": "26637b5198db8b3767760486ecbdf9e56395050e1a9aa8e441b88f9d4e399e73",
+      "digest": "0fb5ca7a42b404193f2115488cffec7071cdeb7dff7609b5a3317a402a3dadaf",
       "id": "semantic-service:invite.revoke_all"
     },
     {
-      "digest": "99f322bf30423f8c48d25a1c70e7895f2162bc9ed43d8d31d029b9717a30c576",
+      "digest": "7b2fa29170cb8c2d1753a34f9214c063602aa23d4f26644eb5620aca93ecd351",
       "id": "semantic-service:member.remove"
     },
     {
-      "digest": "4caf9c8177e52adabd538314364d41c56aa68dcca737d8ff9807a225115e0771",
+      "digest": "5faf9e175a24e9a2f3db8700bbbe96784737dbf9f6093cfed9c928a61f567915",
       "id": "semantic-service:member.restore"
     },
     {
-      "digest": "66022003aec6147083a9fd8b2b2c0ed1d06924011ecd552f500a1fe261b1f122",
+      "digest": "afe891cff871f81069226ac671b06ffe32c87c7740bc6d83625b2f689d06f0a8",
       "id": "semantic-service:member.role.update"
     },
     {
-      "digest": "f3da82a2198b9c9447175abeef12df6875fdbcbcf82f0cdccdf16f7570104831",
+      "digest": "6e49a7d2dfb406c9a7432fbd23dd936c8e11648dedf3b7a100aaad1bd19401f8",
       "id": "semantic-service:member.suspend"
     },
     {
-      "digest": "1f17c9dc4a73e1222fa0646678f3e02f32befdb8fec9a587769a1a88d6b45e0e",
+      "digest": "417e76f62c45ce4b9468cdc23faa5b734ea31e0260f6f6a833cf769e2ea5d366",
       "id": "semantic-service:notification.preference.save"
     },
     {
-      "digest": "c92ab6f6faeabc3b80861ee7aa5244a54450daf969c0dd58e22bfbc982148bcd",
+      "digest": "a310a7f5901bb7f3dfc9868b5010d83b370b9a8b2f1b97193b1de5b16eaf29ff",
       "id": "semantic-service:platform.registration.allocate"
     },
     {
-      "digest": "c6362832d45521031a304fb7c8b3e17202fa13ee6f887a7a458fdfaf7b84f668",
+      "digest": "b2fac411de5061bccd831c7a981e5e9402c618117c0bba3cb311a67941b0e26c",
       "id": "semantic-service:platform.registration.complete"
     },
     {
-      "digest": "6af0a0b0676d8bdfdfe27141d40991463b6fb7165b0f1e0356b2c303e1c2b5a7",
+      "digest": "4c218ef82415ce9eb0b973d6a56aaf4246e25e0de906e73794d9f6db54c2bbaf",
       "id": "semantic-service:platform.registration.operation-status"
     },
     {
-      "digest": "bc112f9a458532ec6d77536e585548860da603b1a1adf95a36cbf7c651304903",
+      "digest": "90b7536cf1969c9c859ad03cc4e98be6a0bcc319f801c0d5195508547172e510",
       "id": "semantic-service:platform.registration.settings"
     },
     {
-      "digest": "d595a855592c023ab94ad361b7d886b2d381c4e61f2a7cabae6385dad9b9f0d0",
+      "digest": "1389c5ed905ab2a8091d8d6a4fca921670b6d2d57e5a40d0ad289ae80da5fa70",
       "id": "semantic-service:settings.units.update"
     },
     {
-      "digest": "6fce14b2fd439552e217039e3b15666990b050d2de1ca1f1e899bdb8eb92612e",
+      "digest": "1e6f6cc9eb940a1c597670d8c6ee3514539506bb148b73a6d8d39be96851c06e",
       "id": "semantic:browser_household_mutations"
     },
     {
-      "digest": "19b7c5a430bfc43f25686dec7d0a9bd63c92240ce20e99f77ccbabab1af86530",
+      "digest": "d06dd08cb8b2e3881273d988ca8e9c5e0bc34b375b1d1f81f1c5e4159bc276f3",
       "id": "semantic:platform_registration"
     }
   ],
@@ -241,10 +241,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "776c68cb7e97ffaab26a986d03927c6ae8f02a8b11b27a5985da058216e889c6",
+  "semanticArtifactDigest": "792aedc119078fcb14a3683498dda5b759be86ada5a1c4059e2355c99a43bc68",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "211a99105bf89de81eaee6ef6fcb4730604e86977cfd4869437266eb3e9e7390",
+  "semanticCoverageDigest": "d16681cb8d1ccfda4cda3a446c1284f3152ca8715ffa27d7db5b09f00356189d",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "5bde0f649adc5408141e5d1e08fabe783d252e0033daffc12399e270e0e114dd"
+  "semanticFingerprint": "5a93db266cc34ddb80d4eaf61169a0e17437d4a13fd3846f9117d6b9479f30fa"
 }

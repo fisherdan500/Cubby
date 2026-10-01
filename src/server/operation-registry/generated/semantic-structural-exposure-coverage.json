@@ -2740,6 +2740,23 @@
       "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
+      "anchorBytes": "fetch(\"/api/attachments/feed-photos\", {\n        method: \"POST\",\n        headers: { \"content-type\": file.type || \"application/octet-stream\" },\n        body: file\n      })",
+      "anchorDigest": "58d93984f846c5963d2d0102a6e597f71fcc1053fc9705446a4b41b6c6ad321a",
+      "anchorEnd": 1391,
+      "anchorFile": "src/components/activities/activity-photo-control.tsx",
+      "anchorStart": 1222,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/activities/activity-photo-control.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/activities/activity-photo-control.tsx",
+      "ownerModule": "src/components/activities/activity-photo-control.tsx",
+      "sidecarPath": "src/components/activities/activity-photo-control.operation.ts"
+    },
+    {
       "anchorBytes": "authClient.signIn.email({ email, password, rememberMe: true, callbackURL: \"/invite/dispatch\" })",
       "anchorDigest": "6759421470c1b24d56d22b7dc1d80c64f347c5c2b8cadd0aed0741ffb7f7e223",
       "anchorEnd": 1079,
@@ -6482,9 +6499,9 @@
     {
       "anchorBytes": "activityResponsesQuery",
       "anchorDigest": "47b9b715b9a4c7d226b3c266459975bcfb393281432498f71117fa174905e818",
-      "anchorEnd": 1158,
+      "anchorEnd": 1318,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1136,
+      "anchorStart": 1296,
       "binding": {
         "kind": "server_value_import",
         "symbol": "activityResponsesQuery",
@@ -6499,9 +6516,9 @@
     {
       "anchorBytes": "feedInteractionKey",
       "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-      "anchorEnd": 1233,
+      "anchorEnd": 1413,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1215,
+      "anchorStart": 1395,
       "binding": {
         "kind": "server_value_import",
         "symbol": "feedInteractionKey",
@@ -6516,9 +6533,9 @@
     {
       "anchorBytes": "getActivityView",
       "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-      "anchorEnd": 1087,
+      "anchorEnd": 1247,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1072,
+      "anchorStart": 1232,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityView",
@@ -6533,9 +6550,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 1327,
+      "anchorEnd": 1507,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1311,
+      "anchorStart": 1491,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -6548,11 +6565,28 @@
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts"
     },
     {
+      "anchorBytes": "listActivityPhotos",
+      "anchorDigest": "fdc969e38174cc87e010b87046ca8c9b8800796f16a826774692a354e68071b2",
+      "anchorEnd": 1338,
+      "anchorFile": "src/app/app/activities/[id]/page.tsx",
+      "anchorStart": 1320,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listActivityPhotos",
+        "target": "src/server/services/activity-responses.ts#listActivityPhotos"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/activities/[id]/page.tsx:server_value_import:listActivityPhotos:src/server/services/activity-responses.ts#listActivityPhotos",
+      "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
+      "ownerModule": "src/app/app/activities/[id]/page.tsx",
+      "sidecarPath": "src/app/app/activities/[id]/page.operation.ts"
+    },
+    {
       "anchorBytes": "listFeedInteractions",
       "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-      "anchorEnd": 1255,
+      "anchorEnd": 1435,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1235,
+      "anchorStart": 1415,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listFeedInteractions",
@@ -6567,9 +6601,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1030,
+      "anchorEnd": 1190,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1015,
+      "anchorStart": 1175,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8441,10 +8475,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "776c68cb7e97ffaab26a986d03927c6ae8f02a8b11b27a5985da058216e889c6",
+  "semanticArtifactDigest": "792aedc119078fcb14a3683498dda5b759be86ada5a1c4059e2355c99a43bc68",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "211a99105bf89de81eaee6ef6fcb4730604e86977cfd4869437266eb3e9e7390",
+  "semanticCoverageDigest": "d16681cb8d1ccfda4cda3a446c1284f3152ca8715ffa27d7db5b09f00356189d",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "5bde0f649adc5408141e5d1e08fabe783d252e0033daffc12399e270e0e114dd"
+  "semanticFingerprint": "5a93db266cc34ddb80d4eaf61169a0e17437d4a13fd3846f9117d6b9479f30fa"
 }

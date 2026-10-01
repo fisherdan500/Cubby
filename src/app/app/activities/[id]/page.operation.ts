@@ -23,6 +23,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "listActivityPhotos",
+      target: "src/server/services/activity-responses.ts#listActivityPhotos"
+    },
+    {
+      kind: "server_value_import",
       symbol: "feedInteractionKey",
       target: "src/server/services/feed-interactions.ts#feedInteractionKey"
     },

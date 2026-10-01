@@ -2,14 +2,14 @@
   "authority": "observation_only",
   "categoryCounts": {
     "api_route": 120,
-    "client_binding": 45,
+    "client_binding": 46,
     "instrumentation": 1,
     "package_command": 40,
     "server_action": 1,
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "5496f10e226c0fab7c28e8b524595e14bc62feefb4453fde226c70d1eaa7f3a5",
+  "declarationDigest": "326ea97c263107eedddc93c015b52cddc8cefa8eb4a932ebcf2efccb70c93161",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -5505,6 +5505,11 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "listActivityPhotos",
+            "target": "src/server/services/activity-responses.ts#listActivityPhotos"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "feedInteractionKey",
             "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
           },
@@ -6939,6 +6944,36 @@
       },
       "id": "client_binding:src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/activities/activity-photo-control.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/activities/activity-photo-control.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/activities/activity-photo-control.tsx",
+      "sidecarPath": "src/components/activities/activity-photo-control.operation.ts"
     },
     {
       "declaration": {
@@ -8994,7 +9029,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "37685befbcbdd0148b43a28ee002f0b5bbcf8a9a31256e5e36046d369e449529",
+  "generatorDigest": "8254c6e23f54125d849174bc454e86570d7073372eb077a199371d1bd9c6f672",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11637,54 +11672,63 @@
       "bindings": [
         {
           "anchorDigest": "47b9b715b9a4c7d226b3c266459975bcfb393281432498f71117fa174905e818",
-          "anchorEnd": 1158,
+          "anchorEnd": 1318,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1136,
+          "anchorStart": 1296,
           "kind": "server_value_import",
           "symbol": "activityResponsesQuery",
           "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
         },
         {
           "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-          "anchorEnd": 1233,
+          "anchorEnd": 1413,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1215,
+          "anchorStart": 1395,
           "kind": "server_value_import",
           "symbol": "feedInteractionKey",
           "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
         },
         {
           "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-          "anchorEnd": 1087,
+          "anchorEnd": 1247,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1072,
+          "anchorStart": 1232,
           "kind": "server_value_import",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 1327,
+          "anchorEnd": 1507,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1311,
+          "anchorStart": 1491,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-          "anchorEnd": 1255,
+          "anchorDigest": "fdc969e38174cc87e010b87046ca8c9b8800796f16a826774692a354e68071b2",
+          "anchorEnd": 1338,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1235,
+          "anchorStart": 1320,
+          "kind": "server_value_import",
+          "symbol": "listActivityPhotos",
+          "target": "src/server/services/activity-responses.ts#listActivityPhotos"
+        },
+        {
+          "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
+          "anchorEnd": 1435,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1415,
           "kind": "server_value_import",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1030,
+          "anchorEnd": 1190,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1015,
+          "anchorStart": 1175,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -12963,6 +13007,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "58d93984f846c5963d2d0102a6e597f71fcc1053fc9705446a4b41b6c6ad321a",
+          "anchorEnd": 1391,
+          "anchorFile": "src/components/activities/activity-photo-control.tsx",
+          "anchorStart": 1222,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/activities/activity-photo-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/activities/activity-photo-control.tsx",
+      "sidecarPath": "src/components/activities/activity-photo-control.operation.ts"
     },
     {
       "bindings": [
@@ -16117,8 +16180,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 246,
-  "observationDigest": "6a73a18789ac8e2cebc01dd0cad2bbdccc8329fd7bd83efc6a3502999e076415",
+  "observationCount": 247,
+  "observationDigest": "5a45b1bf9bd63ca525e820b43e2a06664312109e55acc17adac2d2073a8bc34c",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18636,54 +18699,63 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1158,
+          "anchorEnd": 1318,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1136,
+          "anchorStart": 1296,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "activityResponsesQuery",
           "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
         },
         {
-          "anchorEnd": 1233,
+          "anchorEnd": 1413,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1215,
+          "anchorStart": 1395,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "feedInteractionKey",
           "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
         },
         {
-          "anchorEnd": 1087,
+          "anchorEnd": 1247,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1072,
+          "anchorStart": 1232,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
-          "anchorEnd": 1327,
+          "anchorEnd": 1507,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1311,
+          "anchorStart": 1491,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 1255,
+          "anchorEnd": 1338,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1235,
+          "anchorStart": 1320,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/activities/[id]/page.tsx",
+          "symbol": "listActivityPhotos",
+          "target": "src/server/services/activity-responses.ts#listActivityPhotos"
+        },
+        {
+          "anchorEnd": 1435,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1415,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
         },
         {
-          "anchorEnd": 1030,
+          "anchorEnd": 1190,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1015,
+          "anchorStart": 1175,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "requireUserPage",
@@ -19928,6 +20000,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/active-timer-bar.tsx",
       "sidecarPath": "src/components/active-timer-bar.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1391,
+          "anchorFile": "src/components/activities/activity-photo-control.tsx",
+          "anchorStart": 1222,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/activities/activity-photo-control.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/activities/activity-photo-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/activities/activity-photo-control.tsx",
+      "sidecarPath": "src/components/activities/activity-photo-control.operation.ts"
     },
     {
       "bindings": [
@@ -23763,6 +23853,12 @@
       "sidecarPath": "src/components/active-timer-bar.operation.ts"
     },
     {
+      "id": "client_binding:src/components/activities/activity-photo-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/activities/activity-photo-control.tsx",
+      "sidecarPath": "src/components/activities/activity-photo-control.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/auth/auth-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/auth/auth-form.tsx",
@@ -24279,9 +24375,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "10ee8e40698f1cbe96aa10d1563447486ead8f2a2464da75d7f7976766962629",
+  "ownerSetDigest": "d1a65fa1d81c1bec26589034b790ad2214af93cc862fd4824645ec69077cdd00",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "241bd1e6e3350401bd6136930b3b62ee564e7270ec0b0ef0e741c8eca10eb776",
+  "registryDigest": "62bf9c68aa53b2b583a791922b106267d1f757681e94929df3f1421d7814c642",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

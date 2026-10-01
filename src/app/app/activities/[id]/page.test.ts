@@ -21,6 +21,15 @@ vi.mock("@/server/services/feed-interactions", () => ({
   listFeedInteractions: async () => ({ comments: {}, reactions: {}, canRespond: false })
 }));
 vi.mock("@/components/feed/feed-responses", () => ({ FeedResponses: () => createElement("section") }));
+// Likewise the entry's photos: covered by their own tests, and here they must not reach a session or
+// database either.
+vi.mock("@/components/activities/activity-photo-control", () => ({
+  ActivityPhotoControl: () => createElement("div")
+}));
+vi.mock("@/server/services/activity-responses", () => ({
+  activityResponsesQuery: (activityId: string) => ({ postIds: [], activityIds: [activityId] }),
+  listActivityPhotos: async () => []
+}));
 vi.mock("@/components/app-shell", () => ({
   AppShell: ({ children, timerBabyId, timerActivityType }: { children: React.ReactNode; timerBabyId?: string; timerActivityType?: string }) =>
     createElement("main", { "data-timer-baby-id": timerBabyId, "data-timer-activity-type": timerActivityType }, children)

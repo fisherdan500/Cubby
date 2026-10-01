@@ -15,12 +15,17 @@ const mocks = vi.hoisted(() => ({
   requireUserPage: vi.fn(),
   getHouseholdHome: vi.fn(),
   getActivityView: vi.fn(),
-  listFeedInteractions: vi.fn()
+  listFeedInteractions: vi.fn(),
+  listActivityPhotos: vi.fn()
 }));
 
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/households", () => ({ getHouseholdHome: mocks.getHouseholdHome }));
 vi.mock("@/server/services/activities", () => ({ getActivityView: mocks.getActivityView }));
+vi.mock("@/server/services/activity-responses", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/server/services/activity-responses");
+  return { ...actual, listActivityPhotos: mocks.listActivityPhotos };
+});
 vi.mock("@/server/services/feed-interactions", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/server/services/feed-interactions");
   return { ...actual, listFeedInteractions: mocks.listFeedInteractions };
@@ -75,6 +80,7 @@ beforeEach(() => {
     canDelete: true
   });
   mocks.listFeedInteractions.mockResolvedValue({ comments: {}, reactions: {}, canRespond: true });
+  mocks.listActivityPhotos.mockResolvedValue([]);
 });
 
 async function renderPage() {
@@ -140,5 +146,38 @@ describe("responses on a logged entry's screen", () => {
     await renderPage();
 
     expect(screen.queryByText(/belongs to a post/i)).toBeNull();
+  });
+});
+
+describe("photos on a logged entry's screen", () => {
+  it("offers a way to add one", async () => {
+    await renderPage();
+
+    expect(screen.getByLabelText(/add a photo/i)).toBeTruthy();
+  });
+
+  it("asks only for this entry's photos", async () => {
+    await renderPage();
+
+    expect(mocks.listActivityPhotos).toHaveBeenCalledWith("act-1");
+  });
+
+  it("shows a photo already added to this entry", async () => {
+    mocks.listActivityPhotos.mockResolvedValue([{ id: "att-1", width: 800, height: 600 }]);
+
+    await renderPage();
+
+    // Served from the checked private address, never a public file path.
+    const image = screen.getAllByRole("img").find((node) => node.getAttribute("src")?.includes("att-1"));
+    expect(image?.getAttribute("src")).toContain("/api/attachments/att-1");
+  });
+
+  it("does not offer to add a photo to an entry the viewer may not change", async () => {
+    const current = await mocks.getActivityView();
+    mocks.getActivityView.mockResolvedValue({ ...current, canUpdate: false, canDelete: false });
+
+    await renderPage();
+
+    expect(screen.queryByLabelText(/add a photo/i)).toBeNull();
   });
 });
