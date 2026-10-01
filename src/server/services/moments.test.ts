@@ -55,6 +55,12 @@ function applyBoundary<T extends { id: string; occurredAt: Date }>(
   kind: "activity" | "post",
   boundary?: MomentsBoundary
 ): T[] {
+  // MOMENTS_QUERY reads occurredAt DESC, id DESC. The cursor's tie-break assumes that order, so a fake
+  // source must deliver it too.
+  const ordered = [...rows].sort(
+    (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
+  );
+  rows = ordered;
   if (!boundary) return rows;
   const at = new Date(boundary.at).getTime();
   if (kind !== boundary.kind) {
@@ -142,28 +148,118 @@ describe("paging a timeline that combines entries with their photos", () => {
     expect(nextCursor).toBeDefined();
   });
 
-  it("shows every entry and every post across the whole walk", async () => {
-    // The requirement behind every paging rule: each stored row appears on exactly one page. Driven by
-    // following the real cursor through both sources, so it holds whatever the mechanism is.
-    const entries = Array.from({ length: 20 }, (_, i) => activity(i * 2));
-    const posts = Array.from({ length: 20 }, (_, i) => post(i * 2 + 1));
+  /**
+   * Walks the whole timeline the way the app does and checks what a family would notice: nothing
+   * missing, nothing shown twice, and the walk actually ends.
+   *
+   * Asserting only that everything appeared would miss a duplicate -- a boundary that re-shows one row
+   * still shows everything -- so each of these is checked separately.
+   */
+  async function walkEverything(entries: ReturnType<typeof activity>[], posts: ReturnType<typeof post>[]) {
     mocks.listActivities.mockImplementation(async ({ momentsAfter: boundary }: { momentsAfter?: MomentsBoundary }) =>
       applyBoundary(entries, "activity", boundary).slice(0, HISTORY_PAGE_SIZE + 1));
     mocks.listFeedPosts.mockImplementation(async ({ momentsAfter: boundary }: { momentsAfter?: MomentsBoundary }) =>
       applyBoundary(posts, "post", boundary).slice(0, HISTORY_PAGE_SIZE + 1));
     const { listMixedMoments } = await import("./moments");
 
-    const shown = new Set<string>();
+    const times = new Map<string, number>();
+    const cursors = new Set<string>();
+    let deadEnds = 0;
     let cursor: string | undefined;
     let pages = 0;
-    do {
+    let ended = false;
+    for (;;) {
       const result = await listMixedMoments({ cursor });
-      for (const item of result.items) shown.add(item.kind === "activity" ? item.activity.id : item.post.id);
-      cursor = result.nextCursor;
       pages += 1;
-    } while (cursor && pages < 20);
+      const ids = result.items.flatMap((item) =>
+        item.kind === "activity"
+          // A folded photo post shows up as its entry's photo rather than an item of its own, so the
+          // photo's own post counts as seen through the id carried on the combined entry.
+          ? [item.activity.id, ...(item.photoPostId ? [item.photoPostId] : [])]
+          : [item.post.id]);
+      const fresh = ids.filter((id) => !times.has(id));
+      for (const id of ids) times.set(id, (times.get(id) ?? 0) + 1);
 
-    expect(shown.size).toBe(entries.length + posts.length);
+      // A page reached through 'load more' must show something, and something new, or the family taps
+      // into a dead end.
+      if (pages > 1 && (ids.length === 0 || fresh.length === 0)) deadEnds += 1;
+      if (!result.nextCursor) { ended = true; break; }
+      // The same cursor twice means the walk is going in circles.
+      expect(cursors.has(result.nextCursor)).toBe(false);
+      cursors.add(result.nextCursor);
+      cursor = result.nextCursor;
+      if (pages > entries.length + posts.length + 5) break;
+    }
+
+    return {
+      ended,
+      deadEnds,
+      shown: times.size,
+      duplicated: [...times.values()].filter((count) => count > 1).length,
+      stored: entries.length + posts.length
+    };
+  }
+
+  it("shows every entry and every post exactly once across the whole walk", async () => {
+    const entries = Array.from({ length: 20 }, (_, i) => activity(i * 2));
+    const posts = Array.from({ length: 20 }, (_, i) => post(i * 2 + 1));
+
+    const walk = await walkEverything(entries, posts);
+
+    expect(walk).toEqual({ ended: true, deadEnds: 0, shown: 40, duplicated: 0, stored: 40 });
+  });
+
+  it("shows everything exactly once for shapes that stress the page boundary", async () => {
+    // Each of these broke, or could break, a different way: sources overflowing only together; a
+    // same-instant cluster bigger than a page; photos newer and older than their entries.
+    const shapes: { name: string; entries: ReturnType<typeof activity>[]; posts: ReturnType<typeof post>[] }[] = [
+      {
+        name: "overflow only in combination, over several pages",
+        entries: Array.from({ length: 30 }, (_, i) => activity(i * 2)),
+        posts: Array.from({ length: 30 }, (_, i) => post(i * 2 + 1))
+      },
+      {
+        name: "a same-instant cluster larger than one page",
+        entries: Array.from({ length: 15 }, (_, i) => ({ ...activity(i), occurredAt: new Date(base) })),
+        posts: Array.from({ length: 15 }, (_, i) => ({ ...post(i), occurredAt: new Date(base) }))
+      },
+      {
+        name: "photo posts newer than their entries",
+        entries: Array.from({ length: 26 }, (_, i) => activity(i)),
+        posts: Array.from({ length: 26 }, (_, i) => photoPostNewerThan(100 + i, `act-${i}`))
+      },
+      {
+        name: "a photo post older than its entry",
+        entries: Array.from({ length: 26 }, (_, i) => activity(i)),
+        posts: [post(99, "act-0")]
+      },
+      { name: "one entry and a full page of posts", entries: [activity(0)], posts: Array.from({ length: 25 }, (_, i) => post(i + 1)) },
+      {
+        // Exactly one full page and nothing more: offering 'load more' here leads to an empty page,
+        // which is the dead end an off-by-one in the has-more test produces.
+        name: "exactly one full page, nothing behind it",
+        entries: Array.from({ length: 12 }, (_, i) => activity(i * 2)),
+        posts: Array.from({ length: 13 }, (_, i) => post(i * 2 + 1))
+      },
+      {
+        name: "exactly two full pages, nothing behind them",
+        entries: Array.from({ length: 25 }, (_, i) => activity(i * 2)),
+        posts: Array.from({ length: 25 }, (_, i) => post(i * 2 + 1))
+      },
+      { name: "nothing at all", entries: [], posts: [] }
+    ];
+
+    for (const shape of shapes) {
+      const walk = await walkEverything(shape.entries, shape.posts);
+      expect({ shape: shape.name, ...walk }).toEqual({
+        shape: shape.name,
+        ended: true,
+        deadEnds: 0,
+        shown: shape.entries.length + shape.posts.length,
+        duplicated: 0,
+        stored: shape.entries.length + shape.posts.length
+      });
+    }
   });
 
   it("stops offering more when both sources are exhausted", async () => {
