@@ -311,6 +311,7 @@ function CalendarDrawer({
                         returnTo={returnTo}
                         timeZone={calendar.timezone}
                         volume={volume}
+                        day={calendar.selected!.window}
                         actions={activityRowActions({ memberId: calendar.home.id, role: calendar.home.role }, activity)}
                       />
                     ))}
