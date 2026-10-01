@@ -2640,17 +2640,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "fb37de07ef24f2ffeb6209e2217737955d54f2902f2217d8714d4ea6303ea9a9",
+          "digest": "23fbb9137ed89cb2be1b78f071316edfb33a251df552aeade8ed317dfc443766",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "c7739b0aab4be23ccf455a3d14b1d012a59ac13097284ff200725e49069d3c07",
+      "fingerprint": "7a784063ec591d89432e2312a8c15e22896639654db7c1f2975fcf2ce7c69ff0",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "b0ef3d619447bcdef314caad25208264267af10789585ac1383e9285fe196427",
+      "sourceDigest": "05cf53e0d257d03361b0a18d73719c6341a21a901a6949e59f42e1174b13ac16",
       "status": "declared"
     },
     {
@@ -4380,11 +4380,11 @@
   ],
   "generatorDigest": "fb663a73da7e3ac337de5b0943784bd07e2a18f9e6af22d99fb66dabd3892495",
   "generatorVersion": "r0.1",
-  "observationDigest": "1ef36d8d74203085876578047e9031613e92b6a1b52a0c1de2cd97509b52b304",
+  "observationDigest": "860e1b6ca9b5fac23922a69a5883d64865a665de191f4e18da503b7540286a4a",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "f97b48c1c76b24204886647ef1fc40e96fd3f5838654fa9f7bcfa6a6f2c0926b",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a707a8ffd4c5d1e7acdb217576a1ff85e9cad5c900619c11047c9095861fa581",
+  "registryDigest": "68c9da7698093e9f53ad7a8a75721321642e550197f030c0b05bb32059789bfe",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
