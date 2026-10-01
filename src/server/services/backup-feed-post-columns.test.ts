@@ -94,6 +94,19 @@ describe("a feed post in a backup", () => {
     expect(dangling).toMatch(/feedPosts[\s\S]*?activityId/);
   });
 
+  it("exports the entry link only when that entry is exported too", () => {
+    // Entries are exported only while live, but a photo post survives its entry being deleted. If the
+    // export carried the link anyway, the payload would name an entry it does not contain -- and the
+    // dangling-reference check would then refuse the family's own backup, so deleting one logged entry
+    // would stop the household backing up at all.
+    const source = readFileSync(resolve(process.cwd(), "src/server/services/backups.ts"), "utf8");
+    const mapping = /feedPosts: feedPosts\.map\(\(post\) => \(\{([\s\S]*?)\}\)\)/.exec(source)?.[1] ?? "";
+    expect(mapping).not.toBe("");
+
+    // The link must be conditioned on the entry being present, not copied unconditionally.
+    expect(mapping).toMatch(/activityId: [^,\n]*(exportedActivityIds|has\(|\?)/);
+  });
+
   it("carries the entry a photo post belongs to", () => {
     // Without this the entry and its photo come back as two separate moments and the entry's Photos
     // section is empty -- the family opens the feed they photographed and the picture is gone.
