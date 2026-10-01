@@ -9,7 +9,7 @@
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "abdc02ff44eddfcbeaef33f581c479ba8a2221bcec2d7edc90cad3e5aca11f26",
+  "declarationDigest": "94daee8c61ada2c3891667348589703bcb16c1478c902eafb632d8a1c326c8b6",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -5456,18 +5456,33 @@
         "bindings": [
           {
             "kind": "server_value_import",
+            "symbol": "requireUserPage",
+            "target": "src/server/auth/session.ts#requireUserPage"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getActivityView",
             "target": "src/server/services/activities.ts#getActivityView"
           },
           {
             "kind": "server_value_import",
-            "symbol": "getHouseholdHome",
-            "target": "src/server/services/households.ts#getHouseholdHome"
+            "symbol": "activityResponsesQuery",
+            "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
           },
           {
             "kind": "server_value_import",
-            "symbol": "requireUserPage",
-            "target": "src/server/auth/session.ts#requireUserPage"
+            "symbol": "feedInteractionKey",
+            "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "listFeedInteractions",
+            "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "getHouseholdHome",
+            "target": "src/server/services/households.ts#getHouseholdHome"
           }
         ],
         "deferredGateIds": [
@@ -11579,28 +11594,55 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-          "anchorEnd": 1021,
+          "anchorDigest": "47b9b715b9a4c7d226b3c266459975bcfb393281432498f71117fa174905e818",
+          "anchorEnd": 1158,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1006,
+          "anchorStart": 1136,
+          "kind": "server_value_import",
+          "symbol": "activityResponsesQuery",
+          "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
+        },
+        {
+          "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
+          "anchorEnd": 1233,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1215,
+          "kind": "server_value_import",
+          "symbol": "feedInteractionKey",
+          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+        },
+        {
+          "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
+          "anchorEnd": 1087,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1072,
           "kind": "server_value_import",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 1086,
+          "anchorEnd": 1327,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1070,
+          "anchorStart": 1311,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 964,
+          "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
+          "anchorEnd": 1255,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 949,
+          "anchorStart": 1235,
+          "kind": "server_value_import",
+          "symbol": "listFeedInteractions",
+          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 1030,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1015,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -16008,7 +16050,7 @@
     }
   ],
   "observationCount": 245,
-  "observationDigest": "f4b4838945f23f8b378ad5faeee9921f0baa1416d3bc7631bbfa0ae262b54d48",
+  "observationDigest": "6542fe361b9d523f6d87027e8aeb4a6ee539382b2250f395c7ce8d18eab6b651",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18526,27 +18568,54 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1021,
+          "anchorEnd": 1158,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1006,
+          "anchorStart": 1136,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/activities/[id]/page.tsx",
+          "symbol": "activityResponsesQuery",
+          "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
+        },
+        {
+          "anchorEnd": 1233,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1215,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/activities/[id]/page.tsx",
+          "symbol": "feedInteractionKey",
+          "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+        },
+        {
+          "anchorEnd": 1087,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1072,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
-          "anchorEnd": 1086,
+          "anchorEnd": 1327,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1070,
+          "anchorStart": 1311,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 964,
+          "anchorEnd": 1255,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 949,
+          "anchorStart": 1235,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/activities/[id]/page.tsx",
+          "symbol": "listFeedInteractions",
+          "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorEnd": 1030,
+          "anchorFile": "src/app/app/activities/[id]/page.tsx",
+          "anchorStart": 1015,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "requireUserPage",
@@ -24120,7 +24189,7 @@
   ],
   "ownerSetDigest": "cbb091a147ba3437b32a768d2b97ff303fd1c726cbd7f730b18d09819606f611",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "479dbbc0259fe2ceccd83478bc20a8b08e0de7d049c42563f4de6e1ffe3c38a4",
+  "registryDigest": "561238595b928fdda2aa3dbe45b7bf2844a33def96c40a7f0482ea72c00d2245",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

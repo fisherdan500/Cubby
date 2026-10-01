@@ -6463,11 +6463,45 @@
       "sidecarPath": "src/app/app/activities/[id]/edit/page.operation.ts"
     },
     {
+      "anchorBytes": "activityResponsesQuery",
+      "anchorDigest": "47b9b715b9a4c7d226b3c266459975bcfb393281432498f71117fa174905e818",
+      "anchorEnd": 1158,
+      "anchorFile": "src/app/app/activities/[id]/page.tsx",
+      "anchorStart": 1136,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "activityResponsesQuery",
+        "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/activities/[id]/page.tsx:server_value_import:activityResponsesQuery:src/server/services/activity-responses.ts#activityResponsesQuery",
+      "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
+      "ownerModule": "src/app/app/activities/[id]/page.tsx",
+      "sidecarPath": "src/app/app/activities/[id]/page.operation.ts"
+    },
+    {
+      "anchorBytes": "feedInteractionKey",
+      "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
+      "anchorEnd": 1233,
+      "anchorFile": "src/app/app/activities/[id]/page.tsx",
+      "anchorStart": 1215,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "feedInteractionKey",
+        "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/activities/[id]/page.tsx:server_value_import:feedInteractionKey:src/server/services/feed-interactions.ts#feedInteractionKey",
+      "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
+      "ownerModule": "src/app/app/activities/[id]/page.tsx",
+      "sidecarPath": "src/app/app/activities/[id]/page.operation.ts"
+    },
+    {
       "anchorBytes": "getActivityView",
       "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-      "anchorEnd": 1021,
+      "anchorEnd": 1087,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1006,
+      "anchorStart": 1072,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityView",
@@ -6482,9 +6516,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 1086,
+      "anchorEnd": 1327,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1070,
+      "anchorStart": 1311,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -6497,11 +6531,28 @@
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts"
     },
     {
+      "anchorBytes": "listFeedInteractions",
+      "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
+      "anchorEnd": 1255,
+      "anchorFile": "src/app/app/activities/[id]/page.tsx",
+      "anchorStart": 1235,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "listFeedInteractions",
+        "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/activities/[id]/page.tsx:server_value_import:listFeedInteractions:src/server/services/feed-interactions.ts#listFeedInteractions",
+      "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
+      "ownerModule": "src/app/app/activities/[id]/page.tsx",
+      "sidecarPath": "src/app/app/activities/[id]/page.operation.ts"
+    },
+    {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 964,
+      "anchorEnd": 1030,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 949,
+      "anchorStart": 1015,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8373,9 +8424,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "4ce063bb1a53f184f181026eac12bd82fe34c10e77206f9798fc084e8659628a",
+  "semanticArtifactDigest": "ced521ce11961abe3a1603c940d4e9c819964819f68b83d116fc6be28e120998",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "61b3650af92f5daf9191d40dab05b5689c50aa8be40e3411d5c87c1f9f2e9a0e",
+  "semanticCoverageDigest": "ea9ce1293702d6f4b2f5b3f6025aca0bd4c1a0b25785cebc74b4cded5a7e6d96",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "922cf74ab8b3b39fa814c70b3dbde8c77ae199e26da21ca466aa0bb8b353e741"

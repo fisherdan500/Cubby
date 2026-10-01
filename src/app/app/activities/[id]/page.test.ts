@@ -14,6 +14,13 @@ globalThis.React = React;
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/households", () => ({ getHouseholdHome: mocks.getHouseholdHome }));
 vi.mock("@/server/services/activities", () => ({ getActivityView: mocks.getActivityView }));
+// The page now also loads the entry's responses. That thread is covered by its own tests; here it
+// only has to not reach a real session or database.
+vi.mock("@/server/services/feed-interactions", () => ({
+  feedInteractionKey: (kind: string, id: string) => `${kind}:${id}`,
+  listFeedInteractions: async () => ({ comments: {}, reactions: {}, canRespond: false })
+}));
+vi.mock("@/components/feed/feed-responses", () => ({ FeedResponses: () => createElement("section") }));
 vi.mock("@/components/app-shell", () => ({
   AppShell: ({ children, timerBabyId, timerActivityType }: { children: React.ReactNode; timerBabyId?: string; timerActivityType?: string }) =>
     createElement("main", { "data-timer-baby-id": timerBabyId, "data-timer-activity-type": timerActivityType }, children)

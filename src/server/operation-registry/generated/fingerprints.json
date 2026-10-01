@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "abdc02ff44eddfcbeaef33f581c479ba8a2221bcec2d7edc90cad3e5aca11f26",
+  "declarationDigest": "94daee8c61ada2c3891667348589703bcb16c1478c902eafb632d8a1c326c8b6",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -2012,17 +2012,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "81f26df920992711626249bf85b7a5551237364bffc535617f1d7cb7aa01a1cf",
+          "digest": "18ffb1ca2c10d1b4b47a8255307cf012cfc395a13fce1445f39988a2438a6701",
           "file": "src/app/app/activities/[id]/page.tsx"
         }
       ],
-      "declarationDigest": "7db689af1701252bff79d689cc65d47d28b401ad8933e95b5f469603025660c1",
-      "fingerprint": "74f48a7554faecb87e567e41e11c79789b8acc6439b184d55b3dab0f98b5bc5c",
+      "declarationDigest": "d4c4ef95aa2eb5c466ebb714153650eb68a2609a50223590e92bb8cdf9264251",
+      "fingerprint": "b24fded9dbaa42255d48ff8a2398a7b33dcb35fe3f03aaf01830549c58bbe02b",
       "id": "fingerprint:server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerId": "server_loader:src/app/app/activities/[id]/page.tsx",
       "ownerModule": "src/app/app/activities/[id]/page.tsx",
       "sidecarPath": "src/app/app/activities/[id]/page.operation.ts",
-      "sourceDigest": "2371ee1cfc9223dbb78faeecd4cb81e922422f5ba9730e93e4255493f0b939de",
+      "sourceDigest": "5744ff4d07271faf6eab609cedc4f88ecd1ba390bea3575bd9df42fc0826401b",
       "status": "declared"
     },
     {
@@ -4464,11 +4464,11 @@
   ],
   "generatorDigest": "cfd7b743d9927ad88fbd949bc18f79de0f20859998c126460ecc7ea7770fbe85",
   "generatorVersion": "r0.1",
-  "observationDigest": "f4b4838945f23f8b378ad5faeee9921f0baa1416d3bc7631bbfa0ae262b54d48",
+  "observationDigest": "6542fe361b9d523f6d87027e8aeb4a6ee539382b2250f395c7ce8d18eab6b651",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "cbb091a147ba3437b32a768d2b97ff303fd1c726cbd7f730b18d09819606f611",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "479dbbc0259fe2ceccd83478bc20a8b08e0de7d049c42563f4de6e1ffe3c38a4",
+  "registryDigest": "561238595b928fdda2aa3dbe45b7bf2844a33def96c40a7f0482ea72c00d2245",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

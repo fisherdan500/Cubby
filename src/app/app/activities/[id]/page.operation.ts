@@ -8,18 +8,33 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "requireUserPage",
+      target: "src/server/auth/session.ts#requireUserPage"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getActivityView",
       target: "src/server/services/activities.ts#getActivityView"
     },
     {
       kind: "server_value_import",
-      symbol: "getHouseholdHome",
-      target: "src/server/services/households.ts#getHouseholdHome"
+      symbol: "activityResponsesQuery",
+      target: "src/server/services/activity-responses.ts#activityResponsesQuery"
     },
     {
       kind: "server_value_import",
-      symbol: "requireUserPage",
-      target: "src/server/auth/session.ts#requireUserPage"
+      symbol: "feedInteractionKey",
+      target: "src/server/services/feed-interactions.ts#feedInteractionKey"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "listFeedInteractions",
+      target: "src/server/services/feed-interactions.ts#listFeedInteractions"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "getHouseholdHome",
+      target: "src/server/services/households.ts#getHouseholdHome"
     }
   ],
   disposition: "observed",
