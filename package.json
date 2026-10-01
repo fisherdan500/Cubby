@@ -35,6 +35,7 @@
     "verify:baby-photo": "tsx scripts/baby-photo-rehearsal.ts",
     "verify:user-photo": "tsx scripts/user-photo-rehearsal.ts",
     "verify:photo-upload": "tsx scripts/photo-upload-rehearsal.ts",
+    "verify:overnight-log": "tsx scripts/overnight-log-rehearsal.ts",
     "verify:user-photo-gate-proof": "tsx scripts/user-photo-rehearsal-gate-proof.ts",
     "verify:baby-photo-gate-proof": "tsx scripts/baby-photo-rehearsal-gate-proof.ts",
     "verify:invitation-email-delivery": "tsx scripts/invitation-email-delivery-rehearsal.ts",

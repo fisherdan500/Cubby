@@ -118,7 +118,7 @@ async function getDashboardForHome(home: HouseholdHome, params?: DashboardParams
         householdId: home.householdId,
         babyId: baby.id,
         deletedAt: null,
-        occurredAt: { gte: selectedDate.start, lt: selectedDate.end }
+        ...dayLogWhere(selectedDate)
       },
       include: activityInclude,
       orderBy: { occurredAt: "desc" }
@@ -442,6 +442,24 @@ function dismissalKey(warning: { type: string; fingerprint: string }) {
 
 function dismissalKeySet(dismissals: Array<{ type: string; fingerprint: string }>) {
   return new Set(dismissals.map(dismissalKey));
+}
+
+/**
+ * Which activities a day's log shows.
+ *
+ * Not just what was recorded during the day: anything whose time actually covers part of it. An
+ * overnight sleep is one activity that belongs to two days, and filtering on the recorded moment
+ * alone hid it from the morning the family woke up on.
+ */
+export function dayLogWhere(day: { start: Date; end: Date }) {
+  return {
+    OR: [
+      { occurredAt: { gte: day.start, lt: day.end } },
+      // Spans into or across the day. endedAt: { gt } excludes nulls, so a still-running activity
+      // stays on its own day only.
+      { startedAt: { lt: day.end }, endedAt: { gt: day.start } }
+    ]
+  };
 }
 
 export function resolveDashboardDate(input: string | undefined, timezone = env.APP_TIMEZONE, now = new Date()): DashboardDate {

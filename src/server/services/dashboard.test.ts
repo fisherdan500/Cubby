@@ -141,12 +141,20 @@ describe("dashboard service data loading", () => {
 
     // The timeline is read once. The other dated read selects every sleep interval that can overlap
     // the day, regardless of how long ago it started.
-    const selectedDayReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.occurredAt && !query.where.type);
+    const selectedDayReads = mocks.activityFindMany.mock.calls.filter(
+      ([query]) => query.where.OR?.[0]?.occurredAt && !query.where.type
+    );
     const sleepLookbackReads = mocks.activityFindMany.mock.calls.filter(([query]) => query.where.type === ActivityType.sleep);
     expect(selectedDayReads).toHaveLength(1);
     expect(sleepLookbackReads).toHaveLength(1);
-    const dayStart = selectedDayReads[0][0].where.occurredAt.gte;
-    const dayEnd = selectedDayReads[0][0].where.occurredAt.lt;
+    // The timeline asks for the day itself plus anything spanning it, so an overnight sleep shows
+    // on the morning it ended as well as the evening it began.
+    const dayStart = selectedDayReads[0][0].where.OR[0].occurredAt.gte;
+    const dayEnd = selectedDayReads[0][0].where.OR[0].occurredAt.lt;
+    expect(selectedDayReads[0][0].where.OR[1]).toEqual({
+      startedAt: { lt: dayEnd },
+      endedAt: { gt: dayStart }
+    });
     expect(sleepLookbackReads[0][0].where.OR).toEqual([
       { startedAt: { not: null, lt: dayEnd }, endedAt: null },
       { startedAt: { not: null, lt: dayEnd }, endedAt: { gt: dayStart } },
