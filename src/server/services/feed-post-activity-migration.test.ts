@@ -48,7 +48,7 @@ describe("linking a photo post to a logged entry", () => {
     ).toBe(true);
   });
 
-  it("removes the link when the entry is deleted, leaving no post pointing at nothing", () => {
+  it("removes the photo post too when the entry is hard-deleted, so nothing points at a missing entry", () => {
     expect(has(/"FeedPost_householdId_activityId_fkey".*ON DELETE CASCADE/i)).toBe(true);
   });
 

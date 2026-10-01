@@ -22,7 +22,10 @@ describe("responses on a logged entry", () => {
   it("keys the thread by the activity, so the entry and the feed share it", () => {
     // Moments already builds its key this way for an activity item; the entry screen must agree or
     // the same conversation would appear as two.
-    expect(feedInteractionKey("activity", "act-1")).toBe(feedInteractionKey("activity", "act-1"));
+    // The entry screen and Moments must derive the SAME key from the same entry, or a reply left in
+    // one place would not appear in the other. Pin the actual value, not that the function equals
+    // itself.
+    expect(feedInteractionKey("activity", "act-1")).toBe("activity:act-1");
   });
 
   it("keeps an activity thread separate from a post that happens to share an id", () => {

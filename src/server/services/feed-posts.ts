@@ -9,7 +9,7 @@ import {
   parseFeedPostEdit,
   parseFeedPostInput
 } from "@/domain/feed-post";
-import { hasPermission } from "@/domain/roles";
+import { hasPermission, canMutateOwnOrAny } from "@/domain/roles";
 import { prisma } from "@/lib/db/prisma";
 import { momentsAfter, type MomentsBoundary } from "@/lib/moments-pagination";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
@@ -172,9 +172,15 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
       if (activityId) {
         const activity = await tx.activityLog.findFirst({
           where: { id: activityId, householdId: lockedCtx.householdId, deletedAt: null },
-          select: { id: true }
+          select: { id: true, actorMemberId: true }
         });
         if (!activity) throw new Error("not_found");
+        // Adding a photo to an entry changes that entry, so it needs the same authority editing it
+        // needs. The entry screen hides the control on the same rule; without this the screen would
+        // promise a restriction the server did not keep.
+        if (!canMutateOwnOrAny(lockedCtx.role, "update", activity.actorMemberId === lockedCtx.memberId)) {
+          throw new Error("forbidden");
+        }
       }
       const post = await tx.feedPost.create({
         data: { householdId: lockedCtx.householdId, babyId: input.babyId, authorMemberId: lockedCtx.memberId, body: input.body, tags: input.tags, activityId },

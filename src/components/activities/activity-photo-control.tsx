@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus } from "lucide-react";
 
@@ -25,10 +25,18 @@ export function ActivityPhotoControl({
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
+  // The disabled attribute alone is not enough: a second change event can race the state update, and
+  // an upload that resolves after the family has navigated away must not touch a gone component.
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => () => { mounted.current = false; }, []);
+
   async function add(file: File) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -41,6 +49,7 @@ export function ActivityPhotoControl({
       const body = (await response.json().catch(() => null)) as
         | { ok?: boolean; data?: { attachmentId?: string }; error?: { message?: string } }
         | null;
+      if (!mounted.current) return;
       if (!response.ok || !body?.ok || !body.data?.attachmentId) {
         setError(body?.error?.message ?? "That photo could not be added. Try again.");
         return;
@@ -52,19 +61,23 @@ export function ActivityPhotoControl({
         "/api/feed/posts",
         "POST",
         {
+          // A photo post carries no caption; the create schema allows that only because a photo is
+          // attached (see the body/attachment rule in src/domain/feed-post.ts).
           body: "",
           babyId,
           activityId,
           attachmentIds: [body.data.attachmentId]
         }
       );
+      if (!mounted.current) return;
       if (!outcome.ok) {
         setError(outcome.message);
         return;
       }
       router.refresh();
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (mounted.current) setBusy(false);
       if (input.current) input.current.value = "";
     }
   }

@@ -13012,9 +13012,9 @@
       "bindings": [
         {
           "anchorDigest": "58d93984f846c5963d2d0102a6e597f71fcc1053fc9705446a4b41b6c6ad321a",
-          "anchorEnd": 1391,
+          "anchorEnd": 1791,
           "anchorFile": "src/components/activities/activity-photo-control.tsx",
-          "anchorStart": 1222,
+          "anchorStart": 1622,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -16181,7 +16181,7 @@
     }
   ],
   "observationCount": 247,
-  "observationDigest": "5a45b1bf9bd63ca525e820b43e2a06664312109e55acc17adac2d2073a8bc34c",
+  "observationDigest": "67a2c18464790b562d0de0fbaecda22176be0b282bba95c9d9c79d031170c6e8",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -20004,9 +20004,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1391,
+          "anchorEnd": 1791,
           "anchorFile": "src/components/activities/activity-photo-control.tsx",
-          "anchorStart": 1222,
+          "anchorStart": 1622,
           "kind": "global_fetch",
           "ownerModule": "src/components/activities/activity-photo-control.tsx",
           "symbol": "fetch[1]",
@@ -24377,7 +24377,7 @@
   ],
   "ownerSetDigest": "d1a65fa1d81c1bec26589034b790ad2214af93cc862fd4824645ec69077cdd00",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "62bf9c68aa53b2b583a791922b106267d1f757681e94929df3f1421d7814c642",
+  "registryDigest": "832dfc075776fcec77df5002433d261a5deb234425ddee8b86ee9436db5e1674",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

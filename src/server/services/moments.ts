@@ -16,6 +16,11 @@ export type MomentItem =
     }
   | { kind: "post"; at: Date; post: FeedPostView };
 
+/** One row from a source, before an entry's photo posts are folded into it for presentation. */
+type MomentRow =
+  | { kind: "activity"; at: Date; activity: ActivityItem }
+  | { kind: "post"; at: Date; post: FeedPostView };
+
 /** Each scoped source reads only a page plus lookahead; neither source owns continuation. */
 export async function listMixedMoments({ babyId, cursor }: { babyId?: string; cursor?: string }) {
   const after = parseMomentsCursor(cursor);
@@ -26,40 +31,65 @@ export async function listMixedMoments({ babyId, cursor }: { babyId?: string; cu
   // A photo added to an entry is stored as a feed photo on a real post, which is what keeps private
   // delivery and backups working. The family should still see one moment rather than the entry and
   // its photo side by side, so such a post is folded into its entry here, for presentation only.
-  const activityIds = new Set(activities.map((activity) => activity.id));
-  const foldedByActivity = new Map<string, FeedPostView[]>();
-  const standalonePosts: FeedPostView[] = [];
-  for (const post of posts) {
-    // A photo post whose entry is not on this page stays an ordinary post, so it is never hidden.
-    if (post.activityId && activityIds.has(post.activityId)) {
-      const group = foldedByActivity.get(post.activityId);
-      if (group) group.push(post);
-      else foldedByActivity.set(post.activityId, [post]);
-    } else {
-      standalonePosts.push(post);
-    }
-  }
-  const merged: MomentItem[] = [
-    ...standalonePosts.map((post): MomentItem => ({ kind: "post", at: post.occurredAt, post })),
-    ...activities.map((activity): MomentItem => {
-      const own = foldedByActivity.get(activity.id) ?? [];
-      return {
-        kind: "activity",
-        at: activity.occurredAt,
-        activity,
-        photos: own.flatMap((post) => post.photos),
-        photoPostId: own[0]?.id ?? null
-      };
-    })
+  // Whether more history exists is decided by what the SOURCES returned, before any folding. Folding
+  // changes presentation only; counting after it let a family who added photos to a few entries lose
+  // the whole older half of their timeline, with nothing to tell them it had gone.
+  const sourceHasMore = activities.length > HISTORY_PAGE_SIZE || posts.length > HISTORY_PAGE_SIZE;
+
+  // Page the two sources together FIRST, exactly as they were paged before combining existed, so the
+  // rows that make up this page are settled independently of folding.
+  const rows: MomentRow[] = [
+    ...posts.map((post): MomentRow => ({ kind: "post", at: post.occurredAt, post })),
+    ...activities.map((activity): MomentRow => ({ kind: "activity", at: activity.occurredAt, activity }))
   ];
   // Stable sort retains the database's id order within each source (including its collation).
-  merged.sort((a, b) => b.at.getTime() - a.at.getTime() || (a.kind === b.kind ? 0 : a.kind === "post" ? -1 : 1));
-  const items = merged.slice(0, HISTORY_PAGE_SIZE);
-  const last = items.at(-1);
+  rows.sort((a, b) => b.at.getTime() - a.at.getTime() || (a.kind === b.kind ? 0 : a.kind === "post" ? -1 : 1));
+
+  // The boundary is the last row of the page, and it must be a row the next page can continue from.
+  // A folded post is not shown in its own right, so it must never become the boundary.
+  const paged = rows.slice(0, HISTORY_PAGE_SIZE);
+  const pagedActivityIds = new Set(
+    paged.flatMap((row) => (row.kind === "activity" ? [row.activity.id] : []))
+  );
+
+  // Only a photo post whose entry is ON THIS PAGE folds into it. One whose entry is elsewhere stays an
+  // ordinary post, so a picture is shown either way and never falls between two pages.
+  const foldedByActivity = new Map<string, FeedPostView[]>();
+  const items: MomentItem[] = [];
+  for (const row of paged) {
+    if (row.kind === "post" && row.post.activityId && pagedActivityIds.has(row.post.activityId)) {
+      const group = foldedByActivity.get(row.post.activityId);
+      if (group) group.push(row.post);
+      else foldedByActivity.set(row.post.activityId, [row.post]);
+    }
+  }
+  for (const row of paged) {
+    if (row.kind === "post") {
+      if (row.post.activityId && pagedActivityIds.has(row.post.activityId)) continue;
+      items.push({ kind: "post", at: row.at, post: row.post });
+      continue;
+    }
+    // Oldest post first, so an entry's pictures read in the order they were added, matching the
+    // entry's own screen.
+    const own = [...(foldedByActivity.get(row.activity.id) ?? [])].sort(
+      (a, b) => a.occurredAt.getTime() - b.occurredAt.getTime()
+    );
+    items.push({
+      kind: "activity",
+      at: row.at,
+      activity: row.activity,
+      photos: own.flatMap((post) => post.photos),
+      photoPostId: own[0]?.id ?? null
+    });
+  }
+
+  const boundary = paged.at(-1);
   return {
     items,
-    nextCursor: merged.length > HISTORY_PAGE_SIZE && last ? momentsCursor({
-      at: last.at.toISOString(), kind: last.kind, id: last.kind === "post" ? last.post.id : last.activity.id
+    nextCursor: sourceHasMore && boundary ? momentsCursor({
+      at: boundary.at.toISOString(),
+      kind: boundary.kind,
+      id: boundary.kind === "post" ? boundary.post.id : boundary.activity.id
     }) : undefined
   };
 }

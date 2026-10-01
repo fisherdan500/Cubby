@@ -161,6 +161,9 @@ const feedPostSchema = z
     body: z.string().trim().max(2_000),
     tags: z.array(z.string().min(1).max(40)).max(20),
     occurredAt: isoDateTime,
+    // The entry this post belongs to, when a photo was added to a logged entry. Without it the entry
+    // and its photo come back as two separate moments and the entry's photo is lost from it.
+    activityId: id.nullable().optional(),
     authorName: shortString
   })
   .strict();
@@ -381,6 +384,8 @@ const v2PayloadSchema = z
       payload.reminders.some((item) => !babies.has(item.babyId)) ||
       plannedSchedules.some((item) => !babies.has(item.babyId)) ||
       (payload.feedPosts ?? []).some((item) => item.babyId !== null && !babies.has(item.babyId)) ||
+      // A photo post names the entry it belongs to; that entry must travel in the same backup.
+      (payload.feedPosts ?? []).some((item) => (item.activityId ?? null) !== null && !activities.has(item.activityId!)) ||
       (payload.feedComments ?? []).some((item) => !onCarriedParent(item)) ||
       (payload.feedReactions ?? []).some((item) => !onCarriedParent(item)) ||
       (payload.feedPhotos ?? []).some((item) => {

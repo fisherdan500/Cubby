@@ -51,7 +51,7 @@ beforeEach(() => {
 
 describe("linking a photo post to a logged entry", () => {
   it("looks the entry up in the locked household, not the one the request claims", async () => {
-    const tx = transaction({ id: "act-1" });
+    const tx = transaction({ id: "act-1", actorMemberId: "member-1" });
     mocks.executeHousehold.mockImplementation((contract: { execute: Function }) => contract.execute(tx, ctx, { targetSnapshot: {} }));
     const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
 
@@ -59,7 +59,8 @@ describe("linking a photo post to a logged entry", () => {
 
     expect(tx.activityLog.findFirst).toHaveBeenCalledWith({
       where: { id: "act-1", householdId: "household-1", deletedAt: null },
-      select: { id: true }
+      // Who logged it is read too, because adding a photo needs the authority to change the entry.
+      select: { id: true, actorMemberId: true }
     });
   });
 
@@ -86,7 +87,7 @@ describe("linking a photo post to a logged entry", () => {
   });
 
   it("stores the link when the entry is this household's", async () => {
-    const tx = transaction({ id: "act-1" });
+    const tx = transaction({ id: "act-1", actorMemberId: "member-1" });
     mocks.executeHousehold.mockImplementation((contract: { execute: Function }) => contract.execute(tx, ctx, { targetSnapshot: {} }));
     const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
 
@@ -98,7 +99,7 @@ describe("linking a photo post to a logged entry", () => {
   });
 
   it("does not look up any entry for an ordinary post", async () => {
-    const tx = transaction({ id: "act-1" });
+    const tx = transaction({ id: "act-1", actorMemberId: "member-1" });
     mocks.executeHousehold.mockImplementation((contract: { execute: Function }) => contract.execute(tx, ctx, { targetSnapshot: {} }));
     const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
 
@@ -108,5 +109,54 @@ describe("linking a photo post to a logged entry", () => {
     expect(tx.feedPost.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ activityId: null }) })
     );
+  });
+});
+
+describe("who may add a photo to an entry", () => {
+  it("refuses a member who may not change that entry", async () => {
+    // The entry screen hides the control unless you may change the entry. The server must agree, or
+    // the screen promises a restriction that does not exist.
+    const tx = transaction({ id: "act-1", actorMemberId: "someone-else" });
+    mocks.executeHousehold.mockImplementation((contract: { execute: Function }) =>
+      contract.execute(tx, { ...ctx, role: "caretaker" }, { targetSnapshot: {} }));
+    const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
+
+    await expect(
+      submitFeedPostCreateBrowserOperation({ operationId: "op-1", body: "", activityId: "act-1", attachmentIds: ["att-1"] })
+    ).rejects.toThrow("forbidden");
+    expect(tx.feedPost.create).not.toHaveBeenCalled();
+  });
+
+  it("allows a member adding a photo to an entry they logged themselves", async () => {
+    const tx = transaction({ id: "act-1", actorMemberId: "member-1" });
+    mocks.executeHousehold.mockImplementation((contract: { execute: Function }) =>
+      contract.execute(tx, { ...ctx, role: "caretaker" }, { targetSnapshot: {} }));
+    const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
+
+    await submitFeedPostCreateBrowserOperation({ operationId: "op-1", body: "", activityId: "act-1", attachmentIds: ["att-1"] });
+
+    expect(tx.feedPost.create).toHaveBeenCalled();
+  });
+
+  it("allows a parent to add a photo to any entry in the household", async () => {
+    const tx = transaction({ id: "act-1", actorMemberId: "someone-else" });
+    mocks.executeHousehold.mockImplementation((contract: { execute: Function }) =>
+      contract.execute(tx, { ...ctx, role: "parent" }, { targetSnapshot: {} }));
+    const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
+
+    await submitFeedPostCreateBrowserOperation({ operationId: "op-1", body: "", activityId: "act-1", attachmentIds: ["att-1"] });
+
+    expect(tx.feedPost.create).toHaveBeenCalled();
+  });
+
+  it("leaves an ordinary post unaffected by entry authority", async () => {
+    const tx = transaction(null);
+    mocks.executeHousehold.mockImplementation((contract: { execute: Function }) =>
+      contract.execute(tx, { ...ctx, role: "caretaker" }, { targetSnapshot: {} }));
+    const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
+
+    await submitFeedPostCreateBrowserOperation({ operationId: "op-1", body: "Just a thought" });
+
+    expect(tx.feedPost.create).toHaveBeenCalled();
   });
 });

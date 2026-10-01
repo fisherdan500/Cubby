@@ -98,15 +98,24 @@ describe("adding a photo to an entry", () => {
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
   });
 
-  it("does not upload the same file twice while it is still working", async () => {
-    let resolveUpload: (value: unknown) => void = () => {};
-    globalThis.fetch = vi.fn(() => new Promise((resolve) => { resolveUpload = resolve; })) as unknown as typeof fetch;
+  it("uploads once when the same file is chosen twice in quick succession", async () => {
+    let release: (value: unknown) => void = () => {};
+    const calls: string[] = [];
+    globalThis.fetch = vi.fn((url: string) => {
+      calls.push(String(url));
+      return new Promise((resolve) => { release = resolve; });
+    }) as unknown as typeof fetch;
     render(createElement(ActivityPhotoControl, { activityId: "act-1", babyId: "baby-1" }));
 
-    const input = screen.getByLabelText(/add a photo/i);
+    const input = screen.getByLabelText(/add a photo/i) as HTMLInputElement;
+    // Two choices racing the first upload: a double tap, or a slow connection the family retries on.
     await userEvent.upload(input, file());
-    expect((input as HTMLInputElement).disabled).toBe(true);
+    await userEvent.upload(input, file());
 
-    resolveUpload({ ok: true, json: async () => ({ ok: true, data: { attachmentId: "att-1" } }) });
+    // One picture chosen must become one upload and one post, never two of either.
+    expect(calls).toHaveLength(1);
+
+    release({ ok: true, json: async () => ({ ok: true, data: { attachmentId: "att-1" } }) });
+    await waitFor(() => expect(mocks.runFeedOperation).toHaveBeenCalledTimes(1));
   });
 });

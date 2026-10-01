@@ -201,7 +201,7 @@ describe("tenant safety", () => {
     expect(stored.activityId).toBeNull();
   });
 
-  it("unlinks nothing but the post when the entry is deleted", async () => {
+  it("removes the photo post with the entry on a hard delete (soft delete keeps it)", async () => {
     const activity = await prisma.activityLog.create({
       data: {
         household: { connect: { id: householdId } },
@@ -218,5 +218,37 @@ describe("tenant safety", () => {
 
     // ON DELETE CASCADE: no post is left pointing at an entry that no longer exists.
     expect(await prisma.feedPost.findUnique({ where: { id: post.id } })).toBeNull();
+  });
+});
+
+describe("the link survives a backup", () => {
+  it("keeps the photo with its entry through an export and restore", async () => {
+    // The photo bytes always survived; the LINK did not, so a restored household showed the entry and
+    // its picture as two separate moments and the entry's Photos section was empty. Nothing reported
+    // it -- the post count was identical. This asserts the column is actually stored and readable,
+    // which is the part the backup format reads.
+    const { post } = await postWithPhoto({ linkTo: activityId });
+
+    const exported = await prisma.feedPost.findUniqueOrThrow({
+      where: { id: post.id },
+      select: { id: true, activityId: true, photos: { select: { id: true } } }
+    });
+
+    expect(exported.activityId).toBe(activityId);
+    expect(exported.photos.length).toBeGreaterThan(0);
+
+    // A restore recreates the post against the restored entry; the composite key must accept it.
+    const restored = await prisma.feedPost.create({
+      data: {
+        householdId,
+        babyId,
+        authorMemberId: memberId,
+        body: "",
+        occurredAt: new Date("2026-10-01T09:00:00.000Z"),
+        activityId: exported.activityId
+      },
+      select: { activityId: true }
+    });
+    expect(restored.activityId).toBe(activityId);
   });
 });
