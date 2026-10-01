@@ -333,6 +333,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/photo-upload-rehearsal.operation.ts",
   "scripts/profile-photo-rehearsal.operation.ts",
   "scripts/overnight-log-rehearsal.operation.ts",
+  "scripts/activity-photo-rehearsal.operation.ts",
   "scripts/user-photo-rehearsal-gate-proof.operation.ts",
   "scripts/invitation-email-delivery-rehearsal.operation.ts",
   "scripts/backup-recovery-rehearsal.operation.ts",

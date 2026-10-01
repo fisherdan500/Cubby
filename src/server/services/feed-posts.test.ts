@@ -139,7 +139,7 @@ describe("feed posts", () => {
       .resolves.toEqual({ kind: "feed_post", code: "created", postId: "post-1" });
     expect(tx.baby.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: "baby-1", householdId: "household-1" }) }));
     expect(tx.feedPost.create).toHaveBeenCalledWith({
-      data: { householdId: "household-1", babyId: "baby-1", authorMemberId: "member-1", body: "First bath! #firsts", tags: ["firsts"] },
+      data: { householdId: "household-1", babyId: "baby-1", authorMemberId: "member-1", body: "First bath! #firsts", tags: ["firsts"], activityId: null },
       select: { id: true }
     });
     expect(mocks.writeAudit).toHaveBeenCalledWith(ctx, expect.objectContaining({ action: "feed_post.create", after: { tagCount: 1 } }), tx);
