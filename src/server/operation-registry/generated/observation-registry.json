@@ -2,14 +2,14 @@
   "authority": "observation_only",
   "categoryCounts": {
     "api_route": 120,
-    "client_binding": 46,
+    "client_binding": 47,
     "instrumentation": 1,
     "package_command": 40,
     "server_action": 1,
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "326ea97c263107eedddc93c015b52cddc8cefa8eb4a932ebcf2efccb70c93161",
+  "declarationDigest": "5324b383ac6ac52afb9edb5ecd7e591cdc00637b6f2a36d9a69af0fbd6d73d02",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -7297,6 +7297,36 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/forms/activity-photo-picker.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/forms/activity-photo-picker.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/forms/activity-photo-picker.tsx",
+      "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
             "kind": "form_action",
@@ -9029,7 +9059,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "8254c6e23f54125d849174bc454e86570d7073372eb077a199371d1bd9c6f672",
+  "generatorDigest": "0d42a9d990cf6e68fae3fae3e4791f34d964f1e153030dea3a6c5035ea009f30",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -13263,45 +13293,45 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 11244,
+          "anchorEnd": 11837,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 11229,
+          "anchorStart": 11822,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
           "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-          "anchorEnd": 2310,
+          "anchorEnd": 2390,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2245,
+          "anchorStart": 2325,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-          "anchorEnd": 6772,
+          "anchorEnd": 7353,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6695,
+          "anchorStart": 7276,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-          "anchorEnd": 8111,
+          "anchorEnd": 8692,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7939,
+          "anchorStart": 8520,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-          "anchorEnd": 8864,
+          "anchorDigest": "12df8c707b4f5aae5c64605eff59e11f49890a144878468a1ded7e1604e94271",
+          "anchorEnd": 9457,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8659,
+          "anchorStart": 9240,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -13313,6 +13343,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "e15a8430aa6fc7f853dda2bd3137deaf6821b488bae0bd4198fadde4399298da",
+          "anchorEnd": 2092,
+          "anchorFile": "src/components/forms/activity-photo-picker.tsx",
+          "anchorStart": 1915,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/forms/activity-photo-picker.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/forms/activity-photo-picker.tsx",
+      "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts"
     },
     {
       "bindings": [
@@ -16180,8 +16229,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 247,
-  "observationDigest": "76cfd259cdb4809c844fcf05341b397addf8f848c94fc02a32002068844ddff7",
+  "observationCount": 248,
+  "observationDigest": "4b7c9547de2ff87a3effab76dfa2757ff53951ba2de04f98ed9bce42a2685895",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -20247,45 +20296,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 11244,
+          "anchorEnd": 11837,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 11229,
+          "anchorStart": 11822,
           "kind": "form_action",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "submit",
           "target": "src/components/forms/activity-form.tsx#submit"
         },
         {
-          "anchorEnd": 2310,
+          "anchorEnd": 2390,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 2245,
+          "anchorStart": 2325,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 6772,
+          "anchorEnd": 7353,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 6695,
+          "anchorStart": 7276,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 8111,
+          "anchorEnd": 8692,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 7939,
+          "anchorStart": 8520,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 8864,
+          "anchorEnd": 9457,
           "anchorFile": "src/components/forms/activity-form.tsx",
-          "anchorStart": 8659,
+          "anchorStart": 9240,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-form.tsx",
           "symbol": "fetch[4]",
@@ -20297,6 +20346,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 2092,
+          "anchorFile": "src/components/forms/activity-photo-picker.tsx",
+          "anchorStart": 1915,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/forms/activity-photo-picker.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/forms/activity-photo-picker.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/forms/activity-photo-picker.tsx",
+      "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts"
     },
     {
       "bindings": [
@@ -23907,6 +23974,12 @@
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/forms/activity-photo-picker.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/forms/activity-photo-picker.tsx",
+      "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/forms/baby-edit-form.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/forms/baby-edit-form.tsx",
@@ -24375,9 +24448,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "d1a65fa1d81c1bec26589034b790ad2214af93cc862fd4824645ec69077cdd00",
+  "ownerSetDigest": "793f4b58a011851f43f942de98da96b8aa7dac82312157502d3e96d004bdc8d3",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "6d60bcd5f2f863e1de5d04a51d0fa20fc340c83925610b10aa30ab90815a35b8",
+  "registryDigest": "9d612e6d047cf7945f241190263a91734587c792a8f1edac1925fbc2166a7f86",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

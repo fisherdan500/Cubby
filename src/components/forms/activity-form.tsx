@@ -5,6 +5,7 @@ import type { InputHTMLAttributes, KeyboardEvent, ReactNode } from "react";
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
+import { ActivityPhotoPicker } from "@/components/forms/activity-photo-picker";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { scrollRow, useFollowNow, WhenField, type WhenValue } from "@/components/forms/when-field";
@@ -116,6 +117,8 @@ export function ActivityForm({
   // A new sleep starts as a running timer: it is usually logged as the baby goes down, not after they
   // wake. One tap turns it into an entry that has ended. Every other activity starts as ended.
   const [activeTimer, setActiveTimer] = useState(() => type === "sleep" && !initial);
+  // Photos chosen before the entry exists: uploaded privately already, attached by the save itself.
+  const [photoIds, setPhotoIds] = useState<string[]>([]);
   useFollowNow(when, setWhen, appTimeZone);
 
   function clearOperation(storageKey: string) {
@@ -147,6 +150,10 @@ export function ActivityForm({
     setSubmitting(true);
     const body = Object.fromEntries(formData);
     body.type = type;
+    // The save creates the entry and attaches these in one transaction, so the entry and its pictures
+    // appear together or neither does. Kept out of `body` so the reconciliation path keeps its shape.
+    const withPhotos = (payload: Record<string, unknown>) =>
+      photoIds.length ? { ...payload, attachmentIds: photoIds } : payload;
     try {
       const { partition } = await householdPartition();
       const storageKey = await tabScopedBrowserOperationStorageKey(partition, activityOperationStorageKey(partition, activityId, type));
@@ -184,7 +191,7 @@ export function ActivityForm({
       }
       body.operationId = currentOperationId;
       const submitted = await activityOperationResponse(await fetch(activityId ? `/api/activities/${activityId}` : "/api/activities", {
-        method: activityId ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+        method: activityId ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(withPhotos(body))
       }));
       if (isAuthorizedBrowserOperation410(submitted.response.status, submitted.result, currentOperationId)) {
         clearOperation(storageKey);
@@ -248,6 +255,10 @@ export function ActivityForm({
         type={type}
         slots={{ babyId, initial, editing: Boolean(initial), lastFeeding, preferences: unitPreferences, medicineNames, supplementNames, when: whenSection, notes }}
       />
+
+      {/* Photos belong with the entry as it is logged, so the family does not have to save, reopen the
+          entry and come back to add the picture they already took. */}
+      <ActivityPhotoPicker onChange={setPhotoIds} />
 
       {/* Cancel and Save share the activity page's bar: FIXED just above the phone's bottom navigation, the
           same height and in the same spot on every form, so the thumb always finds them and they never

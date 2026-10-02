@@ -125,7 +125,11 @@ const activityInputSchema = z.discriminatedUnion("type", [
 
 export const activityRestoreSchema = activityInputSchema;
 /** Browser-v2 operations own durability through the bmo_ ledger, never receipts. */
-export const activityBrowserCreateSchema = activityInputSchema;
+// A photo chosen while logging: uploaded privately first, then attached by the save that creates the
+// entry. Bounded here so a crafted request cannot ask for an unlimited claim.
+export const activityBrowserCreateSchema = activityInputSchema.and(
+  z.object({ attachmentIds: z.array(z.string().min(1)).max(10).optional() })
+);
 export const activityBrowserUpdateSchema = activityInputSchema.and(z.object({
   id: z.string().min(1),
   expectedUpdatedAt: z.string().datetime({ offset: true })

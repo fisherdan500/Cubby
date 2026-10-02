@@ -12,6 +12,7 @@ import {
   activityUpdateSchema,
   type ActivityRestoreInput
 } from "@/lib/validation/activity";
+import { claimStagedFeedPhotos } from "@/server/services/attachments";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import type { LastFeeding } from "@/domain/feeding-defaults";
 import { canMutateOwnOrAny } from "@/domain/roles";
@@ -1623,6 +1624,7 @@ async function assertCurrentActivityBinding(
 
 export async function submitActivityCreateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
   const input = activityBrowserCreateSchema.parse(raw);
+  const attachmentIds = input.attachmentIds ?? [];
   const ctx = await getBrowserOperationContextForBaby(input.babyId);
   return executeBrowserOperation({
     ctx, operationId: (raw as Record<string, unknown>).operationId, operationKey: BrowserOperationKey.activityCreate, intent: input, babyId: input.babyId, permission: "activity.create",
@@ -1632,6 +1634,24 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
     },
     execute: async (tx, lockedCtx) => {
       const activity = await createActivityInTransaction({ ...input, clientMutationId: undefined }, lockedCtx, tx, true);
+      // A photo chosen while logging becomes this entry's own photo post, in the same transaction that
+      // creates the entry: the entry and its picture appear together, or neither does. Attaching a
+      // picture is a feed post, so it needs that permission even though logging does not.
+      if (attachmentIds.length > 0) {
+        requirePermission(lockedCtx, "feed.post");
+        const post = await tx.feedPost.create({
+          data: {
+            householdId: lockedCtx.householdId,
+            babyId: activity.babyId,
+            authorMemberId: lockedCtx.memberId,
+            body: "",
+            tags: [],
+            activityId: activity.id
+          },
+          select: { id: true }
+        });
+        await claimStagedFeedPhotos(tx, lockedCtx, { attachmentIds, postId: post.id });
+      }
       return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };
     }
   });

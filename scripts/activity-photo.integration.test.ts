@@ -252,3 +252,104 @@ describe("the link survives a backup", () => {
     expect(restored.activityId).toBe(activityId);
   });
 });
+
+describe("logging an entry with a photo, in one transaction", () => {
+  it("keeps the entry and its photo together when the save succeeds", async () => {
+    // What the log form does: the picture is staged first, then one transaction creates the entry, its
+    // photo post, and claims the picture. Proven here against the real database because the promise is
+    // transactional -- a mocked test cannot show that a failure leaves nothing behind.
+    const staged = await prisma.attachment.create({
+      data: {
+        householdId,
+        type: "feed_photo",
+        state: "staging",
+        storageKey: randomBytes(16).toString("hex"),
+        byteSize: 4,
+        sha256: randomBytes(32).toString("hex"),
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdByMemberId: memberId
+      }
+    });
+
+    const saved = await prisma.$transaction(async (tx) => {
+      const activity = await tx.activityLog.create({
+        data: {
+          household: { connect: { id: householdId } },
+          baby: { connect: { id: babyId } },
+          actorMember: { connect: { id: memberId } },
+          type: "feeding",
+          occurredAt: new Date("2026-10-01T10:00:00.000Z"),
+          timezone: "Etc/UTC"
+        }
+      });
+      const post = await tx.feedPost.create({
+        data: { householdId, babyId, authorMemberId: memberId, body: "", activityId: activity.id },
+        select: { id: true }
+      });
+      await tx.attachment.update({
+        where: { id: staged.id },
+        data: { state: "available", postId: post.id, position: 0, activatedAt: new Date() }
+      });
+      return { activityId: activity.id, postId: post.id };
+    });
+
+    const linked = await prisma.feedPost.findUniqueOrThrow({
+      where: { id: saved.postId },
+      select: { activityId: true, photos: { select: { id: true, state: true, postId: true } } }
+    });
+    expect(linked.activityId).toBe(saved.activityId);
+    expect(linked.photos).toHaveLength(1);
+    // Still an ordinary feed photo on a real post, which is what keeps delivery and backups working.
+    expect(linked.photos[0]!.state).toBe("available");
+    expect(linked.photos[0]!.postId).toBe(saved.postId);
+  });
+
+  it("leaves no entry and no claimed photo when the save fails", async () => {
+    // The family taps Save, something goes wrong, and they must be left with nothing -- not an entry
+    // that claims a picture it never got, and not a picture attached to an entry that does not exist.
+    const staged = await prisma.attachment.create({
+      data: {
+        householdId,
+        type: "feed_photo",
+        state: "staging",
+        storageKey: randomBytes(16).toString("hex"),
+        byteSize: 4,
+        sha256: randomBytes(32).toString("hex"),
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdByMemberId: memberId
+      }
+    });
+    const before = await prisma.activityLog.count({ where: { householdId } });
+
+    await expect(prisma.$transaction(async (tx) => {
+      const activity = await tx.activityLog.create({
+        data: {
+          household: { connect: { id: householdId } },
+          baby: { connect: { id: babyId } },
+          actorMember: { connect: { id: memberId } },
+          type: "sleep",
+          occurredAt: new Date("2026-10-01T22:00:00.000Z"),
+          timezone: "Etc/UTC"
+        }
+      });
+      const post = await tx.feedPost.create({
+        data: { householdId, babyId, authorMemberId: memberId, body: "", activityId: activity.id },
+        select: { id: true }
+      });
+      await tx.attachment.update({
+        where: { id: staged.id },
+        data: { state: "available", postId: post.id, position: 0, activatedAt: new Date() }
+      });
+      throw new Error("save_failed");
+    })).rejects.toThrow("save_failed");
+
+    // Every part of the save is undone together.
+    expect(await prisma.activityLog.count({ where: { householdId } })).toBe(before);
+    const photo = await prisma.attachment.findUniqueOrThrow({ where: { id: staged.id } });
+    expect([photo.state, photo.postId]).toEqual(["staging", null]);
+  });
+});

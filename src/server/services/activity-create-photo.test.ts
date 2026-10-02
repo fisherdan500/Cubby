@@ -1,0 +1,195 @@
+/**
+ * Attaching a photo while logging an entry.
+ *
+ * The photo is chosen before the entry exists, so it is uploaded privately first and then attached by
+ * the same save that creates the entry. That order is what makes the promise keepable: the entry and
+ * its picture become visible together or neither does, and a save that fails leaves no half-logged
+ * entry and no post pointing at nothing.
+ *
+ * The photo itself stays an ordinary feed photo on a real post, which is what keeps private delivery
+ * and backups working, exactly as a photo added to an already-saved entry does.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  executeBrowserOperation: vi.fn(),
+  getContextForBaby: vi.fn(),
+  claimStagedFeedPhotos: vi.fn(),
+  writeAudit: vi.fn(),
+  queueActivitySideEffects: vi.fn()
+}));
+
+// The audit trail and side-effect queue are their own concerns with their own tests; here they only
+// have to not reach a real database.
+vi.mock("@/server/services/audit", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/server/services/audit");
+  return { ...actual, writeAudit: mocks.writeAudit };
+});
+
+
+vi.mock("@/server/services/browser-operations", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/server/services/browser-operations");
+  return {
+    ...actual,
+    executeBrowserOperation: mocks.executeBrowserOperation,
+    getBrowserOperationContextForBaby: mocks.getContextForBaby
+  };
+});
+vi.mock("@/server/services/attachments", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/server/services/attachments");
+  return { ...actual, claimStagedFeedPhotos: mocks.claimStagedFeedPhotos };
+});
+
+const ctx = {
+  householdId: "house-1",
+  memberId: "member-1",
+  userId: "user-1",
+  role: "parent" as const,
+  permissions: [],
+  sessionId: "s-1"
+};
+
+const baby = { id: "baby-1", inactiveAt: null, updatedAt: new Date("2026-10-01T00:00:00.000Z") };
+
+/** A transaction that records what the save wrote, in order. */
+function transaction(calls: string[]) {
+  return {
+    activityLog: {
+      create: vi.fn(async () => {
+        calls.push("activity");
+        return { id: "act-new", babyId: "baby-1", householdId: "house-1" };
+      })
+    },
+    feedPost: {
+      create: vi.fn(async () => {
+        calls.push("post");
+        return { id: "post-new" };
+      })
+    },
+    // Webhook and notification fan-out is its own concern with its own tests; here nothing is
+    // configured, which is the ordinary case for this household.
+    webhookEndpoint: { findMany: vi.fn(async () => []) },
+    webhookDelivery: { createMany: vi.fn(async () => ({ count: 0 })) },
+    notificationPreference: { findMany: vi.fn(async () => []) },
+    notificationLog: { createMany: vi.fn(async () => ({ count: 0 })) },
+    contact: { findFirst: vi.fn(async () => null) },
+    $queryRaw: vi.fn(async () => [])
+  };
+}
+
+function entry(extra: Record<string, unknown> = {}) {
+  return {
+    operationId: "11111111-1111-4111-8111-111111111111",
+    babyId: "baby-1",
+    type: "feeding",
+    mode: "bottle",
+    amount: null,
+    leftSeconds: null,
+    rightSeconds: null,
+    occurredAt: "2026-10-01T08:00:00.000Z",
+    timezone: "Etc/UTC",
+    ...extra
+  };
+}
+
+beforeEach(() => {
+  for (const mock of Object.values(mocks)) mock.mockReset();
+  mocks.getContextForBaby.mockResolvedValue(ctx);
+  mocks.claimStagedFeedPhotos.mockResolvedValue(undefined);
+});
+
+describe("logging an entry with a photo", () => {
+  it("creates the entry, its photo post, and claims the photo in one save", async () => {
+    const calls: string[] = [];
+    const tx = transaction(calls);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      await contract.execute(tx, ctx, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }));
+
+    // One transaction: the entry, then the post that carries the picture, then the claim.
+    expect(calls).toEqual(["activity", "post"]);
+    expect(mocks.claimStagedFeedPhotos).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({ householdId: "house-1" }),
+      expect.objectContaining({ attachmentIds: ["att-1"], postId: "post-new" })
+    );
+  });
+
+  it("links the photo post to the entry it was logged with", async () => {
+    const tx = transaction([]);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      await contract.execute(tx, ctx, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }));
+
+    // The link is what makes Moments show one combined moment instead of two things.
+    expect(tx.feedPost.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ activityId: "act-new", babyId: "baby-1" }) })
+    );
+  });
+
+  it("writes no post at all when the entry is logged without a photo", async () => {
+    const calls: string[] = [];
+    const tx = transaction(calls);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      await contract.execute(tx, ctx, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry());
+
+    expect(calls).toEqual(["activity"]);
+    expect(tx.feedPost.create).not.toHaveBeenCalled();
+    expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
+  });
+
+  it("fails the whole save when the photo cannot be claimed", async () => {
+    // A picture that cannot be attached must not leave a logged entry behind claiming to have one.
+    // The surrounding transaction is what undoes it, so the error has to escape.
+    const tx = transaction([]);
+    mocks.claimStagedFeedPhotos.mockRejectedValue(new Error("not_found"));
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
+      contract.execute(tx, ctx, baby));
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await expect(
+      submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-gone"] }))
+    ).rejects.toThrow("not_found");
+  });
+
+  it("refuses a photo from someone who may not post to the feed", async () => {
+    // Logging an entry needs activity.create; attaching a picture is a feed post and needs feed.post.
+    const tx = transaction([]);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
+      contract.execute(tx, { ...ctx, role: "read_only" as const }, baby));
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await expect(
+      submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }))
+    ).rejects.toThrow();
+    expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
+  });
+
+  it("still logs the entry for a read-only member when no photo is attached", async () => {
+    // The feed permission is required only by the picture, so it must not gate ordinary logging.
+    const calls: string[] = [];
+    const tx = transaction(calls);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      await contract.execute(tx, { ...ctx, role: "read_only" as const }, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry());
+
+    expect(calls).toEqual(["activity"]);
+  });
+});
