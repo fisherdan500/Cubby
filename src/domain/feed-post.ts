@@ -63,6 +63,11 @@ export type FeedPostInput = ReturnType<typeof parseFeedPostInput>;
 // shape: the audit layer minimizes feed_post.create against a strict schema, so a wrong shape throws
 // inside the save and rolls the whole thing back. photoCount must be positive, so it is omitted when
 // there is none rather than written as zero.
+//
+// CONTRACT: this shape is correct only against `feedPostCreateSchema` in src/server/services/audit.ts,
+// which this module deliberately cannot import (the domain layer stays server-agnostic). If that schema
+// gains a required field, this builder must gain it too -- feed-post-audit-contract.test.ts pins the
+// pair so the two cannot drift apart silently.
 export function feedPostAuditPayload(post: Pick<FeedPostInput, "tags" | "attachmentIds">) {
   return {
     tagCount: post.tags.length,

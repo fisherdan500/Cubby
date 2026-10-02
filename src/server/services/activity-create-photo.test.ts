@@ -11,6 +11,11 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// This suite imports the service graph inside test bodies -- deliberately, so the vi.mock factories
+// and the audit guard below install first -- so a cold transform can outlast vitest's 5s default on an
+// otherwise fast test. Scoped here rather than relaxing every suite in the repo.
+vi.setConfig({ testTimeout: 20_000 });
+
 const mocks = vi.hoisted(() => ({
   executeBrowserOperation: vi.fn(),
   getContextForBaby: vi.fn(),
@@ -148,7 +153,9 @@ describe("the audit guard protecting these tests", () => {
       entityType: "feed_post",
       entityId: "post-1",
       after: { activityId: "act-1", photoCount: 1 }
-    })).rejects.toThrow();
+    // Matched on the schema's own words. A bare toThrow() also passes when the stub throws for an
+    // unrelated reason, which would hide the guard having been removed.
+    })).rejects.toThrow(/Unrecognized key/);
   });
 
   it("accepts the shape this path actually writes", async () => {
