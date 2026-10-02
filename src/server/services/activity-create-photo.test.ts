@@ -19,14 +19,13 @@ const mocks = vi.hoisted(() => ({
   queueActivitySideEffects: vi.fn()
 }));
 
-// The audit trail and side-effect queue are their own concerns with their own tests; here they only
-// have to not reach a real database.
+// The audit trail must not reach a real database here, but it still has a contract: each action's
+// payload is minimized against a strict schema. Stubbing that away once let a malformed payload reach
+// a frozen candidate, so the stub below keeps the validation and drops only the write.
 vi.mock("@/server/services/audit", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/server/services/audit");
   return { ...actual, writeAudit: mocks.writeAudit };
 });
-
-
 
 vi.mock("@/server/services/browser-operations", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/server/services/browser-operations");
@@ -109,15 +108,41 @@ beforeEach(async () => {
     _ctx: unknown,
     input: {
       action: Parameters<typeof minimizeAuditPayload>[0];
+      before?: Parameters<typeof minimizeAuditPayload>[1];
       after?: Parameters<typeof minimizeAuditPayload>[1];
     }
   ) => {
-    if (input.after !== undefined && input.after !== null) {
-      minimizeAuditPayload(input.action, input.after, "after");
+    // writeAudit minimizes both sides, so validating only one would leave the other unchecked.
+    for (const side of ["before", "after"] as const) {
+      const payload = input[side];
+      if (payload !== undefined && payload !== null) minimizeAuditPayload(input.action, payload, side);
     }
   });
   mocks.getContextForBaby.mockResolvedValue(ctx);
   mocks.claimStagedFeedPhotos.mockResolvedValue(undefined);
+});
+
+describe("the audit guard protecting these tests", () => {
+  // Without this, a future beforeEach calling mockReset would silently restore a stub that validates
+  // nothing, and every assertion below would keep passing while the real contract went unchecked.
+  // That already happened once. This fails the moment the guard stops being installed.
+  it("is installed, so a malformed payload cannot pass unnoticed", async () => {
+    await expect(mocks.writeAudit(ctx, {
+      action: "feed_post.create",
+      entityType: "feed_post",
+      entityId: "post-1",
+      after: { activityId: "act-1", photoCount: 1 }
+    })).rejects.toThrow();
+  });
+
+  it("accepts the shape this path actually writes", async () => {
+    await expect(mocks.writeAudit(ctx, {
+      action: "feed_post.create",
+      entityType: "feed_post",
+      entityId: "post-1",
+      after: { tagCount: 0, photoCount: 1 }
+    })).resolves.toBeUndefined();
+  });
 });
 
 describe("logging an entry with a photo", () => {

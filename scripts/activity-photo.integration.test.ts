@@ -354,30 +354,69 @@ describe("logging an entry with a photo, in one transaction", () => {
   });
 });
 
-describe("the audit trail a photo save actually writes", () => {
-  it("accepts the feed_post.create payload this path produces", async () => {
-    // The create-with-photo save writes a feed_post.create audit row. Its payload is minimized against
-    // a strict schema, so a wrong shape throws INSIDE the save and takes the family's entry down with
-    // it. The unit suite stubs the audit layer, and this gate drives Prisma directly rather than the
-    // service, so neither saw the malformed payload that review caught -- this asserts the contract
-    // against the real validator.
-    const { minimizeAuditPayload } = await import("../src/server/services/audit");
+describe("the audit row a photo save writes, against real PostgreSQL", () => {
+  // A photo save writes a feed_post.create audit row inside the same transaction as the entry. Its
+  // payload is minimized against a strict schema, so a wrong shape throws AFTER the entry, the post
+  // and the claim have run -- rolling the whole save back and losing the entry the family just typed.
+  // That shipped once. The unit suite now validates the payload, but only the real audit writer proves
+  // the row actually lands: it hashes into the household's audit chain and parses for real here.
+  //
+  // The payload is built by the same domain function the service uses, not retyped as a literal, so
+  // this moves if parseFeedPostInput's shape moves.
+  it("persists, chained, for the payload this path produces", async () => {
+    const { parseFeedPostInput } = await import("../src/domain/feed-post");
+    const { writeAudit } = await import("../src/server/services/audit");
 
-    const tags: string[] = [];
-    const attachmentIds = ["att-1"];
-    const after = {
-      tagCount: tags.length,
-      ...(attachmentIds.length > 0 ? { photoCount: attachmentIds.length } : {})
-    };
+    const attachmentIds = [`att-${randomUUID()}`];
+    const parsed = parseFeedPostInput({ body: "", babyId, attachmentIds });
 
-    expect(() => minimizeAuditPayload("feed_post.create", after, "after")).not.toThrow();
+    const post = await prisma.feedPost.create({
+      data: { householdId, babyId, authorMemberId: memberId, body: "", tags: parsed.tags, activityId }
+    });
+
+    const before = await prisma.auditEvent.count({ where: { householdId } });
+
+    await writeAudit({ householdId, userId, memberId, role: "parent" }, {
+      action: "feed_post.create",
+      entityType: "feed_post",
+      entityId: post.id,
+      babyId,
+      after: {
+        tagCount: parsed.tags.length,
+        ...(parsed.attachmentIds.length > 0 ? { photoCount: parsed.attachmentIds.length } : {})
+      }
+    }, prisma);
+
+    const row = await prisma.auditEvent.findFirst({
+      where: { householdId, entityId: post.id, action: "feed_post.create" }
+    });
+
+    expect(await prisma.auditEvent.count({ where: { householdId } })).toBe(before + 1);
+    expect(row?.after).toEqual({ tagCount: 0, photoCount: 1 });
+    // A row with no chain hash would be invisible to the integrity check, so the save would look
+    // audited while the chain had a hole in it.
+    expect(row?.eventHash).toBeTruthy();
   });
 
-  it("refuses a payload that names the entry, so provenance cannot be smuggled in", async () => {
-    // Recording which entry the post came from would be useful, but the schema is strict and the audit
-    // deliberately keeps only safe counts. Adding a field needs a schema change, not a silent extra key.
-    const { minimizeAuditPayload } = await import("../src/server/services/audit");
+  it("refuses to record the entry id, so provenance cannot be smuggled past the schema", async () => {
+    // Naming the entry in the audit payload would be useful, but the schema is strict and deliberately
+    // keeps only non-identifying counts. Adding a field needs a schema change, not an extra key -- and
+    // the attempt must fail loudly rather than being dropped.
+    const { writeAudit } = await import("../src/server/services/audit");
+    const post = await prisma.feedPost.create({
+      data: { householdId, babyId, authorMemberId: memberId, body: "", tags: [], activityId }
+    });
+    const before = await prisma.auditEvent.count({ where: { householdId } });
 
-    expect(() => minimizeAuditPayload("feed_post.create", { activityId: "act-1", photoCount: 1 }, "after")).toThrow();
+    await expect(writeAudit({ householdId, userId, memberId, role: "parent" }, {
+      action: "feed_post.create",
+      entityType: "feed_post",
+      entityId: post.id,
+      babyId,
+      after: { activityId, photoCount: 1 }
+    }, prisma)).rejects.toThrow();
+
+    // and it must not have written a partial row
+    expect(await prisma.auditEvent.count({ where: { householdId } })).toBe(before);
   });
 });
