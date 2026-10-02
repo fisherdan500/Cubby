@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HouseholdRole } from "@prisma/client";
 import {
   canAssignHouseholdRole,
   canManageHouseholdRole,
@@ -58,6 +59,13 @@ describe("role permissions", () => {
     expect(canManageHouseholdRole("admin", "parent")).toBe(true);
   });
 
+  // The iterated list must stay the COMPLETE set of roles the database can hold, or the two rule
+  // tests below would silently cover only part of it: a one-entry householdRoles satisfies their
+  // non-emptiness witness just as well as the real five.
+  it("iterates every role the database can actually store", () => {
+    expect([...householdRoles].sort()).toEqual(Object.values(HouseholdRole).sort());
+  });
+
   // The User's rule: "if a person can create a log then they should also be able to add a photo.
   // same rights as logs". Today activity.create and feed.post happen to be granted to the same
   // roles, so the product behaves correctly by coincidence of two separate lists. This pins the
@@ -82,5 +90,14 @@ describe("role permissions", () => {
       expect(hasPermission(role, "activity.create"), `${role} can attach a photo but cannot log an entry`).toBe(true);
     }
     expect(checked, "no role can attach a photo, so the rule was never exercised").toBeGreaterThan(0);
+  });
+
+  // The same rule stated as the set equality it really is. The two loops above name one offending
+  // role per run; this names every mismatch at once. It needs the loops' witness to stay honest,
+  // since two empty sets are equal -- so these three tests are kept together deliberately.
+  it("grants logging and photo rights to exactly the same roles", () => {
+    const canLog = householdRoles.filter((role) => hasPermission(role, "activity.create"));
+    const canAttach = householdRoles.filter((role) => hasPermission(role, "feed.post"));
+    expect(canAttach).toEqual(canLog);
   });
 });
