@@ -65,9 +65,9 @@ export type FeedPostInput = ReturnType<typeof parseFeedPostInput>;
 // there is none rather than written as zero.
 //
 // CONTRACT: this shape is correct only against `feedPostCreateSchema` in src/server/services/audit.ts,
-// which this module deliberately cannot import (the domain layer stays server-agnostic). If that schema
-// gains a required field, this builder must gain it too -- feed-post-audit-contract.test.ts pins the
-// pair so the two cannot drift apart silently.
+// which this module deliberately does not import -- a convention keeping the domain server-agnostic,
+// not something the build enforces. If that schema gains a required field, this builder must gain it
+// too; feed-post-audit-contract.test.ts pins the pair so the two cannot drift apart silently.
 export function feedPostAuditPayload(post: Pick<FeedPostInput, "tags" | "attachmentIds">) {
   return {
     tagCount: post.tags.length,

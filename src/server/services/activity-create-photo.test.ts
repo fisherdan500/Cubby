@@ -244,7 +244,7 @@ describe("logging an entry with a photo", () => {
 
     await expect(
       submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }))
-    ).rejects.toThrow();
+    ).rejects.toThrow("forbidden");
     expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
   });
 
