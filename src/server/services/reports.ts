@@ -16,7 +16,14 @@ import { activityInclude } from "@/server/services/activities";
 
 type ReportActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
 
-export type RoutineWindow = "1w" | "2w" | "1m";
+export type RoutineQuickWindow = "1w" | "2w" | "1m";
+/**
+ * Which days the observed routine covers. A quick window is a day count ending today; a custom
+ * window carries its own endpoints, so the two cannot be collapsed into one string.
+ */
+export type RoutineWindow =
+  | { kind: RoutineQuickWindow }
+  | { kind: "custom"; startKey: string; endKey: string };
 
 const routineTypes = ["sleep", "feeding", ...otherRoutineTypes] as const;
 type RoutineRecord = {
@@ -27,7 +34,7 @@ type RoutineRecord = {
   durationSeconds: number | null;
 };
 
-const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
+const routineWindows: Record<RoutineQuickWindow, { label: string; days: number }> = {
   "1w": { label: "1 week", days: 7 },
   "2w": { label: "2 weeks", days: 14 },
   "1m": { label: "1 month", days: 30 }
@@ -35,7 +42,16 @@ const routineWindows: Record<RoutineWindow, { label: string; days: number }> = {
 
 export async function getReports(
   userId: string,
-  input?: { babyId?: string; start?: string; end?: string; routineWindow?: string; compare?: boolean; history?: boolean }
+  input?: {
+    babyId?: string;
+    start?: string;
+    end?: string;
+    routineWindow?: string;
+    routineStart?: string;
+    routineEnd?: string;
+    compare?: boolean;
+    history?: boolean;
+  }
 ) {
   const ctx = await getEffectiveHouseholdContext();
   requirePermission(ctx, "activity.read");
@@ -51,8 +67,8 @@ export async function getReports(
   // The period just before this one, the same number of days long, for "compared with before".
   const periodDays = dateKeySpan(startKey, endKey);
   const previousStartKey = addDaysToDateKey(startKey, -periodDays);
-  const routineWindow = resolveRoutineWindow(input?.routineWindow);
-  // The routine is always the baby's recent days, up to today; the date range belongs to Stats.
+  const routineWindow = resolveRoutineWindow(input?.routineWindow, { start: input?.routineStart, end: input?.routineEnd });
+  // A quick routine window is the baby's recent days up to today; a custom one says its own dates.
   const routineRange = routineWindowRange(todayKey, routineWindow, env.APP_TIMEZONE);
   if (!baby) {
     return {
@@ -158,21 +174,40 @@ function dateKeySpan(startKey: string, endKey: string) {
 }
 
 // 30 days unless a shorter period is chosen: a month shows the steady pattern, and one off day barely moves it.
-export function resolveRoutineWindow(value: string | undefined): RoutineWindow {
-  return value === "1w" || value === "2w" ? value : "1m";
+// A custom range must be two valid dates in order; anything else falls back rather than becoming an
+// unbounded or backwards query.
+export function resolveRoutineWindow(
+  value: string | undefined,
+  range?: { start?: string; end?: string }
+): RoutineWindow {
+  if (value === "custom") {
+    const startKey = range?.start;
+    const endKey = range?.end;
+    if (isValidDateKey(startKey) && isValidDateKey(endKey) && startKey <= endKey) {
+      return { kind: "custom", startKey, endKey };
+    }
+    return { kind: "1m" };
+  }
+  return { kind: value === "1w" || value === "2w" ? value : "1m" };
 }
 
 export function routineWindowRange(endKey: string, window: RoutineWindow, timeZone = env.APP_TIMEZONE) {
-  const days = routineWindows[window].days;
-  const startKey = addDaysToDateKey(endKey, -(days - 1));
-  const endExclusiveKey = addDaysToDateKey(endKey, 1);
+  // A custom window ignores the anchor date: it already says which days it covers.
+  const resolved =
+    window.kind === "custom"
+      ? { startKey: window.startKey, endKey: window.endKey, days: dateKeySpan(window.startKey, window.endKey), label: "Custom" }
+      : (() => {
+          const days = routineWindows[window.kind].days;
+          return { startKey: addDaysToDateKey(endKey, -(days - 1)), endKey, days, label: routineWindows[window.kind].label };
+        })();
+  const endExclusiveKey = addDaysToDateKey(resolved.endKey, 1);
   return {
     window,
-    label: routineWindows[window].label,
-    days,
-    startKey,
-    endKey,
-    start: zonedDateStart(startKey, timeZone),
+    label: resolved.label,
+    days: resolved.days,
+    startKey: resolved.startKey,
+    endKey: resolved.endKey,
+    start: zonedDateStart(resolved.startKey, timeZone),
     endExclusive: zonedDateStart(endExclusiveKey, timeZone)
   };
 }

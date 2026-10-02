@@ -352,9 +352,9 @@ function DailySummary({
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">Daily Summary</h2>
       {items.length || summary.awake.known || summary.awake.unavailableReason ? (
-        // One swipeable row rather than a grid of cards: the summary is a glance, and as a grid it
-        // pushed the day's log below the first screen on a phone.
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+        // Wrapped rather than a swipeable row: the User asked to see every summary at a glance,
+        // accepting that the block is taller and pushes the day's log further down on a phone.
+        <div className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
           {/* Awake leads, with sleep immediately after it: between them they account for the whole
               day, so they read as a pair before the counts of individual activities. It is not a
               link - it is the rest of the day rather than a kind of activity, so there is nothing to

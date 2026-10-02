@@ -25,9 +25,10 @@ const tabs = [
   ["milestones", "Milestones", Trophy]
 ] as const;
 
-// Each tab has only the period control it uses. Stats: 7, 14 or 30 days to today, or a custom range
-// whose date boxes appear only when asked for. Routine: 7, 14 or 30 days to today. Growth and
-// Milestones: the whole history, so none.
+// Each tab has only the period control it uses. Stats and Routine: 7, 14 or 30 days to today, or a
+// custom range whose date boxes appear only when asked for. The two keep separate ranges, so moving
+// between the tabs does not silently rewrite the other's period. Growth and Milestones: the whole
+// history, so none.
 const quickPeriods = [7, 14, 30] as const;
 const routinePeriods = [["1w", "7 days"], ["2w", "14 days"], ["1m", "30 days"]] as const;
 
@@ -39,7 +40,17 @@ const periodChip = (current: boolean) =>
 export default async function ReportsPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; start?: string; end?: string; tab?: string; routineWindow?: string; custom?: string };
+  searchParams: {
+    babyId?: string;
+    start?: string;
+    end?: string;
+    tab?: string;
+    routineWindow?: string;
+    routineStart?: string;
+    routineEnd?: string;
+    custom?: string;
+    routineCustom?: string;
+  };
 }) {
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
@@ -52,25 +63,47 @@ export default async function ReportsPage({
   if (!report?.home) redirect("/onboarding");
   // The plan sits beside the observed routine, so it is only read when that tab is open.
   const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
-  const reportHref = (next: { tab?: string; routineWindow?: string; start?: string; end?: string; custom?: boolean }) => {
+  const routineWindow = report.routine.window;
+  const routineIsCustom = routineWindow.kind === "custom";
+  const reportHref = (next: {
+    tab?: string;
+    routineWindow?: string;
+    start?: string;
+    end?: string;
+    custom?: boolean;
+    routineStart?: string;
+    routineEnd?: string;
+    routineCustom?: boolean;
+  }) => {
     const params = new URLSearchParams();
     if (report.baby?.id) params.set("babyId", report.baby.id);
     params.set("start", next.start ?? report.startKey);
     params.set("end", next.end ?? report.endKey);
     params.set("tab", next.tab ?? tab);
-    params.set("routineWindow", next.routineWindow ?? report.routine.window);
+    params.set("routineWindow", next.routineWindow ?? (routineIsCustom ? "custom" : routineWindow.kind));
+    // Carry the routine's own dates so switching tabs or quick periods does not drop them.
+    const carriedStart = next.routineStart ?? (routineIsCustom ? routineWindow.startKey : searchParams.routineStart);
+    const carriedEnd = next.routineEnd ?? (routineIsCustom ? routineWindow.endKey : searchParams.routineEnd);
+    if (carriedStart) params.set("routineStart", carriedStart);
+    if (carriedEnd) params.set("routineEnd", carriedEnd);
     if (next.custom) params.set("custom", "1");
+    if (next.routineCustom) params.set("routineCustom", "1");
     return `/app/reports?${params.toString()}`;
   };
   const quickStart = (days: number) => addDaysToDateKey(report.todayKey, -(days - 1));
   const onQuickPeriod = report.endKey === report.todayKey && quickPeriods.some((days) => report.startKey === quickStart(days));
   // Custom when asked for, or when the range in use is not one of the quick ones.
   const custom = searchParams.custom === "1" || !onQuickPeriod;
-  const routinePeriodLinks = routinePeriods.map(([window, label]) => ({
-    label,
-    href: reportHref({ routineWindow: window }),
-    current: report.routine.window === window
-  }));
+  // Routine shows its date boxes when asked for, or whenever a custom range is already in use.
+  const routineCustom = searchParams.routineCustom === "1" || routineIsCustom;
+  const routinePeriodLinks = [
+    ...routinePeriods.map(([window, label]) => ({
+      label,
+      href: reportHref({ routineWindow: window, routineStart: "", routineEnd: "" }),
+      current: !routineIsCustom && routineWindow.kind === window
+    })),
+    { label: "Custom", href: reportHref({ routineCustom: true }), current: routineCustom }
+  ];
 
   return (
     <AppShell title="Reports" userName={user.name} babySelector={babySelector}>
@@ -100,7 +133,10 @@ export default async function ReportsPage({
               <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
                 <input name="babyId" type="hidden" value={report.baby.id} />
                 <input name="tab" type="hidden" value={tab} />
-                <input name="routineWindow" type="hidden" value={report.routine.window} />
+                <input name="routineWindow" type="hidden" value={routineIsCustom ? "custom" : routineWindow.kind} />
+                {/* Carry the routine's own dates through a Stats range change, so it keeps its period. */}
+                {routineIsCustom ? <input name="routineStart" type="hidden" value={routineWindow.startKey} /> : null}
+                {routineIsCustom ? <input name="routineEnd" type="hidden" value={routineWindow.endKey} /> : null}
                 <input name="custom" type="hidden" value="1" />
                 {/* A bare date input announces only "date"; these say which end of the range they set. */}
                 <label htmlFor="report-start" className="sr-only">
@@ -138,12 +174,35 @@ export default async function ReportsPage({
           {tab === "milestones" && report.history ? <MilestonesTab history={report.history} babyName={report.baby.name} /> : null}
           {tab === "growth" && report.history ? <GrowthTab history={report.history} babyName={report.baby.name} /> : null}
           {tab === "routine" ? (
-            <RoutineTab
-              babyName={report.baby.name}
-              schedule={schedule}
-              routine={report.routine}
-              periods={routinePeriodLinks}
-            />
+            <>
+              {routineCustom ? (
+                <Card className="w-fit max-w-full print:hidden">
+                  <AutoSubmitForm className="flex max-w-full flex-wrap gap-3">
+                    <input name="babyId" type="hidden" value={report.baby.id} />
+                    <input name="tab" type="hidden" value={tab} />
+                    <input name="start" type="hidden" value={report.startKey} />
+                    <input name="end" type="hidden" value={report.endKey} />
+                    <input name="routineWindow" type="hidden" value="custom" />
+                    <input name="routineCustom" type="hidden" value="1" />
+                    {/* A bare date input announces only "date"; these say which end of the range they set. */}
+                    <label htmlFor="routine-start" className="sr-only">
+                      Routine start date
+                    </label>
+                    <Input id="routine-start" name="routineStart" type="date" defaultValue={report.routine.startKey} className="sm:w-48" />
+                    <label htmlFor="routine-end" className="sr-only">
+                      Routine end date
+                    </label>
+                    <Input id="routine-end" name="routineEnd" type="date" defaultValue={report.routine.endKey} className="sm:w-48" />
+                  </AutoSubmitForm>
+                </Card>
+              ) : null}
+              <RoutineTab
+                babyName={report.baby.name}
+                schedule={schedule}
+                routine={report.routine}
+                periods={routinePeriodLinks}
+              />
+            </>
           ) : null}
         </div>
       )}

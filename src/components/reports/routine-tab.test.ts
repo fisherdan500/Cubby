@@ -28,7 +28,7 @@ function week(days = 7, nightBefore = true) {
     }
     records.push(record("sleep", at(key, "19:15"), at(next, "06:30")));
   }
-  return buildRoutine(records, addDaysToDateKey("2026-09-14", days - 1), "1w", timeZone);
+  return buildRoutine(records, addDaysToDateKey("2026-09-14", days - 1), { kind: "1w" }, timeZone);
 }
 
 const periods = [

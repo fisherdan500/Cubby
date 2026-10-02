@@ -2,7 +2,7 @@ import { ActivityType } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import { defaultUnitPreferences } from "@/domain/unit-preferences";
 import { addDaysToDateKey, zonedDateTimeToDate } from "@/lib/timezone";
-import { buildReportStats, buildRoutine, routineEventsFrom, routineWindowRange } from "@/server/services/reports";
+import { buildReportStats, buildRoutine, resolveRoutineWindow, routineEventsFrom, routineWindowRange } from "@/server/services/reports";
 
 const timeZone = "America/New_York";
 
@@ -150,23 +150,23 @@ describe("report growth statistics", () => {
 
 describe("reports routine", () => {
   it("builds trailing windows anchored to the report end date", () => {
-    expect(routineWindowRange("2026-06-19", "1w", timeZone)).toMatchObject({
+    expect(routineWindowRange("2026-06-19", { kind: "1w" }, timeZone)).toMatchObject({
       startKey: "2026-06-13",
       endKey: "2026-06-19",
       days: 7
     });
-    expect(routineWindowRange("2026-06-19", "2w", timeZone)).toMatchObject({
+    expect(routineWindowRange("2026-06-19", { kind: "2w" }, timeZone)).toMatchObject({
       startKey: "2026-06-06",
       endKey: "2026-06-19",
       days: 14
     });
-    expect(routineWindowRange("2026-06-19", "1m", timeZone)).toMatchObject({
+    expect(routineWindowRange("2026-06-19", { kind: "1m" }, timeZone)).toMatchObject({
       startKey: "2026-05-21",
       endKey: "2026-06-19",
       days: 30
     });
-    expect(routineWindowRange("2026-06-19", "1w", timeZone).start.toISOString()).toBe("2026-06-13T04:00:00.000Z");
-    expect(routineWindowRange("2026-06-19", "1w", timeZone).endExclusive.toISOString()).toBe("2026-06-20T04:00:00.000Z");
+    expect(routineWindowRange("2026-06-19", { kind: "1w" }, timeZone).start.toISOString()).toBe("2026-06-13T04:00:00.000Z");
+    expect(routineWindowRange("2026-06-19", { kind: "1w" }, timeZone).endExclusive.toISOString()).toBe("2026-06-20T04:00:00.000Z");
   });
 
   it("runs a timed activity from its start to its end, or its recorded length when it has no end", () => {
@@ -189,7 +189,7 @@ describe("reports routine", () => {
     });
     const events = routineEventsFrom(records);
     expect(events[0].end).toEqual(local("2026-06-13T13:00"));
-    const routine = buildRoutine(records, "2026-06-19", "1w", timeZone);
+    const routine = buildRoutine(records, "2026-06-19", { kind: "1w" }, timeZone);
     const slots = type === "sleep" ? routine.naps?.slots : routine.others.find((item) => item.type === type)?.slots;
     expect(slots).toEqual([expect.objectContaining({ time: "12:00 PM", durationSeconds: 1200, duration: "20 min" })]);
   });
@@ -209,11 +209,41 @@ describe("reports routine", () => {
       const next = addDaysToDateKey(key, 1);
       records.push({ type: "sleep", occurredAt: local(`${key}T19:00`), startedAt: local(`${key}T19:00`), endedAt: local(`${next}T06:00`), durationSeconds: null });
     }
-    const routine = buildRoutine(records, "2026-06-19", "1w", timeZone);
+    const routine = buildRoutine(records, "2026-06-19", { kind: "1w" }, timeZone);
 
-    expect(routine).toMatchObject({ window: "1w", windowLabel: "1 week", startKey: "2026-06-13", endKey: "2026-06-19" });
+    expect(routine).toMatchObject({ window: { kind: "1w" }, windowLabel: "1 week", startKey: "2026-06-13", endKey: "2026-06-19" });
     expect(routine.wake).toMatchObject({ time: "6:00 AM", days: 7 });
     expect(routine.bedtime).toMatchObject({ time: "7:00 PM", days: 7 });
+  });
+
+  // Item 7: Routine gains the custom range Stats already had. A custom window carries its own
+  // start/end rather than a day count, so it is a distinct variant, not a widened string.
+  it("accepts an explicit custom routine range", () => {
+    expect(resolveRoutineWindow("custom", { start: "2026-06-01", end: "2026-06-10" })).toEqual({
+      kind: "custom",
+      startKey: "2026-06-01",
+      endKey: "2026-06-10"
+    });
+  });
+
+  it("falls back to the 30-day window when a custom range is malformed or inverted", () => {
+    // Fail closed: a bad range must not become an unbounded or backwards query.
+    expect(resolveRoutineWindow("custom", { start: "nonsense", end: "2026-06-10" })).toEqual({ kind: "1m" });
+    expect(resolveRoutineWindow("custom", { start: "2026-06-10", end: "2026-06-01" })).toEqual({ kind: "1m" });
+    expect(resolveRoutineWindow("custom", undefined)).toEqual({ kind: "1m" });
+  });
+
+  it("keeps the quick windows as day counts to today", () => {
+    expect(resolveRoutineWindow("1w", undefined)).toEqual({ kind: "1w" });
+    expect(resolveRoutineWindow("2w", undefined)).toEqual({ kind: "2w" });
+    expect(resolveRoutineWindow("bogus", undefined)).toEqual({ kind: "1m" });
+  });
+
+  it("spans exactly the custom range it was given", () => {
+    const range = routineWindowRange("2026-06-19", { kind: "custom", startKey: "2026-06-01", endKey: "2026-06-10" }, timeZone);
+    expect(range).toMatchObject({ startKey: "2026-06-01", endKey: "2026-06-10", days: 10 });
+    expect(range.start.toISOString()).toBe("2026-06-01T04:00:00.000Z");
+    expect(range.endExclusive.toISOString()).toBe("2026-06-11T04:00:00.000Z");
   });
 });
 
