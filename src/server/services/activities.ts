@@ -12,7 +12,7 @@ import {
   activityUpdateSchema,
   type ActivityRestoreInput
 } from "@/lib/validation/activity";
-import { parseFeedPostInput } from "@/domain/feed-post";
+import { feedPostAuditPayload, parseFeedPostInput } from "@/domain/feed-post";
 import { claimStagedFeedPhotos } from "@/server/services/attachments";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import type { LastFeeding } from "@/domain/feeding-defaults";
@@ -1658,18 +1658,12 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
           select: { id: true }
         });
         await claimStagedFeedPhotos(tx, lockedCtx, { attachmentIds: photoPost.attachmentIds, postId: post.id });
-        // Mirrors the feed's own create audit exactly: how many tags and how many photos, never the
-        // caption or anything the uploader supplied. photoCount must be positive, so it is omitted
-        // when there is none rather than written as zero.
         await writeAudit(lockedCtx, {
           action: "feed_post.create",
           entityType: "feed_post",
           entityId: post.id,
           ...(activity.babyId ? { babyId: activity.babyId } : {}),
-          after: {
-            tagCount: photoPost.tags.length,
-            ...(photoPost.attachmentIds.length > 0 ? { photoCount: photoPost.attachmentIds.length } : {})
-          }
+          after: feedPostAuditPayload(photoPost)
         }, tx);
       }
       return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };

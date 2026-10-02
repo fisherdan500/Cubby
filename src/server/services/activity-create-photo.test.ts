@@ -112,7 +112,8 @@ beforeEach(async () => {
       after?: Parameters<typeof minimizeAuditPayload>[1];
     }
   ) => {
-    // writeAudit minimizes both sides, so validating only one would leave the other unchecked.
+    // writeAudit minimizes both sides. This path writes no `before` today, so the before branch is
+    // future-proofing rather than a gap being closed -- it costs nothing and catches a later path.
     for (const side of ["before", "after"] as const) {
       const payload = input[side];
       if (payload !== undefined && payload !== null) minimizeAuditPayload(input.action, payload, side);
@@ -120,6 +121,21 @@ beforeEach(async () => {
   });
   mocks.getContextForBaby.mockResolvedValue(ctx);
   mocks.claimStagedFeedPhotos.mockResolvedValue(undefined);
+});
+
+describe("what the save hands the executor", () => {
+  // The fingerprint test below proves the hash is sensitive to the chosen photos, but not that the
+  // service actually puts them in the intent it hands over. If a narrowed intent or a stripping schema
+  // dropped them, a family who removed a picture and re-saved would get the original replayed back.
+  it("includes the chosen photos in the intent it fingerprints", async () => {
+    mocks.executeBrowserOperation.mockResolvedValue({ kind: "activity", code: "ok", activityId: "act-1", action: "create" });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1", "att-2"] }));
+
+    const contract = mocks.executeBrowserOperation.mock.calls[0][0] as { intent: { attachmentIds?: string[] } };
+    expect(contract.intent.attachmentIds).toEqual(["att-1", "att-2"]);
+  });
 });
 
 describe("the audit guard protecting these tests", () => {

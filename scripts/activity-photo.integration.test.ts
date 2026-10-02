@@ -361,10 +361,12 @@ describe("the audit row a photo save writes, against real PostgreSQL", () => {
   // That shipped once. The unit suite now validates the payload, but only the real audit writer proves
   // the row actually lands: it hashes into the household's audit chain and parses for real here.
   //
-  // The payload is built by the same domain function the service uses, not retyped as a literal, so
-  // this moves if parseFeedPostInput's shape moves.
+  // The payload is built by feedPostAuditPayload -- the SAME exported function the service calls -- so
+  // a change to it moves this test too. What this gate still does NOT reach: it does not execute
+  // submitActivityCreateBrowserOperation, so the service's own wiring is covered by the unit suite,
+  // not here.
   it("persists, chained, for the payload this path produces", async () => {
-    const { parseFeedPostInput } = await import("../src/domain/feed-post");
+    const { parseFeedPostInput, feedPostAuditPayload } = await import("../src/domain/feed-post");
     const { writeAudit } = await import("../src/server/services/audit");
 
     const attachmentIds = [`att-${randomUUID()}`];
@@ -381,10 +383,7 @@ describe("the audit row a photo save writes, against real PostgreSQL", () => {
       entityType: "feed_post",
       entityId: post.id,
       babyId,
-      after: {
-        tagCount: parsed.tags.length,
-        ...(parsed.attachmentIds.length > 0 ? { photoCount: parsed.attachmentIds.length } : {})
-      }
+      after: feedPostAuditPayload(parsed)
     }, prisma);
 
     const row = await prisma.auditEvent.findFirst({
@@ -414,7 +413,7 @@ describe("the audit row a photo save writes, against real PostgreSQL", () => {
       entityId: post.id,
       babyId,
       after: { activityId, photoCount: 1 }
-    }, prisma)).rejects.toThrow();
+    }, prisma)).rejects.toThrow(/Unrecognized key/);
 
     // and it must not have written a partial row
     expect(await prisma.auditEvent.count({ where: { householdId } })).toBe(before);
