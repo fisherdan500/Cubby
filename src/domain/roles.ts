@@ -35,6 +35,8 @@ export type Permission =
   | "feed.comment"
   | "feed.moderate";
 
+// Product rule, enforced by src/domain/roles.test.ts: any role granted "activity.create" must also
+// be granted "feed.post", and vice versa. Anyone who may log an entry may also attach a photo to it.
 const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
   owner: [
     "household.manage",

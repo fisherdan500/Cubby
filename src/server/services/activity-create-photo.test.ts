@@ -236,7 +236,9 @@ describe("logging an entry with a photo", () => {
   });
 
   it("refuses a photo from someone who may not post to the feed", async () => {
-    // Logging an entry needs activity.create; attaching a picture is a feed post and needs feed.post.
+    // A read-only member may neither log an entry nor attach a photo, so this is the one role the
+    // guard actually turns away. It is defence in depth rather than a narrower gate than logging:
+    // every role that may log an entry may also attach a photo (pinned in src/domain/roles.test.ts).
     const tx = transaction([]);
     mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
       contract.execute(tx, { ...ctx, role: "read_only" as const }, baby));
@@ -248,12 +250,14 @@ describe("logging an entry with a photo", () => {
     expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
   });
 
-  it("still logs the entry for a read-only member when no photo is attached", async () => {
+  it("still logs the entry for the lowest-privilege logger when no photo is attached", async () => {
     // The feed permission is required only by the picture, so it must not gate ordinary logging.
+    // caretaker is the lowest role that may actually log: read_only cannot, so asserting a
+    // successful save for read_only would only pass because the operation gate is mocked here.
     const calls: string[] = [];
     const tx = transaction(calls);
     mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
-      await contract.execute(tx, { ...ctx, role: "read_only" as const }, baby);
+      await contract.execute(tx, { ...ctx, role: "caretaker" as const }, baby);
       return { kind: "activity", code: "ok" };
     });
     const { submitActivityCreateBrowserOperation } = await import("./activities");
@@ -261,6 +265,24 @@ describe("logging an entry with a photo", () => {
     await submitActivityCreateBrowserOperation(entry());
 
     expect(calls).toEqual(["activity"]);
+  });
+
+  it("lets the lowest-privilege logger attach a photo while logging", async () => {
+    // The User's rule at the call site, not just in the permission table: a caretaker may log an
+    // entry, so a caretaker may also attach a photo to it. src/domain/roles.test.ts pins the table;
+    // this pins that the service actually honours it for the role most exposed to a future edit.
+    const calls: string[] = [];
+    const tx = transaction(calls);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      await contract.execute(tx, { ...ctx, role: "caretaker" as const }, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }));
+
+    expect(calls).toEqual(["activity", "post"]);
+    expect(mocks.claimStagedFeedPhotos).toHaveBeenCalledTimes(1);
   });
 });
 

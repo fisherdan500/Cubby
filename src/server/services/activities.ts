@@ -1636,8 +1636,9 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
     execute: async (tx, lockedCtx) => {
       const activity = await createActivityInTransaction({ ...input, clientMutationId: undefined }, lockedCtx, tx, true);
       // A photo chosen while logging becomes this entry's own photo post, in the same transaction that
-      // creates the entry: the entry and its picture appear together, or neither does. Attaching a
-      // picture is a feed post, so it needs that permission even though logging does not.
+      // creates the entry: the entry and its picture appear together, or neither does. The check below
+      // is defence in depth, not a narrower gate: anyone who may log an entry may also attach a photo
+      // to it, and src/domain/roles.test.ts pins that rule over every role so the two cannot drift.
       if (attachmentIds.length > 0) {
         requirePermission(lockedCtx, "feed.post");
         // The caption may be empty only because a photo is attached; parsing through the domain rule
