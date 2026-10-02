@@ -62,17 +62,25 @@ describe("role permissions", () => {
   // same rights as logs". Today activity.create and feed.post happen to be granted to the same
   // roles, so the product behaves correctly by coincidence of two separate lists. This pins the
   // rule itself, over every role including ones added later, so the coincidence cannot quietly end.
+  // Each test counts the roles it actually checked and requires that count to be non-zero: without
+  // that, deleting both permissions from every role would skip both loops and pass silently.
   it("lets anyone who can log an entry also attach a photo to it", () => {
+    let checked = 0;
     for (const role of householdRoles) {
       if (!hasPermission(role, "activity.create")) continue;
+      checked += 1;
       expect(hasPermission(role, "feed.post"), `${role} can log an entry but cannot attach a photo`).toBe(true);
     }
+    expect(checked, "no role can log an entry, so the rule was never exercised").toBeGreaterThan(0);
   });
 
   it("does not let a photo be attached by someone who cannot log an entry", () => {
+    let checked = 0;
     for (const role of householdRoles) {
       if (!hasPermission(role, "feed.post")) continue;
+      checked += 1;
       expect(hasPermission(role, "activity.create"), `${role} can attach a photo but cannot log an entry`).toBe(true);
     }
+    expect(checked, "no role can attach a photo, so the rule was never exercised").toBeGreaterThan(0);
   });
 });
