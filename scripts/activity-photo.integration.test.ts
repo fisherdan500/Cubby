@@ -252,3 +252,170 @@ describe("the link survives a backup", () => {
     expect(restored.activityId).toBe(activityId);
   });
 });
+
+describe("logging an entry with a photo, in one transaction", () => {
+  it("keeps the entry and its photo together when the save succeeds", async () => {
+    // What the log form does: the picture is staged first, then one transaction creates the entry, its
+    // photo post, and claims the picture. Proven here against the real database because the promise is
+    // transactional -- a mocked test cannot show that a failure leaves nothing behind.
+    const staged = await prisma.attachment.create({
+      data: {
+        householdId,
+        type: "feed_photo",
+        state: "staging",
+        storageKey: randomBytes(16).toString("hex"),
+        byteSize: 4,
+        sha256: randomBytes(32).toString("hex"),
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdByMemberId: memberId
+      }
+    });
+
+    const saved = await prisma.$transaction(async (tx) => {
+      const activity = await tx.activityLog.create({
+        data: {
+          household: { connect: { id: householdId } },
+          baby: { connect: { id: babyId } },
+          actorMember: { connect: { id: memberId } },
+          type: "feeding",
+          occurredAt: new Date("2026-10-01T10:00:00.000Z"),
+          timezone: "Etc/UTC"
+        }
+      });
+      const post = await tx.feedPost.create({
+        data: { householdId, babyId, authorMemberId: memberId, body: "", activityId: activity.id },
+        select: { id: true }
+      });
+      await tx.attachment.update({
+        where: { id: staged.id },
+        data: { state: "available", postId: post.id, position: 0, activatedAt: new Date() }
+      });
+      return { activityId: activity.id, postId: post.id };
+    });
+
+    const linked = await prisma.feedPost.findUniqueOrThrow({
+      where: { id: saved.postId },
+      select: { activityId: true, photos: { select: { id: true, state: true, postId: true } } }
+    });
+    expect(linked.activityId).toBe(saved.activityId);
+    expect(linked.photos).toHaveLength(1);
+    // Still an ordinary feed photo on a real post, which is what keeps delivery and backups working.
+    expect(linked.photos[0]!.state).toBe("available");
+    expect(linked.photos[0]!.postId).toBe(saved.postId);
+  });
+
+  it("leaves no entry and no claimed photo when the save fails", async () => {
+    // The family taps Save, something goes wrong, and they must be left with nothing -- not an entry
+    // that claims a picture it never got, and not a picture attached to an entry that does not exist.
+    const staged = await prisma.attachment.create({
+      data: {
+        householdId,
+        type: "feed_photo",
+        state: "staging",
+        storageKey: randomBytes(16).toString("hex"),
+        byteSize: 4,
+        sha256: randomBytes(32).toString("hex"),
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        createdByMemberId: memberId
+      }
+    });
+    const before = await prisma.activityLog.count({ where: { householdId } });
+
+    await expect(prisma.$transaction(async (tx) => {
+      const activity = await tx.activityLog.create({
+        data: {
+          household: { connect: { id: householdId } },
+          baby: { connect: { id: babyId } },
+          actorMember: { connect: { id: memberId } },
+          type: "sleep",
+          occurredAt: new Date("2026-10-01T22:00:00.000Z"),
+          timezone: "Etc/UTC"
+        }
+      });
+      const post = await tx.feedPost.create({
+        data: { householdId, babyId, authorMemberId: memberId, body: "", activityId: activity.id },
+        select: { id: true }
+      });
+      await tx.attachment.update({
+        where: { id: staged.id },
+        data: { state: "available", postId: post.id, position: 0, activatedAt: new Date() }
+      });
+      throw new Error("save_failed");
+    })).rejects.toThrow("save_failed");
+
+    // Every part of the save is undone together.
+    expect(await prisma.activityLog.count({ where: { householdId } })).toBe(before);
+    const photo = await prisma.attachment.findUniqueOrThrow({ where: { id: staged.id } });
+    expect([photo.state, photo.postId]).toEqual(["staging", null]);
+  });
+});
+
+describe("the audit row a photo save writes, against real PostgreSQL", () => {
+  // A photo save writes a feed_post.create audit row inside the same transaction as the entry. Its
+  // payload is minimized against a strict schema, so a wrong shape throws AFTER the entry, the post
+  // and the claim have run -- rolling the whole save back and losing the entry the family just typed.
+  // That shipped once. The unit suite now validates the payload, but only the real audit writer proves
+  // the row actually lands: it hashes into the household's audit chain and parses for real here.
+  //
+  // The payload is built by feedPostAuditPayload -- the SAME exported function the service calls -- so
+  // a change to it moves this test too. What this gate still does NOT reach: it does not execute
+  // submitActivityCreateBrowserOperation, so the service's own wiring is covered by the unit suite,
+  // not here.
+  it("persists, chained, for the payload this path produces", async () => {
+    const { parseFeedPostInput, feedPostAuditPayload } = await import("../src/domain/feed-post");
+    const { writeAudit } = await import("../src/server/services/audit");
+
+    const attachmentIds = [`att-${randomUUID()}`];
+    const parsed = parseFeedPostInput({ body: "", babyId, attachmentIds });
+
+    const post = await prisma.feedPost.create({
+      data: { householdId, babyId, authorMemberId: memberId, body: "", tags: parsed.tags, activityId }
+    });
+
+    const before = await prisma.auditEvent.count({ where: { householdId } });
+
+    await writeAudit({ householdId, userId, memberId, role: "parent" }, {
+      action: "feed_post.create",
+      entityType: "feed_post",
+      entityId: post.id,
+      babyId,
+      after: feedPostAuditPayload(parsed)
+    }, prisma);
+
+    const row = await prisma.auditEvent.findFirst({
+      where: { householdId, entityId: post.id, action: "feed_post.create" }
+    });
+
+    expect(await prisma.auditEvent.count({ where: { householdId } })).toBe(before + 1);
+    expect(row?.after).toEqual({ tagCount: 0, photoCount: 1 });
+    // A row with no chain hash would be invisible to the integrity check, so the save would look
+    // audited while the chain had a hole in it.
+    expect(row?.eventHash).toBeTruthy();
+  });
+
+  it("refuses to record the entry id, so provenance cannot be smuggled past the schema", async () => {
+    // Naming the entry in the audit payload would be useful, but the schema is strict and deliberately
+    // keeps only non-identifying counts. Adding a field needs a schema change, not an extra key -- and
+    // the attempt must fail loudly rather than being dropped.
+    const { writeAudit } = await import("../src/server/services/audit");
+    const post = await prisma.feedPost.create({
+      data: { householdId, babyId, authorMemberId: memberId, body: "", tags: [], activityId }
+    });
+    const before = await prisma.auditEvent.count({ where: { householdId } });
+
+    await expect(writeAudit({ householdId, userId, memberId, role: "parent" }, {
+      action: "feed_post.create",
+      entityType: "feed_post",
+      entityId: post.id,
+      babyId,
+      after: { activityId, photoCount: 1 }
+    }, prisma)).rejects.toThrow(/Unrecognized key/);
+
+    // and it must not have written a partial row
+    expect(await prisma.auditEvent.count({ where: { householdId } })).toBe(before);
+  });
+});

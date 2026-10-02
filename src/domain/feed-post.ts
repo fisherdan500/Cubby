@@ -58,6 +58,23 @@ export function parseFeedPostInput(raw: unknown) {
 
 export type FeedPostInput = ReturnType<typeof parseFeedPostInput>;
 
+// The audit row for a created post records how many tags and how many photos, never the caption or
+// anything else the uploader supplied. Both create paths build it here rather than each retyping the
+// shape: the audit layer minimizes feed_post.create against a strict schema, so a wrong shape throws
+// inside the save and rolls the whole thing back. photoCount must be positive, so it is omitted when
+// there is none rather than written as zero.
+//
+// CONTRACT: this shape is correct only against `feedPostCreateSchema` in src/server/services/audit.ts,
+// which this module deliberately does not import -- a convention keeping the domain server-agnostic,
+// not something the build enforces. If that schema gains a required field, this builder must gain it
+// too; feed-post-audit-contract.test.ts pins the pair so the two cannot drift apart silently.
+export function feedPostAuditPayload(post: Pick<FeedPostInput, "tags" | "attachmentIds">) {
+  return {
+    tagCount: post.tags.length,
+    ...(post.attachmentIds.length > 0 ? { photoCount: post.attachmentIds.length } : {})
+  };
+}
+
 /**
  * An edit changes the caption only; who the post is about and its photos stay as they were shared.
  * A post with photos may have its caption cleared; one without must keep some words.

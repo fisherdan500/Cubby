@@ -7,7 +7,8 @@ import {
   canRemoveFeedPost,
   feedPostRestorable,
   parseFeedPostEdit,
-  parseFeedPostInput
+  parseFeedPostInput,
+  feedPostAuditPayload
 } from "@/domain/feed-post";
 import { hasPermission, canMutateOwnOrAny } from "@/domain/roles";
 import { prisma } from "@/lib/db/prisma";
@@ -195,7 +196,7 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
         entityType: "feed_post",
         entityId: post.id,
         ...(input.babyId ? { babyId: input.babyId } : {}),
-        after: { tagCount: input.tags.length, ...(input.attachmentIds.length > 0 ? { photoCount: input.attachmentIds.length } : {}) }
+        after: feedPostAuditPayload(input)
       }, tx);
       return { kind: "feed_post", code: "created", postId: post.id } as const;
     }

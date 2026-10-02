@@ -125,10 +125,20 @@ const activityInputSchema = z.discriminatedUnion("type", [
 
 export const activityRestoreSchema = activityInputSchema;
 /** Browser-v2 operations own durability through the bmo_ ledger, never receipts. */
-export const activityBrowserCreateSchema = activityInputSchema;
+// A photo chosen while logging: uploaded privately first, then attached by the save that creates the
+// entry. Bounded here so a crafted request cannot ask for an unlimited claim.
+export const activityBrowserCreateSchema = activityInputSchema.and(
+  z.object({ attachmentIds: z.array(z.string().min(1)).max(10).optional() })
+);
 export const activityBrowserUpdateSchema = activityInputSchema.and(z.object({
   id: z.string().min(1),
-  expectedUpdatedAt: z.string().datetime({ offset: true })
+  expectedUpdatedAt: z.string().datetime({ offset: true }),
+  // Editing an entry cannot attach photos: only the save that creates one claims them. An update that
+  // carries photo ids must be REFUSED rather than quietly succeeding without them, or a stale tab or a
+  // replayed request would tell the family their picture was saved while it expired unclaimed.
+  attachmentIds: z
+    .undefined({ message: "activity_update_photos_unsupported" })
+    .optional()
 }));
 export const activityCreateSchema = activityInputSchema.and(z.object({ clientMutationId: z.string().uuid() }));
 export const activityUpdateSchema = activityInputSchema.and(z.object({

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { attachmentTypes } from "@/domain/attachments";
+import { FEED_POST_MAX_PHOTOS } from "@/domain/feed-post";
 import { prisma } from "@/lib/db/prisma";
 import type { HouseholdContext } from "@/server/auth/context";
 import { hashAuditEvent } from "@/server/services/audit-integrity";
@@ -164,7 +165,7 @@ const notificationPreferenceSchema = z.object({
 // A post's caption and tags are private family text; the audit keeps only how many tags it had.
 const feedPostCreateSchema = z.object({
   tagCount: z.number().int().nonnegative(),
-  photoCount: z.number().int().positive().max(10).optional()
+  photoCount: z.number().int().positive().max(FEED_POST_MAX_PHOTOS).optional()
 }).strict();
 // Attachment events (DEC-PROD-147) carry the type, safe counts and a fixed reason - never a filename,
 // path, checksum, size, bytes or anything the uploader supplied.

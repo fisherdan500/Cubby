@@ -284,6 +284,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/components/babies/baby-photo-control.operation.ts",
   "src/components/members/profile-photo-control.operation.ts",
   "src/components/activities/activity-photo-control.operation.ts",
+  "src/components/forms/activity-photo-picker.operation.ts",
   "src/components/feed/feed-photo-gallery.operation.ts",
   "src/components/feed/feed-post-actions.operation.ts",
   "src/components/forms/activity-form.operation.ts",

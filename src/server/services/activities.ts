@@ -12,6 +12,8 @@ import {
   activityUpdateSchema,
   type ActivityRestoreInput
 } from "@/lib/validation/activity";
+import { feedPostAuditPayload, parseFeedPostInput } from "@/domain/feed-post";
+import { claimStagedFeedPhotos } from "@/server/services/attachments";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import type { LastFeeding } from "@/domain/feeding-defaults";
 import { canMutateOwnOrAny } from "@/domain/roles";
@@ -1623,6 +1625,7 @@ async function assertCurrentActivityBinding(
 
 export async function submitActivityCreateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
   const input = activityBrowserCreateSchema.parse(raw);
+  const attachmentIds = input.attachmentIds ?? [];
   const ctx = await getBrowserOperationContextForBaby(input.babyId);
   return executeBrowserOperation({
     ctx, operationId: (raw as Record<string, unknown>).operationId, operationKey: BrowserOperationKey.activityCreate, intent: input, babyId: input.babyId, permission: "activity.create",
@@ -1632,6 +1635,37 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
     },
     execute: async (tx, lockedCtx) => {
       const activity = await createActivityInTransaction({ ...input, clientMutationId: undefined }, lockedCtx, tx, true);
+      // A photo chosen while logging becomes this entry's own photo post, in the same transaction that
+      // creates the entry: the entry and its picture appear together, or neither does. Attaching a
+      // picture is a feed post, so it needs that permission even though logging does not.
+      if (attachmentIds.length > 0) {
+        requirePermission(lockedCtx, "feed.post");
+        // The caption may be empty only because a photo is attached; parsing through the domain rule
+        // keeps this path honest against the same invariant the feed's own composer uses.
+        const photoPost = parseFeedPostInput({ body: "", babyId: activity.babyId, attachmentIds });
+        const post = await tx.feedPost.create({
+          data: {
+            householdId: lockedCtx.householdId,
+            babyId: photoPost.babyId,
+            authorMemberId: lockedCtx.memberId,
+            body: photoPost.body,
+            tags: photoPost.tags,
+            activityId: activity.id,
+            // Dated to the entry, not to the upload. A family logging yesterday's bath would otherwise
+            // get the picture as a separate moment at the top of today.
+            occurredAt: activity.occurredAt
+          },
+          select: { id: true }
+        });
+        await claimStagedFeedPhotos(tx, lockedCtx, { attachmentIds: photoPost.attachmentIds, postId: post.id });
+        await writeAudit(lockedCtx, {
+          action: "feed_post.create",
+          entityType: "feed_post",
+          entityId: post.id,
+          ...(activity.babyId ? { babyId: activity.babyId } : {}),
+          after: feedPostAuditPayload(photoPost)
+        }, tx);
+      }
       return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };
     }
   });

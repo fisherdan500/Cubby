@@ -3065,9 +3065,9 @@
     {
       "anchorBytes": "action={submit}",
       "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-      "anchorEnd": 11244,
+      "anchorEnd": 11837,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 11229,
+      "anchorStart": 11822,
       "binding": {
         "kind": "form_action",
         "symbol": "submit",
@@ -3082,9 +3082,9 @@
     {
       "anchorBytes": "fetch(\"/api/browser-operations/partition\", { cache: \"no-store\" })",
       "anchorDigest": "73a95e9ca63441b2b128078a8fc69f7d1feea0394ad2e6c22c35b69f3b9c6742",
-      "anchorEnd": 2310,
+      "anchorEnd": 2390,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 2245,
+      "anchorStart": 2325,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -3099,9 +3099,9 @@
     {
       "anchorBytes": "fetch(`/api/browser-operations/${currentOperationId}`, { cache: \"no-store\" })",
       "anchorDigest": "d8e73b721c8630635cf9721002aa0f0b3c3d7679a55006f67904cc8afec342ee",
-      "anchorEnd": 6772,
+      "anchorEnd": 7353,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 6695,
+      "anchorStart": 7276,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -3116,9 +3116,9 @@
     {
       "anchorBytes": "fetch(endpoint, {\n          method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify({ babyId: body.babyId })\n        })",
       "anchorDigest": "31d1eb879a3b5f75a5a3285ade8d5acdaa672158b7bd7369b9fa8495d2006aee",
-      "anchorEnd": 8111,
+      "anchorEnd": 8692,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 7939,
+      "anchorStart": 8520,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[3]",
@@ -3131,11 +3131,11 @@
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(activityId ? `/api/activities/${activityId}` : \"/api/activities\", {\n        method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(body)\n      })",
-      "anchorDigest": "184830f44ed71b88105a7ea4b4966a97ce2e837611748772f7ca036de693e67e",
-      "anchorEnd": 8864,
+      "anchorBytes": "fetch(activityId ? `/api/activities/${activityId}` : \"/api/activities\", {\n        method: activityId ? \"PATCH\" : \"POST\", headers: { \"content-type\": \"application/json\" }, body: JSON.stringify(withPhotos(body))\n      })",
+      "anchorDigest": "12df8c707b4f5aae5c64605eff59e11f49890a144878468a1ded7e1604e94271",
+      "anchorEnd": 9457,
       "anchorFile": "src/components/forms/activity-form.tsx",
-      "anchorStart": 8659,
+      "anchorStart": 9240,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[4]",
@@ -3146,6 +3146,23 @@
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/attachments/feed-photos\", {\n          method: \"POST\",\n          headers: { \"content-type\": file.type || \"application/octet-stream\" },\n          body: file\n        })",
+      "anchorDigest": "e15a8430aa6fc7f853dda2bd3137deaf6821b488bae0bd4198fadde4399298da",
+      "anchorEnd": 2255,
+      "anchorFile": "src/components/forms/activity-photo-picker.tsx",
+      "anchorStart": 2078,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/forms/activity-photo-picker.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/forms/activity-photo-picker.tsx",
+      "ownerModule": "src/components/forms/activity-photo-picker.tsx",
+      "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts"
     },
     {
       "anchorBytes": "action={onSubmit}",
@@ -8475,10 +8492,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "0465462bb98afe14da9d525837e32b8c3767b24048eed6fd3fd22b4d41b60522",
+  "semanticArtifactDigest": "56ae9ec1f2037dab146a4a3f60b848d0c470edf1cfb05827ebea3456cf79630c",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "e8b15a44add6378eb8ffd6b0b3e08d26372017b52ece103491a420298c14b435",
+  "semanticCoverageDigest": "1fdc8a9f9e60032f1dbac6298742cb84e5200f6e44f32485b839b2edcfd6ca39",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "5a93db266cc34ddb80d4eaf61169a0e17437d4a13fd3846f9117d6b9479f30fa"
+  "semanticFingerprint": "e31c34c392373a8767fe71112059e635426874c9dc4fd4e57e7999176870f432"
 }
