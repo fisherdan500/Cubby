@@ -8492,10 +8492,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "3b1f8960c7e7c178598972dfee38da354f05371cea6b76acd7cb58c393c546e3",
+  "semanticArtifactDigest": "ed4da19b5fdf26746427be04be6fa259df147f4755b75cc49e286d136227905f",
   "semanticArtifactVersion": "semantic-artifact.v1",
   "semanticCoverageDigest": "1fdc8a9f9e60032f1dbac6298742cb84e5200f6e44f32485b839b2edcfd6ca39",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "90791716f469358a68f51b5596e24a1022af6ecbcdad15dfbba38ee4e500c796"
+  "semanticFingerprint": "cf8f8b11870faa4925cc4cce76022db7f1be92b0449668b72e23fd3a2fc9c1f4"
 }

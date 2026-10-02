@@ -12,6 +12,7 @@ import {
   activityUpdateSchema,
   type ActivityRestoreInput
 } from "@/lib/validation/activity";
+import { parseFeedPostInput } from "@/domain/feed-post";
 import { claimStagedFeedPhotos } from "@/server/services/attachments";
 import { getEffectiveHouseholdContext, requirePermission, type HouseholdContext } from "@/server/auth/context";
 import type { LastFeeding } from "@/domain/feeding-defaults";
@@ -1639,18 +1640,33 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
       // picture is a feed post, so it needs that permission even though logging does not.
       if (attachmentIds.length > 0) {
         requirePermission(lockedCtx, "feed.post");
+        // The caption may be empty only because a photo is attached; parsing through the domain rule
+        // keeps this path honest against the same invariant the feed's own composer uses.
+        const photoPost = parseFeedPostInput({ body: "", babyId: activity.babyId, attachmentIds });
         const post = await tx.feedPost.create({
           data: {
             householdId: lockedCtx.householdId,
-            babyId: activity.babyId,
+            babyId: photoPost.babyId,
             authorMemberId: lockedCtx.memberId,
-            body: "",
-            tags: [],
-            activityId: activity.id
+            body: photoPost.body,
+            tags: photoPost.tags,
+            activityId: activity.id,
+            // Dated to the entry, not to the upload. A family logging yesterday's bath would otherwise
+            // get the picture as a separate moment at the top of today.
+            occurredAt: activity.occurredAt
           },
           select: { id: true }
         });
-        await claimStagedFeedPhotos(tx, lockedCtx, { attachmentIds, postId: post.id });
+        await claimStagedFeedPhotos(tx, lockedCtx, { attachmentIds: photoPost.attachmentIds, postId: post.id });
+        // Symmetry with the feed's own create path, so the audit trail explains where this post
+        // came from rather than showing an unexplained row.
+        await writeAudit(lockedCtx, {
+          action: "feed_post.create",
+          entityType: "feed_post",
+          entityId: post.id,
+          babyId: activity.babyId,
+          after: { activityId: activity.id, photoCount: photoPost.attachmentIds.length }
+        }, tx);
       }
       return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };
     }

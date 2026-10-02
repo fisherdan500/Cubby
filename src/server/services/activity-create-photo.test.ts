@@ -55,9 +55,15 @@ const baby = { id: "baby-1", inactiveAt: null, updatedAt: new Date("2026-10-01T0
 function transaction(calls: string[]) {
   return {
     activityLog: {
-      create: vi.fn(async () => {
+      create: vi.fn(async (args: { data?: { occurredAt?: Date } }) => {
         calls.push("activity");
-        return { id: "act-new", babyId: "baby-1", householdId: "house-1" };
+        // Mirrors the row the database would return, so the photo post can be dated from it.
+        return {
+          id: "act-new",
+          babyId: "baby-1",
+          householdId: "house-1",
+          occurredAt: args?.data?.occurredAt ?? new Date("2026-10-01T08:00:00.000Z")
+        };
       })
     },
     feedPost: {
@@ -226,6 +232,63 @@ describe("the photo work stays inside the save's own transaction", () => {
     await expect(
       submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }))
     ).rejects.toThrow("post_failed");
+    expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
+  });
+});
+
+describe("a backdated entry keeps its photo with it", () => {
+  it("dates the photo post to the entry, not to the moment it was uploaded", async () => {
+    // A family logging yesterday's bath with a photo: the entry sorts at yesterday, so a post dated
+    // now would drift to the top of today and show as a separate caption-less moment. Moments only
+    // folds the two together when both land in the same page of the timeline.
+    const tx = transaction([]);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      await contract.execute(tx, ctx, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(
+      entry({ attachmentIds: ["att-1"], occurredAt: "2026-09-30T18:00:00.000Z" })
+    );
+
+    expect(tx.feedPost.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ occurredAt: new Date("2026-09-30T18:00:00.000Z") })
+      })
+    );
+  });
+});
+
+describe("retrying a save cannot double-claim or resurrect a removed photo", () => {
+  it("fingerprints the chosen photos, so a retry with different ones is refused", async () => {
+    // The browser-operation layer replays a stored outcome for the SAME request and refuses a changed
+    // one. That protection only reaches photos if the chosen ids are part of what is fingerprinted --
+    // otherwise a family who removed a picture and saved again would have the original replayed back.
+    const { browserIntentFingerprint } = await import("./browser-operations");
+    const opening = "opening-1";
+    const base = { babyId: "baby-1", type: "feeding", occurredAt: "2026-10-01T08:00:00.000Z" };
+
+    const one = browserIntentFingerprint({ openingFingerprint: opening, payload: { ...base, attachmentIds: ["att-1"] } });
+    const other = browserIntentFingerprint({ openingFingerprint: opening, payload: { ...base, attachmentIds: ["att-2"] } });
+    const removed = browserIntentFingerprint({ openingFingerprint: opening, payload: base });
+    const both = browserIntentFingerprint({ openingFingerprint: opening, payload: { ...base, attachmentIds: ["att-1", "att-2"] } });
+    const same = browserIntentFingerprint({ openingFingerprint: opening, payload: { ...base, attachmentIds: ["att-1"] } });
+
+    // The same request replays; every other combination is a different request.
+    expect(same).toBe(one);
+    expect(new Set([one, other, removed, both]).size).toBe(4);
+  });
+
+  it("refuses the same picture listed twice rather than claiming it twice", async () => {
+    const tx = transaction([]);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
+      contract.execute(tx, ctx, baby));
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await expect(
+      submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1", "att-1"] }))
+    ).rejects.toThrow();
     expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
   });
 });
