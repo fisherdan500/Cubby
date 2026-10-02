@@ -13348,9 +13348,9 @@
       "bindings": [
         {
           "anchorDigest": "e15a8430aa6fc7f853dda2bd3137deaf6821b488bae0bd4198fadde4399298da",
-          "anchorEnd": 2092,
+          "anchorEnd": 2255,
           "anchorFile": "src/components/forms/activity-photo-picker.tsx",
-          "anchorStart": 1915,
+          "anchorStart": 2078,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -16230,7 +16230,7 @@
     }
   ],
   "observationCount": 248,
-  "observationDigest": "4b7c9547de2ff87a3effab76dfa2757ff53951ba2de04f98ed9bce42a2685895",
+  "observationDigest": "ed56643f5a12e6a218aab52eac36cd8fb187607786de08d9388cd47d0272667f",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -20350,9 +20350,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2092,
+          "anchorEnd": 2255,
           "anchorFile": "src/components/forms/activity-photo-picker.tsx",
-          "anchorStart": 1915,
+          "anchorStart": 2078,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/activity-photo-picker.tsx",
           "symbol": "fetch[1]",
@@ -24450,7 +24450,7 @@
   ],
   "ownerSetDigest": "793f4b58a011851f43f942de98da96b8aa7dac82312157502d3e96d004bdc8d3",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "9d612e6d047cf7945f241190263a91734587c792a8f1edac1925fbc2166a7f86",
+  "registryDigest": "a46b92d2b41946c281f6e9cdba9e7ddbaabeb825fb09856910605ff322cd8f25",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

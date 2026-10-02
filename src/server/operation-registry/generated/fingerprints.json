@@ -2704,33 +2704,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "9833352f2515d14463ce97f8585e142001b2ad6bd6192fab98237cd9628a2832",
+          "digest": "e4bb6c95464b819ecf0087988b0c21a0f5b876e35e11fefa0b2387a3231e9c3c",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "e32c0150ababc0e59a45d1ef6be98735858fdfa68895e19926c7d8ec170efe5b",
+      "fingerprint": "f91ea3e8a052cb27656115209604b98f7355b77fa55cfa8b27f641fca55517c9",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "0c3220dd84bf3ef8ba0063fa41dbd2d39f2e85ed7d177478dfe306b0c2df249c",
+      "sourceDigest": "151b5f1a851344ba3bfa00a9674f6123df57143b83f62fec5b9688cf789b9c6b",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "9b57adcc5e0140315c3fd8e3532a67a1289bf47550947e38c928cf5aa616c5b1",
+          "digest": "e0aa5832edb0c5bd5a7f7a7d21e907e4d46fd36c6cf51a9358c9c38e637e0c1d",
           "file": "src/components/forms/activity-photo-picker.tsx"
         }
       ],
       "declarationDigest": "acbb3fb232014ffdc54b20c7a5031d6110a1021140ffb7dbd116097484e589c8",
-      "fingerprint": "c1c1a99bbf6f58082e85d752c4f15e879680f947e9e43e92bc3300520447275c",
+      "fingerprint": "73f31429aa19355eb013fc3e0729acaa47fb4d05c1c0a20eadb29726d5dfd5d8",
       "id": "fingerprint:client_binding:src/components/forms/activity-photo-picker.tsx",
       "ownerId": "client_binding:src/components/forms/activity-photo-picker.tsx",
       "ownerModule": "src/components/forms/activity-photo-picker.tsx",
       "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts",
-      "sourceDigest": "81febfd81faeef2b046039b241ef1cedfc94a9243f9c6d239a49f1b3ae3dc567",
+      "sourceDigest": "2f89968fb93e213edfeae17843a80a7331665e24b8c7b2c94a73f8d4ffbba356",
       "status": "declared"
     },
     {
@@ -4516,11 +4516,11 @@
   ],
   "generatorDigest": "0d42a9d990cf6e68fae3fae3e4791f34d964f1e153030dea3a6c5035ea009f30",
   "generatorVersion": "r0.1",
-  "observationDigest": "4b7c9547de2ff87a3effab76dfa2757ff53951ba2de04f98ed9bce42a2685895",
+  "observationDigest": "ed56643f5a12e6a218aab52eac36cd8fb187607786de08d9388cd47d0272667f",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "793f4b58a011851f43f942de98da96b8aa7dac82312157502d3e96d004bdc8d3",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "9d612e6d047cf7945f241190263a91734587c792a8f1edac1925fbc2166a7f86",
+  "registryDigest": "a46b92d2b41946c281f6e9cdba9e7ddbaabeb825fb09856910605ff322cd8f25",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

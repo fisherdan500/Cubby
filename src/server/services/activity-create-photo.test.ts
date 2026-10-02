@@ -193,3 +193,39 @@ describe("logging an entry with a photo", () => {
     expect(calls).toEqual(["activity"]);
   });
 });
+
+describe("the photo work stays inside the save's own transaction", () => {
+  it("uses the very transaction the executor wrapped, not one of its own", async () => {
+    // If the photo post were created in a separate transaction, a crash between the two would leave a
+    // logged entry with no photo. The only way to rule that out is to require the same handle.
+    const tx = transaction([]);
+    let handed: unknown;
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => {
+      handed = tx;
+      await contract.execute(tx, ctx, baby);
+      return { kind: "activity", code: "ok" };
+    });
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }));
+
+    expect(mocks.claimStagedFeedPhotos.mock.calls[0]![0]).toBe(handed);
+    // And the post was created through that same handle, not through the module-level client.
+    expect(tx.feedPost.create).toHaveBeenCalled();
+  });
+
+  it("lets a failure in the photo work escape, so the save is rolled back", async () => {
+    // The executor rolls its savepoint back when execute rejects. Swallowing the error here would
+    // commit a logged entry that claims a photo it never got.
+    const tx = transaction([]);
+    tx.feedPost.create = vi.fn(async () => { throw new Error("post_failed"); });
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
+      contract.execute(tx, ctx, baby));
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await expect(
+      submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }))
+    ).rejects.toThrow("post_failed");
+    expect(mocks.claimStagedFeedPhotos).not.toHaveBeenCalled();
+  });
+});

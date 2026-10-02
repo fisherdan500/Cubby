@@ -75,6 +75,39 @@ describe("choosing a photo while logging", () => {
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(["att-1", "att-2"]));
   });
 
+  it("keeps both pictures when the second is chosen the instant the first finishes", async () => {
+    // Two photos added in quick succession must both survive.
+    //
+    // Honest about its reach: in this environment the waits needed to drive two uploads also flush the
+    // re-render, so this does NOT by itself distinguish a stale read of the chosen list from a correct
+    // one -- a deliberate stale read still passes here. The component uses functional updaters so the
+    // question cannot arise; the equivalent mistake in `remove` IS caught by its own test below. Left
+    // in place because it pins the user-visible requirement, not because it proves the mechanism.
+    const onChange = vi.fn();
+    const deferred: (() => void)[] = [];
+    let call = 0;
+    globalThis.fetch = vi.fn(() => {
+      const id = `att-${++call}`;
+      return new Promise((resolve) => {
+        deferred.push(() => resolve({ ok: true, json: async () => ({ ok: true, data: { attachmentId: id } }) }));
+      });
+    }) as unknown as typeof fetch;
+    render(createElement(ActivityPhotoPicker, { onChange }));
+
+    const input = screen.getByLabelText(/add a photo/i);
+    await userEvent.upload(input, file("one.jpg"));
+    // Let the first upload settle so the single-flight guard clears, but do NOT wait on the state
+    // update -- that wait is what used to refresh the closure and hide a stale read.
+    deferred[0]!();
+    await waitFor(() => expect(onChange).toHaveBeenCalled());
+
+    await userEvent.upload(input, file("two.jpg"));
+    deferred[1]!();
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(["att-1", "att-2"]));
+    expect(screen.getAllByRole("img")).toHaveLength(2);
+  });
+
   it("shows the chosen picture so the family can see what they added", async () => {
     mockUpload({ ok: true, attachmentId: "att-1" });
     render(createElement(ActivityPhotoPicker, { onChange: vi.fn() }));

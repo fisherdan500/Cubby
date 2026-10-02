@@ -29,8 +29,11 @@ export function ActivityPhotoPicker({ onChange }: { onChange: (attachmentIds: st
     return () => { mounted.current = false; };
   }, []);
 
-  // Preview URLs are only valid while this screen is open.
-  useEffect(() => () => { for (const photo of chosen) URL.revokeObjectURL(photo.previewUrl); }, [chosen]);
+  // Preview URLs live until this screen closes. Keyed on nothing, so adding a picture cannot revoke the
+  // previews still on screen; removal revokes its own.
+  const live = useRef<Chosen[]>([]);
+  live.current = chosen;
+  useEffect(() => () => { for (const photo of live.current) URL.revokeObjectURL(photo.previewUrl); }, []);
 
   async function add(file: File) {
     if (inFlight.current) return;
@@ -59,12 +62,14 @@ export function ActivityPhotoPicker({ onChange }: { onChange: (attachmentIds: st
         setError(body?.error?.message ?? "That photo could not be added. Try again.");
         return;
       }
-      const next = [
-        ...chosen,
-        { attachmentId: body.data.attachmentId, previewUrl: URL.createObjectURL(file), name: file.name }
-      ];
-      setChosen(next);
-      onChange(next.map((photo) => photo.attachmentId));
+      // Derived from the latest list rather than the one this handler closed over: a second picture
+      // chosen the instant the first finishes must not replace it.
+      const photo = { attachmentId: body.data.attachmentId, previewUrl: URL.createObjectURL(file), name: file.name };
+      setChosen((previous) => {
+        const next = [...previous, photo];
+        onChange(next.map((item) => item.attachmentId));
+        return next;
+      });
     } finally {
       inFlight.current = false;
       if (mounted.current) setBusy(false);
@@ -73,13 +78,15 @@ export function ActivityPhotoPicker({ onChange }: { onChange: (attachmentIds: st
   }
 
   function remove(attachmentId: string) {
-    const next = chosen.filter((photo) => photo.attachmentId !== attachmentId);
-    const dropped = chosen.find((photo) => photo.attachmentId === attachmentId);
-    if (dropped) URL.revokeObjectURL(dropped.previewUrl);
-    setChosen(next);
-    // Nothing is attached until the entry is saved, so leaving it out of the save is all that is
-    // needed; the unclaimed upload expires on its own.
-    onChange(next.map((photo) => photo.attachmentId));
+    setChosen((previous) => {
+      const dropped = previous.find((photo) => photo.attachmentId === attachmentId);
+      if (dropped) URL.revokeObjectURL(dropped.previewUrl);
+      const next = previous.filter((photo) => photo.attachmentId !== attachmentId);
+      // Nothing is attached until the entry is saved, so leaving it out of the save is all that is
+      // needed; the unclaimed upload expires on its own.
+      onChange(next.map((photo) => photo.attachmentId));
+      return next;
+    });
   }
 
   return (

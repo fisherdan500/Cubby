@@ -257,8 +257,9 @@ export function ActivityForm({
       />
 
       {/* Photos belong with the entry as it is logged, so the family does not have to save, reopen the
-          entry and come back to add the picture they already took. */}
-      <ActivityPhotoPicker onChange={setPhotoIds} />
+          entry and come back to add the picture they already took. Only the save that CREATES an entry
+          claims photos, so offering this while editing would promise something the save drops. */}
+      {activityId ? null : <ActivityPhotoPicker onChange={setPhotoIds} />}
 
       {/* Cancel and Save share the activity page's bar: FIXED just above the phone's bottom navigation, the
           same height and in the same spot on every form, so the thumb always finds them and they never
