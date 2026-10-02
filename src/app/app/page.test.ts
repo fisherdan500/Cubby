@@ -85,6 +85,20 @@ beforeEach(() => {
 });
 
 describe("daily summary chips", () => {
+  // Item 8: the User asked to see every summary at a glance on a phone, accepting a taller block.
+  // A horizontally scrolling row hides the later chips off-screen, so wrapping is the requirement
+  // and must not silently revert to `overflow-x-auto`.
+  it("wraps every chip into view on a phone rather than scrolling sideways", async () => {
+    const body = await renderDashboard();
+    const row = body.querySelector('[aria-label="Daily summary"]');
+
+    expect(row).toBeTruthy();
+    expect(row?.className).toContain("flex-wrap");
+    // No breakpoint prefix: it wraps at phone width too, not only from `sm:` up.
+    expect(row?.className).not.toContain("sm:flex-wrap");
+    expect(row?.className).not.toContain("overflow-x-auto");
+  });
+
   it("leads with awake time, then sleep, then the activity counts", async () => {
     const body = await renderDashboard();
 

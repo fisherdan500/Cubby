@@ -50,7 +50,7 @@ function baseReport() {
     startKey: "2026-09-13",
     endKey,
     todayKey: endKey,
-    routine: buildRoutine([], endKey, "1w", "Etc/UTC"),
+    routine: buildRoutine([], endKey, { kind: "1w" }, "Etc/UTC"),
     stats: buildReportStats([], null, "Etc/UTC"),
     previous: null,
     history: buildReportStats([], null, "Etc/UTC")
@@ -83,16 +83,43 @@ describe("ReportsPage accessibility", () => {
     }
   });
 
-  it("gives Routine one period choice, ending today, and none of Stats' range", async () => {
+  // Item 7: Routine now offers Stats' custom range too, but keeps its OWN period. Stats' range
+  // control and date boxes still belong to Stats alone, which is what the null checks below pin.
+  it("gives Routine its own quick periods plus Custom, and none of Stats' range control", async () => {
     const body = await renderReports("routine");
 
     expect(body.querySelector('nav[aria-label="Report period"]')).toBeNull();
     expect(body.querySelector("#report-start")).toBeNull();
     const { periods } = mocks.routineTab.mock.calls[0][0] as { periods: Array<{ label: string; href: string; current: boolean }> };
-    expect(periods.map((period) => [period.label, period.current])).toEqual([["7 days", true], ["14 days", false], ["30 days", false]]);
+    expect(periods.map((period) => [period.label, period.current])).toEqual([
+      ["7 days", true],
+      ["14 days", false],
+      ["30 days", false],
+      ["Custom", false]
+    ]);
     expect(periods[1].href).toContain("routineWindow=2w");
     expect(periods[2].href).toContain("routineWindow=1m");
+    expect(periods[3].href).toContain("routineCustom=1");
     expect(periods[1].href).toContain("tab=routine");
+  });
+
+  it("marks exactly one routine period as current, even while the date boxes are open", async () => {
+    // Asking for the boxes does not change which period is in use, so the quick chip must not stay
+    // current alongside Custom: two aria-current links in one nav is wrong for a screen reader.
+    await renderReports("routine", { routineCustom: "1", routineWindow: "1w" });
+    const { periods } = mocks.routineTab.mock.calls[0][0] as { periods: Array<{ label: string; current: boolean }> };
+
+    expect(periods.filter((period) => period.current).map((period) => period.label)).toEqual(["Custom"]);
+  });
+
+  it("shows the routine date boxes only once a custom routine range is asked for", async () => {
+    // Routine's boxes carry their own names, so they cannot be confused with Stats' start/end.
+    expect((await renderReports("routine")).querySelector("#routine-start")).toBeNull();
+
+    const custom = await renderReports("routine", { routineCustom: "1" });
+    expect(custom.querySelector("#routine-start")).toBeTruthy();
+    expect(custom.querySelector("#routine-end")).toBeTruthy();
+    expect(custom.querySelector('input[name="routineStart"]')).toBeTruthy();
   });
 
   it("marks the open report, and only that one, as the current page", async () => {

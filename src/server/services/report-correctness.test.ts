@@ -255,10 +255,36 @@ describe("report range", () => {
     vi.setSystemTime(new Date("2026-09-19T15:00:00.000Z"));
     for (const routineWindow of [undefined, "not-a-window"]) {
       const report = await getReports("user-1", { babyId: "baby-1", routineWindow });
-      expect(report?.routine).toMatchObject({ window: "1m", startKey: "2026-08-21", endKey: "2026-09-19" });
+      expect(report?.routine).toMatchObject({ window: { kind: "1m" }, startKey: "2026-08-21", endKey: "2026-09-19" });
     }
     const week = await getReports("user-1", { babyId: "baby-1", routineWindow: "1w" });
-    expect(week?.routine).toMatchObject({ window: "1w", startKey: "2026-09-13" });
+    expect(week?.routine).toMatchObject({ window: { kind: "1w" }, startKey: "2026-09-13" });
+    vi.useRealTimers();
+  });
+
+  it("works the routine out from an explicit custom range, end to end", async () => {
+    // Item 7: Routine accepts its own dates, independently of Stats' range.
+    vi.setSystemTime(new Date("2026-09-19T15:00:00.000Z"));
+    const custom = await getReports("user-1", {
+      babyId: "baby-1",
+      routineWindow: "custom",
+      routineStart: "2026-09-01",
+      routineEnd: "2026-09-10"
+    });
+    expect(custom?.routine).toMatchObject({
+      window: { kind: "custom", startKey: "2026-09-01", endKey: "2026-09-10" },
+      startKey: "2026-09-01",
+      endKey: "2026-09-10"
+    });
+
+    // Fail closed: an inverted range must not query backwards, it falls back to the 30 days.
+    const inverted = await getReports("user-1", {
+      babyId: "baby-1",
+      routineWindow: "custom",
+      routineStart: "2026-09-10",
+      routineEnd: "2026-09-01"
+    });
+    expect(inverted?.routine).toMatchObject({ window: { kind: "1m" }, startKey: "2026-08-21", endKey: "2026-09-19" });
     vi.useRealTimers();
   });
 
