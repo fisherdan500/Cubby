@@ -1658,14 +1658,18 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
           select: { id: true }
         });
         await claimStagedFeedPhotos(tx, lockedCtx, { attachmentIds: photoPost.attachmentIds, postId: post.id });
-        // Symmetry with the feed's own create path, so the audit trail explains where this post
-        // came from rather than showing an unexplained row.
+        // Mirrors the feed's own create audit exactly: how many tags and how many photos, never the
+        // caption or anything the uploader supplied. photoCount must be positive, so it is omitted
+        // when there is none rather than written as zero.
         await writeAudit(lockedCtx, {
           action: "feed_post.create",
           entityType: "feed_post",
           entityId: post.id,
-          babyId: activity.babyId,
-          after: { activityId: activity.id, photoCount: photoPost.attachmentIds.length }
+          ...(activity.babyId ? { babyId: activity.babyId } : {}),
+          after: {
+            tagCount: photoPost.tags.length,
+            ...(photoPost.attachmentIds.length > 0 ? { photoCount: photoPost.attachmentIds.length } : {})
+          }
         }, tx);
       }
       return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };

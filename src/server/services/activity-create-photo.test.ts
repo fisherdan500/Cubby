@@ -27,6 +27,7 @@ vi.mock("@/server/services/audit", async () => {
 });
 
 
+
 vi.mock("@/server/services/browser-operations", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/server/services/browser-operations");
   return {
@@ -98,8 +99,23 @@ function entry(extra: Record<string, unknown> = {}) {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   for (const mock of Object.values(mocks)) mock.mockReset();
+  // The audit layer minimizes each action's payload against a strict schema. A stub that accepts
+  // anything hides a malformed write until it fails against the real database and takes the family's
+  // entry down with it, so run the real validator here.
+  const { minimizeAuditPayload } = await import("@/server/services/audit");
+  mocks.writeAudit.mockImplementation(async (
+    _ctx: unknown,
+    input: {
+      action: Parameters<typeof minimizeAuditPayload>[0];
+      after?: Parameters<typeof minimizeAuditPayload>[1];
+    }
+  ) => {
+    if (input.after !== undefined && input.after !== null) {
+      minimizeAuditPayload(input.action, input.after, "after");
+    }
+  });
   mocks.getContextForBaby.mockResolvedValue(ctx);
   mocks.claimStagedFeedPhotos.mockResolvedValue(undefined);
 });
