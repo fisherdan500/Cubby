@@ -3,6 +3,7 @@ import {
   canAssignHouseholdRole,
   canManageHouseholdRole,
   canMutateOwnOrAny,
+  householdRoles,
   hasPermission
 } from "@/domain/roles";
 
@@ -55,5 +56,23 @@ describe("role permissions", () => {
     expect(canManageHouseholdRole("owner", "admin")).toBe(true);
     expect(canManageHouseholdRole("admin", "admin")).toBe(false);
     expect(canManageHouseholdRole("admin", "parent")).toBe(true);
+  });
+
+  // The User's rule: "if a person can create a log then they should also be able to add a photo.
+  // same rights as logs". Today activity.create and feed.post happen to be granted to the same
+  // roles, so the product behaves correctly by coincidence of two separate lists. This pins the
+  // rule itself, over every role including ones added later, so the coincidence cannot quietly end.
+  it("lets anyone who can log an entry also attach a photo to it", () => {
+    for (const role of householdRoles) {
+      if (!hasPermission(role, "activity.create")) continue;
+      expect(hasPermission(role, "feed.post"), `${role} can log an entry but cannot attach a photo`).toBe(true);
+    }
+  });
+
+  it("does not let a photo be attached by someone who cannot log an entry", () => {
+    for (const role of householdRoles) {
+      if (!hasPermission(role, "feed.post")) continue;
+      expect(hasPermission(role, "activity.create"), `${role} can attach a photo but cannot log an entry`).toBe(true);
+    }
   });
 });

@@ -236,7 +236,9 @@ describe("logging an entry with a photo", () => {
   });
 
   it("refuses a photo from someone who may not post to the feed", async () => {
-    // Logging an entry needs activity.create; attaching a picture is a feed post and needs feed.post.
+    // A read-only member may neither log an entry nor attach a photo, so this is the one role the
+    // guard actually turns away. It is defence in depth rather than a narrower gate than logging:
+    // every role that may log an entry may also attach a photo (pinned in src/domain/roles.test.ts).
     const tx = transaction([]);
     mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
       contract.execute(tx, { ...ctx, role: "read_only" as const }, baby));
