@@ -174,8 +174,10 @@ function dateKeySpan(startKey: string, endKey: string) {
 }
 
 // 30 days unless a shorter period is chosen: a month shows the steady pattern, and one off day barely moves it.
-// A custom range must be two valid dates in order; anything else falls back rather than becoming an
-// unbounded or backwards query.
+// A custom range must be two valid dates in order and within the cap; anything else falls back rather
+// than becoming an unbounded, backwards, or absurdly long query.
+const ROUTINE_MAX_CUSTOM_DAYS = 366;
+
 export function resolveRoutineWindow(
   value: string | undefined,
   range?: { start?: string; end?: string }
@@ -183,7 +185,14 @@ export function resolveRoutineWindow(
   if (value === "custom") {
     const startKey = range?.start;
     const endKey = range?.end;
-    if (isValidDateKey(startKey) && isValidDateKey(endKey) && startKey <= endKey) {
+    if (
+      isValidDateKey(startKey) &&
+      isValidDateKey(endKey) &&
+      startKey <= endKey &&
+      // The routine builds per-day state, so a hand-edited range of centuries would allocate
+      // millions of days. A year is more than any routine reading needs.
+      dateKeySpan(startKey, endKey) <= ROUTINE_MAX_CUSTOM_DAYS
+    ) {
       return { kind: "custom", startKey, endKey };
     }
     return { kind: "1m" };

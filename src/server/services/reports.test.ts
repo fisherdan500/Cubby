@@ -231,6 +231,17 @@ describe("reports routine", () => {
     expect(resolveRoutineWindow("custom", { start: "nonsense", end: "2026-06-10" })).toEqual({ kind: "1m" });
     expect(resolveRoutineWindow("custom", { start: "2026-06-10", end: "2026-06-01" })).toEqual({ kind: "1m" });
     expect(resolveRoutineWindow("custom", undefined)).toEqual({ kind: "1m" });
+    // Both halves are required: one date alone cannot say which days to cover.
+    expect(resolveRoutineWindow("custom", { start: "2026-06-01" })).toEqual({ kind: "1m" });
+    expect(resolveRoutineWindow("custom", { end: "2026-06-10" })).toEqual({ kind: "1m" });
+  });
+
+  it("refuses a custom range longer than a year rather than walking centuries of days", () => {
+    // The routine allocates per-day state, so an absurd hand-edited range is a self-inflicted
+    // denial of service. A year is far more than any routine reading needs.
+    expect(resolveRoutineWindow("custom", { start: "2026-01-01", end: "2026-12-31" })).toMatchObject({ kind: "custom" });
+    expect(resolveRoutineWindow("custom", { start: "0100-01-01", end: "9999-12-31" })).toEqual({ kind: "1m" });
+    expect(resolveRoutineWindow("custom", { start: "2020-01-01", end: "2026-01-01" })).toEqual({ kind: "1m" });
   });
 
   it("keeps the quick windows as day counts to today", () => {

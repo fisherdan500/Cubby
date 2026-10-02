@@ -2144,33 +2144,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "81aa9a6d1fc6b57bd8c0263e70d5aabdebb995f25436d7edfe8140565be7bb20",
+          "digest": "a7cafdd2bb51b7329678572b71d9d805813df5a0d78034e1c227c0c7e00fa724",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "1a4d2162934be66c2587fea837f1f38e9a69f69eba876a552a624a0d625cbcd7",
+      "fingerprint": "78ec10b425227f99df1a1cef930a28f925f45b8c0e58cda94b650445c025d3bb",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "723fbd991ccc1a0062119ac313680f4fbd3bcecfaf0126c309806c3bf05aa7cb",
+      "sourceDigest": "20aec23709a04bfe36ee5be0c17de1587a036dcefffc241142b70a6704cb334c",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "d4d709e27e3485bb55e6653471252d06a77fda9833ecaff77c6832bd12f24d72",
+          "digest": "a641321583e927ea8e360660674c0f601dc681d26b15c3f18906cfe47d4adc1f",
           "file": "src/app/app/reports/page.tsx"
         }
       ],
       "declarationDigest": "2a176ab245fae2f9c7df3a6c489583e4e399de3e854c5cbf46c07ea8ef08b300",
-      "fingerprint": "ca784483712e258de335abb14417ad0702f3cc3b12b8fc9c2d82b4cd4d808283",
+      "fingerprint": "29673106e7231879546980206d71c4bc57d0e99eb594748c244a487fc77adfd4",
       "id": "fingerprint:server_loader:src/app/app/reports/page.tsx",
       "ownerId": "server_loader:src/app/app/reports/page.tsx",
       "ownerModule": "src/app/app/reports/page.tsx",
       "sidecarPath": "src/app/app/reports/page.operation.ts",
-      "sourceDigest": "0337d960afbf0bbc12c55eea966a4b39029aed03a3061da451f5b06b7bcbf995",
+      "sourceDigest": "4d4a46a698dc7a22c0e92814b5b0cbec58d6c4b5a1d7a2a10a10aeb6c5507b2a",
       "status": "declared"
     },
     {

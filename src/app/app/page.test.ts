@@ -90,7 +90,7 @@ describe("daily summary chips", () => {
   // and must not silently revert to `overflow-x-auto`.
   it("wraps every chip into view on a phone rather than scrolling sideways", async () => {
     const body = await renderDashboard();
-    const row = body.querySelector("h2 + div");
+    const row = body.querySelector('[aria-label="Daily summary"]');
 
     expect(row).toBeTruthy();
     expect(row?.className).toContain("flex-wrap");

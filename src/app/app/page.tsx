@@ -354,7 +354,8 @@ function DailySummary({
       {items.length || summary.awake.known || summary.awake.unavailableReason ? (
         // Wrapped rather than a swipeable row: the User asked to see every summary at a glance,
         // accepting that the block is taller and pushes the day's log further down on a phone.
-        <div className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
+        // Labelled so tests select it by name rather than by its position after the heading.
+        <div aria-label="Daily summary" className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
           {/* Awake leads, with sleep immediately after it: between them they account for the whole
               day, so they read as a pair before the counts of individual activities. It is not a
               link - it is the rest of the day rather than a kind of activity, so there is nothing to

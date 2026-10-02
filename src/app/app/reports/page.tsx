@@ -100,7 +100,9 @@ export default async function ReportsPage({
     ...routinePeriods.map(([window, label]) => ({
       label,
       href: reportHref({ routineWindow: window, routineStart: "", routineEnd: "" }),
-      current: !routineIsCustom && routineWindow.kind === window
+      // Mirrors Stats: asking for the date boxes does not change which period is in use, so the
+      // quick chip must not read as current alongside Custom.
+      current: !routineCustom && !routineIsCustom && routineWindow.kind === window
     })),
     { label: "Custom", href: reportHref({ routineCustom: true }), current: routineCustom }
   ];

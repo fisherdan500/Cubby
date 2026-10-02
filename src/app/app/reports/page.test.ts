@@ -103,6 +103,15 @@ describe("ReportsPage accessibility", () => {
     expect(periods[1].href).toContain("tab=routine");
   });
 
+  it("marks exactly one routine period as current, even while the date boxes are open", async () => {
+    // Asking for the boxes does not change which period is in use, so the quick chip must not stay
+    // current alongside Custom: two aria-current links in one nav is wrong for a screen reader.
+    await renderReports("routine", { routineCustom: "1", routineWindow: "1w" });
+    const { periods } = mocks.routineTab.mock.calls[0][0] as { periods: Array<{ label: string; current: boolean }> };
+
+    expect(periods.filter((period) => period.current).map((period) => period.label)).toEqual(["Custom"]);
+  });
+
   it("shows the routine date boxes only once a custom routine range is asked for", async () => {
     // Routine's boxes carry their own names, so they cannot be confused with Stats' start/end.
     expect((await renderReports("routine")).querySelector("#routine-start")).toBeNull();
