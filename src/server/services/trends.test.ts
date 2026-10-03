@@ -111,6 +111,42 @@ describe("trends", () => {
       expect(week.value).toBeCloseTo((36 * 3600) / 4, 0);
     });
 
+    // Review found the window edge truncated: a night that began before the first day was never
+    // consulted, so the first morning lost its tail. The caller reads from before the window for
+    // exactly this reason, and the service must use what it is given rather than a fixed lookback.
+    it("gives the first day the tail of a night that began before it", () => {
+      const activities = [
+        // Began the evening before the first day shown - the caller fetches this deliberately.
+        sleep("2026-05-31T19:00", "2026-06-01T07:00"),
+        sleep("2026-06-01T19:00", "2026-06-02T07:00"),
+        sleep("2026-06-02T19:00", "2026-06-03T07:00"),
+        sleep("2026-06-03T19:00", "2026-06-04T07:00")
+      ];
+
+      const points = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
+      const first = points.find((point) => point.weekKey === "2026-06-01");
+
+      // 1 June holds 7h of the night before plus 5h of its own evening: a full twelve hours. With
+      // the night before ignored it would read 5h, and the week would open on a false low.
+      expect(first).toBeDefined();
+      expect((first?.value as number) * (first?.daysCounted ?? 0)).toBeGreaterThanOrEqual(12 * 3600);
+    });
+
+    it("counts every day a long sleep covers, not just the two it starts and ends beside", () => {
+      // A thirty-hour entry is a mistake somebody made, but losing it silently is our mistake.
+      const activities = [
+        sleep("2026-06-01T20:00", "2026-06-03T02:00"),
+        sleep("2026-06-04T19:00", "2026-06-05T07:00"),
+        sleep("2026-06-05T19:00", "2026-06-06T07:00")
+      ];
+
+      const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
+
+      // 30h from the long entry plus 24h from the two nights, over the days they touch.
+      const total = (week.value as number) * week.daysCounted;
+      expect(total).toBeCloseTo(54 * 3600, -2);
+    });
+
     it("reports sleep in seconds so the page can format it", () => {
       const activities = [sleep("2026-06-01T09:00", "2026-06-01T11:00"), sleep("2026-06-02T09:00", "2026-06-02T11:00"), sleep("2026-06-03T09:00", "2026-06-03T11:00")];
 
@@ -132,6 +168,42 @@ describe("trends", () => {
 
       // One measured feed in eleven: reporting 4oz a day would read as near-starvation.
       expect(week.value).toBeNull();
+    });
+
+    it("weighs a day by the feeds it actually measured, not by all of them", () => {
+      // Review: an unmeasured feed added nothing to the ounces but still carried its day at full
+      // weight, so a week passing the guard with a tenth unmeasured under-reported intake by a
+      // tenth. On a chart about how much a baby is taking, that is the wrong direction to be wrong.
+      const activities = [];
+      for (let dayOfMonth = 1; dayOfMonth <= 7; dayOfMonth += 1) {
+        const date = String(dayOfMonth).padStart(2, "0");
+        for (let n = 0; n < 10; n += 1) {
+          const unmeasured = dayOfMonth === 1 && n < 7;
+          activities.push(feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, unmeasured ? null : 4));
+        }
+      }
+
+      const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+      // Every measured feed is 4oz, so the honest figure is 40oz a day however many went unrecorded.
+      expect(week.value).toBeCloseTo(40, 1);
+    });
+
+    it("leaves today out, so a day still in progress is not drawn as a drop", () => {
+      // Review: feeds so far today were averaged against whole days, showing a dip that was only
+      // the clock. Today is reported once it is over.
+      const activities = [];
+      for (let dayOfMonth = 1; dayOfMonth <= 5; dayOfMonth += 1) {
+        const date = String(dayOfMonth).padStart(2, "0");
+        for (let n = 0; n < 6; n += 1) activities.push(feed(`2026-06-${date}T${String(6 + n * 2).padStart(2, "0")}:00`));
+      }
+      // Three feeds logged by lunchtime on the 6th, which is "today".
+      for (let n = 0; n < 3; n += 1) activities.push(feed(`2026-06-06T${String(7 + n * 2).padStart(2, "0")}:00`));
+
+      const [week] = buildTrends(activities, { timeZone, now: at("2026-06-06T13:00").getTime() }).feeds.points;
+
+      expect(week.value).toBeCloseTo(6, 5);
+      expect(week.daysCounted).toBe(5);
     });
 
     it("reports a week where every feed was measured", () => {

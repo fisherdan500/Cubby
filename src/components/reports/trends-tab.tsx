@@ -28,7 +28,7 @@ const measures: Measure[] = [
   {
     key: "volume",
     title: "Bottle and formula per day",
-    note: "Breastfeeds carry no measured amount, so weeks that were mostly breastfed are left out.",
+    note: "Only weeks where nearly every feed was measured. Breastfeeds carry no amount, so weeks with many of them are left out.",
     format: (value) => `${value.toFixed(1)} oz`
   },
   { key: "diapers", title: "Diapers per day", format: (value) => value.toFixed(1) }
@@ -103,7 +103,10 @@ function TrendPanel({ measure, points }: { measure: Measure; points: TrendPoint[
   const counted = points.reduce((total, point) => total + point.daysCounted, 0);
   const logged = points.reduce((total, point) => total + point.daysLogged, 0);
 
-  const x = (index: number) => PAD_L + ((CHART_W - PAD_L - PAD_R) * index) / Math.max(points.length - 1, 1);
+  // A single week sits in the middle rather than hard against the left edge, matching the growth
+  // chart: pinned left it reads as the truncated start of a series that is not there.
+  const x = (index: number) =>
+    points.length === 1 ? CHART_W / 2 : PAD_L + ((CHART_W - PAD_L - PAD_R) * index) / (points.length - 1);
   const y = (value: number) => PAD_T + (CHART_H - PAD_T - PAD_B) * (1 - value / top);
 
   // One path per unbroken run, so a gap stays a gap instead of becoming a straight line across it.
@@ -135,7 +138,9 @@ function TrendPanel({ measure, points }: { measure: Measure; points: TrendPoint[
         {change ? <p className="tabular text-sm text-muted-foreground">{change}</p> : null}
       </div>
       {measure.note ? <p className="text-xs text-muted-foreground">{measure.note}</p> : null}
-      <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="h-auto w-full" role="img" aria-label={`${measure.title}, by week`}>
+      {/* Hidden from assistive tech because every figure is listed as text below, which is how the
+          growth charts on this page already work. */}
+      <svg aria-hidden="true" viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="h-auto w-full">
         <line x1={PAD_L} y1={y(0)} x2={CHART_W - PAD_R} y2={y(0)} className="stroke-border" strokeWidth="1" />
         <line x1={PAD_L} y1={y(top)} x2={CHART_W - PAD_R} y2={y(top)} className="stroke-border" strokeWidth="1" strokeDasharray="3 4" />
         {points.map((point, index) =>
@@ -164,6 +169,13 @@ function TrendPanel({ measure, points }: { measure: Measure; points: TrendPoint[
       <p className="tabular text-xs text-muted-foreground">
         {measure.format(top === 1 && !high ? 0 : high)} highest · {counted} of {logged} days
       </p>
+      <ul data-trend-values="" className="sr-only">
+        {points.map((point) => (
+          <li key={point.weekKey}>
+            {`Week of ${point.weekKey}: ${point.value === null ? "not enough logged" : measure.format(point.value)}`}
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

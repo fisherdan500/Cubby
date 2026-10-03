@@ -12,7 +12,7 @@
  */
 
 import { ActivityType, type Prisma } from "@prisma/client";
-import { daySleepSeconds, type DaySleepRecord } from "@/lib/day-sleep";
+import { daySleepSeconds, sleepInterval, type DaySleepRecord } from "@/lib/day-sleep";
 import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart } from "@/lib/timezone";
 import { bucketWeeks, trendSeries, VOLUME_MIN_MEASURED_SHARE, type TrendDay, type TrendPoint } from "@/lib/trends";
 
@@ -68,6 +68,9 @@ function panel(points: TrendPoint[]): TrendPanel {
  */
 export function buildTrends(activities: TrendActivity[], options: { timeZone: string; now: number }): Trends {
   const { timeZone, now } = options;
+  // Today is still happening, so its totals are not comparable with whole days: a morning's three
+  // feeds against yesterday's six reads as a drop that is only the clock. It joins once it is over.
+  const todayKey = dateKeyInTimeZone(new Date(now), timeZone);
   const dayKeys = new Set<string>();
   const sleepsByDay = new Map<string, DaySleepRecord[]>();
   const feedsByDay = new Map<string, { count: number; measured: number; volume: number }>();
@@ -95,8 +98,15 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
       };
       if (existing) existing.push(record);
       else sleepsByDay.set(key, [record]);
-      // A night that began yesterday still fills part of today, so today must exist as a day.
-      if (activity.endedAt) dayKeys.add(dateKeyInTimeZone(activity.endedAt, timeZone));
+      // Every day a sleep covers must exist as a day, not just the one it began on and the one it
+      // ended on: a sleep running over thirty hours has a middle day that is entirely asleep, and
+      // leaving it out drops a full day of sleep from the week.
+      if (activity.endedAt) {
+        const endKey = dateKeyInTimeZone(activity.endedAt, timeZone);
+        for (let covered = key; covered <= endKey; covered = addDaysToDateKey(covered, 1)) {
+          dayKeys.add(covered);
+        }
+      }
       continue;
     }
 
@@ -117,7 +127,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     }
   }
 
-  const keys = [...dayKeys].sort();
+  const keys = [...dayKeys].filter((key) => key < todayKey).sort();
   if (!keys.length) {
     const empty = panel([]);
     return { startKey: "", endKey: "", weeks: 0, anyData: false, sleep: empty, feeds: empty, volume: empty, diapers: empty };
@@ -125,15 +135,36 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
 
   const weeks = bucketWeeks(keys, timeZone);
 
-  // Sleep needs every sleep that could overlap a day, including one that began the evening before.
+  // Sleep is selected by whether it OVERLAPS the day, exactly as the dashboard does, rather than by
+  // which day it was filed under. A fixed one-day lookback silently truncated two real cases: the
+  // first day of any window never received the tail of the night that ended it, so two identical
+  // weeks rendered as a slope; and a sleep spanning more than two days was invisible to its third
+  // day onwards, so a mistaken thirty-hour entry lost most of itself without a word.
+  const allSleeps: Array<{ record: DaySleepRecord; start: number; end: number }> = [];
+  for (const [, records] of sleepsByDay) {
+    for (const record of records) {
+      const span = sleepInterval(record, now);
+      if (span) allSleeps.push({ record, start: span.start, end: span.end });
+    }
+  }
+
   const sleepSecondsFor = (key: string) => {
-    const previous = addDaysToDateKey(key, -1);
-    const records = [...(sleepsByDay.get(previous) ?? []), ...(sleepsByDay.get(key) ?? [])];
-    if (!records.length) return null;
     const windowStart = zonedDateStart(key, timeZone);
     const windowEnd = zonedDateStart(addDaysToDateKey(key, 1), timeZone);
+    const from = windowStart.getTime();
+    const to = windowEnd.getTime();
+    const records = allSleeps.filter((item) => item.start < to && item.end > from).map((item) => item.record);
+    if (!records.length) return null;
     const slept = daySleepSeconds(records, windowStart, windowEnd, now);
     return slept.count > 0 ? slept.seconds : null;
+  };
+
+  // A day's evidence is how many sleeps actually overlapped it, not how many were filed under it: a
+  // morning that holds only the tail of last night was logged just as well as any other.
+  const sleepEntriesFor = (key: string) => {
+    const from = zonedDateStart(key, timeZone).getTime();
+    const to = zonedDateStart(addDaysToDateKey(key, 1), timeZone).getTime();
+    return allSleeps.filter((item) => item.start < to && item.end > from).length;
   };
 
   const sleepWeeks = weeks.map((week) => ({
@@ -141,7 +172,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     days: week.dayKeys.flatMap((key): TrendDay[] => {
       const seconds = sleepSecondsFor(key);
       if (seconds === null) return [];
-      return [{ key, entries: (sleepsByDay.get(key) ?? []).length || 1, value: seconds }];
+      return [{ key, entries: sleepEntriesFor(key), value: seconds }];
     })
   }));
 
@@ -153,11 +184,16 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     })
   }));
 
+  // A day's volume is weighed by the feeds that were actually measured. Counting an unmeasured feed
+  // as nought ounces while still carrying its day at full weight under-reported intake by as much as
+  // a tenth in a week that still passed the guard below - the wrong direction on an intake chart.
   const volumeWeeks = weeks.map((week) => ({
     weekKey: week.weekKey,
     days: week.dayKeys.flatMap((key): TrendDay[] => {
       const feeds = feedsByDay.get(key);
-      return feeds ? [{ key, entries: feeds.count, value: feeds.volume }] : [];
+      if (!feeds || feeds.measured === 0) return [];
+      const perMeasuredFeed = feeds.volume / feeds.measured;
+      return [{ key, entries: feeds.count, value: perMeasuredFeed * feeds.count }];
     })
   }));
 

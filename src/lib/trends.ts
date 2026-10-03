@@ -21,8 +21,8 @@
 import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
 import { ROUTINE_MIN_DAYS } from "@/lib/observed-routine";
 
-/** A day far below its own week's median was probably logged by somebody who stopped. */
-const COMPLETE_DAY_MEDIAN_SHARE = 0.4;
+/** A day far below the week's better-logged days was probably logged by somebody who stopped. */
+const COMPLETE_DAY_SHARE = 0.4;
 
 /** Nearly every feed in a week must carry a volume before the week's ounces mean anything. */
 export const VOLUME_MIN_MEASURED_SHARE = 0.9;
@@ -93,15 +93,28 @@ function median(values: number[]) {
 }
 
 /**
- * The days of a week that were logged thoroughly enough to average. The floor is relative to the
- * week itself because feeding and sleeping legitimately halve as a baby grows: a fixed "at least
- * four entries" would throw away real days later on and admit junk days early on.
+ * The days of a week that were logged thoroughly enough to average.
+ *
+ * The floor is a share of how the week's BETTER-logged days look, not of its middle day. Anchoring
+ * on the median collapses exactly when it is needed most: once the thin days are half the week, the
+ * median is itself thin, the floor falls to almost nothing and every sitter day is averaged in. A
+ * week of three ordinary days and four single-entry ones then reads as half the real figure while
+ * the caption still claims seven days of evidence.
+ *
+ * The floor is relative rather than a fixed count because feeding and sleeping legitimately halve as
+ * a baby grows: "at least four entries" would throw away real days later on and admit junk early on.
  */
 export function completeDays(days: TrendDay[]) {
   if (days.length <= 1) return [...days];
-  const floor = median(days.map((day) => day.entries)) * COMPLETE_DAY_MEDIAN_SHARE;
-  // The median itself always clears a floor set below it, so this can never empty the week.
-  return days.filter((day) => day.entries >= floor);
+  const sorted = [...days].map((day) => day.entries).sort((left, right) => left - right);
+  // The median of the upper half: a robust stand-in for "a day that was properly logged", which a
+  // minority of thin days cannot drag down.
+  const upper = sorted.slice(Math.floor(sorted.length / 2));
+  const typical = median(upper);
+  const floor = typical * COMPLETE_DAY_SHARE;
+  const kept = days.filter((day) => day.entries >= floor);
+  // Anchoring high can in principle exclude everything; the best-logged day always belongs.
+  return kept.length ? kept : days.filter((day) => day.entries === sorted[sorted.length - 1]);
 }
 
 /**

@@ -37,8 +37,10 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
   // query is how a reports page becomes the slowest screen in the app.
   const days = window === "all" ? 5 * 365 : windowDays[window];
   const startKey = addDaysToDateKey(todayKey, -(days - 1));
-  // A night that began the evening before the window still fills part of its first morning.
-  const from = zonedDateStart(addDaysToDateKey(startKey, -1), timeZone);
+  // A sleep that began before the window can still fill part of its first morning. Two days of
+  // lookback rather than one: a single day misses an entry that spans more than twenty-four hours,
+  // which is a mistake somebody can make with a timer left running.
+  const from = zonedDateStart(addDaysToDateKey(startKey, -2), timeZone);
   const to = zonedDateStart(addDaysToDateKey(todayKey, 1), timeZone);
 
   const activities = await prisma.activityLog.findMany({

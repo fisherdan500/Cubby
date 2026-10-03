@@ -52,6 +52,28 @@ describe("the completeness floor", () => {
     expect(completeDays(busyWeek).map((entry) => entry.key)).toEqual(["d1", "d2", "d3"]);
   });
 
+  // Review found the floor strongest when least needed and absent when the week is worst: once thin
+  // days are half or more of the week, the median is itself thin and the floor collapses to nothing.
+  it("still sets aside the thin days when they outnumber the logged ones", () => {
+    const days = [day("d1", 8), day("d2", 8), day("d3", 8), day("d4", 1), day("d5", 1), day("d6", 1), day("d7", 1)];
+
+    const kept = completeDays(days);
+
+    expect(kept.map((entry) => entry.key)).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("reports the week from its complete days when most of it was barely logged", () => {
+    const days = [day("d1", 8), day("d2", 8), day("d3", 8), day("d4", 1), day("d5", 1), day("d6", 1), day("d7", 1)];
+
+    const [point] = trendSeries([{ weekKey: "2026-06-01", days }]);
+
+    // 8 a day over the three days that were really logged, not 4 a day over seven - and the caption
+    // must say three, or it asserts a week was fully logged when four days were a single entry.
+    expect(point.value).toBeCloseTo(8, 5);
+    expect(point.daysCounted).toBe(3);
+    expect(point.daysLogged).toBe(7);
+  });
+
   it("never drops every day, however lopsided the week", () => {
     // A floor that could empty a week would turn one odd day into a gap for the whole week.
     const kept = completeDays([day("d1", 20), day("d2", 1)]);

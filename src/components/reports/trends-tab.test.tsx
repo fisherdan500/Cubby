@@ -108,6 +108,30 @@ describe("TrendsTab", () => {
     expect(body.textContent).toMatch(/bottle and formula/i);
   });
 
+  it("lists the weekly figures as text, so the chart is not the only way to read them", () => {
+    // Review: the repo's existing Growth charts are aria-hidden BECAUSE every point is also listed
+    // as text. role="img" with a bare label asserts the alt text is enough, and for a 29-week series
+    // it is not. Follow the convention already here rather than inventing a weaker one.
+    const body = render(
+      trends({ feeds: panel([point("2026-06-01", 5), point("2026-06-08", 4), point("2026-06-15", 3)]) })
+    );
+
+    expect(body.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    const listed = body.querySelector("[data-trend-values]");
+    expect(listed).toBeTruthy();
+    expect(listed?.textContent).toContain("5.0");
+    expect(listed?.textContent).toContain("3.0");
+  });
+
+  it("centres a lone week rather than pinning it to the left edge", () => {
+    // Matches GrowthChart, which already centres a single measurement.
+    const body = render(trends({ feeds: panel([point("2026-06-01", 5)]) }));
+
+    const dot = body.querySelector("svg circle");
+    expect(dot).toBeTruthy();
+    expect(Number(dot?.getAttribute("cx"))).toBeGreaterThan(100);
+  });
+
   it("draws nothing for a measure whose every week is blank", () => {
     const body = render(
       trends({ sleep: panel([point("2026-06-01", null, 0, 0), point("2026-06-08", null, 0, 0)]) })
