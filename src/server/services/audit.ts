@@ -64,6 +64,7 @@ const auditActionSchema = z.enum([
   "member.self_leave",
   "member.suspend",
   "notification.preference.save",
+  "own_profile.name.update",
   "planned_schedule.save",
   "push_subscription.save",
   "settings.appearance.update",
@@ -148,6 +149,16 @@ const babyDeletionAuditSchema = z.object({
   activityCount: z.number().int().nonnegative().optional(),
   feedPostCount: z.number().int().nonnegative().optional()
 }).strict();
+/**
+ * A rename records THAT the name changed and whether this household's shown name followed it -
+ * never the name itself. A person's name is exactly the household content audit evidence is
+ * required to exclude (DEC-PROD-144 minimization), and a household that had renamed the member
+ * itself saw no change at all.
+ */
+const ownProfileNameUpdateSchema = z.object({
+  changed: z.array(z.enum(["name"])).max(1).optional(),
+  shownNameFollowed: z.boolean().optional()
+}).strict();
 const appearanceSchema = z.object({ accentTheme: z.string().min(1).max(80).nullable().optional() }).strict();
 const calendarCreateSchema = z.object({
   babyId: z.string().min(1).max(200),
@@ -229,6 +240,9 @@ export function minimizeAuditPayload(
   }
   if (action === "baby.delete" || action === "baby.remove") {
     return babyDeletionAuditSchema.parse(payload) as Prisma.InputJsonValue;
+  }
+  if (action === "own_profile.name.update") {
+    return ownProfileNameUpdateSchema.parse(payload) as Prisma.InputJsonValue;
   }
   if (action === "settings.appearance.update") {
     return appearanceSchema.parse(payload) as Prisma.InputJsonValue;
