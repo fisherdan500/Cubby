@@ -495,4 +495,87 @@ describe("trends", () => {
     expect(justInside).not.toEqual(baseline);
     expect(justOutside).toEqual(baseline);
   });
+  it("counts a day it had to set aside, so the caption cannot imply full coverage", () => {
+    // A week logged on all seven days, three of which had a bottle with no amount. Reporting "4 of
+    // 4 days" would read as complete coverage of a week where three days were thrown away.
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 4; n += 1) activities.push(feed(`${date}T${String(6 + n * 2).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+      if (day > 4) activities.push(feed(`${date}T20:00`, null, "bottle", null));
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.value).toBeCloseTo(16, 1);
+    expect(week.daysCounted).toBe(4);
+    expect(week.daysUnknown).toBe(3);
+  });
+
+  it("leaves no day unaccounted for in a week where every bottle was written down", () => {
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 4; n += 1) activities.push(feed(`${date}T${String(6 + n * 2).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.daysUnknown).toBe(0);
+  });
+
+  it("ignores a forgotten timer even when its end is unreadable rather than absent", () => {
+    // The guard used to ask whether endedAt was absent. A row carrying an end that cannot be read is
+    // just as unfinished, and asking the wrong question let it fill every day with 24 hours.
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const activities: ReturnType<typeof sleep>[] = [
+      { ...sleep("2026-04-01T20:00", null, { timerState: "running" }), endedAt: new Date("not a date") }
+    ];
+    for (let day = 1; day <= 7; day += 1) {
+      activities.push(sleep(`2026-06-${pad(day)}T19:00`, `2026-06-${pad(day + 1)}T07:00`));
+    }
+
+    const trends = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() });
+    const baseline = buildTrends(activities.slice(1), { timeZone, now: at("2026-06-10T12:00").getTime() });
+
+    expect(trends.sleep.points.map((point) => point.value)).toEqual(baseline.sleep.points.map((point) => point.value));
+    expect(trends.startKey).toBe(baseline.startKey);
+  });
+
+  it("drops a timer running for days, not only one running for weeks", () => {
+    // Pins the limit from above as well as below: a five-day timer must go, or the limit could be
+    // widened to a month and the forgotten-timer cases would all still pass.
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const nights: ReturnType<typeof sleep>[] = [];
+    for (let day = 1; day <= 9; day += 1) {
+      nights.push(sleep(`2026-06-${pad(day)}T19:00`, `2026-06-${pad(day + 1)}T07:00`));
+    }
+    const now = at("2026-06-12T12:00").getTime();
+    const baseline = buildTrends(nights, { timeZone, now }).sleep.points.map((point) => point.value);
+
+    const fiveDays = buildTrends([...nights, sleep("2026-06-07T12:00", null, { timerState: "running" })], { timeZone, now })
+      .sleep.points.map((point) => point.value);
+
+    expect(fiveDays).toEqual(baseline);
+  });
+
+  it("judges a week by the bottles it could read, not by the ones that merely had a number", () => {
+    // The share guard's numerator. Four days fully recorded in ounces, three recorded in a unit this
+    // cannot convert: every bottle carries a number, so a guard counting numbers sees a complete
+    // week and reports the four good days as though they spoke for all seven. Counting only what is
+    // readable sees 16 bottles of 28 and declines. This shape is the one that separates the two.
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 4; n += 1) {
+        activities.push(feed(`${date}T${String(6 + n * 2).padStart(2, "0")}:00`, 4, "bottle", day <= 4 ? "oz" : "tbsp"));
+      }
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.value).toBeNull();
+    expect(week.daysCounted).toBe(4);
+    expect(week.daysUnknown).toBe(3);
+  });
 });

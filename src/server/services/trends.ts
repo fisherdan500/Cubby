@@ -72,6 +72,11 @@ function panel(points: TrendPoint[]): TrendPanel {
 // real nap or night while still allowing the longest genuine overnight a timer legitimately spans.
 const UNFINISHED_TIMER_LIMIT_MS = 2 * 24 * 60 * 60 * 1000;
 
+// An end this can place on a calendar. An unreadable end is an unfinished sleep, not a finished one.
+function isReadableEnd(endedAt: Date | null): endedAt is Date {
+  return endedAt !== null && Number.isFinite(endedAt.getTime());
+}
+
 // The sleep fields of an activity, in the shape the dashboard's own sleep helpers expect.
 function asSleepRecord(activity: TrendActivity): DaySleepRecord {
   return {
@@ -88,7 +93,7 @@ function asSleepRecord(activity: TrendActivity): DaySleepRecord {
   };
 }
 
-type DayFeeds = { count: number; pourable: number; measured: number; volumes: Array<{ amount: number; unit?: string | null }> };
+type DayFeeds = { count: number; pourable: number; volumes: Array<{ amount: number; unit?: string | null }> };
 
 // Every amount on the day this can convert to ounces. The one place that decides what "known" means.
 function readableOunces(feeds: DayFeeds) {
@@ -144,7 +149,6 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
   const feedsByDay = new Map<string, {
     count: number;
     pourable: number;
-    measured: number;
     volumes: Array<{ amount: number; unit?: string | null }>;
   }>();
   const diapersByDay = new Map<string, number>();
@@ -156,7 +160,9 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     // Leave a forgotten timer out before anything else sees it, including the day it was filed
     // under: an excluded sleep must not stretch the chart either. One timer left running since
     // April opened the window in April and drew nine empty weeks ahead of the real data.
-    if (activity.type === ActivityType.sleep && activity.endedAt === null) {
+    // Asked of every sleep row, not only those with no end at all: an end that cannot be read is
+    // just as unfinished as an absent one, and both arrive here claiming days they never covered.
+    if (activity.type === ActivityType.sleep && !isReadableEnd(activity.endedAt)) {
       const span = sleepInterval(asSleepRecord(activity), now);
       if (!span || !Number.isFinite(span.end - span.start)) continue;
       if (span.end - span.start > UNFINISHED_TIMER_LIMIT_MS) continue;
@@ -185,7 +191,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
       // Every day a sleep covers must exist as a day, not just the one it began on and the one it
       // ended on: a sleep running over thirty hours has a middle day that is entirely asleep, and
       // leaving it out drops a full day of sleep from the week.
-      if (activity.endedAt && Number.isFinite(activity.endedAt.getTime())) {
+      if (isReadableEnd(activity.endedAt)) {
         const endKey = keyOf(activity.endedAt);
         for (let covered = key; covered <= endKey; covered = addDaysToDateKey(covered, 1)) {
           dayKeys.add(covered);
@@ -196,17 +202,14 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
 
     if (activity.type === ActivityType.feeding) {
       const amount = amountOf(activity.feedingAmount);
-      const current = feedsByDay.get(key) ?? { count: 0, pourable: 0, measured: 0, volumes: [] };
+      const current = feedsByDay.get(key) ?? { count: 0, pourable: 0, volumes: [] };
       current.count += 1;
       // Bottle and formula: the feeds that are poured from a container, named positively because
       // FeedingKind also holds solids, and a puree at dinner is not a bottle. reports.ts asks the
       // same question the same way.
       if (activity.feedingMode === "bottle" || activity.feedingMode === "formula") {
         current.pourable += 1;
-        if (amount !== null) {
-          current.measured += 1;
-          current.volumes.push({ amount, unit: activity.feedingUnit ?? null });
-        }
+        if (amount !== null) current.volumes.push({ amount, unit: activity.feedingUnit ?? null });
       }
       feedsByDay.set(key, current);
       continue;
@@ -292,9 +295,11 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     weekKey: week.weekKey,
     days: week.dayKeys.flatMap((key): TrendDay[] => {
       const feeds = feedsByDay.get(key);
-      if (!feeds) return [];
-      const known = knownVolumeOunces(feeds);
-      return known === null ? [] : [{ key, entries: feeds.count, value: known }];
+      if (!feeds || feeds.pourable === 0) return [];
+      // A day whose bottles could not be totalled is still carried, with no figure. Dropping it
+      // here would leave the caption counting only the days that worked, which reads as full
+      // coverage of a week that was partly set aside.
+      return [{ key, entries: feeds.count, value: knownVolumeOunces(feeds) }];
     })
   }));
 

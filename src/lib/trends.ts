@@ -45,6 +45,11 @@ export type TrendPoint = {
   daysCounted: number;
   /** Days that had any entry at all, complete or not. */
   daysLogged: number;
+  /**
+   * Days this measure could not state a figure for, though they were logged. Reporting only the
+   * days that worked reads as full coverage of a week that was partly set aside.
+   */
+  daysUnknown: number;
 };
 
 /**
@@ -124,7 +129,11 @@ export function completeDays(days: TrendDay[]) {
 export function trendSeries(weeks: TrendWeek[], options?: { measuredShare?: number[] }): TrendPoint[] {
   return weeks.map((week, index) => {
     const logged = week.days.length;
-    const kept = completeDays(week.days).filter((day) => day.value !== null);
+    const complete = completeDays(week.days);
+    const kept = complete.filter((day) => day.value !== null);
+    // A day that was well enough logged to count, but whose figure could not be known: a bottle
+    // with no amount, or an amount in a unit this cannot read.
+    const unknown = complete.length - kept.length;
     const share = options?.measuredShare?.[index];
 
     const enough = kept.length >= ROUTINE_MIN_DAYS;
@@ -132,6 +141,6 @@ export function trendSeries(weeks: TrendWeek[], options?: { measuredShare?: numb
     const value =
       enough && measured ? kept.reduce((total, day) => total + (day.value ?? 0), 0) / kept.length : null;
 
-    return { weekKey: week.weekKey, value, daysCounted: kept.length, daysLogged: logged };
+    return { weekKey: week.weekKey, value, daysCounted: kept.length, daysLogged: logged, daysUnknown: unknown };
   });
 }

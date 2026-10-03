@@ -102,6 +102,9 @@ function TrendPanel({ measure, points }: { measure: Measure; points: TrendPoint[
   const top = high > 0 ? high * 1.15 : 1;
   const counted = points.reduce((total, point) => total + point.daysCounted, 0);
   const logged = points.reduce((total, point) => total + point.daysLogged, 0);
+  // Days that were logged but whose figure could not be known. Without this the caption reports
+  // only the days that worked, which reads as full coverage of a week partly set aside.
+  const unknown = points.reduce((total, point) => total + point.daysUnknown, 0);
 
   // A single week sits in the middle rather than hard against the left edge, matching the growth
   // chart: pinned left it reads as the truncated start of a series that is not there.
@@ -168,6 +171,7 @@ function TrendPanel({ measure, points }: { measure: Measure; points: TrendPoint[
       </svg>
       <p className="tabular text-xs text-muted-foreground">
         {measure.format(top === 1 && !high ? 0 : high)} highest · {counted} of {logged} days
+        {unknown > 0 ? ` · ${unknown} ${unknown === 1 ? "day" : "days"} had a bottle with no amount` : ""}
       </p>
       <ul data-trend-values="" className="sr-only">
         {points.map((point) => (

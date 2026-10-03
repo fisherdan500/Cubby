@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { TrendsTab } from "@/components/reports/trends-tab";
 import type { Trends } from "@/server/services/trends";
 
-function point(weekKey: string, value: number | null, daysCounted = 7, daysLogged = 7) {
-  return { weekKey, value, daysCounted, daysLogged };
+function point(weekKey: string, value: number | null, daysCounted = 7, daysLogged = 7, daysUnknown = 0) {
+  return { weekKey, value, daysCounted, daysLogged, daysUnknown };
 }
 
 function panel(points: ReturnType<typeof point>[]) {
@@ -138,5 +138,22 @@ describe("TrendsTab", () => {
     );
 
     expect([...body.querySelectorAll("h3")].map((node) => node.textContent)).not.toContain("Total sleep per day");
+  });
+  it("says how many days had a bottle with no amount, rather than implying full coverage", () => {
+    // "4 of 4 days" on a week logged across seven reads as complete. The days set aside have to be
+    // visible, or the household trusts a figure built on less than it logged.
+    const body = render(
+      trends({
+        volume: panel([point("2026-06-01", 16, 4, 4, 3), point("2026-06-08", 18, 5, 5, 2)])
+      })
+    );
+
+    expect(body.textContent).toContain("5 days had a bottle with no amount");
+  });
+
+  it("says nothing about set-aside days when every bottle was written down", () => {
+    const body = render(trends({ volume: panel([point("2026-06-01", 16, 7, 7, 0)]) }));
+
+    expect(body.textContent).not.toContain("had a bottle with no amount");
   });
 });
