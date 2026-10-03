@@ -332,9 +332,10 @@ describe("trends", () => {
     expect(week.value).toBeCloseTo(36, 1);
   });
 
-  it("keeps a day's measured bottles when one entry carries a unit it cannot read", () => {
-    // An unreadable unit is one entry's problem. Discarding the whole day for it threw away six
-    // perfectly good bottles and quietly shortened the week.
+  it("will not report a day holding an amount it cannot read", () => {
+    // A tablespoon is not a unit this converts, so that bottle's volume is simply unknown. The day
+    // cannot be totalled honestly and is left out, rather than having the unknown bottle stand in
+    // at the average of the others - which reported 40oz for a day that may have held 37.
     const activities = [];
     for (let day = 1; day <= 7; day += 1) {
       const date = `2026-06-0${day}`;
@@ -344,8 +345,39 @@ describe("trends", () => {
 
     const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
 
-    expect(week.daysCounted).toBe(7);
-    expect(week.value).toBeCloseTo(40, 1);
+    expect(week.value).toBeNull();
+  });
+
+  it("reports the ounces that were actually recorded, never an estimate standing in for them", () => {
+    // The invariant every earlier version of this panel broke: a reported figure must be the sum of
+    // amounts that were really written down. Four rounds of defects all came from one unmeasured or
+    // unreadable feed being replaced by the average of its neighbours, which inflated a day of
+    // mostly-tablespoon bottles to three times its real volume.
+    const shapes: Array<{ label: string; day: Array<[number | null, string, string | null]> }> = [
+      { label: "one readable ounce among tablespoons", day: [[4, "bottle", "oz"], ...Array.from({ length: 9 }, () => [2, "bottle", "tbsp"] as [number, string, string]) ] },
+      { label: "one readable ounce among millilitre-likes", day: [[1, "bottle", "oz"], ...Array.from({ length: 9 }, () => [240, "bottle", "cc"] as [number, string, string]) ] },
+      { label: "a bottle nobody wrote an amount for", day: [[4, "bottle", "oz"], [4, "bottle", "oz"], [null, "bottle", null]] },
+      { label: "every bottle readable", day: [[4, "bottle", "oz"], [6, "bottle", "oz"], [118.294, "bottle", "mL"]] }
+    ];
+
+    for (const shape of shapes) {
+      const activities: ReturnType<typeof feed>[] = [];
+      for (let day = 1; day <= 7; day += 1) {
+        const date = `2026-06-0${day}`;
+        shape.day.forEach(([amount, mode, unit], index) => {
+          activities.push(feed(`${date}T${String(6 + index).padStart(2, "0")}:00`, amount, mode, unit));
+        });
+      }
+
+      const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+      if (week.value === null) continue;
+      // Every amount this can read, in ounces, across the days it counted.
+      const readablePerDay = shape.day
+        .filter(([amount, , unit]) => amount !== null && (unit === "oz" || unit === "mL"))
+        .reduce((sum, [amount, , unit]) => sum + (unit === "mL" ? (amount as number) / 29.5735295625 : (amount as number)), 0);
+      expect(week.value).toBeLessThanOrEqual(readablePerDay + 0.01);
+    }
   });
 
   it("weighs the measured share by the feeds that could have carried an amount", () => {
@@ -375,14 +407,51 @@ describe("trends", () => {
     }
 
     const points = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
-    const week = points.find((point) => point.weekKey === "2026-06-01");
     const withoutTimer = buildTrends(activities.slice(1), { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
-    const unaffected = withoutTimer.find((point) => point.weekKey === "2026-06-01");
 
-    // The forgotten timer must make no difference at all, and the week must read as the nights it
-    // actually holds rather than as a fortnight of continuous sleep.
-    expect(week?.value).toBe(unaffected?.value);
+    // The whole series, not one week: a timer wrongly counted on its start day alone would hide
+    // outside whichever week a single assertion happened to inspect.
+    expect(points.map((point) => point.value)).toEqual(withoutTimer.map((point) => point.value));
+    const week = points.find((point) => point.weekKey === "2026-06-01");
     expect((week?.value ?? 0) / 3600).toBeLessThan(13);
+  });
+
+  it("still ignores it when the timer was left with no state and only a length", () => {
+    // The same forgotten sleep, reached through durationSeconds instead of a running timer: an
+    // unfinished row with a fortnight's length filed itself against every day in between.
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const activities: ReturnType<typeof sleep>[] = [
+      { ...sleep("2026-04-01T20:00", null), timerState: "none", durationSeconds: 70 * 24 * 60 * 60 }
+    ];
+    for (let day = 1; day <= 7; day += 1) {
+      activities.push(sleep(`2026-06-${pad(day)}T19:00`, `2026-06-${pad(day + 1)}T07:00`));
+    }
+
+    const points = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
+    const withoutIt = buildTrends(activities.slice(1), { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
+
+    expect(points.map((point) => point.value)).toEqual(withoutIt.map((point) => point.value));
+  });
+
+  it("keeps a sleep that is genuinely still running tonight", () => {
+    // The limit must not throw away real sleep in progress: a timer started last evening is an
+    // ordinary night, not a forgotten one. Logged on a day with no other sleep, so that merging
+    // overlapping intervals cannot hide whether it was counted.
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const activities: ReturnType<typeof sleep>[] = [];
+    for (let day = 1; day <= 9; day += 1) {
+      activities.push(sleep(`2026-06-${pad(day)}T19:00`, `2026-06-${pad(day + 1)}T07:00`));
+    }
+    const running = sleep("2026-06-10T20:00", null, { timerState: "running" });
+    const now = at("2026-06-11T10:00").getTime();
+
+    const withRunning = buildTrends([...activities, running], { timeZone, now }).sleep.points;
+    const without = buildTrends(activities, { timeZone, now }).sleep.points;
+
+    expect(withRunning.map((point) => point.value)).not.toEqual(without.map((point) => point.value));
+    const week = withRunning.find((point) => point.weekKey === "2026-06-08");
+    const sameWeek = without.find((point) => point.weekKey === "2026-06-08");
+    expect(week?.value ?? 0).toBeGreaterThan(sameWeek?.value ?? 0);
   });
 
   it("skips an entry whose timestamp cannot be read rather than failing the whole page", () => {
@@ -392,5 +461,38 @@ describe("trends", () => {
     ];
 
     expect(() => buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() })).not.toThrow();
+  });
+
+  it("survives a sleep whose end or length cannot be read", () => {
+    const cases = [
+      { ...sleep("2026-06-01T19:00", "2026-06-02T07:00"), endedAt: new Date("not a date") },
+      { ...sleep("2026-06-01T19:00", null), timerState: "none", durationSeconds: Number.NaN },
+      { ...sleep("2026-06-01T19:00", null), timerState: "none", durationSeconds: 1e18 }
+    ];
+
+    for (const broken of cases) {
+      expect(() => buildTrends([broken], { timeZone, now: at("2026-06-10T12:00").getTime() })).not.toThrow();
+    }
+  });
+  it("draws the line at two days, so a long night counts and a forgotten day does not", () => {
+    // Pins the boundary itself. Without this, the limit could be widened to a month and every test
+    // would still pass, because the forgotten-timer cases use spans far beyond any plausible limit.
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const nights: ReturnType<typeof sleep>[] = [];
+    for (let day = 1; day <= 9; day += 1) {
+      nights.push(sleep(`2026-06-${pad(day)}T19:00`, `2026-06-${pad(day + 1)}T07:00`));
+    }
+    const now = at("2026-06-12T12:00").getTime();
+    const baseline = buildTrends(nights, { timeZone, now }).sleep.points.map((point) => point.value);
+
+    // 47 hours: inside the limit, so it must still be counted.
+    const justInside = buildTrends([...nights, sleep("2026-06-10T13:00", null, { timerState: "running" })], { timeZone, now })
+      .sleep.points.map((point) => point.value);
+    // 49 hours: past the limit, so it must be left out entirely.
+    const justOutside = buildTrends([...nights, sleep("2026-06-10T11:00", null, { timerState: "running" })], { timeZone, now })
+      .sleep.points.map((point) => point.value);
+
+    expect(justInside).not.toEqual(baseline);
+    expect(justOutside).toEqual(baseline);
   });
 });

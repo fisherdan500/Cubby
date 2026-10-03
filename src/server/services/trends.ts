@@ -72,6 +72,46 @@ function panel(points: TrendPoint[]): TrendPanel {
 // real nap or night while still allowing the longest genuine overnight a timer legitimately spans.
 const UNFINISHED_TIMER_LIMIT_MS = 2 * 24 * 60 * 60 * 1000;
 
+// The sleep fields of an activity, in the shape the dashboard's own sleep helpers expect.
+function asSleepRecord(activity: TrendActivity): DaySleepRecord {
+  return {
+    occurredAt: activity.occurredAt,
+    startedAt: activity.startedAt,
+    endedAt: activity.endedAt,
+    durationSeconds: activity.durationSeconds,
+    timerState: activity.timerState,
+    pausedAt: activity.pausedAt,
+    pausedSeconds: activity.pausedSeconds,
+    pauseTrackingStartedAt: activity.pauseTrackingStartedAt,
+    pauseTrackingBaselineSeconds: activity.pauseTrackingBaselineSeconds,
+    pauseIntervals: activity.pauseIntervals
+  };
+}
+
+type DayFeeds = { count: number; pourable: number; measured: number; volumes: Array<{ amount: number; unit?: string | null }> };
+
+// Every amount on the day this can convert to ounces. The one place that decides what "known" means.
+function readableOunces(feeds: DayFeeds) {
+  return feeds.volumes
+    .map((entry) => convertVolume(entry.amount, entry.unit, "oz"))
+    .filter((ounces): ounces is number => ounces !== null);
+}
+
+// A day's intake in ounces, or null when it cannot be stated honestly.
+//
+// Four rounds of defects in this panel all had one shape: a feed whose volume was not known got
+// replaced by the average of the feeds that were, and the chart reported an intake nobody recorded.
+// A day of one 4oz bottle beside nine in tablespoons read as 40oz when it may have held 13. So the
+// rule here is flat: every poured feed must carry an amount this can read, or the day is not
+// reported. An estimate is indistinguishable from a measurement once it is drawn as a line, and the
+// household reads this chart to decide whether a baby is feeding enough.
+function knownVolumeOunces(feeds: DayFeeds) {
+  if (feeds.pourable === 0) return null;
+  const readable = readableOunces(feeds);
+  if (readable.length !== feeds.pourable) return null;
+  return readable.reduce((total, ounces) => total + ounces, 0);
+}
+
 export function buildTrends(activities: TrendActivity[], options: { timeZone: string; now: number }): Trends {
   const { timeZone, now } = options;
   // Naming the day an instant falls on means formatting it in the household's zone, which is the
@@ -113,6 +153,14 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     // One unreadable timestamp is one row's problem. Letting it reach the zone formatter threw
     // RangeError out of the whole page, so a single bad row took the Reports tab down with it.
     if (!Number.isFinite(activity.occurredAt?.getTime?.() ?? Number.NaN)) continue;
+    // Leave a forgotten timer out before anything else sees it, including the day it was filed
+    // under: an excluded sleep must not stretch the chart either. One timer left running since
+    // April opened the window in April and drew nine empty weeks ahead of the real data.
+    if (activity.type === ActivityType.sleep && activity.endedAt === null) {
+      const span = sleepInterval(asSleepRecord(activity), now);
+      if (!span || !Number.isFinite(span.end - span.start)) continue;
+      if (span.end - span.start > UNFINISHED_TIMER_LIMIT_MS) continue;
+    }
     const key = keyOf(activity.occurredAt);
     dayKeys.add(key);
 
@@ -196,13 +244,6 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
   const overlapping = new Map<string, DaySleepRecord[]>();
   for (const [, records] of sleepsByDay) {
     for (const record of records) {
-      // A timer nobody stopped is an unfinished log, not a baby who slept for a fortnight. The
-      // dashboard shows it as still running on the day it began; a weekly average cannot, because
-      // spreading it over every day since drew a flat 24h line across weeks of ordinary nights.
-      if (record.endedAt === null && (record.timerState === "running" || record.timerState === "paused")) {
-        const span = sleepInterval(record, now);
-        if (span && span.end - span.start > UNFINISHED_TIMER_LIMIT_MS) continue;
-      }
       const span = sleepInterval(record, now);
       if (!span) continue;
       const firstKey = keyOf(new Date(span.start));
@@ -251,33 +292,26 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     weekKey: week.weekKey,
     days: week.dayKeys.flatMap((key): TrendDay[] => {
       const feeds = feedsByDay.get(key);
-      if (!feeds || feeds.measured === 0) return [];
-      // Amounts are converted before they are added: the entry form lets each feed carry its own
-      // unit, and summing millilitres onto ounces drew a thirty-fold cliff on a chart about change.
-      // An amount in a unit this cannot read is dropped on its own; discarding the whole day for it
-      // threw away every good bottle alongside it and quietly shortened the week.
-      const readable = feeds.volumes.filter((entry) => convertVolume(entry.amount, entry.unit, "oz") !== null);
-      if (!readable.length) return [];
-      const total = sumVolume(readable, "oz").amount;
-      if (total === null) return [];
-      return [{ key, entries: feeds.count, value: (total / readable.length) * feeds.pourable }];
+      if (!feeds) return [];
+      const known = knownVolumeOunces(feeds);
+      return known === null ? [] : [{ key, entries: feeds.count, value: known }];
     })
   }));
 
-  // What share of the week's POURED feeds carried an amount. A week where most bottles went
-  // unrecorded cannot be averaged honestly, so it is left blank rather than guessed at. Breastfeeds
-  // are not in this denominator: they never carry an amount, and counting them blanked a
-  // well-measured bottle week for the sin of also breastfeeding.
+  // What share of the week's POURED feeds this can actually total. A week where bottles went
+  // unrecorded, or were recorded in something this cannot convert, cannot be averaged honestly and
+  // is left blank rather than guessed at. Breastfeeds are not in this denominator: they never carry
+  // an amount, and counting them blanked a well-measured bottle week for also breastfeeding.
   const measuredShare = weeks.map((week) => {
-    let count = 0;
-    let measured = 0;
+    let pourable = 0;
+    let known = 0;
     for (const key of week.dayKeys) {
       const feeds = feedsByDay.get(key);
       if (!feeds) continue;
-      count += feeds.pourable;
-      measured += feeds.measured;
+      pourable += feeds.pourable;
+      known += readableOunces(feeds).length;
     }
-    return count === 0 ? 0 : measured / count;
+    return pourable === 0 ? 0 : known / pourable;
   });
 
   const diaperWeeks = weeks.map((week) => ({

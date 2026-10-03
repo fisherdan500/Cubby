@@ -28,7 +28,7 @@ const measures: Measure[] = [
   {
     key: "volume",
     title: "Bottle and formula per day",
-    note: "Only weeks where nearly every feed was measured. Breastfeeds carry no amount, so weeks with many of them are left out.",
+    note: "Only days where every bottle and formula feed had its amount written down, in ounces or millilitres. Breastfeeds carry no amount, so weeks of mostly breastfeeding are left out.",
     format: (value) => `${value.toFixed(1)} oz`
   },
   { key: "diapers", title: "Diapers per day", format: (value) => value.toFixed(1) }
