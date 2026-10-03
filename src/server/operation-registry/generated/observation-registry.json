@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 120,
-    "client_binding": 47,
+    "api_route": 121,
+    "client_binding": 48,
     "instrumentation": 1,
     "package_command": 40,
     "server_action": 1,
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "2d2bbc733286381bf62e1a5470ad17c61b5bb599701865d916031cf98be4065b",
+  "declarationDigest": "758b0338bf7debd84aa952bae9022fbe4c21050106592d765f51080af992128a",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4710,6 +4710,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "PATCH",
+            "target": "src/app/api/members/me/name/route.ts#PATCH"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/members/me/name/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/members/me/name/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/members/me/name/route.ts",
+      "sidecarPath": "src/app/api/members/me/name/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "PUT",
             "target": "src/app/api/members/me/photo/route.ts#PUT"
           }
@@ -7627,6 +7657,36 @@
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/members/profile-name-control.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/members/profile-name-control.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/members/profile-name-control.tsx",
+      "sidecarPath": "src/components/members/profile-name-control.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
           },
           {
             "kind": "global_fetch",
@@ -9069,7 +9129,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "0d42a9d990cf6e68fae3fae3e4791f34d964f1e153030dea3a6c5035ea009f30",
+  "generatorDigest": "b596ef1b31016625831dff649c92e6a32dc893ad07c0666d99def03b357f7334",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11044,6 +11104,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "27babe53e4a2699b4eef02a9b5b8109c71182416d57b9be041c35a21e0becaa6",
+          "anchorEnd": 700,
+          "anchorFile": "src/app/api/members/me/name/route.ts",
+          "anchorStart": 396,
+          "kind": "route_method",
+          "symbol": "PATCH",
+          "target": "src/app/api/members/me/name/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/members/me/name/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/me/name/route.ts",
+      "sidecarPath": "src/app/api/members/me/name/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "930cc5def3de431ed4b0b5bf284bdf958c8bd9ef27d18b5ede5900809fad5d60",
           "anchorEnd": 1010,
           "anchorFile": "src/app/api/members/me/photo/route.ts",
@@ -11591,18 +11670,18 @@
       "bindings": [
         {
           "anchorDigest": "0f45d7c6b9a825d98662dc14f0b48f59b5dbfe45f8d018fe6f0165428c5dff86",
-          "anchorEnd": 326,
+          "anchorEnd": 406,
           "anchorFile": "src/app/account/profile/page.tsx",
-          "anchorStart": 308,
+          "anchorStart": 388,
           "kind": "server_value_import",
           "symbol": "getOwnProfilePhoto",
           "target": "src/server/services/profile-photo.ts#getOwnProfilePhoto"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 266,
+          "anchorEnd": 346,
           "anchorFile": "src/app/account/profile/page.tsx",
-          "anchorStart": 251,
+          "anchorStart": 331,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -13632,6 +13711,25 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/invitations/manual-invitation-manager.tsx",
       "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorDigest": "841d8952051869bdc20bba7f859c90f4dc784cd82ebd136dadee60fc8a908cfb",
+          "anchorEnd": 614,
+          "anchorFile": "src/components/members/profile-name-control.tsx",
+          "anchorStart": 461,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/members/profile-name-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/members/profile-name-control.tsx",
+      "sidecarPath": "src/components/members/profile-name-control.operation.ts"
     },
     {
       "bindings": [
@@ -16257,8 +16355,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 248,
-  "observationDigest": "c812c3dbc7f54e26c21100f5817159f378719ae045dcc6facd5fc15de50796dc",
+  "observationCount": 250,
+  "observationDigest": "87f8d0affc0b16916a6ca2d7e5dc5bbcfa011b116aef9d391042c7799e0f1cc6",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18137,6 +18235,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 700,
+          "anchorFile": "src/app/api/members/me/name/route.ts",
+          "anchorStart": 396,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/members/me/name/route.ts",
+          "symbol": "PATCH",
+          "target": "src/app/api/members/me/name/route.ts#PATCH"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/members/me/name/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/me/name/route.ts",
+      "sidecarPath": "src/app/api/members/me/name/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 1010,
           "anchorFile": "src/app/api/members/me/photo/route.ts",
           "anchorStart": 518,
@@ -18659,18 +18775,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 326,
+          "anchorEnd": 406,
           "anchorFile": "src/app/account/profile/page.tsx",
-          "anchorStart": 308,
+          "anchorStart": 388,
           "kind": "server_value_import",
           "ownerModule": "src/app/account/profile/page.tsx",
           "symbol": "getOwnProfilePhoto",
           "target": "src/server/services/profile-photo.ts#getOwnProfilePhoto"
         },
         {
-          "anchorEnd": 266,
+          "anchorEnd": 346,
           "anchorFile": "src/app/account/profile/page.tsx",
-          "anchorStart": 251,
+          "anchorStart": 331,
           "kind": "server_value_import",
           "ownerModule": "src/app/account/profile/page.tsx",
           "symbol": "requireUserPage",
@@ -20644,6 +20760,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/invitations/manual-invitation-manager.tsx",
       "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 614,
+          "anchorFile": "src/components/members/profile-name-control.tsx",
+          "anchorStart": 461,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/members/profile-name-control.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/members/profile-name-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/members/profile-name-control.tsx",
+      "sidecarPath": "src/components/members/profile-name-control.operation.ts"
     },
     {
       "bindings": [
@@ -23588,6 +23722,12 @@
       "sidecarPath": "src/app/api/members/assisted-account/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/members/me/name/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/members/me/name/route.ts",
+      "sidecarPath": "src/app/api/members/me/name/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/members/me/photo/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/members/me/photo/route.ts",
@@ -24074,6 +24214,12 @@
       "sidecarPath": "src/components/invitations/manual-invitation-manager.operation.ts"
     },
     {
+      "id": "client_binding:src/components/members/profile-name-control.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/members/profile-name-control.tsx",
+      "sidecarPath": "src/components/members/profile-name-control.operation.ts"
+    },
+    {
       "id": "client_binding:src/components/members/profile-photo-control.tsx",
       "ownerKind": "client_binding",
       "ownerModule": "src/components/members/profile-photo-control.tsx",
@@ -24494,9 +24640,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "793f4b58a011851f43f942de98da96b8aa7dac82312157502d3e96d004bdc8d3",
+  "ownerSetDigest": "9b389990016482f64bf3d7db6cdd80bb04f93fa1eef8d74e5114806f2f1b87c7",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "c63ec888de64e50cc70482567d75122347d832730a08793e3b3a6d2197450134",
+  "registryDigest": "4dbd20271b2300694840d24b1f0d4605b94dcc04496d46ec75292f17feccd3b6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

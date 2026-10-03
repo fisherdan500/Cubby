@@ -121,10 +121,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "485e879359883dee394b80943ac1216a46525ba6498cd4e43bae4c19802e1f03",
+  "semanticArtifactDigest": "55660ba71024e4b818de0a67f75df8f4e6b2d0b9a837b8c0da33e653d53bd74d",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "4219010058e7af3ed5f658cda49797dcad8926ad30de7b2f8f7cdad6291f82d9",
+  "semanticCoverageDigest": "d898623ef9875bda41430caa55725430ca4a0f7ce4e65923f9a9df145ea2d235",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "e31c34c392373a8767fe71112059e635426874c9dc4fd4e57e7999176870f432"
+  "semanticFingerprint": "0d894e2fbbe50fc9eecdbc3b034ee88aa58a0528aa282bf375b05f1e8f0f0de5"
 }
