@@ -25,7 +25,7 @@ const sections = [
 const accountSections = [
   { href: "/account/security", label: "Account security", description: "Change your password or email, set up recovery codes, and see your security history.", icon: LockKeyhole },
   { href: "/account/appearance", label: "Personal appearance", description: "Your own light, dark or system theme, kept across your devices.", icon: SunMoon },
-  { href: "/account/profile", label: "Your picture", description: "The picture shown beside the moments you post.", icon: UserRound }
+  { href: "/account/profile", label: "Your name and picture", description: "How you are named and the picture shown beside the moments you post.", icon: UserRound }
 ] satisfies Array<{ href: string; label: string; description: string; icon: typeof Shield }>;
 
 export default async function SettingsPage({ searchParams }: { searchParams: { denied?: string } }) {
