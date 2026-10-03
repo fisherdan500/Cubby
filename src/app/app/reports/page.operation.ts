@@ -23,8 +23,18 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "getTrends",
+      target: "src/server/services/trends-report.ts#getTrends"
+    },
+    {
+      kind: "server_value_import",
       symbol: "requireUserPage",
       target: "src/server/auth/session.ts#requireUserPage"
+    },
+    {
+      kind: "server_value_import",
+      symbol: "resolveTrendWindow",
+      target: "src/server/services/trends-report.ts#resolveTrendWindow"
     }
   ],
   disposition: "observed",
