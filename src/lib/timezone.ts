@@ -1,14 +1,57 @@
 export const DEFAULT_APP_TIMEZONE = "America/New_York";
 
+/**
+ * Naming a day in a zone means asking Intl, and the expensive part is BUILDING the formatter rather
+ * than using it - about thirteen times the cost. Reports asks once per entry and the calendar twice
+ * per visible day, so a six-month report spent most of its time rebuilding the same few formatters.
+ *
+ * Both caches below are keyed by zone (and shape), never by date, so nothing grows with how much
+ * history is being read. They stay small because every caller passes the one zone the installation
+ * is configured with, or a baby's stored zone, which is written from that same setting - NOT a zone
+ * taken from a request. A caller that ever forwards a user-supplied zone would be widening the key
+ * space, and should bound it. A zone's rules cannot change while the process runs, so a kept
+ * formatter cannot go stale.
+ */
+const resolvedZones = new Map<string, Map<string, string>>();
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormatter(timeZone: string, withTime: boolean) {
+  const key = withTime ? `t:${timeZone}` : `d:${timeZone}`;
+  const cached = dateFormatters.get(key);
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat("en-US", withTime
+    ? {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+      }
+    : { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
+  dateFormatters.set(key, formatter);
+  return formatter;
+}
+
 export function normalizeTimeZone(timeZone: string | null | undefined, fallback = DEFAULT_APP_TIMEZONE) {
   const candidate = timeZone?.trim() || fallback;
+  // Nested rather than a joined string, because the same candidate resolves differently under a
+  // different fallback and no single separator is guaranteed absent from a caller's zone name.
+  let byFallback = resolvedZones.get(candidate);
+  if (!byFallback) resolvedZones.set(candidate, (byFallback = new Map()));
+  const cached = byFallback.get(fallback);
+  if (cached !== undefined) return cached;
+  let resolved: string;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: candidate }).format(new Date());
-    return candidate;
+    resolved = candidate;
   } catch {
-    if (candidate !== fallback) return normalizeTimeZone(fallback, "UTC");
-    return "UTC";
+    resolved = candidate !== fallback ? normalizeTimeZone(fallback, "UTC") : "UTC";
   }
+  byFallback.set(fallback, resolved);
+  return resolved;
 }
 
 /** True when the runtime recognises `timeZone` as an IANA zone (e.g. "America/New_York"). */
@@ -95,6 +138,10 @@ export function zonedDateTimeToDate(value: string, timeZone: string) {
   let utc = desired;
   const safeTimeZone = normalizeTimeZone(timeZone);
 
+  // A wall time that does not exist - the hour the clocks spring forward - has no answer to settle
+  // on, and the correction below alternates between two instants rather than converging. An EVEN
+  // number of passes is what makes that alternation land on the later one consistently, so this is
+  // not a count that can be trimmed: three passes disagrees with four on hundreds of real days.
   for (let index = 0; index < 4; index += 1) {
     const parts = dateTimePartsInTimeZone(new Date(utc), safeTimeZone);
     const actual = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
@@ -105,36 +152,26 @@ export function zonedDateTimeToDate(value: string, timeZone: string) {
 }
 
 export function dateTimePartsInTimeZone(date: Date, timeZone: string) {
-  const values = new Intl.DateTimeFormat("en-US", {
-    timeZone: normalizeTimeZone(timeZone),
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23"
-  }).formatToParts(date);
+  // One formatter rather than two: this used to build a second one for the date half and throw away
+  // the parts it had already been given.
+  const values = dateFormatter(normalizeTimeZone(timeZone), true).formatToParts(date);
   return {
-    ...datePartsInTimeZone(date, timeZone),
-    hour: Number(values.find((part) => part.type === "hour")?.value),
-    minute: Number(values.find((part) => part.type === "minute")?.value),
-    second: Number(values.find((part) => part.type === "second")?.value)
+    year: part(values, "year"),
+    month: part(values, "month"),
+    day: part(values, "day"),
+    hour: part(values, "hour"),
+    minute: part(values, "minute"),
+    second: part(values, "second")
   };
 }
 
 function datePartsInTimeZone(date: Date, timeZone: string) {
-  const values = new Intl.DateTimeFormat("en-US", {
-    timeZone: normalizeTimeZone(timeZone),
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-  return {
-    year: Number(values.find((part) => part.type === "year")?.value),
-    month: Number(values.find((part) => part.type === "month")?.value),
-    day: Number(values.find((part) => part.type === "day")?.value)
-  };
+  const values = dateFormatter(normalizeTimeZone(timeZone), false).formatToParts(date);
+  return { year: part(values, "year"), month: part(values, "month"), day: part(values, "day") };
+}
+
+function part(values: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) {
+  return Number(values.find((value) => value.type === type)?.value);
 }
 
 function pad2(value: number) {
