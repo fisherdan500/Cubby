@@ -33,14 +33,13 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
 
   const timeZone = env.APP_TIMEZONE;
   const todayKey = dateKeyInTimeZone(new Date(), timeZone);
-  // "All" still has a floor: five years is beyond any household's history here, and an unbounded
-  // query is how a reports page becomes the slowest screen in the app.
-  const days = window === "all" ? 5 * 365 : windowDays[window];
+  // "All" still has a floor. Two years rather than five: a weekly chart of a hundred-odd points is
+  // already more than can be read at once, and the work of placing every entry in the household's
+  // own zone is what makes this page slow. Five years of a busy household took six seconds of server
+  // time to lay out, for a chart nobody could take in.
+  const days = window === "all" ? 2 * 365 : windowDays[window];
   const startKey = addDaysToDateKey(todayKey, -(days - 1));
-  // A sleep that began before the window can still fill part of its first morning. Two days of
-  // lookback rather than one: a single day misses an entry that spans more than twenty-four hours,
-  // which is a mistake somebody can make with a timer left running.
-  const from = zonedDateStart(addDaysToDateKey(startKey, -2), timeZone);
+  const from = zonedDateStart(startKey, timeZone);
   const to = zonedDateStart(addDaysToDateKey(todayKey, 1), timeZone);
 
   const activities = await prisma.activityLog.findMany({
@@ -48,8 +47,18 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
       householdId: ctx.householdId,
       babyId,
       deletedAt: null,
-      type: { in: [ActivityType.sleep, ActivityType.feeding, ActivityType.diaper] },
-      occurredAt: { gte: from, lt: to }
+      OR: [
+        // Feeds and changes happen at an instant, so they belong to the window by when they happened.
+        { type: { in: [ActivityType.feeding, ActivityType.diaper] }, occurredAt: { gte: from, lt: to } },
+        // A sleep belongs to the window if it OVERLAPS it, however long before it began. The same
+        // rule the dashboard uses: any fixed lookback is arbitrary, and a timer left running for
+        // days would silently lose whatever fell outside it.
+        {
+          type: ActivityType.sleep,
+          occurredAt: { lt: to },
+          OR: [{ endedAt: { gt: from } }, { endedAt: null }]
+        }
+      ]
     },
     select: {
       type: true,
@@ -63,7 +72,7 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
       pauseTrackingStartedAt: true,
       pauseTrackingBaselineSeconds: true,
       pauseIntervals: { select: { startedAt: true, endedAt: true } },
-      feeding: { select: { amount: true, mode: true } }
+      feeding: { select: { amount: true, mode: true, unit: true } }
     },
     orderBy: { occurredAt: "asc" }
   });
@@ -82,7 +91,8 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
       pauseTrackingBaselineSeconds: activity.pauseTrackingBaselineSeconds,
       pauseIntervals: activity.pauseIntervals,
       feedingAmount: activity.feeding?.amount ?? null,
-      feedingMode: activity.feeding?.mode ?? null
+      feedingMode: activity.feeding?.mode ?? null,
+      feedingUnit: activity.feeding?.unit ?? null
     })),
     { timeZone, now: Date.now() }
   );

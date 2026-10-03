@@ -8,7 +8,12 @@ function at(localDateTime: string) {
   return new Date(`${localDateTime}:00.000-04:00`);
 }
 
-function feed(localDateTime: string, amount: number | null = null) {
+function feed(
+  localDateTime: string,
+  amount: number | null = null,
+  mode = amount === null ? "breast" : "bottle",
+  unit: string | null = amount === null ? null : "oz"
+) {
   return {
     type: "feeding" as const,
     occurredAt: at(localDateTime),
@@ -18,7 +23,8 @@ function feed(localDateTime: string, amount: number | null = null) {
     timerState: "none",
     pausedAt: null,
     feedingAmount: amount,
-    feedingMode: amount === null ? "breast" : "bottle"
+    feedingMode: mode,
+    feedingUnit: unit
   };
 }
 
@@ -123,13 +129,16 @@ describe("trends", () => {
         sleep("2026-06-03T19:00", "2026-06-04T07:00")
       ];
 
-      const points = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
-      const first = points.find((point) => point.weekKey === "2026-06-01");
+      // Only 1 June and 2 June, so the week is exactly the two full days and nothing else dilutes
+      // them. Review proved a week-level lower bound passed even with the night before ignored, so
+      // this pins the value exactly: both days hold 7h of the night before plus 5h of their own.
+      const twoDays = [activities[0], activities[1], activities[2]];
+      const trends = buildTrends(twoDays, { timeZone, now: at("2026-06-10T12:00").getTime() });
+      const week = trends.sleep.points.find((point) => point.weekKey === "2026-06-01");
 
-      // 1 June holds 7h of the night before plus 5h of its own evening: a full twelve hours. With
-      // the night before ignored it would read 5h, and the week would open on a false low.
-      expect(first).toBeDefined();
-      expect((first?.value as number) * (first?.daysCounted ?? 0)).toBeGreaterThanOrEqual(12 * 3600);
+      // 06-01: 7h + 5h. 06-02: 7h + 5h. 06-03: 7h tail only. Mean of 12, 12, 7.
+      expect(week?.daysCounted).toBe(3);
+      expect(week?.value).toBeCloseTo(((12 + 12 + 7) / 3) * 3600, 0);
     });
 
     it("counts every day a long sleep covers, not just the two it starts and ends beside", () => {
@@ -157,16 +166,20 @@ describe("trends", () => {
   });
 
   describe("volume", () => {
-    it("stays blank while most feeds are breastfeeds, which carry no volume", () => {
+    it("stays blank when most of the bottles themselves went unmeasured", () => {
+      // Breastfeeds no longer dilute this panel - they are not bottles - so what the guard still
+      // protects against is a week of bottles somebody poured without recording the amount.
       const activities = [];
       for (let day = 1; day <= 5; day += 1) {
-        for (let n = 0; n < 10; n += 1) activities.push(feed(`2026-06-0${day}T${String(6 + n).padStart(2, "0")}:00`));
-        activities.push(feed(`2026-06-0${day}T20:00`, 4));
+        for (let n = 0; n < 10; n += 1) {
+          activities.push(feed(`2026-06-0${day}T${String(6 + n).padStart(2, "0")}:00`, null, "bottle", null));
+        }
+        activities.push(feed(`2026-06-0${day}T20:00`, 4, "bottle"));
       }
 
       const [week] = buildTrends(activities, { timeZone, now: at("2026-06-08T12:00").getTime() }).volume.points;
 
-      // One measured feed in eleven: reporting 4oz a day would read as near-starvation.
+      // One bottle measured in eleven: reporting 4oz a day would read as near-starvation.
       expect(week.value).toBeNull();
     });
 
@@ -179,7 +192,12 @@ describe("trends", () => {
         const date = String(dayOfMonth).padStart(2, "0");
         for (let n = 0; n < 10; n += 1) {
           const unmeasured = dayOfMonth === 1 && n < 7;
-          activities.push(feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, unmeasured ? null : 4));
+          // Unmeasured BOTTLES: poured but not recorded, so they belong in the panel's denominator.
+          activities.push(
+            unmeasured
+              ? feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, null, "bottle", null)
+              : feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, 4, "bottle")
+          );
         }
       }
 
@@ -187,6 +205,47 @@ describe("trends", () => {
 
       // Every measured feed is 4oz, so the honest figure is 40oz a day however many went unrecorded.
       expect(week.value).toBeCloseTo(40, 1);
+    });
+
+    it("counts only the feeds this panel is about, not breastfeeds alongside them", () => {
+      // Review: extrapolating measured ounces across EVERY feed read a breastfeed as though it were
+      // another bottle, over-reporting intake by more than the under-report it replaced. A breastfeed
+      // contributes no bottle volume at all; the app records which feeds are which, so use it.
+      const activities = [];
+      for (let dayOfMonth = 1; dayOfMonth <= 7; dayOfMonth += 1) {
+        const date = String(dayOfMonth).padStart(2, "0");
+        for (let n = 0; n < 9; n += 1) {
+          activities.push(feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, 4, "bottle"));
+        }
+        activities.push(feed(`2026-06-${date}T20:00`, null, "breast"));
+      }
+
+      const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+      expect(week.value).toBeCloseTo(36, 1);
+    });
+
+    it("reads a week logged in millilitres as the same intake as one logged in ounces", () => {
+      // Review: amounts were summed raw while the panel formatted them as ounces, so switching the
+      // entry unit for a week drew a thirty-fold cliff on a chart that exists to show change.
+      const activities = [];
+      for (let dayOfMonth = 1; dayOfMonth <= 7; dayOfMonth += 1) {
+        const date = String(dayOfMonth).padStart(2, "0");
+        for (let n = 0; n < 8; n += 1) {
+          activities.push(feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+        }
+      }
+      for (let dayOfMonth = 8; dayOfMonth <= 14; dayOfMonth += 1) {
+        const date = String(dayOfMonth).padStart(2, "0");
+        for (let n = 0; n < 8; n += 1) {
+          activities.push(feed(`2026-06-${date}T${String(6 + n).padStart(2, "0")}:00`, 118.294, "bottle", "mL"));
+        }
+      }
+
+      const points = buildTrends(activities, { timeZone, now: at("2026-06-20T12:00").getTime() }).volume.points;
+
+      expect(points[0].value).toBeCloseTo(32, 0);
+      expect(points[1].value).toBeCloseTo(32, 0);
     });
 
     it("leaves today out, so a day still in progress is not drawn as a drop", () => {
