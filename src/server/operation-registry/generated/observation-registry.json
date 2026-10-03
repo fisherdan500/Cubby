@@ -9,7 +9,7 @@
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "5324b383ac6ac52afb9edb5ecd7e591cdc00637b6f2a36d9a69af0fbd6d73d02",
+  "declarationDigest": "2d2bbc733286381bf62e1a5470ad17c61b5bb599701865d916031cf98be4065b",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -5980,8 +5980,18 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "getTrends",
+            "target": "src/server/services/trends-report.ts#getTrends"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "requireUserPage",
             "target": "src/server/auth/session.ts#requireUserPage"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "resolveTrendWindow",
+            "target": "src/server/services/trends-report.ts#resolveTrendWindow"
           }
         ],
         "deferredGateIds": [
@@ -12179,39 +12189,57 @@
       "bindings": [
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 713,
+          "anchorEnd": 786,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 692,
+          "anchorStart": 765,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "b1f5d69b1bdda67ed827a0cb9e64ce027893b4a6484c0ed60d2f4be9799646d2",
-          "anchorEnd": 783,
+          "anchorEnd": 856,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 765,
+          "anchorStart": 838,
           "kind": "server_value_import",
           "symbol": "getPlannedSchedule",
           "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
         },
         {
           "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-          "anchorEnd": 848,
+          "anchorEnd": 921,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 838,
+          "anchorStart": 911,
           "kind": "server_value_import",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
         },
         {
-          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 650,
+          "anchorDigest": "6ba3ccd7f56634f5098fa64cd1c9dfdc2584e9e83ab4f0e75a69d0462eec07c2",
+          "anchorEnd": 976,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 635,
+          "anchorStart": 967,
+          "kind": "server_value_import",
+          "symbol": "getTrends",
+          "target": "src/server/services/trends-report.ts#getTrends"
+        },
+        {
+          "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+          "anchorEnd": 723,
+          "anchorFile": "src/app/app/reports/page.tsx",
+          "anchorStart": 708,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
+        },
+        {
+          "anchorDigest": "09d073b1b98a5b9257759c112c10f590d360dd5ac892ee3a3fd36c3190ca68a4",
+          "anchorEnd": 996,
+          "anchorFile": "src/app/app/reports/page.tsx",
+          "anchorStart": 978,
+          "kind": "server_value_import",
+          "symbol": "resolveTrendWindow",
+          "target": "src/server/services/trends-report.ts#resolveTrendWindow"
         }
       ],
       "disposition": "observed",
@@ -16230,7 +16258,7 @@
     }
   ],
   "observationCount": 248,
-  "observationDigest": "ed56643f5a12e6a218aab52eac36cd8fb187607786de08d9388cd47d0272667f",
+  "observationDigest": "c812c3dbc7f54e26c21100f5817159f378719ae045dcc6facd5fc15de50796dc",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -19216,40 +19244,58 @@
     {
       "bindings": [
         {
-          "anchorEnd": 713,
+          "anchorEnd": 786,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 692,
+          "anchorStart": 765,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 783,
+          "anchorEnd": 856,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 765,
+          "anchorStart": 838,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getPlannedSchedule",
           "target": "src/server/services/planned-schedule.ts#getPlannedSchedule"
         },
         {
-          "anchorEnd": 848,
+          "anchorEnd": 921,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 838,
+          "anchorStart": 911,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "getReports",
           "target": "src/server/services/reports.ts#getReports"
         },
         {
-          "anchorEnd": 650,
+          "anchorEnd": 976,
           "anchorFile": "src/app/app/reports/page.tsx",
-          "anchorStart": 635,
+          "anchorStart": 967,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/reports/page.tsx",
+          "symbol": "getTrends",
+          "target": "src/server/services/trends-report.ts#getTrends"
+        },
+        {
+          "anchorEnd": 723,
+          "anchorFile": "src/app/app/reports/page.tsx",
+          "anchorStart": 708,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/reports/page.tsx",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
+        },
+        {
+          "anchorEnd": 996,
+          "anchorFile": "src/app/app/reports/page.tsx",
+          "anchorStart": 978,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/reports/page.tsx",
+          "symbol": "resolveTrendWindow",
+          "target": "src/server/services/trends-report.ts#resolveTrendWindow"
         }
       ],
       "disposition": "observed",
@@ -24450,7 +24496,7 @@
   ],
   "ownerSetDigest": "793f4b58a011851f43f942de98da96b8aa7dac82312157502d3e96d004bdc8d3",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a46b92d2b41946c281f6e9cdba9e7ddbaabeb825fb09856910605ff322cd8f25",
+  "registryDigest": "c63ec888de64e50cc70482567d75122347d832730a08793e3b3a6d2197450134",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

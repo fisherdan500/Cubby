@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BarChart3, Clock3, LineChart, Trophy } from "lucide-react";
+import { BarChart3, Clock3, LineChart, TrendingUp, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { RoutineTab } from "@/components/reports/routine-tab";
+import { TrendsTab } from "@/components/reports/trends-tab";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { env } from "@/lib/env";
@@ -14,12 +15,14 @@ import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getPlannedSchedule } from "@/server/services/planned-schedule";
 import { getReports } from "@/server/services/reports";
+import { getTrends, resolveTrendWindow } from "@/server/services/trends-report";
 
 // Activity (how often each type was logged) and Heatmaps were retired: the first described the
 // logging more than the baby, and Routine now shows when things happen far more readably. An old
 // link to either opens Routine.
 const tabs = [
   ["routine", "Routine", Clock3],
+  ["trends", "Trends", TrendingUp],
   ["stats", "Stats", BarChart3],
   ["growth", "Growth", LineChart],
   ["milestones", "Milestones", Trophy]
@@ -31,6 +34,8 @@ const tabs = [
 // history, so none.
 const quickPeriods = [7, 14, 30] as const;
 const routinePeriods = [["1w", "7 days"], ["2w", "14 days"], ["1m", "30 days"]] as const;
+// Trends reads weekly, so its periods are months rather than the days Routine and Stats use.
+const trendPeriods = [["8w", "8 weeks"], ["6m", "6 months"], ["all", "All"]] as const;
 
 const periodChip = (current: boolean) =>
   `inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold ${
@@ -50,6 +55,7 @@ export default async function ReportsPage({
     routineEnd?: string;
     custom?: string;
     routineCustom?: string;
+    trendWindow?: string;
   };
 }) {
   const user = await requireUserPage();
@@ -63,6 +69,9 @@ export default async function ReportsPage({
   if (!report?.home) redirect("/onboarding");
   // The plan sits beside the observed routine, so it is only read when that tab is open.
   const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
+  // A trend reads a far longer stretch than the other tabs, so it is only read when it is shown.
+  const trendWindow = resolveTrendWindow(searchParams.trendWindow);
+  const trends = tab === "trends" && report.baby ? await getTrends(report.baby.id, trendWindow) : null;
   const routineWindow = report.routine.window;
   const routineIsCustom = routineWindow.kind === "custom";
   const reportHref = (next: {
@@ -71,6 +80,7 @@ export default async function ReportsPage({
     start?: string;
     end?: string;
     custom?: boolean;
+    trendWindow?: string;
     routineStart?: string;
     routineEnd?: string;
     routineCustom?: boolean;
@@ -86,6 +96,7 @@ export default async function ReportsPage({
     const carriedEnd = next.routineEnd ?? (routineIsCustom ? routineWindow.endKey : searchParams.routineEnd);
     if (carriedStart) params.set("routineStart", carriedStart);
     if (carriedEnd) params.set("routineEnd", carriedEnd);
+    params.set("trendWindow", next.trendWindow ?? trendWindow);
     if (next.custom) params.set("custom", "1");
     if (next.routineCustom) params.set("routineCustom", "1");
     return `/app/reports?${params.toString()}`;
@@ -175,6 +186,17 @@ export default async function ReportsPage({
           {tab === "stats" ? <StatsTab stats={report.stats} previous={report.previous} /> : null}
           {tab === "milestones" && report.history ? <MilestonesTab history={report.history} babyName={report.baby.name} /> : null}
           {tab === "growth" && report.history ? <GrowthTab history={report.history} babyName={report.baby.name} /> : null}
+          {tab === "trends" && trends ? (
+            <TrendsTab
+              babyName={report.baby.name}
+              trends={trends}
+              periods={trendPeriods.map(([value, label]) => ({
+                label,
+                href: reportHref({ trendWindow: value }),
+                current: trendWindow === value
+              }))}
+            />
+          ) : null}
           {tab === "routine" ? (
             <>
               {routineCustom ? (

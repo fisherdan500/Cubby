@@ -134,11 +134,12 @@ describe("ReportsPage accessibility", () => {
     expect(views?.querySelectorAll("svg:not([aria-hidden='true'])")).toHaveLength(0);
   });
 
-  it("offers Routine, Stats, Growth and Milestones, and opens Routine for an old Activity or Heatmaps link", async () => {
+  it("offers Routine, Trends, Stats, Growth and Milestones, and opens Routine for an old Activity or Heatmaps link", async () => {
     for (const oldTab of ["activity", "heatmaps"]) {
       const body = await renderReports(oldTab);
       const views = [...body.querySelectorAll('nav[aria-label="Report views"] a')].map((link) => link.textContent);
-      expect(views).toEqual(["Routine", "Stats", "Growth", "Milestones"]);
+      // Trends sits beside Routine: it answers what has been changing underneath the usual day.
+      expect(views).toEqual(["Routine", "Trends", "Stats", "Growth", "Milestones"]);
       expect(body.querySelector('nav[aria-label="Report views"] a[aria-current="page"]')?.textContent).toBe("Routine");
       expect(body.textContent).toContain("routine");
     }
