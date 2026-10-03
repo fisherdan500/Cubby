@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getSession: vi.fn(),
+  requireUser: vi.fn(),
   userFindFirst: vi.fn(),
   userUpdate: vi.fn(),
   memberFindMany: vi.fn(),
   memberUpdateMany: vi.fn(),
   lockRaw: vi.fn(),
   transaction: vi.fn(),
-  writeAudit: vi.fn()
+  writeAudit: vi.fn(),
+  order: [] as string[]
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -20,10 +21,10 @@ vi.mock("@/lib/db/prisma", () => ({
   }
 }));
 
-vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession }));
+vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
-import { getOwnProfileName, updateOwnName } from "@/server/services/own-profile";
+import { updateOwnName } from "@/server/services/own-profile";
 
 const USER = { id: "user-1", name: "Dan Fisher" };
 
@@ -31,33 +32,25 @@ function memberships(rows: Array<{ id: string; householdId: string; displayName:
   mocks.memberFindMany.mockResolvedValue(rows);
 }
 
+function txHandle() {
+  return {
+    user: { findFirst: mocks.userFindFirst, update: mocks.userUpdate },
+    householdMember: { findMany: mocks.memberFindMany, updateMany: mocks.memberUpdateMany },
+    $queryRaw: mocks.lockRaw,
+    __tx: true
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getSession.mockResolvedValue({ user: { id: USER.id }, session: { id: "session-1" } });
-  mocks.userFindFirst.mockResolvedValue(USER);
+  mocks.order.length = 0;
+  mocks.requireUser.mockResolvedValue({ id: USER.id, name: USER.name });
+  mocks.lockRaw.mockImplementation(async () => { mocks.order.push("lock"); return [{ id: USER.id }]; });
+  mocks.userFindFirst.mockImplementation(async () => { mocks.order.push("read"); return USER; });
   mocks.userUpdate.mockResolvedValue({ ...USER, name: "Daniel Fisher" });
   mocks.memberUpdateMany.mockResolvedValue({ count: 1 });
-  mocks.lockRaw.mockResolvedValue([{ id: USER.id }]);
   memberships([{ id: "member-1", householdId: "household-1", displayName: "Dan Fisher" }]);
-  mocks.transaction.mockImplementation(async (fn: any) =>
-    fn({
-      user: { findFirst: mocks.userFindFirst, update: mocks.userUpdate },
-      householdMember: { findMany: mocks.memberFindMany, updateMany: mocks.memberUpdateMany },
-      $queryRaw: mocks.lockRaw
-    })
-  );
-});
-
-describe("reading your own name", () => {
-  it("reads the name from the account, not from a household", async () => {
-    expect(await getOwnProfileName()).toEqual({ name: "Dan Fisher" });
-  });
-
-  it("refuses when nobody is signed in", async () => {
-    mocks.getSession.mockResolvedValue(null);
-
-    await expect(getOwnProfileName()).rejects.toThrow("unauthenticated");
-  });
+  mocks.transaction.mockImplementation(async (fn: any) => fn(txHandle()));
 });
 
 describe("changing your own name", () => {
@@ -69,10 +62,11 @@ describe("changing your own name", () => {
     );
   });
 
-  it("carries the new name into every household that was still showing the old one", async () => {
-    // Everywhere Cubby shows a person - moments, the full log, the members list - it reads
-    // `displayName ?? user.name`, and displayName was seeded from the name at the time of joining.
-    // Changing only the account would leave the old name on every screen that matters.
+  it("lets every household that was still showing the old name follow the account again", async () => {
+    // Everywhere Cubby shows a person it reads `displayName ?? user.name`, and displayName was
+    // seeded from the name at the time of joining. Clearing the seeded copy is better than writing
+    // the new string into it: the membership follows the account from then on, so a later rename
+    // needs no carry at all, and a copy can no longer be mistaken for somebody's own choice.
     memberships([
       { id: "member-1", householdId: "household-1", displayName: "Dan Fisher" },
       { id: "member-2", householdId: "household-2", displayName: "Dan Fisher" }
@@ -83,41 +77,75 @@ describe("changing your own name", () => {
     expect(mocks.memberUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ userId: USER.id, displayName: "Dan Fisher" }),
-        data: { displayName: "Daniel Fisher" }
+        data: { displayName: null }
       })
     );
   });
 
   it("leaves a household name alone when it was deliberately set to something else", async () => {
-    // A per-household name is somebody's choice. Overwriting every membership would erase it, so
-    // only the memberships still echoing the old account name are carried forward.
     memberships([{ id: "member-1", householdId: "household-1", displayName: "Grandpa" }]);
 
     await updateOwnName({ name: "Daniel Fisher" });
 
     const call = mocks.memberUpdateMany.mock.calls[0]?.[0];
     expect(call.where.displayName).toBe("Dan Fisher");
-    expect(call.data.displayName).toBe("Daniel Fisher");
+    expect(call.where.userId).toBe(USER.id);
   });
 
-  it("records the change against every household the person belongs to", async () => {
+  it("narrows by the person as well as the name, so nobody else's membership is reachable", async () => {
+    // Two people can share a display name. Without the userId conjunct this would clear every
+    // membership in the database holding that string.
+    await updateOwnName({ name: "Daniel Fisher" });
+
+    expect(mocks.memberUpdateMany.mock.calls[0]?.[0].where.userId).toBe(USER.id);
+  });
+
+  it("records, for each household, the name that household will now show", async () => {
+    // One household follows the account; the other has its own name. Writing the same before and
+    // after into both would claim the second household's shown name changed, which it did not -
+    // and an audit trail is the one place that has to be literally true.
     memberships([
       { id: "member-1", householdId: "household-1", displayName: "Dan Fisher" },
-      { id: "member-2", householdId: "household-2", displayName: "Dan Fisher" }
+      { id: "member-2", householdId: "household-2", displayName: "Grandpa" }
     ]);
 
     await updateOwnName({ name: "Daniel Fisher" });
 
     expect(mocks.writeAudit).toHaveBeenCalledTimes(2);
-    const households = mocks.writeAudit.mock.calls.map((call) => call[0].householdId).sort();
-    expect(households).toEqual(["household-1", "household-2"]);
+    const byHousehold = new Map(
+      mocks.writeAudit.mock.calls.map((call) => [call[0].householdId, call[1]])
+    );
+    expect(byHousehold.get("household-1")?.before).toEqual({ name: "Dan Fisher", shownAs: "Dan Fisher" });
+    expect(byHousehold.get("household-1")?.after).toEqual({ name: "Daniel Fisher", shownAs: "Daniel Fisher" });
+    expect(byHousehold.get("household-2")?.before).toEqual({ name: "Dan Fisher", shownAs: "Grandpa" });
+    expect(byHousehold.get("household-2")?.after).toEqual({ name: "Daniel Fisher", shownAs: "Grandpa" });
+
     const [ctx, entry] = mocks.writeAudit.mock.calls[0];
     expect(ctx.userId).toBe(USER.id);
     expect(entry.action).toBe("own_profile.name.update");
     expect(entry.entityType).toBe("user");
     expect(entry.entityId).toBe(USER.id);
-    expect(entry.before).toEqual({ name: "Dan Fisher" });
-    expect(entry.after).toEqual({ name: "Daniel Fisher" });
+  });
+
+  it("treats a membership that already follows the account as following it still", async () => {
+    memberships([{ id: "member-1", householdId: "household-1", displayName: null }]);
+
+    await updateOwnName({ name: "Daniel Fisher" });
+
+    const entry = mocks.writeAudit.mock.calls[0][1];
+    expect(entry.before).toEqual({ name: "Dan Fisher", shownAs: "Dan Fisher" });
+    expect(entry.after).toEqual({ name: "Daniel Fisher", shownAs: "Daniel Fisher" });
+  });
+
+  it("writes the audit inside the same transaction as the rename", async () => {
+    // A rename that commits without its audit record cannot be reconstructed later. updateBaby
+    // passes the transaction to writeAudit for this reason; so does this.
+    await updateOwnName({ name: "Daniel Fisher" });
+
+    expect(mocks.writeAudit).toHaveBeenCalled();
+    for (const call of mocks.writeAudit.mock.calls) {
+      expect(call[2]).toMatchObject({ __tx: true });
+    }
   });
 
   it("refuses an empty name", async () => {
@@ -125,8 +153,15 @@ describe("changing your own name", () => {
     expect(mocks.userUpdate).not.toHaveBeenCalled();
   });
 
-  it("refuses a name longer than the column allows", async () => {
+  it("refuses a name longer than this allows", async () => {
     await expect(updateOwnName({ name: "x".repeat(81) })).rejects.toThrow();
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a name carrying characters that only confuse how it reads", async () => {
+    for (const name of ["Dan\u202eFisher", "Dan\nFisher", "Dan\u0000Fisher"]) {
+      await expect(updateOwnName({ name })).rejects.toThrow();
+    }
     expect(mocks.userUpdate).not.toHaveBeenCalled();
   });
 
@@ -148,24 +183,46 @@ describe("changing your own name", () => {
   });
 
   it("refuses when nobody is signed in", async () => {
-    mocks.getSession.mockResolvedValue(null);
+    mocks.requireUser.mockRejectedValue(new Error("unauthenticated"));
 
     await expect(updateOwnName({ name: "Daniel Fisher" })).rejects.toThrow("unauthenticated");
     expect(mocks.userUpdate).not.toHaveBeenCalled();
   });
 
+  it("refuses an identity still owing a password change", async () => {
+    // The corridor invariant: getSession deliberately does NOT gate on the assisted first-login
+    // obligation, because the corridor itself authorizes through it. Anything that writes must use a
+    // helper that does, or a corralled identity renames itself across every household by calling
+    // this route directly instead of navigating the app.
+    mocks.requireUser.mockRejectedValue(new Error("password_change_required"));
+
+    await expect(updateOwnName({ name: "Daniel Fisher" })).rejects.toThrow("password_change_required");
+    expect(mocks.userUpdate).not.toHaveBeenCalled();
+    expect(mocks.memberUpdateMany).not.toHaveBeenCalled();
+  });
+
   it("takes the row for update before reading the name it compares against", async () => {
-    // Two tabs renaming at once must not interleave: the lock is taken inside the transaction so
-    // the old name this reads is the one it is about to replace.
+    // Ordering, not mere invocation: a lock taken after the read would guarantee nothing.
     await updateOwnName({ name: "Daniel Fisher" });
 
-    expect(mocks.lockRaw).toHaveBeenCalled();
+    expect(mocks.order).toEqual(["lock", "read"]);
     expect(mocks.transaction).toHaveBeenCalled();
   });
 
+  it("retries a serialization conflict rather than failing the save", async () => {
+    // The appearance service locks this very row the same way, so a conflict is reachable.
+    let attempts = 0;
+    mocks.transaction.mockImplementation(async (fn: any) => {
+      attempts += 1;
+      if (attempts === 1) throw Object.assign(new Error("conflict"), { code: "P2034" });
+      return fn(txHandle());
+    });
+
+    await expect(updateOwnName({ name: "Daniel Fisher" })).resolves.toEqual({ name: "Daniel Fisher" });
+    expect(attempts).toBe(2);
+  });
+
   it("changes a name nobody else can reach", async () => {
-    // The identity comes from the session, never from the caller, so there is no field to aim at
-    // another account.
     await updateOwnName({ name: "Daniel Fisher", userId: "someone-else" } as never);
 
     expect(mocks.userUpdate).toHaveBeenCalledWith(
