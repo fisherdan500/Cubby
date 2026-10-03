@@ -66,6 +66,9 @@ export async function updateOwnName(raw: unknown) {
       data: { displayName: null }
     });
 
+    // An account with no memberships writes no audit record: writeAudit is per-household by
+    // construction - the household scopes the chain lock, the chain order and the checkpoint - so
+    // there is no chain for it to go in. Deliberate, not an oversight.
     for (const member of members) {
       // Which changed, never what it became: a person's name is household content, and audit
       // evidence is required to exclude it. What each household needs on the record is that the

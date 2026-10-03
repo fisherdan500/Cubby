@@ -272,4 +272,21 @@ describe("changing your own name", () => {
     await expect(updateOwnName({ name: "Daniel Fisher" })).rejects.toThrow("password_change_required");
     expect(attempts).toBe(0);
   });
+  it("reads the households in a fixed order, because each one locks its own audit chain", () => {
+    // writeAudit takes a per-household advisory lock on that household's audit chain. Without an
+    // order, two people renaming themselves while sharing two households are free to take the two
+    // locks in opposite orders and deadlock.
+    return (async () => {
+      memberships([
+        { id: "member-1", householdId: "household-1", displayName: "Dan Fisher" },
+        { id: "member-2", householdId: "household-2", displayName: "Dan Fisher" }
+      ]);
+
+      await updateOwnName({ name: "Daniel Fisher" });
+
+      expect(mocks.memberFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ orderBy: { householdId: "asc" } })
+      );
+    })();
+  });
 });

@@ -24,7 +24,9 @@ function stubDb() {
         findFirst: async () => null,
         create: async () => { writes.push("create"); return {}; }
       },
-      auditCheckpoint: { findFirst: async () => null, upsert: async () => ({}) }
+      // The key writeAudit actually branches on. Spelled `auditCheckpoint` this was dead, so the
+      // checkpoint write looked covered and never ran.
+      auditIntegrityCheckpoint: { upsert: async () => { writes.push("checkpoint"); return {}; } }
     }
   };
 }
@@ -46,7 +48,11 @@ describe("the rename's audit record", () => {
       db as never
     );
 
+    // The chain lock is taken before the row is counted or written: that ordering is what makes
+    // chainOrder and the per-household chain safe under concurrency.
+    expect(writes[0]).toBe("lock");
     expect(writes).toContain("create");
+    expect(writes).toContain("checkpoint");
   });
 
   it("refuses to record the name itself", async () => {
