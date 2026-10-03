@@ -1,14 +1,52 @@
 export const DEFAULT_APP_TIMEZONE = "America/New_York";
 
+/**
+ * Naming a day in a zone means asking Intl, and the expensive part is BUILDING the formatter rather
+ * than using it - about thirteen times the cost. Reports asks once per entry and the calendar twice
+ * per visible day, so a six-month report spent most of its time rebuilding the same few formatters.
+ *
+ * Both caches below are keyed by zone (and shape), never by date, so they hold one entry per zone a
+ * household actually uses - a handful - and nothing grows with how much history is being read. A
+ * zone's rules do not change while the process runs, so a kept formatter cannot go stale.
+ */
+const resolvedZones = new Map<string, string>();
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormatter(timeZone: string, withTime: boolean) {
+  const key = withTime ? `t:${timeZone}` : `d:${timeZone}`;
+  const cached = dateFormatters.get(key);
+  if (cached) return cached;
+  const formatter = new Intl.DateTimeFormat("en-US", withTime
+    ? {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+      }
+    : { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
+  dateFormatters.set(key, formatter);
+  return formatter;
+}
+
 export function normalizeTimeZone(timeZone: string | null | undefined, fallback = DEFAULT_APP_TIMEZONE) {
   const candidate = timeZone?.trim() || fallback;
+  // Keyed on both, because the same candidate resolves differently under a different fallback.
+  const cacheKey = `${candidate}|${fallback}`;
+  const cached = resolvedZones.get(cacheKey);
+  if (cached !== undefined) return cached;
+  let resolved: string;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: candidate }).format(new Date());
-    return candidate;
+    resolved = candidate;
   } catch {
-    if (candidate !== fallback) return normalizeTimeZone(fallback, "UTC");
-    return "UTC";
+    resolved = candidate !== fallback ? normalizeTimeZone(fallback, "UTC") : "UTC";
   }
+  resolvedZones.set(cacheKey, resolved);
+  return resolved;
 }
 
 /** True when the runtime recognises `timeZone` as an IANA zone (e.g. "America/New_York"). */
@@ -105,36 +143,26 @@ export function zonedDateTimeToDate(value: string, timeZone: string) {
 }
 
 export function dateTimePartsInTimeZone(date: Date, timeZone: string) {
-  const values = new Intl.DateTimeFormat("en-US", {
-    timeZone: normalizeTimeZone(timeZone),
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23"
-  }).formatToParts(date);
+  // One formatter rather than two: this used to build a second one for the date half and throw away
+  // the parts it had already been given.
+  const values = dateFormatter(normalizeTimeZone(timeZone), true).formatToParts(date);
   return {
-    ...datePartsInTimeZone(date, timeZone),
-    hour: Number(values.find((part) => part.type === "hour")?.value),
-    minute: Number(values.find((part) => part.type === "minute")?.value),
-    second: Number(values.find((part) => part.type === "second")?.value)
+    year: part(values, "year"),
+    month: part(values, "month"),
+    day: part(values, "day"),
+    hour: part(values, "hour"),
+    minute: part(values, "minute"),
+    second: part(values, "second")
   };
 }
 
 function datePartsInTimeZone(date: Date, timeZone: string) {
-  const values = new Intl.DateTimeFormat("en-US", {
-    timeZone: normalizeTimeZone(timeZone),
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-  return {
-    year: Number(values.find((part) => part.type === "year")?.value),
-    month: Number(values.find((part) => part.type === "month")?.value),
-    day: Number(values.find((part) => part.type === "day")?.value)
-  };
+  const values = dateFormatter(normalizeTimeZone(timeZone), false).formatToParts(date);
+  return { year: part(values, "year"), month: part(values, "month"), day: part(values, "day") };
+}
+
+function part(values: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) {
+  return Number(values.find((value) => value.type === type)?.value);
 }
 
 function pad2(value: number) {
