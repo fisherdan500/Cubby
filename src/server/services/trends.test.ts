@@ -578,4 +578,24 @@ describe("trends", () => {
     expect(week.daysCounted).toBe(4);
     expect(week.daysUnknown).toBe(3);
   });
+  it("blames a missing amount only on the day that had one, not on a thinly logged day", () => {
+    // Two different reasons a day is not counted, in one week: five days well logged, one day a
+    // sitter recorded a single bottle on, and one day whose bottle carried no amount. Counting the
+    // sitter day as a missing amount would blame it for something it did not do - and "logged but
+    // not counted" is already visible in the day counts without mislabelling why.
+    const activities = [];
+    for (let day = 1; day <= 5; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 8; n += 1) activities.push(feed(`${date}T${String(6 + n).padStart(2, "0")}:00`, 2, "bottle", "oz"));
+    }
+    activities.push(feed("2026-06-06T09:00", 2, "bottle", "oz"));
+    for (let n = 0; n < 7; n += 1) activities.push(feed(`2026-06-07T${String(6 + n).padStart(2, "0")}:00`, 2, "bottle", "oz"));
+    activities.push(feed("2026-06-07T20:00", null, "bottle", null));
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.daysCounted).toBe(5);
+    expect(week.daysLogged).toBe(7);
+    expect(week.daysUnknown).toBe(1);
+  });
 });

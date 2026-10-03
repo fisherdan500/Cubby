@@ -171,7 +171,7 @@ function TrendPanel({ measure, points }: { measure: Measure; points: TrendPoint[
       </svg>
       <p className="tabular text-xs text-muted-foreground">
         {measure.format(top === 1 && !high ? 0 : high)} highest · {counted} of {logged} days
-        {unknown > 0 ? ` · ${unknown} ${unknown === 1 ? "day" : "days"} had a bottle with no amount` : ""}
+        {unknown > 0 ? ` · ${unknown} ${unknown === 1 ? "day" : "days"} had a bottle with no usable amount` : ""}
       </p>
       <ul data-trend-values="" className="sr-only">
         {points.map((point) => (

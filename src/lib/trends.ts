@@ -129,6 +129,10 @@ export function completeDays(days: TrendDay[]) {
 export function trendSeries(weeks: TrendWeek[], options?: { measuredShare?: number[] }): TrendPoint[] {
   return weeks.map((week, index) => {
     const logged = week.days.length;
+    // Note that a day carried with no figure still counts as evidence of how thoroughly the week
+    // was logged, so it takes part in the floor below. That is deliberate - whether a day's bottles
+    // could be totalled and whether the day was well logged are separate questions - but it does
+    // couple the two rules, so change either with the other in mind.
     const complete = completeDays(week.days);
     const kept = complete.filter((day) => day.value !== null);
     // A day that was well enough logged to count, but whose figure could not be known: a bottle

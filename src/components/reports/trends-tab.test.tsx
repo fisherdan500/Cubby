@@ -148,12 +148,12 @@ describe("TrendsTab", () => {
       })
     );
 
-    expect(body.textContent).toContain("5 days had a bottle with no amount");
+    expect(body.textContent).toContain("5 days had a bottle with no usable amount");
   });
 
   it("says nothing about set-aside days when every bottle was written down", () => {
     const body = render(trends({ volume: panel([point("2026-06-01", 16, 7, 7, 0)]) }));
 
-    expect(body.textContent).not.toContain("had a bottle with no amount");
+    expect(body.textContent).not.toContain("had a bottle with no usable amount");
   });
 });
