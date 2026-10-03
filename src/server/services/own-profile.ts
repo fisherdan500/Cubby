@@ -51,9 +51,13 @@ export async function updateOwnName(raw: unknown) {
 
     // Read before the write, so each household's audit record can say what that household will now
     // show rather than asserting a change it never saw.
+    // Ordered, because writeAudit takes a per-household advisory lock on that household's audit
+    // chain: two people renaming themselves while sharing two households would otherwise be free to
+    // take the two locks in opposite orders.
     const members = await tx.householdMember.findMany({
       where: { userId },
-      select: { id: true, householdId: true, displayName: true }
+      select: { id: true, householdId: true, displayName: true },
+      orderBy: { householdId: "asc" }
     });
 
     await tx.user.update({ where: { id: userId }, data: { name } });
@@ -63,15 +67,18 @@ export async function updateOwnName(raw: unknown) {
     });
 
     for (const member of members) {
-      const followed = member.displayName === null || member.displayName === current.name;
+      // Which changed, never what it became: a person's name is household content, and audit
+      // evidence is required to exclude it. What each household needs on the record is that the
+      // rename happened and whether the name THIS household shows followed it - a household that
+      // had renamed the member itself saw no change at all.
+      const shownNameFollowed = member.displayName === null || member.displayName === current.name;
       await writeAudit(
         { householdId: member.householdId, userId, memberId: member.id },
         {
           action: "own_profile.name.update",
           entityType: "user",
           entityId: userId,
-          before: { name: current.name, shownAs: member.displayName ?? current.name } as Prisma.InputJsonValue,
-          after: { name, shownAs: followed ? name : member.displayName } as Prisma.InputJsonValue
+          after: { changed: ["name"], shownNameFollowed } as Prisma.InputJsonValue
         },
         tx
       );

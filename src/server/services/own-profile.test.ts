@@ -22,7 +22,13 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/server/auth/session", () => ({ requireUser: mocks.requireUser }));
-vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+// writeAudit is spied so the per-household calls can be inspected, but everything else in the
+// module stays REAL: the action enum and the payload minimizer are the only things that validate an
+// audit record, and mocking them away is how an unclassified action reached a green suite.
+vi.mock("@/server/services/audit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/services/audit")>()),
+  writeAudit: mocks.writeAudit
+}));
 
 import { updateOwnName } from "@/server/services/own-profile";
 
@@ -115,10 +121,14 @@ describe("changing your own name", () => {
     const byHousehold = new Map(
       mocks.writeAudit.mock.calls.map((call) => [call[0].householdId, call[1]])
     );
-    expect(byHousehold.get("household-1")?.before).toEqual({ name: "Dan Fisher", shownAs: "Dan Fisher" });
-    expect(byHousehold.get("household-1")?.after).toEqual({ name: "Daniel Fisher", shownAs: "Daniel Fisher" });
-    expect(byHousehold.get("household-2")?.before).toEqual({ name: "Dan Fisher", shownAs: "Grandpa" });
-    expect(byHousehold.get("household-2")?.after).toEqual({ name: "Daniel Fisher", shownAs: "Grandpa" });
+    // The household that followed the account records that its shown name moved; the household with
+    // its own name records that it did not. Neither carries the name itself.
+    expect(byHousehold.get("household-1")?.after).toEqual({ changed: ["name"], shownNameFollowed: true });
+    expect(byHousehold.get("household-2")?.after).toEqual({ changed: ["name"], shownNameFollowed: false });
+    for (const entry of byHousehold.values()) {
+      expect(JSON.stringify(entry)).not.toContain("Dan Fisher");
+      expect(JSON.stringify(entry)).not.toContain("Daniel Fisher");
+    }
 
     const [ctx, entry] = mocks.writeAudit.mock.calls[0];
     expect(ctx.userId).toBe(USER.id);
@@ -133,8 +143,7 @@ describe("changing your own name", () => {
     await updateOwnName({ name: "Daniel Fisher" });
 
     const entry = mocks.writeAudit.mock.calls[0][1];
-    expect(entry.before).toEqual({ name: "Dan Fisher", shownAs: "Dan Fisher" });
-    expect(entry.after).toEqual({ name: "Daniel Fisher", shownAs: "Daniel Fisher" });
+    expect(entry.after).toEqual({ changed: ["name"], shownNameFollowed: true });
   });
 
   it("writes the audit inside the same transaction as the rename", async () => {
@@ -228,5 +237,39 @@ describe("changing your own name", () => {
     expect(mocks.userUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: USER.id } })
     );
+  });
+  it("sends the real audit trail only payloads it will store", async () => {
+    const { minimizeAuditPayload } = await import("@/server/services/audit");
+    const action = "own_profile.name.update" as Parameters<typeof minimizeAuditPayload>[0];
+    memberships([
+      { id: "member-1", householdId: "household-1", displayName: "Dan Fisher" },
+      { id: "member-2", householdId: "household-2", displayName: "Grandpa" }
+    ]);
+
+    await updateOwnName({ name: "Daniel Fisher" });
+
+    expect(mocks.writeAudit).toHaveBeenCalledTimes(2);
+    for (const call of mocks.writeAudit.mock.calls) {
+      // Refused if the payload carries a name, or if the action is unclassified.
+      expect(() => minimizeAuditPayload(action, call[1].after, "after")).not.toThrow();
+      expect(call[1].before).toBeUndefined();
+    }
+  });
+
+  it("does not retry a refusal, only a serialization conflict", async () => {
+    // An over-broad classifier would retry a validation failure three times before surfacing it.
+    let attempts = 0;
+    mocks.transaction.mockImplementation(async () => {
+      attempts += 1;
+      throw Object.assign(new Error("nope"), { code: "P2002" });
+    });
+
+    await expect(updateOwnName({ name: "Daniel Fisher" })).rejects.toThrow();
+    expect(attempts).toBe(1);
+
+    attempts = 0;
+    mocks.requireUser.mockRejectedValue(new Error("password_change_required"));
+    await expect(updateOwnName({ name: "Daniel Fisher" })).rejects.toThrow("password_change_required");
+    expect(attempts).toBe(0);
   });
 });
