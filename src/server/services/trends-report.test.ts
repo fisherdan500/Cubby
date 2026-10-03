@@ -76,4 +76,40 @@ describe("the trends query", () => {
     expect(yearsBack).toBeLessThanOrEqual(2.1);
     expect(yearsBack).toBeGreaterThan(1.9);
   });
+  it("carries each amount's own unit through to the chart, not just into the query", () => {
+    // Asking the database for the unit is not the same as using it. Proving the SELECT contains it
+    // left room for the value to be dropped on the way to the builder, reverting the fix unseen.
+    return (async () => {
+      const day = 24 * 60 * 60 * 1000;
+      const rows = [];
+      for (let index = 1; index <= 21; index += 1) {
+        const occurredAt = new Date(Date.now() - index * day);
+        for (let n = 0; n < 8; n += 1) {
+          rows.push({
+            type: "feeding",
+            occurredAt: new Date(occurredAt.getTime() + n * 60 * 60 * 1000),
+            startedAt: null,
+            endedAt: null,
+            durationSeconds: null,
+            timerState: "none",
+            pausedAt: null,
+            pausedSeconds: null,
+            pauseTrackingStartedAt: null,
+            pauseTrackingBaselineSeconds: null,
+            pauseIntervals: [],
+            // 118.294 mL is 4 oz. Read raw, it would read as 118.
+            feeding: { amount: 118.294, mode: "bottle", unit: "mL" }
+          });
+        }
+      }
+      mocks.findMany.mockResolvedValue(rows);
+
+      const { getTrends } = await import("@/server/services/trends-report");
+      const trends = await getTrends("baby-1", "8w");
+      const reported = trends.volume.points.filter((point) => point.value !== null);
+
+      expect(reported.length).toBeGreaterThan(0);
+      for (const point of reported) expect(point.value).toBeCloseTo(32, 0);
+    })();
+  });
 });

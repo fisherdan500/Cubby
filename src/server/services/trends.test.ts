@@ -42,14 +42,15 @@ function diaper(localDateTime: string) {
   };
 }
 
-function sleep(startLocal: string, endLocal: string) {
+function sleep(startLocal: string, endLocal: string | null, options: { timerState?: string } = {}) {
+  const endedAt = endLocal === null ? null : at(endLocal);
   return {
     type: "sleep" as const,
     occurredAt: at(startLocal),
     startedAt: at(startLocal),
-    endedAt: at(endLocal),
-    durationSeconds: Math.round((at(endLocal).getTime() - at(startLocal).getTime()) / 1000),
-    timerState: "stopped",
+    endedAt,
+    durationSeconds: endedAt === null ? null : Math.round((endedAt.getTime() - at(startLocal).getTime()) / 1000),
+    timerState: options.timerState ?? "stopped",
     pausedAt: null,
     feedingAmount: null,
     feedingMode: null
@@ -302,5 +303,94 @@ describe("trends", () => {
     const trends = buildTrends([], { timeZone, now: at("2026-06-08T12:00").getTime() });
     expect(trends.feeds.points).toEqual([]);
     expect(trends.anyData).toBe(false);
+  });
+  it("counts only what was poured, not a solids meal logged beside the bottles", () => {
+    // FeedingKind has four values, so "not breast" is not the same as "bottle or formula". A puree
+    // at dinner is not a bottle, and it must not inflate the count the ounces are spread across.
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 9; n += 1) activities.push(feed(`${date}T${String(6 + n).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+      activities.push(feed(`${date}T18:00`, null, "solids", null));
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.value).toBeCloseTo(36, 1);
+  });
+
+  it("leaves a solids amount out of a bottle total even when one was recorded", () => {
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 9; n += 1) activities.push(feed(`${date}T${String(6 + n).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+      activities.push(feed(`${date}T18:00`, 3, "solids", "oz"));
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.value).toBeCloseTo(36, 1);
+  });
+
+  it("keeps a day's measured bottles when one entry carries a unit it cannot read", () => {
+    // An unreadable unit is one entry's problem. Discarding the whole day for it threw away six
+    // perfectly good bottles and quietly shortened the week.
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 9; n += 1) activities.push(feed(`${date}T${String(6 + n).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+      activities.push(feed(`${date}T18:00`, 2, "bottle", "tbsp"));
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.daysCounted).toBe(7);
+    expect(week.value).toBeCloseTo(40, 1);
+  });
+
+  it("weighs the measured share by the feeds that could have carried an amount", () => {
+    // The guard asks what share of the POURED feeds were measured. Counting breastfeeds in that
+    // denominator blanks a bottle-fed week for the sin of also breastfeeding.
+    const activities = [];
+    for (let day = 1; day <= 7; day += 1) {
+      const date = `2026-06-0${day}`;
+      for (let n = 0; n < 4; n += 1) activities.push(feed(`${date}T${String(6 + n * 2).padStart(2, "0")}:00`, 4, "bottle", "oz"));
+      for (let n = 0; n < 6; n += 1) activities.push(feed(`${date}T${String(15 + n).padStart(2, "0")}:00`, null, "breast", null));
+    }
+
+    const [week] = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).volume.points;
+
+    expect(week.value).toBeCloseTo(16, 1);
+  });
+
+  it("ignores a timer someone forgot to stop instead of calling every day fully asleep", () => {
+    // An unfinished timer is an unfinished log, not evidence of sleep. Spreading it across every day
+    // it has been running drew a flat 24h line over a week that really held twelve-hour nights.
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const activities: ReturnType<typeof sleep>[] = [
+      sleep("2026-04-01T20:00", null, { timerState: "running" })
+    ];
+    for (let day = 1; day <= 7; day += 1) {
+      activities.push(sleep(`2026-06-${pad(day)}T19:00`, `2026-06-${pad(day + 1)}T07:00`));
+    }
+
+    const points = buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
+    const week = points.find((point) => point.weekKey === "2026-06-01");
+    const withoutTimer = buildTrends(activities.slice(1), { timeZone, now: at("2026-06-10T12:00").getTime() }).sleep.points;
+    const unaffected = withoutTimer.find((point) => point.weekKey === "2026-06-01");
+
+    // The forgotten timer must make no difference at all, and the week must read as the nights it
+    // actually holds rather than as a fortnight of continuous sleep.
+    expect(week?.value).toBe(unaffected?.value);
+    expect((week?.value ?? 0) / 3600).toBeLessThan(13);
+  });
+
+  it("skips an entry whose timestamp cannot be read rather than failing the whole page", () => {
+    const activities = [
+      { ...feed("2026-06-01T08:00", 4, "bottle", "oz"), occurredAt: new Date("not a date") },
+      ...Array.from({ length: 7 }, (_, index) => feed(`2026-06-0${index + 1}T09:00`, 4, "bottle", "oz"))
+    ];
+
+    expect(() => buildTrends(activities, { timeZone, now: at("2026-06-10T12:00").getTime() })).not.toThrow();
   });
 });

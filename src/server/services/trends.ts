@@ -13,7 +13,7 @@
 
 import { ActivityType, type Prisma } from "@prisma/client";
 import { daySleepSeconds, sleepInterval, type DaySleepRecord } from "@/lib/day-sleep";
-import { sumVolume } from "@/domain/units";
+import { convertVolume, sumVolume } from "@/domain/units";
 import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart } from "@/lib/timezone";
 import { bucketWeeks, trendSeries, VOLUME_MIN_MEASURED_SHARE, type TrendDay, type TrendPoint } from "@/lib/trends";
 
@@ -68,6 +68,10 @@ function panel(points: TrendPoint[]): TrendPanel {
  * Weekly figures for one baby. `now` bounds a day that has not finished yet, exactly as the
  * dashboard does, so today never reads as a collapse simply because it is still morning.
  */
+// A sleep timer still running after this long was forgotten rather than slept. Two days is past any
+// real nap or night while still allowing the longest genuine overnight a timer legitimately spans.
+const UNFINISHED_TIMER_LIMIT_MS = 2 * 24 * 60 * 60 * 1000;
+
 export function buildTrends(activities: TrendActivity[], options: { timeZone: string; now: number }): Trends {
   const { timeZone, now } = options;
   // Naming the day an instant falls on means formatting it in the household's zone, which is the
@@ -106,6 +110,9 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
   const diapersByDay = new Map<string, number>();
 
   for (const activity of activities) {
+    // One unreadable timestamp is one row's problem. Letting it reach the zone formatter threw
+    // RangeError out of the whole page, so a single bad row took the Reports tab down with it.
+    if (!Number.isFinite(activity.occurredAt?.getTime?.() ?? Number.NaN)) continue;
     const key = keyOf(activity.occurredAt);
     dayKeys.add(key);
 
@@ -130,7 +137,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
       // Every day a sleep covers must exist as a day, not just the one it began on and the one it
       // ended on: a sleep running over thirty hours has a middle day that is entirely asleep, and
       // leaving it out drops a full day of sleep from the week.
-      if (activity.endedAt) {
+      if (activity.endedAt && Number.isFinite(activity.endedAt.getTime())) {
         const endKey = keyOf(activity.endedAt);
         for (let covered = key; covered <= endKey; covered = addDaysToDateKey(covered, 1)) {
           dayKeys.add(covered);
@@ -143,9 +150,10 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
       const amount = amountOf(activity.feedingAmount);
       const current = feedsByDay.get(key) ?? { count: 0, pourable: 0, measured: 0, volumes: [] };
       current.count += 1;
-      // Bottle, formula and anything else poured from a container: the feeds that CAN carry an
-      // amount, and so the only ones the volume panel should be counting or dividing by.
-      if (activity.feedingMode !== "breast") {
+      // Bottle and formula: the feeds that are poured from a container, named positively because
+      // FeedingKind also holds solids, and a puree at dinner is not a bottle. reports.ts asks the
+      // same question the same way.
+      if (activity.feedingMode === "bottle" || activity.feedingMode === "formula") {
         current.pourable += 1;
         if (amount !== null) {
           current.measured += 1;
@@ -188,6 +196,13 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
   const overlapping = new Map<string, DaySleepRecord[]>();
   for (const [, records] of sleepsByDay) {
     for (const record of records) {
+      // A timer nobody stopped is an unfinished log, not a baby who slept for a fortnight. The
+      // dashboard shows it as still running on the day it began; a weekly average cannot, because
+      // spreading it over every day since drew a flat 24h line across weeks of ordinary nights.
+      if (record.endedAt === null && (record.timerState === "running" || record.timerState === "paused")) {
+        const span = sleepInterval(record, now);
+        if (span && span.end - span.start > UNFINISHED_TIMER_LIMIT_MS) continue;
+      }
       const span = sleepInterval(record, now);
       if (!span) continue;
       const firstKey = keyOf(new Date(span.start));
@@ -239,14 +254,20 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
       if (!feeds || feeds.measured === 0) return [];
       // Amounts are converted before they are added: the entry form lets each feed carry its own
       // unit, and summing millilitres onto ounces drew a thirty-fold cliff on a chart about change.
-      const total = sumVolume(feeds.volumes, "oz").amount;
+      // An amount in a unit this cannot read is dropped on its own; discarding the whole day for it
+      // threw away every good bottle alongside it and quietly shortened the week.
+      const readable = feeds.volumes.filter((entry) => convertVolume(entry.amount, entry.unit, "oz") !== null);
+      if (!readable.length) return [];
+      const total = sumVolume(readable, "oz").amount;
       if (total === null) return [];
-      return [{ key, entries: feeds.count, value: (total / feeds.measured) * feeds.pourable }];
+      return [{ key, entries: feeds.count, value: (total / readable.length) * feeds.pourable }];
     })
   }));
 
-  // What share of the week's feeds carried a volume at all. Breastfeeds never do, so a week of
-  // breastfeeding would otherwise report a few ounces a day and read as near-starvation.
+  // What share of the week's POURED feeds carried an amount. A week where most bottles went
+  // unrecorded cannot be averaged honestly, so it is left blank rather than guessed at. Breastfeeds
+  // are not in this denominator: they never carry an amount, and counting them blanked a
+  // well-measured bottle week for the sin of also breastfeeding.
   const measuredShare = weeks.map((week) => {
     let count = 0;
     let measured = 0;
