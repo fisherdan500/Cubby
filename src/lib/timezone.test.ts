@@ -156,6 +156,18 @@ describe("reusing the work behind a zone lookup", () => {
     expect(dateKeyInTimeZone(instant, "Asia/Tokyo")).toBe("2026-07-16");
   });
 
+  it("keeps two different zones apart under the same fallback", () => {
+    // The mirror of the case below: same fallback, different zones. Both are perfectly valid, so a
+    // lookup that kept only one answer per fallback would hand the second caller the first's zone -
+    // and every date in the app is grouped through this answer.
+    expect(normalizeTimeZone("Asia/Tokyo")).toBe("Asia/Tokyo");
+    expect(normalizeTimeZone("Europe/Paris")).toBe("Europe/Paris");
+    expect(normalizeTimeZone("America/New_York")).toBe("America/New_York");
+    // Asked again, after all three are remembered.
+    expect(normalizeTimeZone("Asia/Tokyo")).toBe("Asia/Tokyo");
+    expect(normalizeTimeZone("Europe/Paris")).toBe("Europe/Paris");
+  });
+
   it("answers for the fallback it was given, not the one it was asked about first", () => {
     // The same unusable zone resolves differently depending on what to fall back to, so the
     // fallback belongs in the lookup as much as the zone does.
@@ -203,5 +215,21 @@ describe("reusing the work behind a zone lookup", () => {
     // move. Reached here because an activity really can be logged at half past two in the morning.
     expect(zonedDateTimeToDate("2026-03-08T02:30", "America/New_York").toISOString()).toBe("2026-03-08T06:30:00.000Z");
     expect(zonedDateTimeToDate("2026-11-01T02:30", "America/New_York").toISOString()).toBe("2026-11-01T07:30:00.000Z");
+  });
+  it("names a leap day and years well beyond the ones hard-coded here", () => {
+    // Every other date assertion in this file is a 2026 date, so a fault that only shows up on a
+    // leap day, or after some future year, would go unnoticed. Both are ordinary days to a family
+    // using the app then.
+    const leapDay = new Date("2028-02-29T16:00:00.000Z");
+    expect(dateKeyInTimeZone(leapDay, "America/New_York")).toBe("2028-02-29");
+    expect(zonedDateStart("2028-02-29", "America/New_York").toISOString()).toBe("2028-02-29T05:00:00.000Z");
+    // The day after, so a leap day quietly read as the 28th would show up as a repeat.
+    expect(dateKeyInTimeZone(new Date("2028-03-01T16:00:00.000Z"), "America/New_York")).toBe("2028-03-01");
+
+    expect(dateKeyInTimeZone(new Date("2031-07-04T16:00:00.000Z"), "America/New_York")).toBe("2031-07-04");
+    expect(dateKeyInTimeZone(new Date("2040-12-31T18:00:00.000Z"), "America/New_York")).toBe("2040-12-31");
+    // Across midnight in the zone, where the year rolls over but the instant is still the old year.
+    expect(dateKeyInTimeZone(new Date("2041-01-01T04:00:00.000Z"), "America/New_York")).toBe("2040-12-31");
+    expect(dateTimeInputValue(new Date("2032-02-29T13:45:00.000Z"), "Asia/Kolkata")).toBe("2032-02-29T19:15");
   });
 });

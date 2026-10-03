@@ -5,11 +5,14 @@ export const DEFAULT_APP_TIMEZONE = "America/New_York";
  * than using it - about thirteen times the cost. Reports asks once per entry and the calendar twice
  * per visible day, so a six-month report spent most of its time rebuilding the same few formatters.
  *
- * Both caches below are keyed by zone (and shape), never by date, so they hold one entry per zone a
- * household actually uses - a handful - and nothing grows with how much history is being read. A
- * zone's rules do not change while the process runs, so a kept formatter cannot go stale.
+ * Both caches below are keyed by zone (and shape), never by date, so nothing grows with how much
+ * history is being read. They stay small because every caller passes the one zone the installation
+ * is configured with, or a baby's stored zone, which is written from that same setting - NOT a zone
+ * taken from a request. A caller that ever forwards a user-supplied zone would be widening the key
+ * space, and should bound it. A zone's rules cannot change while the process runs, so a kept
+ * formatter cannot go stale.
  */
-const resolvedZones = new Map<string, string>();
+const resolvedZones = new Map<string, Map<string, string>>();
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
 
 function dateFormatter(timeZone: string, withTime: boolean) {
@@ -34,9 +37,11 @@ function dateFormatter(timeZone: string, withTime: boolean) {
 
 export function normalizeTimeZone(timeZone: string | null | undefined, fallback = DEFAULT_APP_TIMEZONE) {
   const candidate = timeZone?.trim() || fallback;
-  // Keyed on both, because the same candidate resolves differently under a different fallback.
-  const cacheKey = `${candidate}|${fallback}`;
-  const cached = resolvedZones.get(cacheKey);
+  // Nested rather than a joined string, because the same candidate resolves differently under a
+  // different fallback and no single separator is guaranteed absent from a caller's zone name.
+  let byFallback = resolvedZones.get(candidate);
+  if (!byFallback) resolvedZones.set(candidate, (byFallback = new Map()));
+  const cached = byFallback.get(fallback);
   if (cached !== undefined) return cached;
   let resolved: string;
   try {
@@ -45,7 +50,7 @@ export function normalizeTimeZone(timeZone: string | null | undefined, fallback 
   } catch {
     resolved = candidate !== fallback ? normalizeTimeZone(fallback, "UTC") : "UTC";
   }
-  resolvedZones.set(cacheKey, resolved);
+  byFallback.set(fallback, resolved);
   return resolved;
 }
 
@@ -133,6 +138,10 @@ export function zonedDateTimeToDate(value: string, timeZone: string) {
   let utc = desired;
   const safeTimeZone = normalizeTimeZone(timeZone);
 
+  // A wall time that does not exist - the hour the clocks spring forward - has no answer to settle
+  // on, and the correction below alternates between two instants rather than converging. An EVEN
+  // number of passes is what makes that alternation land on the later one consistently, so this is
+  // not a count that can be trimmed: three passes disagrees with four on hundreds of real days.
   for (let index = 0; index < 4; index += 1) {
     const parts = dateTimePartsInTimeZone(new Date(utc), safeTimeZone);
     const actual = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
