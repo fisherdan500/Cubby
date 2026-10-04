@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { activityDayTimeLabel } from "./activity";
+import { activityDayTimeLabel, activityTimeLabel } from "./activity";
 
 const zone = "America/New_York";
 const dayStart = new Date("2026-09-28T04:00:00.000Z"); // Sep 28 00:00 EDT
@@ -80,5 +80,75 @@ describe("how an activity's time reads on a day", () => {
       "Asia/Tokyo"
     );
     expect(label.text).toBe("11:00 PM");
+  });
+  it("reads each household in its own zone, however many have been asked for", () => {
+    // The formatters behind these labels are kept between calls, so the zone has to be part of what
+    // is kept: the same instant is a different time of day in each household.
+    const instant = new Date("2026-09-28T14:00:00.000Z");
+    expect(activityTimeLabel(instant, "America/New_York")).toBe("10:00 AM");
+    expect(activityTimeLabel(instant, "Asia/Tokyo")).toBe("11:00 PM");
+    expect(activityTimeLabel(instant, "Europe/London")).toBe("3:00 PM");
+    // Asked again after all three are remembered, in a different order.
+    expect(activityTimeLabel(instant, "Asia/Tokyo")).toBe("11:00 PM");
+    expect(activityTimeLabel(instant, "America/New_York")).toBe("10:00 AM");
+  });
+
+  it("keeps the three label shapes apart", () => {
+    // A plain time, a time carrying a date, and the internal day comparison are three different
+    // shapes. If a kept formatter were shared between them, a moment would read as "Sep 28, 10:00 AM"
+    // or an overnight would lose its dates - and the day comparison would stop detecting midnight.
+    const sameDay = activityDayTimeLabel(
+      { startedAt: new Date("2026-09-28T14:00:00.000Z"), endedAt: new Date("2026-09-28T15:30:00.000Z") },
+      day,
+      zone
+    );
+    expect(sameDay).toEqual({ text: "10:00 AM - 11:30 AM", spansDays: false });
+
+    const overnight = activityDayTimeLabel(
+      { startedAt: new Date("2026-09-28T23:00:00.000Z"), endedAt: new Date("2026-09-29T11:00:00.000Z") },
+      day,
+      zone
+    );
+    expect(overnight).toEqual({ text: "Sep 28 7:00 PM - Sep 29 7:00 AM", spansDays: true });
+
+    // And a plain time again afterwards, which would be wrong if the dated shape had been kept for it.
+    expect(activityTimeLabel(new Date("2026-09-28T14:00:00.000Z"), zone)).toBe("10:00 AM");
+  });
+
+  it("still detects midnight in a zone asked about after another one", () => {
+    // The day comparison is what decides whether dates appear. It is zone-sensitive: this activity
+    // crosses midnight in New York but not in Tokyo, where both ends fall on the 29th.
+    const crossesInNewYork = { startedAt: new Date("2026-09-28T23:00:00.000Z"), endedAt: new Date("2026-09-29T11:00:00.000Z") };
+    expect(activityDayTimeLabel(crossesInNewYork, day, "Asia/Tokyo").spansDays).toBe(false);
+    expect(activityDayTimeLabel(crossesInNewYork, day, "America/New_York").spansDays).toBe(true);
+    // Reversed, so neither answer can be the one left over from the other.
+    expect(activityDayTimeLabel(crossesInNewYork, day, "America/New_York").spansDays).toBe(true);
+    expect(activityDayTimeLabel(crossesInNewYork, day, "Asia/Tokyo").spansDays).toBe(false);
+  });
+  it("tells a year apart from the same day", () => {
+    // The day comparison decides whether dates appear at all, and it has to include the year: an
+    // entry left running since last year is not "the same day" as today. A timer someone forgot to
+    // stop is exactly how this arises.
+    const yearApart = {
+      startedAt: new Date("2026-06-15T18:00:00.000Z"),
+      endedAt: new Date("2027-06-15T18:00:00.000Z")
+    };
+    const label = activityDayTimeLabel(yearApart, day, zone);
+    expect(label.spansDays).toBe(true);
+    expect(label.text).toBe("Jun 15 2:00 PM - Jun 15 2:00 PM");
+
+    // And across a new year, where the day-of-month alone would also read as different.
+    const acrossNewYear = {
+      startedAt: new Date("2026-12-31T23:00:00.000Z"),
+      endedAt: new Date("2027-01-01T11:00:00.000Z")
+    };
+    expect(activityDayTimeLabel(acrossNewYear, day, zone).spansDays).toBe(true);
+
+    // A month apart on the same day-of-month, which the day number alone would also miss.
+    const monthApart = {
+      startedAt: new Date("2026-05-15T18:00:00.000Z"),
+      endedAt: new Date("2026-06-15T18:00:00.000Z")
+    };
+    expect(activityDayTimeLabel(monthApart, day, zone).spansDays).toBe(true);
   });
 });
