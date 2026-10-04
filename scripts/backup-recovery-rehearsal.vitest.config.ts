@@ -13,8 +13,12 @@ export default defineConfig({
     include: [
       "scripts/backup-recovery-rehearsal.test.ts",
       "scripts/backup-recovery-rehearsal.integration.test.ts",
-      "scripts/backup-matrix-rehearsal.integration.test.ts"
+      "scripts/backup-matrix-rehearsal.integration.test.ts",
+      "scripts/backup-scale-rehearsal.integration.test.ts"
     ],
+    // The scale rehearsal seeds and restores thousands of entries, so its own hooks and cases declare
+    // longer budgets individually. These defaults stay tight enough that an ordinary rehearsal hanging
+    // is still reported as a failure rather than waiting ten minutes.
     testTimeout: 120_000,
     hookTimeout: 120_000,
     pool: "forks",

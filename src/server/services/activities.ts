@@ -586,6 +586,78 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
   }
 }
 
+/**
+ * The row an activity insert writes, shared by the normal and the restore paths so the two cannot
+ * drift in what they persist - only in what they read back.
+ */
+function activityCreateData(
+  input: ActivityRestoreInput,
+  ctx: HouseholdContext,
+  historicalTimer?: HistoricalTimerMetadata,
+  historicalAttribution?: { source: string; externalActorName: string | null },
+  historicalFields?: HistoricalActivityFields,
+  clientMutationFingerprint?: string
+) {
+  return {
+    ...specificCreate(input),
+    ...(historicalTimer
+      ? {
+          timerState: historicalTimer.timerState,
+          durationSeconds: historicalTimer.durationSeconds,
+          pausedAt: null,
+          pausedSeconds: historicalTimer.pausedSeconds
+        }
+      : {}),
+    ...(historicalAttribution ?? {}),
+    ...(historicalFields ? {
+      startedAt: historicalFields.startedAt,
+      endedAt: historicalFields.endedAt,
+      timezone: historicalFields.timezone,
+      pauseTrackingStartedAt: historicalFields.pauseTrackingStartedAt,
+      pauseTrackingBaselineSeconds: historicalFields.pauseTrackingBaselineSeconds,
+      ...(historicalFields.pauseIntervals?.length ? {
+        pauseIntervals: {
+          create: historicalFields.pauseIntervals
+        }
+      } : {})
+    } : {}),
+    clientMutationId: input.clientMutationId,
+    clientMutationFingerprint,
+    household: { connect: { id: ctx.householdId } },
+    baby: { connect: { id: input.babyId } },
+    actorMember: { connect: { id: ctx.memberId } }
+  };
+}
+
+/**
+ * Insert a restored entry and return only its new id.
+ *
+ * Deliberately separate from createActivityInTransaction rather than a flag on it. A restore writes
+ * thousands of these and reads nothing but the id, while the normal path hydrates all sixteen
+ * activity relations for its audit entry and webhook payload - at a few thousand entries that
+ * hydration is the difference between a restore that finishes and one that exhausts its transaction.
+ * Keeping them as two functions means the normal path's return type stays exactly what its callers
+ * expect, instead of becoming a union every one of them has to narrow.
+ *
+ * Writes no audit entry and queues no side effects: a restore audits once for the whole operation,
+ * and a webhook per entry would flood a household with thousands of notifications for history it
+ * already had.
+ */
+async function createRestoredActivityInTransaction(
+  input: ActivityRestoreInput,
+  ctx: HouseholdContext,
+  tx: Prisma.TransactionClient,
+  historicalTimer?: HistoricalTimerMetadata,
+  historicalAttribution?: { source: string; externalActorName: string | null },
+  historicalFields?: HistoricalActivityFields
+) {
+  await requireHouseholdMedicineContact(tx, ctx, input);
+  return await tx.activityLog.create({
+    data: activityCreateData(input, ctx, historicalTimer, historicalAttribution, historicalFields),
+    select: { id: true }
+  });
+}
+
 async function createActivityInTransaction(
   input: ActivityRestoreInput,
   ctx: HouseholdContext,
@@ -599,35 +671,7 @@ async function createActivityInTransaction(
 ) {
   await requireHouseholdMedicineContact(tx, ctx, input);
   const activity = await tx.activityLog.create({
-    data: {
-      ...specificCreate(input),
-      ...(historicalTimer
-        ? {
-            timerState: historicalTimer.timerState,
-            durationSeconds: historicalTimer.durationSeconds,
-            pausedAt: null,
-            pausedSeconds: historicalTimer.pausedSeconds
-          }
-        : {}),
-      ...(historicalAttribution ?? {}),
-      ...(historicalFields ? {
-        startedAt: historicalFields.startedAt,
-        endedAt: historicalFields.endedAt,
-        timezone: historicalFields.timezone,
-        pauseTrackingStartedAt: historicalFields.pauseTrackingStartedAt,
-        pauseTrackingBaselineSeconds: historicalFields.pauseTrackingBaselineSeconds,
-        ...(historicalFields.pauseIntervals?.length ? {
-          pauseIntervals: {
-            create: historicalFields.pauseIntervals
-          }
-        } : {})
-      } : {}),
-      clientMutationId: input.clientMutationId,
-      clientMutationFingerprint,
-      household: { connect: { id: ctx.householdId } },
-      baby: { connect: { id: input.babyId } },
-      actorMember: { connect: { id: ctx.memberId } }
-    },
+    data: activityCreateData(input, ctx, historicalTimer, historicalAttribution, historicalFields, clientMutationFingerprint),
     include: activityInclude
   });
 
@@ -657,14 +701,12 @@ export async function restoreHistoricalActivityForContext(
   if (input.activeTimer) throw new Error("backup_active_timer");
   if (historicalTimer && !timerCapableTypes.has(input.type as ActivityType)) throw new Error("backup_invalid_timer");
   requireValidHistoricalPauseIntervals(historicalTimer, historicalFields);
-  return createActivityInTransaction(
+  return createRestoredActivityInTransaction(
     { ...input, clientMutationId: undefined },
     lockedCtx,
     tx,
-    false,
     historicalTimer,
     historicalAttribution,
-    false,
     historicalFields
   );
 }

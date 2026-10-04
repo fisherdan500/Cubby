@@ -200,6 +200,7 @@ export function handleError(error: unknown) {
     if (error.message === "backup_audit_integrity_unavailable") return fail("backup_audit_integrity_unavailable", "This household's audit history could not be verified, so restoring into it was refused. Run the integrity check to see why, then try again.", 409);
     if (error.message === "backup_invalid_pause_intervals" || error.message === "pause_interval_state_invalid") return fail("backup_invalid_pause_intervals", "This backup contains a timer whose pause history is incomplete and cannot be restored.", 422);
     if (error.message === "archive_too_large") return fail("archive_too_large", "Cubby backup archives must be 2 GiB or smaller.", 413);
+    if (error.message === "backup_too_large_to_restore") return fail("backup_too_large_to_restore", "This backup holds more history than Cubby can restore in one go. Keep the file safely - it is still a complete copy - and see Moving One Household To A New Cubby in the install guide for how to bring it in. Retrying will not help.", 413);
     if (error.message === "backup_directory_unavailable") return fail("backup_directory_unavailable", "Cubby cannot reach its backup folder (AUTOMATED_BACKUP_DIRECTORY). Check it on the platform page, then try again.", 503);
     if (error.message === "attachment_type_unavailable") return fail("not_found", "Not found.", 404);
     if (error.message === "attachment_upload_busy") return fail("attachment_upload_busy", "Another photo is being processed. Try again shortly.", 429);
