@@ -326,6 +326,51 @@ Set up a new server, install Cubby as in step 2 with your saved `.env` in place,
 `/setup`, and restore your newest system backup, exactly as in the practice restore. Everyone
 signs in as before. See [Whole-System Backup](recovery/system-backup.md#restoring-onto-a-new-server).
 
+## 8. Moving One Household To A New Cubby
+
+A whole-system backup moves everything and is the right tool when you are replacing a server. Use a
+single household backup instead when you are moving one household into a Cubby that already exists,
+or when you do not have the old server's `.env` and so cannot carry accounts across.
+
+This path is deliberately narrower than a system restore, and the restrictions are worth knowing
+before you start rather than after a refusal.
+
+**The destination household must be genuinely empty.** Restore refuses a household that holds any
+baby, entry, contact, medicine, calendar event, reminder, post, comment, reaction, photo, planned
+schedule, notification preference or push subscription — and also any outstanding invite, API key or
+webhook. A brand-new household from `/setup` is empty; one you have been trying things in is not,
+even if it looks empty on screen. If you created a placeholder baby while setting up, delete it
+first. The refusal is `Restore requires a fresh household with only its current owner.`
+
+**You must be the household's only member, and its owner.** Invite the rest of the family *after*
+the restore, not before.
+
+**Accounts do not travel.** A household backup carries who was in the household, but not their
+passwords or sessions — those live in the system backup and in `.env`. After a restore, anyone whose
+email is already registered on the destination is reconnected automatically; everyone else is listed
+for you to invite again. Nobody is created, and nobody gains access because a file said so.
+
+**Entry authorship does not travel either.** Restored entries are attributed to whoever ran the
+restore, because an entry's author is a household membership and memberships are not carried. The
+times, notes and details are exact; the name against each entry becomes yours.
+
+Steps:
+
+1. On the old Cubby, open Backups and download the household backup. A household with photos
+   downloads as a `.zip`; keep it exactly as downloaded — do not unzip or rebuild it.
+2. On the new Cubby, finish `/setup`, create the household, and delete any placeholder baby.
+3. Open Backups, upload the file to preview it, check the household name and counts look right, then
+   confirm the restore by typing the household's name.
+4. The restore tells you who it could not reconnect. Invite those people; they sign in with their own
+   new accounts.
+
+**Keep the old server running and untouched until you have checked the new one.** The restore does
+not alter the backup file, so an attempt that fails costs you the attempt and nothing else.
+
+If a restore stops with a message about the database being busy or unreachable, nothing was saved —
+wait and try again. If it stops because Cubby cannot reach its backup folder, that is
+`AUTOMATED_BACKUP_DIRECTORY` on the *server*, not a problem with your file.
+
 ## Checklist
 
 - [ ] Time zone set at install (`--timezone`)
