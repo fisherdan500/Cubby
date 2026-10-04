@@ -351,7 +351,8 @@ describe("a restore at the size a real household reaches", () => {
       (backup.payload.contacts?.length ?? 0) +
       (backup.payload.catalogs?.length ?? 0) +
       (backup.payload.plannedSchedules?.length ?? 0) +
-      (backup.payload.feedPhotos?.length ?? 0);
+      (backup.payload.feedPhotos?.length ?? 0) +
+      (backup.payload.notificationPreferences?.length ?? 0);
 
     const target = await seedHousehold({ slug: "scale-dst", name: "Scale Target", caregivers: 0, babies: 0 });
     asOwner(target.ctx);

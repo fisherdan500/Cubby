@@ -625,16 +625,19 @@ type LockedRecoveryContext = Awaited<ReturnType<typeof lockActorForWrite>>;
  */
 const RESTORE_TIMEOUT_FLOOR_MS = 120_000;
 /**
- * Six hours. Generous on purpose: a restore is a one-time migration or recovery step on a private
- * household server, not a request competing with daily traffic, so a long transaction costs far less
- * here than a refused migration would. At the allowance below this covers roughly 144,000 records -
- * about forty years of heavy daily tracking - so no realistic household meets it.
+ * Six hours - a runaway guard, not an allowance anybody should plan to use.
  *
- * A ceiling still exists because a transaction open without bound is its own hazard: it holds a
- * serializable snapshot and blocks other writers. Removing the limit entirely would mean restoring in
- * resumable chunks instead of one transaction, which trades this guarantee - a restore either lands
- * whole or leaves nothing - for partial-state recovery. That trade is not worth making for a limit
- * nobody reaches.
+ * It is set far above any real payload (about 144,000 records at the rate below, on the order of forty
+ * years of heavy daily tracking) so that it never refuses a genuine household. It is NOT a promise
+ * that a six-hour restore would succeed: an HTTP request, a connection pool, a reverse proxy or
+ * PostgreSQL's own idle_in_transaction_session_timeout will cut a transaction long before that, and a
+ * serializable snapshot held for hours holds back autovacuum across the whole database. Anything
+ * approaching this ceiling has a different problem than its budget.
+ *
+ * The limit exists at all because an unbounded transaction is its own hazard. Lifting it would mean
+ * restoring in resumable chunks, which trades away the guarantee that a restore either lands whole or
+ * leaves nothing - not a trade worth making for a limit no household reaches. If it is ever
+ * approached, the per-record cost is the thing to attack first.
  */
 const RESTORE_TIMEOUT_CEILING_MS = 21_600_000;
 /**
@@ -650,7 +653,7 @@ const RESTORE_TIMEOUT_CEILING_MS = 21_600_000;
  */
 const RESTORE_MS_PER_RECORD = 150;
 
-function restoreRecordCount(payload: { activities?: unknown[]; babies?: unknown[]; feedPosts?: unknown[]; feedComments?: unknown[]; feedReactions?: unknown[]; calendarEvents?: unknown[]; reminders?: unknown[]; contacts?: unknown[]; catalogs?: unknown[]; plannedSchedules?: unknown[]; feedPhotos?: unknown[] } | undefined) {
+function restoreRecordCount(payload: { activities?: unknown[]; babies?: unknown[]; feedPosts?: unknown[]; feedComments?: unknown[]; feedReactions?: unknown[]; calendarEvents?: unknown[]; reminders?: unknown[]; contacts?: unknown[]; catalogs?: unknown[]; plannedSchedules?: unknown[]; feedPhotos?: unknown[]; notificationPreferences?: unknown[] } | undefined) {
   if (!payload) return 0;
   return (
     (payload.activities?.length ?? 0) +
@@ -663,8 +666,26 @@ function restoreRecordCount(payload: { activities?: unknown[]; babies?: unknown[
     (payload.contacts?.length ?? 0) +
     (payload.catalogs?.length ?? 0) +
     (payload.plannedSchedules?.length ?? 0) +
-    (payload.feedPhotos?.length ?? 0)
+    (payload.feedPhotos?.length ?? 0) +
+    // Written one row at a time inside the transaction, and the format allows up to a thousand.
+    (payload.notificationPreferences?.length ?? 0)
   );
+}
+
+/**
+ * Three operations per photo happen inside the restore transaction, on top of the attachment row that
+ * `feedPhotos` already counts: the intent lock, the byte read back, and the ownership transfer. The
+ * bytes themselves are written BEFORE the transaction opens, so that cost is deliberately not billed
+ * here - this budget sizes the transaction, not the whole operation.
+ */
+export const RESTORE_UNITS_PER_ARCHIVE_PHOTO = 3;
+
+/** The records a restore of this archive must write, counting its photos' in-transaction work. */
+export function archiveRestoreRecordCount(
+  payload: Parameters<typeof restoreRecordCount>[0],
+  photoCount: number
+) {
+  return restoreRecordCount(payload) + photoCount * RESTORE_UNITS_PER_ARCHIVE_PHOTO;
 }
 
 /** The transaction budget for a restore of this many records, and whether it is restorable at all. */
@@ -684,8 +705,8 @@ async function runRestoreTransaction<T>(
   records = 0
 ) {
   const budget = restoreTimeoutForRecords(records);
-  // Refused before anything is written, rather than accepted and abandoned two minutes in. Nobody
-  // should discover a size limit by watching a restore fail.
+  // Refused before the transaction opens and before any household row is written, rather than
+  // accepted and abandoned partway. Nobody should discover a size limit by watching a restore fail.
   if (budget.exceedsCeiling) throw new Error("backup_too_large_to_restore");
   try {
     return await settledPhotoTransaction(
@@ -765,10 +786,10 @@ export async function restoreBackupArchive(filePath: string, confirmation: Resto
         });
         storedKeys.set(photo.id, storageKey);
       }
-      const records =
-        restoreRecordCount(archive.parsed.backup.payload as Parameters<typeof restoreRecordCount>[0]) +
-        // Each photo costs an intent lock and a byte read inside the transaction, on top of its row.
-        archive.photos.length * 2;
+      const records = archiveRestoreRecordCount(
+        archive.parsed.backup.payload as Parameters<typeof restoreRecordCount>[0],
+        archive.photos.length
+      );
       return await runRestoreTransaction(ctx, confirmation, async (lockedCtx, tx) => {
         // Stable lock order before domain effects; reservations are not household data.
         for (const photo of [...archive.photos].sort((a, b) => storedKeys.get(a.id)!.localeCompare(storedKeys.get(b.id)!))) {

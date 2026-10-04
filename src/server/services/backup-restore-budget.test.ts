@@ -7,7 +7,44 @@
  * cases pin the shape of that derivation rather than any one number.
  */
 import { describe, expect, it } from "vitest";
-import { restoreTimeoutForRecords } from "@/server/services/backups";
+import {
+  archiveRestoreRecordCount,
+  RESTORE_UNITS_PER_ARCHIVE_PHOTO,
+  restoreTimeoutForRecords
+} from "@/server/services/backups";
+
+describe("what a restore is charged for", () => {
+  it("charges a photo for the work it does inside the transaction", () => {
+    // Each photo costs an intent lock, a byte read back and an ownership transfer inside the
+    // transaction, on top of the attachment row the payload already carries. Billing fewer than that
+    // is how a photo-heavy household would run out of budget partway.
+    expect(RESTORE_UNITS_PER_ARCHIVE_PHOTO).toBe(3);
+
+    const payload = { activities: Array(10).fill(null), feedPhotos: Array(4).fill(null) };
+    const withoutPhotos = archiveRestoreRecordCount(payload, 0);
+    const withPhotos = archiveRestoreRecordCount(payload, 4);
+
+    expect(withPhotos - withoutPhotos).toBe(4 * RESTORE_UNITS_PER_ARCHIVE_PHOTO);
+  });
+
+  it("counts every collection the restore writes row by row", () => {
+    // Each of these is inserted one row at a time inside the transaction, so each has to be paid for.
+    // notificationPreferences is the one that was missed: the format allows a thousand of them.
+    const collections = [
+      "activities", "babies", "feedPosts", "feedComments", "feedReactions",
+      "calendarEvents", "reminders", "contacts", "catalogs", "plannedSchedules",
+      "feedPhotos", "notificationPreferences"
+    ];
+
+    const uncounted = collections.filter((name) => {
+      const empty = archiveRestoreRecordCount({}, 0);
+      const populated = archiveRestoreRecordCount({ [name]: Array(5).fill(null) } as never, 0);
+      return populated - empty !== 5;
+    });
+
+    expect(uncounted).toEqual([]);
+  });
+});
 
 describe("the budget a restore is given", () => {
   it("never drops below the floor, however small the household", () => {
