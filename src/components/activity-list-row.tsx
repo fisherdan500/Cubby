@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { SwipeRowActions } from "@/components/swipe-row-actions";
-import { activityDayTimeLabel, activityLabels, type ActivityTypeName } from "@/domain/activity";
+import { activityDayTimeLabel, activityLabels, activityTimeLabel, type ActivityTypeName } from "@/domain/activity";
 import type { VolumeUnit } from "@/domain/units";
 import { describeActivity } from "@/lib/activity-format";
 import { activityDetailHref, activityEditHref } from "@/lib/activity-navigation";
@@ -31,7 +31,7 @@ function dayTimeLabel(
 ) {
   const startedAt = activity.startedAt ?? null;
   if (!day || !startedAt) {
-    return new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt);
+    return activityTimeLabel(activity.occurredAt, timeZone);
   }
   return activityDayTimeLabel({ startedAt, endedAt: activity.endedAt ?? null }, day, timeZone).text;
 }

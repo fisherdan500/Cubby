@@ -118,22 +118,62 @@ export function activityDayAnchor(
  * would misreport when it happened. The text is the same on both days it appears on; only where it
  * sits in the list changes.
  */
+/**
+ * Kept formatters for the row labels below.
+ *
+ * Building an Intl formatter costs far more than using one, and a label is built for every row of
+ * the day log - a hundred at a time on the full log - so constructing them per row was most of the
+ * work of rendering the page. Keyed by shape and zone, never by date, so nothing grows with how many
+ * rows are shown.
+ *
+ * It stays at three entries because every caller passes the one zone the installation is configured
+ * with. A change that made the zone per-baby or per-member would widen that, and nothing here evicts.
+ */
+const rowFormatters = new Map<string, Intl.DateTimeFormat>();
+
+// A shape carries its own locale, so naming the shape names everything about the formatter except
+// the zone.
+//
+// dayKey is not shown to anyone - it exists only to be compared against another day's, to decide
+// whether an activity crossed midnight. What it needs is the year, the month and the day, and
+// nothing that can differ between two moments on the SAME day: the zone's abbreviation changes when
+// the clocks do, so including it would read a nap from 1:30 to 3:30 on that morning as overnight.
+// The locale only decides how the three read; en-CA gives a sortable year-month-day, which is easy
+// to recognise in a debugger, and any locale that keeps the three distinct would work as well.
+const ROW_SHAPES = {
+  time: { locale: "en", options: { hour: "numeric", minute: "2-digit" } },
+  dateAndTime: { locale: "en", options: { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } },
+  dayKey: { locale: "en-CA", options: { year: "numeric", month: "2-digit", day: "2-digit" } }
+} satisfies Record<string, { locale: string; options: Intl.DateTimeFormatOptions }>;
+
+function rowFormatter(shape: keyof typeof ROW_SHAPES, timeZone: string) {
+  const key = `${shape}|${timeZone}`;
+  const cached = rowFormatters.get(key);
+  if (cached) return cached;
+  const { locale, options } = ROW_SHAPES[shape];
+  const formatter = new Intl.DateTimeFormat(locale, { ...options, timeZone });
+  rowFormatters.set(key, formatter);
+  return formatter;
+}
+
+/** Just the time of day, for a row with no day context to place it in. */
+export function activityTimeLabel(value: Date, timeZone: string) {
+  return rowFormatter("time", timeZone).format(value);
+}
+
 export function activityDayTimeLabel(
   activity: { startedAt: Date; endedAt: Date | null; running?: boolean },
   day: { start: Date; end: Date },
   timeZone: string
 ): { text: string; spansDays: boolean } {
-  const time = (value: Date) =>
-    new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit", timeZone }).format(value);
+  const time = (value: Date) => rowFormatter("time", timeZone).format(value);
   const dateAndTime = (value: Date) =>
-    new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone }).format(value)
-      .replace(",", "");
+    rowFormatter("dateAndTime", timeZone).format(value).replace(",", "");
 
   if (activity.running) return { text: `${time(activity.startedAt)} - now`, spansDays: false };
   if (!activity.endedAt) return { text: time(activity.startedAt), spansDays: false };
 
-  const dayKey = (value: Date) =>
-    new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone }).format(value);
+  const dayKey = (value: Date) => rowFormatter("dayKey", timeZone).format(value);
   const spansDays = dayKey(activity.startedAt) !== dayKey(activity.endedAt);
 
   if (!spansDays) return { text: `${time(activity.startedAt)} - ${time(activity.endedAt)}`, spansDays: false };
