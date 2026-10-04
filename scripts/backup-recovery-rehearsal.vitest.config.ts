@@ -12,7 +12,8 @@ export default defineConfig({
     environment: "node",
     include: [
       "scripts/backup-recovery-rehearsal.test.ts",
-      "scripts/backup-recovery-rehearsal.integration.test.ts"
+      "scripts/backup-recovery-rehearsal.integration.test.ts",
+      "scripts/backup-matrix-rehearsal.integration.test.ts"
     ],
     testTimeout: 120_000,
     hookTimeout: 120_000,
