@@ -610,12 +610,83 @@ type RestoreConfirmation = { confirmation?: string; previewChecksum?: string };
 type RecoveryContext = BrowserOperationContext;
 type LockedRecoveryContext = Awaited<ReturnType<typeof lockActorForWrite>>;
 
+/**
+ * How long a restore is allowed to take.
+ *
+ * A fixed ceiling cannot serve every household: the work is proportional to how much history the
+ * family has, so a budget that suits a new household silently fails a well-used one, and the failure
+ * arrives after two minutes of apparently-working progress. The budget is therefore derived from the
+ * payload actually being restored.
+ *
+ * The floor keeps small restores from being held to an unreasonably tight limit. The ceiling exists
+ * because a transaction held open indefinitely is its own problem - it blocks other writers and holds
+ * a serializable snapshot - so a payload beyond that is refused up front, with a message that names
+ * the size, rather than being accepted and abandoned partway.
+ */
+const RESTORE_TIMEOUT_FLOOR_MS = 120_000;
+/**
+ * Six hours. Generous on purpose: a restore is a one-time migration or recovery step on a private
+ * household server, not a request competing with daily traffic, so a long transaction costs far less
+ * here than a refused migration would. At the allowance below this covers roughly 144,000 records -
+ * about forty years of heavy daily tracking - so no realistic household meets it.
+ *
+ * A ceiling still exists because a transaction open without bound is its own hazard: it holds a
+ * serializable snapshot and blocks other writers. Removing the limit entirely would mean restoring in
+ * resumable chunks instead of one transaction, which trades this guarantee - a restore either lands
+ * whole or leaves nothing - for partial-state recovery. That trade is not worth making for a limit
+ * nobody reaches.
+ */
+const RESTORE_TIMEOUT_CEILING_MS = 21_600_000;
+/**
+ * Measured, not guessed: a restored entry costs about 23 ms on a local disposable PostgreSQL, down
+ * from 83 ms before relation hydration was skipped. The allowance is deliberately several times that
+ * measurement, because the budget scales with how many records there are and NOT with how fast the
+ * server is - so a thin multiplier would simply move the failure to slower hardware instead of
+ * removing it. A household server on modest hardware can be several times slower than this
+ * measurement and still finish.
+ *
+ * The asymmetry justifies the generosity: overestimating costs a transaction that could have been
+ * shorter, while underestimating costs somebody their migration.
+ */
+const RESTORE_MS_PER_RECORD = 150;
+
+function restoreRecordCount(payload: { activities?: unknown[]; babies?: unknown[]; feedPosts?: unknown[]; feedComments?: unknown[]; feedReactions?: unknown[]; calendarEvents?: unknown[]; reminders?: unknown[]; contacts?: unknown[]; catalogs?: unknown[]; plannedSchedules?: unknown[]; feedPhotos?: unknown[] } | undefined) {
+  if (!payload) return 0;
+  return (
+    (payload.activities?.length ?? 0) +
+    (payload.babies?.length ?? 0) +
+    (payload.feedPosts?.length ?? 0) +
+    (payload.feedComments?.length ?? 0) +
+    (payload.feedReactions?.length ?? 0) +
+    (payload.calendarEvents?.length ?? 0) +
+    (payload.reminders?.length ?? 0) +
+    (payload.contacts?.length ?? 0) +
+    (payload.catalogs?.length ?? 0) +
+    (payload.plannedSchedules?.length ?? 0) +
+    (payload.feedPhotos?.length ?? 0)
+  );
+}
+
+/** The transaction budget for a restore of this many records, and whether it is restorable at all. */
+export function restoreTimeoutForRecords(records: number) {
+  const required = records * RESTORE_MS_PER_RECORD;
+  return {
+    timeoutMs: Math.min(RESTORE_TIMEOUT_CEILING_MS, Math.max(RESTORE_TIMEOUT_FLOOR_MS, required)),
+    exceedsCeiling: required > RESTORE_TIMEOUT_CEILING_MS
+  };
+}
+
 /** The one serializable transaction every restore runs in, with its confirmation and target checks. */
 async function runRestoreTransaction<T>(
   ctx: RecoveryContext,
   confirmation: RestoreConfirmation,
-  work: (lockedCtx: LockedRecoveryContext, tx: Prisma.TransactionClient) => Promise<T>
+  work: (lockedCtx: LockedRecoveryContext, tx: Prisma.TransactionClient) => Promise<T>,
+  records = 0
 ) {
+  const budget = restoreTimeoutForRecords(records);
+  // Refused before anything is written, rather than accepted and abandoned two minutes in. Nobody
+  // should discover a size limit by watching a restore fail.
+  if (budget.exceedsCeiling) throw new Error("backup_too_large_to_restore");
   try {
     return await settledPhotoTransaction(
       async (tx) => {
@@ -635,7 +706,7 @@ async function runRestoreTransaction<T>(
         await assertFreshTarget(tx, lockedCtx);
         return work(lockedCtx, tx);
       },
-      { isolationLevel: "Serializable", maxWait: 10_000, timeout: 120_000 }
+      { isolationLevel: "Serializable", maxWait: 10_000, timeout: budget.timeoutMs }
     );
   } catch (error) {
     if (typeof error === "object" && error !== null && "code" in error && error.code === "P2034") {
@@ -654,10 +725,17 @@ export async function restoreBackupJson(raw: unknown, confirmation: RestoreConfi
   if (parsed.version === 2 && confirmation.previewChecksum !== parsed.backup.checksum) {
     throw new Error("backup_preview_mismatch");
   }
-  return runRestoreTransaction(ctx, confirmation, (lockedCtx, tx) =>
-    parsed.version === 2
-      ? restoreV2InTransaction(parsed, lockedCtx, tx)
-      : restoreLegacyInTransaction(parsed, legacy!, lockedCtx, tx)
+  const records = parsed.version === 2
+    ? restoreRecordCount(parsed.backup.payload as Parameters<typeof restoreRecordCount>[0])
+    : (parsed.backup.activities?.length ?? 0) + (parsed.backup.babies?.length ?? 0);
+  return runRestoreTransaction(
+    ctx,
+    confirmation,
+    (lockedCtx, tx) =>
+      parsed.version === 2
+        ? restoreV2InTransaction(parsed, lockedCtx, tx)
+        : restoreLegacyInTransaction(parsed, legacy!, lockedCtx, tx),
+    records
   );
 }
 
@@ -687,6 +765,10 @@ export async function restoreBackupArchive(filePath: string, confirmation: Resto
         });
         storedKeys.set(photo.id, storageKey);
       }
+      const records =
+        restoreRecordCount(archive.parsed.backup.payload as Parameters<typeof restoreRecordCount>[0]) +
+        // Each photo costs an intent lock and a byte read inside the transaction, on top of its row.
+        archive.photos.length * 2;
       return await runRestoreTransaction(ctx, confirmation, async (lockedCtx, tx) => {
         // Stable lock order before domain effects; reservations are not household data.
         for (const photo of [...archive.photos].sort((a, b) => storedKeys.get(a.id)!.localeCompare(storedKeys.get(b.id)!))) {
@@ -697,7 +779,7 @@ export async function restoreBackupArchive(filePath: string, confirmation: Resto
         const result = await restoreV2InTransaction(archive.parsed, lockedCtx, tx, storedKeys);
         for (const photo of archive.photos) await transferPhotoWriteIntent(tx, storedKeys.get(photo.id)!, lockedCtx.householdId, photo);
         return result;
-      });
+      }, records);
     });
   } finally {
     await archive.close();

@@ -127,27 +127,27 @@
       "id": "semantic-service:activity.create"
     },
     {
-      "digest": "9f74788ee61343816c1bf1c10a340c5f8aa3c17fd121ebaf13babb26f9544920",
+      "digest": "6feb2fdfe35e85bb556f79dae10dcb5f5268a6b41d7ce18ed9cfb310dc585fbf",
       "id": "semantic-service:activity.delete"
     },
     {
-      "digest": "e3c0d4dd73958f75f37dbe201cf6ca83fad5da6fa7401cb3f0d19c7496a9e994",
+      "digest": "74733e192a6801f836ac2a16b46c5766007cd09a1d08e0feba53eed88aa024a3",
       "id": "semantic-service:activity.timer.pause"
     },
     {
-      "digest": "b8dfe5284f300e72983719ff09838e8847861ed225df1a3521492ad9cf426f73",
+      "digest": "96ef1a3f637892fc251b172d667648cb13061dc0cab1ef36a53f2dcbd3ca3f44",
       "id": "semantic-service:activity.timer.resume"
     },
     {
-      "digest": "27c5abab04c0e22edac7a43e10061a2c0b9f8cf4f75f27ef12c2064668ecd8bc",
+      "digest": "538ebb2b235bba82bf012aa9ab2c91ebbd01f4b30d8030fbbd1caca81ab09de0",
       "id": "semantic-service:activity.timer.stop"
     },
     {
-      "digest": "79e57dd1ca1dd79dd3b697676eccb4191f13f7ea65b21fbff5ef16689e27998c",
+      "digest": "377f11569891f645b9671c726eda799acdba74c6268a11ddd116e10eec3f5fcb",
       "id": "semantic-service:activity.undo_last"
     },
     {
-      "digest": "60b402c408bccb45c6a99b2633fc9b02b107919610958035c5dd8610a4626299",
+      "digest": "a1c50ea4c8280847bf45a2fc52739ab028ee70f8b155017b8a11a40ffbec98f9",
       "id": "semantic-service:activity.update"
     },
     {
@@ -227,7 +227,7 @@
       "id": "semantic-service:settings.units.update"
     },
     {
-      "digest": "4d9247c53ece0996797760c7027ee5ceecd5673468a91e64aad29f0294e41f8a",
+      "digest": "62272af8d875aaa68a05b4fde8a71b491505ac7c7a1c1a5067224188abd2d4e4",
       "id": "semantic:browser_household_mutations"
     },
     {
@@ -241,10 +241,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "5b38a242efae1cfb6baaa2c74f88d95116b4b98cd2424172e9138c5b5a73854a",
+  "semanticArtifactDigest": "d753e16df434550fe169258064e95571e68bdc7b7bd3282e98bb7d9074d2c5ff",
   "semanticArtifactVersion": "semantic-artifact.v1",
   "semanticCoverageDigest": "46306c8d7e6ec47501cd7b87f62a0b52db4e52b36199afb519cae26041a62f78",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "0d894e2fbbe50fc9eecdbc3b034ee88aa58a0528aa282bf375b05f1e8f0f0de5"
+  "semanticFingerprint": "27b6a4bb85178549a48c5d9915547c816ccd2c6f8aa9d9ceb9f3e22b82d178bd"
 }
