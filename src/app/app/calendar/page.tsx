@@ -15,7 +15,7 @@ import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calend
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getCalendar } from "@/server/services/calendar";
-import { displayFormatter } from "@/lib/timezone";
+import { dayKeyFormatter, displayFormatter } from "@/lib/timezone";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const eventTypes = ["Appointment", "Birthday", "Reminder", "Checkup", "Visit", "Other"];
@@ -498,7 +498,6 @@ function formatTime(date: Date, timeZone: string) {
 }
 
 function formatDateKeyLabel(key: string) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(
-    new Date(`${key}T12:00:00.000Z`)
-  );
+  // Built for every day cell's spoken label, so a month view asked for forty of these.
+  return dayKeyFormatter("dayInFull").format(new Date(`${key}T12:00:00.000Z`));
 }

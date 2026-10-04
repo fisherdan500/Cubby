@@ -2064,17 +2064,17 @@
           "file": "src/app/app/calendar/actions.ts"
         },
         {
-          "digest": "a8c783b68531cc15458cd52a60d9aee15c52a1ea0a84144950f5b329aa1ef568",
+          "digest": "bf9530a1b3681c81af7ad575674a8f756f3035542d37bde814c2df2dbac6134d",
           "file": "src/app/app/calendar/page.tsx"
         }
       ],
       "declarationDigest": "19c37a3926df789f72a86b7a0e445a13dc81d4e7169d26e20c35df4e5503b5cc",
-      "fingerprint": "50ee3a59cf9ac5e5069a1eb0fe700e30ac6b9e8166d6033f090f6a55aa988a89",
+      "fingerprint": "b93e4736b840475bacda60fb142b26ea1115f697429860a1db3460bde7007a74",
       "id": "fingerprint:server_loader:src/app/app/calendar/page.tsx",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts",
-      "sourceDigest": "25bdbf2398db0eec857b42981f736d000d4db4c6bc77fd7fad6c9adde1c9bd90",
+      "sourceDigest": "51379509726320cb6c42dabad381ff64ed7e3d39bba43dc18086643381cc06cc",
       "status": "declared"
     },
     {

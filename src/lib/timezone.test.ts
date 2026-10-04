@@ -4,6 +4,7 @@ import {
   dateKeyInTimeZone,
   DEFAULT_APP_TIMEZONE,
   dateTimeInputValue,
+  dayKeyFormatter,
   displayFormatter,
   formatCalendarDate,
   formatInstant,
@@ -269,23 +270,29 @@ describe("reusing the work behind a zone lookup", () => {
     expect(displayFormatter("timeOfDay", "").format(instant)).toBe("7:30 PM");
     expect(() => displayFormatter("hourOfDay", "Not/AZone")).not.toThrow();
   });
-  it("reads a day heading in UTC however the caller's zone is set", () => {
-    // A day key is a calendar date with no instant behind it, stored as midnight UTC. Read in a zone
-    // west of UTC it would land on the day before, so these two shapes name their own zone and the
-    // caller's must not override it - including the household zone, which is where that would hurt.
-    const dayKeyAsInstant = new Date(Date.UTC(2026, 5, 15));
-    expect(displayFormatter("dayHeading", "UTC").format(dayKeyAsInstant)).toBe("Mon, Jun 15");
-    expect(displayFormatter("dayHeading", "America/New_York").format(dayKeyAsInstant)).toBe("Mon, Jun 15");
-    expect(displayFormatter("dayHeading", "Asia/Tokyo").format(dayKeyAsInstant)).toBe("Mon, Jun 15");
+  it("names a day key in UTC, because there is no zone that could be right for one", () => {
+    // A day key is a calendar date with no instant behind it, carried as midnight UTC. Read in a zone
+    // west of UTC it lands on the day before, so these shapes take no zone at all - a caller cannot
+    // pass the household's and quietly get yesterday.
+    expect(dayKeyFormatter("dayHeading").format(new Date(Date.UTC(2026, 5, 15)))).toBe("Mon, Jun 15");
 
     // An earlier year has to say which year it was.
-    expect(displayFormatter("dayHeadingWithYear", "UTC").format(new Date(Date.UTC(2025, 5, 15))))
-      .toBe("Sun, Jun 15, 2025");
-    expect(displayFormatter("dayHeadingWithYear", "America/New_York").format(new Date(Date.UTC(2025, 5, 15))))
+    expect(dayKeyFormatter("dayHeadingWithYear").format(new Date(Date.UTC(2025, 5, 15))))
       .toBe("Sun, Jun 15, 2025");
 
-    // The first of a month, where slipping a day also changes the month.
-    expect(displayFormatter("dayHeading", "America/New_York").format(new Date(Date.UTC(2026, 0, 1))))
-      .toBe("Thu, Jan 1");
+    // Spoken in full, for the calendar's day cells.
+    expect(dayKeyFormatter("dayInFull").format(new Date("2026-06-15T12:00:00.000Z")))
+      .toBe("Monday, June 15, 2026");
+
+    // The first of a month and of a year, where slipping a day also changes the month, and the day is
+    // a single digit so it must not be padded.
+    expect(dayKeyFormatter("dayHeading").format(new Date(Date.UTC(2026, 0, 1)))).toBe("Thu, Jan 1");
+    expect(dayKeyFormatter("dayInFull").format(new Date("2026-01-01T12:00:00.000Z")))
+      .toBe("Thursday, January 1, 2026");
+
+    // A leap day, and a year far enough out that no other assertion here reaches it.
+    expect(dayKeyFormatter("dayHeading").format(new Date(Date.UTC(2028, 1, 29)))).toBe("Tue, Feb 29");
+    expect(dayKeyFormatter("dayInFull").format(new Date("2040-12-31T12:00:00.000Z")))
+      .toBe("Monday, December 31, 2040");
   });
 });

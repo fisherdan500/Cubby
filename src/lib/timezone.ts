@@ -11,6 +11,11 @@ export const DEFAULT_APP_TIMEZONE = "America/New_York";
  * taken from a request. A caller that ever forwards a user-supplied zone would be widening the key
  * space, and should bound it. A zone's rules cannot change while the process runs, so a kept
  * formatter cannot go stale.
+ *
+ * Everything exported from here resolves the zone it is given, so callers do not resolve it first and
+ * must not resolve it again. Code outside this module that formats without coming through here - the
+ * activity row labels in domain/activity.ts, which cannot import from lib - is therefore handed a
+ * zone that has already been resolved by whoever read it.
  */
 const resolvedZones = new Map<string, Map<string, string>>();
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
@@ -47,32 +52,49 @@ function dateFormatter(timeZone: string, withTime: boolean) {
  * for different options would silently hand the second one the first's formatter. Naming the shapes
  * here means the name and the options cannot drift apart.
  */
-const DISPLAY_SHAPES = {
+/** Shapes for a real moment, which has to be read in the household's zone to mean anything. */
+const INSTANT_SHAPES = {
   /** A time of day, as it reads beside an entry: "7:30 PM". */
   timeOfDay: { locale: "en-US", options: { hour: "numeric", minute: "2-digit" } },
   /** The hour alone, 0-23, for deciding which part of the day something falls in. */
-  hourOfDay: { locale: "en-US", options: { hour: "numeric", hourCycle: "h23" } },
-  /** A day heading within the current year: "Mon, Jun 15". Read in UTC from a day key. */
-  dayHeading: { locale: "en-US", options: { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" } },
-  /** The same heading for an earlier year, where the year has to be said: "Mon, Jun 15, 2025". */
-  dayHeadingWithYear: {
-    locale: "en-US",
-    options: { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }
-  }
+  hourOfDay: { locale: "en-US", options: { hour: "numeric", hourCycle: "h23" } }
+} satisfies Record<string, { locale: string; options: Intl.DateTimeFormatOptions }>;
+
+/**
+ * Shapes for a day key - a calendar date with no instant behind it, carried as midnight UTC.
+ *
+ * These take no zone, and the separate function below is why: read in a zone west of UTC a day key
+ * lands on the day before, so there is no zone a caller could usefully pass. Keeping them out of the
+ * zone-taking API means that mistake cannot be written rather than merely being unlikely.
+ */
+const DAY_KEY_SHAPES = {
+  /** A day heading within the current year: "Mon, Jun 15". */
+  dayHeading: { locale: "en-US", options: { weekday: "short", month: "short", day: "numeric" } },
+  /** The same for an earlier year, where the year has to be said: "Mon, Jun 15, 2025". */
+  dayHeadingWithYear: { locale: "en-US", options: { weekday: "short", month: "short", day: "numeric", year: "numeric" } },
+  /** A day named in full, for a label read aloud by a screen reader: "Monday, June 15, 2026". */
+  dayInFull: { locale: "en-US", options: { weekday: "long", month: "long", day: "numeric", year: "numeric" } }
 } satisfies Record<string, { locale: string; options: Intl.DateTimeFormatOptions }>;
 
 const displayFormatters = new Map<string, Intl.DateTimeFormat>();
 
-export function displayFormatter(shape: keyof typeof DISPLAY_SHAPES, timeZone: string) {
+export function displayFormatter(shape: keyof typeof INSTANT_SHAPES, timeZone: string) {
   const zone = normalizeTimeZone(timeZone);
   const key = `${shape}|${zone}`;
   const cached = displayFormatters.get(key);
   if (cached) return cached;
-  const { locale, options } = DISPLAY_SHAPES[shape];
-  // A shape that names its own zone keeps it: a day key is a calendar date with no instant behind it,
-  // so it is read in UTC, and reading it in a zone west of UTC would land on the day before.
-  const formatter = new Intl.DateTimeFormat(locale, { timeZone: zone, ...options });
+  const { locale, options } = INSTANT_SHAPES[shape];
+  const formatter = new Intl.DateTimeFormat(locale, { ...options, timeZone: zone });
   displayFormatters.set(key, formatter);
+  return formatter;
+}
+
+export function dayKeyFormatter(shape: keyof typeof DAY_KEY_SHAPES) {
+  const cached = displayFormatters.get(shape);
+  if (cached) return cached;
+  const { locale, options } = DAY_KEY_SHAPES[shape];
+  const formatter = new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" });
+  displayFormatters.set(shape, formatter);
   return formatter;
 }
 
