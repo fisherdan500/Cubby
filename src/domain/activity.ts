@@ -123,13 +123,23 @@ export function activityDayAnchor(
  *
  * Building an Intl formatter costs far more than using one, and a label is built for every row of
  * the day log - a hundred at a time on the full log - so constructing them per row was most of the
- * work of rendering the page. Keyed by shape and zone, never by date, so one entry exists per shape
- * per zone the installation uses and nothing grows with how many rows are shown.
+ * work of rendering the page. Keyed by shape and zone, never by date, so nothing grows with how many
+ * rows are shown.
+ *
+ * It stays at three entries because every caller passes the one zone the installation is configured
+ * with. A change that made the zone per-baby or per-member would widen that, and nothing here evicts.
  */
 const rowFormatters = new Map<string, Intl.DateTimeFormat>();
 
 // A shape carries its own locale, so naming the shape names everything about the formatter except
-// the zone. The day comparison uses en-CA because it wants a sortable year-month-day, not a label.
+// the zone.
+//
+// dayKey is not shown to anyone - it exists only to be compared against another day's, to decide
+// whether an activity crossed midnight. What it needs is the year, the month and the day, and
+// nothing that can differ between two moments on the SAME day: the zone's abbreviation changes when
+// the clocks do, so including it would read a nap from 1:30 to 3:30 on that morning as overnight.
+// The locale only decides how the three read; en-CA gives a sortable year-month-day, which is easy
+// to recognise in a debugger, and any locale that keeps the three distinct would work as well.
 const ROW_SHAPES = {
   time: { locale: "en", options: { hour: "numeric", minute: "2-digit" } },
   dateAndTime: { locale: "en", options: { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" } },

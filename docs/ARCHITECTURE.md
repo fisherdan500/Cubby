@@ -75,7 +75,12 @@ resolution. Offline expansion is intentionally deferred.
 - `src/app/app`: authenticated app pages such as Log Entry, Feed, Full Log, Calendar, Reports, and Settings.
 - `src/app/api`: HTTP route handlers for app actions, auth, exports, backups, hooks, notifications, timers, settings, and dashboard warnings.
 - `src/components`: shared UI components and app shell pieces.
-- `src/domain`: app-level domain constants such as roles and permissions.
+- `src/domain`: app-level domain constants such as roles and permissions. Files here import only
+  from `src/domain`, zod, and node built-ins, never from `src/lib` - keeping the layer free of
+  runtime wiring. `activity.ts` holds the one exception to statelessness: a small cache of Intl
+  formatters for the activity row labels, kept there because the labels themselves live there and
+  the alternative was the first `domain` -> `lib` import. Treat it as the exception, not a precedent
+  for state in this layer.
 - `src/lib`: shared runtime helpers, auth wiring, environment validation, Prisma client, and time utilities.
 - `src/server/auth`: current-user and household context helpers.
 - `src/server/services`: business logic used by pages and API routes.

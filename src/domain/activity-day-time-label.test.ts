@@ -151,4 +151,34 @@ describe("how an activity's time reads on a day", () => {
     };
     expect(activityDayTimeLabel(monthApart, day, zone).spansDays).toBe(true);
   });
+  it("writes a single-digit day without padding it", () => {
+    // Every other dated label here lands on a two-digit day, so a shape that zero-padded the day
+    // would read "Oct 01" and no test would notice. A family writes it the way they say it.
+    const intoOctober = {
+      startedAt: new Date("2026-09-30T23:30:00.000Z"),
+      endedAt: new Date("2026-10-01T09:30:00.000Z")
+    };
+    expect(activityDayTimeLabel(intoOctober, day, zone).text).toBe("Sep 30 7:30 PM - Oct 1 5:30 AM");
+  });
+
+  it("does not mistake the clocks changing for a change of day", () => {
+    // The day comparison must contain nothing that varies WITHIN a day. On the morning the clocks
+    // spring forward the two ends of this nap sit in different offsets, so anything carrying the
+    // zone's abbreviation would differ between them and the nap would wrongly claim it crossed
+    // midnight - it began at 1:30 and ended at 3:30 the same morning.
+    const acrossTheSpringForward = {
+      startedAt: new Date("2026-03-08T06:30:00.000Z"),
+      endedAt: new Date("2026-03-08T07:30:00.000Z")
+    };
+    const label = activityDayTimeLabel(acrossTheSpringForward, day, zone);
+    expect(label.spansDays).toBe(false);
+    expect(label.text).toBe("1:30 AM - 3:30 AM");
+
+    // And the autumn transition, where an hour repeats instead of vanishing.
+    const acrossTheFallBack = {
+      startedAt: new Date("2026-11-01T05:30:00.000Z"),
+      endedAt: new Date("2026-11-01T06:30:00.000Z")
+    };
+    expect(activityDayTimeLabel(acrossTheFallBack, day, zone).spansDays).toBe(false);
+  });
 });
