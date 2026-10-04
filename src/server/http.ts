@@ -100,8 +100,44 @@ export async function readBoundedBytes(request: Request, maxBytes: number, tooLa
   return Buffer.concat(chunks, total);
 }
 
+/**
+ * Database failures that are the server's problem and worth retrying, not the caller's mistake.
+ *
+ * Prisma reports these on `code` rather than in `message`, so they do not match any of the string
+ * comparisons below and would otherwise fall through to the catch-all. A long restore is where they
+ * bite: it holds one serializable transaction across thousands of rows, so an exhausted pool or a
+ * closed transaction is a realistic outcome on a busy or underpowered server. Told plainly, the
+ * person retries; told "Something went wrong", they have no idea whether their data arrived.
+ *
+ * Deliberately narrow. Only transient infrastructure codes are listed - a constraint violation or a
+ * missing record is a bug and must keep reaching the catch-all, where it is logged.
+ */
+const RETRYABLE_DATABASE_CODES = new Map([
+  ["P2024", "Cubby could not get a database connection in time. Wait a moment, then try again."],
+  ["P2028", "The database stopped partway through this operation, so nothing was saved. Try again."],
+  ["P2034", "The database was too busy to finish this safely, so nothing was saved. Try again."],
+  ["P1001", "Cubby cannot reach its database. Check that the database is running, then try again."],
+  ["P1002", "Cubby cannot reach its database. Check that the database is running, then try again."],
+  ["P1008", "The database took too long to respond, so nothing was saved. Try again."],
+  ["P1017", "The database closed the connection, so nothing was saved. Try again."]
+]);
+
+function retryableDatabaseFailure(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) return null;
+  const code = (error as { code: unknown }).code;
+  if (typeof code !== "string") return null;
+  const message = RETRYABLE_DATABASE_CODES.get(code);
+  return message ? { code, message } : null;
+}
+
 export function handleError(error: unknown) {
   if (error instanceof ZodError) return fail("validation_error", "Please check the highlighted fields.", 422, error.flatten());
+  const database = retryableDatabaseFailure(error);
+  if (database) {
+    // Logged as well as reported: a pool timeout on an ordinary request is a capacity signal.
+    console.error(error);
+    return fail("database_unavailable", database.message, 503);
+  }
   if (error instanceof Error) {
     if (error.message === "unauthenticated") return fail("unauthenticated", "Please sign in.", 401);
     if (error.message === "password_change_required") return fail("password_change_required", "Choose your own password before continuing.", 403);
@@ -164,6 +200,7 @@ export function handleError(error: unknown) {
     if (error.message === "backup_audit_integrity_unavailable") return fail("backup_audit_integrity_unavailable", "This household's audit history could not be verified, so restoring into it was refused. Run the integrity check to see why, then try again.", 409);
     if (error.message === "backup_invalid_pause_intervals" || error.message === "pause_interval_state_invalid") return fail("backup_invalid_pause_intervals", "This backup contains a timer whose pause history is incomplete and cannot be restored.", 422);
     if (error.message === "archive_too_large") return fail("archive_too_large", "Cubby backup archives must be 2 GiB or smaller.", 413);
+    if (error.message === "backup_directory_unavailable") return fail("backup_directory_unavailable", "Cubby cannot reach its backup folder (AUTOMATED_BACKUP_DIRECTORY). Check it on the platform page, then try again.", 503);
     if (error.message === "attachment_type_unavailable") return fail("not_found", "Not found.", 404);
     if (error.message === "attachment_upload_busy") return fail("attachment_upload_busy", "Another photo is being processed. Try again shortly.", 429);
     if (error.message === "upload_timeout" || error.message === "upload_aborted") return fail(error.message, "The upload stopped. Try again.", 408);
