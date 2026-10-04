@@ -5,6 +5,7 @@ import { activityLabels, type ActivityTypeName } from "@/domain/activity";
 import type { VolumeUnit } from "@/domain/units";
 import { describeActivity } from "@/lib/activity-format";
 import { activityDetailHref } from "@/lib/activity-navigation";
+import { displayFormatter } from "@/lib/timezone";
 
 type FeedActivity = Parameters<typeof describeActivity>[0] & {
   actorMember?: { displayName: string | null; user: { name: string } } | null;
@@ -40,7 +41,7 @@ export function FeedActivityCard({
   const summary = describeActivity(activity, { volume });
   const milestone = type === "milestone";
   const author = activity.actorMember?.displayName ?? activity.actorMember?.user.name;
-  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(activity.occurredAt);
+  const time = displayFormatter("timeOfDay", timeZone).format(activity.occurredAt);
 
   return (
     <article

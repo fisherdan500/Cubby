@@ -4,6 +4,8 @@ import {
   dateKeyInTimeZone,
   DEFAULT_APP_TIMEZONE,
   dateTimeInputValue,
+  dayKeyFormatter,
+  displayFormatter,
   formatCalendarDate,
   formatInstant,
   formatInstantDate,
@@ -231,5 +233,66 @@ describe("reusing the work behind a zone lookup", () => {
     // Across midnight in the zone, where the year rolls over but the instant is still the old year.
     expect(dateKeyInTimeZone(new Date("2041-01-01T04:00:00.000Z"), "America/New_York")).toBe("2040-12-31");
     expect(dateTimeInputValue(new Date("2032-02-29T13:45:00.000Z"), "Asia/Kolkata")).toBe("2032-02-29T19:15");
+  });
+  it("shows a time of day in the household's zone, whichever was asked for last", () => {
+    // These formatters are kept between calls, and a page shows a lot of items, so the zone has to
+    // be part of what is kept: the same moment is a different time of day in each household.
+    const instant = new Date("2026-06-15T23:30:00.000Z");
+    expect(displayFormatter("timeOfDay", "America/New_York").format(instant)).toBe("7:30 PM");
+    expect(displayFormatter("timeOfDay", "Asia/Tokyo").format(instant)).toBe("8:30 AM");
+    expect(displayFormatter("timeOfDay", "UTC").format(instant)).toBe("11:30 PM");
+    // Asked again, after all three are remembered.
+    expect(displayFormatter("timeOfDay", "Asia/Tokyo").format(instant)).toBe("8:30 AM");
+    expect(displayFormatter("timeOfDay", "America/New_York").format(instant)).toBe("7:30 PM");
+  });
+
+  it("keeps the time of day and the bare hour apart", () => {
+    // One is read by a person, the other is parsed as a number to decide whether something happened
+    // in the morning or at night. Sharing a kept formatter between them would turn "7:30 PM" into
+    // the input of a Number() and give NaN, or label the evening as the small hours.
+    const evening = new Date("2026-06-15T23:30:00.000Z");
+    expect(displayFormatter("timeOfDay", "America/New_York").format(evening)).toBe("7:30 PM");
+    expect(Number(displayFormatter("hourOfDay", "America/New_York").format(evening))).toBe(19);
+
+    // The hour must count from zero, so midnight is 0 rather than 24 or 12.
+    const justAfterMidnight = new Date("2026-06-15T04:30:00.000Z");
+    expect(Number(displayFormatter("hourOfDay", "America/New_York").format(justAfterMidnight))).toBe(0);
+    // And the displayed shape still reads as a time afterwards.
+    expect(displayFormatter("timeOfDay", "America/New_York").format(justAfterMidnight)).toBe("12:30 AM");
+  });
+
+  it("reads an unusable zone in the fallback rather than failing a page", () => {
+    // Every caller passes the installation's configured zone today, so this cannot happen now. It is
+    // pinned because a time beside an entry should not be what takes a whole page down if a stored
+    // zone is ever unreadable - the rest of the module already resolves rather than throws.
+    const instant = new Date("2026-06-15T23:30:00.000Z");
+    expect(displayFormatter("timeOfDay", "Not/AZone").format(instant)).toBe("7:30 PM");
+    expect(displayFormatter("timeOfDay", "").format(instant)).toBe("7:30 PM");
+    expect(() => displayFormatter("hourOfDay", "Not/AZone")).not.toThrow();
+  });
+  it("names a day key in UTC, because there is no zone that could be right for one", () => {
+    // A day key is a calendar date with no instant behind it, carried as midnight UTC. Read in a zone
+    // west of UTC it lands on the day before, so these shapes take no zone at all - a caller cannot
+    // pass the household's and quietly get yesterday.
+    expect(dayKeyFormatter("dayHeading").format(new Date(Date.UTC(2026, 5, 15)))).toBe("Mon, Jun 15");
+
+    // An earlier year has to say which year it was.
+    expect(dayKeyFormatter("dayHeadingWithYear").format(new Date(Date.UTC(2025, 5, 15))))
+      .toBe("Sun, Jun 15, 2025");
+
+    // Spoken in full, for the calendar's day cells.
+    expect(dayKeyFormatter("dayInFull").format(new Date("2026-06-15T12:00:00.000Z")))
+      .toBe("Monday, June 15, 2026");
+
+    // The first of a month and of a year, where slipping a day also changes the month, and the day is
+    // a single digit so it must not be padded.
+    expect(dayKeyFormatter("dayHeading").format(new Date(Date.UTC(2026, 0, 1)))).toBe("Thu, Jan 1");
+    expect(dayKeyFormatter("dayInFull").format(new Date("2026-01-01T12:00:00.000Z")))
+      .toBe("Thursday, January 1, 2026");
+
+    // A leap day, and a year far enough out that no other assertion here reaches it.
+    expect(dayKeyFormatter("dayHeading").format(new Date(Date.UTC(2028, 1, 29)))).toBe("Tue, Feb 29");
+    expect(dayKeyFormatter("dayInFull").format(new Date("2040-12-31T12:00:00.000Z")))
+      .toBe("Monday, December 31, 2040");
   });
 });

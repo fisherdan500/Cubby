@@ -1,5 +1,5 @@
 import type { ActivityTypeName } from "@/domain/activity";
-import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
+import { addDaysToDateKey, dateKeyInTimeZone, dayKeyFormatter } from "@/lib/timezone";
 
 /**
  * The family feed (DEC-PROD-421): the household's own entries, newest first, one card each, for the
@@ -61,11 +61,6 @@ function dayLabel(key: string, todayKey: string) {
   if (key === todayKey) return "Today";
   if (key === addDaysToDateKey(todayKey, -1)) return "Yesterday";
   const [year, month, day] = key.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    ...(key.slice(0, 4) === todayKey.slice(0, 4) ? {} : { year: "numeric" as const }),
-    timeZone: "UTC"
-  }).format(new Date(Date.UTC(year, month - 1, day)));
+  const shape = key.slice(0, 4) === todayKey.slice(0, 4) ? "dayHeading" : "dayHeadingWithYear";
+  return dayKeyFormatter(shape).format(new Date(Date.UTC(year, month - 1, day)));
 }
