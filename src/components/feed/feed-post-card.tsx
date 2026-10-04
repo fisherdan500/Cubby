@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
 import { FeedPostBody, FeedPostRemoveButton } from "@/components/feed/feed-post-actions";
 import { feedHref } from "@/lib/feed";
+import { displayFormatter } from "@/lib/timezone";
 
 type FeedPost = {
   id: string;
@@ -40,7 +41,7 @@ export function FeedPostCard({
   timeZone: string;
   footer?: React.ReactNode;
 }) {
-  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(post.occurredAt);
+  const time = displayFormatter("timeOfDay", timeZone).format(post.occurredAt);
   const scope = post.babyId === null ? "The whole family" : babyName ? `About ${babyName}` : "";
 
   return (

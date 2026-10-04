@@ -23,7 +23,7 @@ import type { VolumeUnit } from "@/domain/units";
 import { formatDuration, formatTimeSince } from "@/lib/activity-format";
 import { timersWithoutTile } from "@/lib/dashboard-timers";
 import { activityRowActions, type ActivityRowViewer } from "@/lib/activity-row-actions";
-import { formatInstant } from "@/lib/timezone";
+import { displayFormatter, formatInstant } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getDashboardPageData } from "@/server/services/dashboard";
 
@@ -525,7 +525,7 @@ function Timeline({
 
 
 function periodLabel(date: Date, timeZone: string) {
-  const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone }).format(date));
+  const hour = Number(displayFormatter("hourOfDay", timeZone).format(date));
   if (hour < 5) return "Overnight";
   if (hour < 12) return "Morning";
   if (hour < 17) return "Afternoon";

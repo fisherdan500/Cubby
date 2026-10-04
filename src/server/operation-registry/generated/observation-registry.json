@@ -12240,18 +12240,18 @@
       "bindings": [
         {
           "anchorDigest": "841cc43390980cc944d787d64b367abf37857a98077d97a5a99d245137911028",
-          "anchorEnd": 1427,
+          "anchorEnd": 1445,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1407,
+          "anchorStart": 1425,
           "kind": "server_value_import",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1365,
+          "anchorEnd": 1383,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1350,
+          "anchorStart": 1368,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -16356,7 +16356,7 @@
     }
   ],
   "observationCount": 250,
-  "observationDigest": "87f8d0affc0b16916a6ca2d7e5dc5bbcfa011b116aef9d391042c7799e0f1cc6",
+  "observationDigest": "88a01227b37e8140cddd810437f44e16264d2e6b8801b2ea00c92fcdec0e30ba",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -19333,18 +19333,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1427,
+          "anchorEnd": 1445,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1407,
+          "anchorStart": 1425,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "getDashboardPageData",
           "target": "src/server/services/dashboard.ts#getDashboardPageData"
         },
         {
-          "anchorEnd": 1365,
+          "anchorEnd": 1383,
           "anchorFile": "src/app/app/page.tsx",
-          "anchorStart": 1350,
+          "anchorStart": 1368,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/page.tsx",
           "symbol": "requireUserPage",
@@ -24642,7 +24642,7 @@
   ],
   "ownerSetDigest": "9b389990016482f64bf3d7db6cdd80bb04f93fa1eef8d74e5114806f2f1b87c7",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "4dbd20271b2300694840d24b1f0d4605b94dcc04496d46ec75292f17feccd3b6",
+  "registryDigest": "8219fd878daac0e8a329f01de2c161b9ed5c943252bc80e2c2cbef61c7bed6c4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

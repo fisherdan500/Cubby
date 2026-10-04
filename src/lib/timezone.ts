@@ -35,6 +35,47 @@ function dateFormatter(timeZone: string, withTime: boolean) {
   return formatter;
 }
 
+/**
+ * Kept formatters for the one-line times the app shows beside things: a moment's time on a feed
+ * card, an event's start and end on the calendar, the hour behind a timeline's "Morning" heading.
+ *
+ * These are built once per item, and a page shows a lot of items - the Moments feed loads two
+ * hundred posts - so the construction cost that mattered in the aggregations matters here too.
+ *
+ * The shapes are a closed list rather than options passed in by each caller. A caller that handed
+ * over its own options would need a name to keep them under, and two callers choosing the same name
+ * for different options would silently hand the second one the first's formatter. Naming the shapes
+ * here means the name and the options cannot drift apart.
+ */
+const DISPLAY_SHAPES = {
+  /** A time of day, as it reads beside an entry: "7:30 PM". */
+  timeOfDay: { locale: "en-US", options: { hour: "numeric", minute: "2-digit" } },
+  /** The hour alone, 0-23, for deciding which part of the day something falls in. */
+  hourOfDay: { locale: "en-US", options: { hour: "numeric", hourCycle: "h23" } },
+  /** A day heading within the current year: "Mon, Jun 15". Read in UTC from a day key. */
+  dayHeading: { locale: "en-US", options: { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" } },
+  /** The same heading for an earlier year, where the year has to be said: "Mon, Jun 15, 2025". */
+  dayHeadingWithYear: {
+    locale: "en-US",
+    options: { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }
+  }
+} satisfies Record<string, { locale: string; options: Intl.DateTimeFormatOptions }>;
+
+const displayFormatters = new Map<string, Intl.DateTimeFormat>();
+
+export function displayFormatter(shape: keyof typeof DISPLAY_SHAPES, timeZone: string) {
+  const zone = normalizeTimeZone(timeZone);
+  const key = `${shape}|${zone}`;
+  const cached = displayFormatters.get(key);
+  if (cached) return cached;
+  const { locale, options } = DISPLAY_SHAPES[shape];
+  // A shape that names its own zone keeps it: a day key is a calendar date with no instant behind it,
+  // so it is read in UTC, and reading it in a zone west of UTC would land on the day before.
+  const formatter = new Intl.DateTimeFormat(locale, { timeZone: zone, ...options });
+  displayFormatters.set(key, formatter);
+  return formatter;
+}
+
 export function normalizeTimeZone(timeZone: string | null | undefined, fallback = DEFAULT_APP_TIMEZONE) {
   const candidate = timeZone?.trim() || fallback;
   // Nested rather than a joined string, because the same candidate resolves differently under a

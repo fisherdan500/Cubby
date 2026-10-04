@@ -15,6 +15,7 @@ import {
   type FeedReactionKey,
   type FeedReactionSummary
 } from "@/domain/feed-interactions";
+import { displayFormatter } from "@/lib/timezone";
 
 type FeedComment = {
   id: string;
@@ -216,7 +217,7 @@ function FeedCommentItem({ comment, timeZone }: { comment: FeedComment; timeZone
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const url = `/api/feed/comments/${encodeURIComponent(comment.id)}`;
-  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(comment.createdAt);
+  const time = displayFormatter("timeOfDay", timeZone).format(comment.createdAt);
 
   async function run(storageName: string, method: "PATCH" | "DELETE", fields: Record<string, unknown>) {
     setError("");

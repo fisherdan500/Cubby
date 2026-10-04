@@ -15,6 +15,7 @@ import { calendarEventTextColor, calendarFullBleedClassName } from "@/lib/calend
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { getCalendar } from "@/server/services/calendar";
+import { displayFormatter } from "@/lib/timezone";
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const eventTypes = ["Appointment", "Birthday", "Reminder", "Checkup", "Visit", "Other"];
@@ -493,7 +494,7 @@ function formatEventTime(event: { allDay: boolean; startTime: Date; endTime: Dat
 }
 
 function formatTime(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(date);
+  return displayFormatter("timeOfDay", timeZone).format(date);
 }
 
 function formatDateKeyLabel(key: string) {

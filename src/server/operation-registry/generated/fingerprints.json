@@ -2064,17 +2064,17 @@
           "file": "src/app/app/calendar/actions.ts"
         },
         {
-          "digest": "baa158f80ab8247675819633ea50b8f31a7281d2712176fed4385121becf2e84",
+          "digest": "a8c783b68531cc15458cd52a60d9aee15c52a1ea0a84144950f5b329aa1ef568",
           "file": "src/app/app/calendar/page.tsx"
         }
       ],
       "declarationDigest": "19c37a3926df789f72a86b7a0e445a13dc81d4e7169d26e20c35df4e5503b5cc",
-      "fingerprint": "7e6f6cedf37415093241f5e80c2fc23daec24acf3c7be7ad54dcc3c95c241951",
+      "fingerprint": "50ee3a59cf9ac5e5069a1eb0fe700e30ac6b9e8166d6033f090f6a55aa988a89",
       "id": "fingerprint:server_loader:src/app/app/calendar/page.tsx",
       "ownerId": "server_loader:src/app/app/calendar/page.tsx",
       "ownerModule": "src/app/app/calendar/page.tsx",
       "sidecarPath": "src/app/app/calendar/page.operation.ts",
-      "sourceDigest": "216ea5d0e05be71f8989bd78610eae8a46886d326fa01dfa833e12db0b1b742a",
+      "sourceDigest": "25bdbf2398db0eec857b42981f736d000d4db4c6bc77fd7fad6c9adde1c9bd90",
       "status": "declared"
     },
     {
@@ -2160,17 +2160,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "a7cafdd2bb51b7329678572b71d9d805813df5a0d78034e1c227c0c7e00fa724",
+          "digest": "40d81ee70a37c61e28340dbbc6569c20bffdbfdcc9106bf5203954fe61f85e6f",
           "file": "src/app/app/page.tsx"
         }
       ],
       "declarationDigest": "90d779ff70d3b0d43fc8c764b87dceec812b1a6403dbba201b7f7b9e0ba852ba",
-      "fingerprint": "4076f1dab8f73af107a175ed96d1be82f3164f4d4d16f552aba0f48f4a207311",
+      "fingerprint": "07c62638d66a77f929f7a5db11061b534464b9033892c35f3d6f142dd9bada59",
       "id": "fingerprint:server_loader:src/app/app/page.tsx",
       "ownerId": "server_loader:src/app/app/page.tsx",
       "ownerModule": "src/app/app/page.tsx",
       "sidecarPath": "src/app/app/page.operation.ts",
-      "sourceDigest": "74adb967e341a4df221bba7b8dd95c32965b20590a2c64541670dcc6a4aa0dd1",
+      "sourceDigest": "7098f45bfcd0a53b36ec89db816f54f0fd2a850aa665b20fc85aebb4094f0f77",
       "status": "declared"
     },
     {
@@ -4548,11 +4548,11 @@
   ],
   "generatorDigest": "b596ef1b31016625831dff649c92e6a32dc893ad07c0666d99def03b357f7334",
   "generatorVersion": "r0.1",
-  "observationDigest": "87f8d0affc0b16916a6ca2d7e5dc5bbcfa011b116aef9d391042c7799e0f1cc6",
+  "observationDigest": "88a01227b37e8140cddd810437f44e16264d2e6b8801b2ea00c92fcdec0e30ba",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "9b389990016482f64bf3d7db6cdd80bb04f93fa1eef8d74e5114806f2f1b87c7",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "4dbd20271b2300694840d24b1f0d4605b94dcc04496d46ec75292f17feccd3b6",
+  "registryDigest": "8219fd878daac0e8a329f01de2c161b9ed5c943252bc80e2c2cbef61c7bed6c4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
