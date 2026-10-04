@@ -36,6 +36,11 @@ vi.mock("@/server/auth/context", () => ({
     if (!auth.context) throw new Error("rehearsal_context_not_set");
     return auth.context;
   }),
+  // Deliberately NARROWER than production: the real hasPermission grants "backup.manage" to owner
+  // AND admin (src/domain/roles.ts). This stub refuses everyone but the owner because every scenario
+  // here restores as an owner and the subject under test is the data path, not the permission table.
+  // Do not read it as documentation of who may restore - roles.ts and its own tests own that rule,
+  // and an admin-initiated restore is NOT exercised by this file.
   requirePermission: (context: { role: HouseholdRole }) => {
     if (context.role !== HouseholdRole.owner) throw new Error("forbidden");
   }
@@ -624,7 +629,7 @@ describe("D - the new-server migration, where nobody is known yet", () => {
 });
 
 describe("E - a file that cannot be trusted", () => {
-  it("refuses a tampered role, a missing photo, a dangling reference and a bad checksum, leaving nothing behind", async () => {
+  it("ignores a tampered role, and refuses a missing photo, a dangling reference and a bad checksum", async () => {
     const source = await seedHousehold({
       slug: "e-src",
       name: "E Source",
@@ -674,8 +679,10 @@ describe("E - a file that cannot be trusted", () => {
     //
     // The code is `backup_invalid`, not `backup_dangling_reference`: the reference rule is a Zod
     // refinement (backup-format.ts:397) and parseRecoveryBackup collapses every ZodError into one
-    // code (backups.ts:711). So the file is refused for the right reason and the person is told only
-    // that the file is unusable. Worth knowing before reading a support report.
+    // code (backups.ts:711). The specific code is unreachable FROM THE RESTORE PATH - createV2Backup
+    // does surface it on export - so the route can only tell the person the file is not a valid
+    // backup. This assertion therefore proves some refinement fired, not that the reference rule
+    // specifically did; a future refactor that broke a different refinement would keep it green.
     const dangling = structuredClone(good);
     dangling.payload.activities[0].babyId = "no-such-baby";
     resign(dangling);
@@ -707,6 +714,15 @@ describe("E - a file that cannot be trusted", () => {
       restoreBackupJson(claimsPhotos, { confirmation: "E Photos", previewChecksum: claimsPhotos.checksum })
     ).rejects.toThrow("backup_photos_missing");
     expect((await countsFor(t3.household.id)).activities).toBe(0);
+
+    // The photo refusal is deliberately ahead of the preview check (backups.ts:652 before :654), so a
+    // file claiming photos is turned away for the honest reason even when the preview is also wrong.
+    // Pinned because a future reorder would silently start blaming the preview instead.
+    const t3b = await freshFor("e-photo-2", "E Photos Two");
+    await expect(
+      restoreBackupJson(claimsPhotos, { confirmation: "E Photos Two", previewChecksum: "not-the-checksum" })
+    ).rejects.toThrow("backup_photos_missing");
+    expect((await countsFor(t3b.household.id)).activities).toBe(0);
 
     // The confirmation is the household's own name: a mismatch means the person is looking at a
     // different household than the one they are about to overwrite.
