@@ -6,8 +6,14 @@
  * members overlap. The scenarios below are the ones a family actually meets when they move Cubby to
  * a new machine, and the ones that decide whether their history survives the trip.
  *
+ * SCOPE, STATED PLAINLY. These exercise the backup and restore SERVICES against a real database, with
+ * the household context and session resolution mocked. They do NOT go through the HTTP route, so the
+ * route's parsing, headers, upload limits and error mapping are untested here, and neither is the
+ * browser. A failure reported as "Something went wrong" is the route's fallback for an error it does
+ * not recognise - nothing in this file can reproduce or rule that out.
+ *
  * Every assertion here is about OBSERVED behaviour, not about what a backup file ought to contain.
- * Where the answer is surprising - an imported owner is not restored as an owner, an entry's author
+ * Where the answer is surprising - a membership claiming to be an owner is ignored, an entry's author
  * becomes whoever ran the restore - the test states the behaviour and why, so a future change that
  * breaks it has to argue with the reason rather than with a bare expectation.
  */
@@ -54,6 +60,7 @@ import {
   previewBackupJson,
   restoreBackupJson
 } from "@/server/services/backups";
+import { payloadChecksum } from "@/server/services/backup-format";
 import { refreshHouseholdAuditCheckpoint } from "@/server/services/audit-checkpoints";
 
 type Envelope = {
@@ -422,10 +429,18 @@ describe("B - an install holding several households", () => {
       }
     }
 
+    // Counts alone would miss an in-place change - a renamed baby, a rewritten note, a flipped role -
+    // so the whole exported payload of each uninvolved household is fingerprinted instead. The
+    // checksum covers every field of every table the export reaches.
+    const fingerprint = async (household: { household: { id: string }; ctx: typeof first.ctx }) => {
+      asOwner(household.ctx);
+      const snapshot = (await exportHouseholdBackupJson(household.household.id)) as Envelope;
+      return payloadChecksum(snapshot.payload);
+    };
     const before = {
-      one: await countsFor(first.household.id),
-      two: await countsFor(second.household.id),
-      three: await countsFor(third.household.id)
+      one: await fingerprint(first),
+      two: await fingerprint(second),
+      three: await fingerprint(third)
     };
 
     asOwner(second.ctx);
@@ -439,17 +454,30 @@ describe("B - an install holding several households", () => {
     for (const foreign of ["One-A", "One-B", "Three-A", "B One", "B Three", mail("b-one-owner"), mail("b-three-owner")]) {
       expect(text).not.toContain(foreign);
     }
-    // The shared person appears, because they really are a member of this household.
+    // The shared person appears, because they really are a member of this household - and they appear
+    // in their SECOND-household capacity. A lookup that found the membership by account alone would
+    // return their first-household role instead, and this is what catches that.
     expect(text).toContain(mail("b-shared"));
+    // Household two has three people: its own owner, its own helper, and the shared person.
+    expect((backup.payload.members as Array<{ email: string }>).map((m) => m.email.toLowerCase()).sort()).toEqual([
+      mail("b-shared"),
+      mail("b-two-helper"),
+      mail("b-two-owner")
+    ]);
+    expect((backup.payload.members as Array<{ email: string; role: string; displayName: string | null }>)
+      .find((m) => m.email.toLowerCase() === mail("b-shared"))).toMatchObject({
+        role: "caretaker",
+        displayName: "b-shared"
+      });
 
     // Restoring it elsewhere must not disturb the households that were not involved.
     const fresh = await seedHousehold({ slug: "b-fresh", name: "B Fresh", members: [], babies: [] });
     asOwner(fresh.ctx);
     await restoreBackupJson(backup, { confirmation: "B Fresh", previewChecksum: backup.checksum });
 
-    expect(await countsFor(first.household.id)).toEqual(before.one);
-    expect(await countsFor(second.household.id)).toEqual(before.two);
-    expect(await countsFor(third.household.id)).toEqual(before.three);
+    expect(await fingerprint(first)).toBe(before.one);
+    expect(await fingerprint(second)).toBe(before.two);
+    expect(await fingerprint(third)).toBe(before.three);
 
     // And the restored household holds only what the file carried.
     const restoredBabies = await prisma.baby.findMany({
@@ -540,16 +568,20 @@ describe("D - the new-server migration, where nobody is known yet", () => {
     const backup = (await exportHouseholdBackupJson(source.household.id)) as Envelope;
 
     // The new server: a brand-new household whose owner is a DIFFERENT person entirely, so not one
-    // email in the file matches anybody here. This is the migration the User could not complete, and
-    // the case that produced an unexplained failure.
+    // email in the file matches anybody here. This is the shape of the migration the User could not
+    // complete.
+    //
+    // WHAT THIS DOES AND DOES NOT SHOW. It exercises the service, not the HTTP route: the route's own
+    // parsing, header handling, upload limits and - crucially - its error mapping are not in this call
+    // path. The User's report of "Something went wrong" is the route's fallback for an error it does
+    // not recognise, so this test cannot reproduce or rule that out. What it does show is that the
+    // service's own refusals are named: if restore declines here, the message must be a recognised
+    // backup_* code rather than a database or client error that the route would be unable to explain.
     const newServer = await seedHousehold({ slug: "d-new", name: "D New Server", members: [], babies: [] });
     asOwner(newServer.ctx);
 
     await expect(previewBackupJson(backup)).resolves.toMatchObject({ checksumVerified: true });
 
-    // Whatever happens, it must not be an unmapped failure. Either it restores, or it fails with an
-    // error the interface can explain - never a bare exception that reaches the user as
-    // "Something went wrong".
     let outcome: { ok: true; needInvite: string[] } | { ok: false; message: string };
     try {
       const result = await restoreBackupJson(backup, {
@@ -562,7 +594,8 @@ describe("D - the new-server migration, where nobody is known yet", () => {
     }
 
     if (!outcome.ok) {
-      // A recognised backup_* error is acceptable; anything else is the defect.
+      // A recognised backup_* code is one the route can turn into a sentence. Anything else - a Prisma
+      // error, a trigger's raise, a connection failure - is what becomes "Something went wrong".
       expect(outcome.message).toMatch(/^backup_[a-z_]+$/);
       throw new Error(`restore_onto_unknown_server_refused:${outcome.message}`);
     }
@@ -614,34 +647,65 @@ describe("E - a file that cannot be trusted", () => {
       return household;
     };
 
-    // A hand-edited checksum: the file no longer vouches for itself.
+    /**
+     * A tampered file that still vouches for itself.
+     *
+     * The checksum is computed over the whole payload and verified before anything else, so editing
+     * the payload and leaving the old checksum means the file dies at `backup_checksum_mismatch` and
+     * the rule being tested is never reached. Every case below that edits the payload has to re-sign
+     * it, or it proves only that the checksum works - which the first case already proves.
+     */
+    const resign = (envelope: Envelope) => {
+      envelope.checksum = payloadChecksum(envelope.payload);
+      return envelope;
+    };
+
+    // A hand-edited checksum: the file no longer vouches for itself. Deliberately NOT re-signed.
     const badChecksum = structuredClone(good);
     badChecksum.checksum = "0".repeat(64);
     const t1 = await freshFor("e-sum", "E Checksum");
     await expect(
       restoreBackupJson(badChecksum, { confirmation: "E Checksum", previewChecksum: badChecksum.checksum })
-    ).rejects.toThrow(/backup_/);
+    ).rejects.toThrow("backup_checksum_mismatch");
     expect((await countsFor(t1.household.id)).activities).toBe(0);
 
-    // An entry pointing at a baby the file does not carry.
+    // An entry pointing at a baby the file does not carry, re-signed so the reference check is what
+    // refuses it rather than the checksum.
+    //
+    // The code is `backup_invalid`, not `backup_dangling_reference`: the reference rule is a Zod
+    // refinement (backup-format.ts:397) and parseRecoveryBackup collapses every ZodError into one
+    // code (backups.ts:711). So the file is refused for the right reason and the person is told only
+    // that the file is unusable. Worth knowing before reading a support report.
     const dangling = structuredClone(good);
     dangling.payload.activities[0].babyId = "no-such-baby";
+    resign(dangling);
     const t2 = await freshFor("e-dangle", "E Dangling");
     await expect(
       restoreBackupJson(dangling, { confirmation: "E Dangling", previewChecksum: dangling.checksum })
-    ).rejects.toThrow(/backup_/);
+    ).rejects.toThrow("backup_invalid");
     expect((await countsFor(t2.household.id)).activities).toBe(0);
 
     // A file claiming photos it does not carry: JSON alone cannot restore them, and a half-restored
-    // household with missing pictures is worse than a refusal.
+    // household with missing pictures is worse than a refusal. The entry has to be schema-VALID or it
+    // is rejected as a malformed file instead, which would prove nothing about the photos rule.
     const claimsPhotos = structuredClone(good);
     claimsPhotos.payload.feedPhotos = [
-      { id: "ghost", postId: null, babyId: null, memberEmail: mail("e-src-owner"), position: 0, objectKey: "ghost", mimeType: "image/jpeg", byteSize: 1, checksum: "0".repeat(64) }
+      {
+        id: "ghost-photo",
+        postId: null,
+        position: null,
+        memberEmail: mail("e-src-owner"),
+        width: 100,
+        height: 100,
+        byteSize: 1_024,
+        sha256: "0".repeat(64)
+      }
     ];
+    resign(claimsPhotos);
     const t3 = await freshFor("e-photo", "E Photos");
     await expect(
       restoreBackupJson(claimsPhotos, { confirmation: "E Photos", previewChecksum: claimsPhotos.checksum })
-    ).rejects.toThrow(/backup_/);
+    ).rejects.toThrow("backup_photos_missing");
     expect((await countsFor(t3.household.id)).activities).toBe(0);
 
     // The confirmation is the household's own name: a mismatch means the person is looking at a
@@ -660,29 +724,41 @@ describe("E - a file that cannot be trusted", () => {
     ).rejects.toThrow("backup_preview_mismatch");
     expect((await countsFor(t5.household.id)).activities).toBe(0);
 
-    // An imported membership claiming to be an owner. Whatever the file says, it must not be able to
-    // hand someone a household, so either the file is refused or the role is not applied.
+    // An imported membership claiming to be an owner, re-signed so the claim actually reaches the
+    // member logic. A backup file must never be able to hand someone a household.
+    //
+    // The restore SUCCEEDS and the claim is simply ignored: memberships are not created or altered by
+    // a restore at all, so the role in the file is read for the record and never applied. That is the
+    // behaviour being pinned - not merely "one of two safe outcomes".
     const claimsOwner = structuredClone(good);
     (claimsOwner.payload.members as Array<{ email: string; role: string }>).forEach((member) => {
       member.role = "owner";
     });
+    resign(claimsOwner);
     const t6 = await freshFor("e-owner", "E Owner Claim");
-    let ownerClaimRefused = false;
-    try {
-      await restoreBackupJson(claimsOwner, { confirmation: "E Owner Claim", previewChecksum: claimsOwner.checksum });
-    } catch {
-      ownerClaimRefused = true;
-    }
-    // Either way, the household still has exactly one owner and it is the person who restored.
+    const ownerClaimResult = await restoreBackupJson(claimsOwner, {
+      confirmation: "E Owner Claim",
+      previewChecksum: claimsOwner.checksum
+    });
+
+    // The household still has exactly one owner and one member: the person who restored. Nobody named
+    // in the file was granted anything, however the file described them.
     const ownersAfter = await prisma.householdMember.findMany({
       where: { householdId: t6.household.id, deletedAt: null, role: HouseholdRole.owner }
     });
     expect(ownersAfter).toHaveLength(1);
     expect(ownersAfter[0].id).toBe(t6.ownerMember.id);
     expect(await prisma.householdMember.count({ where: { householdId: t6.household.id, deletedAt: null } })).toBe(1);
-    // Recorded rather than asserted either way: both outcomes are safe, and which one happens is a
-    // product decision rather than a correctness one.
-    expect(typeof ownerClaimRefused).toBe("boolean");
+    // Both people in the file are strangers here, so both are reported for invitation rather than
+    // being admitted as the owners the file claimed they were.
+    expect([...ownerClaimResult.members.needInvite].sort()).toEqual([
+      mail("e-helper"),
+      mail("e-src-owner")
+    ]);
+    expect(ownerClaimResult.members.matched).toBe(0);
+    // The data itself still arrived, which is what makes the ignored role a safe outcome rather than
+    // a silent half-restore.
+    expect((await countsFor(t6.household.id)).activities).toBe(1);
 
     // After all of those refusals, the source household is exactly as it was.
     expect((await countsFor(source.household.id)).activities).toBe(1);
