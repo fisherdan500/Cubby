@@ -1,5 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+/**
+ * The backup directory is configuration, not a fact about the code under test.
+ *
+ * These cases assert the service hands the configured directory to the storage layer, and they write
+ * that directory as the literal default. Left to the ambient environment, AUTOMATED_BACKUP_DIRECTORY
+ * - which anybody running a disposable rehearsal exports - silently replaces it, and four cases fail
+ * with a path mismatch that looks like a code defect and is nothing of the sort. Pinned here so the
+ * suite reports on the code rather than on whoever's shell started it.
+ *
+ * Mocked at @/lib/env because that is where backups.ts imports it from; mocking
+ * @/lib/automated-backup-config instead has no effect, since env re-exports its own resolved value.
+ */
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/env")>();
+  return {
+    ...actual,
+    automatedBackupConfig: { ...actual.automatedBackupConfig, directory: "/var/lib/cubby/backups" }
+  };
+});
+
 const mocks = vi.hoisted(() => ({
   getEffectiveHouseholdContext: vi.fn(),
   intent: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
