@@ -33,7 +33,37 @@ async function preferenceResponse(response: Response) {
   return { response, body, status: body?.ok ? body.data?.status : undefined };
 }
 
-export function NotificationPreferenceForm({ babies, state = "unsaved_off" }: { babies: Array<{ id: string; name: string }>; state?: PreferenceState }) {
+/** What is already saved, so every control can show it rather than rendering blank. */
+export type SavedPreference = {
+  externalDeliveryEnabled: boolean;
+  categories: string[];
+  channels: string[];
+  babyScope: "all" | "selected";
+  selectedBabyIds: string[];
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+  interruptionLevel: string;
+};
+
+export function NotificationPreferenceForm({
+  babies,
+  state = "unsaved_off",
+  saved = null
+}: {
+  babies: Array<{ id: string; name: string }>;
+  state?: PreferenceState;
+  saved?: SavedPreference | null;
+}) {
+  /**
+   * Saving replaces the whole document, so a control that renders blank does not mean "leave this
+   * alone" - it means "turn this off". Showing what is already saved is what makes it possible to
+   * change one setting without silently clearing the others.
+   *
+   * The one deliberate exception is needs_review: that state exists to make someone re-affirm
+   * external delivery after a restore, so it stays unticked however it was saved.
+   */
+  const deliveryChecked = state === "needs_review" ? false : Boolean(saved?.externalDeliveryEnabled);
+  const scope = saved?.babyScope ?? "all";
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -113,12 +143,12 @@ export function NotificationPreferenceForm({ babies, state = "unsaved_off" }: { 
 
   return <form action={submit} className="space-y-4">
     <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground" role="status">{state === "needs_review" ? "Your previous notification preferences need review. External delivery remains off until you save this complete replacement." : state === "unsaved_off" ? "External delivery is off until you deliberately save preferences." : "These preferences apply only to your current household membership."}</p>
-    <label className="flex min-h-11 items-center gap-2 text-sm font-semibold"><input name="externalDeliveryEnabled" type="checkbox" /> Enable external delivery</label>
-    <fieldset className="space-y-2"><legend className="text-sm font-semibold">Baby scope</legend><label className="mr-4 inline-flex min-h-11 items-center gap-2"><input name="babyScope" type="radio" value="all" defaultChecked /> All active babies</label><label className="inline-flex min-h-11 items-center gap-2"><input name="babyScope" type="radio" value="selected" /> Selected babies</label><select name="babyIds" multiple className="min-h-24 w-full rounded-lg border border-control bg-card px-3 py-2" aria-label="Selected babies">{babies.map((baby) => <option key={baby.id} value={baby.id}>{baby.name}</option>)}</select></fieldset>
-    <fieldset className="space-y-2"><legend className="text-sm font-semibold">Categories</legend>{[["timer_overdue", "Timer overdue"], ["activity_created", "Activity created"], ["reminder_due", "Reminders"], ["moments", "Moments"]].map(([value, label]) => <label key={value} className="mr-4 inline-flex min-h-11 items-center gap-2 text-sm"><input name={value} type="checkbox" />{label}</label>)}</fieldset>
-    <label className="flex min-h-11 items-center gap-2 text-sm font-semibold"><input name="browser_push" type="checkbox" /> Browser push channel</label>
-    <div className="grid gap-3 sm:grid-cols-2"><Input name="quietHoursStart" type="time" aria-label="Quiet hours start" /><Input name="quietHoursEnd" type="time" aria-label="Quiet hours end" /></div>
-    <label className="block text-sm font-semibold">Interruption level<select name="interruptionLevel" defaultValue="normal" className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3"><option value="passive">Passive</option><option value="normal">Normal</option><option value="time_sensitive">Time sensitive</option></select></label>
+    <label className="flex min-h-11 items-center gap-2 text-sm font-semibold"><input name="externalDeliveryEnabled" type="checkbox" defaultChecked={deliveryChecked} /> Enable external delivery</label>
+    <fieldset className="space-y-2"><legend className="text-sm font-semibold">Baby scope</legend><label className="mr-4 inline-flex min-h-11 items-center gap-2"><input name="babyScope" type="radio" value="all" defaultChecked={scope === "all"} /> All active babies</label><label className="inline-flex min-h-11 items-center gap-2"><input name="babyScope" type="radio" value="selected" defaultChecked={scope === "selected"} /> Selected babies</label><select name="babyIds" multiple defaultValue={saved?.selectedBabyIds ?? []} className="min-h-24 w-full rounded-lg border border-control bg-card px-3 py-2" aria-label="Selected babies">{babies.map((baby) => <option key={baby.id} value={baby.id}>{baby.name}</option>)}</select></fieldset>
+    <fieldset className="space-y-2"><legend className="text-sm font-semibold">Categories</legend>{[["timer_overdue", "Timer overdue"], ["activity_created", "Activity created"], ["reminder_due", "Reminders"], ["moments", "Moments"]].map(([value, label]) => <label key={value} className="mr-4 inline-flex min-h-11 items-center gap-2 text-sm"><input name={value} type="checkbox" defaultChecked={saved?.categories.includes(value) ?? false} />{label}</label>)}</fieldset>
+    <label className="flex min-h-11 items-center gap-2 text-sm font-semibold"><input name="browser_push" type="checkbox" defaultChecked={saved?.channels.includes("browser_push") ?? false} /> Browser push channel</label>
+    <div className="grid gap-3 sm:grid-cols-2"><Input name="quietHoursStart" type="time" defaultValue={saved?.quietHoursStart ?? ""} aria-label="Quiet hours start" /><Input name="quietHoursEnd" type="time" defaultValue={saved?.quietHoursEnd ?? ""} aria-label="Quiet hours end" /></div>
+    <label className="block text-sm font-semibold">Interruption level<select name="interruptionLevel" defaultValue={saved?.interruptionLevel ?? "normal"} className="mt-1 min-h-11 w-full rounded-lg border border-control bg-card px-3"><option value="passive">Passive</option><option value="normal">Normal</option><option value="time_sensitive">Time sensitive</option></select></label>
     {message ? <p role="status" className="rounded-lg bg-primary/10 p-3 text-sm text-primary">{message}</p> : null}
     <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save notification preferences"}</Button>
   </form>;
