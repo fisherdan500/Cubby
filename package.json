@@ -17,7 +17,7 @@
     "build:email-delivery-keys": "esbuild scripts/provision-email-delivery-keys.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-email-delivery-keys.mjs",
     "build:global-security-throttle-key": "esbuild scripts/provision-global-security-throttle-key.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-global-security-throttle-key.mjs",
     "build:platform-setup-code": "esbuild scripts/provision-platform-setup-code.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-platform-setup-code.mjs",
-    "build:database-timezone":"esbuild scripts/provision-database-timezone.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-database-timezone.mjs",
+    "build:database-timezone": "esbuild scripts/provision-database-timezone.mjs --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/provision-database-timezone.mjs",
     "build:security-operator": "esbuild scripts/security-operator.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/security-operator.mjs",
     "security:operator": "tsx scripts/security-operator.ts",
     "start": "next start",
@@ -49,7 +49,7 @@
     "verify:performance-1y": "tsx scripts/performance-budgets.acceptance-rehearsal.ts --years=1",
     "verify:performance-5y": "tsx scripts/performance-budgets.acceptance-rehearsal.ts --years=5",
     "verify:performance-input": "tsx scripts/performance-budgets.acceptance-rehearsal.ts --years=1 --browser",
-    "verify:update-preflight":"tsx scripts/update-preflight.ts",
+    "verify:update-preflight": "tsx scripts/update-preflight.ts",
     "verify:p1-3-migrator-bootstrap": "tsx scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
     "verify:p1-3-invitation-acceptance": "tsx scripts/p1-3-invitation.acceptance-rehearsal.ts",
     "verify:integrity-suite": "tsx scripts/integrity-suite.acceptance-rehearsal.ts",
@@ -90,6 +90,7 @@
     "sharp": "^0.33.5",
     "sql.js": "^1.14.1",
     "tailwind-merge": "^2.6.0",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -100,6 +101,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/sql.js": "^1.4.11",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "esbuild": "^0.28.1",
     "eslint": "^8.57.1",

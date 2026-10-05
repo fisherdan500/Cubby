@@ -15,7 +15,8 @@ export default defineConfig({
       "scripts/backup-recovery-rehearsal.integration.test.ts",
       "scripts/backup-matrix-rehearsal.integration.test.ts",
       "scripts/backup-scale-rehearsal.integration.test.ts",
-      "scripts/reports-equivalence.integration.test.ts"
+      "scripts/reports-equivalence.integration.test.ts",
+      "scripts/moment-notifications.integration.test.ts"
     ],
     // The scale rehearsal seeds and restores thousands of entries, so its own hooks and cases declare
     // longer budgets individually. These defaults stay tight enough that an ordinary rehearsal hanging

@@ -23,6 +23,7 @@ import {
   issueHouseholdBrowserOperation,
   type BrowserOperationContext
 } from "@/server/services/browser-operations";
+import { queueMomentNotification } from "@/server/services/moment-notifications";
 
 /**
  * Posts in the private family feed (DEC-PROD-421): words, photos (DEC-PROD-422), or both. A post is
@@ -155,7 +156,7 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
   const activityId = parseFeedPostActivityLink(raw.activityId);
   if (input.attachmentIds.length > 0 && !attachmentTypeEnabled("feed_photo", options.enabled)) throw new Error("attachment_type_unavailable");
   const ctx = await getBrowserOperationContextForHousehold();
-  return executeHouseholdBrowserOperation({
+  const result = await executeHouseholdBrowserOperation({
     ctx,
     operationId: raw.operationId,
     operationKey: BrowserOperationKey.feedPostCreate,
@@ -201,6 +202,19 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
       return { kind: "feed_post", code: "created", postId: post.id } as const;
     }
   });
+  // After the transaction, never inside it: a push service is a third party, and a slow or
+  // unreachable one must not roll back a post a caregiver just wrote.
+  if (result.status === "completed" && result.outcome?.code === "created") {
+    queueMomentNotification({
+      householdId: ctx.householdId,
+      kind: "post",
+      actorMemberId: ctx.memberId,
+      parentAuthorMemberId: ctx.memberId,
+      postId: typeof result.outcome.postId === "string" ? result.outcome.postId : null,
+      babyId: input.babyId
+    });
+  }
+  return result;
 }
 
 /** The live post, locked for the rest of the transaction, if this member may act on it. */

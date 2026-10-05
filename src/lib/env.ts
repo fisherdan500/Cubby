@@ -3,6 +3,7 @@ import { readAttachmentConfig } from "@/lib/attachment-config";
 import { readAutomatedBackupConfig } from "@/lib/automated-backup-config";
 import { readIntegrityConfig } from "@/lib/integrity-config";
 import { DEFAULT_APP_TIMEZONE, isValidTimeZone } from "@/lib/timezone";
+import { readWebPushConfig } from "@/lib/web-push-config";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -50,6 +51,14 @@ export const attachmentConfig = readAttachmentConfig({ ATTACHMENT_DIRECTORY: pro
 export const integrityConfig = readIntegrityConfig({
   INTEGRITY_CHECKS_ENABLED: process.env.INTEGRITY_CHECKS_ENABLED,
   INTEGRITY_CHECK_INTERVAL_HOURS: process.env.INTEGRITY_CHECK_INTERVAL_HOURS
+});
+
+export const webPushConfig = readWebPushConfig({
+  WEB_PUSH_VAPID_PUBLIC_KEY: process.env.WEB_PUSH_VAPID_PUBLIC_KEY,
+  WEB_PUSH_VAPID_PRIVATE_KEY: process.env.WEB_PUSH_VAPID_PRIVATE_KEY,
+  WEB_PUSH_CONTACT: process.env.WEB_PUSH_CONTACT,
+  CUBBY_PUBLIC_URL: process.env.CUBBY_PUBLIC_URL,
+  BETTER_AUTH_URL: process.env.BETTER_AUTH_URL
 });
 
 export function trustedOrigins() {

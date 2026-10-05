@@ -57,7 +57,13 @@ const INSTANT_SHAPES = {
   /** A time of day, as it reads beside an entry: "7:30 PM". */
   timeOfDay: { locale: "en-US", options: { hour: "numeric", minute: "2-digit" } },
   /** The hour alone, 0-23, for deciding which part of the day something falls in. */
-  hourOfDay: { locale: "en-US", options: { hour: "numeric", hourCycle: "h23" } }
+  hourOfDay: { locale: "en-US", options: { hour: "numeric", hourCycle: "h23" } },
+  /**
+   * Wall-clock "HH:MM" on a 24-hour cycle, for comparing against a time a member typed - quiet
+   * hours are stored as the text "22:00", so the comparison has to be in the same shape and the
+   * household's zone rather than the server's.
+   */
+  clock24: { locale: "en-GB", options: { hour: "2-digit", minute: "2-digit", hourCycle: "h23" } }
 } satisfies Record<string, { locale: string; options: Intl.DateTimeFormatOptions }>;
 
 /**

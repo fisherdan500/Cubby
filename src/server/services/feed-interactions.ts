@@ -21,6 +21,30 @@ import {
   issueHouseholdBrowserOperation,
   type BrowserOperationContext
 } from "@/server/services/browser-operations";
+import { queueMomentNotification } from "@/server/services/moment-notifications";
+
+/**
+ * Whose moment this is, for deciding who hears about a comment or reaction.
+ *
+ * A post has an author. A logged entry has no author - it has whoever recorded it - so that
+ * caregiver stands in, and commenting on a sleep entry reaches the person who logged the sleep.
+ * Null when the parent is gone or was written by someone outside the household, which simply means
+ * there is nobody to notify.
+ */
+async function momentParentAuthor(householdId: string, parent: FeedParent): Promise<string | null> {
+  if (parent.parentKind === "post") {
+    const post = await prisma.feedPost.findFirst({
+      where: { id: parent.parentId, householdId, deletedAt: null },
+      select: { authorMemberId: true }
+    });
+    return post?.authorMemberId ?? null;
+  }
+  const activity = await prisma.activityLog.findFirst({
+    where: { id: parent.parentId, householdId, deletedAt: null },
+    select: { actorMemberId: true }
+  });
+  return activity?.actorMemberId ?? null;
+}
 
 /**
  * Comments and reactions in the family feed (DEC-PROD-421), on a post or a logged entry. Every member
@@ -159,7 +183,7 @@ export async function submitFeedCommentCreateBrowserOperation(raw: Record<string
   const parent = parseFeedParent(raw);
   const input = parseFeedCommentInput({ body: raw.body });
   const ctx = await getBrowserOperationContextForHousehold();
-  return executeHouseholdBrowserOperation({
+  const result = await executeHouseholdBrowserOperation({
     ctx,
     operationId: raw.operationId,
     operationKey: BrowserOperationKey.feedCommentCreate,
@@ -186,6 +210,17 @@ export async function submitFeedCommentCreateBrowserOperation(raw: Record<string
       return { kind: "feed_comment", code: "created", commentId: comment.id } as const;
     }
   });
+  // After the transaction: the comment is saved whether or not any phone hears about it.
+  if (result.status === "completed" && result.outcome.code === "created") {
+    queueMomentNotification({
+      householdId: ctx.householdId,
+      kind: "comment",
+      actorMemberId: ctx.memberId,
+      parentAuthorMemberId: await momentParentAuthor(ctx.householdId, parent),
+      ...(parent.parentKind === "post" ? { postId: parent.parentId } : { activityId: parent.parentId })
+    });
+  }
+  return result;
 }
 
 /** The live comment, locked for the rest of the transaction, if this member may act on it. */
@@ -318,7 +353,7 @@ export async function submitFeedReactionSetBrowserOperation(raw: Record<string, 
   const input = parseFeedReactionInput(raw);
   const parent = { parentKind: input.parentKind, parentId: input.parentId };
   const ctx = await getBrowserOperationContextForHousehold();
-  return executeHouseholdBrowserOperation({
+  const result = await executeHouseholdBrowserOperation({
     ctx,
     operationId: raw.operationId,
     operationKey: BrowserOperationKey.feedReactionSet,
@@ -348,4 +383,15 @@ export async function submitFeedReactionSetBrowserOperation(raw: Record<string, 
       return { kind: "feed_reaction", code: "set", reaction: input.reaction, on: input.on } as const;
     }
   });
+  // Only a reaction being added is news. Taking one back is not something to tell anyone about.
+  if (result.status === "completed" && result.outcome.code === "set" && input.on) {
+    queueMomentNotification({
+      householdId: ctx.householdId,
+      kind: "reaction",
+      actorMemberId: ctx.memberId,
+      parentAuthorMemberId: await momentParentAuthor(ctx.householdId, parent),
+      ...(parent.parentKind === "post" ? { postId: parent.parentId } : { activityId: parent.parentId })
+    });
+  }
+  return result;
 }
