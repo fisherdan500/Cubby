@@ -2304,17 +2304,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "9bb2275128bbe9500988394c28233a855abf48565a4588164a001a1c55490382",
+          "digest": "6ffb02144bb092028131773d931ceabb20cf794616faf0f02dc66c058c055c7b",
           "file": "src/app/app/settings/notifications/page.tsx"
         }
       ],
       "declarationDigest": "a6d88a37b02e60e6f5eef1c2012dbd7ff10c052822a1bf7e24b55ace8bc999c4",
-      "fingerprint": "985fb3040dc34ba890dad765fe232aabbe33ee0a81fbc750a9c06585d9344faf",
+      "fingerprint": "586ebd6c5773d9f2c3dfd559f48e3f4675f769cea35128b74ca9e1a450690078",
       "id": "fingerprint:server_loader:src/app/app/settings/notifications/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/notifications/page.tsx",
       "ownerModule": "src/app/app/settings/notifications/page.tsx",
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts",
-      "sourceDigest": "67b120ba5636d8f58666c1781d8c5c3b7fba09009fec758d5169101169cc5577",
+      "sourceDigest": "73e0d653e1076b86eddf351ebaebab3d08406cbf0c8ad27c93e5ad13c397e3f0",
       "status": "declared"
     },
     {
@@ -3120,17 +3120,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "595993e1bb9799647519b7a6c27e8c17c47381831b3f8ccebbef6766debcd0f2",
+          "digest": "85d691a62013c9f05e5f78a308528d0175a7be423a1d55e0e6e7cd12983ce01e",
           "file": "src/components/settings/notification-preference-form.tsx"
         }
       ],
       "declarationDigest": "263e488325316567c79a0313c32cb386407f2eb6d15d90e48fc4d7f34b9d17fa",
-      "fingerprint": "38ff6c5dfb4d69571535ee725b2aac18a360f55462aeb3057eb6ff06758d5de8",
+      "fingerprint": "9b702039b09a8837fd0d6fc15c1f4b15a85c597af95c1334d332290ae46e40bc",
       "id": "fingerprint:client_binding:src/components/settings/notification-preference-form.tsx",
       "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
       "ownerModule": "src/components/settings/notification-preference-form.tsx",
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts",
-      "sourceDigest": "ec453ae61664e7cf5725db322182814ff9d0acf3391256b0057412892e5b32d7",
+      "sourceDigest": "84d47cc57d4f3d30f41477db82742c39c32937d421c23adcac1fe6362f207b2a",
       "status": "declared"
     },
     {
@@ -4580,11 +4580,11 @@
   ],
   "generatorDigest": "8abe879292e49ce20c3e1afa80c439ea7ffd295f279ecc3614aa876109a0114f",
   "generatorVersion": "r0.1",
-  "observationDigest": "ded30c139cfc38fa5bd262379100e6ca29974df262f90298eed99b5c20005318",
+  "observationDigest": "ad233ba99d5a7d69dcd4b19c7f01adda91d56922e239a85c124693ebffc3309d",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "81b72eb8040bd024145de00e3ecaad604d7fcc4543fbe4aa41d2a502f2296684",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "58994995a81e336e57a29bb3933af8e2382de25ad890f080bc01c1731e06ac41",
+  "registryDigest": "0ceb3486aedda3fbf31443448b88f159d09d2dafcca8969216abce24c05938c8",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
