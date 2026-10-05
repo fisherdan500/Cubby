@@ -29,6 +29,10 @@ import {
   issueHouseholdBrowserOperation,
   type BrowserOperationResult
 } from "@/server/services/browser-operations";
+import {
+  queueActivityNotification,
+  queueActivityNotificationFromBrowserOperationResult
+} from "@/server/services/activity-notifications";
 
 export const activityInclude = {
   actorMember: { include: { user: true } },
@@ -460,7 +464,9 @@ async function queueActivitySideEffects(
     });
   }
 
-  if (event === WebhookEvent.activity_created) {
+  // A running timer is still a newly logged activity; its webhook event is timer_started, but the
+  // member's activity-created preference covers it just like a completed entry.
+  if (event === WebhookEvent.activity_created || event === WebhookEvent.timer_started) {
     const preferences = await db.notificationPreference.findMany({
       where: {
         householdId: ctx.householdId,
@@ -548,7 +554,7 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
       ) throw new Error("idempotency_conflict");
       const snapshot = receiptOutcomeSnapshot(receipt);
       if (!snapshot) throw new Error("idempotency_conflict");
-      return snapshot;
+      return { activity: snapshot, created: false } as const;
     }
     const legacy = await tx.activityLog.findFirst({
       where: { householdId: lockedCtx.householdId, clientMutationId: input.clientMutationId },
@@ -556,7 +562,7 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
     });
     if (legacy) {
       if (legacy.actorMemberId !== lockedCtx.memberId || legacy.clientMutationFingerprint !== fingerprint) throw new Error("idempotency_conflict");
-      return legacy;
+      return { activity: legacy, created: false } as const;
     }
     if (recoverOnly) throw new Error("idempotency_conflict");
     const baby = await lockBabyForWrite(tx, lockedCtx, input.babyId);
@@ -575,15 +581,20 @@ export async function createActivityForContext(raw: unknown, ctx: HouseholdConte
         outcomeSnapshot: outcomeSnapshot(activity)
       }
     });
-    return activity;
+    return { activity, created: true } as const;
   };
 
+  let result;
   try {
-    return await prisma.$transaction((tx) => replayOrCreate(tx));
+    result = await prisma.$transaction((tx) => replayOrCreate(tx));
   } catch (error) {
     if (!isMutationReceiptUniqueError(error)) throw error;
-    return prisma.$transaction((tx) => replayOrCreate(tx, true));
+    result = await prisma.$transaction((tx) => replayOrCreate(tx, true));
   }
+  // A durable receipt replay is also a recovery opportunity if the first request committed but died
+  // before this post-commit enqueue. The sender's pending-log claim makes the normal replay a no-op.
+  queueActivityNotification({ householdId: ctx.householdId, activityId: result.activity.id });
+  return result.activity;
 }
 
 /**
@@ -1592,7 +1603,9 @@ export async function issueActivityCreateBrowserOperation(raw: unknown): Promise
   const input = activityBrowserOpeningInput(raw);
   const babyId = requiredActivityBrowserId(input, "babyId");
   const ctx = await getBrowserOperationContextForBaby(babyId);
-  return issueBrowserOperation({ ctx, operationId: input.operationId, operationKey: BrowserOperationKey.activityCreate, opening: { babyId }, babyId, targetKind: "baby", targetId: babyId, permission: "activity.create", targetSnapshot: async (_tx, _ctx, baby) => ({ id: baby.id, updatedAt: baby.updatedAt.toISOString(), inactiveAt: baby.inactiveAt?.toISOString() ?? null }) });
+  const result = await issueBrowserOperation({ ctx, operationId: input.operationId, operationKey: BrowserOperationKey.activityCreate, opening: { babyId }, babyId, targetKind: "baby", targetId: babyId, permission: "activity.create", targetSnapshot: async (_tx, _ctx, baby) => ({ id: baby.id, updatedAt: baby.updatedAt.toISOString(), inactiveAt: baby.inactiveAt?.toISOString() ?? null }) });
+  queueActivityNotificationFromBrowserOperationResult({ householdId: ctx.householdId, result });
+  return result;
 }
 
 export async function issueActivityUpdateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {
@@ -1669,7 +1682,7 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
   const input = activityBrowserCreateSchema.parse(raw);
   const attachmentIds = input.attachmentIds ?? [];
   const ctx = await getBrowserOperationContextForBaby(input.babyId);
-  return executeBrowserOperation({
+  const result = await executeBrowserOperation({
     ctx, operationId: (raw as Record<string, unknown>).operationId, operationKey: BrowserOperationKey.activityCreate, intent: input, babyId: input.babyId, permission: "activity.create",
     validate: async (_tx, _ctx, baby, binding) => {
       const snapshot = binding.targetSnapshot as { id?: unknown; updatedAt?: unknown };
@@ -1712,6 +1725,15 @@ export async function submitActivityCreateBrowserOperation(raw: unknown): Promis
       return { kind: "activity", code: "ok", activityId: activity.id, action: "create" as const };
     }
   });
+  const activityId = result.status === "completed" && result.outcome.action === "create"
+    ? result.outcome.activityId
+    : null;
+  if (typeof activityId === "string") {
+    // A replay may return the same terminal outcome. The sender atomically claims pending logs, so
+    // only the invocation that wins that claim can reach a push service.
+    queueActivityNotification({ householdId: ctx.householdId, activityId });
+  }
+  return result;
 }
 
 export async function submitActivityUpdateBrowserOperation(raw: unknown): Promise<BrowserOperationResult> {

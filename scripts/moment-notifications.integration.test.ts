@@ -45,6 +45,7 @@ vi.mock("@/lib/env", async () => {
 
 import { PrismaClient } from "@prisma/client";
 
+import { sendActivityNotification } from "@/server/services/activity-notifications";
 import { momentNotificationRecipients, sendMomentNotification } from "@/server/services/moment-notifications";
 
 const prisma = new PrismaClient();
@@ -60,6 +61,8 @@ async function reset() {
   sent.length = 0;
   failures.clear();
   await prisma.$executeRawUnsafe(`DELETE FROM "PushSubscription" WHERE "householdId" = '${HOUSEHOLD}'`);
+  await prisma.$executeRawUnsafe(`DELETE FROM "NotificationLog" WHERE "householdId" = '${HOUSEHOLD}'`);
+  await prisma.$executeRawUnsafe(`DELETE FROM "ActivityLog" WHERE "householdId" = '${HOUSEHOLD}'`);
   await prisma.$executeRawUnsafe(`DELETE FROM "NotificationPreferenceBaby" WHERE "householdId" = '${HOUSEHOLD}'`);
   await prisma.$executeRawUnsafe(`DELETE FROM "NotificationPreference" WHERE "householdId" = '${HOUSEHOLD}'`);
   await prisma.$executeRawUnsafe(`DELETE FROM "FeedComment" WHERE "householdId" = '${HOUSEHOLD}'`);
@@ -70,6 +73,31 @@ async function reset() {
 async function livePost(id: string, authorMemberId = AUTHOR) {
   await prisma.feedPost.create({
     data: { id, householdId: HOUSEHOLD, authorMemberId, body: "a moment", tags: [] }
+  });
+}
+
+async function liveActivityWithPendingLog(id: string, recipientUserId: string) {
+  await prisma.activityLog.create({
+    data: {
+      id,
+      householdId: HOUSEHOLD,
+      babyId: BABY,
+      actorMemberId: AUTHOR,
+      type: "note",
+      occurredAt: new Date("2026-10-05T12:00:00.000Z"),
+      timezone: "America/New_York",
+      notes: "private fixture content that must not enter push payloads"
+    }
+  });
+  await prisma.notificationLog.create({
+    data: {
+      householdId: HOUSEHOLD,
+      activityId: id,
+      userId: recipientUserId,
+      kind: "activity_created",
+      title: "New Cubby activity",
+      body: "note"
+    }
   });
 }
 
@@ -515,5 +543,47 @@ describe("a phone that is gone", () => {
     });
     expect(result.sent).toBe(0);
     expect(result.skipped).toBe("no_subscriptions");
+  });
+});
+
+describe("a newly logged activity", () => {
+  it("reaches even the recorder when that member explicitly opts into every activity", async () => {
+    await optIn(AUTHOR, "https://push.test/author", { categories: ["activity_created"] });
+    await liveActivityWithPendingLog("a-1", `u-${AUTHOR}`);
+
+    const result = await sendActivityNotification({ householdId: HOUSEHOLD, activityId: "a-1" });
+
+    expect(result).toEqual({ sent: 1, pruned: 0, skipped: "" });
+    expect(sent).toEqual([{
+      endpoint: "https://push.test/author",
+      payload: {
+        kind: "activity_created",
+        title: "New activity",
+        body: "Daniel logged note for Finley",
+        url: "https://cubby.example.test/app/activities/a-1",
+        tag: "activity:a-1"
+      }
+    }]);
+    expect(JSON.stringify(sent[0].payload)).not.toContain("private fixture content");
+    const log = await prisma.notificationLog.findFirstOrThrow({
+      where: { householdId: HOUSEHOLD, activityId: "a-1", userId: `u-${AUTHOR}` }
+    });
+    expect(log.status).toBe("delivered");
+    expect(log.sentAt).not.toBeNull();
+  });
+
+  it("does not treat a pending log as consent after the member chooses another category", async () => {
+    await optIn(PARTNER, "https://push.test/partner", { categories: ["moments"] });
+    await liveActivityWithPendingLog("a-2", `u-${PARTNER}`);
+
+    const result = await sendActivityNotification({ householdId: HOUSEHOLD, activityId: "a-2" });
+
+    expect(result.sent).toBe(0);
+    expect(sent).toHaveLength(0);
+    const log = await prisma.notificationLog.findFirstOrThrow({
+      where: { householdId: HOUSEHOLD, activityId: "a-2", userId: `u-${PARTNER}` }
+    });
+    expect(log.status).toBe("failed");
+    expect(log.error).toBe("not_eligible");
   });
 });

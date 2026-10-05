@@ -8,6 +8,7 @@ import {
   browserOperationResultFromPersistence,
   type BrowserOperationResult
 } from "@/server/services/browser-operations";
+import { queueActivityNotificationFromBrowserOperationResult } from "@/server/services/activity-notifications";
 
 type StatusTransaction = Pick<Prisma.TransactionClient, "$queryRaw" | "$executeRaw"> & {
   session: { findFirst: any };
@@ -31,7 +32,7 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
   const authSession = await getSession();
   if (!authSession?.user || !authSession.session || authSession.user.id !== ctx.userId) throw new Error("unauthenticated");
 
-  return prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction): Promise<BrowserOperationResult> => {
     const tx = transaction as unknown as StatusTransaction;
     await tx.$executeRaw`SELECT "lock_household_browser_operation_identity"(${ctx.householdId}, ${operationId})`;
     await tx.$queryRaw`SELECT "id" FROM "lock_actor_session_for_operation"(${ctx.userId}, ${authSession.session.id})`;
@@ -87,4 +88,6 @@ export async function getHouseholdBrowserOperationStatus(rawOperationId: unknown
       code: reservationTombstone.terminalCode === "operation_abandoned" ? "operation_abandoned" : "operation_result_expired"
     };
   }, { isolationLevel: "Serializable" });
+  queueActivityNotificationFromBrowserOperationResult({ householdId: ctx.householdId, result });
+  return result;
 }

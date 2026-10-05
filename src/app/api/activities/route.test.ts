@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ createActivity: vi.fn(), listActivities: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  createActivity: vi.fn(),
+  listActivities: vi.fn(),
+  issueActivityCreateBrowserOperation: vi.fn(),
+  submitActivityCreateBrowserOperation: vi.fn()
+}));
 vi.mock("@/server/services/activities", () => mocks);
 
 import { POST } from "@/app/api/activities/route";
@@ -13,7 +18,7 @@ const body = {
   mode: "bottle"
 };
 
-function request(payload = body) {
+function request(payload: Record<string, unknown> = body) {
   return new Request("http://localhost/api/activities", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -41,5 +46,22 @@ describe("POST /api/activities", () => {
 
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({ ok: false, error: { code: "idempotency_conflict" } });
+  });
+
+  it("returns a durable terminal create replay through the browser-operation issue path", async () => {
+    const operationId = "bmo_0123456789abcdefghjkmnpqrs";
+    const completed = {
+      status: "completed",
+      operationId,
+      outcome: { kind: "activity", code: "ok", activityId: "activity-1", action: "create" }
+    };
+    mocks.issueActivityCreateBrowserOperation.mockResolvedValue(completed);
+
+    const response = await POST(request({ ...body, operationId }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ ok: true, data: completed });
+    expect(mocks.issueActivityCreateBrowserOperation).toHaveBeenCalledWith({ ...body, operationId });
+    expect(mocks.submitActivityCreateBrowserOperation).not.toHaveBeenCalled();
   });
 });

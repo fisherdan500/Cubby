@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
   memberFindFirst: vi.fn(),
   bindingFindFirst: vi.fn(),
   tombstoneFindUnique: vi.fn(),
-  reservationTombstoneFindUnique: vi.fn()
+  reservationTombstoneFindUnique: vi.fn(),
+  queueFromBrowserResult: vi.fn()
 }));
 
 vi.mock("@/server/auth/context", () => ({
@@ -20,6 +21,9 @@ vi.mock("@/server/auth/context", () => ({
 vi.mock("@/server/auth/session", () => ({ getSession: mocks.getSession, assertFreshSession: mocks.assertFreshSession }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: { $transaction: mocks.transaction }
+}));
+vi.mock("@/server/services/activity-notifications", () => ({
+  queueActivityNotificationFromBrowserOperationResult: mocks.queueFromBrowserResult
 }));
 
 import { getHouseholdBrowserOperationStatus } from "@/server/services/browser-operation-status";
@@ -135,6 +139,25 @@ describe("household browser operation status", () => {
       status: "completed",
       operationId,
       outcome: { operationId, kind: "calendar_event", code: "ok", eventId: "event-1" }
+    });
+  });
+
+  it("requeues a completed activity create discovered by retained-operation reconciliation", async () => {
+    const outcome = { operationId, kind: "activity", code: "ok", activityId: "activity-1", action: "create" };
+    mocks.bindingFindFirst.mockResolvedValue({
+      sessionId: "session-1",
+      actorUserId: "user-1",
+      actorMemberId: "member-1",
+      operation: { operationId, status: "completed", outcomeCode: "ok", outcomeSnapshot: outcome }
+    });
+
+    await expect(getHouseholdBrowserOperationStatus(operationId)).resolves.toMatchObject({
+      status: "completed",
+      outcome
+    });
+    expect(mocks.queueFromBrowserResult).toHaveBeenCalledWith({
+      householdId: "household-1",
+      result: { status: "completed", operationId, outcome }
     });
   });
 
