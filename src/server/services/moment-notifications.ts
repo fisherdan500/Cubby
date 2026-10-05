@@ -169,6 +169,19 @@ export async function sendMomentNotification(
   // Resolved here, inside the fire-and-forget boundary, so a transient database failure cannot
   // reach a request whose comment or reaction has already been saved.
   const parentAuthor = await resolveParentAuthor(event);
+
+  // A post can be deleted in the seconds between saving and sending - a double tap, the wrong baby,
+  // the wrong photo. The audience for a post is the whole household rather than its author, so the
+  // author lookup above cannot stand in for a liveness check: without this, every phone in the
+  // house rings for something that no longer exists and the tap lands on a missing post.
+  if (event.kind === "post" && event.postId) {
+    const live = await prisma.feedPost.findFirst({
+      where: { id: event.postId, householdId: event.householdId, deletedAt: null },
+      select: { id: true }
+    });
+    if (!live) return { sent: 0, pruned: 0, skipped: "parent_gone" };
+  }
+
   const recipients = await momentNotificationRecipients(event, parentAuthor);
   if (recipients.length === 0) return { sent: 0, pruned: 0, skipped: "no_recipients" };
 

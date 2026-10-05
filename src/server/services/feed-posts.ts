@@ -209,7 +209,9 @@ export async function submitFeedPostCreateBrowserOperation(raw: Record<string, u
       householdId: ctx.householdId,
       kind: "post",
       actorMemberId: ctx.memberId,
-      parentAuthorMemberId: ctx.memberId,
+      // The author is deliberately not passed: letting the send resolve it applies the same
+      // deletedAt check a comment and a reaction already get, so a post deleted in the seconds
+      // between saving and sending notifies nobody rather than ringing every phone in the house.
       postId: typeof result.outcome.postId === "string" ? result.outcome.postId : null,
       babyId: input.babyId
     });

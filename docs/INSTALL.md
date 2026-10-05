@@ -371,15 +371,25 @@ Android has no such restriction.
    docker compose up -d --build --no-deps app
    ```
 
-5. On each phone, open **Settings → Notifications**, turn on **External delivery** under Preference,
-   then press **Turn on notifications** under "This device". Both are needed: the preference is the
-   member's choice, and the device registration is the phone itself.
+5. On each phone, open **Settings → Notifications**. Under **Preference**, turn on **External
+   delivery**, tick **Moments** under Categories, and tick the **Browser push** channel. Then press
+   **Turn on notifications** under "This device".
+
+   All four are needed, and they mean different things: external delivery is the master switch,
+   Moments is which kind of news you want, Browser push is how it reaches you, and the device
+   registration is this particular phone. A member who registers the device but never ticks Moments
+   receives nothing - deliberately, so that nobody is opted into lock-screen notifications they did
+   not ask for.
 
 ### If nothing arrives
 
-The settings page states the reason it will not offer the button - not a secure address, keys not
-configured, blocked in browser settings, or an iPhone that is not yet on the Home Screen. Check
-there first.
+First check the four switches in step 5. A device that is registered but whose member has not
+ticked **Moments**, or not ticked **Browser push**, receives nothing and reports no error - that is
+the commonest cause by far.
+
+Then check the card itself: it states the reason it will not offer the button - not a secure
+address, keys not configured, blocked in browser settings, or an iPhone that is not yet on the Home
+Screen.
 
 Delivery is best effort. Apple's and Google's services are outside your control and will sometimes
 delay or drop a notification, so treat it as a nudge rather than a guarantee; Cubby's own record of

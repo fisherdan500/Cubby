@@ -66,6 +66,13 @@ async function reset() {
   await prisma.$executeRawUnsafe(`DELETE FROM "FeedPost" WHERE "householdId" = '${HOUSEHOLD}'`);
 }
 
+/** A real post to notify about. The send checks a post still exists, so a fixture must create one. */
+async function livePost(id: string, authorMemberId = AUTHOR) {
+  await prisma.feedPost.create({
+    data: { id, householdId: HOUSEHOLD, authorMemberId, body: "a moment", tags: [] }
+  });
+}
+
 /** A member opted in to everything, with one registered phone. */
 async function optIn(memberId: string, endpoint: string, overrides: Record<string, unknown> = {}) {
   await prisma.notificationPreference.create({
@@ -120,6 +127,7 @@ describe("a new post", () => {
     await optIn(PARTNER, "https://push.test/partner");
     await optIn(GRANDMA, "https://push.test/grandma");
     await optIn(AUTHOR, "https://push.test/author");
+    await livePost("p-1");
 
     const result = await sendMomentNotification({
       householdId: HOUSEHOLD,
@@ -138,6 +146,7 @@ describe("a new post", () => {
 
   it("says who posted and about whom, and nothing the post contains", async () => {
     await optIn(PARTNER, "https://push.test/partner");
+    await livePost("p-1");
     await sendMomentNotification({
       householdId: HOUSEHOLD,
       kind: "post",
@@ -239,6 +248,44 @@ describe("a comment", () => {
       postId: "p-3"
     });
     expect(recipients).toEqual([AUTHOR]);
+  });
+});
+
+describe("a post that is already gone", () => {
+  it("tells nobody about a post deleted between saving and sending", async () => {
+    // A caregiver posts and immediately deletes - wrong baby, wrong photo, a double tap. The send
+    // is fire-and-forget, so the delete can land first; every phone in the house should stay quiet
+    // rather than ring for something that no longer exists.
+    await optIn(PARTNER, "https://push.test/partner");
+    await prisma.feedPost.create({
+      data: { id: "p-gone", householdId: HOUSEHOLD, authorMemberId: AUTHOR, body: "oops", tags: [], deletedAt: new Date() }
+    });
+    const result = await sendMomentNotification({
+      householdId: HOUSEHOLD,
+      kind: "post",
+      actorMemberId: AUTHOR,
+      postId: "p-gone",
+      babyId: BABY
+    });
+    expect(result.sent).toBe(0);
+    expect(sent).toHaveLength(0);
+  });
+
+  it("still tells the household about a post that is live", async () => {
+    // The guard above must not silence ordinary posts.
+    await optIn(PARTNER, "https://push.test/partner");
+    await prisma.feedPost.create({
+      data: { id: "p-live", householdId: HOUSEHOLD, authorMemberId: AUTHOR, body: "hello", tags: [] }
+    });
+    const result = await sendMomentNotification({
+      householdId: HOUSEHOLD,
+      kind: "post",
+      actorMemberId: AUTHOR,
+      postId: "p-live",
+      babyId: BABY
+    });
+    expect(result.sent).toBe(1);
+    expect(sent[0].endpoint).toBe("https://push.test/partner");
   });
 });
 
@@ -412,6 +459,7 @@ describe("a phone that is gone", () => {
   it("retires a subscription the push service says no longer exists", async () => {
     await optIn(PARTNER, "https://push.test/partner");
     await optIn(GRANDMA, "https://push.test/grandma");
+    await livePost("p-1");
     failures.set("https://push.test/partner", 410);
 
     const result = await sendMomentNotification({
@@ -434,6 +482,7 @@ describe("a phone that is gone", () => {
   it("keeps a subscription that failed for a reason that may pass", async () => {
     // A 500 or a timeout is the push service having a bad day, not a phone that is gone.
     await optIn(PARTNER, "https://push.test/partner");
+    await livePost("p-1");
     failures.set("https://push.test/partner", 500);
 
     const result = await sendMomentNotification({
@@ -452,6 +501,7 @@ describe("a phone that is gone", () => {
 
   it("never sends to an already retired subscription", async () => {
     await optIn(PARTNER, "https://push.test/partner");
+    await livePost("p-1");
     await prisma.pushSubscription.updateMany({
       where: { endpoint: "https://push.test/partner" },
       data: { deletedAt: new Date() }
