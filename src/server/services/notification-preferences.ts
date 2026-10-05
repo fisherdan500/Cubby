@@ -10,7 +10,7 @@ import {
 } from "@/server/services/browser-operations";
 
 const notificationPreferenceSchemaVersion = 1 as const;
-const categorySchema = z.enum(["timer_overdue", "activity_created", "reminder_due"]);
+const categorySchema = z.enum(["timer_overdue", "activity_created", "reminder_due", "moments"]);
 const channelSchema = z.enum(["browser_push"]);
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const babyScopeSchema = z.discriminatedUnion("mode", [

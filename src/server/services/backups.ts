@@ -422,7 +422,7 @@ export async function buildHouseholdV2Snapshot(
       const selectedBabyIds = preference.selectedBabies.map((selected) => selected.babyId);
       return [{
         email: owner.user.email.toLowerCase(),
-        categories: preference.categories as Array<"timer_overdue" | "activity_created" | "reminder_due">,
+        categories: preference.categories as Array<"timer_overdue" | "activity_created" | "reminder_due" | "moments">,
         ...(preference.quietHoursStart === null ? {} : { quietHoursStart: preference.quietHoursStart }),
         ...(preference.quietHoursEnd === null ? {} : { quietHoursEnd: preference.quietHoursEnd }),
         interruptionLevel: preference.interruptionLevel === "timeSensitive"

@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { NotificationPreferenceForm } from "@/components/settings/notification-preference-form";
+import { NotificationSubscribeCard } from "@/components/settings/notification-subscribe-card";
 import { Card } from "@/components/ui/card";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdHome } from "@/server/services/households";
@@ -17,10 +18,15 @@ export default async function NotificationsSettingsPage() {
           <h2 className="mb-3 text-lg font-semibold">Preference</h2>
           <NotificationPreferenceForm babies={babies} state={preference.state} />
         </Card>
-        <Card className="space-y-3">
-          <h2 className="text-lg font-semibold">Current document</h2>
-          {preference.document ? <p className="text-sm text-muted-foreground">Revision {preference.document.revision}. External delivery is {preference.document.externalDeliveryEnabled ? "enabled" : "off"}.</p> : <p className="text-sm text-muted-foreground">No document is saved. External delivery is off.</p>}
-        </Card>
+        <div className="space-y-4">
+          {/* Registering this phone is separate from the household preference: a member can be
+              opted in and still have no device able to receive anything. */}
+          <NotificationSubscribeCard />
+          <Card className="space-y-3">
+            <h2 className="text-lg font-semibold">Current document</h2>
+            {preference.document ? <p className="text-sm text-muted-foreground">Revision {preference.document.revision}. External delivery is {preference.document.externalDeliveryEnabled ? "enabled" : "off"}.</p> : <p className="text-sm text-muted-foreground">No document is saved. External delivery is off.</p>}
+          </Card>
+        </div>
       </div>
     </AppShell>
   );

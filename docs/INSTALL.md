@@ -320,13 +320,88 @@ keep the backup from step 1, and follow
 and `docker compose up -d` are safe. For the full runbook, with the preflight checks, see
 [Always-On Updates](ALWAYS_ON_UPDATES.md).
 
-## 7. If The Server Dies
+## 7. Phone Notifications For Moments
+
+Optional. When it is set up, a phone gets a notification when someone posts a moment, and the
+people in a conversation hear about comments and reactions on it. Leave the keys blank and Cubby
+behaves exactly as it does without this: nothing is sent, and the settings page says so.
+
+**Two things are required before any of it can work.**
+
+First, an **https address**. Browsers refuse push notifications on a plain `http://` address, and
+they refuse to register the service worker that receives them, so nothing arrives and nothing
+explains why. If you reach Cubby over http today, set up the reverse proxy in step 1 first.
+
+Second, on an **iPhone or iPad**, Cubby has to be on the Home Screen. Safari grants notifications
+only to an installed web app; in an ordinary Safari tab the permission prompt never appears. Open
+Cubby in Safari, tap Share, choose "Add to Home Screen", then open Cubby from that new icon.
+Android has no such restriction.
+
+### Setting it up
+
+1. Generate a key pair. These identify your server to Apple's and Google's push services:
+
+   ```bash
+   docker compose exec app node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"
+   ```
+
+2. Put them in `.env`, with an address a push service can use to contact you:
+
+   ```bash
+   WEB_PUSH_VAPID_PUBLIC_KEY=<the publicKey from step 1>
+   WEB_PUSH_VAPID_PRIVATE_KEY=<the privateKey from step 1>
+   WEB_PUSH_CONTACT=mailto:you@example.com
+   ```
+
+   The private key signs every notification. Treat it like a password: keep it out of screenshots
+   and out of anything you share. Changing it later invalidates every device already registered,
+   and each one has to turn notifications on again.
+
+3. If Cubby sits behind a reverse proxy, so that `BETTER_AUTH_URL` is an internal address rather
+   than the one people type, add the public one. A notification's link is built from this, and a
+   notification that opens an internal address goes nowhere from a phone:
+
+   ```bash
+   CUBBY_PUBLIC_URL=https://cubby.example.com
+   ```
+
+4. Rebuild the app so it reads the new settings. PostgreSQL is untouched:
+
+   ```bash
+   docker compose up -d --build --no-deps app
+   ```
+
+5. On each phone, open **Settings → Notifications**. Under **Preference**, turn on **External
+   delivery**, tick **Moments** under Categories, and tick the **Browser push** channel. Then press
+   **Turn on notifications** under "This device".
+
+   All four are needed, and they mean different things: external delivery is the master switch,
+   Moments is which kind of news you want, Browser push is how it reaches you, and the device
+   registration is this particular phone. A member who registers the device but never ticks Moments
+   receives nothing - deliberately, so that nobody is opted into lock-screen notifications they did
+   not ask for.
+
+### If nothing arrives
+
+First check the four switches in step 5. A device that is registered but whose member has not
+ticked **Moments**, or not ticked **Browser push**, receives nothing and reports no error - that is
+the commonest cause by far.
+
+Then check the card itself: it states the reason it will not offer the button - not a secure
+address, keys not configured, blocked in browser settings, or an iPhone that is not yet on the Home
+Screen.
+
+Delivery is best effort. Apple's and Google's services are outside your control and will sometimes
+delay or drop a notification, so treat it as a nudge rather than a guarantee; Cubby's own record of
+what happened is always the Moments page.
+
+## 8. If The Server Dies
 
 Set up a new server, install Cubby as in step 2 with your saved `.env` in place, do not open
 `/setup`, and restore your newest system backup, exactly as in the practice restore. Everyone
 signs in as before. See [Whole-System Backup](recovery/system-backup.md#restoring-onto-a-new-server).
 
-## 8. Moving One Household To A New Cubby
+## 9. Moving One Household To A New Cubby
 
 A whole-system backup moves everything and is the right tool when you are replacing a server. Use a
 single household backup instead when you are moving one household into a Cubby that already exists,
@@ -383,5 +458,7 @@ wait and try again. If it stops because Cubby cannot reach its backup folder, th
 - [ ] `AUTOMATED_BACKUPS_ENABLED=true` in `.env`
 - [ ] Backups copied off the server on a schedule
 - [ ] Practice restore done on a throwaway machine
+- [ ] Optional: phone notifications set up (https address, VAPID keys in `.env`, and on an iPhone
+      Cubby added to the Home Screen) - see step 7
 - [ ] Before every update: `cd` into the Cubby folder and make a backup first; then `git pull`, `docker compose build --pull app`,
       `docker compose pull postgres`, `docker compose up -d`; never `docker compose down --volumes`
