@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
   auditFindFirst: vi.fn(),
   writeAudit: vi.fn(),
   pauseIntervalCreate: vi.fn(),
-  pauseIntervalCloseQuery: vi.fn()
+  pauseIntervalCloseQuery: vi.fn(),
+  queueActivityNotification: vi.fn(),
+  queueFromBrowserResult: vi.fn()
 }));
 
 vi.mock("@/server/services/browser-operations", () => ({
@@ -24,6 +26,10 @@ vi.mock("@/server/services/browser-operations", () => ({
 }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: { auditEvent: { findFirst: mocks.auditFindFirst } } }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/activity-notifications", () => ({
+  queueActivityNotification: mocks.queueActivityNotification,
+  queueActivityNotificationFromBrowserOperationResult: mocks.queueFromBrowserResult
+}));
 
 import {
   issueActivityCreateBrowserOperation,
@@ -31,6 +37,7 @@ import {
   issueActivityTimerBrowserOperation,
   issueActivityUndoLastBrowserOperation,
   issueActivityUpdateBrowserOperation,
+  submitActivityCreateBrowserOperation,
   submitActivityTimerBrowserOperation,
   submitActivityUndoLastBrowserOperation
 } from "./activities";
@@ -115,6 +122,46 @@ describe("activity browser-v2 opening bindings", () => {
 
     await expect(submitActivityUndoLastBrowserOperation({ operationId, activityId: "activity-9" })).rejects.toThrow("not_found");
     expect(mocks.executeHousehold).toHaveBeenCalledWith(expect.objectContaining({ targetId: "activity-9", intent: { activityId: "activity-9" } }));
+  });
+});
+
+describe("activity browser-v2 create notification dispatch", () => {
+  it("requeues a durable terminal create when issue discovers a completed replay", async () => {
+    const completed = {
+      status: "completed",
+      operationId,
+      outcome: { kind: "activity", code: "ok", activityId: "activity-1", action: "create" }
+    } as const;
+    mocks.issueBrowser.mockResolvedValue(completed);
+
+    await expect(issueActivityCreateBrowserOperation({ operationId, babyId: "baby-1" })).resolves.toEqual(completed);
+
+    expect(mocks.queueFromBrowserResult).toHaveBeenCalledWith({
+      householdId: "household-1",
+      result: completed
+    });
+  });
+
+  it("queues delivery after the normal browser create executor returns its committed activity", async () => {
+    mocks.executeBrowser.mockResolvedValue({
+      status: "completed",
+      operationId,
+      outcome: { kind: "activity", code: "ok", activityId: "activity-1", action: "create" }
+    });
+
+    await submitActivityCreateBrowserOperation({
+      operationId,
+      babyId: "baby-1",
+      type: "feeding",
+      mode: "bottle",
+      occurredAt: "2026-08-17T12:00:00.000Z",
+      activeTimer: false
+    });
+
+    expect(mocks.queueActivityNotification).toHaveBeenCalledWith({
+      householdId: "household-1",
+      activityId: "activity-1"
+    });
   });
 });
 

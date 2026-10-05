@@ -30,7 +30,8 @@ const mocks = vi.hoisted(() => ({
   pauseIntervalCloseQuery: vi.fn(),
   pauseIntervalCount: vi.fn(),
   apiKeyFindFirst: vi.fn(),
-  writeAudit: vi.fn()
+  writeAudit: vi.fn(),
+  queueActivityNotification: vi.fn()
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
@@ -56,6 +57,10 @@ vi.mock("@/server/auth/context", () => ({
 }));
 
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+
+vi.mock("@/server/services/activity-notifications", () => ({
+  queueActivityNotification: mocks.queueActivityNotification
+}));
 
 import {
   activityLogUpdateData,
@@ -229,6 +234,25 @@ describe("activity page access", () => {
     );
   });
 
+  it("queues the activity notification only after the create transaction commits", async () => {
+    let committed = false;
+    mocks.transaction.mockImplementationOnce(async (operation) => {
+      const result = await operation(transactionClient());
+      committed = true;
+      return result;
+    });
+    mocks.queueActivityNotification.mockImplementation(() => {
+      expect(committed).toBe(true);
+    });
+
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    expect(mocks.queueActivityNotification).toHaveBeenCalledWith({
+      householdId: "household-1",
+      activityId: "activity-created"
+    });
+  });
+
   it("starts precise pause tracking at the timer's start instant", () => {
     const draft = specificCreate({ ...feedingInput(), activeTimer: true } as unknown as Parameters<typeof specificCreate>[0]);
 
@@ -287,6 +311,10 @@ describe("activity page access", () => {
     await expect(createActivityForContext(request, context("parent"))).resolves.toEqual(outcomeSnapshot);
     expect(mocks.activityCreate).not.toHaveBeenCalled();
     expect(mocks.writeAudit).not.toHaveBeenCalled();
+    expect(mocks.queueActivityNotification).toHaveBeenCalledWith({
+      householdId: "household-1",
+      activityId: "activity-created"
+    });
   });
 
   it("replays the authoritative activity for the same household mutation ID and normalized request", async () => {
@@ -451,6 +479,31 @@ describe("activity page access", () => {
         title: "New Cubby activity",
         body: "feeding"
       }]
+    });
+  });
+
+  it("queues the opted-in activity notification log when the new activity starts a timer", async () => {
+    mocks.activityCreate.mockResolvedValue({
+      id: "activity-created",
+      babyId: "baby-1",
+      type: "feeding",
+      timerState: "running"
+    });
+    mocks.notificationFindMany.mockResolvedValue([{ memberId: "recipient-episode" }]);
+    mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"id"')
+        ? [{ userId: "recipient-user" }]
+        : [{ id: "locked" }]
+    );
+
+    await createActivityForContext({ ...feedingInput(), activeTimer: true }, context("parent"));
+
+    expect(mocks.notificationCreateMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({
+        activityId: "activity-created",
+        userId: "recipient-user",
+        kind: "activity_created"
+      })]
     });
   });
 

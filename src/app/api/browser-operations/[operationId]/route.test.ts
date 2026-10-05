@@ -18,7 +18,8 @@ describe("GET /api/browser-operations/:operationId", () => {
     [{ status: "prepared", operationId, code: "operation_prepared" }, 202],
     [{ status: "expired", operationId, code: "operation_result_expired" }, 410],
     [{ status: "expired", operationId, code: "operation_abandoned" }, 410],
-    [{ status: "completed", operationId, outcome: { kind: "calendar_event", code: "ok", eventId: "event-1" } }, 200]
+    [{ status: "completed", operationId, outcome: { kind: "calendar_event", code: "ok", eventId: "event-1" } }, 200],
+    [{ status: "completed", operationId, outcome: { kind: "activity", code: "ok", activityId: "activity-1", action: "create" } }, 200]
   ] as const)("maps durable status %# without executing a mutation", async (result, status) => {
     mocks.getStatus.mockResolvedValue(result);
     const response = await GET(new Request(`http://localhost/api/browser-operations/${operationId}`), {
