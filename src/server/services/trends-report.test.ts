@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   findMany: vi.fn(),
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/db/prisma", () => ({ prisma: { activityLog: { findMany: mocks.findMany } } }));
+vi.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "UTC" } }));
 vi.mock("@/server/auth/context", () => ({
   getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext,
   requirePermission: mocks.requirePermission
@@ -18,6 +19,10 @@ beforeEach(() => {
   mocks.findMany.mockReset().mockResolvedValue([]);
   mocks.getEffectiveHouseholdContext.mockReset().mockResolvedValue({ householdId: "household-1", role: "parent" });
   mocks.requirePermission.mockReset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 async function readTrends(window: "8w" | "6m" | "all" = "6m") {
@@ -79,6 +84,9 @@ describe("the trends query", () => {
   it("carries each amount's own unit through to the chart, not just into the query", () => {
     // Asking the database for the unit is not the same as using it. Proving the SELECT contains it
     // left room for the value to be dropped on the way to the builder, reverting the fix unseen.
+    // Keep the fixture and application timezone on the same day, independently of the host timezone.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-15T08:00:00.000Z"));
     return (async () => {
       const day = 24 * 60 * 60 * 1000;
       const rows = [];
