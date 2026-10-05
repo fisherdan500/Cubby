@@ -12,9 +12,44 @@ import { buildObservedRoutine, otherRoutineTypes, type RoutineEvent } from "@/li
 import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart } from "@/lib/timezone";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { getHouseholdHome } from "@/server/services/households";
-import { activityInclude } from "@/server/services/activities";
 
-type ReportActivity = Prisma.ActivityLogGetPayload<{ include: typeof activityInclude }>;
+/**
+ * The detail tables a report actually reads.
+ *
+ * `activityInclude` carries all sixteen activity relations plus the acting member and their user
+ * account. A report reads six of them and never looks at who logged an entry, so the rest are
+ * hydrated for every row in the window and discarded - and a report window is thousands of rows for
+ * a household with real history. Narrowed here rather than by changing activityInclude, which the
+ * entry list and the feed legitimately need in full.
+ *
+ * Keep this in step with buildReportStats: a detail table read there but missing here would arrive
+ * as undefined and be silently skipped rather than failing, so the two belong in the same change.
+ */
+const reportActivityInclude = {
+  feeding: true,
+  diaper: true,
+  sleep: true,
+  pumping: true,
+  measurement: true,
+  milestone: true
+} satisfies Prisma.ActivityLogInclude;
+
+/**
+ * Growth and milestones are a history rather than a window, so that query is the only one here with
+ * no date bound - it reads every measurement and milestone a baby has ever had. It also filters to
+ * those two types, so the other four detail tables can never be non-null on a row it returns.
+ */
+const historyActivityInclude = {
+  measurement: true,
+  milestone: true
+} satisfies Prisma.ActivityLogInclude;
+
+type ReportActivity = Prisma.ActivityLogGetPayload<{ include: typeof reportActivityInclude }>;
+type HistoryActivity = Prisma.ActivityLogGetPayload<{ include: typeof historyActivityInclude }>;
+/** A row the statistics can read: the full window shape, or a history row without the window-only joins. */
+type StatsActivity =
+  | ReportActivity
+  | (HistoryActivity & Partial<Pick<ReportActivity, "feeding" | "diaper" | "sleep" | "pumping">>);
 
 export type RoutineQuickWindow = "1w" | "2w" | "1m";
 /**
@@ -96,7 +131,7 @@ export async function getReports(
         deletedAt: null,
         occurredAt: { gte: start, lt: endExclusive }
       },
-      include: activityInclude,
+      include: reportActivityInclude,
       orderBy: { occurredAt: "asc" }
     }),
     prisma.activityLog.findMany({
@@ -119,7 +154,7 @@ export async function getReports(
             deletedAt: null,
             occurredAt: { gte: zonedDateStart(previousStartKey, env.APP_TIMEZONE), lt: start }
           },
-          include: activityInclude,
+          include: reportActivityInclude,
           orderBy: { occurredAt: "asc" }
         })
       : Promise.resolve(null),
@@ -132,7 +167,7 @@ export async function getReports(
             deletedAt: null,
             type: { in: [ActivityType.measurement, ActivityType.milestone] }
           },
-          include: activityInclude,
+          include: historyActivityInclude,
           orderBy: { occurredAt: "asc" }
         })
       : Promise.resolve(null)
@@ -247,7 +282,7 @@ export function routineEventsFrom(records: RoutineRecord[]): RoutineEvent[] {
 export type RoutineTimeline = ReturnType<typeof buildRoutine>;
 
 export function buildReportStats(
-  activities: ReportActivity[],
+  activities: StatsActivity[],
   birthDate?: Date | null,
   timeZone = env.APP_TIMEZONE,
   preferences: UnitPreferences = defaultUnitPreferences
