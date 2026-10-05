@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db/prisma";
 import { env, webPushConfig } from "@/lib/env";
 import { publicAppUrl } from "@/lib/web-push-config";
 import { displayFormatter } from "@/lib/timezone";
+import { WEB_PUSH_REQUEST_OPTIONS } from "@/server/services/web-push-delivery";
 
 /**
  * Sending a moment notification.
@@ -243,7 +244,7 @@ export async function sendMomentNotification(
           url,
           tag
         });
-        await webpush.sendNotification(target, JSON.stringify(payload));
+        await webpush.sendNotification(target, JSON.stringify(payload), WEB_PUSH_REQUEST_OPTIONS);
         sent += 1;
       } catch (error) {
         const status = (error as WebPushError)?.statusCode;
