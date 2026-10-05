@@ -231,18 +231,18 @@ export async function sendMomentNotification(
         recipientIsParentAuthor: member.id === parentAuthor,
         babyName: baby?.name ?? null
       });
-      const payload = momentPushPayloadSchema.parse({
-        kind: event.kind,
-        title: text.title,
-        body: text.body.slice(0, 160),
-        url,
-        tag
-      });
       const target: WebPushSubscription = {
         endpoint: subscription.endpoint,
         keys: { p256dh: subscription.p256dh, auth: subscription.auth }
       };
       try {
+        const payload = momentPushPayloadSchema.parse({
+          kind: event.kind,
+          title: text.title,
+          body: text.body.slice(0, 160),
+          url,
+          tag
+        });
         await webpush.sendNotification(target, JSON.stringify(payload));
         sent += 1;
       } catch (error) {
