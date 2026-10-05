@@ -97,6 +97,17 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
+/** Convert the configured base64url VAPID public key into the bytes expected by PushManager. */
+function decodeApplicationServerKey(base64Url) {
+  const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
+  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const buffer = new ArrayBuffer(raw.length);
+  const bytes = new Uint8Array(buffer);
+  for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
+  return buffer;
+}
+
 /**
  * A browser can replace a subscription on its own, without the member doing anything. Registering
  * the replacement here keeps a phone receiving notifications instead of going silently quiet until
@@ -105,21 +116,31 @@ self.addEventListener("notificationclick", (event) => {
 self.addEventListener("pushsubscriptionchange", (event) => {
   event.waitUntil(
     (async () => {
-      const applicationServerKey =
+      let applicationServerKey =
         (event.oldSubscription && event.oldSubscription.options && event.oldSubscription.options.applicationServerKey) ||
         null;
-      if (!applicationServerKey) return;
+      if (!applicationServerKey) {
+        const response = await fetch("/api/notifications/vapid-key", {
+          cache: "no-store",
+          credentials: "include"
+        });
+        const body = await response.json();
+        const config = body && body.data;
+        if (!response.ok || !config || !config.enabled || typeof config.publicKey !== "string" || !config.publicKey) return;
+        applicationServerKey = decodeApplicationServerKey(config.publicKey);
+      }
       const subscription = await self.registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey
       });
       const json = subscription.toJSON();
-      await fetch("/api/notifications/subscribe", {
+      const saved = await fetch("/api/notifications/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ endpoint: subscription.endpoint, keys: json.keys })
-      }).catch(() => undefined);
+      }).catch(() => null);
+      if (!saved || !saved.ok) await subscription.unsubscribe().catch(() => undefined);
     })()
   );
 });
