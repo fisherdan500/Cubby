@@ -287,7 +287,7 @@ const memberSchema = z
 const notificationPreferenceSchema = z
   .object({
     email: z.string().min(3).max(320),
-    categories: z.array(z.enum(["timer_overdue", "activity_created", "reminder_due"])).max(20),
+    categories: z.array(z.enum(["timer_overdue", "activity_created", "reminder_due", "moments"])).max(20),
     quietHoursStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
     quietHoursEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
     interruptionLevel: z.enum(["passive", "normal", "time_sensitive"]),

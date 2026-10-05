@@ -14264,9 +14264,9 @@
       "bindings": [
         {
           "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 6417,
+          "anchorEnd": 6428,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 6402,
+          "anchorStart": 6413,
           "kind": "form_action",
           "symbol": "submit",
           "target": "src/components/settings/notification-preference-form.tsx#submit"
@@ -14281,8 +14281,8 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorDigest": "8e6589ca2d19fa4ad2ecfc5c1029f07ba02d490fe885c0dd77410f1ad8117af8",
-          "anchorEnd": 2967,
+          "anchorDigest": "ab646a8e6eed4175ca6f8c9d092e7ca725c7bfd0603b79733a8e52d4d0531442",
+          "anchorEnd": 2978,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
           "anchorStart": 2182,
           "kind": "global_fetch",
@@ -14291,18 +14291,18 @@
         },
         {
           "anchorDigest": "94cdb2c0e6ddab0ad44ed814024813dc68be4c94d8850f2cee00a75b044c7686",
-          "anchorEnd": 4289,
+          "anchorEnd": 4300,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 4222,
+          "anchorStart": 4233,
           "kind": "global_fetch",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "03a9a9415149cb9444ac32fac10560c6b7924e665ab8b0b8e769994640b7b56a",
-          "anchorEnd": 5519,
+          "anchorEnd": 5530,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 5365,
+          "anchorStart": 5376,
           "kind": "global_fetch",
           "symbol": "fetch[4]",
           "target": "globalThis.fetch"
@@ -16468,7 +16468,7 @@
     }
   ],
   "observationCount": 252,
-  "observationDigest": "770afb9545d6836b729cd11f013ad5527f9f9fa37e835f6bb64d05f493cd3887",
+  "observationDigest": "ded30c139cfc38fa5bd262379100e6ca29974df262f90298eed99b5c20005318",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -21344,9 +21344,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 6417,
+          "anchorEnd": 6428,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 6402,
+          "anchorStart": 6413,
           "kind": "form_action",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "submit",
@@ -21362,7 +21362,7 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2967,
+          "anchorEnd": 2978,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
           "anchorStart": 2182,
           "kind": "global_fetch",
@@ -21371,18 +21371,18 @@
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 4289,
+          "anchorEnd": 4300,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 4222,
+          "anchorStart": 4233,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "fetch[3]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 5519,
+          "anchorEnd": 5530,
           "anchorFile": "src/components/settings/notification-preference-form.tsx",
-          "anchorStart": 5365,
+          "anchorStart": 5376,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/notification-preference-form.tsx",
           "symbol": "fetch[4]",
@@ -24811,7 +24811,7 @@
   ],
   "ownerSetDigest": "81b72eb8040bd024145de00e3ecaad604d7fcc4543fbe4aa41d2a502f2296684",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "3004329ce971286bf65874567213717392a3a1bb06fb322be60c150c32e6d93c",
+  "registryDigest": "58994995a81e336e57a29bb3933af8e2382de25ad890f080bc01c1731e06ac41",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

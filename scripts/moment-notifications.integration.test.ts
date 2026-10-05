@@ -72,9 +72,10 @@ async function optIn(memberId: string, endpoint: string, overrides: Record<strin
     data: {
       householdId: HOUSEHOLD,
       memberId,
+      status: "active",
       externalDeliveryEnabled: true,
-      categories: [],
-      channels: ["push"],
+      categories: ["moments"],
+      channels: ["browser_push"],
       ...overrides
     }
   });
@@ -316,7 +317,21 @@ describe("a member's own choices", () => {
   });
 
   it("skips a member whose chosen categories do not include moments", async () => {
-    await optIn(PARTNER, "https://push.test/partner", { categories: ["reminders"] });
+    await optIn(PARTNER, "https://push.test/partner", { categories: ["timer_overdue"] });
+    const recipients = await momentNotificationRecipients({
+      householdId: HOUSEHOLD,
+      kind: "post",
+      actorMemberId: AUTHOR,
+      parentAuthorMemberId: AUTHOR
+    });
+    expect(recipients).toEqual([]);
+  });
+
+  it("sends nothing to a member who chose NO categories", async () => {
+    // An empty list is not consent. Membership of a category is a positive test here, the way
+    // activities.ts reads the same column - anything else silently opts a member into a lock-screen
+    // notification they never asked for.
+    await optIn(PARTNER, "https://push.test/partner", { categories: [] });
     const recipients = await momentNotificationRecipients({
       householdId: HOUSEHOLD,
       kind: "post",
@@ -335,6 +350,45 @@ describe("a member's own choices", () => {
       parentAuthorMemberId: AUTHOR
     });
     expect(recipients).toEqual([PARTNER]);
+  });
+
+  it("skips a preference awaiting re-confirmation", async () => {
+    // needsReview is the app's way of saying do not act on this preference yet, typically after a
+    // restore. Acting on it anyway would notify someone on the strength of a stale choice.
+    await optIn(PARTNER, "https://push.test/partner", { status: "needsReview" });
+    const recipients = await momentNotificationRecipients({
+      householdId: HOUSEHOLD,
+      kind: "post",
+      actorMemberId: AUTHOR,
+      parentAuthorMemberId: AUTHOR
+    });
+    expect(recipients).toEqual([]);
+  });
+
+  it("skips a member who did not choose the browser push channel", async () => {
+    await optIn(PARTNER, "https://push.test/partner", { channels: [] });
+    const recipients = await momentNotificationRecipients({
+      householdId: HOUSEHOLD,
+      kind: "post",
+      actorMemberId: AUTHOR,
+      parentAuthorMemberId: AUTHOR
+    });
+    expect(recipients).toEqual([]);
+  });
+
+  it("resolves the post's author itself when the caller does not supply one", async () => {
+    // The call sites deliberately omit parentAuthorMemberId so the lookup happens inside the send,
+    // off the request path: a failure there must never report a saved comment as a failure.
+    await optIn(AUTHOR, "https://push.test/author");
+    await prisma.feedPost.create({ data: { id: "p-self", householdId: HOUSEHOLD, authorMemberId: AUTHOR, body: "hi", tags: [] } });
+    const result = await sendMomentNotification({
+      householdId: HOUSEHOLD,
+      kind: "reaction",
+      actorMemberId: PARTNER,
+      postId: "p-self"
+    });
+    expect(result.sent).toBe(1);
+    expect(sent[0].endpoint).toBe("https://push.test/author");
   });
 
   it("skips a suspended member", async () => {

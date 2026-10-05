@@ -24,29 +24,6 @@ import {
 import { queueMomentNotification } from "@/server/services/moment-notifications";
 
 /**
- * Whose moment this is, for deciding who hears about a comment or reaction.
- *
- * A post has an author. A logged entry has no author - it has whoever recorded it - so that
- * caregiver stands in, and commenting on a sleep entry reaches the person who logged the sleep.
- * Null when the parent is gone or was written by someone outside the household, which simply means
- * there is nobody to notify.
- */
-async function momentParentAuthor(householdId: string, parent: FeedParent): Promise<string | null> {
-  if (parent.parentKind === "post") {
-    const post = await prisma.feedPost.findFirst({
-      where: { id: parent.parentId, householdId, deletedAt: null },
-      select: { authorMemberId: true }
-    });
-    return post?.authorMemberId ?? null;
-  }
-  const activity = await prisma.activityLog.findFirst({
-    where: { id: parent.parentId, householdId, deletedAt: null },
-    select: { actorMemberId: true }
-  });
-  return activity?.actorMemberId ?? null;
-}
-
-/**
  * Comments and reactions in the family feed (DEC-PROD-421), on a post or a logged entry. Every member
  * may comment and react, read-only members included; a comment never changes the entry it is on. The
  * author edits their comment; the author, or an owner, admin or parent, removes it. The audit trail
@@ -216,7 +193,6 @@ export async function submitFeedCommentCreateBrowserOperation(raw: Record<string
       householdId: ctx.householdId,
       kind: "comment",
       actorMemberId: ctx.memberId,
-      parentAuthorMemberId: await momentParentAuthor(ctx.householdId, parent),
       ...(parent.parentKind === "post" ? { postId: parent.parentId } : { activityId: parent.parentId })
     });
   }
@@ -389,7 +365,6 @@ export async function submitFeedReactionSetBrowserOperation(raw: Record<string, 
       householdId: ctx.householdId,
       kind: "reaction",
       actorMemberId: ctx.memberId,
-      parentAuthorMemberId: await momentParentAuthor(ctx.householdId, parent),
       ...(parent.parentKind === "post" ? { postId: parent.parentId } : { activityId: parent.parentId })
     });
   }

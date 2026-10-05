@@ -32,12 +32,41 @@ export type MomentNotificationEvent = {
   householdId: string;
   kind: MomentNotificationKind;
   actorMemberId: string;
-  parentAuthorMemberId: string | null;
+  /**
+   * The post's author, or for a comment/reaction on a logged entry, whoever recorded it. Null when
+   * the parent was written by someone outside the household. Omitted for a comment or reaction, so
+   * that the lookup happens inside the send rather than on a request path whose write has already
+   * committed - a transient failure there would report a saved comment as a failure.
+   */
+  parentAuthorMemberId?: string | null;
   /** The post this concerns, for the click target and for collapsing repeats on the phone. */
   postId?: string | null;
   activityId?: string | null;
   babyId?: string | null;
 };
+
+/**
+ * Whose moment this is. A post carries its author; a logged entry has none, so whoever recorded it
+ * stands in, and commenting on a sleep entry reaches the caregiver who logged the sleep.
+ */
+async function resolveParentAuthor(event: MomentNotificationEvent): Promise<string | null> {
+  if (event.parentAuthorMemberId !== undefined) return event.parentAuthorMemberId;
+  if (event.postId) {
+    const post = await prisma.feedPost.findFirst({
+      where: { id: event.postId, householdId: event.householdId, deletedAt: null },
+      select: { authorMemberId: true }
+    });
+    return post?.authorMemberId ?? null;
+  }
+  if (event.activityId) {
+    const activity = await prisma.activityLog.findFirst({
+      where: { id: event.activityId, householdId: event.householdId, deletedAt: null },
+      select: { actorMemberId: true }
+    });
+    return activity?.actorMemberId ?? null;
+  }
+  return null;
+}
 
 let configured = false;
 function ensureConfigured(): boolean {
@@ -50,7 +79,11 @@ function ensureConfigured(): boolean {
 }
 
 /** The members who should hear about this event, after their own preferences are applied. */
-export async function momentNotificationRecipients(event: MomentNotificationEvent): Promise<string[]> {
+export async function momentNotificationRecipients(
+  event: MomentNotificationEvent,
+  parentAuthorMemberId?: string | null
+): Promise<string[]> {
+  const parentAuthor = parentAuthorMemberId !== undefined ? parentAuthorMemberId : await resolveParentAuthor(event);
   const [members, priorCommenters] = await Promise.all([
     prisma.householdMember.findMany({
       // disabledAt is this schema's suspension: a suspended member keeps no claim on notifications.
@@ -73,7 +106,7 @@ export async function momentNotificationRecipients(event: MomentNotificationEven
   const audience = momentNotificationAudience({
     kind: event.kind,
     actorMemberId: event.actorMemberId,
-    parentAuthorMemberId: event.parentAuthorMemberId,
+    parentAuthorMemberId: parentAuthor,
     priorCommenterMemberIds: priorCommenters
       .map((comment) => comment.authorMemberId)
       .filter((id): id is string => id !== null),
@@ -81,14 +114,22 @@ export async function momentNotificationRecipients(event: MomentNotificationEven
   });
   if (audience.length === 0) return [];
 
-  // A member with no preference row has not opted in: external delivery defaults to off, which is
-  // the same answer the settings page gives when no document is saved.
+  // The same recipient contract the rest of the app uses (see activities.ts): the preference must
+  // be active rather than awaiting re-confirmation, external delivery on, this category chosen,
+  // and browser push chosen as a channel. Membership of a category is a POSITIVE test - an empty
+  // list means nothing was chosen, so nothing is sent. A member who has not asked for moment
+  // notifications must never receive one on a lock screen.
   const preferences = await prisma.notificationPreference.findMany({
-    where: { householdId: event.householdId, memberId: { in: audience } },
+    where: {
+      householdId: event.householdId,
+      memberId: { in: audience },
+      status: "active",
+      externalDeliveryEnabled: true,
+      categories: { has: MOMENT_NOTIFICATION_CATEGORY },
+      channels: { has: "browser_push" }
+    },
     select: {
       memberId: true,
-      externalDeliveryEnabled: true,
-      categories: true,
       quietHoursStart: true,
       quietHoursEnd: true,
       babyScope: true,
@@ -103,10 +144,8 @@ export async function momentNotificationRecipients(event: MomentNotificationEven
   const allowed: string[] = [];
   for (const memberId of audience) {
     const preference = preferences.find((row) => row.memberId === memberId);
-    if (!preference?.externalDeliveryEnabled) continue;
-    // An empty category list means "everything this household sends"; a non-empty one must name
-    // moments explicitly, so a member who chose only some categories is not opted into new ones.
-    if (preference.categories.length > 0 && !preference.categories.includes(MOMENT_NOTIFICATION_CATEGORY)) continue;
+    // No row, or a row the query above rejected, means this member has not opted in.
+    if (!preference) continue;
     if (withinQuietHours(nowHHMM, preference.quietHoursStart, preference.quietHoursEnd)) continue;
     // A member watching only some babies does not hear about the others. A post about the whole
     // family carries no baby and reaches everyone who is opted in.
@@ -127,7 +166,10 @@ export async function sendMomentNotification(
 ): Promise<{ sent: number; pruned: number; skipped: string }> {
   if (!ensureConfigured()) return { sent: 0, pruned: 0, skipped: webPushConfig.enabled ? "" : "push_disabled" };
 
-  const recipients = await momentNotificationRecipients(event);
+  // Resolved here, inside the fire-and-forget boundary, so a transient database failure cannot
+  // reach a request whose comment or reaction has already been saved.
+  const parentAuthor = await resolveParentAuthor(event);
+  const recipients = await momentNotificationRecipients(event, parentAuthor);
   if (recipients.length === 0) return { sent: 0, pruned: 0, skipped: "no_recipients" };
 
   const [actor, baby, subscriptions] = await Promise.all([
@@ -173,7 +215,7 @@ export async function sendMomentNotification(
       const text = momentNotificationText({
         kind: event.kind,
         actorName: actor?.displayName ?? actor?.user.name ?? "Someone",
-        recipientIsParentAuthor: member.id === event.parentAuthorMemberId,
+        recipientIsParentAuthor: member.id === parentAuthor,
         babyName: baby?.name ?? null
       });
       const payload = momentPushPayloadSchema.parse({
