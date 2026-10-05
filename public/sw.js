@@ -92,6 +92,11 @@ self.addEventListener("notificationclick", (event) => {
         if ("navigate" in client) return client.navigate(target).then((navigated) => (navigated ? navigated.focus() : null));
         if ("focus" in client) return client.focus();
       }
+      try {
+        if (new URL(target, self.location.origin).origin !== self.location.origin) return null;
+      } catch {
+        return null;
+      }
       return self.clients.openWindow(target);
     })
   );
