@@ -10,7 +10,7 @@ import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
 import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart } from "@/lib/timezone";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
-import { buildTrends, type Trends } from "@/server/services/trends";
+import { buildTrends, UNFINISHED_SLEEP_LIMIT_MS, type Trends } from "@/server/services/trends";
 
 export type TrendWindow = "8w" | "6m" | "all";
 
@@ -32,7 +32,8 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
   requirePermission(ctx, "activity.read");
 
   const timeZone = env.APP_TIMEZONE;
-  const todayKey = dateKeyInTimeZone(new Date(), timeZone);
+  const now = Date.now();
+  const todayKey = dateKeyInTimeZone(new Date(now), timeZone);
   // "All" still has a floor. Two years rather than five: a weekly chart of a hundred-odd points is
   // already more than can be read at once, and the work of placing every entry in the household's
   // own zone is what makes this page slow. Five years of a busy household took six seconds of server
@@ -41,6 +42,7 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
   const startKey = addDaysToDateKey(todayKey, -(days - 1));
   const from = zonedDateStart(startKey, timeZone);
   const to = zonedDateStart(addDaysToDateKey(todayKey, 1), timeZone);
+  const earliestUnfinishedStart = new Date(from.getTime() - UNFINISHED_SLEEP_LIMIT_MS);
 
   const activities = await prisma.activityLog.findMany({
     where: {
@@ -50,13 +52,21 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
       OR: [
         // Feeds and changes happen at an instant, so they belong to the window by when they happened.
         { type: { in: [ActivityType.feeding, ActivityType.diaper] }, occurredAt: { gte: from, lt: to } },
-        // A sleep belongs to the window if it OVERLAPS it, however long before it began. The same
-        // rule the dashboard uses: any fixed lookback is arbitrary, and a timer left running for
-        // days would silently lose whatever fell outside it.
+        // Finished sleeps may overlap regardless of start age. An unfinished interval can only
+        // survive aggregation's two-day limit and overlap if its canonical start is recent enough.
         {
           type: ActivityType.sleep,
           occurredAt: { lt: to },
-          OR: [{ endedAt: { gt: from } }, { endedAt: null }]
+          OR: [
+            { endedAt: { gt: from } },
+            {
+              endedAt: null,
+              OR: [
+                { startedAt: { gt: earliestUnfinishedStart } },
+                { startedAt: null, occurredAt: { gt: earliestUnfinishedStart } }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -72,7 +82,8 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
       pauseTrackingStartedAt: true,
       pauseTrackingBaselineSeconds: true,
       pauseIntervals: { select: { startedAt: true, endedAt: true } },
-      feeding: { select: { amount: true, mode: true, unit: true } }
+      feeding: { select: { amount: true, mode: true, unit: true } },
+      diaper: { select: { kind: true } }
     },
     orderBy: { occurredAt: "asc" }
   });
@@ -92,8 +103,9 @@ export async function getTrends(babyId: string, window: TrendWindow): Promise<Tr
       pauseIntervals: activity.pauseIntervals,
       feedingAmount: activity.feeding?.amount ?? null,
       feedingMode: activity.feeding?.mode ?? null,
-      feedingUnit: activity.feeding?.unit ?? null
+      feedingUnit: activity.feeding?.unit ?? null,
+      diaperKind: activity.diaper?.kind ?? null
     })),
-    { timeZone, now: Date.now() }
+    { timeZone, now, window: { from, to } }
   );
 }

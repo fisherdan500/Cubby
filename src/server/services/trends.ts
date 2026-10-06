@@ -6,15 +6,15 @@
  * logging. Routine can take the most common number of naps and ignore the odd day; a total has no
  * such natural filter, so `src/lib/trends.ts` carries the rules that keep these figures honest.
  *
- * Sleep is measured exactly as the dashboard's Total Sleep card measures it - by how much of each
+ * Total sleep is measured exactly as the dashboard's Total Sleep card measures it - by how much of each
  * sleep fell inside the day - so a night that runs past midnight is shared between the two days it
  * covers. Any other rule would disagree with the card the household reads every morning.
  */
 
-import { ActivityType, type Prisma } from "@prisma/client";
+import { ActivityType, type DiaperKind, type Prisma } from "@prisma/client";
 import { daySleepSeconds, sleepInterval, type DaySleepRecord } from "@/lib/day-sleep";
 import { convertVolume, sumVolume } from "@/domain/units";
-import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart } from "@/lib/timezone";
+import { addDaysToDateKey, dateKeyInTimeZone, zonedDateStart, zonedDateTimeToDate } from "@/lib/timezone";
 import { bucketWeeks, trendSeries, VOLUME_MIN_MEASURED_SHARE, type TrendDay, type TrendPoint } from "@/lib/trends";
 
 export type { TrendPoint };
@@ -35,6 +35,7 @@ export type TrendActivity = {
   feedingAmount: Prisma.Decimal | number | null;
   feedingMode: string | null;
   feedingUnit?: string | null;
+  diaperKind: DiaperKind | null;
 };
 
 export type TrendPanel = {
@@ -49,9 +50,13 @@ export type Trends = {
   weeks: number;
   anyData: boolean;
   sleep: TrendPanel;
+  daytimeSleep: TrendPanel;
+  nighttimeSleep: TrendPanel;
   feeds: TrendPanel;
   volume: TrendPanel;
   diapers: TrendPanel;
+  wetDiapers: TrendPanel;
+  dirtyDiapers: TrendPanel;
 };
 
 function amountOf(value: Prisma.Decimal | number | null) {
@@ -70,7 +75,7 @@ function panel(points: TrendPoint[]): TrendPanel {
  */
 // A sleep timer still running after this long was forgotten rather than slept. Two days is past any
 // real nap or night while still allowing the longest genuine overnight a timer legitimately spans.
-const UNFINISHED_TIMER_LIMIT_MS = 2 * 24 * 60 * 60 * 1000;
+export const UNFINISHED_SLEEP_LIMIT_MS = 2 * 24 * 60 * 60 * 1000;
 
 // An end this can place on a calendar. An unreadable end is an unfinished sleep, not a finished one.
 function isReadableEnd(endedAt: Date | null): endedAt is Date {
@@ -117,8 +122,14 @@ function knownVolumeOunces(feeds: DayFeeds) {
   return readable.reduce((total, ounces) => total + ounces, 0);
 }
 
-export function buildTrends(activities: TrendActivity[], options: { timeZone: string; now: number }): Trends {
-  const { timeZone, now } = options;
+export function buildTrends(activities: TrendActivity[], options: {
+  timeZone: string;
+  now: number;
+  window?: { from: Date; to: Date };
+}): Trends {
+  const { timeZone, now, window } = options;
+  const from = window?.from.getTime() ?? -Infinity;
+  const to = window?.to.getTime() ?? Infinity;
   // Naming the day an instant falls on means formatting it in the household's zone, which is the
   // expensive step here: five years of logs repeat few distinct instants, and a month of them repeat
   // almost none. The observed routine caches this for the same reason.
@@ -142,6 +153,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
   // Today is still happening, so its totals are not comparable with whole days: a morning's three
   // feeds against yesterday's six reads as a drop that is only the clock. It joins once it is over.
   const todayKey = keyOf(new Date(now));
+  const firstWindowKey = window ? keyOf(window.from) : null;
   const dayKeys = new Set<string>();
   const sleepsByDay = new Map<string, DaySleepRecord[]>();
   // `count` is every feed, for the feeds panel. The volume fields cover only the feeds this panel
@@ -151,7 +163,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     pourable: number;
     volumes: Array<{ amount: number; unit?: string | null }>;
   }>();
-  const diapersByDay = new Map<string, number>();
+  const diapersByDay = new Map<string, { count: number; wet: number; dirty: number; known: boolean }>();
 
   for (const activity of activities) {
     // One unreadable timestamp is one row's problem. Letting it reach the zone formatter threw
@@ -162,13 +174,18 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     // April opened the window in April and drew nine empty weeks ahead of the real data.
     // Asked of every sleep row, not only those with no end at all: an end that cannot be read is
     // just as unfinished as an absent one, and both arrive here claiming days they never covered.
-    if (activity.type === ActivityType.sleep && !isReadableEnd(activity.endedAt)) {
+    if (activity.type === ActivityType.sleep) {
       const span = sleepInterval(asSleepRecord(activity), now);
-      if (!span || !Number.isFinite(span.end - span.start)) continue;
-      if (span.end - span.start > UNFINISHED_TIMER_LIMIT_MS) continue;
+      if (!isReadableEnd(activity.endedAt)) {
+        if (!span || !Number.isFinite(span.end - span.start)) continue;
+        if (span.end - span.start > UNFINISHED_SLEEP_LIMIT_MS) continue;
+      }
+    } else if (activity.occurredAt.getTime() < from || activity.occurredAt.getTime() >= to) {
+      continue;
     }
     const key = keyOf(activity.occurredAt);
-    dayKeys.add(key);
+    // With a resolved window, sleep contributes only the canonical interval's covered days below.
+    if (!window || activity.type !== ActivityType.sleep) dayKeys.add(key);
 
     if (activity.type === ActivityType.sleep) {
       // A sleep is filed under the day it began, then split by overlap below: a night that runs past
@@ -191,7 +208,7 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
       // Every day a sleep covers must exist as a day, not just the one it began on and the one it
       // ended on: a sleep running over thirty hours has a middle day that is entirely asleep, and
       // leaving it out drops a full day of sleep from the week.
-      if (isReadableEnd(activity.endedAt)) {
+      if (!window && isReadableEnd(activity.endedAt)) {
         const endKey = keyOf(activity.endedAt);
         for (let covered = key; covered <= endKey; covered = addDaysToDateKey(covered, 1)) {
           dayKeys.add(covered);
@@ -216,17 +233,14 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     }
 
     if (activity.type === ActivityType.diaper) {
-      diapersByDay.set(key, (diapersByDay.get(key) ?? 0) + 1);
+      const current = diapersByDay.get(key) ?? { count: 0, wet: 0, dirty: 0, known: true };
+      current.count += 1;
+      if (activity.diaperKind === "wet" || activity.diaperKind === "mixed") current.wet += 1;
+      if (activity.diaperKind === "dirty" || activity.diaperKind === "mixed") current.dirty += 1;
+      if (activity.diaperKind == null) current.known = false;
+      diapersByDay.set(key, current);
     }
   }
-
-  const keys = [...dayKeys].filter((key) => key < todayKey).sort();
-  if (!keys.length) {
-    const empty = panel([]);
-    return { startKey: "", endKey: "", weeks: 0, anyData: false, sleep: empty, feeds: empty, volume: empty, diapers: empty };
-  }
-
-  const weeks = bucketWeeks(keys, timeZone);
 
   // Sleep is selected by whether it OVERLAPS the day, exactly as the dashboard does, rather than by
   // which day it was filed under. A fixed one-day lookback silently truncated two real cases: the
@@ -245,19 +259,70 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
   };
 
   const overlapping = new Map<string, DaySleepRecord[]>();
+  const reportingBounds = new Map<string, { start: Date; middle: Date; end: Date }>();
+  const reportingBoundsOf = (key: string) => {
+    const cached = reportingBounds.get(key);
+    if (cached) return cached;
+    const bounds = {
+      start: zonedDateTimeToDate(`${key}T07:00`, timeZone),
+      middle: zonedDateTimeToDate(`${key}T19:00`, timeZone),
+      end: zonedDateTimeToDate(`${addDaysToDateKey(key, 1)}T07:00`, timeZone)
+    };
+    reportingBounds.set(key, bounds);
+    return bounds;
+  };
+  const reportingKeyOf = (at: number) => {
+    const key = keyOf(new Date(at));
+    return at < reportingBoundsOf(key).start.getTime() ? addDaysToDateKey(key, -1) : key;
+  };
+  const reportingSleeps = new Map<string, DaySleepRecord[]>();
   for (const [, records] of sleepsByDay) {
     for (const record of records) {
       const span = sleepInterval(record, now);
       if (!span) continue;
-      const firstKey = keyOf(new Date(span.start));
-      const lastKey = keyOf(new Date(span.end));
+      const start = Math.max(span.start, from);
+      const end = Math.min(span.end, to);
+      const firstKey = keyOf(new Date(start));
+      const lastKey = keyOf(new Date(window ? end - 1 : end));
       for (let covered = firstKey; covered <= lastKey; covered = addDaysToDateKey(covered, 1)) {
+        if (window) dayKeys.add(covered);
         const bucket = overlapping.get(covered);
         if (bucket) bucket.push(record);
         else overlapping.set(covered, [record]);
       }
+      // Index only reporting days the interval actually touches; an end at 7 AM belongs to
+      // the preceding night. Each day then scans its own records, not the full history.
+      if (end <= start) continue;
+      const reportKey = reportingKeyOf(start);
+      // Reporting dates, like calendar dates, stay inside the selected local date range.
+      const firstReportKey = firstWindowKey && reportKey < firstWindowKey ? firstWindowKey : reportKey;
+      const lastReportKey = reportingKeyOf(end - 1);
+      for (let covered = firstReportKey; covered <= lastReportKey; covered = addDaysToDateKey(covered, 1)) {
+        const bucket = reportingSleeps.get(covered);
+        if (bucket) bucket.push(record);
+        else reportingSleeps.set(covered, [record]);
+      }
     }
   }
+
+  const keys = [...dayKeys].filter((key) => key < todayKey).sort();
+  const weeks = bucketWeeks(keys, timeZone);
+
+  // Both halves become comparable only once their entire 7 AM-to-7 AM day is over.
+  const splitKeys = [...reportingSleeps.keys()].filter((key) => {
+    const { start, end } = reportingBoundsOf(key);
+    return end.getTime() <= now && (!window || (start.getTime() >= from && end.getTime() <= to));
+  });
+  const splitWeeks = bucketWeeks(splitKeys, timeZone);
+  const splitSleepWeeks = (half: "daytime" | "nighttime") => splitWeeks.map((week) => ({
+    weekKey: week.weekKey,
+    days: week.dayKeys.map((key): TrendDay => {
+      const records = reportingSleeps.get(key)!;
+      const { start, middle, end } = reportingBoundsOf(key);
+      const slept = daySleepSeconds(records, half === "daytime" ? start : middle, half === "daytime" ? middle : end, now);
+      return { key, entries: records.length, value: slept.seconds };
+    })
+  }));
 
   const sleepSecondsFor = (key: string) => {
     const records = overlapping.get(key);
@@ -319,23 +384,34 @@ export function buildTrends(activities: TrendActivity[], options: { timeZone: st
     return pourable === 0 ? 0 : known / pourable;
   });
 
-  const diaperWeeks = weeks.map((week) => ({
+  const diaperWeeks = (measure: "count" | "wet" | "dirty") => weeks.map((week) => ({
     weekKey: week.weekKey,
     days: week.dayKeys.flatMap((key): TrendDay[] => {
       const changes = diapersByDay.get(key);
-      return changes === undefined ? [] : [{ key, entries: changes, value: changes }];
+      // All changes are completeness evidence, including days with zero of this subtype.
+      return changes === undefined ? [] : [{
+        key,
+        entries: changes.count,
+        value: measure === "count" || changes.known ? changes[measure] : null
+      }];
     })
   }));
 
+  const completedKeys = [...new Set([...keys, ...splitKeys])].sort();
+
   return {
-    startKey: keys[0],
-    endKey: keys[keys.length - 1],
-    weeks: weeks.length,
-    anyData: true,
+    startKey: completedKeys[0] ?? "",
+    endKey: completedKeys[completedKeys.length - 1] ?? "",
+    weeks: bucketWeeks(completedKeys, timeZone).length,
+    anyData: completedKeys.length > 0,
     sleep: panel(trendSeries(sleepWeeks)),
+    daytimeSleep: panel(trendSeries(splitSleepWeeks("daytime"))),
+    nighttimeSleep: panel(trendSeries(splitSleepWeeks("nighttime"))),
     feeds: panel(trendSeries(feedWeeks)),
     volume: panel(trendSeries(volumeWeeks, { measuredShare })),
-    diapers: panel(trendSeries(diaperWeeks))
+    diapers: panel(trendSeries(diaperWeeks("count"))),
+    wetDiapers: panel(trendSeries(diaperWeeks("wet"))),
+    dirtyDiapers: panel(trendSeries(diaperWeeks("dirty")))
   };
 }
 

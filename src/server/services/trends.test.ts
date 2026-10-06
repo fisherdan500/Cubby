@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildTrends } from "@/server/services/trends";
+import { buildTrends, type TrendActivity } from "@/server/services/trends";
+import { addDaysToDateKey, zonedDateTimeToDate } from "@/lib/timezone";
 
 const timeZone = "America/New_York";
 
 function at(localDateTime: string) {
-  // Fixed offsets for the dates used here; America/New_York is UTC-4 in June and September 2026.
-  return new Date(`${localDateTime}:00.000-04:00`);
+  return zonedDateTimeToDate(localDateTime, timeZone);
 }
 
 function feed(
@@ -24,11 +24,12 @@ function feed(
     pausedAt: null,
     feedingAmount: amount,
     feedingMode: mode,
-    feedingUnit: unit
+    feedingUnit: unit,
+    diaperKind: null
   };
 }
 
-function diaper(localDateTime: string) {
+function diaper(localDateTime: string, kind: TrendActivity["diaperKind"] = null) {
   return {
     type: "diaper" as const,
     occurredAt: at(localDateTime),
@@ -38,7 +39,8 @@ function diaper(localDateTime: string) {
     timerState: "none",
     pausedAt: null,
     feedingAmount: null,
-    feedingMode: null
+    feedingMode: null,
+    diaperKind: kind
   };
 }
 
@@ -53,7 +55,8 @@ function sleep(startLocal: string, endLocal: string | null, options: { timerStat
     timerState: options.timerState ?? "stopped",
     pausedAt: null,
     feedingAmount: null,
-    feedingMode: null
+    feedingMode: null,
+    diaperKind: null
   };
 }
 
@@ -70,6 +73,300 @@ function ordinaryWeek(from: string, feedsPerDay = 5) {
 }
 
 describe("trends", () => {
+  describe("resolved window", () => {
+    const options = {
+      timeZone,
+      now: at("2026-06-10T12:00").getTime(),
+      window: { from: at("2026-06-01T00:00"), to: at("2026-06-04T00:00") }
+    };
+
+    it.each([true, false])("rejects old duration-only rows but retains window overlap with startedAt=%s", (hasStart) => {
+      const durationOnly = (start: string, durationSeconds: number) => ({
+        ...sleep(start, null, { timerState: "none" }),
+        startedAt: hasStart ? at(start) : null,
+        durationSeconds
+      });
+      const old = durationOnly("2020-06-01T12:00", 3600);
+      expect(buildTrends([old], options).anyData).toBe(false);
+
+      const result = buildTrends([
+        old,
+        durationOnly("2026-05-31T23:30", 3600),
+        durationOnly("2026-06-02T00:00", 1800),
+        durationOnly("2026-06-03T00:00", 1800)
+      ], options);
+
+      expect(result.startKey).toBe("2026-06-01");
+      expect(result.endKey).toBe("2026-06-03");
+      expect(result.sleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 1800, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+      ]);
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points.map((point) => point.weekKey)).toEqual(["2026-06-01"]);
+      }
+    });
+
+    it("rejects instant records and nonoverlapping sleeps outside the half-open window", () => {
+      const inside = [feed("2026-06-01T00:00"), diaper("2026-06-03T23:59", "mixed")];
+      const outside = [
+        feed("2026-05-31T23:59"), feed("2026-06-04T00:00"),
+        diaper("2026-05-31T23:59", "wet"), diaper("2026-06-04T00:00", "dirty"),
+        sleep("2026-05-31T23:00", "2026-06-01T00:00"),
+        sleep("2026-06-04T00:00", "2026-06-04T01:00")
+      ];
+
+      expect(buildTrends([...outside, ...inside], options)).toEqual(buildTrends(inside, options));
+    });
+
+    it("retains genuinely long finished sleep without extending the resolved window", () => {
+      const result = buildTrends([sleep("2020-06-01T00:00", "2026-06-05T00:00")], {
+        ...options,
+        window: { from: at("2026-06-01T00:00"), to: at("2026-06-05T00:00") }
+      });
+
+      expect(result).toMatchObject({ startKey: "2026-06-01", endKey: "2026-06-04", weeks: 1 });
+      expect(result.sleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 86400, daysCounted: 4, daysLogged: 4, daysUnknown: 0 }
+      ]);
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points).toEqual([
+          { weekKey: "2026-06-01", value: 43200, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+        ]);
+      }
+    });
+  });
+
+  describe("split sleep", () => {
+    it("keeps three completed Kiritimati Friday Saturday Sunday nights in one Monday week", () => {
+      const zone = "Pacific/Kiritimati";
+      const activities = ["2026-06-05", "2026-06-06", "2026-06-07"].map((key) => {
+        const startedAt = zonedDateTimeToDate(`${key}T19:00`, zone);
+        const endedAt = zonedDateTimeToDate(`${addDaysToDateKey(key, 1)}T07:00`, zone);
+        return {
+          ...sleep(`${key}T19:00`, null),
+          occurredAt: startedAt,
+          startedAt,
+          endedAt,
+          durationSeconds: (endedAt.getTime() - startedAt.getTime()) / 1000
+        };
+      });
+
+      const result = buildTrends(activities, {
+        timeZone: zone,
+        now: zonedDateTimeToDate("2026-06-09T12:00", zone).getTime()
+      });
+
+      expect(result.nighttimeSleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 43200, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+      ]);
+    });
+
+    it("deduplicates overlapping sleep time across both windows and indexes every covered reporting day", () => {
+      const record = sleep("2026-06-01T07:00", "2026-06-04T07:00");
+      const overlap = sleep("2026-06-02T18:00", "2026-06-03T08:00");
+      const result = buildTrends([record, overlap], { timeZone, now: at("2026-06-06T12:00").getTime() });
+
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points).toEqual([
+          { weekKey: "2026-06-01", value: 43200, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+        ]);
+      }
+    });
+
+    it("retains a finished reporting night when its only record occurred this morning", () => {
+      const result = buildTrends([sleep("2026-06-08T01:00", "2026-06-08T07:00")], {
+        timeZone, now: at("2026-06-08T08:00").getTime()
+      });
+
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points).toEqual([
+          { weekKey: "2026-06-01", value: null, daysCounted: 1, daysLogged: 1, daysUnknown: 0 }
+        ]);
+      }
+      expect(result.sleep.points).toEqual([]);
+      expect(result.anyData).toBe(true);
+      expect(result.startKey).toBe("2026-06-07");
+      expect(result.endKey).toBe("2026-06-07");
+      expect(result.weeks).toBe(1);
+    });
+
+    it("preserves total-sleep midnight outputs and blank week gaps for overnight records", () => {
+      const activities = [0, 1, 2, 14, 15, 16].map((offset) => {
+        const key = addDaysToDateKey("2026-06-01", offset);
+        return sleep(`${key}T19:00`, `${addDaysToDateKey(key, 1)}T07:00`);
+      });
+      const result = buildTrends(activities, { timeZone, now: at("2026-06-22T12:00").getTime() });
+
+      expect(result.sleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 32400, daysCounted: 4, daysLogged: 4, daysUnknown: 0 },
+        { weekKey: "2026-06-08", value: null, daysCounted: 0, daysLogged: 0, daysUnknown: 0 },
+        { weekKey: "2026-06-15", value: 32400, daysCounted: 4, daysLogged: 4, daysUnknown: 0 }
+      ]);
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points.map((point) => point.weekKey)).toEqual(["2026-06-01", "2026-06-08", "2026-06-15"]);
+        expect(result[key].points.map((point) => point.value)).toEqual(key === "daytimeSleep" ? [0, null, 0] : [43200, null, 43200]);
+      }
+    });
+
+    it("withholds both halves until ending 7 AM while retaining genuine running sleep and excluding forgotten timers", () => {
+      const activities = [1, 2, 3].map((day) => sleep(`2026-06-0${day}T19:00`, `2026-06-0${day + 1}T07:00`));
+      const running = sleep("2026-06-04T19:00", null, { timerState: "running" });
+      const boundary = at("2026-06-05T07:00").getTime();
+      const before = buildTrends([...activities, running], { timeZone, now: boundary - 1000 });
+
+      expect(before.nighttimeSleep.points[0]).toMatchObject({ value: 43200, daysCounted: 3, daysLogged: 3 });
+      expect(before.daytimeSleep.points[0]).toMatchObject({ value: 0, daysCounted: 3, daysLogged: 3 });
+      expect(before.sleep).not.toEqual(buildTrends(activities, { timeZone, now: boundary - 1000 }).sleep);
+
+      for (const now of [boundary, boundary + 1000]) {
+        const result = buildTrends([...activities, running], { timeZone, now });
+        expect(result.nighttimeSleep.points[0]).toMatchObject({ value: 43200, daysCounted: 4, daysLogged: 4 });
+        expect(result.daytimeSleep.points[0]).toMatchObject({ value: 0, daysCounted: 4, daysLogged: 4 });
+        const forgotten = { ...running, occurredAt: new Date(now - 2 * 86400000 - 1), startedAt: new Date(now - 2 * 86400000 - 1) };
+        expect(buildTrends([...activities, running, forgotten], { timeZone, now })).toEqual(result);
+      }
+    });
+
+    it("leaves unknown legacy pause and duration placement unavailable with honest daysUnknown", () => {
+      for (const pausedSeconds of [3600, 0]) {
+        const activities: TrendActivity[] = [1, 2, 3, 4].flatMap((day) => [
+          sleep(`2026-06-0${day}T10:00`, `2026-06-0${day}T11:00`),
+          sleep(`2026-06-0${day}T20:00`, `2026-06-0${day}T21:00`)
+        ]);
+        activities.push({ ...sleep("2026-06-04T18:00", "2026-06-04T20:00"), durationSeconds: 3600, pausedSeconds });
+        const options = { timeZone, now: at("2026-06-06T12:00").getTime() };
+        const result = buildTrends(activities, options);
+
+        for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+          expect(result[key].points[0]).toEqual({
+            weekKey: "2026-06-01", value: 3600, daysCounted: 3, daysLogged: 4, daysUnknown: 1
+          });
+          expect(buildTrends(activities.slice(2), options)[key].points[0]).toMatchObject({
+            value: null, daysCounted: 2, daysLogged: 3, daysUnknown: 1
+          });
+        }
+      }
+    });
+
+    it("uses full reporting-day entry counts for both halves while still excluding thin days", () => {
+      const activities: TrendActivity[] = [];
+      for (const day of [1, 2, 3, 4, 5, 6, 7]) {
+        // Three days with four daytime records, three with four nighttime records, one thin day.
+        const hours = day <= 3 ? [8, 10, 12, 14] : day <= 6 ? [19, 20, 21, 22] : [8];
+        for (const hour of hours) {
+          const start = `2026-06-0${day}T${String(hour).padStart(2, "0")}`;
+          activities.push(sleep(`${start}:00`, `${start}:30`));
+        }
+      }
+      const result = buildTrends(activities, { timeZone, now: at("2026-06-09T12:00").getTime() });
+
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points).toEqual([
+          { weekKey: "2026-06-01", value: 3600, daysCounted: 6, daysLogged: 7, daysUnknown: 0 }
+        ]);
+      }
+    });
+
+    it("reports known zero in the opposite half of a daytime-only or nighttime-only reporting day", () => {
+      for (const [start, end, known, zero] of [
+        ["10:00", "12:00", "daytimeSleep", "nighttimeSleep"],
+        ["20:00", "22:00", "nighttimeSleep", "daytimeSleep"]
+      ] as const) {
+        const activities = [1, 2, 3].map((day) => sleep(`2026-06-0${day}T${start}`, `2026-06-0${day}T${end}`));
+        const result = buildTrends(activities, { timeZone, now: at("2026-06-05T12:00").getTime() });
+
+        expect(result[known].points[0]).toMatchObject({ value: 7200, daysCounted: 3, daysLogged: 3, daysUnknown: 0 });
+        expect(result[zero].points[0]).toMatchObject({ value: 0, daysCounted: 3, daysLogged: 3, daysUnknown: 0 });
+      }
+    });
+
+    it("uses eleven spring-forward and thirteen fall-back hours for fully asleep nights", () => {
+      for (const [firstKey, transitionHours] of [["2026-03-05", 11], ["2026-10-29", 13]] as const) {
+        const activities = [0, 1, 2].map((offset) => {
+          const key = addDaysToDateKey(firstKey, offset);
+          return sleep(`${key}T19:00`, `${addDaysToDateKey(key, 1)}T07:00`);
+        });
+        const result = buildTrends(activities, { timeZone, now: at(`${addDaysToDateKey(firstKey, 4)}T12:00`).getTime() });
+
+        expect(activities[2].durationSeconds).toBe(transitionHours * 3600);
+        expect(result.nighttimeSleep.points[0]).toMatchObject({ daysCounted: 3, daysLogged: 3, daysUnknown: 0 });
+        expect(result.nighttimeSleep.points[0].value! * 3 - 24 * 3600).toBe(transitionHours * 3600);
+        expect(result.daytimeSleep.points[0].value).toBe(0);
+      }
+    });
+
+    it("subtracts precise pauses crossing both 7 AM and 7 PM from their actual halves", () => {
+      const activities: TrendActivity[] = [2, 4, 6].flatMap((day) => [6, 18].map((hour) => {
+        const date = `2026-06-0${day}`;
+        const start = `${date}T${String(hour).padStart(2, "0")}:00`;
+        return {
+          ...sleep(start, `${date}T${String(hour + 2).padStart(2, "0")}:00`),
+          durationSeconds: 5400,
+          pausedSeconds: 1800,
+          pauseTrackingStartedAt: at(start),
+          pauseIntervals: [{
+            startedAt: at(`${date}T${String(hour).padStart(2, "0")}:45`),
+            endedAt: at(`${date}T${String(hour + 1).padStart(2, "0")}:15`)
+          }]
+        };
+      }));
+      const result = buildTrends(activities, { timeZone, now: at("2026-06-08T12:00").getTime() });
+
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points).toEqual([
+          { weekKey: "2026-06-01", value: 2700, daysCounted: 6, daysLogged: 6, daysUnknown: 0 }
+        ]);
+      }
+    });
+
+    it("owns Sunday-to-Monday sleep in Sunday's week even when the record starts after midnight", () => {
+      const activities = [
+        sleep("2026-06-05T19:00", "2026-06-06T07:00"),
+        sleep("2026-06-06T19:00", "2026-06-07T07:00"),
+        sleep("2026-06-08T01:00", "2026-06-08T07:00")
+      ];
+      const result = buildTrends(activities, { timeZone, now: at("2026-06-09T12:00").getTime() });
+
+      expect(result.nighttimeSleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 36000, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+      ]);
+      expect(result.daytimeSleep.points[0]).toMatchObject({ weekKey: "2026-06-01", value: 0, daysCounted: 3 });
+    });
+
+    it("keeps exact 7 AM and 7 PM boundaries half-open without extra reporting days", () => {
+      const activities = [1, 2, 3].flatMap((day) => [
+        sleep(`2026-06-0${day}T07:00`, `2026-06-0${day}T19:00`),
+        sleep(`2026-06-0${day}T19:00`, `2026-06-0${day + 1}T07:00`)
+      ]);
+      const result = buildTrends(activities, { timeZone, now: at("2026-06-06T12:00").getTime() });
+
+      for (const key of ["daytimeSleep", "nighttimeSleep"] as const) {
+        expect(result[key].points).toEqual([
+          { weekKey: "2026-06-01", value: 43200, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+        ]);
+      }
+      expect(result.daytimeSleep.points[0].value! + result.nighttimeSleep.points[0].value!).toBe(86400);
+    });
+
+    it("splits complete reporting days by actual overlap without changing total sleep", () => {
+      const activities = [1, 2, 3].flatMap((day) => [
+        sleep(`2026-06-0${day}T10:00`, `2026-06-0${day}T12:00`),
+        sleep(`2026-06-0${day}T18:30`, `2026-06-0${day}T20:30`)
+      ]);
+      const result = buildTrends(activities, { timeZone, now: at("2026-06-05T12:00").getTime() });
+
+      expect(result.daytimeSleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 9000, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+      ]);
+      expect(result.nighttimeSleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 5400, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+      ]);
+      expect(result.sleep.points).toEqual([
+        { weekKey: "2026-06-01", value: 14400, daysCounted: 3, daysLogged: 3, daysUnknown: 0 }
+      ]);
+    });
+  });
+
   it("counts feeds per complete day, by week", () => {
     const trends = buildTrends(ordinaryWeek("2026-06-01"), { timeZone, now: at("2026-06-08T12:00").getTime() });
 
@@ -97,6 +394,105 @@ describe("trends", () => {
     const [week] = buildTrends(activities, { timeZone, now: at("2026-06-08T12:00").getTime() }).diapers.points;
 
     expect(week.value).toBeCloseTo(4 / 3, 5);
+  });
+
+  describe("wet and dirty diapers", () => {
+    const now = at("2026-06-22T12:00").getTime();
+    const changes = (day: number, kinds: TrendActivity["diaperKind"][]) => kinds.map((kind, index) =>
+      diaper(`2026-06-${String(day).padStart(2, "0")}T${String(8 + index).padStart(2, "0")}:00`, kind)
+    );
+
+    it.each([
+      ["wet", 1, 0], ["dirty", 0, 1], ["mixed", 1, 1], ["dry", 0, 0]
+    ] as const)("counts %s once in total and only in its applicable subtypes", (kind, wet, dirty) => {
+      const activities = [1, 2, 3].flatMap((day) => changes(day, [kind]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      expect(trends.diapers.points[0]).toMatchObject({ value: 1, daysCounted: 3, daysLogged: 3 });
+      expect(trends.wetDiapers?.points[0]).toMatchObject({ value: wet, daysCounted: 3, daysUnknown: 0 });
+      expect(trends.dirtyDiapers?.points[0]).toMatchObject({ value: dirty, daysCounted: 3, daysUnknown: 0 });
+    });
+
+    it("adds wet plus mixed and dirty plus mixed without changing total diaper counts", () => {
+      const activities = [1, 2, 3].flatMap((day) => changes(day, ["wet", "wet", "dirty", "mixed", "dry"]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      expect(trends.diapers.points[0].value).toBe(5);
+      expect(trends.wetDiapers?.points[0].value).toBe(3);
+      expect(trends.dirtyDiapers?.points[0].value).toBe(2);
+    });
+
+    it.each([
+      ["wetDiapers", "wet", "dirty"], ["dirtyDiapers", "dirty", "wet"]
+    ] as const)("uses all changes as %s completeness evidence, retaining opposite-only zero days", (key, kind, opposite) => {
+      const activities = [1, 2, 3].flatMap((day) => changes(day, Array(6).fill(kind)));
+      for (const day of [4, 5, 6, 7]) activities.push(...changes(day, [opposite, opposite, "dry", "dry", "dry", "dry"]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      expect(trends[key]?.points[0]).toEqual({
+        weekKey: "2026-06-01", value: 18 / 7, daysCounted: 7, daysLogged: 7, daysUnknown: 0
+      });
+      expect(trends[key]?.daysCounted).toBe(7);
+      expect(trends.diapers.points[0].value).toBe(6);
+    });
+
+    it.each([
+      ["wetDiapers", "wet"], ["dirtyDiapers", "dirty"]
+    ] as const)("retains well-logged days with a low %s subtype count", (key, kind) => {
+      const activities = [1, 2, 3].flatMap((day) => changes(day, Array(6).fill(kind)));
+      for (const day of [4, 5, 6, 7]) activities.push(...changes(day, [kind, "dry", "dry", "dry", "dry", "dry"]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      expect(trends[key]?.points[0]).toMatchObject({ value: 22 / 7, daysCounted: 7, daysLogged: 7 });
+    });
+
+    it("still excludes incomplete days from total, wet and dirty averages", () => {
+      const activities = [1, 2, 3].flatMap((day) => changes(day, ["wet", "dirty", "mixed", "dry", "dry", "dry"]));
+      for (const day of [4, 5, 6, 7]) activities.push(...changes(day, ["mixed"]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      for (const [key, value] of [["diapers", 6], ["wetDiapers", 2], ["dirtyDiapers", 2]] as const) {
+        expect(trends[key]?.points[0]).toMatchObject({ value, daysCounted: 3, daysLogged: 7, daysUnknown: 0 });
+      }
+    });
+
+    it("keeps missing weeks and insufficiently logged weeks blank for every diaper measure", () => {
+      const activities = [1, 2, 3, 15, 16].flatMap((day) => changes(day, ["mixed"]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      for (const key of ["diapers", "wetDiapers", "dirtyDiapers"] as const) {
+        expect(trends[key]?.points).toEqual([
+          { weekKey: "2026-06-01", value: 1, daysCounted: 3, daysLogged: 3, daysUnknown: 0 },
+          { weekKey: "2026-06-08", value: null, daysCounted: 0, daysLogged: 0, daysUnknown: 0 },
+          { weekKey: "2026-06-15", value: null, daysCounted: 2, daysLogged: 2, daysUnknown: 0 }
+        ]);
+      }
+    });
+
+    it("excludes today in the household timezone and cannot use it to complete a week", () => {
+      const activities = [1, 2, 3, 4].flatMap((day) => changes(day, ["mixed", "mixed", "mixed"]));
+      for (const [localNow, daysCounted, value] of [["2026-06-03T23:30", 2, null], ["2026-06-04T23:30", 3, 3]] as const) {
+        const trends = buildTrends(activities, { timeZone, now: at(localNow).getTime() });
+        for (const key of ["diapers", "wetDiapers", "dirtyDiapers"] as const) {
+          expect(trends[key]?.points[0]).toMatchObject({ value, daysCounted, daysLogged: daysCounted });
+        }
+      }
+      const todayOnly = buildTrends(changes(4, ["mixed"]), { timeZone, now: at("2026-06-04T23:30").getTime() });
+      expect(todayOnly.anyData).toBe(false);
+      expect(todayOnly.wetDiapers).toEqual({ points: [], daysCounted: 0 });
+      expect(todayOnly.dirtyDiapers).toEqual({ points: [], daysCounted: 0 });
+    });
+
+    it("keeps a missing diaper kind unknown without losing its total change", () => {
+      const activities = [1, 2, 3].flatMap((day) => changes(day, ["mixed", "dry"]));
+      activities.push(...changes(4, [null, "mixed"]));
+      const trends = buildTrends(activities, { timeZone, now });
+
+      expect(trends.diapers.points[0]).toMatchObject({ value: 2, daysCounted: 4, daysUnknown: 0 });
+      for (const key of ["wetDiapers", "dirtyDiapers"] as const) {
+        expect(trends[key]?.points[0]).toMatchObject({ value: 1, daysCounted: 3, daysLogged: 4, daysUnknown: 1 });
+      }
+    });
   });
 
   describe("sleep", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROUTINE_MIN_DAYS } from "@/lib/observed-routine";
-import { bucketWeeks, completeDays, trendSeries, VOLUME_MIN_MEASURED_SHARE } from "@/lib/trends";
+import { bucketWeeks, completeDays, trendSeries, VOLUME_MIN_MEASURED_SHARE, weekKeyOf } from "@/lib/trends";
 
 const timeZone = "America/New_York";
 
@@ -10,6 +10,16 @@ function day(key: string, entries: number, value: number | null = entries) {
 }
 
 describe("weekly buckets", () => {
+  it.each(["Pacific/Kiritimati", "Pacific/Tongatapu", "UTC", "America/New_York", "Pacific/Honolulu"])(
+    "keeps already-local Friday Saturday Sunday in Monday's week in %s",
+    (zone) => {
+      const dayKeys = ["2026-06-05", "2026-06-06", "2026-06-07"];
+
+      expect(dayKeys.map((key) => weekKeyOf(key, zone))).toEqual(["2026-06-01", "2026-06-01", "2026-06-01"]);
+      expect(bucketWeeks(dayKeys, zone)).toEqual([{ weekKey: "2026-06-01", dayKeys }]);
+    }
+  );
+
   it("groups days into weeks starting Monday, in the household's zone", () => {
     const weeks = bucketWeeks(["2026-06-01", "2026-06-07", "2026-06-08"], timeZone);
 

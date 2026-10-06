@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { ActivityType, BrowserOperationKey, FeedingKind, TimerState, WebhookEvent, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { momentsAfter, type MomentsBoundary } from "@/lib/moments-pagination";
+import { resolveHistoryWeek } from "@/lib/history-week";
+import { selectHistoryWeekIds } from "@/server/services/activity-history-week";
 import { durationSeconds } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { zonedDateTimeToDate } from "@/lib/timezone";
@@ -723,6 +725,7 @@ export async function restoreHistoricalActivityForContext(
 }
 
 export async function listActivities(params?: {
+  week?: unknown;
   babyId?: string;
   type?: string;
   search?: string;
@@ -735,8 +738,9 @@ export async function listActivities(params?: {
 
 export async function listActivitiesForContext(
   ctx: HouseholdContext,
-  database: Pick<Prisma.TransactionClient, "activityLog">,
+  database: Pick<Prisma.TransactionClient, "activityLog"> & Partial<Pick<Prisma.TransactionClient, "$queryRaw">>,
   params?: {
+    week?: unknown;
     babyId?: string;
     type?: string;
     search?: string;
@@ -745,28 +749,46 @@ export async function listActivitiesForContext(
   }
 ) {
   requirePermission(ctx, "activity.read");
+  const week = resolveHistoryWeek(params?.week, env.APP_TIMEZONE);
+  if (week.status === "invalid") throw new Error("invalid_history_week");
+  if (week.status === "valid" && params?.momentsAfter) throw new Error("history_week_moments_boundary_unsupported");
+  const where: Prisma.ActivityLogWhereInput = {
+    householdId: ctx.householdId,
+    deletedAt: null,
+    ...(params?.momentsAfter ? { AND: [momentsAfter("activity", params.momentsAfter)] } : {}),
+    ...(params?.babyId ? { babyId: params.babyId } : {}),
+    ...(params?.type ? { type: params.type as ActivityType } : {}),
+    ...(params?.search
+      ? {
+          OR: [
+            { notes: { contains: params.search, mode: "insensitive" } },
+            { milestone: { title: { contains: params.search, mode: "insensitive" } } },
+            { note: { text: { contains: params.search, mode: "insensitive" } } },
+            { medicine: { name: { contains: params.search, mode: "insensitive" } } },
+            { supplement: { name: { contains: params.search, mode: "insensitive" } } },
+            { vaccine: { name: { contains: params.search, mode: "insensitive" } } },
+            { mood: { mood: { contains: params.search, mode: "insensitive" } } },
+            { play: { activityName: { contains: params.search, mode: "insensitive" } } }
+          ]
+        }
+      : {})
+  };
+  if (week.status === "valid") {
+    if (!database.$queryRaw) throw new Error("history_week_selector_unavailable");
+    const selected = await selectHistoryWeekIds(
+      database as Pick<Prisma.TransactionClient, "$queryRaw">, ctx.householdId, week, params, params?.page?.cursor?.id
+    );
+    const ids = selected.map(({ id }) => id);
+    if (ids.length === 0) return [];
+    const rows = await database.activityLog.findMany({ where: { ...where, id: { in: ids } }, include: activityInclude });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    if (rows.length !== ids.length || byId.size !== ids.length || ids.some((id) => !byId.has(id))) {
+      throw new Error("history_week_hydration_mismatch");
+    }
+    return ids.map((id) => byId.get(id)!);
+  }
   return database.activityLog.findMany({
-    where: {
-      householdId: ctx.householdId,
-      deletedAt: null,
-      ...(params?.momentsAfter ? { AND: [momentsAfter("activity", params.momentsAfter)] } : {}),
-      ...(params?.babyId ? { babyId: params.babyId } : {}),
-      ...(params?.type ? { type: params.type as ActivityType } : {}),
-      ...(params?.search
-        ? {
-            OR: [
-              { notes: { contains: params.search, mode: "insensitive" } },
-              { milestone: { title: { contains: params.search, mode: "insensitive" } } },
-              { note: { text: { contains: params.search, mode: "insensitive" } } },
-              { medicine: { name: { contains: params.search, mode: "insensitive" } } },
-              { supplement: { name: { contains: params.search, mode: "insensitive" } } },
-              { vaccine: { name: { contains: params.search, mode: "insensitive" } } },
-              { mood: { mood: { contains: params.search, mode: "insensitive" } } },
-              { play: { activityName: { contains: params.search, mode: "insensitive" } } }
-            ]
-          }
-        : {})
-    },
+    where,
     include: activityInclude,
     ...(params?.page ?? {
       orderBy: [{ occurredAt: "desc" as const }, { id: "desc" as const }],

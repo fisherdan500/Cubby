@@ -6890,9 +6890,9 @@
     {
       "anchorBytes": "getActivityRowViewer",
       "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-      "anchorEnd": 767,
+      "anchorEnd": 887,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 747,
+      "anchorStart": 867,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityRowViewer",
@@ -6907,9 +6907,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 931,
+      "anchorEnd": 1051,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 905,
+      "anchorStart": 1025,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -6924,9 +6924,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 853,
+      "anchorEnd": 973,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 832,
+      "anchorStart": 952,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -6941,9 +6941,9 @@
     {
       "anchorBytes": "listActivities",
       "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-      "anchorEnd": 783,
+      "anchorEnd": 903,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 769,
+      "anchorStart": 889,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivities",
@@ -6958,9 +6958,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 705,
+      "anchorEnd": 825,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 690,
+      "anchorStart": 810,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8611,10 +8611,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "db91b5e28a3a3e63e57f0a0f0baa46c5b1ae6b7b2455d754b5c38bcc693e88ca",
+  "semanticArtifactDigest": "9e55332fa0940d652278eaaa5b590b4b96f7c8cfc2be9a23b1ec0f441fd710f8",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "061b8f5d3763876b7ed052b038573820d90e7e94e8a6c2dc81ab7a1bb2c06fed",
+  "semanticCoverageDigest": "220d86952eca91f267214ee8b4a0e455082ab39401e4bb63a0d8cce8db9c8e43",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "7ea4f5b1ea071b82e14e2fe1855a69fbf631120c3c862fbfb22b4740cf60a8c7"
+  "semanticFingerprint": "69f390b821df5edec14f479aea0e6b30114aaf001b346c6b59232f7b6c2fd266"
 }

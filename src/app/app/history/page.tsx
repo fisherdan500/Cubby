@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ActivityListRow } from "@/components/activity-list-row";
@@ -9,7 +10,8 @@ import { activityLabels, activityTypes } from "@/domain/activity";
 import { activityRowActions } from "@/lib/activity-row-actions";
 import { env } from "@/lib/env";
 import { historyHref, historyPageQuery, paginateHistoryItems } from "@/lib/history-pagination";
-import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
+import { resolveHistoryWeek } from "@/lib/history-week";
+import { addDaysToDateKey, dateKeyInTimeZone, formatInstantDate } from "@/lib/timezone";
 import { requireUserPage } from "@/server/auth/session";
 import { getActivityRowViewer, listActivities } from "@/server/services/activities";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
@@ -20,15 +22,19 @@ type HistoryActivity = Awaited<ReturnType<typeof listActivities>>[number];
 export default async function HistoryPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; type?: string; search?: string; cursor?: string };
+  searchParams: { babyId?: string; type?: string; search?: string; cursor?: string; week?: unknown };
 }) {
   const user = await requireUserPage();
+  const week = resolveHistoryWeek(searchParams.week, env.APP_TIMEZONE);
+  if (week.status === "invalid") notFound();
+  const weekKey = week.status === "valid" ? week.key : undefined;
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const [activityResults, unitSettings, viewer] = await Promise.all([
     listActivities({
       babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
       type: searchParams.type,
       search: searchParams.search,
+      ...(week.status === "valid" ? { week: week.key } : {}),
       page: historyPageQuery(searchParams.cursor)
     }),
     getActivityUnitPreferences(),
@@ -40,10 +46,11 @@ export default async function HistoryPage({
     babyId: selectedBabyId,
     type: searchParams.type,
     search: searchParams.search,
+    week: weekKey,
     cursor: searchParams.cursor
   });
   const clearHref = historyHref({ babyId: selectedBabyId });
-  const hasActiveFilters = Boolean(searchParams.type || searchParams.search);
+  const hasActiveFilters = Boolean(weekKey || searchParams.type || searchParams.search);
   const groups = groupActivitiesByDay(activities, env.APP_TIMEZONE);
 
   return (
@@ -52,6 +59,7 @@ export default async function HistoryPage({
         {/* Search leads, since that is what the log is opened for; the type filter sits beside it. */}
         <AutoSubmitForm className="flex max-w-full flex-wrap items-center gap-2">
           {babySelector ? <input type="hidden" name="babyId" value={babySelector.selectedBabyId} /> : null}
+          {week.status === "valid" ? <input type="hidden" name="week" value={week.key} /> : null}
           <label htmlFor="history-search" className="sr-only">
             Search activity history
           </label>
@@ -77,9 +85,33 @@ export default async function HistoryPage({
           ) : null}
         </AutoSubmitForm>
 
+        {week.status === "valid" ? (
+          <section aria-label="Selected week">
+            <Card className="space-y-2">
+              <h2 className="text-sm font-semibold">
+                {formatInstantDate(week.start, env.APP_TIMEZONE)} – {formatInstantDate(new Date(week.end.getTime() - 1), env.APP_TIMEZONE)}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {searchParams.type === "sleep"
+                  ? "Records whose recorded interval overlaps the week."
+                  : searchParams.type
+                    ? "Records logged in the week."
+                    : "Activity records logged in or overlapping the week."}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                These are records in or overlapping the week, not necessarily the exact records or days used in the chart value.
+              </p>
+            </Card>
+          </section>
+        ) : null}
+
         {activities.length === 0 ? (
           <Card>
-            <p className="text-sm text-muted-foreground">{hasActiveFilters ? "Nothing matches that search." : "No activity logged yet."}</p>
+            <p className="text-sm text-muted-foreground">
+              {weekKey
+                ? "No records match the selected week and filters."
+                : hasActiveFilters ? "Nothing matches that search." : "No activity logged yet."}
+            </p>
           </Card>
         ) : null}
 
@@ -111,7 +143,7 @@ export default async function HistoryPage({
           <nav aria-label="Activity history pages" className="flex flex-wrap items-center justify-between gap-3 pt-1">
             {searchParams.cursor ? (
               <Link
-                href={historyHref({ babyId: selectedBabyId, type: searchParams.type, search: searchParams.search })}
+                href={historyHref({ babyId: selectedBabyId, type: searchParams.type, search: searchParams.search, week: weekKey })}
                 className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted"
               >
                 Back to newest
@@ -123,6 +155,7 @@ export default async function HistoryPage({
                   babyId: selectedBabyId,
                   type: searchParams.type,
                   search: searchParams.search,
+                  week: weekKey,
                   cursor: nextCursor
                 })}
                 className="ml-auto inline-flex min-h-11 items-center justify-center rounded-lg border border-control bg-card px-5 text-sm font-semibold hover:bg-muted"

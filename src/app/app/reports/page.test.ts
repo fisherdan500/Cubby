@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => ({
   getHeaderBabySelector: vi.fn(),
   getReports: vi.fn(),
   getPlannedSchedule: vi.fn(),
-  routineTab: vi.fn()
+  routineTab: vi.fn(),
+  getTrends: vi.fn(),
+  trendsTab: vi.fn()
 }));
 
 globalThis.React = React;
@@ -16,6 +18,10 @@ globalThis.React = React;
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/planned-schedule", () => ({ getPlannedSchedule: mocks.getPlannedSchedule }));
+vi.mock("@/server/services/trends-report", async () => {
+  const actual = await vi.importActual<typeof import("@/server/services/trends-report")>("@/server/services/trends-report");
+  return { ...actual, getTrends: mocks.getTrends };
+});
 vi.mock("@/server/services/reports", async () => {
   const actual = await vi.importActual<typeof import("@/server/services/reports")>("@/server/services/reports");
   return { ...actual, getReports: mocks.getReports };
@@ -28,6 +34,12 @@ vi.mock("@/components/reports/routine-tab", () => ({
   RoutineTab: (props: unknown) => {
     mocks.routineTab(props);
     return createElement("div", null, "routine");
+  }
+}));
+vi.mock("@/components/reports/trends-tab", () => ({
+  TrendsTab: (props: unknown) => {
+    mocks.trendsTab(props);
+    return createElement("div", null, "trends");
   }
 }));
 
@@ -65,6 +77,19 @@ beforeEach(() => {
 });
 
 describe("ReportsPage accessibility", () => {
+  it("passes the selected report baby's ID into TrendsTab", async () => {
+    mocks.getHeaderBabySelector.mockResolvedValue({ selectedBabyId: "selected-baby" });
+    mocks.getReports.mockResolvedValue({ ...baseReport(), baby: { id: "selected-baby", name: "Avery", birthDate: null } });
+    const trends = { anyData: false };
+    mocks.getTrends.mockResolvedValue(trends);
+
+    await renderReports("trends");
+
+    expect(mocks.getReports).toHaveBeenCalledWith("user-1", expect.objectContaining({ babyId: "selected-baby" }));
+    expect(mocks.getTrends).toHaveBeenCalledWith("selected-baby", expect.any(String));
+    expect(mocks.trendsTab).toHaveBeenCalledWith(expect.objectContaining({ babyId: "selected-baby", babyName: "Avery", trends }));
+  });
+
   it("shows Stats' date boxes only for a custom range, naming both ends", async () => {
     expect((await renderReports("stats")).querySelector("#report-start")).toBeNull();
 
