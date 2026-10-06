@@ -21,7 +21,9 @@ const mocks = vi.hoisted(() => ({
   getContextForBaby: vi.fn(),
   claimStagedFeedPhotos: vi.fn(),
   writeAudit: vi.fn(),
-  queueActivitySideEffects: vi.fn()
+  queueActivitySideEffects: vi.fn(),
+  queueActivityNotification: vi.fn(),
+  queueMomentNotification: vi.fn()
 }));
 
 // The audit trail must not reach a real database here, but it still has a contract: each action's
@@ -43,6 +45,14 @@ vi.mock("@/server/services/browser-operations", async () => {
 vi.mock("@/server/services/attachments", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@/server/services/attachments");
   return { ...actual, claimStagedFeedPhotos: mocks.claimStagedFeedPhotos };
+});
+vi.mock("@/server/services/activity-notifications", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/server/services/activity-notifications");
+  return { ...actual, queueActivityNotification: mocks.queueActivityNotification };
+});
+vi.mock("@/server/services/moment-notifications", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@/server/services/moment-notifications");
+  return { ...actual, queueMomentNotification: mocks.queueMomentNotification };
 });
 
 const ctx = {
@@ -169,6 +179,25 @@ describe("the audit guard protecting these tests", () => {
 });
 
 describe("logging an entry with a photo", () => {
+  it("queues only the activity notification when the photo is part of the initial save", async () => {
+    const tx = transaction([]);
+    mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) => ({
+      status: "completed",
+      operationId: entry().operationId,
+      outcome: await contract.execute(tx, ctx, baby)
+    }));
+    const { submitActivityCreateBrowserOperation } = await import("./activities");
+
+    await submitActivityCreateBrowserOperation(entry({ attachmentIds: ["att-1"] }));
+
+    expect(mocks.queueActivityNotification).toHaveBeenCalledTimes(1);
+    expect(mocks.queueActivityNotification).toHaveBeenCalledWith({
+      householdId: "house-1",
+      activityId: "act-new"
+    });
+    expect(mocks.queueMomentNotification).not.toHaveBeenCalled();
+  });
+
   it("creates the entry, its photo post, and claims the photo in one save", async () => {
     const calls: string[] = [];
     const tx = transaction(calls);
