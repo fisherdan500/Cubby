@@ -122,9 +122,32 @@ describe("moment notification failure isolation", () => {
     })).resolves.toEqual({ sent: 0, pruned: 1, skipped: "" });
 
     expect(mocks.sendNotification).toHaveBeenCalledOnce();
+    expect(mocks.sendNotification).toHaveBeenCalledWith(
+      {
+        endpoint: "https://push.example.test/b",
+        keys: { p256dh: "key-b", auth: "auth-b" }
+      },
+      expect.any(String),
+      { timeout: 10_000 }
+    );
     expect(mocks.subscriptionUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ["subscription-b"] }, householdId: "household-1", deletedAt: null },
       data: { deletedAt: expect.any(Date) }
     });
+  });
+
+  it("keeps subscriptions when the push provider reports a socket timeout", async () => {
+    mocks.sendNotification.mockRejectedValue(new Error("Socket timeout"));
+
+    await expect(sendMomentNotification({
+      householdId: "household-1",
+      kind: "post",
+      actorMemberId: "actor",
+      parentAuthorMemberId: "actor",
+      postId: "post-1"
+    })).resolves.toEqual({ sent: 0, pruned: 0, skipped: "" });
+
+    expect(mocks.sendNotification).toHaveBeenCalledTimes(2);
+    expect(mocks.subscriptionUpdateMany).not.toHaveBeenCalled();
   });
 });

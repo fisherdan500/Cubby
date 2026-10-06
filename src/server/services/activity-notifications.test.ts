@@ -123,7 +123,8 @@ describe("activity-created browser push", () => {
         body: "Daniel logged feeding for Finley",
         url: "https://cubby.example.test/app/activities/activity-1",
         tag: "activity:activity-1"
-      })
+      }),
+      { timeout: 10_000 }
     );
     expect(mocks.logUpdateMany).toHaveBeenCalledTimes(2);
     expect(mocks.logUpdateMany).toHaveBeenLastCalledWith({
@@ -182,6 +183,29 @@ describe("activity-created browser push", () => {
     expect(result).toEqual({ sent: 0, pruned: 0, skipped: "" });
     expect(mocks.subscriptionUpdateMany).not.toHaveBeenCalled();
     expect(mocks.logUpdateMany).toHaveBeenLastCalledWith(expect.objectContaining({
+      data: { status: "failed", sentAt: null, error: "push_failed" }
+    }));
+  });
+
+  it("keeps a timed-out subscription and never replays the claimed activity notification", async () => {
+    let pending = true;
+    mocks.logUpdateMany.mockImplementation(async ({ where, data }) => {
+      if (where.status === "pending" && data.status === "failed") {
+        if (!pending) return { count: 0 };
+        pending = false;
+      }
+      return { count: 1 };
+    });
+    mocks.sendNotification.mockRejectedValue(new Error("Socket timeout"));
+
+    const first = await sendActivityNotification({ householdId: "household-1", activityId: "activity-1" });
+    const replay = await sendActivityNotification({ householdId: "household-1", activityId: "activity-1" });
+
+    expect(first).toEqual({ sent: 0, pruned: 0, skipped: "" });
+    expect(replay).toEqual({ sent: 0, pruned: 0, skipped: "no_pending_logs" });
+    expect(mocks.sendNotification).toHaveBeenCalledOnce();
+    expect(mocks.subscriptionUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.logUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
       data: { status: "failed", sentAt: null, error: "push_failed" }
     }));
   });

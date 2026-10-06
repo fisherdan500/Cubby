@@ -13,6 +13,7 @@ import { displayFormatter } from "@/lib/timezone";
 import { publicAppUrl } from "@/lib/web-push-config";
 import { withinQuietHours } from "@/domain/moment-notifications";
 import type { BrowserOperationResult } from "@/server/services/browser-operations";
+import { WEB_PUSH_REQUEST_OPTIONS } from "@/server/services/web-push-delivery";
 
 export type ActivityNotificationEvent = {
   householdId: string;
@@ -192,7 +193,7 @@ export async function sendActivityNotification(
         keys: { p256dh: subscription.p256dh, auth: subscription.auth }
       };
       try {
-        await webpush.sendNotification(target, JSON.stringify(payload));
+        await webpush.sendNotification(target, JSON.stringify(payload), WEB_PUSH_REQUEST_OPTIONS);
         deliveredUserIds.add(subscription.userId);
         sent += 1;
       } catch (error) {
