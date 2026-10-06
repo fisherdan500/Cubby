@@ -3136,17 +3136,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "2aaf7ca49e107156eecaae563149618ffa2ac16beaf9eddcb510ae9fea110936",
+          "digest": "ee298988c7abcf6f826dadfc18e9380726d1d0786a19ac76b2e4034f4bb5a299",
           "file": "src/components/settings/notification-subscribe-card.tsx"
         }
       ],
       "declarationDigest": "d04335c74a63f2ff1be9373d88dfdd118e67924eb2285e6ea95fbd2a7188739e",
-      "fingerprint": "5888bdf4ead186e6bb1a24e39dba2f3c01d3563f31366e66fe8bf75d140741d0",
+      "fingerprint": "19dbadd06a976b182e54fd2884c8c65027f98afc8af9214ad2e688941dd67514",
       "id": "fingerprint:client_binding:src/components/settings/notification-subscribe-card.tsx",
       "ownerId": "client_binding:src/components/settings/notification-subscribe-card.tsx",
       "ownerModule": "src/components/settings/notification-subscribe-card.tsx",
       "sidecarPath": "src/components/settings/notification-subscribe-card.operation.ts",
-      "sourceDigest": "1061be555349402434c6ed7f69af6f5a79f80a4129429ec4e75409c14aa18398",
+      "sourceDigest": "7c803f60551851540c052db3e1a79f645250ee604f79ce42efa028ab99bdb58a",
       "status": "declared"
     },
     {

@@ -176,7 +176,7 @@ export function NotificationSubscribeCard() {
     <section className="rounded-lg border border-border bg-card p-4">
       <h2 className="mb-1 text-lg font-semibold">This device</h2>
       <p className="mb-3 text-sm text-muted-foreground">
-        Get a notification on this device when someone posts a moment, or comments on and reacts to yours.
+        Register this device so it can receive browser notifications. Cubby sends nothing unless an active saved preference allows it.
       </p>
 
       {state.step === "checking" && <p className="text-sm text-muted-foreground">Checking this device…</p>}
@@ -208,19 +208,21 @@ export function NotificationSubscribeCard() {
           onClick={turnOn}
           className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
         >
-          Turn on notifications
+          Register this device
         </button>
       )}
 
       {state.step === "on" && (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-muted-foreground">Notifications are on for this device.</p>
+          <p className="text-sm text-muted-foreground">
+            This device is registered for browser notifications. Cubby sends nothing unless an active saved preference allows it.
+          </p>
           <button
             type="button"
             onClick={turnOff}
             className="inline-flex min-h-11 items-center rounded-lg border border-control bg-card px-4 text-sm font-medium transition-colors hover:bg-muted"
           >
-            Turn off
+            Unregister this device
           </button>
         </div>
       )}
