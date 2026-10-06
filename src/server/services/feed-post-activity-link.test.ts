@@ -8,12 +8,17 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// This suite imports the service graph inside test bodies; a cold transform can exceed Vitest's
+// five-second default even though the assertions themselves are fast.
+vi.setConfig({ testTimeout: 20_000 });
+
 const mocks = vi.hoisted(() => ({
   executeHousehold: vi.fn(),
   getContext: vi.fn(),
   writeAudit: vi.fn(),
   claimStagedFeedPhotos: vi.fn(),
-  attachmentTypeEnabled: vi.fn(() => true)
+  attachmentTypeEnabled: vi.fn(() => true),
+  queueMomentNotification: vi.fn()
 }));
 
 vi.mock("@/server/services/browser-operations", () => ({
@@ -23,6 +28,9 @@ vi.mock("@/server/services/browser-operations", () => ({
   BrowserOperationKey: { feedPostCreate: "feed_post.create" }
 }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
+vi.mock("@/server/services/moment-notifications", () => ({
+  queueMomentNotification: mocks.queueMomentNotification
+}));
 vi.mock("@/server/services/attachments", () => ({
   claimStagedFeedPhotos: mocks.claimStagedFeedPhotos,
   removePostPhotos: vi.fn(),
@@ -96,6 +104,33 @@ describe("linking a photo post to a logged entry", () => {
     expect(tx.feedPost.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ activityId: "act-1" }) })
     );
+  });
+
+  it("queues an opt-in Moments notification when a photo is added later", async () => {
+    const tx = transaction({ id: "act-1", actorMemberId: "member-1" });
+    mocks.executeHousehold.mockImplementation(async (contract: { execute: Function }) => ({
+      status: "completed",
+      operationId: "op-1",
+      outcome: await contract.execute(tx, ctx, { targetSnapshot: {} })
+    }));
+    const { submitFeedPostCreateBrowserOperation } = await import("@/server/services/feed-posts");
+
+    await submitFeedPostCreateBrowserOperation({
+      operationId: "op-1",
+      body: "",
+      babyId: "baby-1",
+      activityId: "act-1",
+      attachmentIds: ["att-1"]
+    });
+
+    expect(mocks.queueMomentNotification).toHaveBeenCalledTimes(1);
+    expect(mocks.queueMomentNotification).toHaveBeenCalledWith({
+      householdId: "household-1",
+      kind: "post",
+      actorMemberId: "member-1",
+      postId: "post-1",
+      babyId: "baby-1"
+    });
   });
 
   it("does not look up any entry for an ordinary post", async () => {
