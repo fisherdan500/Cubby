@@ -4,14 +4,16 @@ type HistoryHrefParams = {
   babyId?: string;
   type?: string;
   search?: string;
+  week?: string;
   cursor?: string;
 };
 
-export function historyHref({ babyId, type, search, cursor }: HistoryHrefParams) {
+export function historyHref({ babyId, type, search, week, cursor }: HistoryHrefParams) {
   const params = new URLSearchParams();
   if (babyId) params.set("babyId", babyId);
   if (type) params.set("type", type);
   if (search) params.set("search", search);
+  if (week) params.set("week", week);
   if (cursor) params.set("cursor", cursor);
 
   const query = params.toString();

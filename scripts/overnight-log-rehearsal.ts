@@ -60,7 +60,7 @@ export function runOvernightLogRehearsal() {
   const project = `cubby_overnight_log_acceptance_${randomBytes(4).toString("hex")}`;
   const password = randomBytes(24).toString("hex");
   const temp = mkdtempSync(resolve(tmpdir(), "cubby-overnight-log-acceptance-"));
-  const env: NodeJS.ProcessEnv = { ...process.env, COMPOSE_DISABLE_ENV_FILE: "true", CUBBY_PHOTO_UPLOAD_ACCEPTANCE_PASSWORD: password, NODE_ENV: "test" };
+  const env: NodeJS.ProcessEnv = { ...process.env, COMPOSE_DISABLE_ENV_FILE: "true", CUBBY_PHOTO_UPLOAD_ACCEPTANCE_PASSWORD: password, NODE_ENV: "test", APP_TIMEZONE: "America/New_York" };
   delete env.DATABASE_URL;
   delete env.DIRECT_URL;
   delete env.COMPOSE_FILE;

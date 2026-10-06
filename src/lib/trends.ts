@@ -18,7 +18,7 @@
  * as much. A volume week is only reported when nearly every feed in it was actually measured.
  */
 
-import { addDaysToDateKey, dateKeyInTimeZone } from "@/lib/timezone";
+import { addDaysToDateKey } from "@/lib/timezone";
 import { ROUTINE_MIN_DAYS } from "@/lib/observed-routine";
 
 /** A day far below the week's better-logged days was probably logged by somebody who stopped. */
@@ -56,10 +56,10 @@ export type TrendPoint = {
  * The Monday that starts a day's week, in the household's zone. Weeks are the unit because a single
  * day of a baby's life is mostly noise: one bad night moves a daily line and means nothing.
  */
-export function weekKeyOf(dayKey: string, timeZone: string) {
-  // Midday avoids any chance of a zone offset moving the date under us.
-  const at = new Date(`${dayKey}T12:00:00Z`);
-  const weekday = new Date(`${dateKeyInTimeZone(at, timeZone)}T12:00:00Z`).getUTCDay();
+export function weekKeyOf(dayKey: string, _timeZone: string) {
+  // The key is already household-local. Read its Gregorian weekday without another zone conversion;
+  // the timezone argument is retained for existing callers only.
+  const weekday = new Date(`${dayKey}T00:00:00Z`).getUTCDay();
   // getUTCDay is 0 for Sunday; a week runs Monday to Sunday.
   const back = weekday === 0 ? 6 : weekday - 1;
   return addDaysToDateKey(dayKey, -back);

@@ -12058,45 +12058,45 @@
       "bindings": [
         {
           "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-          "anchorEnd": 767,
+          "anchorEnd": 887,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 747,
+          "anchorStart": 867,
           "kind": "server_value_import",
           "symbol": "getActivityRowViewer",
           "target": "src/server/services/activities.ts#getActivityRowViewer"
         },
         {
           "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-          "anchorEnd": 931,
+          "anchorEnd": 1051,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 905,
+          "anchorStart": 1025,
           "kind": "server_value_import",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
           "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-          "anchorEnd": 853,
+          "anchorEnd": 973,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 832,
+          "anchorStart": 952,
           "kind": "server_value_import",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
           "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-          "anchorEnd": 783,
+          "anchorEnd": 903,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 769,
+          "anchorStart": 889,
           "kind": "server_value_import",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 705,
+          "anchorEnd": 825,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 690,
+          "anchorStart": 810,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -16468,7 +16468,7 @@
     }
   ],
   "observationCount": 252,
-  "observationDigest": "ad233ba99d5a7d69dcd4b19c7f01adda91d56922e239a85c124693ebffc3309d",
+  "observationDigest": "3a564d1ec059341e774b57a681fe9bb373f84ab0b994df9f6a4f8a043fd42739",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -19202,45 +19202,45 @@
     {
       "bindings": [
         {
-          "anchorEnd": 767,
+          "anchorEnd": 887,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 747,
+          "anchorStart": 867,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getActivityRowViewer",
           "target": "src/server/services/activities.ts#getActivityRowViewer"
         },
         {
-          "anchorEnd": 931,
+          "anchorEnd": 1051,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 905,
+          "anchorStart": 1025,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getActivityUnitPreferences",
           "target": "src/server/services/unit-preferences.ts#getActivityUnitPreferences"
         },
         {
-          "anchorEnd": 853,
+          "anchorEnd": 973,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 832,
+          "anchorStart": 952,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "getHeaderBabySelector",
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 783,
+          "anchorEnd": 903,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 769,
+          "anchorStart": 889,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "listActivities",
           "target": "src/server/services/activities.ts#listActivities"
         },
         {
-          "anchorEnd": 705,
+          "anchorEnd": 825,
           "anchorFile": "src/app/app/history/page.tsx",
-          "anchorStart": 690,
+          "anchorStart": 810,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/history/page.tsx",
           "symbol": "requireUserPage",
@@ -24811,7 +24811,7 @@
   ],
   "ownerSetDigest": "81b72eb8040bd024145de00e3ecaad604d7fcc4543fbe4aa41d2a502f2296684",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "0ceb3486aedda3fbf31443448b88f159d09d2dafcca8969216abce24c05938c8",
+  "registryDigest": "5d06110122e6152727a62acf34e80f00f08f204b9474544ae400563ec6f46dc4",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

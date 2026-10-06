@@ -188,6 +188,7 @@ export default async function ReportsPage({
           {tab === "growth" && report.history ? <GrowthTab history={report.history} babyName={report.baby.name} /> : null}
           {tab === "trends" && trends ? (
             <TrendsTab
+              babyId={report.baby.id}
               babyName={report.baby.name}
               trends={trends}
               periods={trendPeriods.map(([value, label]) => ({

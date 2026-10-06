@@ -27,6 +27,17 @@ describe("paginateHistoryItems", () => {
 });
 
 describe("historyHref", () => {
+  it("preserves week with the selected baby, filters and cursor in a stable order", () => {
+    expect(historyHref({
+      cursor: "activity-25", week: "2026-03-02", search: "night feed", type: "sleep", babyId: "baby-1"
+    })).toBe("/app/history?babyId=baby-1&type=sleep&search=night+feed&week=2026-03-02&cursor=activity-25");
+  });
+
+  it("omits an empty week and keeps bare history unchanged", () => {
+    expect(historyHref({ week: "" })).toBe("/app/history");
+    expect(historyHref({})).toBe("/app/history");
+  });
+
   it("preserves active filters and the pagination cursor", () => {
     expect(
       historyHref({
