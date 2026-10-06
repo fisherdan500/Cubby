@@ -70,7 +70,7 @@ implementation, merge, deployment, and cleanup approvals.
 - Status: in progress (DEC-PROD-421)
 - Priority: medium
 - Goal: A private family journal: everything logged for the baby as a scrollable feed, then text posts with #tags, then comments and emoji reactions, and later photos.
-- Notes: Private to the household. No public sharing, followers, like counts, ranking, streaks or engagement notifications. Step 1 adds a Feed tab: every logged activity as its own card for the selected baby, newest first under household days, with header filters, opening the entry and returning to the same feed. On phones it takes the Full Log's tab, and the Full Log moves behind More, with the aim that the feed replaces it.
+- Notes: Private to the household. No public sharing, followers, like counts, ranking or streaks. Browser notifications are separately opt-in per member and cover eligible new Moments, comments and reactions under that member's saved preference. Step 1 adds a Feed tab: every logged activity as its own card for the selected baby, newest first under household days, with header filters, opening the entry and returning to the same feed. On phones it takes the Full Log's tab, and the Full Log moves behind More, with the aim that the feed replaces it.
 
 People see the feed as **Moments**, at `/app/moments`, because "Feed" already means feeding the baby. The tab, page title and Back links say Moments, and `/app/feed` forwards there with a temporary redirect that keeps the query string. Code, API routes and stored data keep the feed name.
 
@@ -159,6 +159,14 @@ heading remains only as a historical redirect for earlier evidence links; it doe
 not contain or authorize roadmap work.
 
 ## Recently Completed
+
+### Browser Push Notifications
+
+- Status: done
+- Priority: medium
+- Goal: Let household members deliberately opt in to browser notifications for Moments interactions and newly logged activities on their registered devices.
+- Acceptance: Delivery requires an active saved member preference with external delivery enabled, browser-push channel, matching category, eligible household membership, allowed baby scope and a registered device; quiet hours suppress delivery; new Moments, comments, reactions and logged activities use lock-screen-safe text without post, comment, note, medicine, dose or amount content; transient failures retain subscriptions while `404` and `410` retire dead ones; activity delivery is claimed atomically so replay and concurrent dispatch cannot duplicate it.
+- Notes: Pull request #216 delivered Moments browser push; #218 recovers subscriptions when browsers omit prior state; #219 made `activity_created` a functional explicit opt-in; #221 guards the no-window notification-click fallback to the same origin; #222 isolates malformed Moment payload failures per subscription. Notification delivery remains separate from successful activity or Moment creation.
 
 ### Whole-System Backup, Restore, Health Alerts And Install Guide
 
