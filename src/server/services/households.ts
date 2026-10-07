@@ -2,13 +2,13 @@ import { BrowserOperationKey, BrowserOperationTargetKind, HouseholdRole, TimerSt
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
-import { onboardingSchema, babySchema, babyUpdateSchema, babyDeleteSchema, babyDeleteConfirmationPhrase } from "@/lib/validation/onboarding";
+import { onboardingRequestSchema, babySchema, babyUpdateSchema, babyDeleteSchema, babyDeleteConfirmationPhrase } from "@/lib/validation/onboarding";
 import { requireUser } from "@/server/auth/session";
 import { getEffectiveHouseholdContext, requirePermission } from "@/server/auth/context";
 import { writeAudit } from "@/server/services/audit";
 import { lockActorAndBabyForWrite, lockActorForWrite, lockHouseholdCreation } from "@/server/services/mutation-locks";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
-import { PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
+import { PLATFORM_SIGNUP_POLICY_LOCK_ID, PLATFORM_SINGLETON_ID } from "@/server/services/platform-constants";
 import {
   executeBrowserOperation,
   executeHouseholdBrowserOperation,
@@ -33,19 +33,29 @@ export async function listHouseholdsForUser(userId: string) {
 export async function createOnboardingHousehold(raw: unknown) {
   const user = await requireUser();
   if (!user.emailVerified) throw new Error("email_not_verified");
-  const input = onboardingSchema.parse(raw);
-  const birthDate = input.birthDate ? new Date(input.birthDate) : undefined;
+  const input = onboardingRequestSchema.parse(raw);
+  const birthDate = input.mode !== "restore" && input.birthDate ? new Date(input.birthDate) : undefined;
 
   return prisma.$transaction(async (tx) => {
     await lockHouseholdCreation(tx);
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PLATFORM_SIGNUP_POLICY_LOCK_ID})`;
     const currentMemberships = await tx.householdMember.findMany({
       where: { userId: user.id, deletedAt: null, household: { deletedAt: null } },
       include: { household: true },
       orderBy: { joinedAt: "asc" }
     });
+    if (input.mode === "restore" && currentMemberships.some((member) => !member.disabledAt)) throw new Error("forbidden");
     const activeMembership = currentMemberships.find((member) => !member.disabledAt);
-    if (activeMembership) return activeMembership.household;
+    if (activeMembership) return { household: activeMembership.household, memberId: activeMembership.id };
     if (currentMemberships.length > 0) throw new Error("suspended_membership_must_leave");
+
+    if (input.mode === "restore") {
+      const authorities = await tx.$queryRaw<Array<{ ownerUserId: string }>>`SELECT "ownerUserId"
+        FROM "PlatformAuthority"
+        WHERE "id" = ${PLATFORM_SINGLETON_ID}
+        FOR SHARE`;
+      if (authorities.length !== 1 || authorities[0].ownerUserId !== user.id) throw new Error("forbidden");
+    }
 
     await tx.$queryRaw`SELECT "id"
       FROM "PlatformSettings"
@@ -65,13 +75,13 @@ export async function createOnboardingHousehold(raw: unknown) {
             displayName: user.name
           }
         },
-        babies: {
+        ...(input.mode === "restore" ? {} : { babies: {
           create: {
             name: input.babyName,
             birthDate,
             timezone: env.APP_TIMEZONE
           }
-        },
+        } }),
         settings: {
           create: {
             allowPublicRegistration: false,
@@ -85,10 +95,12 @@ export async function createOnboardingHousehold(raw: unknown) {
         babies: { select: { id: true } }
       }
     });
+    const memberId = created.members[0]?.id;
+    if (!memberId) throw new Error("household_initial_membership_missing");
     const actorContext = {
       userId: user.id,
       householdId: created.id,
-      memberId: created.members[0]?.id
+      memberId
     };
     await writeAudit(actorContext, {
       action: "household.create",
@@ -96,6 +108,8 @@ export async function createOnboardingHousehold(raw: unknown) {
       entityId: created.id,
       after: {}
     }, tx);
+    const { members: _members, babies: _babies, ...household } = created;
+    if (input.mode === "restore") return { household, memberId };
     const initialBaby = created.babies[0];
     if (!initialBaby) throw new Error("household_initial_baby_missing");
     await writeAudit(actorContext, {
@@ -105,8 +119,7 @@ export async function createOnboardingHousehold(raw: unknown) {
       babyId: initialBaby.id,
       after: {}
     }, tx);
-    const { members: _members, babies: _babies, ...household } = created;
-    return household;
+    return { household, memberId };
   });
 }
 

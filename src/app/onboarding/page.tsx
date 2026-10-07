@@ -63,7 +63,7 @@ export default async function OnboardingPage() {
           </Link>
         ) : null}
         {canCreateHousehold ? (
-          <OnboardingForm />
+          <OnboardingForm canRestore={platformOwner && leaveOptions.length === 0} />
         ) : (
           <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
             {!policy.platformOwnerBound

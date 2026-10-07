@@ -407,15 +407,21 @@ A whole-system backup moves everything and is the right tool when you are replac
 single household backup instead when you are moving one household into a Cubby that already exists,
 or when you do not have the old server's `.env` and so cannot carry accounts across.
 
-This path is deliberately narrower than a system restore, and the restrictions are worth knowing
-before you start rather than after a refusal.
+This is household-only plaintext recovery. It does not recover accounts or the system. JSON v1/v2
+and v2 ZIP backups are not encrypted; v2 ZIP includes the existing managed photos. Keep downloaded
+files private. There is no encryption or durable upload staging in this flow.
+
+VaccineLog.documentUrl and all VaccineDocument records, metadata, and file bytes are excluded.
+No partial VaccineDocument metadata is preserved.
 
 **The destination household must be genuinely empty.** Restore refuses a household that holds any
 baby, entry, contact, medicine, calendar event, reminder, post, comment, reaction, photo, planned
 schedule, notification preference or push subscription — and also any outstanding invite, API key or
-webhook. A brand-new household from `/setup` is empty; one you have been trying things in is not,
-even if it looks empty on screen. If you created a placeholder baby while setting up, delete it
-first. The refusal is `Restore requires a fresh household with only its current owner.`
+webhook. The onboarding **Restore household backup** choice creates an ordinary empty target
+household with one owner membership, settings and a household-creation audit checkpoint, and no
+baby. Ordinary **Create a new household and first baby** still creates its initial baby. A household
+you have been trying things in may not be empty even if it looks empty on screen. The refusal is
+`Restore requires a fresh household with only its current owner.`
 
 **You must be the household's only member, and its owner.** Invite the rest of the family *after*
 the restore, not before.
@@ -433,14 +439,25 @@ Steps:
 
 1. On the old Cubby, open Backups and download the household backup. A household with photos
    downloads as a `.zip`; keep it exactly as downloaded — do not unzip or rebuild it.
-2. On the new Cubby, finish `/setup`, create the household, and delete any placeholder baby.
-3. Open Backups, upload the file to preview it, check the household name and counts look right, then
-   confirm the restore by typing the household's name.
+2. On the destination, sign in as the verified current platform owner after finishing `/setup` if
+   needed. You must have no active or suspended current household membership. Open direct household
+   creation in platform settings, then return to `/onboarding` and choose **Restore household backup**.
+   Enter a recovery-target household name (1–80 characters). Current v2 restores adopt the archived
+   household name; legacy v1 keeps the target name. Closed or invitation-only creation policy does
+   not allow this choice.
+3. Continue to create the empty target first and open `/app/settings/backups`. Acknowledge the
+   plaintext privacy warning before selecting a file. The browser uploads the file once for preview
+   and again when you confirm restore. Check the preview name and counts, then type the target's
+   current name to confirm. Existing checksum, photo, size, transaction and fresh-target checks still
+   apply. Withdrawing acknowledgement clears the selected file and preview, so you must select it again.
 4. The restore tells you who it could not reconnect. Invite those people; they sign in with their own
    new accounts.
 
 **Keep the old server running and untouched until you have checked the new one.** The restore does
-not alter the backup file, so an attempt that fails costs you the attempt and nothing else.
+not alter the backup file. A failed or cancelled restore leaves the ordinary empty owner household
+created in step 3; target creation and restore are separate transactions. There is no automatic
+target rollback, recovery mode, single-upload operation or restore receipt. Return to Backups to
+try again while the target remains empty.
 
 If a restore stops with a message about the database being busy or unreachable, nothing was saved —
 wait and try again. If it stops because Cubby cannot reach its backup folder, that is

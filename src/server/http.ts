@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { trustedOrigins } from "@/lib/env";
 import { MAX_BACKUP_BYTES } from "@/server/services/backup-format";
 
 export function ok<T>(data: T, init?: ResponseInit) {
@@ -8,6 +9,17 @@ export function ok<T>(data: T, init?: ResponseInit) {
 
 export function fail(code: string, message: string, status = 400, fieldErrors?: unknown) {
   return NextResponse.json({ ok: false, error: { code, message, fieldErrors } }, { status });
+}
+
+export function authorizedRequestOrigin(request: Request, options: { requireOrigin?: boolean } = {}) {
+  const origin = request.headers.get("origin");
+  const internalOrigin = new URL(request.url).origin;
+  if (!origin) {
+    if (options.requireOrigin) throw new Error("forbidden");
+    return internalOrigin;
+  }
+  if (origin !== internalOrigin && !trustedOrigins().includes(origin)) throw new Error("forbidden");
+  return origin;
 }
 
 export async function readBoundedJson(request: Request, maxBytes = MAX_BACKUP_BYTES) {
