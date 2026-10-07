@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,9 @@ function uploadContentType(file: File) {
 
 export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHouseholdName: string; timeZone: string }) {
   const router = useRouter();
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const selectionVersion = useRef(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [confirmation, setConfirmation] = useState("");
@@ -32,7 +35,23 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
   const [message, setMessage] = useState("");
   const [needInvite, setNeedInvite] = useState<string[]>([]);
 
+  function acknowledgePrivacy(checked: boolean) {
+    setPrivacyAcknowledged(checked);
+    if (!checked) {
+      selectionVersion.current += 1;
+      if (fileInput.current) fileInput.current.value = "";
+      setSelectedFile(null);
+      setPreview(null);
+      setConfirmation("");
+      setMessage("");
+      setNeedInvite([]);
+      if (pending === "preview") setPending(null);
+    }
+  }
+
   async function selectFile(file: File | null) {
+    if (!privacyAcknowledged) return;
+    const version = ++selectionVersion.current;
     setSelectedFile(file);
     setPreview(null);
     setConfirmation("");
@@ -47,17 +66,21 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
         body: file
       });
       const result = await response.json() as ApiResult<Preview>;
+      if (version !== selectionVersion.current) return;
       if (!result.ok) throw new Error(result.error.message);
       setPreview(result.data);
       setMessage("Backup preview is ready. Review it before restoring.");
     } catch (error) {
+      if (version !== selectionVersion.current) return;
       setMessage(error instanceof Error ? error.message : "Cubby could not preview this backup.");
     } finally {
-      setPending(null);
+      if (version === selectionVersion.current) setPending(null);
     }
   }
 
   async function restore() {
+    if (!privacyAcknowledged) return;
+    const version = selectionVersion.current;
     if (!selectedFile || !preview || confirmation !== targetHouseholdName) {
       setMessage("Type the current household name exactly to confirm restore.");
       return;
@@ -79,6 +102,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
         counts?: Record<string, number>;
         members?: { matched: number; needInvite: string[]; preferencesRestored: number };
       }>;
+      if (version !== selectionVersion.current) return;
       if (!result.ok) throw new Error(result.error.message);
       // A restore never grants membership, so anyone in the file who is not already a member did not
       // come across. This list is the only place the operator finds out who to invite.
@@ -86,6 +110,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
       setMessage(`Restore complete. Recovered ${result.data.restored} records. Refreshing Cubby…`);
       router.refresh();
     } catch (error) {
+      if (version !== selectionVersion.current) return;
       setMessage(error instanceof Error ? error.message : "Cubby could not restore this backup.");
     } finally {
       setPending(null);
@@ -94,10 +119,26 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
 
   return (
     <div className="min-w-0 space-y-4">
+      <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+        <p id="backup-privacy-warning">
+          This household backup is plaintext, not encrypted, and can contain private family information and photos.
+          The selected file is uploaded once for preview and again for restore. Handle it privately.
+        </p>
+        <label className="flex min-h-11 items-center gap-3 font-semibold">
+          <input type="checkbox" checked={privacyAcknowledged} aria-describedby="backup-privacy-warning"
+            disabled={pending === "restore"}
+            onChange={(event) => acknowledgePrivacy(event.currentTarget.checked)} />
+          I understand this backup is plaintext and should be handled privately.
+        </label>
+        {pending === "restore" ? <p>Restore is in progress and cannot be cancelled after submission.</p> : null}
+      </div>
       <div className="space-y-2">
         <label htmlFor="backup-file" className="block text-sm font-bold">Cubby backup (.json, or .zip with photos)</label>
-        <Input id="backup-file" type="file" accept="application/json,.json,application/zip,.zip" disabled={pending !== null}
-          onChange={(event) => void selectFile(event.currentTarget.files?.[0] ?? null)} />
+        <Input id="backup-file" type="file" accept="application/json,.json,application/zip,.zip" disabled={!privacyAcknowledged || pending !== null}
+          onChange={(event) => {
+            fileInput.current = event.currentTarget;
+            void selectFile(event.currentTarget.files?.[0] ?? null);
+          }} />
       </div>
       {pending === "preview" ? <p className="text-sm text-muted-foreground">Validating backup…</p> : null}
       {preview ? (
@@ -124,7 +165,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
             </label>
             <Input id="restore-confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" />
           </div>
-          <Button type="button" onClick={restore} disabled={pending !== null || confirmation !== targetHouseholdName}>
+          <Button type="button" onClick={restore} disabled={!privacyAcknowledged || pending !== null || confirmation !== targetHouseholdName}>
             {pending === "restore" ? "Restoring…" : "Restore this backup"}
           </Button>
         </section>

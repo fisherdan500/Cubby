@@ -1,10 +1,18 @@
 import { z } from "zod";
 
 export const onboardingSchema = z.object({
+  mode: z.undefined().optional(),
   householdName: z.string().trim().min(1).max(80),
   babyName: z.string().trim().min(1).max(80),
   birthDate: z.string().optional()
 });
+
+export const restoreOnboardingSchema = z.object({
+  mode: z.literal("restore"),
+  householdName: z.string().trim().min(1).max(80)
+}).strict();
+
+export const onboardingRequestSchema = z.union([restoreOnboardingSchema, onboardingSchema]);
 
 export const babySchema = z.object({
   name: z.string().trim().min(1).max(80),

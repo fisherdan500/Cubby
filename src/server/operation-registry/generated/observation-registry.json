@@ -9,7 +9,7 @@
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "3682d0fce3046558d8b4f4ad008a00e1af75b8efb3fd7ead5026e85a611b3008",
+  "declarationDigest": "a04cf738d62c7a860c6a52560839e870375731610fe6462b0d25cbd806d01a18",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -7529,11 +7529,6 @@
       "declaration": {
         "bindings": [
           {
-            "kind": "form_action",
-            "symbol": "submit",
-            "target": "src/components/forms/onboarding-form.tsx#submit"
-          },
-          {
             "kind": "global_fetch",
             "symbol": "fetch[1]",
             "target": "globalThis.fetch"
@@ -10400,10 +10395,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f25b644a0e5d78b260d59f3d9a1765239e8a2a3dbc02fe5ddcb8941d70612fc7",
-          "anchorEnd": 1375,
+          "anchorDigest": "e5a65780f92c0b3042f16e552998085e86fe0866fab75a9fc8ceac8ee93d52b9",
+          "anchorEnd": 1367,
           "anchorFile": "src/app/api/household-selection/route.ts",
-          "anchorStart": 419,
+          "anchorStart": 380,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/household-selection/route.ts#POST"
@@ -11292,10 +11287,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "f833a85b4998b3237d850ebc016aae027d7a5481e88d6322d504bdf102a8c1f6",
-          "anchorEnd": 369,
+          "anchorDigest": "3e3db649a601f2a15ca8f0658b685100cbc728d4cdf84169d079c6a36b504b6a",
+          "anchorEnd": 853,
           "anchorFile": "src/app/api/onboarding/route.ts",
-          "anchorStart": 165,
+          "anchorStart": 371,
           "kind": "route_method",
           "symbol": "POST",
           "target": "src/app/api/onboarding/route.ts#POST"
@@ -13695,19 +13690,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "ada71e3cd1c758227ee4c25d5aa50e009152d30e7dc34224367c30f5f4a4fb64",
-          "anchorEnd": 802,
-          "anchorFile": "src/components/forms/onboarding-form.tsx",
-          "anchorStart": 787,
-          "kind": "form_action",
-          "symbol": "submit",
-          "target": "src/components/forms/onboarding-form.tsx#submit"
-        },
-        {
           "anchorDigest": "dc12e683e851f15dffcb80216ff15b6aca5a9f9515a185ff1fc108a2527db6b8",
-          "anchorEnd": 590,
+          "anchorEnd": 841,
           "anchorFile": "src/components/forms/onboarding-form.tsx",
-          "anchorStart": 447,
+          "anchorStart": 698,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -14098,18 +14084,18 @@
       "bindings": [
         {
           "anchorDigest": "9b8f89cdaa8b37d623244de2520772f4575e47a18c77672a721cb292c13859a8",
-          "anchorEnd": 1724,
+          "anchorEnd": 2380,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 1571,
+          "anchorStart": 2227,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
           "anchorDigest": "11df17ab5502539712dd945a6f274796bac9d7175ae8e2cee3062d7bbb9f236e",
-          "anchorEnd": 2748,
+          "anchorEnd": 3642,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 2423,
+          "anchorStart": 3317,
           "kind": "global_fetch",
           "symbol": "fetch[2]",
           "target": "globalThis.fetch"
@@ -16468,7 +16454,7 @@
     }
   ],
   "observationCount": 252,
-  "observationDigest": "3a564d1ec059341e774b57a681fe9bb373f84ab0b994df9f6a4f8a043fd42739",
+  "observationDigest": "656d88bb5497eb88b3c0c32298e65613a171eb3d5eb1177886c183ecf2c6e02f",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -17618,9 +17604,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1375,
+          "anchorEnd": 1367,
           "anchorFile": "src/app/api/household-selection/route.ts",
-          "anchorStart": 419,
+          "anchorStart": 380,
           "kind": "route_method",
           "ownerModule": "src/app/api/household-selection/route.ts",
           "symbol": "POST",
@@ -18464,9 +18450,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 369,
+          "anchorEnd": 853,
           "anchorFile": "src/app/api/onboarding/route.ts",
-          "anchorStart": 165,
+          "anchorStart": 371,
           "kind": "route_method",
           "ownerModule": "src/app/api/onboarding/route.ts",
           "symbol": "POST",
@@ -20795,18 +20781,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 802,
+          "anchorEnd": 841,
           "anchorFile": "src/components/forms/onboarding-form.tsx",
-          "anchorStart": 787,
-          "kind": "form_action",
-          "ownerModule": "src/components/forms/onboarding-form.tsx",
-          "symbol": "submit",
-          "target": "src/components/forms/onboarding-form.tsx#submit"
-        },
-        {
-          "anchorEnd": 590,
-          "anchorFile": "src/components/forms/onboarding-form.tsx",
-          "anchorStart": 447,
+          "anchorStart": 698,
           "kind": "global_fetch",
           "ownerModule": "src/components/forms/onboarding-form.tsx",
           "symbol": "fetch[1]",
@@ -21182,18 +21159,18 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1724,
+          "anchorEnd": 2380,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 1571,
+          "anchorStart": 2227,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/backup-restore-form.tsx",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
         },
         {
-          "anchorEnd": 2748,
+          "anchorEnd": 3642,
           "anchorFile": "src/components/settings/backup-restore-form.tsx",
-          "anchorStart": 2423,
+          "anchorStart": 3317,
           "kind": "global_fetch",
           "ownerModule": "src/components/settings/backup-restore-form.tsx",
           "symbol": "fetch[2]",
@@ -24811,7 +24788,7 @@
   ],
   "ownerSetDigest": "81b72eb8040bd024145de00e3ecaad604d7fcc4543fbe4aa41d2a502f2296684",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5d06110122e6152727a62acf34e80f00f08f204b9474544ae400563ec6f46dc4",
+  "registryDigest": "c6b1e26bfe061647ae5afb91c14bfcf3c44c08d2217409aeaa959f7ea28cb652",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

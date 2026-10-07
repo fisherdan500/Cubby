@@ -7,11 +7,6 @@ export const operation = {
   ownerKind: "client_binding",
   bindings: [
     {
-      kind: "form_action",
-      symbol: "submit",
-      target: "src/components/forms/onboarding-form.tsx#submit"
-    },
-    {
       kind: "global_fetch",
       symbol: "fetch[1]",
       target: "globalThis.fetch"

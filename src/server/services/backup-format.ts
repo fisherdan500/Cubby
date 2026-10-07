@@ -9,6 +9,7 @@ export const BACKUP_EXCLUSIONS = [
   "Memberships — people already in the household are recognised; anyone else must be invited",
   "Push subscriptions, so notification rules come back but each device re-enables push",
   "Invitations and registration policy",
+  "VaccineLog.documentUrl and all VaccineDocument records, metadata, and file bytes",
   "API keys, webhooks, and notification delivery history",
   "Audit, import, backup history, and warning dismissals",
   "Audit integrity checkpoints and household deletion registry receipts",

@@ -14,6 +14,17 @@ async function assertNoOutstandingRequiredChange(userId: string) {
 }
 
 export const SELECTED_HOUSEHOLD_MEMBER_COOKIE = "cubby_household_member";
+export const PERSISTENT_HOUSEHOLD_SELECTION_SECONDS = 60 * 60 * 24 * 365;
+
+export function selectedHouseholdCookieOptions(origin: string, maxAge = PERSISTENT_HOUSEHOLD_SELECTION_SECONDS) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: new URL(origin).protocol === "https:",
+    path: "/",
+    maxAge
+  };
+}
 
 export type HouseholdContext = {
   userId: string;

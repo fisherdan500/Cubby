@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  BACKUP_EXCLUSIONS,
+  backupSummary,
   canonicalJson,
   createV2Backup,
   parseBackup,
@@ -8,6 +10,13 @@ import {
 } from "@/server/services/backup-format";
 
 const exportedAt = "2026-07-15T18:00:00.000Z";
+
+it("discloses that vaccine document URLs, all document records, metadata and bytes are excluded", () => {
+  expect(BACKUP_EXCLUSIONS).toContain("VaccineLog.documentUrl and all VaccineDocument records, metadata, and file bytes");
+  expect(backupSummary(parseBackup(createV2Backup(emptyPayload(), exportedAt))).exclusions).toContain(
+    "VaccineLog.documentUrl and all VaccineDocument records, metadata, and file bytes"
+  );
+});
 
 function emptyPayload() {
   return {

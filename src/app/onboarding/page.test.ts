@@ -16,7 +16,7 @@ globalThis.React = React;
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/components/forms/onboarding-form", () => ({
-  OnboardingForm: () => React.createElement("form", { "data-testid": "onboarding-form" })
+  OnboardingForm: ({ canRestore }: { canRestore?: boolean }) => React.createElement("form", { "data-testid": "onboarding-form", "data-can-restore": canRestore ? "yes" : "no" })
 }));
 vi.mock("@/components/brand", () => ({
   BrandLockup: () => React.createElement("div", null, "Cubby")
@@ -44,6 +44,38 @@ beforeEach(() => {
 });
 
 describe("OnboardingPage", () => {
+  it.each([
+    { owner: false, verified: true, allowed: true, suspended: false },
+    { owner: true, verified: false, allowed: true, suspended: false },
+    { owner: true, verified: true, allowed: false, suspended: false },
+    { owner: true, verified: true, allowed: true, suspended: true }
+  ])("does not authorize a restore choice outside the first-owner case: %j", async ({ owner, verified, allowed, suspended }) => {
+    mocks.requireUserPage.mockResolvedValue({ id: "user", emailVerified: verified });
+    mocks.isPlatformOwner.mockResolvedValue(owner);
+    mocks.getAppRegistrationPolicy.mockResolvedValue({ platformOwnerBound: true, newHouseholdCreationAllowed: allowed });
+    mocks.getHouseholdLeaveOptions.mockResolvedValue(suspended ? [{ role: "owner", suspended: true }] : []);
+    const OnboardingPage = (await import("@/app/onboarding/page")).default;
+    expect(renderToStaticMarkup(await OnboardingPage())).not.toContain('data-can-restore="yes"');
+  });
+
+  it("redirects an existing active member before rendering onboarding", async () => {
+    mocks.requireUserPage.mockResolvedValue({ id: "owner", emailVerified: true });
+    mocks.isPlatformOwner.mockResolvedValue(true);
+    mocks.listHouseholdsForUser.mockResolvedValue([{ household: { id: "existing" } }]);
+    mocks.redirect.mockImplementation(() => { throw new Error("redirect"); });
+    const OnboardingPage = (await import("@/app/onboarding/page")).default;
+    await expect(OnboardingPage()).rejects.toThrow("redirect");
+    expect(mocks.redirect).toHaveBeenCalledWith("/app");
+    expect(mocks.getAppRegistrationPolicy).not.toHaveBeenCalled();
+  });
+
+  it("offers restore only to the verified current platform owner with open direct creation and no memberships", async () => {
+    mocks.requireUserPage.mockResolvedValue({ id: "owner", emailVerified: true });
+    mocks.isPlatformOwner.mockResolvedValue(true);
+    const OnboardingPage = (await import("@/app/onboarding/page")).default;
+    expect(renderToStaticMarkup(await OnboardingPage())).toContain('data-can-restore="yes"');
+  });
+
   it("redirects a suspended-only non-owner to the self-leave flow after normal sign-in", async () => {
     mocks.requireUserPage.mockResolvedValue({
       id: "suspended-user",

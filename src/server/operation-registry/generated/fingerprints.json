@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "3682d0fce3046558d8b4f4ad008a00e1af75b8efb3fd7ead5026e85a611b3008",
+  "declarationDigest": "a04cf738d62c7a860c6a52560839e870375731610fe6462b0d25cbd806d01a18",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -920,17 +920,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "0e08b2acd36f87a3323c9a515cd5ee5b5c16dff07f6662acf5d23e8e640214fb",
+          "digest": "5c145aab3182197d217678a8cbf6eb078c2c34d28d5c94edc79ade895d7d6bad",
           "file": "src/app/api/household-selection/route.ts"
         }
       ],
       "declarationDigest": "589302edcae2305e309a7017bb352f62fd2d0e0363383b8c09e08c8aff4aee1c",
-      "fingerprint": "d614402a28abe401ce58e4bf97341605ab8a7388796b899def8e02aa8ec7fccf",
+      "fingerprint": "055d56ffccde480c41aaf42d644d5f95b79031968b54ba2d6ee88c3b48b61a62",
       "id": "fingerprint:api_route:src/app/api/household-selection/route.ts",
       "ownerId": "api_route:src/app/api/household-selection/route.ts",
       "ownerModule": "src/app/api/household-selection/route.ts",
       "sidecarPath": "src/app/api/household-selection/route.operation.ts",
-      "sourceDigest": "243ddf46dd12dd1edbc4c72d058593b359e80012f51cb10ba857694e0a11bedc",
+      "sourceDigest": "330e6158cdd8ee872115c8456278253fd8a75d4f683676916ad2db7a82e9ee7a",
       "status": "declared"
     },
     {
@@ -1656,17 +1656,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "52b98da2baccdbc57401699c6f845279d8ee57e6b24b9ce4c34b05cb25cc2d5a",
+          "digest": "2439faf1770a463d9a1649f78de66d4a882ff194b8d3ad36ace8b69a51958200",
           "file": "src/app/api/onboarding/route.ts"
         }
       ],
       "declarationDigest": "c6b8ad97cf146be1524f8c53205422ec129e11b94a34f482e9e7f8c6271e3914",
-      "fingerprint": "196bcbc49df5db0023828d0b3e03707ab809c15a3a4b7c619ab5e54849b75724",
+      "fingerprint": "4091aa8934dadf0a65cd78bb9628621d8baa5289016d1b705538046c57c56561",
       "id": "fingerprint:api_route:src/app/api/onboarding/route.ts",
       "ownerId": "api_route:src/app/api/onboarding/route.ts",
       "ownerModule": "src/app/api/onboarding/route.ts",
       "sidecarPath": "src/app/api/onboarding/route.operation.ts",
-      "sourceDigest": "458e0d251f1affce7a1602126efc57ccc20750acabb207e5bbc25f03f3bc1f84",
+      "sourceDigest": "76bfe50f525503ae89aad75a7b9b85f83e79e316762d092f6992ead04bd24629",
       "status": "declared"
     },
     {
@@ -2400,17 +2400,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "75a622f3ad6e3b033d8e7293a85f60520e80b36a7edbd4997df00b794543ae2f",
+          "digest": "428ba98b8a8253d7b23e919d40953937fe58d10969ec0d36e8cd19ef34c0616a",
           "file": "src/app/onboarding/page.tsx"
         }
       ],
       "declarationDigest": "3aaff1117c2eaf614d7b92d49865b6e3efcb6dc96f25eff2eb0eacbfbb07a373",
-      "fingerprint": "dba6b75479fc5d4157caa47021190741dc6104b02a1761bce824eaf7012d4400",
+      "fingerprint": "4a4193978c384e87d803889ea2b9aca85aa658128173021b41ba7f0dec8406d9",
       "id": "fingerprint:server_loader:src/app/onboarding/page.tsx",
       "ownerId": "server_loader:src/app/onboarding/page.tsx",
       "ownerModule": "src/app/onboarding/page.tsx",
       "sidecarPath": "src/app/onboarding/page.operation.ts",
-      "sourceDigest": "153173ddb27d3c4dad966965fc6c56064672baa4dc303111d225d16d044d92f2",
+      "sourceDigest": "57b5ba85a5ce68daab8985726bf293edcb0052883bb8aedfbc4580743a059fb4",
       "status": "declared"
     },
     {
@@ -2816,17 +2816,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "ed460ea63bf1ba814f5383b0618c7d80c3b91bf389b8867e5e88394ae5fc4902",
+          "digest": "1a917eb65ef177bbc8fc8913dc1b086187ce76ef04f4b9dab7a812f3e7ba40f1",
           "file": "src/components/forms/onboarding-form.tsx"
         }
       ],
-      "declarationDigest": "c81feb0a9fecd6f6d52b5adedbad4cf84675f31c55d52bdc1b5fc018cee1a6a0",
-      "fingerprint": "17d4ea8246ffebdd62d2ddd4182843ea785b44f9c00a26425b12332f54a566a2",
+      "declarationDigest": "7574d01fd22621d824d7677d77060e9ea8815bf1d69251b0cc180a900215ad37",
+      "fingerprint": "af030153ee99167ee69505afe49ffa9be2052304a59191ea85c13a44584bee35",
       "id": "fingerprint:client_binding:src/components/forms/onboarding-form.tsx",
       "ownerId": "client_binding:src/components/forms/onboarding-form.tsx",
       "ownerModule": "src/components/forms/onboarding-form.tsx",
       "sidecarPath": "src/components/forms/onboarding-form.operation.ts",
-      "sourceDigest": "6df559aa975ec2194978efbe0b22b9317b61bff1a43cef5c50a8ca5489e34eb3",
+      "sourceDigest": "4f5e878c697285d6f758bd3083feba72d16459481269454570433fc50a1a7616",
       "status": "declared"
     },
     {
@@ -3056,17 +3056,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "3b4dea3c1d43699bec0ec519e063ce5274f14839c0f690067b5ea39d6e8a6acc",
+          "digest": "8d24dde3496eee66e3152ff6d5ac0abb4ce5c82abdedb6874a0a4de7043e0fd7",
           "file": "src/components/settings/backup-restore-form.tsx"
         }
       ],
       "declarationDigest": "a24b18c134da8a75e1fec73c47e0355f92d55d337b81ff013b30008454bbcf10",
-      "fingerprint": "626793f575ab95126f0264832d6ffa49b3ad1dda0ab70f190a356acdb3c5d154",
+      "fingerprint": "c9ad6ad1d66ff63fe92bba3aabfa231ab9538dc889e7e2fa4d857577314a3812",
       "id": "fingerprint:client_binding:src/components/settings/backup-restore-form.tsx",
       "ownerId": "client_binding:src/components/settings/backup-restore-form.tsx",
       "ownerModule": "src/components/settings/backup-restore-form.tsx",
       "sidecarPath": "src/components/settings/backup-restore-form.operation.ts",
-      "sourceDigest": "bc179510e16bf8acbed949056200ad244a7ae96ec39a7fb0566e308c4e7cd39c",
+      "sourceDigest": "fc11b068221e27b53a077f7230568263e4e7fa1e4469384b92dc184d62777920",
       "status": "declared"
     },
     {
@@ -4580,11 +4580,11 @@
   ],
   "generatorDigest": "8abe879292e49ce20c3e1afa80c439ea7ffd295f279ecc3614aa876109a0114f",
   "generatorVersion": "r0.1",
-  "observationDigest": "3a564d1ec059341e774b57a681fe9bb373f84ab0b994df9f6a4f8a043fd42739",
+  "observationDigest": "656d88bb5497eb88b3c0c32298e65613a171eb3d5eb1177886c183ecf2c6e02f",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "81b72eb8040bd024145de00e3ecaad604d7fcc4543fbe4aa41d2a502f2296684",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "5d06110122e6152727a62acf34e80f00f08f204b9474544ae400563ec6f46dc4",
+  "registryDigest": "c6b1e26bfe061647ae5afb91c14bfcf3c44c08d2217409aeaa959f7ea28cb652",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
