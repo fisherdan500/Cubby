@@ -287,6 +287,15 @@ function fixtureData(model: string) {
     ts.isPropertyAssignment(property) ? [property.name.getText(source), property.initializer.getText(source)] : [property.getText(source), "spread-or-shorthand"])));
 }
 
+it("B fixture running sleep initializes pause tracking at the start instant", () => {
+  const sleeps = fixtureData("activityLog").filter((activity) => activity.type === "'sleep'");
+  expect(sleeps).toHaveLength(1);
+  expect(sleeps[0]).toMatchObject({
+    timerState: "'running'", startedAt: "now",
+    pauseTrackingStartedAt: "now", pauseTrackingBaselineSeconds: "0"
+  });
+});
+
 it("B tenant fixture includes a foreign household-wide null-baby post", () => {
   expect(fixtureData("feedPost")).toContainEqual({
     householdId: "foreign.householdId", babyId: "null", authorMemberId: "'fresh-member-foreign'", body: "'FOREIGN_FRESHNESS_SENTINEL'"

@@ -21,7 +21,7 @@ try {
   const foreign = { householdId: 'fresh-household-foreign', babyId: 'fresh-baby-foreign' };
   const now = new Date();
   await prisma.activityLog.create({ data: { ...foreign, actorMemberId: 'fresh-member-foreign', type: 'note', occurredAt: now, timezone: 'Etc/UTC', note: { create: { text: 'FOREIGN_FRESHNESS_SENTINEL' } } } });
-  await prisma.activityLog.create({ data: { ...foreign, actorMemberId: 'fresh-member-foreign', type: 'sleep', occurredAt: now, startedAt: now, timezone: 'Etc/UTC', timerState: 'running', sleep: { create: {} } } });
+  await prisma.activityLog.create({ data: { ...foreign, actorMemberId: 'fresh-member-foreign', type: 'sleep', occurredAt: now, startedAt: now, pauseTrackingStartedAt: now, pauseTrackingBaselineSeconds: 0, timezone: 'Etc/UTC', timerState: 'running', sleep: { create: {} } } });
   await prisma.feedPost.create({ data: { ...foreign, authorMemberId: 'fresh-member-foreign', body: 'FOREIGN_FRESHNESS_SENTINEL' } });
   await prisma.feedPost.create({ data: { householdId: foreign.householdId, babyId: null, authorMemberId: 'fresh-member-foreign', body: 'FOREIGN_FRESHNESS_SENTINEL' } });
   await prisma.calendarEvent.create({ data: { householdId: foreign.householdId, title: 'FOREIGN_FRESHNESS_SENTINEL', startTime: now } });
