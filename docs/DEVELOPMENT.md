@@ -600,6 +600,25 @@ no primary phase. Unclassified errors use `UNKNOWN`; no exception message, stack
 child output or resource identity is rendered. Failure exits nonzero and emits no
 success markers.
 
+The package entry runs a plain-JavaScript launcher before loading TypeScript.
+Handled outer failures write their fixed sequence only to stdout. The launcher
+discards child stderr at spawn, retains at most the longest valid fixed stdout
+sequence, and clears that candidate after reduction. Only exact LF-terminated
+sequences with matching exit status and success invocation are accepted.
+Loader/import/startup errors, markerless failures, malformed or extra output,
+overflow and signal termination emit exactly `FRESHNESS_ACCEPTANCE_FAILED` then
+`FRESHNESS_PHASE_UNKNOWN`, with a nonzero exit. It never renders child errors.
+The child must signal readiness before the resource-owning lifecycle begins. The
+launcher gives that startup boundary 30 seconds. A startup deadline or
+SIGINT/SIGTERM before readiness terminates the child, escalates to a forced stop
+after two seconds if needed, waits for close, and emits only the closed `UNKNOWN`
+failure sequence. After readiness, SIGINT/SIGTERM are forwarded through a fixed
+IPC message and the launcher waits for the existing lifecycle's cleanup. Losing
+the launcher connection also interrupts that same path. No retry or second
+cleanup lifecycle is introduced. The source-only output contracts use synthetic
+children in a copied package under the ignored test cache; they never run the
+rehearsal.
+
 These stay outside the gates for reasons continuous integration cannot fix — a
 wall-clock budget a shared runner cannot measure honestly, a dependency on an
 image the host already holds, or a real local Chrome:

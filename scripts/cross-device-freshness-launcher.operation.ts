@@ -2,8 +2,8 @@ import type { OperationDeclaration } from "@/server/operation-registry/schema";
 
 export const operation = {
   schemaVersion: 1,
-  id: "package_command:scripts/cross-device-freshness.acceptance-rehearsal.ts",
-  ownerModule: "scripts/cross-device-freshness.acceptance-rehearsal.ts",
+  id: "package_command:scripts/cross-device-freshness-launcher.mjs",
+  ownerModule: "scripts/cross-device-freshness-launcher.mjs",
   ownerKind: "package_command",
   bindings: [
     {

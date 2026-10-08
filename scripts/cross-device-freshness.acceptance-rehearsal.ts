@@ -283,7 +283,7 @@ export async function recoverFreshnessLedger(path: string) {
   process.stdout.write("FRESHNESS_CLEANUP_PASS\n");
 }
 
-export async function runCrossDeviceFreshnessRehearsal() {
+export async function runCrossDeviceFreshnessRehearsal(interrupted: () => boolean = () => false) {
   let phase: FreshnessPhase = "preflight_export";
   try {
     if (process.platform !== "win32") fail("windows_required");
@@ -302,8 +302,10 @@ export async function runCrossDeviceFreshnessRehearsal() {
     const project = `cubby_freshness_${randomBytes(8).toString("hex")}`;
     const directory = resolve(tmpdir(), `${project}-${randomBytes(6).toString("hex")}`);
     const ledger: Ledger = { version: 1, project, image: `${project}:acceptance`, directory, exportedCommit: acceptedCommit!, pid: process.pid };
+    if (interrupted()) fail("interrupted");
     const ledgerPath = await persistLedger(ledger);
     const controller = new AbortController();
+    if (interrupted()) controller.abort();
     const browsers: ChildProcess[] = [];
     let attempted = false, passed = false;
     let cleanupPromise: Promise<void> | undefined;
@@ -407,9 +409,21 @@ export function parseFreshnessArguments(args: readonly string[]): { recoveryPath
 }
 async function main(args: readonly string[]) {
   const { recoveryPath } = parseFreshnessArguments(args);
-  if (recoveryPath) await recoverFreshnessLedger(recoveryPath);
-  else await runCrossDeviceFreshnessRehearsal();
+  let interrupted = false;
+  const interrupt = () => { interrupted = true; process.exitCode = 1; process.emit("SIGTERM"); };
+  const onMessage = (message: unknown) => { if (message === "FRESHNESS_INTERRUPT") interrupt(); };
+  process.on("message", onMessage); process.on("disconnect", interrupt);
+  try {
+    if (process.send) {
+      if (!process.connected) fail("interrupted");
+      process.send("FRESHNESS_READY", error => { if (error) interrupt(); });
+    }
+    if (recoveryPath) await recoverFreshnessLedger(recoveryPath);
+    else await runCrossDeviceFreshnessRehearsal(() => interrupted);
+  } finally {
+    process.off("message", onMessage); process.off("disconnect", interrupt);
+  }
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main(process.argv.slice(2)).catch(error => { process.stderr.write(formatFreshnessFailure(error)); process.exitCode = 1; });
+  main(process.argv.slice(2)).catch(error => { process.stdout.write(formatFreshnessFailure(error)); process.exitCode = 1; });
 }

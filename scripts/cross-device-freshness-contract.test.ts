@@ -8,7 +8,8 @@ import { resolve } from "node:path";
 import ts from "typescript";
 import { runInNewContext } from "node:vm";
 import { createRequire } from "node:module";
-import { discoverPackageCommands } from "../src/server/operation-registry/checker";
+import { discoverPackageCommands, discoverStructuralExclusions } from "../src/server/operation-registry/checker";
+import { EventEmitter } from "node:events";
 
 const read = (path: string) => existsSync(path) ? readFileSync(path, "utf8") : "";
 
@@ -168,6 +169,7 @@ function simulatedAcceptance(failedPhase?: string, cleanupFails = false, browser
   const stdout: string[] = [];
   const cleanup = vi.fn(async () => { if (cleanupFails) throw Error("synthetic cleanup detail"); });
   const lifecycle = vi.fn(rehearsal.withFreshnessCleanup);
+  const persist = vi.fn(async () => "synthetic-ledger");
   const child = { stderr: { on: (_: string, receive: (chunk: string) => void) => receive("DevTools listening on ws://127.0.0.1:12345/devtools/browser/synthetic") }, once: () => {} };
   const rejectAt = (phase: string) => { if (failedPhase === phase) throw phase === "browser_observation" && browserCode ? browserFailure(browserCode) : Error("synthetic private failure"); };
   const processStub = { platform: "win32", pid: 123, env: { CUBBY_FRESHNESS_ACCEPTED_COMMIT: "a".repeat(40) }, on: () => {}, off: () => {}, stdout: { write: (value: string) => stdout.push(value) } };
@@ -176,7 +178,7 @@ function simulatedAcceptance(failedPhase?: string, cleanupFails = false, browser
     resolve, basename: () => "chrome.exe", tmpdir: () => "synthetic-temp", existsSync: () => true,
     randomBytes: () => ({ toString: () => "synthetic" }), pause: async () => {},
     run: async (_: string, args: string[]) => { rejectAt("preflight_export"); return args[0] === "rev-parse" ? "a".repeat(40) : ""; },
-    persistLedger: async () => "synthetic-ledger", cleanLedger: cleanup,
+    persistLedger: persist, cleanLedger: cleanup,
     withFreshnessCleanup: lifecycle,
     mkdirSync: () => {}, rmSync: () => {}, writeFileSync: () => {},
     readFileSync: (path: string) => path.endsWith(".yml") ? "context: ..\n  app:\n" : `"${"a".repeat(40)}":x.createCalendarEventAction`,
@@ -197,8 +199,55 @@ function simulatedAcceptance(failedPhase?: string, cleanupFails = false, browser
     freshnessTerminalOutcome: (passed: boolean, aborted: boolean) => { rejectAt("terminal"); return rehearsal.freshnessTerminalOutcome(passed, aborted); },
     fail: () => { throw Error("synthetic validation failure"); }
   });
-  return { run, stdout, cleanup, lifecycle };
+  return { run, stdout, cleanup, lifecycle, persist };
 }
+
+it.each(["message", "disconnect"])("L4 CLI routes launcher %s to the existing signal path", async event => {
+  const processStub = Object.assign(new EventEmitter(), { exitCode: 0, connected: true, send: vi.fn() });
+  let interrupted: (() => boolean) | undefined, finish: (() => void) | undefined;
+  const abort = vi.fn();
+  processStub.on("SIGTERM", abort);
+  const main = harnessFunction("main", {
+    process: processStub,
+    parseFreshnessArguments: () => ({ recoveryPath: null }),
+    runCrossDeviceFreshnessRehearsal: (check: () => boolean) => {
+      interrupted = check;
+      return new Promise<void>(done => { finish = done; });
+    },
+    recoverFreshnessLedger: () => { throw Error("unexpected recovery"); }
+  });
+  const pending = main([]);
+  expect(processStub.send).toHaveBeenCalledWith("FRESHNESS_READY", expect.any(Function));
+  processStub.emit("message", "unrecognized");
+  expect(abort).not.toHaveBeenCalled();
+  processStub.emit(event, "FRESHNESS_INTERRUPT");
+  expect(abort).toHaveBeenCalledTimes(1);
+  expect(interrupted?.()).toBe(true);
+  expect(processStub.exitCode).toBe(1);
+  finish!(); await pending;
+  expect(processStub.listenerCount("message")).toBe(0);
+  expect(processStub.listenerCount("disconnect")).toBe(0);
+});
+
+it("L5 an early launcher interruption fails before ledger or resource creation", async () => {
+  const acceptance = simulatedAcceptance();
+  const failure = await acceptance.run(() => true).catch((error: unknown) => error);
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_PREFLIGHT_EXPORT\n");
+  expect(acceptance.persist).not.toHaveBeenCalled();
+  expect(acceptance.lifecycle).not.toHaveBeenCalled();
+  expect(acceptance.stdout).toEqual([]);
+});
+
+it("L5 interruption during ledger persistence still reaches cleanup exactly once", async () => {
+  const acceptance = simulatedAcceptance();
+  let checks = 0;
+  const failure = await acceptance.run(() => ++checks > 1).catch((error: unknown) => error);
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_PREFLIGHT_EXPORT\n");
+  expect(acceptance.persist).toHaveBeenCalledTimes(1);
+  expect(acceptance.cleanup).toHaveBeenCalledTimes(1);
+  expect(acceptance.lifecycle).toHaveBeenCalledTimes(1);
+  expect(acceptance.stdout).toEqual([]);
+});
 
 it("D6 preserves exact success and recovery markers through production control flow", async () => {
   const acceptance = simulatedAcceptance();
@@ -218,7 +267,7 @@ it("D6 preserves exact success and recovery markers through production control f
   expect(cleanup).toHaveBeenCalledTimes(1);
 });
 
-it("D7 outermost CLI formats retained failure state without printing content", async () => {
+it("D7 outermost CLI emits fixed failures only on stdout", async () => {
   const source = ts.createSourceFile("rehearsal.ts", read("scripts/cross-device-freshness.acceptance-rehearsal.ts"), ts.ScriptTarget.Latest, true);
   const entry = source.statements.at(-1);
   expect(entry && ts.isIfStatement(entry)).toBe(true);
@@ -230,10 +279,11 @@ it("D7 outermost CLI formats retained failure state without printing content", a
       async () => { if (cleanupFails) throw Error("synthetic cleanup secret"); },
       () => "fixture"
     ).catch((error: unknown) => error);
-    const stderr: string[] = [];
-    const processStub = { argv: ["node", "synthetic-cli"], stderr: { write: (value: string) => stderr.push(value) }, exitCode: 0 };
+    const stdout: string[] = [], stderr: string[] = [];
+    const processStub = { argv: ["node", "synthetic-cli"], stdout: { write: (value: string) => stdout.push(value) }, stderr: { write: (value: string) => stderr.push(value) }, exitCode: 0 };
     await runInNewContext(expression, { process: processStub, main: async () => { throw failure; }, formatFreshnessFailure: rehearsal.formatFreshnessFailure });
-    expect(stderr.join("")).toBe(rehearsal.formatFreshnessFailure(failure));
+    expect(stdout.join("")).toBe(rehearsal.formatFreshnessFailure(failure));
+    expect(stderr).toEqual([]);
     expect(processStub.exitCode).toBe(1);
   }
 });
@@ -371,16 +421,23 @@ it("fails closed for an interrupt after observation succeeds and cleanup complet
   const terminal = "process.stdout.write(freshnessTerminalOutcome(passed, controller.signal.aborted))";
   expect(source).toContain(terminal);
   expect(source.indexOf(terminal)).toBeGreaterThan(source.indexOf("await cleanup()"));
-  expect(source).toContain('process.stderr.write(formatFreshnessFailure(error))');
+  expect(source).toContain('process.stdout.write(formatFreshnessFailure(error))');
 });
-it("B7 keeps explicit recovery argument parsing compatible with unchanged governance", () => {
+it("B7 keeps explicit recovery argument parsing compatible with launcher governance", () => {
   expect(rehearsal).toHaveProperty("parseFreshnessArguments");
   expect(rehearsal.parseFreshnessArguments([])).toEqual({ recoveryPath: null });
   expect(rehearsal.parseFreshnessArguments(["--recover", "ledger.json"])).toEqual({ recoveryPath: "ledger.json" });
   for (const args of [["--recover"], ["--recover", "a", "b"], ["unknown"]]) expect(() => rehearsal.parseFreshnessArguments(args)).toThrow();
-  const program = ts.createProgram([resolve("scripts/cross-device-freshness.acceptance-rehearsal.ts")], { noResolve: true, target: ts.ScriptTarget.ESNext });
-  const result = discoverPackageCommands(program, resolve("."), JSON.stringify({ scripts: { "verify:cross-device-freshness": "tsx scripts/cross-device-freshness.acceptance-rehearsal.ts" } }));
+  const program = ts.createProgram([resolve("scripts/cross-device-freshness-launcher.mjs")], { noResolve: true, allowJs: true, target: ts.ScriptTarget.ESNext });
+  const result = discoverPackageCommands(program, resolve("."), JSON.stringify({ scripts: { "verify:cross-device-freshness": JSON.parse(read("package.json")).scripts["verify:cross-device-freshness"] } }));
   expect(result.diagnostics).toEqual([]);
+  expect(result.observations).toEqual([expect.objectContaining({
+    kind: "package_script", ownerModule: "scripts/cross-device-freshness-launcher.mjs",
+    symbol: "verify:cross-device-freshness", target: "package.json#scripts.verify:cross-device-freshness"
+  })]);
+  expect(discoverStructuralExclusions(resolve(".")).exclusions).toContainEqual(expect.objectContaining({
+    ownerModule: "scripts/cross-device-freshness-launcher.mjs", category: "rehearsal", packageScripts: ["verify:cross-device-freshness"]
+  }));
 });
 it("B8 documents only unexecuted source guarantees and separate lifecycle gates", () => {
   const docs = read("docs/DEVELOPMENT.md");
@@ -506,7 +563,7 @@ it("B3 separates child capabilities and preflights before resource attempts", ()
   expect(source).toContain('...environments.chrome, ...environments.fixture');
   expect(source).toContain('exec env -i REHEARSAL_SEED_URL="$REHEARSAL_SEED_URL" REHEARSAL_APP_PASSWORD="$REHEARSAL_APP_PASSWORD" /usr/local/bin/node --input-type=module');
   expect(source).not.toMatch(/\.\.\.process\.env|env: environment\b/);
-  const main = source.slice(source.indexOf("export async function runCrossDeviceFreshnessRehearsal()"));
+  const main = source.slice(source.indexOf("export async function runCrossDeviceFreshnessRehearsal("));
   for (const preflight of ['["compose", "version"]', 'fail("docker_endpoint_not_local")']) {
     expect(main.indexOf(preflight)).toBeGreaterThan(0);
     expect(main.indexOf(preflight)).toBeLessThan(main.indexOf("attempted = true"));
@@ -565,7 +622,7 @@ it("B1 encodes the exact generated fixture credential without disclosure", () =>
 });
 it("wires a separately approved Chrome lifecycle outside automatic gate groups", () => {
   const scripts = JSON.parse(read("package.json")).scripts;
-  expect(scripts["verify:cross-device-freshness"]).toBe("tsx scripts/cross-device-freshness.acceptance-rehearsal.ts");
+  expect(scripts["verify:cross-device-freshness"]).toBe("node scripts/cross-device-freshness-launcher.mjs");
   expect(GATES_RUN_BY_HAND["verify:cross-device-freshness"]).toMatch(/Chrome/);
 });
 it("contains a bounded isolated production-image lifecycle and fail-closed teardown", () => {

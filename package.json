@@ -43,7 +43,7 @@
     "verify:invitation-email-delivery": "tsx scripts/invitation-email-delivery-rehearsal.ts",
     "verify:browser-operation-pilot": "tsx scripts/browser-operation-pilot.acceptance-rehearsal.ts",
     "verify:browser-operation-save-path": "tsx scripts/browser-operation-save-path.acceptance-rehearsal.ts",
-    "verify:cross-device-freshness": "tsx scripts/cross-device-freshness.acceptance-rehearsal.ts",
+    "verify:cross-device-freshness": "node scripts/cross-device-freshness-launcher.mjs",
     "verify:admin-assisted-accounts": "tsx scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
     "verify:simplified-signup": "tsx scripts/simplified-signup.acceptance-rehearsal.ts",
     "verify:sprout-preview-commit": "tsx scripts/sprout-preview-commit.acceptance-rehearsal.ts",
