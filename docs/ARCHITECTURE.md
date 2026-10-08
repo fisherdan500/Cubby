@@ -427,6 +427,37 @@ changes.
 
 ### Activities And Timers
 
+The authenticated layout mounts one `AppFreshnessProvider`. While visible and
+online it requests the current route through `router.refresh()` on a per-client
+14.5–15-second cadence. Focus, foreground and online events request a refresh when
+the last confirmation is at least five seconds old, with a cancellable remaining
+five-second foreground deadline for younger confirmations. Local age is monotonic. Hidden pages stop the periodic timer.
+`AppShell` produces a unique confirmation token and server instant after the
+page's awaited loaders. Only a new confirmation closes the pending generation;
+an attempt never advances the displayed instant. Duplicate triggers coalesce.
+A ten-second confirmation timeout or offline event marks the page stale. An
+explicit or automatic retry after timeout reattempts the same generation and
+invokes the registered timer loader. The normal current
+UI is silent; stale UI shows an accessible explanation, `Data current as of …`
+in `APP_TIMEZONE`, and a retry action.
+
+Each generation emits one typed `cubby:freshness-requested` event. The timer bar
+participates through its independent no-store endpoint, which supplies a server
+instant after its authorized query and echoes a per-request random token. The
+loader requires its own token, preventing cached responses from confirming a new
+request without changing the service worker. It retains the last known same-baby snapshot
+on network, HTTP, parsing or timeout failure, reports its own stale domain, and
+disables its Stop controls until a new successful snapshot. Empty success clears
+the bar. Page confirmation cannot clear timer staleness, nor can reconnect or a
+older timer instant. Same-millisecond confirmations require the current request
+token. Existing local timer mutation events still reload it.
+The provider has no keyed remount, draft reset, forced navigation or scroll/focus
+manipulation. Account Sessions and Security History client loaders do not subscribe.
+
+This fallback is implemented in source; disposable production-image/two-browser
+acceptance and polling-load measurement remain pending. It does not complete
+DEC-PROD-173's prompt real-time timer/revision phase or add offline synchronization.
+
 `src/server/services/activities.ts` owns activity creation, updates, deletes,
 undo behavior, timer transitions, and webhook/notification side effects. Pages
 and API routes should call this service instead of writing activity tables

@@ -1,5 +1,6 @@
 import { getActiveTimersForShell } from "@/server/services/active-timers";
 import { fail, handleError, ok } from "@/server/http";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +12,19 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: Request) {
   try {
-    const babyIds = new URL(request.url).searchParams.getAll("babyId");
+    const search = new URL(request.url).searchParams;
+    const tokens = search.getAll("requestToken");
+    if (tokens.length !== 1 || !z.uuid().safeParse(tokens[0]).success) {
+      return fail("invalid_request_token", "Retry the refresh.", 400);
+    }
+    const requestToken = tokens[0];
+    const babyIds = search.getAll("babyId");
     if (babyIds.length > 1 || (babyIds.length === 1 && babyIds[0].length === 0)) {
       return fail("invalid_baby_id", "Select a valid baby.", 400);
     }
     const babyId = babyIds[0];
-    return ok({ timers: await getActiveTimersForShell(babyId) });
+    const timers = await getActiveTimersForShell(babyId);
+    return ok({ timers, confirmedAt: new Date().toISOString(), requestToken }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return handleError(error);
   }

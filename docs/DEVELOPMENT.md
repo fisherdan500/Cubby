@@ -509,6 +509,65 @@ markdown review and `git status --short` are usually enough.
 
 ### Run by hand
 
+The cross-device freshness fallback has focused controller, shell-confirmation,
+timer component/service/route and harness-contract tests in the canonical suites.
+Its production-image and two-browser runtime acceptance remains **pending**.
+No archive, Docker, Chrome or recovery lifecycle was run for the source hardening;
+static contracts are not runtime acceptance evidence.
+
+After separate lifecycle approval, `npm run verify:cross-device-freshness` requires
+Windows, local Chrome (`CUBBY_CHROME_PATH` may name chrome.exe/chromium.exe), Git,
+tar, PowerShell and a local default Docker context with Compose. Set
+`CUBBY_FRESHNESS_ACCEPTED_COMMIT` to the independently reviewed final local
+40-hex commit. The harness requires that exact HEAD and a clean tracked and nonignored-untracked
+worktree before creating disposable resources. The currently dirty source candidate
+is not eligible. It builds only a unique Git-object export, reads its Compose
+template/fixture/probe from that export, and excludes private/runtime paths and
+symlinks/submodules. It never builds from the live worktree or loads its `.env`.
+Compose receives generated infrastructure secrets and allowlisted OS discovery
+variables; Chrome receives only OS/profile variables. Fixture injection receives
+only its generated seed URL and app password; the probe receives only minimal Node
+OS variables, loopback/CDP endpoints, action ID and the fixture password.
+
+The unexecuted probe requires 20-second visible updates across Log, Moments,
+Calendar and timers, five-second foreground recovery, hidden cadence, truthful
+stale/reconnect state and browser diagnostics. The Calendar probe creates an
+event; Cubby has no Calendar edit action. Its bounded display/read isolation proof
+watches both browsers throughout exercised Log/Moments/Calendar/timer-status
+surfaces for foreign synthetic sentinels/identifiers and checks the foreign timer
+read. This is not a hostile mutation or side-effect audit of unchanged endpoints.
+The cache probe retains the production worker, seeds an old authorized response
+under the exact future tokenized URL, obtains a newer confirmation, and uses
+acceptance-only deterministic bytes for one synchronous timer-loader dispatch.
+It requires worker delivery of that exact cached response, matching request token,
+older server instant, retained stale instant and disabled timer actions while
+online. Cache seeding alone cannot pass. Preservation checks require the same
+nonzero scroll offset (using a bounded spacer), connected input/preview/dialog,
+draft and focus, and identical FileList count/name/type/size. Since the composer
+consumes its picker on change, the probe reinstates a pending native selection
+after the real upload/preview without triggering a second upload.
+
+Before creating the disposable root, the harness persists a content-free ledger
+at `<OS temp>/cubby-freshness-ledgers/<exact-project>.json` containing only version,
+project, image tag, root, exported commit and harness PID. Windows ACLs restrict
+access to the current account; file mode is 0600. SIGINT/SIGTERM abort bounded
+child commands into one idempotent cleanup path. Cleanup attempts Chrome exit,
+exact project-labeled containers/volumes/networks and the exact image tag, then
+independently removes both authenticated profiles and the disposable root even if
+Docker cleanup failed. It checks resource/image/process/profile/root absence and
+only deletes the ledger after complete verification. Failures are aggregated;
+interrupted resource commands retain the content-free ledger because daemon work
+may still need recovery. Cookies/cache are never intentionally retained.
+
+Recovery is a separately approved lifecycle, invoked for **one** validated ledger:
+`npm run verify:cross-device-freshness -- --recover <absolute-ledger-path>`.
+It refuses a live recorded harness PID, unsafe paths/labels and redirected roots;
+it rechecks exact project labels before deleting resources and attributes Chrome
+only to exact disposable profile arguments with PID creation-time rechecks.
+It does not broad-match normal Cubby resources. All waits/commands are bounded and
+only fixed content-free result codes are emitted. Do not invoke either lifecycle
+as part of source-only verification.
+
 These stay outside the gates for reasons continuous integration cannot fix — a
 wall-clock budget a shared runner cannot measure honestly, a dependency on an
 image the host already holds, or a real local Chrome:

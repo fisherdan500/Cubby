@@ -62,6 +62,7 @@ export type VerifyGateOutcome = { id: string; group: VerifyGateGroup; passed: bo
  * merges: nobody could tell whether it was excluded on purpose or by neglect.
  */
 export const GATES_RUN_BY_HAND: Readonly<Record<string, string>> = {
+  "verify:cross-device-freshness": "separately approved disposable production-image lifecycle with two local Chrome profiles and wall-clock freshness bounds",
   "verify:performance-1y": "a wall-clock budget, and a shared CI runner's timings do not mean anything",
   "verify:performance-5y": "a wall-clock budget, and a shared CI runner's timings do not mean anything",
   "verify:performance-input": "a wall-clock budget, and it drives a real local Chrome over CDP",

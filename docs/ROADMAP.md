@@ -41,6 +41,14 @@ text, credentials, route names, or implementation structure.
 
 ## Planned Next
 
+### Cross-Device Freshness Fallback
+
+- Status: in progress — bounded fallback source implemented; runtime/two-browser acceptance pending.
+- Priority: high
+- Goal: Keep an open household screen and its active timers current across devices without interrupting unsaved work.
+- Acceptance: Separately approved disposable production-image/two-browser Chrome rehearsal proves visible updates within 20 seconds, foreground updates within five seconds, truthful independent page/timer stale state, scoped reads, preserved drafts/photos/dialogs/focus/scroll, bounded requests and complete teardown.
+- Notes: One authenticated provider, visible/online 15-second refresh, refocus/online triggers, server confirmation tokens and instants, ten-second timeout, shared retry and no-store timer participation are implemented in source. Normal current UI is silent. No schema, real-time transport, service-worker changes, offline writes or account-security loader synchronization. DEC-PROD-173's prompt timer/revision phase remains separate and incomplete. No runtime acceptance or deployment is claimed.
+
 Each substantive application change uses its own approved worktree and separate
 implementation, merge, deployment, and cleanup approvals.
 

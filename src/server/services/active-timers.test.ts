@@ -63,6 +63,18 @@ function timerRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe("active timers for the application shell", () => {
+  it("does not turn a failed authoritative read into an empty snapshot", async () => {
+    mocks.findMany.mockRejectedValue(new Error("unavailable"));
+    await expect(getActiveTimersForShell()).rejects.toThrow("unavailable");
+  });
+
+  it("requires a current authorized household before confirming an empty snapshot", async () => {
+    mocks.getHouseholdHome.mockResolvedValue(null);
+    await expect(getActiveTimersForShell()).rejects.toThrow("unauthenticated");
+    mocks.readHouseholdMemberCandidate.mockReturnValue({ status: "absent" });
+    await expect(getActiveTimersForShell()).rejects.toThrow("unauthenticated");
+    expect(mocks.findMany).not.toHaveBeenCalled();
+  });
   it("returns every active baby's labeled timers when the page has no selected baby", async () => {
     const timers = await getActiveTimersForShell();
 

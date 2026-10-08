@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { TimerFreshnessGuard } from "@/components/app-freshness";
 import { ActivityArtwork } from "@/components/activity-artwork";
 import { PauseTimerButton, ResumeTimerButton, StopTimerButton } from "@/components/actions/activity-actions";
 import { ConfirmedActivityDelete } from "@/components/actions/confirmed-activity-delete";
@@ -90,11 +91,11 @@ export default async function ActivityDetailPage({
                   className="text-primary"
                 />
               </p>
-              <div className="flex flex-wrap gap-2">
+              <TimerFreshnessGuard babyId={activity.babyId} activityId={activity.id} expectedTimerState={paused ? "paused" : "running"}>
                 {/* Pause and Resume keep you here: you are adjusting a timer, not finishing with it. */}
                 {paused ? <ResumeTimerButton id={activity.id} /> : <PauseTimerButton id={activity.id} />}
                 <StopTimerButton id={activity.id} returnTo={returnTo} />
-              </div>
+              </TimerFreshnessGuard>
             </div>
           </Card>
         ) : null}
