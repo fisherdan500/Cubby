@@ -549,9 +549,21 @@ after the real upload/preview without triggering a second upload.
 
 Before creating the disposable root, the harness persists a content-free ledger
 at `<OS temp>/cubby-freshness-ledgers/<exact-project>.json` containing only version,
-project, image tag, root, exported commit and harness PID. Windows ACLs restrict
-access to the current account; file mode is 0600. SIGINT/SIGTERM abort bounded
-child commands into one idempotent cleanup path. Cleanup attempts Chrome exit,
+project, image tag, root, exported commit and harness PID. On Windows, the fixed
+PowerShell command atomically creates a missing private ledger directory with
+`DirectoryInfo.Create(DirectorySecurity)`; Node does not pre-create it. An existing
+directory is only validated, never repaired or accepted on a best-effort basis.
+Before any ledger write, the actual ACL of either directory must have the current
+Windows SID as owner, inheritance protected, and exactly one non-inherited Allow
+FullControl rule for that SID with `ContainerInherit|ObjectInherit` and
+`PropagationFlags.None`. Creation or validation failure stops before writing;
+no `Set-Acl` or insecure fallback is used. Temporary-root and directory checks
+reject redirected paths. Non-Windows creation retains mode 0700 and fails closed
+unless ownership and group/other mode restrictions validate. The content-free
+ledger write remains exclusive (`wx`, mode 0600) and fsynced. These source contracts
+do not replace the pending runtime acceptance gate.
+SIGINT/SIGTERM abort bounded child commands into one idempotent cleanup path.
+Cleanup attempts Chrome exit,
 exact project-labeled containers/volumes/networks and the exact image tag, then
 independently removes both authenticated profiles and the disposable root even if
 Docker cleanup failed. It checks resource/image/process/profile/root absence and

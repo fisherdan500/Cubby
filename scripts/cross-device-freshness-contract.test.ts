@@ -52,6 +52,110 @@ function harnessFunction(name: string, bindings: Record<string, unknown>) {
   return runInNewContext(javascript, bindings) as (...args: unknown[]) => Promise<void>;
 }
 
+function simulatedLedger(platform = "win32", options: { rejectCommand?: boolean; mode?: number; uid?: number; unverifiableOwner?: boolean; redirected?: string } = {}) {
+  const events: string[] = [];
+  const directory = resolve(tmpdir(), "cubby-freshness-ledgers");
+  const project = "cubby_freshness_0123456789abcdef";
+  const ledger = { version: 1, project, image: `${project}:acceptance`, directory: resolve(tmpdir(), `${project}-0123456789ab`), exportedCommit: "a".repeat(40), pid: 1234 };
+  const run = vi.fn(async (_command: string, _args: string[]) => {
+    events.push("secure-command");
+    if (options.rejectCommand) throw Error();
+    return "";
+  });
+  const mkdir = vi.fn(() => { events.push("mkdir"); });
+  const write = vi.fn(() => { events.push("write"); });
+  const persist = harnessFunction("persistLedger", {
+    ...rehearsal, resolve, tmpdir, ledgerDirectory: () => directory,
+    process: { platform, getuid: options.unverifiableOwner ? undefined : () => 1000 },
+    assertOwnedPath: (path: string) => { events.push(`owned:${path}`); if (path === options.redirected) throw Error(); },
+    mkdirSync: mkdir, run, osEnvironment: () => ({}),
+    lstatSync: () => ({ mode: options.mode ?? 0o700, uid: options.uid ?? 1000 }),
+    writeFileSync: write,
+    openSync: (path: string, flag: string) => { events.push("open"); expect(path).toBe(resolve(directory, `${project}.json`)); expect(flag).toBe("r+"); return 42; },
+    fsyncSync: (descriptor: number) => { expect(descriptor).toBe(42); events.push("fsync"); },
+    closeSync: (descriptor: number) => { expect(descriptor).toBe(42); events.push("close"); },
+    fail: () => { throw Error(); }
+  });
+  return { persist: () => persist(ledger), run, mkdir, write, events, ledger, directory };
+}
+
+it("ACL1 atomically creates the Windows ledger directory with DirectorySecurity and never Set-Acl", async () => {
+  const harness = simulatedLedger();
+  await harness.persist();
+  const [command, args] = harness.run.mock.calls[0];
+  expect(command).toBe("powershell.exe");
+  expect(args.slice(0, 3)).toEqual(["-NoProfile", "-NonInteractive", "-Command"]);
+  const script = args[3];
+  expect(script).not.toMatch(/Set-Acl|icacls|chmod/i);
+  expect(script).toContain("$directory = New-Object System.IO.DirectoryInfo($env:FRESHNESS_LEDGER_DIRECTORY)");
+  expect(script).toMatch(/if \(!\$directory\.Exists\) \{\s*\$acl = New-Object System\.Security\.AccessControl\.DirectorySecurity/);
+  expect(script).toContain("$acl.SetAccessRuleProtection($true, $false)");
+  expect(script).toContain("$acl.SetOwner($sid)");
+  expect(script).toContain("New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')");
+  expect(script).toMatch(/\$acl\.AddAccessRule\(\$rule\)\s*\$directory\.Create\(\$acl\)\s*\}/);
+  expect(script).toBe((rehearsal as Record<string, unknown>).WINDOWS_LEDGER_DIRECTORY_COMMAND);
+});
+
+it("ACL2 never pre-creates the Windows ledger directory with Node mkdir", async () => {
+  const harness = simulatedLedger();
+  await harness.persist();
+  expect(harness.mkdir).not.toHaveBeenCalled();
+  expect(harness.events.slice(0, 3)).toEqual([`owned:${tmpdir()}`, `owned:${harness.directory}`, "secure-command"]);
+  expect(harness.events.indexOf("write")).toBeGreaterThan(harness.events.lastIndexOf(`owned:${harness.directory}`));
+  expect(harness.events.lastIndexOf(`owned:${harness.directory}`)).toBeGreaterThan(harness.events.indexOf("secure-command"));
+});
+
+it("ACL3 validates the exact actual Windows ACL for both new and existing directories and fails silently", async () => {
+  const harness = simulatedLedger();
+  await harness.persist();
+  const script = harness.run.mock.calls[0][1][3];
+  expect(script).toContain("$ErrorActionPreference = 'Stop'");
+  expect(script).toContain("$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User");
+  expect(script).toMatch(/\$directory\.Create\(\$acl\)\s*\}\s*\$actual = \$directory\.GetAccessControl\(\)/);
+  expect(script).toContain("$rules = @($actual.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]))");
+  expect(script).toMatch(/if \(\$actual\.GetOwner\(\[System\.Security\.Principal\.SecurityIdentifier\]\)\.Value -ne \$sid\.Value -or\s*!\$actual\.AreAccessRulesProtected -or \$rules\.Count -ne 1\) \{ exit 1 \}/);
+  expect(script).toMatch(/\$rule = \$rules\[0\]\s*if \(\$rule\.IsInherited -or \$rule\.IdentityReference\.Value -ne \$sid\.Value -or\s*\$rule\.AccessControlType -ne \[System\.Security\.AccessControl\.AccessControlType\]::Allow -or\s*\$rule\.FileSystemRights -ne \[System\.Security\.AccessControl\.FileSystemRights\]::FullControl -or\s*\$rule\.InheritanceFlags -ne \(\[System\.Security\.AccessControl\.InheritanceFlags\]::ContainerInherit -bor \[System\.Security\.AccessControl\.InheritanceFlags\]::ObjectInherit\) -or\s*\$rule\.PropagationFlags -ne \[System\.Security\.AccessControl\.PropagationFlags\]::None\) \{ exit 1 \}/);
+  expect(script).toMatch(/try \{[\s\S]+\} catch \{ exit 1 \}\s*$/);
+  expect(script).not.toMatch(/Write-|\$_|throw|Set-Acl|SetAccessControl/i);
+});
+
+it("ACL4 refuses a ledger write when the Windows security command rejects creation or ACL validation", async () => {
+  const harness = simulatedLedger("win32", { rejectCommand: true });
+  expect(await harness.persist().then(() => false, () => true)).toBe(true);
+  expect(harness.run).toHaveBeenCalledTimes(1);
+  expect(harness.write).not.toHaveBeenCalled();
+  expect(harness.events).not.toContain("fsync");
+});
+
+it.each(["temporary root", "ledger directory"])("ACL5 refuses a redirected %s before security commands or writes", async (boundary) => {
+  const harness = simulatedLedger("win32", { redirected: boundary === "temporary root" ? tmpdir() : resolve(tmpdir(), "cubby-freshness-ledgers") });
+  expect(await harness.persist().then(() => false, () => true)).toBe(true);
+  expect(harness.run).not.toHaveBeenCalled();
+  expect(harness.write).not.toHaveBeenCalled();
+});
+
+it.each(["win32", "linux"])("ACL6 permits only the exclusive content-free ledger write and fsync after validation on %s", async (platform) => {
+  const harness = simulatedLedger(platform);
+  await harness.persist();
+  expect(harness.write).toHaveBeenCalledTimes(1);
+  expect(harness.write).toHaveBeenCalledWith(resolve(harness.directory, `${harness.ledger.project}.json`), JSON.stringify(harness.ledger), { mode: 0o600, flag: "wx" });
+  expect(harness.events.slice(-4)).toEqual(["write", "open", "fsync", "close"]);
+  if (platform !== "win32") {
+    expect(harness.run).not.toHaveBeenCalled();
+    expect(harness.mkdir).toHaveBeenCalledWith(harness.directory, { recursive: true, mode: 0o700 });
+  }
+});
+
+it.each([
+  { mode: 0o770 }, { mode: 0o707 }, { uid: 1001 }, { unverifiableOwner: true }
+])("ACL7 fails closed on non-Windows with insecure or unverifiable ownership/mode %j", async (options) => {
+  const harness = simulatedLedger("linux", options);
+  expect(await harness.persist().then(() => false, () => true)).toBe(true);
+  expect(harness.run).not.toHaveBeenCalled();
+  expect(harness.write).not.toHaveBeenCalled();
+  expect(harness.events).not.toContain("fsync");
+});
+
 function simulatedAcceptance(failedPhase?: string, cleanupFails = false) {
   const stdout: string[] = [];
   const cleanup = vi.fn(async () => { if (cleanupFails) throw Error("synthetic cleanup detail"); });

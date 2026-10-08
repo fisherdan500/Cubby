@@ -104,24 +104,45 @@ function assertOwnedPath(path: string) {
   // Refuse reparse/symlink roots; do not traverse a redirected disposable or ledger directory.
   if (existsSync(path) && (lstatSync(path).isSymbolicLink() || realpathSync(path).toLowerCase() !== resolve(path).toLowerCase())) fail("path_redirected");
 }
+export const WINDOWS_LEDGER_DIRECTORY_COMMAND = `
+  $ErrorActionPreference = 'Stop'
+  try {
+    $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+    $directory = New-Object System.IO.DirectoryInfo($env:FRESHNESS_LEDGER_DIRECTORY)
+    if (!$directory.Exists) {
+      $acl = New-Object System.Security.AccessControl.DirectorySecurity
+      $acl.SetAccessRuleProtection($true, $false)
+      $acl.SetOwner($sid)
+      $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+      $acl.AddAccessRule($rule)
+      $directory.Create($acl)
+    }
+    $actual = $directory.GetAccessControl()
+    $rules = @($actual.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]))
+    if ($actual.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $sid.Value -or
+        !$actual.AreAccessRulesProtected -or $rules.Count -ne 1) { exit 1 }
+    $rule = $rules[0]
+    if ($rule.IsInherited -or $rule.IdentityReference.Value -ne $sid.Value -or
+        $rule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow -or
+        $rule.FileSystemRights -ne [System.Security.AccessControl.FileSystemRights]::FullControl -or
+        $rule.InheritanceFlags -ne ([System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit) -or
+        $rule.PropagationFlags -ne [System.Security.AccessControl.PropagationFlags]::None) { exit 1 }
+  } catch { exit 1 }
+`;
 async function persistLedger(ledger: Ledger) {
   const path = resolve(ledgerDirectory(), `${ledger.project}.json`);
   validateLedger(ledger, path);
   assertOwnedPath(tmpdir());
-  mkdirSync(ledgerDirectory(), { recursive: true, mode: 0o700 });
   assertOwnedPath(ledgerDirectory());
   if (process.platform === "win32") {
-    await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `
-      $ErrorActionPreference = 'Stop'
-      $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-      $acl = New-Object System.Security.AccessControl.DirectorySecurity
-      $acl.SetAccessRuleProtection($true, $false); $acl.SetOwner($sid)
-      $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
-      $acl.AddAccessRule($rule); Set-Acl -LiteralPath $env:FRESHNESS_LEDGER_DIRECTORY -AclObject $acl
-    `], tmpdir(), { ...osEnvironment(), FRESHNESS_LEDGER_DIRECTORY: ledgerDirectory() });
-  } else if ((lstatSync(ledgerDirectory()).mode & 0o077) !== 0 || lstatSync(ledgerDirectory()).uid !== process.getuid?.()) fail("ledger_permissions");
+    await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", WINDOWS_LEDGER_DIRECTORY_COMMAND], tmpdir(), { ...osEnvironment(), FRESHNESS_LEDGER_DIRECTORY: ledgerDirectory() });
+  } else {
+    mkdirSync(ledgerDirectory(), { recursive: true, mode: 0o700 });
+  }
+  assertOwnedPath(ledgerDirectory());
+  if (process.platform !== "win32" && ((lstatSync(ledgerDirectory()).mode & 0o077) !== 0 || lstatSync(ledgerDirectory()).uid !== process.getuid?.())) fail("ledger_permissions");
   writeFileSync(path, JSON.stringify(ledger), { mode: 0o600, flag: "wx" });
-  const descriptor = openSync(path, "r"); try { fsyncSync(descriptor); } finally { closeSync(descriptor); }
+  const descriptor = openSync(path, "r+"); try { fsyncSync(descriptor); } finally { closeSync(descriptor); }
   return path;
 }
 function osEnvironment() {
