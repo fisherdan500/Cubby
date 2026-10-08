@@ -4,6 +4,7 @@ import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readF
 import { tmpdir } from "node:os";
 import { basename, dirname, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
+import { FRESHNESS_BROWSER_FAILURE_CODES, browserFailure, browserFailureCode, formatBrowserFailure } from "./cross-device-freshness-browser-contract.mjs";
 
 // Source-only until a separately approved lifecycle. Never uses the normal Compose project or .env.
 type ChildEnvironment = Record<string, string | undefined>;
@@ -17,15 +18,24 @@ export const FRESHNESS_PHASES = Object.freeze([
 type FreshnessPhase = typeof FRESHNESS_PHASES[number];
 const closedPhase = (phase: FreshnessPhase): FreshnessPhase => FRESHNESS_PHASES.includes(phase) ? phase : "unknown";
 class FreshnessFailure extends Error {
-  constructor(readonly phase: FreshnessPhase | null, readonly cleanupFailed = false) { super("freshness_acceptance_failed"); }
+  constructor(readonly phase: FreshnessPhase | null, readonly cleanupFailed = false, readonly browserCode = "unknown") { super("freshness_acceptance_failed"); }
 }
 export function freshnessPhaseFailure(phase: FreshnessPhase, error: unknown) {
-  return error instanceof FreshnessFailure ? error : new FreshnessFailure(closedPhase(phase));
+  return error instanceof FreshnessFailure ? error : new FreshnessFailure(closedPhase(phase), false, phase === "browser_observation" ? browserFailureCode(error) : "unknown");
+}
+export function parseFreshnessBrowserResult(exitCode: unknown, output: unknown): void {
+  const exact = (marker: string) => output === marker || output === `${marker}\n`;
+  if (exitCode === 0 && exact("FRESHNESS_BROWSER_PASS")) return;
+  const code = typeof exitCode === "number" && Number.isInteger(exitCode) && exitCode !== 0
+    ? FRESHNESS_BROWSER_FAILURE_CODES.find(code => exact(`FRESHNESS_BROWSER_${code.toUpperCase()}`))
+    : undefined;
+  throw browserFailure(code);
 }
 export function formatFreshnessFailure(error: unknown): string {
   const failure = freshnessPhaseFailure("unknown", error);
   return "FRESHNESS_ACCEPTANCE_FAILED\n"
     + (failure.phase === null ? "" : `FRESHNESS_PHASE_${closedPhase(failure.phase).toUpperCase()}\n`)
+    + (failure.phase === "browser_observation" ? formatBrowserFailure(browserFailure(failure.browserCode)) : "")
     + (failure.cleanupFailed ? "FRESHNESS_CLEANUP_FAILED\n" : "");
 }
 export async function withFreshnessCleanup(body: () => Promise<void>, cleanup: () => Promise<void>, phase: () => FreshnessPhase = () => "unknown") {
@@ -33,7 +43,7 @@ export async function withFreshnessCleanup(body: () => Promise<void>, cleanup: (
   try { await body(); }
   catch (error) { failure = freshnessPhaseFailure(phase(), error); }
   try { await cleanup(); }
-  catch { failure = new FreshnessFailure(failure?.phase ?? null, true); }
+  catch { failure = new FreshnessFailure(failure?.phase ?? null, true, failure?.browserCode); }
   if (failure) throw failure;
 }
 export function seedUrl(password: string) {
@@ -58,9 +68,9 @@ export function childEnvironments(ambient: ChildEnvironment, infrastructure: Chi
     fixture: { REHEARSAL_SEED_URL: seedUrl(infrastructure.CUBBY_SAVE_PATH_REHEARSAL_PASSWORD!), REHEARSAL_APP_PASSWORD: password }
   };
 }
-async function run(command: string, commandArgs: string[], directory: string, childEnvironment: ChildEnvironment, input?: string, timeout = 120_000, signal?: AbortSignal): Promise<string> {
+async function run(command: string, commandArgs: string[], directory: string, childEnvironment: ChildEnvironment, input?: string, timeout = 120_000, signal?: AbortSignal, browserObservation = false): Promise<string> {
   if (signal?.aborted) fail("interrupted");
-  return new Promise((done, reject) => {
+  return new Promise<string>((done, reject) => {
     const child = spawn(command, commandArgs, { cwd: directory, env: childEnvironment as NodeJS.ProcessEnv,
       stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     let output = "", failed = false;
@@ -68,20 +78,29 @@ async function run(command: string, commandArgs: string[], directory: string, ch
     const stop = () => { failed = true; child.kill("SIGKILL"); abortDeadline ??= setTimeout(() => finish(false), 5_000); };
     const timer = setTimeout(stop, timeout);
     const hardDeadline = setTimeout(() => finish(false), timeout + 5_000);
-    function finish(ok: boolean) {
+    function finish(ok: boolean, exitCode?: number | null) {
       clearTimeout(timer); clearTimeout(hardDeadline); clearTimeout(abortDeadline); signal?.removeEventListener("abort", stop);
+      if (browserObservation) {
+        try { parseFreshnessBrowserResult(failed ? undefined : exitCode, output); done(""); }
+        catch (error) { reject(browserFailure(browserFailureCode(error))); }
+        finally { output = ""; }
+        return;
+      }
       if (ok && !failed) done(output.trim()); else reject(new Error("freshness_command_failed"));
     }
     signal?.addEventListener("abort", stop, { once: true });
     child.stdout.on("data", chunk => { output += String(chunk); if (output.length > 4 * 1024 * 1024) stop(); });
     child.stderr.resume();
     child.stdin.on("error", () => { failed = true; });
-    child.once("error", () => finish(false)); child.once("close", code => finish(code === 0));
+    child.once("error", () => finish(false)); child.once("close", code => finish(code === 0, code));
     child.stdin.end(input);
+  }).catch((error: unknown) => {
+    if (browserObservation) throw browserFailure(browserFailureCode(error));
+    throw error;
   });
 }
-function execute(signal: AbortSignal, command: string, args: string[], cwd: string, env: ChildEnvironment, input?: string, timeout = 120_000) {
-  return run(command, args, cwd, env, input, timeout, signal);
+function execute(signal: AbortSignal, command: string, args: string[], cwd: string, env: ChildEnvironment, input?: string, timeout = 120_000, browserObservation = false) {
+  return run(command, args, cwd, env, input, timeout, signal, browserObservation);
 }
 type Ledger = { version: 1; project: string; image: string; directory: string; exportedCommit: string; pid: number };
 const ledgerDirectory = () => resolve(tmpdir(), "cubby-freshness-ledgers");
@@ -364,8 +383,7 @@ export async function runCrossDeviceFreshnessRehearsal() {
         REHEARSAL_BROWSER_A: await launch(1), REHEARSAL_BROWSER_B: await launch(2)
       };
       phase = "browser_observation";
-      const observation = await execute(controller.signal, process.execPath, [resolve(exportedSource, "scripts/cross-device-freshness-browser-probe.mjs")], directory, probeEnvironment, undefined, 600_000);
-      if (observation !== "FRESHNESS_BROWSER_PASS") fail("observation_invalid");
+      await execute(controller.signal, process.execPath, [resolve(exportedSource, "scripts/cross-device-freshness-browser-probe.mjs")], directory, probeEnvironment, undefined, 600_000, true);
       passed = true;
     }, async () => {
       try { await cleanup(); } finally { process.off("SIGINT", onSignal); process.off("SIGTERM", onSignal); }

@@ -1,11 +1,24 @@
 // Only the disposable lifecycle invokes this file. Values stay in memory; output is one fixed code.
 import { randomBytes, randomUUID } from "node:crypto";
+import { browserFailure, formatBrowserFailure } from "./cross-device-freshness-browser-contract.mjs";
 const base = process.env.REHEARSAL_APP_BASE_URL;
 const password = process.env.REHEARSAL_APP_PASSWORD;
 const action = process.env.REHEARSAL_CALENDAR_ACTION_ID;
-if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) throw new Error("freshness_scope_invalid");
-const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
-const fail = (code) => { throw new Error(code); };
+let asynchronousFailure;
+const failureListeners = new Set();
+function signalBrowserFailure() {
+  if (asynchronousFailure) return;
+  asynchronousFailure = browserFailure("cdp_message_failed");
+  for (const listener of [...failureListeners]) listener(asynchronousFailure);
+}
+const sleep = (ms) => new Promise((done, reject) => {
+  if (asynchronousFailure) { reject(asynchronousFailure); return; }
+  let timer;
+  const failSleep = (error) => { clearTimeout(timer); failureListeners.delete(failSleep); reject(error); };
+  timer = setTimeout(() => { failureListeners.delete(failSleep); done(); }, ms);
+  failureListeners.add(failSleep);
+});
+const fail = (code) => { throw browserFailure(code); };
 const observations = new Set();
 const required = ["activity_create", "activity_update", "moments_create", "moments_update", "calendar_create", "timer_start", "timer_stop", "hidden_no_poll", "foreground_five_seconds", "offline_retention", "online_requires_confirmation", "draft_preservation", "tenant_isolation", "service_worker_cache", "request_cadence", "browser_diagnostics"];
 async function wait(predicate, limit, code) {
@@ -14,33 +27,43 @@ async function wait(predicate, limit, code) {
   fail(code);
 }
 async function connect(url) {
+  if (asynchronousFailure) throw asynchronousFailure;
   if (!/^ws:\/\/127\.0\.0\.1:\d+\/devtools\//.test(url ?? "")) fail("cdp_scope");
   const socket = new WebSocket(url);
   await new Promise((done, reject) => {
-    const timer = setTimeout(() => reject(new Error("cdp_timeout")), 10_000);
+    const timer = setTimeout(() => reject(browserFailure("cdp_timeout")), 10_000);
     socket.onopen = () => { clearTimeout(timer); done(); };
-    socket.onerror = () => { clearTimeout(timer); reject(new Error("cdp_failed")); };
+    socket.onerror = () => { clearTimeout(timer); reject(browserFailure("cdp_failed")); };
   });
+  if (asynchronousFailure) { socket.close(); throw asynchronousFailure; }
   const pending = new Map();
   const listeners = [];
   let id = 0;
+  const rejectPending = (error) => {
+    for (const request of pending.values()) { clearTimeout(request.timer); request.reject(error); }
+    pending.clear();
+  };
+  failureListeners.add(rejectPending);
   socket.onmessage = ({ data }) => {
-    const message = JSON.parse(String(data));
-    if (!message.id) { for (const listener of listeners) listener(message); return; }
-    const request = pending.get(message.id);
-    if (!request) return;
-    pending.delete(message.id); clearTimeout(request.timer);
-    if (message.error) request.reject(new Error("cdp_command_failed"));
-    else request.done(message.result);
+    try {
+      const message = JSON.parse(String(data));
+      if (!message.id) { for (const listener of listeners) listener(message); return; }
+      const request = pending.get(message.id);
+      if (!request) return;
+      pending.delete(message.id); clearTimeout(request.timer);
+      if (message.error) request.reject(browserFailure("cdp_command_failed"));
+      else request.done(message.result);
+    } catch { signalBrowserFailure(); }
   };
   return {
     on: (listener) => listeners.push(listener),
     call: (method, params = {}) => new Promise((done, reject) => {
+      if (asynchronousFailure) { reject(asynchronousFailure); return; }
       const sequence = ++id;
-      const timer = setTimeout(() => { pending.delete(sequence); reject(new Error("cdp_command_timeout")); }, 15_000);
+      const timer = setTimeout(() => { pending.delete(sequence); reject(browserFailure("cdp_command_timeout")); }, 15_000);
       pending.set(sequence, { done, reject, timer }); socket.send(JSON.stringify({ id: sequence, method, params }));
     }),
-    close: () => { for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error("cdp_closed")); } pending.clear(); socket.close(); }
+    close: () => { failureListeners.delete(rejectPending); rejectPending(browserFailure("cdp_closed")); socket.close(); }
   };
 }
 async function evaluate(client, expression) {
@@ -139,7 +162,9 @@ async function mutate(device, path, payload, method = "POST") {
 const babyId = "fresh-baby-own";
 const ownLog = `/app?babyId=${babyId}`;
 const ownMoments = `/app/moments?babyId=${babyId}`;
+let outcome = "FRESHNESS_BROWSER_PASS\n";
 try {
+if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) fail("freshness_scope_invalid");
   const a = await device(process.env.REHEARSAL_BROWSER_A);
   const b = await device(process.env.REHEARSAL_BROWSER_B);
   await navigate(a, ownLog); await navigate(b, ownLog);
@@ -335,7 +360,14 @@ try {
   if ([a, b].some(d => d.diagnostics.errors || d.diagnostics.exceptions || d.diagnostics.failures)) fail("browser_diagnostics");
   observations.add("browser_diagnostics");
   if (required.some(code => !observations.has(code))) fail("observations_missing");
-  process.stdout.write("FRESHNESS_BROWSER_PASS\n");
-} catch {
-  process.stderr.write("FRESHNESS_BROWSER_FAILED\n"); process.exitCode = 1;
-} finally { for (const connection of connections) connection.close(); }
+} catch (error) {
+  outcome = formatBrowserFailure(error); process.exitCode = 1;
+} finally {
+  for (const connection of connections) {
+    try { connection.close(); }
+    catch (error) {
+      if (process.exitCode !== 1) { outcome = formatBrowserFailure(error); process.exitCode = 1; }
+    }
+  }
+}
+process.stdout.write(outcome);

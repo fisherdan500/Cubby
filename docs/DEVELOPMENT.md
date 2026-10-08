@@ -588,11 +588,17 @@ Successful acceptance emits exactly `FRESHNESS_ACCEPTANCE_PASS` followed by
 Failures emit `FRESHNESS_ACCEPTANCE_FAILED` and, for a primary failure, exactly one
 `FRESHNESS_PHASE_` code with suffix `PREFLIGHT_EXPORT`, `DOCKER_IMAGE_START`,
 `FIXTURE`, `ACTION_DISCOVERY`, `BROWSER_LAUNCH`, `BROWSER_OBSERVATION`, `TERMINAL`
-or `UNKNOWN`. These label harness boundaries, not child error content. Acceptance
-cleanup failure adds `FRESHNESS_CLEANUP_FAILED` independently and cannot replace
-the primary phase. Cleanup-only failure has no primary phase. Unclassified errors
-use `UNKNOWN`; no exception message, stack, child output or resource identity is
-rendered. Failure exits nonzero and emits no success markers.
+or `UNKNOWN`. These label harness boundaries, not child error content. A browser
+observation failure also emits exactly one closed `FRESHNESS_BROWSER_` predicate code
+from the probe's ordered allowlist. Malformed, extra or unclassified probe output maps to `FRESHNESS_BROWSER_UNKNOWN`;
+raw stdout and all child stderr remain discarded. Malformed CDP messages and exceptions
+thrown while dispatching CDP listeners reduce to `FRESHNESS_BROWSER_CDP_MESSAGE_FAILED`
+through the same single-marker boundary.
+Acceptance cleanup failure adds `FRESHNESS_CLEANUP_FAILED` independently
+and cannot replace the primary phase or browser predicate. Cleanup-only failure has
+no primary phase. Unclassified errors use `UNKNOWN`; no exception message, stack,
+child output or resource identity is rendered. Failure exits nonzero and emits no
+success markers.
 
 These stay outside the gates for reasons continuous integration cannot fix — a
 wall-clock budget a shared runner cannot measure honestly, a dependency on an

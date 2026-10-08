@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { expect, it, vi } from "vitest";
 import { GATES_RUN_BY_HAND } from "./verify-gates";
 import * as rehearsal from "./cross-device-freshness.acceptance-rehearsal";
+import { FRESHNESS_BROWSER_FAILURE_CODES, browserFailure, browserFailureCode, formatBrowserFailure } from "./cross-device-freshness-browser-contract.mjs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import ts from "typescript";
@@ -50,6 +51,13 @@ function harnessFunction(name: string, bindings: Record<string, unknown>) {
   expect(declaration).toBeDefined();
   const javascript = ts.transpile(`(${declaration!.getText(source).replace(/^export /, "")})`, { target: ts.ScriptTarget.ESNext });
   return runInNewContext(javascript, bindings) as (...args: unknown[]) => Promise<void>;
+}
+
+function probeFunction(name: string, bindings: Record<string, unknown>) {
+  const source = ts.createSourceFile("probe.mjs", read("scripts/cross-device-freshness-browser-probe.mjs"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const declaration = source.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
+  expect(declaration).toBeDefined();
+  return runInNewContext(`(${declaration!.getText(source)})`, bindings) as (...args: unknown[]) => Promise<unknown>;
 }
 
 function simulatedLedger(platform = "win32", options: { rejectCommand?: boolean; mode?: number; uid?: number; unverifiableOwner?: boolean; redirected?: string } = {}) {
@@ -156,12 +164,12 @@ it.each([
   expect(harness.events).not.toContain("fsync");
 });
 
-function simulatedAcceptance(failedPhase?: string, cleanupFails = false) {
+function simulatedAcceptance(failedPhase?: string, cleanupFails = false, browserCode?: string) {
   const stdout: string[] = [];
   const cleanup = vi.fn(async () => { if (cleanupFails) throw Error("synthetic cleanup detail"); });
   const lifecycle = vi.fn(rehearsal.withFreshnessCleanup);
   const child = { stderr: { on: (_: string, receive: (chunk: string) => void) => receive("DevTools listening on ws://127.0.0.1:12345/devtools/browser/synthetic") }, once: () => {} };
-  const rejectAt = (phase: string) => { if (failedPhase === phase) throw Error("synthetic private failure"); };
+  const rejectAt = (phase: string) => { if (failedPhase === phase) throw phase === "browser_observation" && browserCode ? browserFailure(browserCode) : Error("synthetic private failure"); };
   const processStub = { platform: "win32", pid: 123, env: { CUBBY_FRESHNESS_ACCEPTED_COMMIT: "a".repeat(40) }, on: () => {}, off: () => {}, stdout: { write: (value: string) => stdout.push(value) } };
   const run = harnessFunction("runCrossDeviceFreshnessRehearsal", {
     ...rehearsal, process: processStub, root: "synthetic-root", AbortController,
@@ -173,7 +181,7 @@ function simulatedAcceptance(failedPhase?: string, cleanupFails = false) {
     mkdirSync: () => {}, rmSync: () => {}, writeFileSync: () => {},
     readFileSync: (path: string) => path.endsWith(".yml") ? "context: ..\n  app:\n" : `"${"a".repeat(40)}":x.createCalendarEventAction`,
     childEnvironments: () => ({ compose: {}, chrome: {}, fixture: {}, node: {} }),
-    execute: async (_: unknown, command: string, args: string[]) => {
+    execute: async (_: unknown, command: string, args: string[], ...options: unknown[]) => {
       if (args.includes("up")) rejectAt("docker_image_start");
       if (args.includes("exec")) rejectAt("fixture");
       if (args.includes("cp")) rejectAt("action_discovery");
@@ -181,7 +189,7 @@ function simulatedAcceptance(failedPhase?: string, cleanupFails = false) {
       if (args.includes("ps")) return "a".repeat(12);
       if (args.includes("inspect")) return "npipe:////./pipe/synthetic";
       if (args.includes("rev-parse")) return "a".repeat(40);
-      if (command === undefined) { rejectAt("browser_observation"); return "FRESHNESS_BROWSER_PASS"; }
+      if (command === undefined) { expect(options[4]).toBe(true); rejectAt("browser_observation"); return ""; }
       return "";
     },
     spawn: () => { rejectAt("browser_launch"); return child; },
@@ -240,6 +248,7 @@ it("D8 attributes production boundaries and retains the primary across cleanup",
       const expectedCleanup = cleanupFails && phase !== "preflight_export";
       expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\n"
         + (cleanupOnly ? "" : `FRESHNESS_PHASE_${phase.toUpperCase()}\n`)
+        + (phase === "browser_observation" ? "FRESHNESS_BROWSER_UNKNOWN\n" : "")
         + (expectedCleanup ? "FRESHNESS_CLEANUP_FAILED\n" : ""));
       expect(acceptance.stdout).toEqual([]);
       expect(acceptance.cleanup).toHaveBeenCalledTimes(phase === "preflight_export" ? 0 : 1);
@@ -261,7 +270,8 @@ it("D5 exhausts the closed phase vocabulary and rejects arbitrary strings", () =
   expect(Object.isFrozen(rehearsal.FRESHNESS_PHASES)).toBe(true);
   for (const phase of phases) {
     const failure = rehearsal.freshnessPhaseFailure(phase, Error("synthetic child stdout/stderr"));
-    expect(rehearsal.formatFreshnessFailure(failure)).toBe(`FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_${phase.toUpperCase()}\n`);
+    expect(rehearsal.formatFreshnessFailure(failure)).toBe(`FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_${phase.toUpperCase()}\n`
+      + (phase === "browser_observation" ? "FRESHNESS_BROWSER_UNKNOWN\n" : ""));
   }
   for (const phase of ["", "constructor", "toString", "FIXTURE", "fixture\nFRESHNESS_CLEANUP_FAILED", "synthetic-resource-identity"]) {
     const failure = rehearsal.freshnessPhaseFailure(phase as typeof phases[number], Error("synthetic credentials"));
@@ -377,6 +387,8 @@ it("B8 documents only unexecuted source guarantees and separate lifecycle gates"
   for (const text of ["CUBBY_FRESHNESS_ACCEPTED_COMMIT", "clean tracked and nonignored-untracked", "Git-object export", "cubby-freshness-ledgers", "--recover", "Windows", "display/read isolation", "runtime acceptance remains **pending**", "FileList"]) expect(docs).toContain(text);
   expect(docs).toContain("not a hostile mutation or side-effect audit");
   expect(docs).toContain("No archive, Docker, Chrome or recovery lifecycle was run");
+  expect(docs).toContain("closed `FRESHNESS_BROWSER_` predicate code");
+  expect(docs).toContain("Malformed, extra or unclassified probe output maps to `FRESHNESS_BROWSER_UNKNOWN`");
 });
 it("B7 validates one content-free ledger and rejects unsafe recovery scope", () => {
   expect(rehearsal).toHaveProperty("validateLedger");
@@ -591,4 +603,219 @@ it("uses the required note text field in create, update and foreground probes", 
   expect(source).toContain('text: "FRESH_ACTIVITY_CREATED"');
   expect(source).toContain('textarea[name="text"]');
   expect(source).toContain('text: "FRESH_FOREGROUND"');
+});
+
+it("BD1 preserves a known browser predicate through phase formatting", () => {
+  expect(rehearsal).toHaveProperty("parseFreshnessBrowserResult");
+  let failure: unknown;
+  try { rehearsal.parseFreshnessBrowserResult(1, "FRESHNESS_BROWSER_ACTIVITY_CREATE\n"); }
+  catch (error) { failure = rehearsal.freshnessPhaseFailure("browser_observation", error); }
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_BROWSER_OBSERVATION\nFRESHNESS_BROWSER_ACTIVITY_CREATE\n");
+});
+
+
+it.each([false, true])("BD2 retains the browser primary with cleanup failure=%s", async (cleanupFails) => {
+  const failure = await rehearsal.withFreshnessCleanup(
+    async () => { rehearsal.parseFreshnessBrowserResult(1, "FRESHNESS_BROWSER_ACTIVITY_CREATE\n"); },
+    async () => { if (cleanupFails) throw Error("synthetic detail"); },
+    () => "browser_observation"
+  ).catch((error: unknown) => error);
+  expect(rehearsal.formatFreshnessFailure(rehearsal.freshnessPhaseFailure("terminal", failure))).toBe(
+    "FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_BROWSER_OBSERVATION\nFRESHNESS_BROWSER_ACTIVITY_CREATE\n"
+    + (cleanupFails ? "FRESHNESS_CLEANUP_FAILED\n" : ""));
+});
+
+it("BD3 rejects unknown Error and non-Error values without inspecting or retaining them", () => {
+  const hostile = new Proxy({}, { get() { throw Error("must not inspect"); } });
+  for (const value of [undefined, null, "activity_create", Error("activity_create"), Error("synthetic detail"),
+    { code: "activity_create" }, hostile]) {
+    expect(browserFailureCode(value)).toBe("unknown");
+    expect(formatBrowserFailure(value)).toBe("FRESHNESS_BROWSER_UNKNOWN\n");
+    const failure = rehearsal.freshnessPhaseFailure("browser_observation", value);
+    expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_BROWSER_OBSERVATION\nFRESHNESS_BROWSER_UNKNOWN\n");
+    expect(Object.values(failure).some(item => item === value)).toBe(false);
+    for (const [status, output] of [[value, "FRESHNESS_BROWSER_ACTIVITY_CREATE"], [1, value]]) {
+      try { rehearsal.parseFreshnessBrowserResult(status, output); expect.unreachable(); }
+      catch (error) { expect(formatBrowserFailure(error)).toBe("FRESHNESS_BROWSER_UNKNOWN\n"); }
+    }
+  }
+});
+
+it.each(["FRESHNESS_BROWSER_PASS", "FRESHNESS_BROWSER_PASS\n"])("BD4 accepts exact success framing %j", (output) => {
+  expect(() => rehearsal.parseFreshnessBrowserResult(0, output)).not.toThrow();
+});
+
+it.each([
+  [1, ""], [1, "FRESHNESS_BROWSER_"], [1, "FRESHNESS_BROWSER_NOT_ALLOWLISTED"], [1, "arbitrary"],
+  [1, "FRESHNESS_BROWSER_ACTIVITY_CREATE\nextra"], [1, "FRESHNESS_BROWSER_ACTIVITY_CREATE\n\n"],
+  [1, "FRESHNESS_BROWSER_ACTIVITY_CREATE\nFRESHNESS_BROWSER_ACTIVITY_UPDATE\n"],
+  [1, " FRESHNESS_BROWSER_ACTIVITY_CREATE"], [1, "FRESHNESS_BROWSER_ACTIVITY_CREATE "],
+  [1, "FRESHNESS_BROWSER_ACTIVITY_CREATE\r\n"], [0, "FRESHNESS_BROWSER_PASS\nextra"],
+  [0, "FRESHNESS_BROWSER_PASS\n\n"], [1, "FRESHNESS_BROWSER_PASS"], [0, "FRESHNESS_BROWSER_ACTIVITY_CREATE"],
+  [null, "FRESHNESS_BROWSER_ACTIVITY_CREATE"], [undefined, "FRESHNESS_BROWSER_ACTIVITY_CREATE"],
+  [NaN, "FRESHNESS_BROWSER_ACTIVITY_CREATE"], [1.5, "FRESHNESS_BROWSER_ACTIVITY_CREATE"]
+])("BD5 fails closed for malformed or mismatched result %j %j", (status, output) => {
+  let failure: unknown;
+  try { rehearsal.parseFreshnessBrowserResult(status, output); } catch (error) { failure = error; }
+  expect(formatBrowserFailure(failure)).toBe("FRESHNESS_BROWSER_UNKNOWN\n");
+  expect(failure).toBeInstanceOf(Error);
+  expect((failure as Error).message).toBe("FRESHNESS_BROWSER_UNKNOWN");
+});
+
+it("BD6 freezes the closed vocabulary and covers every explicit probe failure", () => {
+  const expected = [
+    "activity_create", "activity_update", "browser_diagnostics", "browser_expression_failed",
+    "button_missing", "calendar_create", "calendar_submit_failed", "cdp_closed",
+    "cdp_command_failed", "cdp_command_timeout", "cdp_message_failed", "cdp_failed", "cdp_scope", "cdp_timeout",
+    "chosen_photo_missing", "control_missing", "dialog_missing", "draft_preservation",
+    "draft_refresh_missing", "foreground_five_seconds", "freshness_scope_invalid",
+    "hidden_no_poll", "hide_failed", "isolation_surfaces_missing", "known_timer_missing",
+    "moments_create", "moments_update", "navigation_failed", "observations_missing",
+    "offline_retention", "online_requires_confirmation", "page_missing", "recovery_failed",
+    "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
+    "timer_start", "timer_stop", "worker_missing", "worker_target_missing", "unknown"
+  ];
+  expect(FRESHNESS_BROWSER_FAILURE_CODES).toEqual(expected);
+  expect(Object.isFrozen(FRESHNESS_BROWSER_FAILURE_CODES)).toBe(true);
+  const source = ts.createSourceFile("probe.mjs", read("scripts/cross-device-freshness-browser-probe.mjs"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const codes = new Set<string>();
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+      const name = node.expression.getText(source);
+      const arg = node.arguments?.[name === "wait" ? 2 : 0];
+      if (["fail", "wait", "observe", "browserFailure", "Error"].includes(name) && arg && ts.isStringLiteral(arg)) codes.add(arg.text);
+      if (name === "Error") expect(arg).toBeUndefined();
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  expect([...codes].sort()).toEqual(expected.filter(code => code !== "unknown").sort());
+  for (const code of expected) {
+    const marker = formatBrowserFailure(browserFailure(code));
+    expect(marker).toBe("FRESHNESS_BROWSER_" + code.toUpperCase() + "\n");
+    for (const output of [marker, marker.slice(0, -1)]) {
+      let failure: unknown;
+      try { rehearsal.parseFreshnessBrowserResult(1, output); } catch (error) { failure = error; }
+      expect(browserFailureCode(failure)).toBe(code);
+    }
+  }
+  for (const code of ["", "constructor", "toString", "ACTIVITY_CREATE", "activity_create\nextra"]) {
+    expect(browserFailureCode(browserFailure(code))).toBe("unknown");
+  }
+  const shared = ts.createSourceFile("contract.mjs", read("scripts/cross-device-freshness-browser-contract.mjs"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  expect(shared.statements.some(ts.isImportDeclaration)).toBe(false);
+  for (const name of ["cross-device-freshness-browser-probe.mjs", "cross-device-freshness.acceptance-rehearsal.ts"]) {
+    expect(read("scripts/" + name)).toContain('from "./cross-device-freshness-browser-contract.mjs"');
+  }
+});
+
+it("BD7 probe emits one fixed stdout marker and no stderr for caught failures", async () => {
+  const source = ts.createSourceFile("probe.mjs", read("scripts/cross-device-freshness-browser-probe.mjs"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const boundary = source.statements.find(ts.isTryStatement)!;
+  expect(boundary).toBeDefined();
+  expect(source.text).not.toContain("process.stderr");
+  const tail = source.text.slice(boundary.end);
+  for (const error of [browserFailure("activity_create"), browserFailure("cdp_message_failed"), Error("synthetic detail"), undefined, "synthetic detail"]) {
+    const stdout: string[] = [];
+    const processStub = { stdout: { write: (marker: string) => stdout.push(marker) }, exitCode: 0 };
+    await runInNewContext('(async () => { let outcome = "FRESHNESS_BROWSER_PASS\\n"; try { throw failure; } '
+      + boundary.catchClause!.getText(source) + ' finally ' + boundary.finallyBlock!.getText(source) + tail + ' })()',
+    { failure: error, connections: [], formatBrowserFailure, process: processStub });
+    expect(stdout).toEqual([formatBrowserFailure(error)]);
+    expect(processStub.exitCode).toBe(1);
+  }
+});
+
+it.each([
+  { code: 1, chunks: ["FRESHNESS_BROWSER_ACTIVITY_", "CREATE\n"], expected: "activity_create" },
+  { code: 0, chunks: ["FRESHNESS_BROWSER_PASS\n"], expected: "pass" },
+  { code: 1, chunks: ["FRESHNESS_BROWSER_ACTIVITY_CREATE\n", "extra"], expected: "unknown" },
+  { code: 0, chunks: [" FRESHNESS_BROWSER_PASS\n"], expected: "unknown" },
+  { code: 1, chunks: ["FRESHNESS_BROWSER_PASS\n"], expected: "unknown" },
+  { code: 0, chunks: ["FRESHNESS_BROWSER_ACTIVITY_CREATE\n"], expected: "unknown" },
+  { code: null, chunks: ["FRESHNESS_BROWSER_ACTIVITY_CREATE\n"], expected: "unknown" }
+])("BD8 child transport classifies exact untrimmed output %#", async ({ code, chunks, expected }) => {
+  const drain = vi.fn();
+  const listeners = new Map<string, (...args: unknown[]) => void>();
+  const child = {
+    stdout: { on: (_: string, receive: (chunk: string) => void) => chunks.forEach(receive) },
+    stderr: { resume: drain },
+    stdin: { on: () => {}, end: () => listeners.get("close")!(code) },
+    once: (event: string, callback: (...args: unknown[]) => void) => listeners.set(event, callback)
+  };
+  const run = harnessFunction("run", {
+    ...rehearsal, browserFailure, browserFailureCode, spawn: () => child,
+    setTimeout: () => 1, clearTimeout: () => {}, fail: () => { throw Error(); }
+  });
+  const result = await run("synthetic", [], "synthetic", {}, undefined, 100, undefined, true).then(() => "pass", browserFailureCode);
+  expect(result).toBe(expected);
+  expect(drain).toHaveBeenCalledTimes(1);
+});
+
+
+it.each([false, true])("BD9 production control flow preserves a known predicate with cleanup failure=%s", async (cleanupFails) => {
+  const acceptance = simulatedAcceptance("browser_observation", cleanupFails, "activity_create");
+  const failure = await acceptance.run().catch((error: unknown) => error);
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_BROWSER_OBSERVATION\nFRESHNESS_BROWSER_ACTIVITY_CREATE\n"
+    + (cleanupFails ? "FRESHNESS_CLEANUP_FAILED\n" : ""));
+  expect(acceptance.stdout).toEqual([]);
+  expect(acceptance.cleanup).toHaveBeenCalledTimes(1);
+});
+
+it.each([Error("synthetic detail"), undefined, { detail: "synthetic detail" }])("BD10 child launch throws reduce immediately to unknown %#", async (thrown) => {
+  const run = harnessFunction("run", {
+    ...rehearsal, browserFailure, browserFailureCode, spawn: () => { throw thrown; }
+  });
+  const failure = await run("synthetic", [], "synthetic", {}, undefined, 100, undefined, true).catch((error: unknown) => error);
+  expect(failure instanceof Error).toBe(true);
+  expect((failure as Error).message).toBe("FRESHNESS_BROWSER_UNKNOWN");
+  expect(Object.values(failure as Error).some(value => value === thrown)).toBe(false);
+});
+
+it("BD11 probe preserves exact success and closes connections before emitting output", async () => {
+  const source = ts.createSourceFile("probe.mjs", read("scripts/cross-device-freshness-browser-probe.mjs"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const boundary = source.statements.find(ts.isTryStatement)!;
+  const tail = source.text.slice(boundary.end);
+  for (const closeFails of [false, true]) {
+    const events: string[] = [];
+    const processStub = { stdout: { write: (marker: string) => events.push(marker) }, exitCode: 0 };
+    await runInNewContext('(async () => { let outcome = "FRESHNESS_BROWSER_PASS\\n"; try {} '
+      + boundary.catchClause!.getText(source) + ' finally ' + boundary.finallyBlock!.getText(source) + tail + ' })()', {
+      connections: [{ close() { events.push("close"); if (closeFails) throw Error("synthetic detail"); } }],
+      formatBrowserFailure, process: processStub
+    });
+    expect(events).toEqual(["close", closeFails ? "FRESHNESS_BROWSER_UNKNOWN\n" : "FRESHNESS_BROWSER_PASS\n"]);
+    expect(processStub.exitCode).toBe(closeFails ? 1 : 0);
+  }
+});
+
+it.each(["malformed message", "throwing listener"])("BD12 routes an asynchronous CDP %s into the closed failure contract", async (scenario) => {
+  let socket: {
+    onopen?: () => void;
+    onmessage?: (event: { data: string }) => void;
+    onerror?: () => void;
+    closed: boolean;
+  } | undefined;
+  class SyntheticWebSocket {
+    onopen?: () => void;
+    onmessage?: (event: { data: string }) => void;
+    onerror?: () => void;
+    closed = false;
+    constructor() { socket = this; queueMicrotask(() => this.onopen?.()); }
+    send() {}
+    close() { this.closed = true; }
+  }
+  const failures: string[] = [];
+  const connect = probeFunction("connect", {
+    WebSocket: SyntheticWebSocket, setTimeout, clearTimeout, browserFailure,
+    asynchronousFailure: undefined, failureListeners: new Set(),
+    signalBrowserFailure: () => failures.push("cdp_message_failed")
+  });
+  const client = await connect("ws://127.0.0.1:12345/devtools/browser/synthetic") as { on: (listener: () => void) => void; close: () => void };
+  if (scenario === "throwing listener") client.on(() => { throw Error("synthetic private detail"); });
+  expect(() => socket!.onmessage?.({ data: scenario === "malformed message" ? "{" : JSON.stringify({ method: "Synthetic.event" }) })).not.toThrow();
+  expect(failures).toEqual(["cdp_message_failed"]);
+  expect(formatBrowserFailure(browserFailure(failures[0]))).toBe("FRESHNESS_BROWSER_CDP_MESSAGE_FAILED\n");
+  client.close();
+  expect(socket!.closed).toBe(true);
 });
