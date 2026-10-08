@@ -568,6 +568,17 @@ It does not broad-match normal Cubby resources. All waits/commands are bounded a
 only fixed content-free result codes are emitted. Do not invoke either lifecycle
 as part of source-only verification.
 
+Successful acceptance emits exactly `FRESHNESS_ACCEPTANCE_PASS` followed by
+`FRESHNESS_CLEANUP_PASS`; successful recovery emits only `FRESHNESS_CLEANUP_PASS`.
+Failures emit `FRESHNESS_ACCEPTANCE_FAILED` and, for a primary failure, exactly one
+`FRESHNESS_PHASE_` code with suffix `PREFLIGHT_EXPORT`, `DOCKER_IMAGE_START`,
+`FIXTURE`, `ACTION_DISCOVERY`, `BROWSER_LAUNCH`, `BROWSER_OBSERVATION`, `TERMINAL`
+or `UNKNOWN`. These label harness boundaries, not child error content. Acceptance
+cleanup failure adds `FRESHNESS_CLEANUP_FAILED` independently and cannot replace
+the primary phase. Cleanup-only failure has no primary phase. Unclassified errors
+use `UNKNOWN`; no exception message, stack, child output or resource identity is
+rendered. Failure exits nonzero and emits no success markers.
+
 These stay outside the gates for reasons continuous integration cannot fix — a
 wall-clock budget a shared runner cannot measure honestly, a dependency on an
 image the host already holds, or a real local Chrome:

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { GATES_RUN_BY_HAND } from "./verify-gates";
 import * as rehearsal from "./cross-device-freshness.acceptance-rehearsal";
 import { tmpdir } from "node:os";
@@ -10,6 +10,161 @@ import { createRequire } from "node:module";
 import { discoverPackageCommands } from "../src/server/operation-registry/checker";
 
 const read = (path: string) => existsSync(path) ? readFileSync(path, "utf8") : "";
+
+it("D1 retains one primary phase when cleanup succeeds", async () => {
+  const events: string[] = [];
+  const failure = await rehearsal.withFreshnessCleanup(
+    async () => { events.push("body"); throw Error("synthetic private child output"); },
+    async () => { events.push("cleanup"); },
+    () => "fixture"
+  ).catch((error: unknown) => error);
+  expect(events).toEqual(["body", "cleanup"]);
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_FIXTURE\n");
+});
+
+it("D2 retains the primary phase separately from cleanup failure", async () => {
+  const events: string[] = [];
+  const failure = await rehearsal.withFreshnessCleanup(
+    async () => { events.push("body"); throw Error("synthetic primary details"); },
+    async () => { events.push("cleanup"); throw Error("synthetic cleanup details"); },
+    () => "fixture"
+  ).catch((error: unknown) => error);
+  expect(events).toEqual(["body", "cleanup"]);
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_FIXTURE\nFRESHNESS_CLEANUP_FAILED\n");
+});
+
+it("D3 reports cleanup-only failure without fabricating a primary phase", async () => {
+  const events: string[] = [];
+  const failure = await rehearsal.withFreshnessCleanup(
+    async () => { events.push("observations passed"); },
+    async () => { events.push("cleanup"); throw undefined; },
+    () => "browser_observation"
+  ).catch((error: unknown) => error);
+  expect(events).toEqual(["observations passed", "cleanup"]);
+  expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_CLEANUP_FAILED\n");
+});
+
+function harnessFunction(name: string, bindings: Record<string, unknown>) {
+  const source = ts.createSourceFile("rehearsal.ts", read("scripts/cross-device-freshness.acceptance-rehearsal.ts"), ts.ScriptTarget.Latest, true);
+  const declaration = source.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
+  expect(declaration).toBeDefined();
+  const javascript = ts.transpile(`(${declaration!.getText(source).replace(/^export /, "")})`, { target: ts.ScriptTarget.ESNext });
+  return runInNewContext(javascript, bindings) as (...args: unknown[]) => Promise<void>;
+}
+
+function simulatedAcceptance(failedPhase?: string, cleanupFails = false) {
+  const stdout: string[] = [];
+  const cleanup = vi.fn(async () => { if (cleanupFails) throw Error("synthetic cleanup detail"); });
+  const lifecycle = vi.fn(rehearsal.withFreshnessCleanup);
+  const child = { stderr: { on: (_: string, receive: (chunk: string) => void) => receive("DevTools listening on ws://127.0.0.1:12345/devtools/browser/synthetic") }, once: () => {} };
+  const rejectAt = (phase: string) => { if (failedPhase === phase) throw Error("synthetic private failure"); };
+  const processStub = { platform: "win32", pid: 123, env: { CUBBY_FRESHNESS_ACCEPTED_COMMIT: "a".repeat(40) }, on: () => {}, off: () => {}, stdout: { write: (value: string) => stdout.push(value) } };
+  const run = harnessFunction("runCrossDeviceFreshnessRehearsal", {
+    ...rehearsal, process: processStub, root: "synthetic-root", AbortController,
+    resolve, basename: () => "chrome.exe", tmpdir: () => "synthetic-temp", existsSync: () => true,
+    randomBytes: () => ({ toString: () => "synthetic" }), pause: async () => {},
+    run: async (_: string, args: string[]) => { rejectAt("preflight_export"); return args[0] === "rev-parse" ? "a".repeat(40) : ""; },
+    persistLedger: async () => "synthetic-ledger", cleanLedger: cleanup,
+    withFreshnessCleanup: lifecycle,
+    mkdirSync: () => {}, rmSync: () => {}, writeFileSync: () => {},
+    readFileSync: (path: string) => path.endsWith(".yml") ? "context: ..\n  app:\n" : `"${"a".repeat(40)}":x.createCalendarEventAction`,
+    childEnvironments: () => ({ compose: {}, chrome: {}, fixture: {}, node: {} }),
+    execute: async (_: unknown, command: string, args: string[]) => {
+      if (args.includes("up")) rejectAt("docker_image_start");
+      if (args.includes("exec")) rejectAt("fixture");
+      if (args.includes("cp")) rejectAt("action_discovery");
+      if (args.includes("port")) return "127.0.0.1:12345";
+      if (args.includes("ps")) return "a".repeat(12);
+      if (args.includes("inspect")) return "npipe:////./pipe/synthetic";
+      if (args.includes("rev-parse")) return "a".repeat(40);
+      if (command === undefined) { rejectAt("browser_observation"); return "FRESHNESS_BROWSER_PASS"; }
+      return "";
+    },
+    spawn: () => { rejectAt("browser_launch"); return child; },
+    setTimeout: () => 1, clearTimeout: () => {},
+    freshnessTerminalOutcome: (passed: boolean, aborted: boolean) => { rejectAt("terminal"); return rehearsal.freshnessTerminalOutcome(passed, aborted); },
+    fail: () => { throw Error("synthetic validation failure"); }
+  });
+  return { run, stdout, cleanup, lifecycle };
+}
+
+it("D6 preserves exact success and recovery markers through production control flow", async () => {
+  const acceptance = simulatedAcceptance();
+  await acceptance.run();
+  expect(acceptance.stdout.join("")).toBe("FRESHNESS_ACCEPTANCE_PASS\nFRESHNESS_CLEANUP_PASS\n");
+  expect(acceptance.cleanup).toHaveBeenCalledTimes(1);
+  expect(acceptance.lifecycle).toHaveBeenCalledTimes(1);
+  const stdout: string[] = [];
+  const cleanup = vi.fn(async () => {});
+  const recovery = harnessFunction("recoverFreshnessLedger", {
+    process: { platform: "win32", kill: () => { throw { code: "ESRCH" }; }, on: () => {}, off: () => {}, stdout: { write: (value: string) => stdout.push(value) } },
+    resolve, tmpdir: () => "synthetic-temp", ledgerDirectory: () => "synthetic-ledgers",
+    validateLedgerPath: () => {}, assertOwnedPath: () => {}, readFileSync: () => "{}", validateLedger: () => ({ pid: 123 }), cleanLedger: cleanup
+  });
+  await recovery("synthetic-ledger");
+  expect(stdout.join("")).toBe("FRESHNESS_CLEANUP_PASS\n");
+  expect(cleanup).toHaveBeenCalledTimes(1);
+});
+
+it("D7 outermost CLI formats retained failure state without printing content", async () => {
+  const source = ts.createSourceFile("rehearsal.ts", read("scripts/cross-device-freshness.acceptance-rehearsal.ts"), ts.ScriptTarget.Latest, true);
+  const entry = source.statements.at(-1);
+  expect(entry && ts.isIfStatement(entry)).toBe(true);
+  const block = (entry as ts.IfStatement).thenStatement as ts.Block;
+  const expression = (block.statements[0] as ts.ExpressionStatement).expression.getText(source);
+  for (const [bodyFails, cleanupFails] of [[true, false], [true, true], [false, true]]) {
+    const failure = await rehearsal.withFreshnessCleanup(
+      async () => { if (bodyFails) throw Error("synthetic primary secret"); },
+      async () => { if (cleanupFails) throw Error("synthetic cleanup secret"); },
+      () => "fixture"
+    ).catch((error: unknown) => error);
+    const stderr: string[] = [];
+    const processStub = { argv: ["node", "synthetic-cli"], stderr: { write: (value: string) => stderr.push(value) }, exitCode: 0 };
+    await runInNewContext(expression, { process: processStub, main: async () => { throw failure; }, formatFreshnessFailure: rehearsal.formatFreshnessFailure });
+    expect(stderr.join("")).toBe(rehearsal.formatFreshnessFailure(failure));
+    expect(processStub.exitCode).toBe(1);
+  }
+});
+
+it("D8 attributes production boundaries and retains the primary across cleanup", async () => {
+  for (const phase of rehearsal.FRESHNESS_PHASES.filter(phase => phase !== "unknown")) {
+    for (const cleanupFails of [false, true]) {
+      const acceptance = simulatedAcceptance(phase, cleanupFails);
+      const failure = await acceptance.run().catch((error: unknown) => error);
+      // A failed cleanup prevents the later terminal check from running.
+      const cleanupOnly = phase === "terminal" && cleanupFails;
+      const expectedCleanup = cleanupFails && phase !== "preflight_export";
+      expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\n"
+        + (cleanupOnly ? "" : `FRESHNESS_PHASE_${phase.toUpperCase()}\n`)
+        + (expectedCleanup ? "FRESHNESS_CLEANUP_FAILED\n" : ""));
+      expect(acceptance.stdout).toEqual([]);
+      expect(acceptance.cleanup).toHaveBeenCalledTimes(phase === "preflight_export" ? 0 : 1);
+    }
+  }
+});
+
+it("D4 maps unknown thrown values to a content-free unknown phase", async () => {
+  for (const value of [undefined, null, "synthetic secret", Error("synthetic path"), { phase: "fixture", message: "synthetic payload" }, { toString() { throw Error("must not render"); } }]) {
+    const failure = await rehearsal.withFreshnessCleanup(async () => { throw value; }, async () => {}).catch((error: unknown) => error);
+    expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_UNKNOWN\n");
+    expect(rehearsal.formatFreshnessFailure(value)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_UNKNOWN\n");
+  }
+});
+
+it("D5 exhausts the closed phase vocabulary and rejects arbitrary strings", () => {
+  const phases = ["preflight_export", "docker_image_start", "fixture", "action_discovery", "browser_launch", "browser_observation", "terminal", "unknown"] as const;
+  expect(rehearsal.FRESHNESS_PHASES).toEqual(phases);
+  expect(Object.isFrozen(rehearsal.FRESHNESS_PHASES)).toBe(true);
+  for (const phase of phases) {
+    const failure = rehearsal.freshnessPhaseFailure(phase, Error("synthetic child stdout/stderr"));
+    expect(rehearsal.formatFreshnessFailure(failure)).toBe(`FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_${phase.toUpperCase()}\n`);
+  }
+  for (const phase of ["", "constructor", "toString", "FIXTURE", "fixture\nFRESHNESS_CLEANUP_FAILED", "synthetic-resource-identity"]) {
+    const failure = rehearsal.freshnessPhaseFailure(phase as typeof phases[number], Error("synthetic credentials"));
+    expect(rehearsal.formatFreshnessFailure(failure)).toBe("FRESHNESS_ACCEPTANCE_FAILED\nFRESHNESS_PHASE_UNKNOWN\n");
+  }
+});
+
 function fixtureData(model: string) {
   const source = ts.createSourceFile("fixture.mjs", read("scripts/cross-device-freshness-fixture.mjs"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const data: ts.ObjectLiteralExpression[] = [];
@@ -93,7 +248,7 @@ it("fails closed for an interrupt after observation succeeds and cleanup complet
   const terminal = "process.stdout.write(freshnessTerminalOutcome(passed, controller.signal.aborted))";
   expect(source).toContain(terminal);
   expect(source.indexOf(terminal)).toBeGreaterThan(source.indexOf("await cleanup()"));
-  expect(source).toContain('main(process.argv.slice(2)).catch(() => { process.stderr.write("FRESHNESS_ACCEPTANCE_FAILED\\n"); process.exitCode = 1; })');
+  expect(source).toContain('process.stderr.write(formatFreshnessFailure(error))');
 });
 it("B7 keeps explicit recovery argument parsing compatible with unchanged governance", () => {
   expect(rehearsal).toHaveProperty("parseFreshnessArguments");

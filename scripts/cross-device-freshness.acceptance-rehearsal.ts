@@ -10,6 +10,32 @@ type ChildEnvironment = Record<string, string | undefined>;
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const pause = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
 function fail(code: string): never { throw new Error(`freshness_${code}`); }
+export const FRESHNESS_PHASES = Object.freeze([
+  "preflight_export", "docker_image_start", "fixture", "action_discovery",
+  "browser_launch", "browser_observation", "terminal", "unknown"
+] as const);
+type FreshnessPhase = typeof FRESHNESS_PHASES[number];
+const closedPhase = (phase: FreshnessPhase): FreshnessPhase => FRESHNESS_PHASES.includes(phase) ? phase : "unknown";
+class FreshnessFailure extends Error {
+  constructor(readonly phase: FreshnessPhase | null, readonly cleanupFailed = false) { super("freshness_acceptance_failed"); }
+}
+export function freshnessPhaseFailure(phase: FreshnessPhase, error: unknown) {
+  return error instanceof FreshnessFailure ? error : new FreshnessFailure(closedPhase(phase));
+}
+export function formatFreshnessFailure(error: unknown): string {
+  const failure = freshnessPhaseFailure("unknown", error);
+  return "FRESHNESS_ACCEPTANCE_FAILED\n"
+    + (failure.phase === null ? "" : `FRESHNESS_PHASE_${closedPhase(failure.phase).toUpperCase()}\n`)
+    + (failure.cleanupFailed ? "FRESHNESS_CLEANUP_FAILED\n" : "");
+}
+export async function withFreshnessCleanup(body: () => Promise<void>, cleanup: () => Promise<void>, phase: () => FreshnessPhase = () => "unknown") {
+  let failure: FreshnessFailure | undefined;
+  try { await body(); }
+  catch (error) { failure = freshnessPhaseFailure(phase(), error); }
+  try { await cleanup(); }
+  catch { failure = new FreshnessFailure(failure?.phase ?? null, true); }
+  if (failure) throw failure;
+}
 export function seedUrl(password: string) {
   if (!password) fail("fixture_credential_missing");
   return `postgresql://${encodeURIComponent("cubby_save_path_rehearsal")}:${encodeURIComponent(password)}@postgres:5432/cubby_browser_operation_save_path?schema=public`;
@@ -218,105 +244,114 @@ export async function recoverFreshnessLedger(path: string) {
 }
 
 export async function runCrossDeviceFreshnessRehearsal() {
-  if (process.platform !== "win32") fail("windows_required");
-  const gitEnvironment = { PATH: process.env.PATH, Path: process.env.Path, SystemRoot: process.env.SystemRoot, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null" };
-  const acceptedCommit = process.env.CUBBY_FRESHNESS_ACCEPTED_COMMIT;
-  assertAcceptedTree(acceptedCommit, await run("git", ["rev-parse", "HEAD"], root, gitEnvironment),
-    await run("git", ["status", "--porcelain=v1", "--untracked-files=all"], root, gitEnvironment));
-  for (const entry of (await run("git", ["ls-tree", "-rz", "--full-tree", acceptedCommit!], root, gitEnvironment)).split("\0").filter(Boolean)) {
-    const match = /^(\d+) blob [0-9a-f]+\t(.+)$/s.exec(entry);
-    if (!match) fail("unsafe_export_entry");
-    assertExportEntry(match[1], match[2]);
-  }
-  const chromePath = process.env.CUBBY_CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
-  if (!/^[a-z]:[\\/]/i.test(chromePath) || !/^(?:chrome|chromium)\.exe$/i.test(basename(chromePath))) fail("chrome_path_invalid");
-  if (!existsSync(chromePath)) fail("chrome_missing");
-  const project = `cubby_freshness_${randomBytes(8).toString("hex")}`;
-  const directory = resolve(tmpdir(), `${project}-${randomBytes(6).toString("hex")}`);
-  const ledger: Ledger = { version: 1, project, image: `${project}:acceptance`, directory, exportedCommit: acceptedCommit!, pid: process.pid };
-  const ledgerPath = await persistLedger(ledger);
-  const controller = new AbortController();
-  const browsers: ChildProcess[] = [];
-  let attempted = false, passed = false;
-  let cleanupPromise: Promise<void> | undefined;
-  const cleanup = () => cleanupPromise ??= cleanLedger(ledger, ledgerPath, attempted, browsers, attempted && controller.signal.aborted);
-  const onSignal = () => controller.abort();
-  process.on("SIGINT", onSignal); process.on("SIGTERM", onSignal);
+  let phase: FreshnessPhase = "preflight_export";
   try {
-    if (controller.signal.aborted) fail("interrupted");
-    mkdirSync(directory, { mode: 0o700 });
-    const exportedSource = resolve(directory, "source");
-    const archive = resolve(directory, "source.tar");
-    mkdirSync(exportedSource, { mode: 0o700 });
-    await execute(controller.signal, "git", ["archive", "--format=tar", "--output", archive, acceptedCommit!], root, gitEnvironment);
-    await execute(controller.signal, "tar", ["-xf", archive, "-C", exportedSource], directory, gitEnvironment);
-    rmSync(archive);
-    const composeFile = resolve(directory, "compose.yml");
-    const image = `${project}:acceptance`;
-    const infrastructure: ChildEnvironment = {};
-    const template = readFileSync(resolve(exportedSource, "scripts/browser-operation-save-path.acceptance.compose.yml"), "utf8");
-    for (const match of template.matchAll(/\$\{(CUBBY_SAVE_PATH_REHEARSAL_[A-Z_]+):/g)) {
-      const key = match[1];
-      infrastructure[key] = key.endsWith("KEYRING") ? `1:${randomBytes(32).toString("base64url")}` : randomBytes(32).toString("base64url");
+    if (process.platform !== "win32") fail("windows_required");
+    const gitEnvironment = { PATH: process.env.PATH, Path: process.env.Path, SystemRoot: process.env.SystemRoot, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null" };
+    const acceptedCommit = process.env.CUBBY_FRESHNESS_ACCEPTED_COMMIT;
+    assertAcceptedTree(acceptedCommit, await run("git", ["rev-parse", "HEAD"], root, gitEnvironment),
+      await run("git", ["status", "--porcelain=v1", "--untracked-files=all"], root, gitEnvironment));
+    for (const entry of (await run("git", ["ls-tree", "-rz", "--full-tree", acceptedCommit!], root, gitEnvironment)).split("\0").filter(Boolean)) {
+      const match = /^(\d+) blob [0-9a-f]+\t(.+)$/s.exec(entry);
+      if (!match) fail("unsafe_export_entry");
+      assertExportEntry(match[1], match[2]);
     }
-    const environments = childEnvironments(process.env, infrastructure, randomBytes(24).toString("base64url"));
-    const environment = environments.compose;
-    if (template.match(/context: \.\./g)?.length !== 1) fail("compose_context_invalid");
-    const compose = template.replace("context: ..", `context: ${JSON.stringify(exportedSource.replaceAll("\\", "/"))}`)
-      .replace("  app:\n", `  app:\n    image: ${image}\n`)
-      .replace("  app:\r\n", `  app:\r\n    image: ${image}\r\n`)
-      .replace("pg_isready -U", "pg_isready -h 127.0.0.1 -U");
-    writeFileSync(composeFile, compose, { mode: 0o600, flag: "wx" });
-    const args = ["compose", "--project-name", project, "--file", composeFile];
-    async function launch(index: number) {
+    const chromePath = process.env.CUBBY_CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
+    if (!/^[a-z]:[\\/]/i.test(chromePath) || !/^(?:chrome|chromium)\.exe$/i.test(basename(chromePath))) fail("chrome_path_invalid");
+    if (!existsSync(chromePath)) fail("chrome_missing");
+    const project = `cubby_freshness_${randomBytes(8).toString("hex")}`;
+    const directory = resolve(tmpdir(), `${project}-${randomBytes(6).toString("hex")}`);
+    const ledger: Ledger = { version: 1, project, image: `${project}:acceptance`, directory, exportedCommit: acceptedCommit!, pid: process.pid };
+    const ledgerPath = await persistLedger(ledger);
+    const controller = new AbortController();
+    const browsers: ChildProcess[] = [];
+    let attempted = false, passed = false;
+    let cleanupPromise: Promise<void> | undefined;
+    const cleanup = () => cleanupPromise ??= cleanLedger(ledger, ledgerPath, attempted, browsers, attempted && controller.signal.aborted);
+    const onSignal = () => controller.abort();
+    process.on("SIGINT", onSignal); process.on("SIGTERM", onSignal);
+    await withFreshnessCleanup(async () => {
       if (controller.signal.aborted) fail("interrupted");
-      const child = spawn(chromePath, ["--headless=new", "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
-        `--user-data-dir=${resolve(directory, `browser-${index}`)}`, "--no-first-run", "--no-default-browser-check", "--window-size=390,844", "about:blank"],
-      { stdio: ["ignore", "ignore", "pipe"], windowsHide: true, env: environments.chrome as NodeJS.ProcessEnv });
-      browsers.push(child);
-      return new Promise<string>((done, reject) => {
-        const timer = setTimeout(() => reject(new Error("freshness_chrome_timeout")), 20_000);
-        controller.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("freshness_interrupted")); }, { once: true });
-        let buffer = "";
-        child.stderr?.on("data", (chunk) => {
-          buffer = (buffer + String(chunk)).slice(-4096);
-          const socket = buffer.match(/DevTools listening on (ws:\/\/127\.0\.0\.1:\d+\/devtools\/browser\/[^\s]+)/)?.[1];
-          if (socket) { clearTimeout(timer); done(socket); }
+      mkdirSync(directory, { mode: 0o700 });
+      const exportedSource = resolve(directory, "source");
+      const archive = resolve(directory, "source.tar");
+      mkdirSync(exportedSource, { mode: 0o700 });
+      await execute(controller.signal, "git", ["archive", "--format=tar", "--output", archive, acceptedCommit!], root, gitEnvironment);
+      await execute(controller.signal, "tar", ["-xf", archive, "-C", exportedSource], directory, gitEnvironment);
+      rmSync(archive);
+      const composeFile = resolve(directory, "compose.yml");
+      const image = `${project}:acceptance`;
+      const infrastructure: ChildEnvironment = {};
+      const template = readFileSync(resolve(exportedSource, "scripts/browser-operation-save-path.acceptance.compose.yml"), "utf8");
+      for (const match of template.matchAll(/\$\{(CUBBY_SAVE_PATH_REHEARSAL_[A-Z_]+):/g)) {
+        const key = match[1];
+        infrastructure[key] = key.endsWith("KEYRING") ? `1:${randomBytes(32).toString("base64url")}` : randomBytes(32).toString("base64url");
+      }
+      const environments = childEnvironments(process.env, infrastructure, randomBytes(24).toString("base64url"));
+      const environment = environments.compose;
+      if (template.match(/context: \.\./g)?.length !== 1) fail("compose_context_invalid");
+      const compose = template.replace("context: ..", `context: ${JSON.stringify(exportedSource.replaceAll("\\", "/"))}`)
+        .replace("  app:\n", `  app:\n    image: ${image}\n`)
+        .replace("  app:\r\n", `  app:\r\n    image: ${image}\r\n`)
+        .replace("pg_isready -U", "pg_isready -h 127.0.0.1 -U");
+      writeFileSync(composeFile, compose, { mode: 0o600, flag: "wx" });
+      const args = ["compose", "--project-name", project, "--file", composeFile];
+      async function launch(index: number) {
+        if (controller.signal.aborted) fail("interrupted");
+        const child = spawn(chromePath, ["--headless=new", "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+          `--user-data-dir=${resolve(directory, `browser-${index}`)}`, "--no-first-run", "--no-default-browser-check", "--window-size=390,844", "about:blank"],
+        { stdio: ["ignore", "ignore", "pipe"], windowsHide: true, env: environments.chrome as NodeJS.ProcessEnv });
+        browsers.push(child);
+        return new Promise<string>((done, reject) => {
+          const timer = setTimeout(() => reject(new Error("freshness_chrome_timeout")), 20_000);
+          controller.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("freshness_interrupted")); }, { once: true });
+          let buffer = "";
+          child.stderr?.on("data", (chunk) => {
+            buffer = (buffer + String(chunk)).slice(-4096);
+            const socket = buffer.match(/DevTools listening on (ws:\/\/127\.0\.0\.1:\d+\/devtools\/browser\/[^\s]+)/)?.[1];
+            if (socket) { clearTimeout(timer); done(socket); }
+          });
+          for (const event of ["error", "exit"] as const) child.once(event, () => { clearTimeout(timer); reject(new Error("freshness_chrome_failed")); });
         });
-        for (const event of ["error", "exit"] as const) child.once(event, () => { clearTimeout(timer); reject(new Error("freshness_chrome_failed")); });
-      });
-    }
-    await execute(controller.signal, "docker", ["compose", "version"], directory, environment);
-    const endpoint = await execute(controller.signal, "docker", ["context", "inspect", "default", "--format", "{{.Endpoints.docker.Host}}"], directory, environment);
-    if (!endpoint.startsWith("unix:///") && !endpoint.startsWith("npipe:////./pipe/")) fail("docker_endpoint_not_local");
-    assertAcceptedTree(acceptedCommit, await execute(controller.signal, "git", ["rev-parse", "HEAD"], root, gitEnvironment),
-      await execute(controller.signal, "git", ["status", "--porcelain=v1", "--untracked-files=all"], root, gitEnvironment));
-    attempted = true;
-    await execute(controller.signal, "docker", [...args, "up", "--detach", "--build", "--wait", "--wait-timeout", "240"], directory, environment, undefined, 1_200_000);
-    const address = await execute(controller.signal, "docker", [...args, "port", "app", "3000"], directory, environment);
-    if (!/^127\.0\.0\.1:\d{2,5}$/.test(address) || address.endsWith(":3000")) fail("loopback_invalid");
-    const baseUrl = `http://${address}`;
-    const appContainer = await execute(controller.signal, "docker", [...args, "ps", "--quiet", "app"], directory, environment);
-    if (!/^[0-9a-f]{12,64}$/.test(appContainer)) fail("container_invalid");
-    await execute(controller.signal, "docker", ["--context", "default", "exec", "-i", "-e", "REHEARSAL_APP_PASSWORD", "-e", "REHEARSAL_SEED_URL", appContainer, "/bin/sh", "-c",
-      'exec env -i REHEARSAL_SEED_URL="$REHEARSAL_SEED_URL" REHEARSAL_APP_PASSWORD="$REHEARSAL_APP_PASSWORD" /usr/local/bin/node --input-type=module'], directory,
-      { ...environments.chrome, ...environments.fixture }, readFileSync(resolve(exportedSource, "scripts/cross-device-freshness-fixture.mjs"), "utf8"));
-    const bundle = resolve(directory, "calendar.js");
-    await execute(controller.signal, "docker", [...args, "cp", "app:/app/.next/server/app/app/calendar/page.js", bundle], directory, environment);
-    const action = readFileSync(bundle, "utf8").match(/"([0-9a-f]{40})"\s*:[^"]{0,200}?\.createCalendarEventAction\b/)?.[1];
-    if (!action) fail("calendar_action_missing");
-    const probeEnvironment = {
-      ...environments.node, REHEARSAL_APP_BASE_URL: baseUrl, REHEARSAL_CALENDAR_ACTION_ID: action,
-      REHEARSAL_APP_PASSWORD: environments.fixture.REHEARSAL_APP_PASSWORD,
-      REHEARSAL_BROWSER_A: await launch(1), REHEARSAL_BROWSER_B: await launch(2)
-    };
-    const observation = await execute(controller.signal, process.execPath, [resolve(exportedSource, "scripts/cross-device-freshness-browser-probe.mjs")], directory, probeEnvironment, undefined, 600_000);
-    if (observation !== "FRESHNESS_BROWSER_PASS") fail("observation_invalid");
-    passed = true;
-  } finally {
-    try { await cleanup(); } finally { process.off("SIGINT", onSignal); process.off("SIGTERM", onSignal); }
-  }
-  process.stdout.write(freshnessTerminalOutcome(passed, controller.signal.aborted));
+      }
+      await execute(controller.signal, "docker", ["compose", "version"], directory, environment);
+      const endpoint = await execute(controller.signal, "docker", ["context", "inspect", "default", "--format", "{{.Endpoints.docker.Host}}"], directory, environment);
+      if (!endpoint.startsWith("unix:///") && !endpoint.startsWith("npipe:////./pipe/")) fail("docker_endpoint_not_local");
+      assertAcceptedTree(acceptedCommit, await execute(controller.signal, "git", ["rev-parse", "HEAD"], root, gitEnvironment),
+        await execute(controller.signal, "git", ["status", "--porcelain=v1", "--untracked-files=all"], root, gitEnvironment));
+      attempted = true;
+      phase = "docker_image_start";
+      await execute(controller.signal, "docker", [...args, "up", "--detach", "--build", "--wait", "--wait-timeout", "240"], directory, environment, undefined, 1_200_000);
+      const address = await execute(controller.signal, "docker", [...args, "port", "app", "3000"], directory, environment);
+      if (!/^127\.0\.0\.1:\d{2,5}$/.test(address) || address.endsWith(":3000")) fail("loopback_invalid");
+      const baseUrl = `http://${address}`;
+      const appContainer = await execute(controller.signal, "docker", [...args, "ps", "--quiet", "app"], directory, environment);
+      if (!/^[0-9a-f]{12,64}$/.test(appContainer)) fail("container_invalid");
+      phase = "fixture";
+      await execute(controller.signal, "docker", ["--context", "default", "exec", "-i", "-e", "REHEARSAL_APP_PASSWORD", "-e", "REHEARSAL_SEED_URL", appContainer, "/bin/sh", "-c",
+        'exec env -i REHEARSAL_SEED_URL="$REHEARSAL_SEED_URL" REHEARSAL_APP_PASSWORD="$REHEARSAL_APP_PASSWORD" /usr/local/bin/node --input-type=module'], directory,
+        { ...environments.chrome, ...environments.fixture }, readFileSync(resolve(exportedSource, "scripts/cross-device-freshness-fixture.mjs"), "utf8"));
+      phase = "action_discovery";
+      const bundle = resolve(directory, "calendar.js");
+      await execute(controller.signal, "docker", [...args, "cp", "app:/app/.next/server/app/app/calendar/page.js", bundle], directory, environment);
+      const action = readFileSync(bundle, "utf8").match(/"([0-9a-f]{40})"\s*:[^"]{0,200}?\.createCalendarEventAction\b/)?.[1];
+      if (!action) fail("calendar_action_missing");
+      phase = "browser_launch";
+      const probeEnvironment = {
+        ...environments.node, REHEARSAL_APP_BASE_URL: baseUrl, REHEARSAL_CALENDAR_ACTION_ID: action,
+        REHEARSAL_APP_PASSWORD: environments.fixture.REHEARSAL_APP_PASSWORD,
+        REHEARSAL_BROWSER_A: await launch(1), REHEARSAL_BROWSER_B: await launch(2)
+      };
+      phase = "browser_observation";
+      const observation = await execute(controller.signal, process.execPath, [resolve(exportedSource, "scripts/cross-device-freshness-browser-probe.mjs")], directory, probeEnvironment, undefined, 600_000);
+      if (observation !== "FRESHNESS_BROWSER_PASS") fail("observation_invalid");
+      passed = true;
+    }, async () => {
+      try { await cleanup(); } finally { process.off("SIGINT", onSignal); process.off("SIGTERM", onSignal); }
+    }, () => phase);
+    phase = "terminal";
+    process.stdout.write(freshnessTerminalOutcome(passed, controller.signal.aborted));
+  } catch (error) { throw freshnessPhaseFailure(phase, error); }
 }
 
 export function freshnessTerminalOutcome(passed: boolean, aborted: boolean): string {
@@ -337,5 +372,5 @@ async function main(args: readonly string[]) {
   else await runCrossDeviceFreshnessRehearsal();
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main(process.argv.slice(2)).catch(() => { process.stderr.write("FRESHNESS_ACCEPTANCE_FAILED\n"); process.exitCode = 1; });
+  main(process.argv.slice(2)).catch(error => { process.stderr.write(formatFreshnessFailure(error)); process.exitCode = 1; });
 }
