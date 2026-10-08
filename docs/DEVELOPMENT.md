@@ -523,7 +523,10 @@ tar, PowerShell and a local default Docker context with Compose. Set
 worktree before creating disposable resources. The currently dirty source candidate
 is not eligible. It builds only a unique Git-object export, reads its Compose
 template/fixture/probe from that export, and excludes private/runtime paths and
-symlinks/submodules. It never builds from the live worktree or loads its `.env`.
+symlinks/submodules. Direct tar extraction uses the fixed relative operands
+`["-xf", "source.tar", "-C", "source"]` from the controlled disposable root as its
+working directory for Windows portability. It never builds from the live worktree
+or loads its `.env`.
 Compose receives generated infrastructure secrets and allowlisted OS discovery
 variables; Chrome receives only OS/profile variables. Fixture injection receives
 only its generated seed URL and app password; the probe receives only minimal Node

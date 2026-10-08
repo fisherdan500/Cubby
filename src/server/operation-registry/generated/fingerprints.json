@@ -3612,17 +3612,17 @@
           "file": "package.json"
         },
         {
-          "digest": "e90625bc381dbf34af33d2c6c6cebba8e3cc2674ed91ee2e5231742a3cb605b7",
+          "digest": "0d3a854b7ed22493268f6ca582067a28fbd71d696b9c14786f58304612acf7d6",
           "file": "scripts/cross-device-freshness.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "be6f825e1a783098774c51878d9db084361e51ef0afe5d1d4e9a4a8129904f80",
-      "fingerprint": "d61c9d9356d8fafdc0463cfa3f76b8c337ded57d82065977a49302794c7a6866",
+      "fingerprint": "da3d2924b0527277530d92f41a5f62b413170a9dd9492a72028845646c40cbe6",
       "id": "fingerprint:package_command:scripts/cross-device-freshness.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/cross-device-freshness.acceptance-rehearsal.ts",
       "ownerModule": "scripts/cross-device-freshness.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/cross-device-freshness.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "f6ac64bdc1e66d19e52c48bb7abdaae56203920623b5c9f6b3af6b391ef72603",
+      "sourceDigest": "32c24412467d3e21d2a6543efb61da7756080d0503091e6095f836c3970b6223",
       "status": "declared"
     },
     {

@@ -298,7 +298,7 @@ export async function runCrossDeviceFreshnessRehearsal() {
       const archive = resolve(directory, "source.tar");
       mkdirSync(exportedSource, { mode: 0o700 });
       await execute(controller.signal, "git", ["archive", "--format=tar", "--output", archive, acceptedCommit!], root, gitEnvironment);
-      await execute(controller.signal, "tar", ["-xf", archive, "-C", exportedSource], directory, gitEnvironment);
+      await execute(controller.signal, "tar", ["-xf", "source.tar", "-C", "source"], directory, gitEnvironment);
       rmSync(archive);
       const composeFile = resolve(directory, "compose.yml");
       const image = `${project}:acceptance`;

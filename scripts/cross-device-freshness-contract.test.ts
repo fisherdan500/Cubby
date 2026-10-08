@@ -514,6 +514,11 @@ it("B2 requires a clean exact accepted commit and a secret-free Git object expor
   expect(source).not.toContain('JSON.stringify(root.replaceAll');
   expect(source.indexOf("assertAcceptedTree(acceptedCommit")).toBeLessThan(source.indexOf("mkdirSync(directory"));
 });
+it("B2 extracts the Git archive with fixed relative tar operands from the controlled temporary root", () => {
+  const source = read("scripts/cross-device-freshness.acceptance-rehearsal.ts");
+  expect(source).toContain('await execute(controller.signal, "tar", ["-xf", "source.tar", "-C", "source"], directory, gitEnvironment)');
+  expect(source).not.toContain('["-xf", archive, "-C", exportedSource]');
+});
 it("B7 attributes Chrome only to an exact profile argument and bounds signal cancellation", () => {
   const profile = "C:\\Temp\\cubby_freshness_0123456789abcdef-0123456789ab\\browser-1";
   for (const command of [`chrome.exe --user-data-dir=${profile} --headless`, `chrome.exe "--user-data-dir=${profile}" --headless`, `chrome.exe --user-data-dir="${profile}"`]) expect(rehearsal.matchesProfile(command, [profile])).toBe(true);
