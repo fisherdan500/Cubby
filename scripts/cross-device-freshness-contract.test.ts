@@ -731,7 +731,7 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     "moments_create", "moments_update", "navigation_failed", "observations_missing",
     "offline_retention", "online_requires_confirmation", "page_missing", "recovery_failed",
     "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
-    "timer_start", "timer_stop", "worker_missing", "worker_target_missing", "unknown"
+    "timer_start", "timer_stop", "worker_missing", "worker_outage_lapsed", "worker_target_missing", "unknown"
   ];
   expect(FRESHNESS_BROWSER_FAILURE_CODES).toEqual(expected);
   expect(Object.isFrozen(FRESHNESS_BROWSER_FAILURE_CODES)).toBe(true);
@@ -1144,4 +1144,111 @@ it("CAL6 binds the submitted operation to the completed-outcome check and the mo
   expect(predicate).not.toContain("FRESH_CALENDAR_CREATED");
   // The event is still created with a real title; only the unsatisfiable title observer is retired.
   expect(source).toContain('title: "FRESH_CALENDAR_CREATED"');
+});
+
+/**
+ * OC contracts close `ONLINE_CONFIRMATION_DISABLED_CONTROL_CONJUNCT`. The online-confirmation
+ * observation must not depend on service-worker network emulation surviving an idle window: the
+ * browser may terminate and restart an idle worker, and a restarted worker does not inherit the
+ * emulation, so the timer request would succeed over the real network and the product would
+ * correctly re-enable its controls while the harness still asserted an outage. The outage is now
+ * deterministic at the page layer, and a lapsed worker outage is reported as its own harness
+ * condition instead of becoming a product verdict.
+ */
+it("OC1 makes the online-confirmation outage deterministic at the page layer", () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+
+  const blocked = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`, `${base}/api/timers/active*`] })');
+  const online = source.indexOf('await b.client.call("Network.emulateNetworkConditions", { offline: false');
+  const observation = source.indexOf('await observe("online_requires_confirmation"');
+  expect(blocked).toBeGreaterThan(0);
+  // The deterministic block is installed before the page returns online and before the assertion.
+  expect(blocked).toBeLessThan(online);
+  expect(online).toBeLessThan(observation);
+
+  // The timer endpoint block is lifted only after that assertion, so the later cache observation
+  // can still reach the service worker and exercise its fallback.
+  const restored = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`] })');
+  const cacheObservation = source.indexOf('await observe("service_worker_cache"');
+  expect(restored).toBeGreaterThan(observation);
+  expect(restored).toBeLessThan(cacheObservation);
+
+  // The assertion itself is unchanged in meaning: confirmed status plus a disabled timer control.
+  const probe = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  let predicate = "";
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && node.expression.getText(probe) === "observe"
+      && ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === "online_requires_confirmation") {
+      predicate = node.arguments[1].getText(probe);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(probe);
+  expect(predicate).toContain('[role="status"] time');
+  expect(predicate).toContain('[aria-label="Running timers"] button:disabled');
+});
+
+it("OC2 re-asserts the worker outage before relying on it and fails closed when it lapsed", () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const reassertion = source.indexOf("await assertWorkerOutage(workerHost, worker)");
+  const cacheDispatch = source.indexOf("window.__freshCacheProof");
+  const cacheObservation = source.indexOf('await observe("service_worker_cache"');
+  expect(reassertion).toBeGreaterThan(0);
+  // The outage is reconfirmed before the cache proof depends on the worker failing its own fetch.
+  expect(reassertion).toBeLessThan(cacheDispatch);
+  expect(cacheDispatch).toBeLessThan(cacheObservation);
+
+  const helper = source.slice(source.indexOf("async function assertWorkerOutage("), source.indexOf("async function observe("));
+  expect(helper).toContain('fail("worker_outage_lapsed")');
+  // It must identify the exact worker target rather than any service worker, and re-apply the outage.
+  expect(helper).toContain('target.type === "service_worker"');
+  expect(helper).toContain("${base}/sw.js");
+  expect(helper).toContain("offline: true");
+});
+
+async function runAssertWorkerOutage(targets: unknown) {
+  const emulated: unknown[] = [];
+  const assertWorkerOutage = probeFunction("assertWorkerOutage", {
+    base: "http://127.0.0.1:41234",
+    fetch: async (url: string) => {
+      expect(url).toBe("http://127.0.0.1:41235/json");
+      if (targets === null) throw Error("synthetic transport detail");
+      return { json: async () => targets };
+    },
+    AbortSignal: { timeout: () => undefined },
+    fail: (code: string) => { throw Error(code); }
+  });
+  const worker = { call: async (method: string, params: unknown) => { emulated.push({ method, params }); } };
+  const outcome = await assertWorkerOutage("127.0.0.1:41235", worker).then(
+    () => "outage_held",
+    (error: Error) => error.message
+  );
+  return { outcome, emulated };
+}
+
+it("OC3 reports a lapsed worker outage as a harness condition, never as a product verdict", async () => {
+  const present = await runAssertWorkerOutage([
+    { type: "page", url: "http://127.0.0.1:41234/app" },
+    { type: "service_worker", url: "http://127.0.0.1:41234/sw.js" }
+  ]);
+  expect(present.outcome).toBe("outage_held");
+  // Re-applying the outage is what makes the subsequent cache fallback deterministic.
+  expect(present.emulated).toEqual([
+    { method: "Network.emulateNetworkConditions", params: { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 } }
+  ]);
+
+  // A terminated worker, a different worker, or an unreachable target list all fail closed, and
+  // none of them may leave the lifecycle asserting an outage it can no longer enforce.
+  for (const targets of [
+    [],
+    [{ type: "page", url: "http://127.0.0.1:41234/app" }],
+    [{ type: "service_worker", url: "http://127.0.0.1:41234/other-worker.js" }],
+    [{ type: "worker", url: "http://127.0.0.1:41234/sw.js" }],
+    null
+  ]) {
+    const { outcome, emulated } = await runAssertWorkerOutage(targets);
+    expect(outcome).not.toBe("outage_held");
+    if (targets !== null) expect(outcome).toBe("worker_outage_lapsed");
+    expect(emulated).toEqual([]);
+  }
 });

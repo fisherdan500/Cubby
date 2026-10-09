@@ -9,7 +9,7 @@ export const FRESHNESS_BROWSER_FAILURE_CODES = Object.freeze([
   "moments_create", "moments_update", "navigation_failed", "observations_missing",
   "offline_retention", "online_requires_confirmation", "page_missing", "recovery_failed",
   "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
-  "timer_start", "timer_stop", "worker_missing", "worker_target_missing", "unknown"
+  "timer_start", "timer_stop", "worker_missing", "worker_outage_lapsed", "worker_target_missing", "unknown"
 ]);
 
 const failures = new WeakMap();

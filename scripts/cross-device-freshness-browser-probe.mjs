@@ -190,6 +190,14 @@ async function calendarOutcomeCompleted(device, operation, limit = 20_000) {
     await sleep(250);
   }
 }
+async function assertWorkerOutage(workerHost, worker) {
+  // An idle service worker can be terminated and restarted, and a restarted worker does not inherit
+  // network emulation. Confirm the exact worker target still exists and re-apply the outage, so a
+  // lapsed outage is reported as a harness condition instead of becoming a product verdict.
+  const targets = await fetch(`http://${workerHost}/json`, { signal: AbortSignal.timeout(5_000) }).then(response => response.json());
+  if (!targets.some(target => target.type === "service_worker" && target.url === `${base}/sw.js`)) fail("worker_outage_lapsed");
+  await worker.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+}
 async function observe(code, predicate, limit = 20_000) {
   await wait(predicate, limit, code);
   for (const device of devices) await assertDisplayIsolation(device);
@@ -301,6 +309,7 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
     await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
   })()`);
   const targets = await fetch(`http://${new URL(process.env.REHEARSAL_BROWSER_B).host}/json`, { signal: AbortSignal.timeout(5_000) }).then(r => r.json());
+  const workerHost = new URL(process.env.REHEARSAL_BROWSER_B).host;
   const workerTarget = targets.find(target => target.type === "service_worker" && target.url === `${base}/sw.js`);
   if (!workerTarget) fail("worker_target_missing");
   const worker = await connect(workerTarget.webSocketDebuggerUrl); connections.push(worker);
@@ -316,10 +325,17 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   await b.client.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await observe("offline_retention", () => evaluate(b.client, `Boolean(document.querySelector('[aria-label="Running timers"]')) && Boolean(document.querySelector('[aria-label="Running timers"] button:disabled')) && Boolean(document.querySelector('[role="status"] time[datetime]'))`), 12_000);
   await worker.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`] });
+  // Block the timer endpoint at the page layer too: the worker's own emulation cannot be trusted to
+  // survive this idle window, and without a deterministic outage a successful request would make the
+  // product correctly re-enable its controls while this assertion still demanded an outage.
+  await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`, `${base}/api/timers/active*`] });
   await b.client.call("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await sleep(11_000);
   await observe("online_requires_confirmation", () => evaluate(b.client, `Boolean(document.querySelector('[role="status"] time')) && Boolean(document.querySelector('[aria-label="Running timers"] button:disabled'))`), 1_000);
+  // The cache observation needs the request to reach the worker and fall back, so lift the endpoint
+  // block and reconfirm the worker outage it depends on.
+  await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`] });
+  await assertWorkerOutage(workerHost, worker);
   // The override exists only during this synchronous loader dispatch, never during authentication/mutation.
   await evaluate(b.client, `(async () => {
     const cacheUrl = ${JSON.stringify(cacheUrl)}, token = ${JSON.stringify(cacheToken)};

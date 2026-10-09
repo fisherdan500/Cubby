@@ -561,7 +561,14 @@ under the exact future tokenized URL, obtains a newer confirmation, and uses
 acceptance-only deterministic bytes for one synchronous timer-loader dispatch.
 It requires worker delivery of that exact cached response, matching request token,
 older server instant, retained stale instant and disabled timer actions while
-online. Cache seeding alone cannot pass. Preservation checks require the same
+online. Cache seeding alone cannot pass. The online-confirmation step does not
+rely on service-worker network emulation surviving its idle window: the timer
+endpoint is also blocked at the page layer for that assertion, then unblocked so
+the cache observation can reach the worker, and the worker outage is reconfirmed
+immediately before the cache proof depends on it. A terminated or replaced worker
+target fails closed as `FRESHNESS_BROWSER_WORKER_OUTAGE_LAPSED`, so a lapsed
+simulated outage is reported as a harness condition rather than becoming a
+product verdict. Preservation checks require the same
 nonzero scroll offset (using a bounded spacer), connected input/preview/dialog,
 draft and focus, and identical FileList count/name/type/size. Since the composer
 consumes its picker on change, the probe reinstates a pending native selection
