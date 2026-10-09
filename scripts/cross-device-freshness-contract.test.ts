@@ -1177,7 +1177,7 @@ it("CAL6 binds the submitted operation to the completed-outcome check and the mo
 it("OC1 makes the online-confirmation outage deterministic at the page layer", () => {
   const source = read("scripts/cross-device-freshness-browser-probe.mjs");
 
-  const blocked = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`, `${base}/api/timers/active*`] })');
+  const blocked = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] })');
   const online = source.indexOf('await b.client.call("Network.emulateNetworkConditions", { offline: false');
   const observation = source.indexOf('await observe("online_requires_confirmation"');
   expect(blocked).toBeGreaterThan(0);
@@ -1187,7 +1187,7 @@ it("OC1 makes the online-confirmation outage deterministic at the page layer", (
 
   // The timer endpoint block is lifted only after that assertion, so the later cache observation
   // can still reach the service worker and exercise its fallback.
-  const restored = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`] })');
+  const restored = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [] })', observation);
   const cacheObservation = source.indexOf('await observe("service_worker_cache"');
   expect(restored).toBeGreaterThan(observation);
   expect(restored).toBeLessThan(cacheObservation);
@@ -1209,6 +1209,47 @@ it("OC1 makes the online-confirmation outage deterministic at the page layer", (
   const classifier = source.slice(source.indexOf("async function onlineConfirmationState("), source.indexOf("async function assertWorkerOutage("));
   expect(classifier).toContain("#app-freshness-status time");
   expect(classifier).toContain('[aria-label="Running timers"] button:disabled');
+});
+
+it("OC9 keeps the application route reachable during the online-confirmation window", () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+
+  // A lifecycle from a071b17d reported FRESHNESS_BROWSER_ONLINE_PAGE_ABSENT: blocking the
+  // application route destroyed the page this step means to observe, so the step demanded a state
+  // that cannot exist under its own staging. The timer data path alone is blocked now, which keeps
+  // the outage deterministic while the page survives to be observed.
+  const blocked = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] })');
+  const online = source.indexOf('await b.client.call("Network.emulateNetworkConditions", { offline: false');
+  const observation = source.indexOf('await observe("online_requires_confirmation"');
+  expect(blocked).toBeGreaterThan(0);
+  expect(blocked).toBeLessThan(online);
+  expect(online).toBeLessThan(observation);
+
+  // No page-layer block on the application route reaches the observation window. The negative is
+  // structural rather than a list of known-bad spellings: setBlockedURLs replaces the list
+  // wholesale, so the LAST call before the assertion is the one that governs it, whatever its
+  // spelling. An extra or differently written app-route block inserted after the narrowed one would
+  // otherwise re-block the route and reintroduce ONLINE_PAGE_ABSENT undetected. The pattern is
+  // whitespace- and newline-tolerant so a reformatted or multi-line call cannot slip past it.
+  const staging = source.slice(0, observation);
+  const callPattern = /await\s+[A-Za-z_$][\w$]*\.client\.call\(\s*"Network\.setBlockedURLs"[\s\S]*?\);/g;
+  const calls = [...staging.matchAll(callPattern)];
+  expect(calls.length).toBeGreaterThan(0);
+  expect(calls.at(-1)![0].replace(/\s+/g, " ")).toBe('await b.client.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] });');
+  expect(staging).not.toContain('urls: [`${base}/app*`, `${base}/api/timers/active*`]');
+  expect(staging).not.toContain('urls: [`${base}/app*`]');
+
+  // Scope-independent backstop: the application-route pattern must not appear in ANY blocked-URL
+  // argument anywhere in the probe, so a block installed inside the observe callback or in a helper
+  // it calls - textually after the slice above - cannot evade this contract either.
+  for (const call of source.matchAll(callPattern)) expect(call[0]).not.toContain("/app*");
+
+  // The endpoint block is lifted after the assertion so the later cache observation still reaches
+  // the service worker, and nothing is left blocked at the page layer.
+  const restored = source.indexOf('await b.client.call("Network.setBlockedURLs", { urls: [] })', observation);
+  const cacheObservation = source.indexOf('await observe("service_worker_cache"');
+  expect(restored).toBeGreaterThan(observation);
+  expect(restored).toBeLessThan(cacheObservation);
 });
 
 it("OC2 re-asserts the worker outage before relying on it and fails closed when it lapsed", () => {

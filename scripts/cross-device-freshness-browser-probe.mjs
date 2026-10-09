@@ -348,10 +348,14 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   await b.client.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await observe("offline_retention", () => evaluate(b.client, `Boolean(document.querySelector('[aria-label="Running timers"]')) && Boolean(document.querySelector('[aria-label="Running timers"] button:disabled')) && Boolean(document.querySelector('[role="status"] time[datetime]'))`), 12_000);
   await worker.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  // Block the timer endpoint at the page layer too: the worker's own emulation cannot be trusted to
-  // survive this idle window, and without a deterministic outage a successful request would make the
-  // product correctly re-enable its controls while this assertion still demanded an outage.
-  await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`, `${base}/api/timers/active*`] });
+  // Block ONLY the timer data path at the page layer. The worker's own emulation cannot be trusted
+  // to survive this idle window, and without a deterministic outage a successful request would make
+  // the product correctly re-enable its controls while this assertion still demanded an outage.
+  // The application route must stay reachable: blocking it destroyed the page this step observes,
+  // which a lifecycle reported as ONLINE_PAGE_ABSENT. The timer bar's requestToken check rejects any
+  // response that does not answer its own live request, so a cached reply cannot clear timer
+  // staleness and the freshness region stays rendered with its confirmed instant.
+  await b.client.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] });
   await b.client.call("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await sleep(11_000);
   let onlineConfirmationDetail;
@@ -360,8 +364,8 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
     return onlineConfirmationDetail === "confirmed";
   }, 1_000, () => onlineConfirmationDetail && `online_${onlineConfirmationDetail}`);
   // The cache observation needs the request to reach the worker and fall back, so lift the endpoint
-  // block and reconfirm the worker outage it depends on.
-  await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`] });
+  // block and reconfirm the worker outage it depends on. Nothing stays blocked at the page layer.
+  await b.client.call("Network.setBlockedURLs", { urls: [] });
   await assertWorkerOutage(workerHost, worker);
   // The override exists only during this synchronous loader dispatch, never during authentication/mutation.
   await evaluate(b.client, `(async () => {

@@ -580,7 +580,15 @@ also render, so an absent region is never misreported as a missing instant.
 Application liveness is checked first and reports
 `FRESHNESS_BROWSER_ONLINE_PAGE_ABSENT`, because blocking the application route
 can destroy the page the step means to observe; without that check a destroyed
-page and a live page that is legitimately current yield the same code. Preservation checks require the same
+page and a live page that is legitimately current yield the same code. A
+lifecycle reported exactly that marker, so the step now blocks only the timer
+data path and leaves the application route reachable. The outage stays
+deterministic because the timer bar rejects any response that does not answer
+its own live request, so a cached reply cannot clear timer staleness, and the
+freshness region stays rendered with its confirmed instant while the page
+survives to be observed. `FRESHNESS_BROWSER_ONLINE_PAGE_ABSENT` is retained
+deliberately now that its staging cause is gone, so a real page-render fault
+still reports precisely instead of collapsing into an absent status region. Preservation checks require the same
 nonzero scroll offset (using a bounded spacer), connected input/preview/dialog,
 draft and focus, and identical FileList count/name/type/size. Since the composer
 consumes its picker on change, the probe reinstates a pending native selection
