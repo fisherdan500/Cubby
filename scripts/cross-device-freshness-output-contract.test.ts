@@ -287,9 +287,18 @@ it.each(["SIGINT", "SIGTERM"])("L16 terminates an unready child on early %s and 
 
 it("L17 bounds startup and escalates termination when an unready child ignores SIGTERM", async () => {
   const harness = await syntheticLauncher({ ready: false, startupTimeoutMs: 5, forceKillGraceMs: 5 });
-  await new Promise(resolve => setTimeout(resolve, 25));
+  // Wait for the escalation itself instead of sleeping a fixed span. The launcher schedules its
+  // force kill 5ms after the SIGTERM, so under load both timers can slip past a wall-clock sleep;
+  // close would then arrive first and the launcher would correctly skip the SIGKILL, failing this
+  // test for a timing reason rather than a contract violation. The contract is that an unready
+  // child IS escalated before close, so wait for that and let the bound fail if it never happens.
+  // The bound stays under vitest's 5s default test timeout so a genuine escalation regression
+  // reports the kills diff rather than a generic timeout.
+  await vi.waitFor(() => expect(harness.kills).toEqual(["SIGTERM", "SIGKILL"]), { timeout: 2_000, interval: 1 });
   harness.child.emit("close", null, "SIGKILL");
   await harness.completion;
+  // Not redundant with the wait above: this forbids a THIRD kill landing after close, proving the
+  // close handler clears the pending force-kill timer.
   expect(harness.kills).toEqual(["SIGTERM", "SIGKILL"]);
   expect(harness.stdout).toEqual([unknownFailure]);
 });
