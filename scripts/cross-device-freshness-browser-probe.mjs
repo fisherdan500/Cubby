@@ -1,6 +1,6 @@
 // Only the disposable lifecycle invokes this file. Values stay in memory; output is one fixed code.
 import { randomBytes, randomUUID } from "node:crypto";
-import { browserFailure, formatBrowserFailure } from "./cross-device-freshness-browser-contract.mjs";
+import { browserFailure, browserFailureCode, formatBrowserFailure } from "./cross-device-freshness-browser-contract.mjs";
 const base = process.env.REHEARSAL_APP_BASE_URL;
 const password = process.env.REHEARSAL_APP_PASSWORD;
 const action = process.env.REHEARSAL_CALENDAR_ACTION_ID;
@@ -190,6 +190,18 @@ async function calendarOutcomeCompleted(device, operation, limit = 20_000) {
     await sleep(250);
   }
 }
+async function onlineConfirmationState(device) {
+  // Truthful online state is a conjunction, so report which part is unmet rather than one collapsed
+  // boolean. A single combined marker already cost this program a repair round spent on an inferred
+  // attribution; the earliest failing sub-state is reported instead.
+  return evaluate(device.client, `(() => {
+    if (!document.querySelector('#app-freshness-status')) return 'status_absent';
+    if (!document.querySelector('#app-freshness-status time')) return 'instant_absent';
+    if (!document.querySelector('[aria-label="Running timers"]')) return 'timer_bar_absent';
+    if (!document.querySelector('[aria-label="Running timers"] button:disabled')) return 'control_enabled';
+    return 'confirmed';
+  })()`);
+}
 async function assertWorkerOutage(workerHost, worker) {
   // An idle service worker can be terminated and restarted, and a restarted worker does not inherit
   // network emulation. Confirm the exact worker target still exists and re-apply the outage, so a
@@ -198,8 +210,18 @@ async function assertWorkerOutage(workerHost, worker) {
   if (!targets.some(target => target.type === "service_worker" && target.url === `${base}/sw.js`)) fail("worker_outage_lapsed");
   await worker.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
 }
-async function observe(code, predicate, limit = 20_000) {
-  await wait(predicate, limit, code);
+async function observe(code, predicate, limit = 20_000, detail) {
+  // A conjunction-backed observation may supply a closed sub-state code, so a failure names the
+  // earliest unmet part instead of collapsing into one ambiguous marker.
+  try {
+    await wait(predicate, limit, code);
+  } catch (error) {
+    // A throwing supplier must not convert a precisely attributed failure into an unknown marker.
+    let reported;
+    try { reported = detail?.(); } catch { reported = undefined; }
+    if (browserFailureCode(error) === code && reported) fail(reported);
+    throw error;
+  }
   for (const device of devices) await assertDisplayIsolation(device);
   observations.add(code);
 }
@@ -331,7 +353,11 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`, `${base}/api/timers/active*`] });
   await b.client.call("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await sleep(11_000);
-  await observe("online_requires_confirmation", () => evaluate(b.client, `Boolean(document.querySelector('[role="status"] time')) && Boolean(document.querySelector('[aria-label="Running timers"] button:disabled'))`), 1_000);
+  let onlineConfirmationDetail;
+  await observe("online_requires_confirmation", async () => {
+    onlineConfirmationDetail = await onlineConfirmationState(b);
+    return onlineConfirmationDetail === "confirmed";
+  }, 1_000, () => onlineConfirmationDetail && `online_${onlineConfirmationDetail}`);
   // The cache observation needs the request to reach the worker and fall back, so lift the endpoint
   // block and reconfirm the worker outage it depends on.
   await b.client.call("Network.setBlockedURLs", { urls: [`${base}/app*`] });

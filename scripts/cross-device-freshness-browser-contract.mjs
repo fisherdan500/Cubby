@@ -7,7 +7,9 @@ export const FRESHNESS_BROWSER_FAILURE_CODES = Object.freeze([
   "draft_refresh_missing", "foreground_five_seconds", "freshness_scope_invalid",
   "hidden_no_poll", "hide_failed", "isolation_surfaces_missing", "known_timer_missing",
   "moments_create", "moments_update", "navigation_failed", "observations_missing",
-  "offline_retention", "online_requires_confirmation", "page_missing", "recovery_failed",
+  "offline_retention", "online_control_enabled", "online_instant_absent",
+  "online_requires_confirmation", "online_status_absent", "online_timer_bar_absent",
+  "page_missing", "recovery_failed",
   "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
   "timer_start", "timer_stop", "worker_missing", "worker_outage_lapsed", "worker_target_missing", "unknown"
 ]);

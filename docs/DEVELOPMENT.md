@@ -568,7 +568,14 @@ the cache observation can reach the worker, and the worker outage is reconfirmed
 immediately before the cache proof depends on it. A terminated or replaced worker
 target fails closed as `FRESHNESS_BROWSER_WORKER_OUTAGE_LAPSED`, so a lapsed
 simulated outage is reported as a harness condition rather than becoming a
-product verdict. Preservation checks require the same
+product verdict. Because truthful online state is a conjunction, that step
+classifies its own earliest unmet part and reports one of the closed sub-state
+codes `FRESHNESS_BROWSER_ONLINE_STATUS_ABSENT`, `..._ONLINE_INSTANT_ABSENT`,
+`..._ONLINE_TIMER_BAR_ABSENT` or `..._ONLINE_CONTROL_ENABLED` instead of one
+collapsed marker, so a failure names the mechanism rather than requiring a
+separate inferential diagnosis. The status checks are bound to the freshness
+region's own id rather than the `role="status"` several unrelated components
+also render, so an absent region is never misreported as a missing instant. Preservation checks require the same
 nonzero scroll offset (using a bounded spacer), connected input/preview/dialog,
 draft and focus, and identical FileList count/name/type/size. Since the composer
 consumes its picker on change, the probe reinstates a pending native selection

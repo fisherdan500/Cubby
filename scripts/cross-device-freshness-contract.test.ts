@@ -729,7 +729,9 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     "draft_refresh_missing", "foreground_five_seconds", "freshness_scope_invalid",
     "hidden_no_poll", "hide_failed", "isolation_surfaces_missing", "known_timer_missing",
     "moments_create", "moments_update", "navigation_failed", "observations_missing",
-    "offline_retention", "online_requires_confirmation", "page_missing", "recovery_failed",
+    "offline_retention", "online_control_enabled", "online_instant_absent",
+    "online_requires_confirmation", "online_status_absent", "online_timer_bar_absent",
+    "page_missing", "recovery_failed",
     "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
     "timer_start", "timer_stop", "worker_missing", "worker_outage_lapsed", "worker_target_missing", "unknown"
   ];
@@ -747,6 +749,21 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     ts.forEachChild(node, visit);
   };
   visit(source);
+  // The four online_* sub-states are composed from a closed classifier result rather than written as
+  // literals, so they are enumerated from the classifier itself and must reconcile exactly.
+  const classifier = source.text.slice(
+    source.text.indexOf("async function onlineConfirmationState("),
+    source.text.indexOf("async function assertWorkerOutage(")
+  );
+  const composed = [...classifier.matchAll(/return '([a-z_]+)'/g)]
+    .map(match => match[1])
+    .filter(state => state !== "confirmed")
+    .map(state => `online_${state}`);
+  expect(composed.sort()).toEqual([
+    "online_control_enabled", "online_instant_absent", "online_status_absent", "online_timer_bar_absent"
+  ]);
+  expect(source.text).toContain("`online_${onlineConfirmationDetail}`");
+  for (const state of composed) codes.add(state);
   expect([...codes].sort()).toEqual(expected.filter(code => code !== "unknown").sort());
   for (const code of expected) {
     const marker = formatBrowserFailure(browserFailure(code));
@@ -1184,8 +1201,12 @@ it("OC1 makes the online-confirmation outage deterministic at the page layer", (
     ts.forEachChild(node, visit);
   };
   visit(probe);
-  expect(predicate).toContain('[role="status"] time');
-  expect(predicate).toContain('[aria-label="Running timers"] button:disabled');
+  // The assertion's meaning is unchanged; it now runs through the sub-state classifier.
+  expect(predicate).toContain("onlineConfirmationState(b)");
+  expect(predicate).toContain('"confirmed"');
+  const classifier = source.slice(source.indexOf("async function onlineConfirmationState("), source.indexOf("async function assertWorkerOutage("));
+  expect(classifier).toContain("#app-freshness-status time");
+  expect(classifier).toContain('[aria-label="Running timers"] button:disabled');
 });
 
 it("OC2 re-asserts the worker outage before relying on it and fails closed when it lapsed", () => {
@@ -1251,4 +1272,227 @@ it("OC3 reports a lapsed worker outage as a harness condition, never as a produc
     if (targets !== null) expect(outcome).toBe("worker_outage_lapsed");
     expect(emulated).toEqual([]);
   }
+});
+
+/**
+ * OC4 closes a diagnostic gap this program paid for twice. The online-confirmation observation is a
+ * two-part conjunction, and a single collapsed marker cannot say which half failed. One repair round
+ * was already spent on a confidently-reasoned but unconfirmed attribution to the disabled-control
+ * half. The step now reports its own earliest failing sub-state, so the next failure names the
+ * mechanism instead of requiring another inferential diagnosis.
+ */
+async function runOnlineConfirmationState(dom: { status?: boolean; time?: boolean; bar?: boolean; disabled?: boolean; foreignStatus?: boolean }) {
+  let expression = "";
+  const onlineConfirmationState = probeFunction("onlineConfirmationState", {
+    evaluate: async (_client: unknown, source: string) => {
+      expression = source;
+      return runInNewContext(source, {
+        document: {
+          querySelector: (selector: string) => {
+            // A foreign role="status" node must never be mistaken for the freshness region.
+            if (selector === '[role="status"]') return dom.foreignStatus || dom.status ? {} : null;
+            if (selector === "#app-freshness-status") return dom.status ? {} : null;
+            if (selector === "#app-freshness-status time") return dom.time ? {} : null;
+            if (selector === '[aria-label="Running timers"]') return dom.bar ? {} : null;
+            if (selector === '[aria-label="Running timers"] button:disabled') return dom.disabled ? {} : null;
+            return null;
+          }
+        }
+      });
+    }
+  });
+  const state = await onlineConfirmationState({ client: {} });
+  return { state, expression };
+}
+
+it("OC4 names the earliest failing sub-state of the online-confirmation conjunction", async () => {
+  // Fully truthful online state: confirmed instant retained and consequential controls disabled.
+  expect((await runOnlineConfirmationState({ status: true, time: true, bar: true, disabled: true })).state).toBe("confirmed");
+
+  // Each failure mode is distinct, so a future lifecycle marker identifies the mechanism directly.
+  expect((await runOnlineConfirmationState({ status: false, time: false, bar: true, disabled: true })).state).toBe("status_absent");
+  expect((await runOnlineConfirmationState({ status: true, time: false, bar: true, disabled: true })).state).toBe("instant_absent");
+  expect((await runOnlineConfirmationState({ status: true, time: true, bar: false, disabled: false })).state).toBe("timer_bar_absent");
+  expect((await runOnlineConfirmationState({ status: true, time: true, bar: true, disabled: false })).state).toBe("control_enabled");
+
+  // Nine unrelated components render role="status". One of them being present while the freshness
+  // region is absent must still report status_absent, or the attribution this step exists to provide
+  // is wrong in exactly the case it is meant to explain.
+  expect((await runOnlineConfirmationState({ foreignStatus: true, status: false, time: false, bar: true, disabled: true })).state).toBe("status_absent");
+
+  // The classifier is content-free and bound to the freshness region by id, not by a shared role.
+  const { expression } = await runOnlineConfirmationState({ status: true, time: true, bar: true, disabled: true });
+  expect(expression).not.toContain("innerText");
+  expect(expression).not.toContain("textContent");
+  expect(expression).not.toContain('[role="status"]');
+  expect(expression).toContain("#app-freshness-status");
+});
+
+it("OC5 statically mirrors the call site as defence in depth only, never as the reporting guard", () => {
+  // Deliberately weak by design: textual proximity is exactly what let a deleted reporting line pass
+  // the whole suite once. OC6 is the executed guard; this only catches a call site drifting away
+  // from the classifier.
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const probe = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  let predicate = "";
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && node.expression.getText(probe) === "observe"
+      && ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === "online_requires_confirmation") {
+      predicate = node.arguments[1].getText(probe);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(probe);
+  expect(predicate).toContain("onlineConfirmationState(b)");
+  expect(predicate).toContain('"confirmed"');
+
+  // The distinct sub-state must reach the retained marker rather than collapsing into one code.
+  const reported = source.slice(source.indexOf('await observe("online_requires_confirmation"'));
+  expect(reported.slice(0, 600)).toContain("onlineConfirmationDetail");
+  const detail = source.slice(source.indexOf("async function onlineConfirmationState("), source.indexOf("async function assertWorkerOutage("));
+  for (const state of ["status_absent", "instant_absent", "timer_bar_absent", "control_enabled"]) {
+    expect(detail).toContain(state);
+  }
+  // The probe must resolve browserFailureCode from the shared contract rather than an injected
+  // binding. OC6 supplies its own, so without this a removed import would leave the suite green
+  // while the real probe threw at the catch site and degraded every sub-state to UNKNOWN.
+  const header = source.slice(0, source.indexOf("const base ="));
+  expect(header).toContain("browserFailureCode");
+  expect(header).toContain("./cross-device-freshness-browser-contract.mjs");
+  // Every reported sub-state code is in the frozen closed allowlist.
+  for (const code of ["online_status_absent", "online_instant_absent", "online_timer_bar_absent", "online_control_enabled"]) {
+    expect(FRESHNESS_BROWSER_FAILURE_CODES).toContain(code);
+  }
+});
+
+it("OC6 actually emits the sub-state code from observe, not just a literal in source", async () => {
+  // A static assertion on the detail identifier passed while the reporting line was deleted, so this
+  // executes the real observe boundary. Deleting `fail(reported)` must fail here.
+  const observe = probeFunction("observe", {
+    wait: async (_predicate: unknown, _limit: unknown, code: string) => { throw browserFailure(code); },
+    browserFailureCode,
+    fail: (code: string) => { throw browserFailure(code); },
+    devices: [],
+    observations: new Set<string>(),
+    assertDisplayIsolation: async () => {}
+  });
+
+  // A supplied sub-state replaces the collapsed code at the closed marker boundary.
+  const reported = await observe(
+    "online_requires_confirmation", async () => false, 10, () => "online_control_enabled"
+  ).then(() => "passed", browserFailureCode);
+  expect(reported).toBe("online_control_enabled");
+
+  // No detail, or a detail that is not yet resolved, preserves the original closed code.
+  for (const detail of [undefined, () => undefined, () => ""]) {
+    const fallback = await observe(
+      "online_requires_confirmation", async () => false, 10, detail
+    ).then(() => "passed", browserFailureCode);
+    expect(fallback).toBe("online_requires_confirmation");
+  }
+
+  // A different failure escaping the predicate is never relabelled as a sub-state.
+  const unrelated = probeFunction("observe", {
+    wait: async () => { throw browserFailure("cdp_command_timeout"); },
+    browserFailureCode,
+    fail: (code: string) => { throw browserFailure(code); },
+    devices: [],
+    observations: new Set<string>(),
+    assertDisplayIsolation: async () => {}
+  });
+  const preserved = await unrelated(
+    "online_requires_confirmation", async () => false, 10, () => "online_control_enabled"
+  ).then(() => "passed", browserFailureCode);
+  expect(preserved).toBe("cdp_command_timeout");
+
+  // A passing observation records the canonical code and never reports a sub-state.
+  const recorded = new Set<string>();
+  const passing = probeFunction("observe", {
+    wait: async () => {},
+    browserFailureCode,
+    fail: (code: string) => { throw browserFailure(code); },
+    devices: [],
+    observations: recorded,
+    assertDisplayIsolation: async () => {}
+  });
+  await passing("online_requires_confirmation", async () => true, 10, () => "online_control_enabled");
+  expect([...recorded]).toEqual(["online_requires_confirmation"]);
+});
+
+it("OC7 composes the real classifier, call-site closure and observe end to end", async () => {
+  // Closes the last static-only link: BD6 and OC5 only prove the `online_` template appears in the
+  // file. This drives the real classifier result through the real composition into the real observe.
+  for (const [state, expected] of [
+    ["status_absent", "online_status_absent"],
+    ["instant_absent", "online_instant_absent"],
+    ["timer_bar_absent", "online_timer_bar_absent"],
+    ["control_enabled", "online_control_enabled"]
+  ] as const) {
+    const observe = probeFunction("observe", {
+      wait: async (predicate: () => Promise<boolean>, _limit: unknown, code: string) => {
+        if (!await predicate()) throw browserFailure(code);
+      },
+      browserFailureCode,
+      fail: (code: string) => { throw browserFailure(code); },
+      devices: [],
+      observations: new Set<string>(),
+      assertDisplayIsolation: async () => {}
+    });
+    const onlineConfirmationState = probeFunction("onlineConfirmationState", {
+      evaluate: async () => state
+    });
+
+    // Exactly the production call-site shape, including the template composition.
+    let onlineConfirmationDetail: string | undefined;
+    const emitted = await observe("online_requires_confirmation", async () => {
+      onlineConfirmationDetail = await onlineConfirmationState({ client: {} }) as string;
+      return onlineConfirmationDetail === "confirmed";
+    }, 1_000, () => onlineConfirmationDetail && `online_${onlineConfirmationDetail}`)
+      .then(() => "passed", browserFailureCode);
+
+    expect(emitted).toBe(expected);
+    // The emitted code must survive the real outer parser without degrading to unknown.
+    expect(FRESHNESS_BROWSER_FAILURE_CODES).toContain(emitted);
+    let parsed: unknown;
+    try { rehearsal.parseFreshnessBrowserResult(1, `FRESHNESS_BROWSER_${emitted.toUpperCase()}\n`); }
+    catch (error) { parsed = error; }
+    expect(browserFailureCode(parsed)).toBe(expected);
+  }
+
+  // The confirmed path passes and emits no sub-state at all.
+  const observe = probeFunction("observe", {
+    wait: async (predicate: () => Promise<boolean>, _limit: unknown, code: string) => {
+      if (!await predicate()) throw browserFailure(code);
+    },
+    browserFailureCode,
+    fail: (code: string) => { throw browserFailure(code); },
+    devices: [],
+    observations: new Set<string>(),
+    assertDisplayIsolation: async () => {}
+  });
+  const confirmed = probeFunction("onlineConfirmationState", { evaluate: async () => "confirmed" });
+  let detail: string | undefined;
+  await observe("online_requires_confirmation", async () => {
+    detail = await confirmed({ client: {} }) as string;
+    return detail === "confirmed";
+  }, 1_000, () => detail && `online_${detail}`);
+  expect(detail).toBe("confirmed");
+});
+
+it("OC8 keeps a throwing detail supplier from destroying attribution", async () => {
+  // Defensive: the current closure cannot throw, but a future supplier must not be able to convert a
+  // precisely attributed failure into an unknown marker by throwing inside the catch path.
+  const observe = probeFunction("observe", {
+    wait: async (_predicate: unknown, _limit: unknown, code: string) => { throw browserFailure(code); },
+    browserFailureCode,
+    fail: (code: string) => { throw browserFailure(code); },
+    devices: [],
+    observations: new Set<string>(),
+    assertDisplayIsolation: async () => {}
+  });
+  const emitted = await observe("online_requires_confirmation", async () => false, 10, () => {
+    throw Error("synthetic detail failure");
+  }).then(() => "passed", browserFailureCode);
+  // The original closed code is preserved rather than collapsing to unknown.
+  expect(emitted).toBe("online_requires_confirmation");
 });
