@@ -195,6 +195,7 @@ async function onlineConfirmationState(device) {
   // boolean. A single combined marker already cost this program a repair round spent on an inferred
   // attribution; the earliest failing sub-state is reported instead.
   return evaluate(device.client, `(() => {
+    if (!document.querySelector('main')) return 'page_absent';
     if (!document.querySelector('#app-freshness-status')) return 'status_absent';
     if (!document.querySelector('#app-freshness-status time')) return 'instant_absent';
     if (!document.querySelector('[aria-label="Running timers"]')) return 'timer_bar_absent';

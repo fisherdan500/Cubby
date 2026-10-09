@@ -730,7 +730,8 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     "hidden_no_poll", "hide_failed", "isolation_surfaces_missing", "known_timer_missing",
     "moments_create", "moments_update", "navigation_failed", "observations_missing",
     "offline_retention", "online_control_enabled", "online_instant_absent",
-    "online_requires_confirmation", "online_status_absent", "online_timer_bar_absent",
+    "online_page_absent", "online_requires_confirmation", "online_status_absent",
+    "online_timer_bar_absent",
     "page_missing", "recovery_failed",
     "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
     "timer_start", "timer_stop", "worker_missing", "worker_outage_lapsed", "worker_target_missing", "unknown"
@@ -749,7 +750,7 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     ts.forEachChild(node, visit);
   };
   visit(source);
-  // The four online_* sub-states are composed from a closed classifier result rather than written as
+  // The five online_* sub-states are composed from a closed classifier result rather than written as
   // literals, so they are enumerated from the classifier itself and must reconcile exactly.
   const classifier = source.text.slice(
     source.text.indexOf("async function onlineConfirmationState("),
@@ -760,7 +761,8 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     .filter(state => state !== "confirmed")
     .map(state => `online_${state}`);
   expect(composed.sort()).toEqual([
-    "online_control_enabled", "online_instant_absent", "online_status_absent", "online_timer_bar_absent"
+    "online_control_enabled", "online_instant_absent", "online_page_absent",
+    "online_status_absent", "online_timer_bar_absent"
   ]);
   expect(source.text).toContain("`online_${onlineConfirmationDetail}`");
   for (const state of composed) codes.add(state);
@@ -1281,7 +1283,7 @@ it("OC3 reports a lapsed worker outage as a harness condition, never as a produc
  * half. The step now reports its own earliest failing sub-state, so the next failure names the
  * mechanism instead of requiring another inferential diagnosis.
  */
-async function runOnlineConfirmationState(dom: { status?: boolean; time?: boolean; bar?: boolean; disabled?: boolean; foreignStatus?: boolean }) {
+async function runOnlineConfirmationState(dom: { live?: boolean; status?: boolean; time?: boolean; bar?: boolean; disabled?: boolean; foreignStatus?: boolean }) {
   let expression = "";
   const onlineConfirmationState = probeFunction("onlineConfirmationState", {
     evaluate: async (_client: unknown, source: string) => {
@@ -1289,6 +1291,8 @@ async function runOnlineConfirmationState(dom: { status?: boolean; time?: boolea
       return runInNewContext(source, {
         document: {
           querySelector: (selector: string) => {
+            // Liveness defaults to present so existing cases keep their meaning.
+            if (selector === "main") return dom.live === false ? null : {};
             // A foreign role="status" node must never be mistaken for the freshness region.
             if (selector === '[role="status"]') return dom.foreignStatus || dom.status ? {} : null;
             if (selector === "#app-freshness-status") return dom.status ? {} : null;
@@ -1315,6 +1319,14 @@ it("OC4 names the earliest failing sub-state of the online-confirmation conjunct
   expect((await runOnlineConfirmationState({ status: true, time: true, bar: false, disabled: false })).state).toBe("timer_bar_absent");
   expect((await runOnlineConfirmationState({ status: true, time: true, bar: true, disabled: false })).state).toBe("control_enabled");
 
+  // A page with no application tree is reported as such, and is checked FIRST. Without this, a page
+  // destroyed by the route block is indistinguishable from a live page that is legitimately current,
+  // which is exactly the ambiguity that made the previous lifecycle's marker unactionable.
+  expect((await runOnlineConfirmationState({ live: false, status: false, time: false, bar: false, disabled: false })).state).toBe("page_absent");
+  // Liveness must not mask a real live-page verdict.
+  expect((await runOnlineConfirmationState({ live: true, status: false, time: false, bar: true, disabled: true })).state).toBe("status_absent");
+  expect((await runOnlineConfirmationState({ live: true, status: true, time: true, bar: true, disabled: true })).state).toBe("confirmed");
+
   // Nine unrelated components render role="status". One of them being present while the freshness
   // region is absent must still report status_absent, or the attribution this step exists to provide
   // is wrong in exactly the case it is meant to explain.
@@ -1326,6 +1338,7 @@ it("OC4 names the earliest failing sub-state of the online-confirmation conjunct
   expect(expression).not.toContain("textContent");
   expect(expression).not.toContain('[role="status"]');
   expect(expression).toContain("#app-freshness-status");
+  expect(expression).toContain("'main'");
 });
 
 it("OC5 statically mirrors the call site as defence in depth only, never as the reporting guard", () => {
@@ -1350,7 +1363,7 @@ it("OC5 statically mirrors the call site as defence in depth only, never as the 
   const reported = source.slice(source.indexOf('await observe("online_requires_confirmation"'));
   expect(reported.slice(0, 600)).toContain("onlineConfirmationDetail");
   const detail = source.slice(source.indexOf("async function onlineConfirmationState("), source.indexOf("async function assertWorkerOutage("));
-  for (const state of ["status_absent", "instant_absent", "timer_bar_absent", "control_enabled"]) {
+  for (const state of ["page_absent", "status_absent", "instant_absent", "timer_bar_absent", "control_enabled"]) {
     expect(detail).toContain(state);
   }
   // The probe must resolve browserFailureCode from the shared contract rather than an injected
@@ -1360,7 +1373,7 @@ it("OC5 statically mirrors the call site as defence in depth only, never as the 
   expect(header).toContain("browserFailureCode");
   expect(header).toContain("./cross-device-freshness-browser-contract.mjs");
   // Every reported sub-state code is in the frozen closed allowlist.
-  for (const code of ["online_status_absent", "online_instant_absent", "online_timer_bar_absent", "online_control_enabled"]) {
+  for (const code of ["online_page_absent", "online_status_absent", "online_instant_absent", "online_timer_bar_absent", "online_control_enabled"]) {
     expect(FRESHNESS_BROWSER_FAILURE_CODES).toContain(code);
   }
 });
@@ -1423,6 +1436,7 @@ it("OC7 composes the real classifier, call-site closure and observe end to end",
   // Closes the last static-only link: BD6 and OC5 only prove the `online_` template appears in the
   // file. This drives the real classifier result through the real composition into the real observe.
   for (const [state, expected] of [
+    ["page_absent", "online_page_absent"],
     ["status_absent", "online_status_absent"],
     ["instant_absent", "online_instant_absent"],
     ["timer_bar_absent", "online_timer_bar_absent"],
