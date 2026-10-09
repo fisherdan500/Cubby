@@ -535,7 +535,24 @@ OS variables, loopback/CDP endpoints, action ID and the fixture password.
 The unexecuted probe requires 20-second visible updates across Log, Moments,
 Calendar and timers, five-second foreground recovery, hidden cadence, truthful
 stale/reconnect state and browser diagnostics. The Calendar probe creates an
-event; Cubby has no Calendar edit action. Its bounded display/read isolation proof
+event; Cubby has no Calendar edit action. Because both profiles run at 390
+pixels, the Calendar observation reads only the phone month cell - its spoken
+item count and its painted marker dots - against a baseline captured on the
+already-open device-B page, and never renavigates it. Desktop event-title text
+sits inside a `hidden md:block` region and the title drawer needs a selected
+date, so neither is observable at that width and neither is read. The cell's
+marker row is capped at four dots, so the observation requires the uncapped
+spoken count to rise while the marker row keeps at least as many dots and stays
+nonempty, rather than demanding a saturated dot row grow. No other own-baby
+write is issued between that baseline and the observation, so an unrelated
+activity cannot supply the increase. The submitted calendar operation ID is also
+reconciled through `/api/browser-operations/<id>`: a `completed` status carrying
+a nonempty `eventId` passes, a still-reconciling `pending`/`prepared`/`open`
+status is polled within the same 20-second bound because the submit runs
+Serializable and may retry, and a terminal `stale`/`rejected`/`expired` status or
+an unusable outcome fails closed immediately. An HTTP 2xx response alone is not a
+saved event.
+Its bounded display/read isolation proof
 watches both browsers throughout exercised Log/Moments/Calendar/timer-status
 surfaces for foreign synthetic sentinels/identifiers and checks the foreign timer
 read. This is not a hostile mutation or side-effect audit of unchanged endpoints.

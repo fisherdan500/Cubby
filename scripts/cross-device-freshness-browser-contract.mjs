@@ -1,6 +1,7 @@
 export const FRESHNESS_BROWSER_FAILURE_CODES = Object.freeze([
   "activity_create", "activity_update", "browser_diagnostics", "browser_expression_failed",
-  "button_missing", "calendar_create", "calendar_submit_failed", "cdp_closed",
+  "button_missing", "calendar_create", "calendar_outcome_incomplete", "calendar_submit_failed",
+  "calendar_viewport_invalid", "cdp_closed",
   "cdp_command_failed", "cdp_command_timeout", "cdp_message_failed", "cdp_failed", "cdp_scope", "cdp_timeout",
   "chosen_photo_missing", "control_missing", "dialog_missing", "draft_preservation",
   "draft_refresh_missing", "foreground_five_seconds", "freshness_scope_invalid",

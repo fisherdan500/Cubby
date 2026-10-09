@@ -139,6 +139,57 @@ async function navigate(device, path) {
   await assertDisplayIsolation(device);
 }
 async function textPresent(device, text) { return evaluate(device.client, `document.body.innerText.includes(${JSON.stringify(text)})`); }
+async function calendarMobileDay(device, dayKey) {
+  // Phone month cell only: the count it speaks and the marker dots actually painted at this viewport.
+  // Event titles live in a desktop-only region, so they are never observable here.
+  const observed = await evaluate(device.client, `(() => {
+    const cell = document.querySelector(${JSON.stringify(`[data-calendar-day="${dayKey}"]`)});
+    const painted = (node) => {
+      const style = getComputedStyle(node);
+      return style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length > 0;
+    };
+    if (!cell || !painted(cell)) return null;
+    const label = cell.getAttribute('aria-label');
+    if (typeof label !== 'string') return null;
+    const markers = cell.querySelector('[aria-hidden="true"]');
+    if (markers && !painted(markers)) return null;
+    const counted = label.match(/, (\\d+) items?$/);
+    return { items: counted ? Number(counted[1]) : 0, dots: markers ? [...markers.children].filter(painted).length : 0 };
+  })()`);
+  if (!observed) fail("calendar_viewport_invalid");
+  return observed;
+}
+function calendarDayAdvanced(before, after) {
+  // The month cell caps its marker row at four dots, so a saturated day can never grow it. Require the
+  // uncapped spoken count to rise and the marker row to still carry at least as many dots as before.
+  return after.items > before.items && after.dots >= before.dots && after.dots > 0;
+}
+async function calendarOutcomeState(device, operation) {
+  // Fixed classification only: completed, still-reconciling, terminal non-completed, or unavailable.
+  return evaluate(device.client, `(async () => {
+    const response = await fetch(${JSON.stringify(`/api/browser-operations/${operation}`)}, { cache: 'no-store' });
+    const body = await response.json().catch(() => null);
+    const status = body && body.ok && body.data ? body.data.status : undefined;
+    if (status === 'completed') {
+      const eventId = body.data.outcome?.eventId;
+      return typeof eventId === 'string' && eventId.length > 0 ? 'completed' : 'unavailable';
+    }
+    if (status === 'pending' || status === 'prepared' || status === 'open') return 'pending';
+    if (status === 'stale' || status === 'rejected' || status === 'expired') return 'terminal';
+    return 'unavailable';
+  })()`);
+}
+async function calendarOutcomeCompleted(device, operation, limit = 20_000) {
+  // A Serializable submit can still be reconciling when the POST returns, so poll the retained
+  // operation instead of trusting one read; a terminal outcome fails immediately rather than retrying.
+  const until = Date.now() + limit;
+  for (;;) {
+    const state = await calendarOutcomeState(device, operation);
+    if (state === "completed") return;
+    if (state !== "pending" || Date.now() >= until) fail("calendar_outcome_incomplete");
+    await sleep(250);
+  }
+}
 async function observe(code, predicate, limit = 20_000) {
   await wait(predicate, limit, code);
   for (const device of devices) await assertDisplayIsolation(device);
@@ -187,9 +238,12 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   await assertDisplayIsolation(b, "moments");
   await navigate(b, `/app/calendar?babyId=${babyId}`);
   const day = new Date().toISOString().slice(0, 10);
-  const saved = await evaluate(a.client, `(async () => { const form = new FormData(); const fields = ${JSON.stringify({ [`$ACTION_ID_${action}`]: "", operationId: operationId(), babyId, title: "FRESH_CALENDAR_CREATED", eventType: "Appointment", startDate: day, startTime: "09:00", endDate: day, endTime: "10:00" })}; for (const [key, value] of Object.entries(fields)) form.set(key, value); const result = await fetch('/app/calendar', { method: 'POST', body: form }); return result.ok; })()`);
+  const calendarBefore = await calendarMobileDay(b, day);
+  const calendarOperation = operationId();
+  const saved = await evaluate(a.client, `(async () => { const form = new FormData(); const fields = ${JSON.stringify({ [`$ACTION_ID_${action}`]: "", operationId: calendarOperation, babyId, title: "FRESH_CALENDAR_CREATED", eventType: "Appointment", startDate: day, startTime: "09:00", endDate: day, endTime: "10:00" })}; for (const [key, value] of Object.entries(fields)) form.set(key, value); const result = await fetch('/app/calendar', { method: 'POST', body: form }); return result.ok; })()`);
   if (!saved) fail("calendar_submit_failed");
-  await observe("calendar_create", () => textPresent(b, "FRESH_CALENDAR_CREATED"));
+  await calendarOutcomeCompleted(a, calendarOperation);
+  await observe("calendar_create", async () => calendarDayAdvanced(calendarBefore, await calendarMobileDay(b, day)));
 
   await assertDisplayIsolation(b, "calendar");
   await navigate(b, ownLog);

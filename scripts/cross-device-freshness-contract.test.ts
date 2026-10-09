@@ -722,7 +722,8 @@ it.each([
 it("BD6 freezes the closed vocabulary and covers every explicit probe failure", () => {
   const expected = [
     "activity_create", "activity_update", "browser_diagnostics", "browser_expression_failed",
-    "button_missing", "calendar_create", "calendar_submit_failed", "cdp_closed",
+    "button_missing", "calendar_create", "calendar_outcome_incomplete", "calendar_submit_failed",
+    "calendar_viewport_invalid", "cdp_closed",
     "cdp_command_failed", "cdp_command_timeout", "cdp_message_failed", "cdp_failed", "cdp_scope", "cdp_timeout",
     "chosen_photo_missing", "control_missing", "dialog_missing", "draft_preservation",
     "draft_refresh_missing", "foreground_five_seconds", "freshness_scope_invalid",
@@ -875,4 +876,272 @@ it.each(["malformed message", "throwing listener"])("BD12 routes an asynchronous
   expect(formatBrowserFailure(browserFailure(failures[0]))).toBe("FRESHNESS_BROWSER_CDP_MESSAGE_FAILED\n");
   client.close();
   expect(socket!.closed).toBe(true);
+});
+
+/**
+ * CAL contracts close `CALENDAR_CREATE_MOBILE_TITLE_OBSERVER_UNSATISFIABLE`. The probe fixes both
+ * devices at 390 pixels, so an observation may only read a surface that is genuinely rendered at that
+ * width, and an accepted calendar mutation must reach the same completed outcome the production
+ * submission requires rather than any 2xx response.
+ */
+const CALENDAR_DAY_KEY = "2026-10-08";
+
+type SyntheticNode = {
+  style: { display: string; visibility: string };
+  children: SyntheticNode[];
+  getClientRects: () => readonly unknown[];
+  getAttribute: (name: string) => string | null;
+  querySelector: (selector: string) => SyntheticNode | null;
+};
+
+function syntheticNode(options: {
+  display?: string;
+  visibility?: string;
+  attributes?: Record<string, string>;
+  children?: SyntheticNode[];
+  nested?: Record<string, SyntheticNode>;
+}): SyntheticNode {
+  const display = options.display ?? "flex";
+  const visibility = options.visibility ?? "visible";
+  return {
+    style: { display, visibility },
+    children: options.children ?? [],
+    getClientRects: () => (display === "none" ? [] : [{ width: 6, height: 6 }]),
+    getAttribute: (name) => options.attributes?.[name] ?? null,
+    querySelector: (selector) => options.nested?.[selector] ?? null
+  };
+}
+
+function syntheticDayCell(options: {
+  label?: string | null;
+  cellDisplay?: string;
+  cellVisibility?: string;
+  markers?: "absent" | "visible" | "hidden";
+  dotDisplays?: string[];
+}) {
+  const dots = (options.dotDisplays ?? ["flex", "flex"]).map((display) => syntheticNode({ display }));
+  const markerRow = options.markers === "absent"
+    ? undefined
+    : syntheticNode({ display: options.markers === "hidden" ? "none" : "flex", children: dots });
+  return syntheticNode({
+    display: options.cellDisplay ?? "flex",
+    visibility: options.cellVisibility ?? "visible",
+    attributes: options.label === null ? {} : { "aria-label": options.label ?? "October 8, 2026, 2 items" },
+    nested: markerRow ? { '[aria-hidden="true"]': markerRow } : {}
+  });
+}
+
+async function runCalendarMobileDay(cell: SyntheticNode | null) {
+  let expression = "";
+  const calendarMobileDay = probeFunction("calendarMobileDay", {
+    evaluate: async (_client: unknown, source: string) => {
+      expression = source;
+      return runInNewContext(source, {
+        document: { querySelector: (selector: string) => (selector === `[data-calendar-day="${CALENDAR_DAY_KEY}"]` ? cell : null) },
+        getComputedStyle: (node: SyntheticNode) => node.style
+      });
+    },
+    fail: (code: string) => { throw Error(code); }
+  });
+  const outcome = await calendarMobileDay({ client: {} }, CALENDAR_DAY_KEY).then(
+    (value: unknown) => value,
+    (error: Error) => error.message
+  );
+  return { outcome, expression };
+}
+
+it("CAL1 rejects a calendar day observation that is not rendered at the probe viewport", async () => {
+  for (const cell of [
+    null,
+    syntheticDayCell({ cellDisplay: "none" }),
+    syntheticDayCell({ cellVisibility: "hidden" }),
+    syntheticDayCell({ label: null }),
+    syntheticDayCell({ markers: "hidden" })
+  ]) {
+    const { outcome } = await runCalendarMobileDay(cell);
+    expect(outcome).toBe("calendar_viewport_invalid");
+  }
+});
+
+it("CAL2 reads the visible mobile day count and marker dots at the probe viewport", async () => {
+  const { outcome, expression } = await runCalendarMobileDay(syntheticDayCell({ label: "October 8, 2026, 3 items" }));
+  expect(outcome).toEqual({ items: 3, dots: 2 });
+  // The predicate must read the mobile surface, never the desktop-only event-title region.
+  expect(expression).not.toContain("md:block");
+  expect(expression).not.toContain("innerText");
+  expect(expression).not.toContain("data-calendar-event");
+
+  const singular = await runCalendarMobileDay(syntheticDayCell({ label: "October 8, 2026, 1 item", dotDisplays: ["flex"] }));
+  expect(singular.outcome).toEqual({ items: 1, dots: 1 });
+
+  const empty = await runCalendarMobileDay(syntheticDayCell({ label: "October 8, 2026", markers: "absent" }));
+  expect(empty.outcome).toEqual({ items: 0, dots: 0 });
+
+  const partiallyHiddenDots = await runCalendarMobileDay(
+    syntheticDayCell({ label: "October 8, 2026, 2 items", dotDisplays: ["flex", "none"] })
+  );
+  expect(partiallyHiddenDots.outcome).toEqual({ items: 2, dots: 1 });
+});
+
+async function runCalendarOutcomeState(response: { status?: number; body?: unknown }) {
+  let expression = "";
+  const calendarOutcomeState = probeFunction("calendarOutcomeState", {
+    evaluate: async (_client: unknown, source: string) => {
+      expression = source;
+      return runInNewContext(source, {
+        fetch: async (url: string) => {
+          expect(url).toBe("/api/browser-operations/bmo_synthetic_operation");
+          const status = response.status ?? 200;
+          return { ok: status >= 200 && status < 300, status, json: async () => response.body };
+        }
+      });
+    }
+  });
+  const state = await calendarOutcomeState({ client: {} }, "bmo_synthetic_operation");
+  return { state, expression };
+}
+
+it("CAL3 classifies the operation status into completed, retryable pending, or terminal", async () => {
+  const completed = await runCalendarOutcomeState({
+    body: { ok: true, data: { status: "completed", operationId: "bmo_synthetic_operation", outcome: { eventId: "evt_synthetic" } } }
+  });
+  expect(completed.state).toBe("completed");
+  expect(completed.expression).toContain("cache: 'no-store'");
+
+  // The real route answers 202 for a not-yet-terminal operation, so these must stay retryable.
+  for (const [status, data] of [
+    [202, { status: "pending", operationId: "bmo_synthetic_operation" }],
+    [202, { status: "prepared", operationId: "bmo_synthetic_operation", code: "operation_prepared" }],
+    [200, { status: "open", operationId: "bmo_synthetic_operation" }]
+  ] as const) {
+    const { state } = await runCalendarOutcomeState({ status, body: { ok: true, data } });
+    expect(state).toBe("pending");
+  }
+
+  // A terminal non-completed outcome must never be retried into a pass.
+  for (const [status, data] of [
+    [200, { status: "stale", operationId: "bmo_synthetic_operation", code: "stale_context" }],
+    [200, { status: "rejected", operationId: "bmo_synthetic_operation", code: "rejected" }],
+    [410, { status: "expired", operationId: "bmo_synthetic_operation", code: "operation_abandoned" }]
+  ] as const) {
+    const { state } = await runCalendarOutcomeState({ status, body: { ok: true, data } });
+    expect(state).toBe("terminal");
+  }
+
+  // A completed operation without a usable event identifier is not a saved event.
+  for (const outcome of [{}, { eventId: "" }, { eventId: 123 }, undefined]) {
+    const { state } = await runCalendarOutcomeState({
+      body: { ok: true, data: { status: "completed", operationId: "bmo_synthetic_operation", outcome } }
+    });
+    expect(state).toBe("unavailable");
+  }
+  for (const body of [{ ok: false, error: { code: "not_found" } }, null, { ok: true }]) {
+    const { state } = await runCalendarOutcomeState({ status: 404, body });
+    expect(state).toBe("unavailable");
+  }
+});
+
+async function runCalendarOutcomeCompleted(states: string[], limit?: number) {
+  const observed: string[] = [];
+  let slept = 0;
+  const calendarOutcomeCompleted = probeFunction("calendarOutcomeCompleted", {
+    calendarOutcomeState: async () => {
+      const next = states.length > 1 ? states.shift()! : states[0];
+      observed.push(next);
+      return next;
+    },
+    sleep: async () => { slept += 1; },
+    Date: { now: () => slept * 1_000 },
+    fail: (code: string) => { throw Error(code); }
+  });
+  const outcome = await calendarOutcomeCompleted({ client: {} }, "bmo_synthetic_operation", limit).then(
+    () => "completed",
+    (error: Error) => error.message
+  );
+  return { outcome, observed, slept };
+}
+
+it("CAL4 tolerates a transient pending operation but fails closed on a terminal or timed-out outcome", async () => {
+  // A Serializable submit can still be prepared/pending when the POST returns, so one read is not proof.
+  const eventual = await runCalendarOutcomeCompleted(["pending", "pending", "completed"]);
+  expect(eventual.outcome).toBe("completed");
+  expect(eventual.observed).toEqual(["pending", "pending", "completed"]);
+
+  const immediate = await runCalendarOutcomeCompleted(["completed"]);
+  expect(immediate.outcome).toBe("completed");
+  expect(immediate.slept).toBe(0);
+
+  // A terminal outcome must fail on the first read rather than being polled into a pass.
+  for (const terminal of ["terminal", "unavailable"]) {
+    const rejected = await runCalendarOutcomeCompleted(["pending", terminal, "completed"]);
+    expect(rejected.outcome).toBe("calendar_outcome_incomplete");
+    expect(rejected.observed).toEqual(["pending", terminal]);
+  }
+
+  const timedOut = await runCalendarOutcomeCompleted(["pending"], 3_000);
+  expect(timedOut.outcome).toBe("calendar_outcome_incomplete");
+  expect(timedOut.observed.every((state) => state === "pending")).toBe(true);
+  expect(timedOut.observed.length).toBeGreaterThan(1);
+});
+
+it("CAL5 requires a real item increase without demanding a capped dot row to grow", () => {
+  const calendarDayAdvanced = probeFunction("calendarDayAdvanced", {}) as unknown as
+    (before: { items: number; dots: number }, after: { items: number; dots: number }) => boolean;
+
+  // The real month cell renders markers.slice(0, 4), so a saturated day can never grow its dot row.
+  expect(calendarDayAdvanced({ items: 6, dots: 4 }, { items: 7, dots: 4 })).toBe(true);
+  expect(calendarDayAdvanced({ items: 1, dots: 1 }, { items: 2, dots: 2 })).toBe(true);
+  expect(calendarDayAdvanced({ items: 0, dots: 0 }, { items: 1, dots: 1 })).toBe(true);
+
+  // An unchanged or regressing surface is not a cross-device update.
+  expect(calendarDayAdvanced({ items: 1, dots: 1 }, { items: 1, dots: 1 })).toBe(false);
+  expect(calendarDayAdvanced({ items: 2, dots: 2 }, { items: 1, dots: 1 })).toBe(false);
+  // A count that rises while every marker disappears is not the created event becoming visible.
+  expect(calendarDayAdvanced({ items: 1, dots: 1 }, { items: 2, dots: 0 })).toBe(false);
+  expect(calendarDayAdvanced({ items: 0, dots: 0 }, { items: 1, dots: 0 })).toBe(false);
+});
+
+it("CAL6 binds the submitted operation to the completed-outcome check and the mobile observation", () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const probe = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+
+  // One retained operation identifier is both submitted and reconciled, so a 2xx alone cannot pass.
+  const submitted = source.indexOf("const calendarOperation = operationId();");
+  const form = source.indexOf("operationId: calendarOperation");
+  const reconciled = source.indexOf("await calendarOutcomeCompleted(a, calendarOperation)");
+  const submitFailure = source.indexOf('fail("calendar_submit_failed")');
+  expect(submitted).toBeGreaterThan(0);
+  expect(form).toBeGreaterThan(submitted);
+  expect(submitFailure).toBeGreaterThan(form);
+  expect(reconciled).toBeGreaterThan(submitFailure);
+  expect(source.match(/operationId: calendarOperation/g)).toHaveLength(1);
+
+  // The baseline is captured on the already-open device-B page, and the observation never renavigates.
+  const baseline = source.indexOf("const calendarBefore = await calendarMobileDay(b, day)");
+  const observation = source.indexOf('await observe("calendar_create"');
+  expect(baseline).toBeGreaterThan(0);
+  expect(baseline).toBeLessThan(observation);
+  expect(reconciled).toBeLessThan(observation);
+  expect(source.slice(baseline, observation)).not.toContain("navigate(b,");
+
+  // No other own-baby mutation may land between the baseline and the observation, or an unrelated
+  // activity could move the combined item count and make a pass non-attributable.
+  expect(source.slice(baseline, observation)).not.toContain('mutate(a, "/api/activities"');
+  expect(source.slice(baseline, observation)).not.toContain('mutate(a, "/api/feed');
+
+  let predicate = "";
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && node.expression.getText(probe) === "observe"
+      && ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === "calendar_create") {
+      predicate = node.arguments[1].getText(probe);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(probe);
+  expect(predicate).toContain("calendarMobileDay(b, day)");
+  expect(predicate).toContain("calendarDayAdvanced(calendarBefore,");
+  expect(predicate).not.toContain("textPresent");
+  expect(predicate).not.toContain("FRESH_CALENDAR_CREATED");
+  // The event is still created with a real title; only the unsatisfiable title observer is retired.
+  expect(source).toContain('title: "FRESH_CALENDAR_CREATED"');
 });
