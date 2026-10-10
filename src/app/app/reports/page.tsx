@@ -124,6 +124,25 @@ export default async function ReportsPage({
         <Card>Add a baby before viewing reports.</Card>
       ) : (
         <div className="space-y-5">
+          {/* Which report is open was carried by colour alone; aria-current says it too. */}
+          <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2 print:hidden">
+            {tabs.map(([value, label, Icon]) => (
+              <Link
+                key={value}
+                href={reportHref({ tab: value })}
+                aria-current={tab === value ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-bold ${
+                  tab === value ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon aria-hidden="true" className="h-4 w-4" />
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Stats' period sits BELOW the views bar, where Routine and Trends already put theirs, so
+              choosing a report and then its period reads the same way in every tab. */}
           {tab === "stats" ? (
           <>
           <nav aria-label="Report period" className="flex flex-wrap gap-2 print:hidden">
@@ -165,23 +184,6 @@ export default async function ReportsPage({
           ) : null}
           </>
           ) : null}
-
-          {/* Which report is open was carried by colour alone; aria-current says it too. */}
-          <nav aria-label="Report views" className="flex gap-2 overflow-x-auto border-b border-border pb-2 print:hidden">
-            {tabs.map(([value, label, Icon]) => (
-              <Link
-                key={value}
-                href={reportHref({ tab: value })}
-                aria-current={tab === value ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-bold ${
-                  tab === value ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Icon aria-hidden="true" className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-          </nav>
 
           {tab === "stats" ? <StatsTab stats={report.stats} previous={report.previous} /> : null}
           {tab === "milestones" && report.history ? <MilestonesTab history={report.history} babyName={report.baby.name} /> : null}

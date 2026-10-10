@@ -108,6 +108,31 @@ describe("ReportsPage accessibility", () => {
     }
   });
 
+  // Item 7.2: the period chips and date boxes sit BELOW the report-views bar, the way Routine and
+  // Trends already present theirs. Comparing DOM order is what pins it: asserting both exist passes
+  // whichever way round they are rendered, which is the regression this test has to catch.
+  it("puts Stats' period chips below the report-views bar, like Routine and Trends", async () => {
+    const body = await renderReports("stats");
+    const views = body.querySelector('nav[aria-label="Report views"]');
+    const period = body.querySelector('nav[aria-label="Report period"]');
+
+    expect(views).not.toBeNull();
+    expect(period).not.toBeNull();
+    // DOCUMENT_POSITION_FOLLOWING: the period nav comes after the views bar in document order.
+    expect(views!.compareDocumentPosition(period!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("puts Stats' custom date boxes below the report-views bar too", async () => {
+    mocks.getReports.mockResolvedValue(baseReport());
+    const body = await renderReports("stats", { custom: "1" });
+    const views = body.querySelector('nav[aria-label="Report views"]');
+    const start = body.querySelector("#report-start");
+
+    expect(views).not.toBeNull();
+    expect(start).not.toBeNull();
+    expect(views!.compareDocumentPosition(start!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   // Item 7: Routine now offers Stats' custom range too, but keeps its OWN period. Stats' range
   // control and date boxes still belong to Stats alone, which is what the null checks below pin.
   it("gives Routine its own quick periods plus Custom, and none of Stats' range control", async () => {
