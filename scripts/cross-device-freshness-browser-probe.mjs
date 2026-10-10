@@ -26,7 +26,55 @@ async function wait(predicate, limit, code) {
   do { if (await predicate()) return; await sleep(100); } while (Date.now() < until);
   fail(code);
 }
-async function connect(url) {
+// Request interception with no handler stalls every request through the target, documents included.
+const CDP_PATH_SEVERING = new Set(["Fetch.enable", "Network.setRequestInterception"]);
+// EVERY CDP METHOD IS DENIED UNLESS LISTED HERE. Refusing four known-dangerous methods left the
+// entire rest of the protocol permitted, and that surface is itself a page-side execution route:
+// Page.navigate and Page.reload sever the observed document, Storage.clearDataForOrigin and
+// Network.clearBrowserCache destroy the cache the proof depends on, ServiceWorker.stopAllWorkers
+// kills the worker, Emulation.setScriptExecutionDisabled kills all page script, and
+// Runtime.callFunctionOn plus Page.addScriptToEvaluateOnNewDocument run arbitrary page code
+// without ever naming Runtime.evaluate. Enumerating what to refuse cannot terminate; this can.
+const CDP_ALLOWED = new Map([
+  ["Target.createTarget", new Set(["browser"])],
+  ["Target.activateTarget", new Set(["browser"])],
+  ["Target.closeTarget", new Set(["browser"])],
+  ["Page.enable", new Set(["page"])],
+  ["Runtime.enable", new Set(["page"])],
+  ["Log.enable", new Set(["page"])],
+  ["Network.enable", new Set(["page", "worker"])],
+  ["Network.setCookies", new Set(["page"])],
+  ["Network.setBlockedURLs", new Set(["page", "worker"])],
+  ["Network.emulateNetworkConditions", new Set(["page"])],
+  ["Emulation.setDeviceMetricsOverride", new Set(["page"])],
+  ["Runtime.evaluate", new Set(["page"])],
+  ["Runtime.addBinding", new Set(["page"])],
+  ["Page.navigate", new Set(["page"])],
+  ["Page.addScriptToEvaluateOnNewDocument", new Set(["page"])]
+]);
+const CDP_TIMER_PATH = /^http:\/\/127\.0\.0\.1:\d+\/api\/timers\/active\*$/;
+function assertDispatchAllowed(kind, method, params) {
+  // THE ONE CHOKE POINT. Whatever expression reaches this function - an alias, a parameter, a
+  // computed key, a name built at runtime - these shapes are refused. Static contracts over the
+  // probe source cannot be made total against re-spelling; this can, because every dispatch is here.
+  //
+  // The service worker controls the origin root with no scope filter and its fetch handler answers
+  // every controlled GET, so taking the WORKER offline severs the observed page's own document and
+  // RSC payloads. Two lifecycles failed exactly that way. The page session may emulate freely.
+  // Deny by default: an unlisted method, or a listed method on the wrong session, is refused.
+  const permittedKinds = CDP_ALLOWED.get(method);
+  if (!permittedKinds || !permittedKinds.has(kind)) fail("cdp_dispatch_forbidden");
+  if (method === "Network.emulateNetworkConditions" && kind !== "page") fail("cdp_dispatch_forbidden");
+  // A blocked-URL list may only be the timer data path, or an explicit clear. A wildcard or an /app
+  // pattern severs the document path the online-confirmation step observes.
+  if (method === "Network.setBlockedURLs") {
+    const urls = params?.urls;
+    if (!Array.isArray(urls) || urls.length > 1) fail("cdp_dispatch_forbidden");
+    if (urls.length === 1 && !CDP_TIMER_PATH.test(String(urls[0]))) fail("cdp_dispatch_forbidden");
+  }
+  if (CDP_PATH_SEVERING.has(method)) fail("cdp_dispatch_forbidden");
+}
+async function connect(url, kind) {
   if (asynchronousFailure) throw asynchronousFailure;
   if (!/^ws:\/\/127\.0\.0\.1:\d+\/devtools\//.test(url ?? "")) fail("cdp_scope");
   const socket = new WebSocket(url);
@@ -57,12 +105,15 @@ async function connect(url) {
   };
   return {
     on: (listener) => listeners.push(listener),
-    call: (method, params = {}) => new Promise((done, reject) => {
+    call: (method, params = {}) => {
+      assertDispatchAllowed(kind, method, params);
+      return new Promise((done, reject) => {
       if (asynchronousFailure) { reject(asynchronousFailure); return; }
       const sequence = ++id;
       const timer = setTimeout(() => { pending.delete(sequence); reject(browserFailure("cdp_command_timeout")); }, 15_000);
       pending.set(sequence, { done, reject, timer }); socket.send(JSON.stringify({ id: sequence, method, params }));
-    }),
+      });
+    },
     close: () => { failureListeners.delete(rejectPending); rejectPending(browserFailure("cdp_closed")); socket.close(); }
   };
 }
@@ -82,12 +133,12 @@ function renderedIsolationMarkup(node) {
   return copy.outerHTML ?? copy.textContent ?? "";
 }
 async function device(url) {
-  const browser = await connect(url); connections.push(browser);
+  const browser = await connect(url, "browser"); connections.push(browser);
   const endpoint = new URL(url).host;
   const targets = await fetch(`http://${endpoint}/json`, { signal: AbortSignal.timeout(5_000) }).then((response) => response.json());
   const target = targets.find((entry) => entry.type === "page");
   if (!target) fail("page_missing");
-  const client = await connect(target.webSocketDebuggerUrl); connections.push(client);
+  const client = await connect(target.webSocketDebuggerUrl, "page"); connections.push(client);
   const diagnostics = { errors: 0, exceptions: 0, failures: 0, overlap: false, rsc: [], active: new Set(), expectedOutage: false, currentPath: "", isolationViolation: false };
   client.on((message) => {
     const params = message.params ?? {};
@@ -133,7 +184,11 @@ async function navigate(device, path) {
   await assertDisplayIsolation(device);
 
   device.diagnostics.currentPath = path.split("?")[0];
-  await device.client.call("Page.navigate", { url: `${base}${path}` });
+  // The observed document path is the whole point of the harness; refuse to navigate anywhere
+  // else. Without this the single permitted navigate could be retargeted at the origin root.
+  const destination = `${base}${path}`;
+  if (!destination.startsWith(`${base}/app`)) fail("navigation_target_forbidden");
+  await device.client.call("Page.navigate", { url: destination });
   await wait(() => evaluate(device.client, `location.pathname === ${JSON.stringify(path.split("?")[0])} && location.search === ${JSON.stringify(new URL(path, base).search)} && document.readyState === 'complete' && Boolean(document.querySelector('main'))`), 15_000, "navigation_failed");
   await sleep(750);
   await assertDisplayIsolation(device);
@@ -197,19 +252,97 @@ async function onlineConfirmationState(device) {
   return evaluate(device.client, `(() => {
     if (!document.querySelector('main')) return 'page_absent';
     if (!document.querySelector('#app-freshness-status')) return 'status_absent';
-    if (!document.querySelector('#app-freshness-status time')) return 'instant_absent';
+    // The timer paragraph specifically, not the page-level branch: both render inside this region,
+    // and a page-level instant plus a button disabled only because a timer load was pending would
+    // otherwise satisfy the conjunction while timer staleness had in fact cleared.
+    const timerCopy = [...document.querySelectorAll('#app-freshness-status p')]
+      .find(p => p.textContent.includes('Timer data may be out of date'));
+    if (!timerCopy) return 'timer_status_absent';
+    if (!timerCopy.nextElementSibling?.querySelector('time')) return 'instant_absent';
     if (!document.querySelector('[aria-label="Running timers"]')) return 'timer_bar_absent';
     if (!document.querySelector('[aria-label="Running timers"] button:disabled')) return 'control_enabled';
     return 'confirmed';
   })()`);
 }
+// One throwaway request shape, shared by both outage guards so a single executable contract covers
+// both. It reports a DISCRIMINATED outcome, because a network refusal, an answer and a fault inside
+// the probe itself are three different facts: a bare catch let any throw - a restarted worker, a
+// TypeError in the expression - read as "the path is out" and certify an outage that never existed.
+// The token is built the way the product builds it, so the probe exercises the real request shape.
+const WORKER_CONTROL_PROBE = `(async () => {
+  try {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    const token = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    // caches.match defaults to ignoreSearch:false, so this query can never match the pre-cached
+    // shell entry: answering REQUIRES the worker's passthrough fetch to reach the network.
+    var url = '/manifest.webmanifest?cacheBust=' + token;
+  } catch {
+    return 'probe_error';
+  }
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok ? 'answered' : 'refused';
+  } catch (error) {
+    return error instanceof TypeError ? 'refused' : 'probe_error';
+  }
+})()`;
+const TIMER_PATH_PROBE = `(async () => {
+  let url;
+  try {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    url = '/api/timers/active?requestToken=' + [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return 'probe_error';
+  }
+  try {
+    await fetch(url, { cache: 'no-store' });
+    return 'answered';
+  } catch (error) {
+    return error instanceof TypeError ? 'refused' : 'probe_error';
+  }
+})()`;
+async function probeTimerPath(device) {
+  // Only an explicit network refusal counts as "out". Anything else - answered, or a fault inside
+  // the probe - is reported to the caller as not-out, so no guard can treat a broken probe as proof.
+  const outcome = await evaluate(device.client, TIMER_PATH_PROBE);
+  if (outcome === "probe_error") fail("timer_path_probe_failed");
+  return outcome === "answered";
+}
+async function assertTimerPathOut(device) {
+  // The worker now stays online, so the page-layer block is the only thing holding the timer data
+  // path out - and whether a page-session block reaches a request mediated by the worker is not
+  // something this harness may assume. Prove the outage instead: issue one throwaway request from
+  // the page and require it to FAIL. A reachable timer path is a harness condition, never a product
+  // verdict, because the product would then be correct to re-enable its controls.
+  if (await probeTimerPath(device)) fail("timer_path_reachable");
+}
+async function assertWorkerBlockEnforced(device) {
+  // The page layer is clear by now, so this request is governed only by the worker's scoped block.
+  // Whether CDP enforces a blocked-URL list on a service_worker target - and delivers the refusal to
+  // the worker's own fetch() promise rather than erroring the fetch event - is an ASSUMPTION this
+  // harness cannot establish from source. Prove it where the cache proof first depends on it.
+  //
+  // A refusal alone is NOT proof: the worker falls back to caches.match, which must miss for a
+  // never-cached URL, so respondWith(undefined) rejects for an unrelated reason that looks
+  // identical. A positive control separates the two. An unblocked path must still answer through
+  // the same worker; if the control is also refused, the worker is broken rather than enforcing,
+  // and that is a harness condition instead of a silent product-looking cache failure later.
+  if (await probeTimerPath(device)) fail("worker_block_unenforced");
+  const control = await evaluate(device.client, WORKER_CONTROL_PROBE);
+  if (control === "probe_error") fail("worker_control_probe_failed");
+  if (control !== "answered") fail("worker_control_unreachable");
+}
 async function assertWorkerOutage(workerHost, worker) {
-  // An idle service worker can be terminated and restarted, and a restarted worker does not inherit
-  // network emulation. Confirm the exact worker target still exists and re-apply the outage, so a
-  // lapsed outage is reported as a harness condition instead of becoming a product verdict.
+  // An idle service worker can be terminated and restarted, and a restarted worker inherits neither
+  // its blocked-URL list nor any emulation. Confirm the exact worker target still exists and
+  // re-apply the scoped block, so a lapsed outage is reported as a harness condition instead of
+  // becoming a product verdict. The block is scoped to the timer data path: the worker controls the
+  // origin root with no scope filter, so an offline emulation here would also sever the document and
+  // RSC payloads of the very page under observation.
   const targets = await fetch(`http://${workerHost}/json`, { signal: AbortSignal.timeout(5_000) }).then(response => response.json());
   if (!targets.some(target => target.type === "service_worker" && target.url === `${base}/sw.js`)) fail("worker_outage_lapsed");
-  await worker.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await worker.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] });
 }
 async function observe(code, predicate, limit = 20_000, detail) {
   // A conjunction-backed observation may supply a closed sub-state code, so a failure names the
@@ -335,7 +468,7 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   const workerHost = new URL(process.env.REHEARSAL_BROWSER_B).host;
   const workerTarget = targets.find(target => target.type === "service_worker" && target.url === `${base}/sw.js`);
   if (!workerTarget) fail("worker_target_missing");
-  const worker = await connect(workerTarget.webSocketDebuggerUrl); connections.push(worker);
+  const worker = await connect(workerTarget.webSocketDebuggerUrl, "worker"); connections.push(worker);
   await worker.call("Network.enable");
   let exactCachedResponse = false;
   b.client.on(({ method, params }) => {
@@ -347,26 +480,33 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   b.diagnostics.expectedOutage = true;
   await b.client.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await observe("offline_retention", () => evaluate(b.client, `Boolean(document.querySelector('[aria-label="Running timers"]')) && Boolean(document.querySelector('[aria-label="Running timers"] button:disabled')) && Boolean(document.querySelector('[role="status"] time[datetime]'))`), 12_000);
-  await worker.call("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  // Block ONLY the timer data path at the page layer. The worker's own emulation cannot be trusted
-  // to survive this idle window, and without a deterministic outage a successful request would make
-  // the product correctly re-enable its controls while this assertion still demanded an outage.
-  // The application route must stay reachable: blocking it destroyed the page this step observes,
-  // which a lifecycle reported as ONLINE_PAGE_ABSENT. The timer bar's requestToken check rejects any
-  // response that does not answer its own live request, so a cached reply cannot clear timer
-  // staleness and the freshness region stays rendered with its confirmed instant.
+  // Sever ONLY the timer data path, at both layers, and never the document path. The worker controls
+  // the origin root with no scope filter and its fetch handler answers every controlled GET, so an
+  // offline emulation on the worker also kills the observed page's own route and leaves no page to
+  // observe - which two lifecycles reported as ONLINE_PAGE_ABSENT. A scoped blocked-URL list keeps
+  // the document path alive. That it ALSO still forces the cache fallback service_worker_cache
+  // proves is an assumption about where CDP enforces a blocked-URL list relative to the worker's
+  // fetch event; it is not established from source, so assertWorkerBlockEnforced proves it below
+  // before that observation relies on it.
+  await worker.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] });
   await b.client.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] });
   await b.client.call("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await sleep(11_000);
+  // The timer bar's requestToken check rejects any response that does not answer its own live
+  // request, so a cached reply cannot clear timer staleness; proving the path is out makes that the
+  // only remaining explanation for a retained stale state.
+  await assertTimerPathOut(b);
   let onlineConfirmationDetail;
   await observe("online_requires_confirmation", async () => {
     onlineConfirmationDetail = await onlineConfirmationState(b);
     return onlineConfirmationDetail === "confirmed";
   }, 1_000, () => onlineConfirmationDetail && `online_${onlineConfirmationDetail}`);
-  // The cache observation needs the request to reach the worker and fall back, so lift the endpoint
-  // block and reconfirm the worker outage it depends on. Nothing stays blocked at the page layer.
+  // The cache observation needs the request to reach the worker and fall back, so lift the PAGE
+  // block and reconfirm the worker's scoped block it depends on. Nothing stays blocked at the page
+  // layer; the worker keeps only the timer data path blocked.
   await b.client.call("Network.setBlockedURLs", { urls: [] });
   await assertWorkerOutage(workerHost, worker);
+  await assertWorkerBlockEnforced(b);
   // The override exists only during this synchronous loader dispatch, never during authentication/mutation.
   await evaluate(b.client, `(async () => {
     const cacheUrl = ${JSON.stringify(cacheUrl)}, token = ${JSON.stringify(cacheToken)};
@@ -403,7 +543,7 @@ if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base) || !password || !action) 
   })()`);
   await observe("service_worker_cache", async () => exactCachedResponse && await evaluate(b.client, `navigator.onLine && window.__freshCacheProof.consumed === 1 && window.__freshCacheProof.exactBody && window.__freshCacheProof.sameInstant && Boolean(document.querySelector('#app-freshness-status time')) && Boolean(document.querySelector('[aria-label="Running timers"] button:disabled')) && !document.querySelector('[aria-label="Running timers"] button:not(:disabled)')`), 1_000);
   await assertDisplayIsolation(b, "timer_status");
-  await worker.call("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await worker.call("Network.setBlockedURLs", { urls: [] });
   await b.client.call("Network.setBlockedURLs", { urls: [] });
   await clickText(b, "Retry refresh");
   await wait(() => evaluate(b.client, `!document.querySelector('#app-freshness-status')`), 20_000, "recovery_failed");

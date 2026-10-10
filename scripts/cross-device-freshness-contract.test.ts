@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { expect, it, vi } from "vitest";
 import { GATES_RUN_BY_HAND } from "./verify-gates";
 import * as rehearsal from "./cross-device-freshness.acceptance-rehearsal";
@@ -11,6 +13,8 @@ import { createRequire } from "node:module";
 import { discoverPackageCommands, discoverStructuralExclusions } from "../src/server/operation-registry/checker";
 import { EventEmitter } from "node:events";
 
+const textOfNode = (node: ts.Node) => node.getSourceFile()
+  ? node.getText(node.getSourceFile()) : String((node as { kind: number }).kind);
 const read = (path: string) => existsSync(path) ? readFileSync(path, "utf8") : "";
 
 it("D1 retains one primary phase when cleanup succeeds", async () => {
@@ -719,22 +723,201 @@ it.each([
   expect((failure as Error).message).toBe("FRESHNESS_BROWSER_UNKNOWN");
 });
 
+it("OC14 pins every function body the harness draws evidence from", () => {
+  // THE SEVERING SURFACE IS NOT THE ONLY SURFACE. Rounds 7-14 bound what the probe may DO to the
+  // browser - which CDP method on which session, which socket, which in-page expression. All of
+  // that holds. But nothing bound the logic that INTERPRETS what the probe sees, and a reviewer
+  // landed 15 of 20 mutations there at a fully green suite:
+  //   evaluate() { return true; }            -> every in-page observation vacuous
+  //   wait() returns before its predicate    -> every settle check vacuous
+  //   the final census `&& false`            -> reports PASS having observed nothing
+  //   exactCachedResponse forged true        -> service_worker_cache certifies on no evidence
+  //   ownLog = `/app/../?babyId=...`      -> passes startsWith("/app"), resolves to origin root
+  //   addBinding name mismatched             -> the isolation violation channel silently dies
+  //   closeTarget closes the observed page   -> evidence destroyed, not severed
+  // A harness that prints FRESHNESS_BROWSER_PASS having observed nothing is WORSE than one that
+  // severs the document path: severing fails loudly and a forged proof does not. Enumerating the
+  // ways to forge evidence is the arms race rounds 7-11 lost five times, so this is the same
+  // inversion applied a third time - every top-level function body is pinned by digest, and any
+  // new, removed or edited function fails closed with its name. Changing harness logic is now a
+  // deliberate, reviewable act: update the digest and say why.
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const file = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const printer = ts.createPrinter({ removeComments: true, newLine: ts.NewLineKind.LineFeed });
+  // Normalise line endings: JavaScript itself folds CRLF to LF inside template literals,
+  // so a CRLF checkout and an LF checkout of the same file run the same program and must
+  // produce the same digest. Without this the pin is an artifact of one platform.
+  const digest = (node: ts.Node) => createHash("sha256")
+    .update(printer.printNode(ts.EmitHint.Unspecified, node, file).split("\r\n").join("\n"))
+    .digest("hex").slice(0, 16);
+  const bodies: [string, string][] = [];
+  for (const statement of file.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name && statement.body) {
+      bodies.push([statement.name.text, digest(statement.body)]);
+      continue;
+    }
+    if (!ts.isVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      // Fail closed: a name this census cannot read (destructuring, computed) is not skipped.
+      // A destructured `const { forged } = { get forged() { ... } }` executes a getter, and the
+      // previous version silently skipped it.
+      const name = declaration.name;
+      if (!ts.isIdentifier(name)) throw new Error(`unreadable declaration name: ${textOfNode(name)}`);
+      if (!declaration.initializer) continue;
+      if (ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer)) {
+        bodies.push([name.text, digest(declaration.initializer.body)]);
+      }
+    }
+  }
+  bodies.sort(([left], [right]) => left.localeCompare(right));
+  expect(bodies).toEqual([
+    ["assertDispatchAllowed", "82c3f3c7ef1625ac"],
+    ["assertDisplayIsolation", "fc8d5ee9bdd45992"],
+    ["assertTimerPathOut", "b1282eda929e92ba"],
+    ["assertWorkerBlockEnforced", "85c64ec72bcc6caa"],
+    ["assertWorkerOutage", "46b3b337d2f9f4a5"],
+    ["calendarDayAdvanced", "83f3f5a4e55d2924"],
+    ["calendarMobileDay", "37995e4f5d27bbb4"],
+    ["calendarOutcomeCompleted", "6a1e27752dbd0a42"],
+    ["calendarOutcomeState", "7743f8d8a8974204"],
+    ["click", "20824589f505baa8"],
+    ["clickText", "36dad3620412ddbd"],
+    ["connect", "8b9ab57143d0dad0"],
+    ["device", "d35dff4028b2a107"],
+    ["evaluate", "361e6e83aed6917e"],
+    ["fail", "2ee20448953a7bb8"],
+    ["input", "f4279f30479b32e3"],
+    ["mutate", "aeeba40ada826255"],
+    ["navigate", "3047a3fbedb96b80"],
+    ["observe", "bae8a679f51a5774"],
+    ["onlineConfirmationState", "fc310c401a84b350"],
+    ["operationId", "c989e2e6ae4e11f2"],
+    ["probeTimerPath", "9b01a81228fd41ea"],
+    ["renderedIsolationMarkup", "51bc2ec4d01b7c87"],
+    ["signalBrowserFailure", "3d380f66dd574437"],
+    ["sleep", "ea17e423aba602ac"],
+    ["textPresent", "bcc4e632f7ae9c02"],
+    ["wait", "c9b342d8bba9d59c"],
+  ]);
+});
+
+it("OC15 pins the lifecycle sequence and every module-level constant", () => {
+  // OC14 pinned function BODIES, and six mutations still survived - because the harness's most
+  // important code is not in a function at all. The observation sequence lives in the top-level
+  // lifecycle `try` block, and the route constants are plain module-level consts:
+  //   closeTarget closing the OBSERVED page instead of the blank one   (in the try block)
+  //   createTarget opening the app route instead of about:blank        (in the try block)
+  //   exactCachedResponse forged true                                  (in the try block)
+  //   request_cadence and the final observation census neutered        (in the try block)
+  //   ownLog = `/app/../?babyId=...`                                 (a module const)
+  // Every one of those forges or destroys evidence while the suite stays green. Pinning "every
+  // function" was the wrong boundary: the right boundary is every statement the harness executes.
+  // So the lifecycle block is pinned as one digest, and module-level constants are pinned as a
+  // CENSUS rather than a hand-picked list - ownLog was missed exactly because it was neither a
+  // function nor on anyone's list. Editing the observation sequence is now a deliberate act.
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const file = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const printer = ts.createPrinter({ removeComments: true, newLine: ts.NewLineKind.LineFeed });
+  // Normalise line endings: JavaScript itself folds CRLF to LF inside template literals,
+  // so a CRLF checkout and an LF checkout of the same file run the same program and must
+  // produce the same digest. Without this the pin is an artifact of one platform.
+  const digest = (node: ts.Node) => createHash("sha256")
+    .update(printer.printNode(ts.EmitHint.Unspecified, node, file).split("\r\n").join("\n"))
+    .digest("hex").slice(0, 16);
+  // Exactly one top-level try: the lifecycle. A second one would give observations a home that
+  // this pin does not cover, and would also defeat the dispatch-reachability contracts.
+  const tryStatements = file.statements.filter(ts.isTryStatement);
+  expect(tryStatements).toHaveLength(1);
+  expect(digest(tryStatements[0].tryBlock)).toBe("e1fc046082b7c918");
+  const constants: [string, string][] = [];
+  for (const statement of file.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      // Fail closed: a name this census cannot read (destructuring, computed) is not skipped.
+      // A destructured `const { forged } = { get forged() { ... } }` executes a getter, and the
+      // previous version silently skipped it.
+      const name = declaration.name;
+      if (!ts.isIdentifier(name)) throw new Error(`unreadable declaration name: ${textOfNode(name)}`);
+      if (!declaration.initializer) continue;
+      if (ts.isArrowFunction(declaration.initializer)
+        || ts.isFunctionExpression(declaration.initializer)) continue;
+      constants.push([name.text, digest(declaration.initializer)]);
+    }
+  }
+  constants.sort(([left], [right]) => left.localeCompare(right));
+  expect(constants).toEqual([
+    ["action", "fae40a7c7ab441ad"],
+    ["babyId", "6362efe1ac11498f"],
+    ["base", "14012dae262daab1"],
+    ["CDP_ALLOWED", "f0a78651c4f88e76"],
+    ["CDP_PATH_SEVERING", "8b507e9d02026f40"],
+    ["CDP_TIMER_PATH", "1d6adc16387d64e4"],
+    ["connections", "4f53cda18c2baa0c"],
+    ["devices", "4f53cda18c2baa0c"],
+    ["displaySurfaces", "1ae36cea42d69792"],
+    ["failureListeners", "1ae36cea42d69792"],
+    ["observations", "1ae36cea42d69792"],
+    ["outcome", "2f3b8e8d700f5702"],
+    ["ownLog", "54bb98075216188c"],
+    ["ownMoments", "3d1ade687bb560c6"],
+    ["password", "ef5cc681612e5217"],
+    ["required", "2ca92de3b6454b30"],
+    ["TIMER_PATH_PROBE", "a2e048922c1fd78f"],
+    ["WORKER_CONTROL_PROBE", "d0244cbdcd9dd03d"],
+  ]);
+});
+
+it("OC16 pins every executable statement in the probe, in any form", () => {
+  // THE BOUNDARY IS THE WHOLE FILE, NOT A LIST OF NODE KINDS. OC14 and OC15 pin function bodies,
+  // the lifecycle block and module constants, which is useful for diagnostics but was NOT a
+  // boundary: they enumerate which AST shapes to digest, and a reviewer put executable logic in
+  // seventeen shapes they do not enumerate. The decisive one is that a function DECLARATION is a
+  // mutable binding, so a single module-level assignment replaces a pinned function wholesale -
+  // the pinned body stays in the file, byte-identical, and simply never runs:
+  //   evaluate = async () => true;              every in-page observation vacuous
+  //   wait = async () => {};                    every settle check vacuous
+  //   assertDispatchAllowed = () => {};         the choke point of rounds 7-14, disabled
+  //   probeTimerPath = async () => false;       both outage proofs forged
+  // and the same assignment hidden in an IIFE, a class static block, a bare block, a label, a
+  // top-level if/for, a top-level await, a destructured getter, or the lifecycle catch/finally.
+  // Enumerating node kinds is the denylist polarity this design condemns elsewhere, and it has
+  // now failed twice. So this digest covers EVERY top-level statement, printed with comments
+  // removed. Nothing executes in a module outside its own statement list, so nothing can be
+  // added, removed, reassigned or reordered without changing this one value.
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const file = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const printer = ts.createPrinter({ removeComments: true, newLine: ts.NewLineKind.LineFeed });
+  const printed = file.statements
+    .map(statement => printer.printNode(ts.EmitHint.Unspecified, statement, file))
+    .join("\n");
+  expect(file.statements).toHaveLength(50);
+  // Line endings normalised for the same reason: the digest must identify the PROGRAM,
+  // not the checkout. A CRLF tree and an LF tree of these bytes execute identically.
+  expect(createHash("sha256").update(printed.split("\r\n").join("\n"))
+    .digest("hex").slice(0, 16)).toBe("ec69ed71b7591191");
+});
+
 it("BD6 freezes the closed vocabulary and covers every explicit probe failure", () => {
   const expected = [
     "activity_create", "activity_update", "browser_diagnostics", "browser_expression_failed",
     "button_missing", "calendar_create", "calendar_outcome_incomplete", "calendar_submit_failed",
     "calendar_viewport_invalid", "cdp_closed",
-    "cdp_command_failed", "cdp_command_timeout", "cdp_message_failed", "cdp_failed", "cdp_scope", "cdp_timeout",
+    "cdp_command_failed", "cdp_command_timeout", "cdp_dispatch_forbidden",
+    "cdp_message_failed", "cdp_failed", "cdp_scope", "cdp_timeout",
     "chosen_photo_missing", "control_missing", "dialog_missing", "draft_preservation",
     "draft_refresh_missing", "foreground_five_seconds", "freshness_scope_invalid",
     "hidden_no_poll", "hide_failed", "isolation_surfaces_missing", "known_timer_missing",
     "moments_create", "moments_update", "navigation_failed", "observations_missing",
     "offline_retention", "online_control_enabled", "online_instant_absent",
     "online_page_absent", "online_requires_confirmation", "online_status_absent",
-    "online_timer_bar_absent",
-    "page_missing", "recovery_failed",
+    "online_timer_bar_absent", "online_timer_status_absent",
+    "navigation_target_forbidden", "page_missing", "recovery_failed",
     "request_cadence", "service_worker_cache", "sign_in_failed", "tenant_isolation",
-    "timer_start", "timer_stop", "worker_missing", "worker_outage_lapsed", "worker_target_missing", "unknown"
+    "timer_path_probe_failed", "timer_path_reachable", "timer_start",
+    "timer_stop", "worker_block_unenforced", "worker_control_probe_failed",
+    "worker_control_unreachable", "worker_missing",
+    "worker_outage_lapsed",
+    "worker_target_missing", "unknown"
   ];
   expect(FRESHNESS_BROWSER_FAILURE_CODES).toEqual(expected);
   expect(Object.isFrozen(FRESHNESS_BROWSER_FAILURE_CODES)).toBe(true);
@@ -752,9 +935,12 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
   visit(source);
   // The five online_* sub-states are composed from a closed classifier result rather than written as
   // literals, so they are enumerated from the classifier itself and must reconcile exactly.
+  // Bounded by the classifier's OWN closing brace, not by whatever happens to follow it: a probe
+  // const inserted in between would otherwise leak its returns into this harvest.
+  const classifierStart = source.text.indexOf("async function onlineConfirmationState(");
   const classifier = source.text.slice(
-    source.text.indexOf("async function onlineConfirmationState("),
-    source.text.indexOf("async function assertWorkerOutage(")
+    classifierStart,
+    source.text.indexOf("\n}", classifierStart)
   );
   const composed = [...classifier.matchAll(/return '([a-z_]+)'/g)]
     .map(match => match[1])
@@ -762,7 +948,7 @@ it("BD6 freezes the closed vocabulary and covers every explicit probe failure", 
     .map(state => `online_${state}`);
   expect(composed.sort()).toEqual([
     "online_control_enabled", "online_instant_absent", "online_page_absent",
-    "online_status_absent", "online_timer_bar_absent"
+    "online_status_absent", "online_timer_bar_absent", "online_timer_status_absent"
   ]);
   expect(source.text).toContain("`online_${onlineConfirmationDetail}`");
   for (const state of composed) codes.add(state);
@@ -1206,8 +1392,12 @@ it("OC1 makes the online-confirmation outage deterministic at the page layer", (
   // The assertion's meaning is unchanged; it now runs through the sub-state classifier.
   expect(predicate).toContain("onlineConfirmationState(b)");
   expect(predicate).toContain('"confirmed"');
-  const classifier = source.slice(source.indexOf("async function onlineConfirmationState("), source.indexOf("async function assertWorkerOutage("));
-  expect(classifier).toContain("#app-freshness-status time");
+  const classifier = source.slice(source.indexOf("async function onlineConfirmationState("), source.indexOf("const TIMER_PATH_PROBE"));
+  // The instant is read from the TIMER paragraph's own group, not anywhere in the region: a
+  // page-level instant plus a button disabled only because a timer load was pending would
+  // otherwise satisfy the conjunction while timer staleness had in fact cleared.
+  expect(classifier).toContain("Timer data may be out of date");
+  expect(classifier).toContain("timerCopy.nextElementSibling?.querySelector('time')");
   expect(classifier).toContain('[aria-label="Running timers"] button:disabled');
 });
 
@@ -1252,23 +1442,978 @@ it("OC9 keeps the application route reachable during the online-confirmation win
   expect(restored).toBeLessThan(cacheObservation);
 });
 
-it("OC2 re-asserts the worker outage before relying on it and fails closed when it lapsed", () => {
+function probeConst(name: string) {
   const source = read("scripts/cross-device-freshness-browser-probe.mjs");
-  const reassertion = source.indexOf("await assertWorkerOutage(workerHost, worker)");
-  const cacheDispatch = source.indexOf("window.__freshCacheProof");
-  const cacheObservation = source.indexOf('await observe("service_worker_cache"');
-  expect(reassertion).toBeGreaterThan(0);
-  // The outage is reconfirmed before the cache proof depends on the worker failing its own fetch.
-  expect(reassertion).toBeLessThan(cacheDispatch);
-  expect(cacheDispatch).toBeLessThan(cacheObservation);
+  const file = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  let text: string | undefined;
+  const visit = (node: ts.Node) => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(file) === name && node.initializer) {
+      text = node.initializer.getText(file).replace(/^`|`$/g, "");
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  expect(text).toBeDefined();
+  return text!;
+}
 
-  const helper = source.slice(source.indexOf("async function assertWorkerOutage("), source.indexOf("async function observe("));
-  expect(helper).toContain('fail("worker_outage_lapsed")');
-  // It must identify the exact worker target rather than any service worker, and re-apply the outage.
-  expect(helper).toContain('target.type === "service_worker"');
-  expect(helper).toContain("${base}/sw.js");
-  expect(helper).toContain("offline: true");
+// Executes the probe's real in-page expression against a fake fetch. A review found that asserting
+// this expression only textually let a mutation add `signal: AbortSignal.abort()` and survive: the
+// guard then reported "proven out" unconditionally, including when the timer path was fully live.
+// The expression now reports a DISCRIMINATED outcome, so a probe-internal fault is distinguishable
+// from a network refusal instead of both reading as an outage.
+async function runTimerPathProbe(fetchImpl: (...args: unknown[]) => Promise<unknown>, randomness?: () => never) {
+  const calls: unknown[][] = [];
+  const spy = async (...args: unknown[]) => { calls.push(args); return await fetchImpl(...args); };
+  const result = await runInNewContext(probeConst("TIMER_PATH_PROBE"), {
+    fetch: spy,
+    Uint8Array,
+    Array,
+    TypeError,
+    crypto: { getRandomValues: randomness ?? ((array: Uint8Array) => { array.fill(7); return array; }) }
+  }) as string;
+  return { result, calls };
+}
+
+it("OC11 proves the timer path is out before asserting, and fails closed when it is reachable", async () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const probe = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+
+  // Holding the worker online means the page-layer block is the only thing keeping the timer data
+  // path out, and whether a page-session block reaches a worker-mediated request is not something
+  // this harness may assume. So the outage is PROVEN before the assertion runs: a reachable timer
+  // path is reported as a harness condition, never as a product verdict.
+  const reachable = await runAssertTimerPathOut(true);
+  expect(reachable.outcome).toBe("timer_path_reachable");
+  const out = await runAssertTimerPathOut(false);
+  expect(out.outcome).toBe("path_proven_out");
+
+  // The in-page expression is EXECUTED, not text-matched: a request that answers must report
+  // answered, and only a genuine network rejection may report refused. A text-only check let a
+  // pre-aborted-signal mutation certify "proven out" while the path was live.
+  const answered = await runTimerPathProbe(async () => ({ ok: true, status: 200 }));
+  expect(answered.result).toBe("answered");
+  const rejected = await runTimerPathProbe(async () => { throw new TypeError("Failed to fetch"); });
+  expect(rejected.result).toBe("refused");
+
+  // A 5xx still means the path answered, so it must not read as proven out.
+  const refused = await runTimerPathProbe(async () => ({ ok: false, status: 503 }));
+  expect(refused.result).toBe("answered");
+
+  // A non-network throw is a probe fault, NOT an outage: a bare catch previously let any error -
+  // a restarted worker, a TypeError in the expression - certify that the path was out.
+  const nonNetwork = await runTimerPathProbe(async () => { throw Error("boom"); });
+  expect(nonNetwork.result).toBe("probe_error");
+  const brokenRandomness = await runTimerPathProbe(async () => ({ ok: true }), () => { throw Error("no csprng"); });
+  expect(brokenRandomness.result).toBe("probe_error");
+  expect(brokenRandomness.calls).toHaveLength(0);
+
+  // It really issues one request, to the real endpoint, with no abort signal that would make the
+  // rejection arm unconditional, and it reads no page text.
+  expect(answered.calls).toHaveLength(1);
+  expect(String(answered.calls[0][0])).toContain("/api/timers/active?requestToken=");
+  expect(JSON.stringify(answered.calls[0][1] ?? {})).not.toContain("signal");
+  expect(probeConst("TIMER_PATH_PROBE")).not.toContain("signal");
+  expect(probeConst("TIMER_PATH_PROBE")).not.toContain("innerText");
+  expect(probeConst("TIMER_PATH_PROBE")).not.toContain("textContent");
+
+  // It runs after the page returns online and before the observation it guards.
+  const online = source.indexOf('await b.client.call("Network.emulateNetworkConditions", { offline: false');
+  const proof = source.indexOf("await assertTimerPathOut(b);");
+  const observation = source.indexOf('await observe("online_requires_confirmation"');
+  expect(proof).toBeGreaterThan(online);
+  expect(proof).toBeLessThan(observation);
+
+  // Its throwaway token cannot collide with the cache proof's fixed token.
+  const assertion = source.slice(source.indexOf("async function assertTimerPathOut("), source.indexOf("async function assertWorkerBlockEnforced("));
+  expect(assertion).not.toContain("cacheToken");
+  let callCount = 0;
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && node.expression.getText(probe) === "assertTimerPathOut") callCount += 1;
+    ts.forEachChild(node, visit);
+  };
+  visit(probe);
+  expect(callCount).toBe(1);
 });
+
+// Executes the worker control's real in-page expression against a fake fetch. Grepping its literals
+// was not enough: a review made it unconditionally truthy in the browser while every literal
+// assertion still passed, which is the same defect as the text-matched outage probe before it.
+async function runWorkerControlProbe(fetchImpl: (...args: unknown[]) => Promise<unknown>, randomness?: () => never) {
+  const calls: unknown[][] = [];
+  const spy = async (...args: unknown[]) => { calls.push(args); return await fetchImpl(...args); };
+  const outcome = await runInNewContext(probeConst("WORKER_CONTROL_PROBE"), {
+    fetch: spy,
+    Uint8Array,
+    Array,
+    TypeError,
+    crypto: { getRandomValues: randomness ?? ((array: Uint8Array) => { array.fill(7); return array; }) }
+  }) as string;
+  return { outcome, calls };
+}
+
+it("OC12 proves the worker's scoped block is enforced before the cache proof depends on it", async () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+
+  // Whether CDP enforces a blocked-URL list on a service_worker target, and delivers the refusal to
+  // the worker's own fetch() promise rather than erroring the fetch event, is not establishable from
+  // source. service_worker_cache has never executed, so an unenforced block would have surfaced as a
+  // late product-looking failure. It is proven where it is first relied upon, and fails closed.
+  const run = async (reachable: boolean, control: boolean | string) => {
+    const evaluated: string[] = [];
+    const assertWorkerBlockEnforced = probeFunction("assertWorkerBlockEnforced", {
+      WORKER_CONTROL_PROBE: "(control probe)",
+      probeTimerPath: async () => reachable,
+      evaluate: async (_client: unknown, expression: string) => {
+        evaluated.push(expression);
+        return typeof control === "string" ? control : control ? "answered" : "refused";
+      },
+      fail: (code: string) => { throw Error(code); }
+    });
+    const outcome = await assertWorkerBlockEnforced({ client: {} }).then(() => "enforced", (error: Error) => error.message);
+    return { outcome, evaluated };
+  };
+
+  // An answering timer path means the block is not enforced at all.
+  expect((await run(true, true)).outcome).toBe("worker_block_unenforced");
+
+  // A refused timer path alone is NOT proof: the worker falls back to caches.match, which must miss
+  // for a never-cached URL, so respondWith(undefined) rejects for an unrelated reason that looks
+  // identical. The positive control separates enforcement from a broken worker, and it must be
+  // load-bearing - removing it previously left this guard unprotected while every test passed.
+  expect((await run(false, false)).outcome).toBe("worker_control_unreachable");
+  expect((await run(false, "probe_error")).outcome).toBe("worker_control_probe_failed");
+  expect((await run(false, true)).outcome).toBe("enforced");
+
+  // The control is a real request through the same worker, and reads no page text. Its SEMANTICS are
+  // executed, not grepped: a review made the control unconditionally truthy in the browser
+  // (`return response.ok || true`) while every literal assertion still passed.
+  const { outcome: answered, calls: answeredCalls } = await runWorkerControlProbe(async () => ({ ok: true }));
+  expect(answered).toBe("answered");
+  expect(answeredCalls).toHaveLength(1);
+  // The control URL must NOT be answerable from the shell cache. sw.js pre-caches
+  // /manifest.webmanifest via SHELL_ASSETS and answers any controlled GET from cache when its
+  // network fails, so the un-busted URL passed with the worker's network fully dead - proving only
+  // that the worker was alive. caches.match defaults to ignoreSearch:false, so a unique query can
+  // never match the cached entry: answering REQUIRES the passthrough fetch to reach the network.
+  expect(String(answeredCalls[0][0])).toMatch(/\/manifest\.webmanifest\?cacheBust=[0-9a-f]{32}$/);
+  expect(await runWorkerControlProbe(async () => ({ ok: false })).then(r => r.outcome)).toBe("refused");
+  expect(await runWorkerControlProbe(async () => { throw new TypeError("blocked"); }).then(r => r.outcome)).toBe("refused");
+  expect(await runWorkerControlProbe(async () => { throw Error("not a network failure"); }).then(r => r.outcome)).toBe("probe_error");
+  const broken = await runWorkerControlProbe(async () => ({ ok: true }), () => { throw Error("no randomness"); });
+  expect(broken.outcome).toBe("probe_error");
+  expect(broken.calls).toHaveLength(0);
+  expect(probeConst("WORKER_CONTROL_PROBE")).not.toContain("innerText");
+  expect(probeConst("WORKER_CONTROL_PROBE")).not.toContain("textContent");
+
+  // Both the outage proof and its control are consumed in conditions, never discarded.
+  const file = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const declaration = file.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "assertWorkerBlockEnforced");
+  expect(declaration).toBeDefined();
+  const body = declaration!.getText(file);
+  expect(body).toMatch(/if\s*\(\s*await\s+probeTimerPath\(device\)\s*\)\s*fail\("worker_block_unenforced"\)/);
+  expect(body).toMatch(/if\s*\(\s*control\s*===\s*"probe_error"\s*\)\s*fail\("worker_control_probe_failed"\)/);
+  expect(body).toMatch(/if\s*\(\s*control\s*!==\s*"answered"\s*\)\s*fail\("worker_control_unreachable"\)/);
+
+  // Placement is derived from RESOLVED AST call nodes, never from source.indexOf of call text: a
+  // review deleted the guard with `// await assertWorkerBlockEnforced(b);` and every text-anchored
+  // offset still matched inside the comment, so the whole CDP-enforcement discharge vanished from
+  // the lifecycle with the suite green. A commented-out call is not a CallExpression.
+  // A guard must be REACHED, not merely present. Counting CallExpressions proved only that the text
+  // existed as a call: `if (false) await guard(b);`, `void guard(b);`, `try { await guard(b); }
+  // catch {}` and a local no-op shadow `{ const guard = async () => {}; await guard(b); }` all left
+  // exactly one correctly-named call node while the real guard never ran. So the call must be an
+  // awaited expression statement on the lifecycle's unconditional path, and the name must not be
+  // re-bound in any inner scope.
+  // TOTAL and DECIDABLE. The previous reachability model inferred whether a guard was on the
+  // unconditional path, and a review defeated it twice over: `switch (0) { case 1: await guard(b); }`
+  // and `[].forEach(async () => await guard(b))` both read as unconditional, and catch-propagation was
+  // decided by a TEXT regex over the handler, so `catch { /* throw */ }` laundered a fully swallowed
+  // guard. Inference is abandoned. The guard call must be a DIRECT CHILD STATEMENT of the lifecycle's
+  // own top-level try block - the one construct whose handler is known to report and exit non-zero.
+  // Anything nested inside a switch, a callback, an if, or an inner try/catch is by construction not a
+  // direct child and fails regardless of how it is spelled.
+  const lifecycleTry = file.statements.find(ts.isTryStatement);
+  expect(lifecycleTry).toBeDefined();
+  const guardStatement = (name: string) => {
+    const shadows: string[] = [];
+    const walkShadow = (node: ts.Node) => {
+      if ((ts.isVariableDeclaration(node) || ts.isFunctionDeclaration(node))
+        && node.name && ts.isIdentifier(node.name) && node.name.text === name) {
+        const atModuleScope = ts.isSourceFile(node.parent)
+          || (ts.isVariableDeclarationList(node.parent) && ts.isVariableStatement(node.parent.parent)
+            && ts.isSourceFile(node.parent.parent.parent));
+        if (!atModuleScope) shadows.push(`${name} re-bound at ${node.getStart(file)}`);
+      }
+      ts.forEachChild(node, walkShadow);
+    };
+    walkShadow(file);
+    expect(shadows).toEqual([]);
+    // Every call to the guard anywhere in the file, so a second inert copy cannot hide.
+    const all: number[] = [];
+    const walkAll = (node: ts.Node) => {
+      if (ts.isCallExpression(node) && node.expression.getText(file) === name) all.push(node.getStart(file));
+      ts.forEachChild(node, walkAll);
+    };
+    walkAll(file);
+    const direct = lifecycleTry!.tryBlock.statements
+      .filter(statement => ts.isExpressionStatement(statement)
+        && ts.isAwaitExpression(statement.expression)
+        && ts.isCallExpression(statement.expression.expression)
+        && statement.expression.expression.expression.getText(file) === name)
+      .map(statement => statement.getStart(file));
+    // A call that exists but is not a direct awaited child statement is inert: report it rather than
+    // silently counting only the good ones.
+    expect(all).toHaveLength(direct.length);
+    return direct;
+  };
+  const enforcedSites = guardStatement("assertWorkerBlockEnforced");
+  expect(enforcedSites).toHaveLength(1);
+  const pageLifts = cdpCalls("Network.setBlockedURLs").calls
+    .filter(call => call.receiver === "b.client" && call.argument === "{ urls: [] }");
+  expect(pageLifts.length).toBeGreaterThan(0);
+  const cacheObservation = source.indexOf('await observe("service_worker_cache"');
+  expect(cacheObservation).toBeGreaterThan(0);
+  expect(enforcedSites[0]).toBeGreaterThan(pageLifts[0].offset);
+  expect(enforcedSites[0]).toBeLessThan(cacheObservation);
+  // The outage re-assertion and the timer-path proof must be reached on the same unconditional path.
+  expect(guardStatement("assertTimerPathOut")).toHaveLength(1);
+  expect(guardStatement("assertWorkerOutage")).toHaveLength(1);
+});
+
+// TOTAL and DECIDABLE. Six review rounds defeated every inference-based version of this enumerator:
+// an allowlist of callee shapes, then of receivers, then of carrier binding forms. Each closed the
+// reported spellings and left an adjacent one open, because each tried to work out WHICH expression
+// holds a CDP connection. The last hole was a connection passed as a FUNCTION PARAMETER with a
+// runtime-built method name, which reinstated the document-severing emulation with a green suite.
+//
+// Inference is abandoned for three rules that need no notion of which variable holds a connection.
+// In this probe `.call` is used EXCLUSIVELY for CDP dispatch, so:
+//   1. the indirect-dispatch primitives are forbidden outright (the clean probe contains none);
+//   2. a `call` reference may not be detached from its receiver without being invoked;
+//   3. every invoked `.call(...)` must name its CDP method as a STRING LITERAL.
+// Together these are total: the only route to a connection's `call` is rule 3, which forces a literal
+// method name, so the dangerous-method check below is exhaustive by construction. A parameter, a
+// destructured binding, a for-of binding and an alias chain of any depth are all irrelevant.
+const CDP_DANGEROUS = new Set([
+  "Network.setBlockedURLs",
+  "Network.emulateNetworkConditions",
+  // Stalls every request through the target when enabled with a wildcard pattern and no handler.
+  "Fetch.enable",
+  "Network.setRequestInterception"
+]);
+
+// Structural, name-free pin for loop-driven domain enables. The previous pin required the loop
+// variable to be spelled `domain`, which rejected a semantically identical rename, and rejected
+// `for (const m of ["Page.enable"]) await worker.call(m)` outright. Only benign enable/disable
+// methods can satisfy it: `Network.setBlockedURLs` fails the tail pattern.
+const BENIGN_DOMAIN = /^[A-Z][A-Za-z]*(?:\.(?:enable|disable))?$/;
+function benignDomainLoop(call: ts.CallExpression, file: ts.SourceFile) {
+  let scope: ts.Node | undefined = call;
+  while (scope && !ts.isForOfStatement(scope)) scope = scope.parent;
+  if (!scope) return false;
+  const loop = scope as ts.ForOfStatement;
+  if (!ts.isArrayLiteralExpression(loop.expression)) return false;
+  if (!loop.expression.elements.every(element => ts.isStringLiteral(element) && BENIGN_DOMAIN.test(element.text))) return false;
+  const declarations = ts.isVariableDeclarationList(loop.initializer) ? loop.initializer.declarations : [];
+  const bound = declarations.length === 1 && ts.isIdentifier(declarations[0].name) ? declarations[0].name.text : undefined;
+  if (!bound) return false;
+  const first = call.arguments[0];
+  if (!first) return false;
+  // Either the bare loop variable, or a single-span template whose tail is a benign suffix.
+  if (ts.isIdentifier(first) && first.text === bound) return true;
+  if (ts.isTemplateExpression(first) && first.templateSpans.length === 1 && first.head.text === "") {
+    const span = first.templateSpans[0];
+    return ts.isIdentifier(span.expression) && span.expression.text === bound
+      && /^\.(?:enable|disable)$/.test(span.literal.text);
+  }
+  return false;
+}
+
+function cdpCalls(method: string) {
+  const text = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const file = ts.createSourceFile("probe.mjs", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const violations: string[] = [];
+  const calls: { receiver: string; argument: string; offset: number }[] = [];
+
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression.getText(file).replace(/\s+/g, "");
+      // Rule 1: no primitive that can invoke a function while naming neither receiver nor method in a
+      // resolvable position. Reflect.apply carried the emulation past an earlier version of this gate.
+      if (/\bReflect\.(?:apply|get)\b/.test(callee) || /\.(?:apply|bind)$/.test(callee)) {
+        violations.push(`indirect dispatch primitive ${callee.slice(0, 44)} at ${node.getStart(file)}`);
+      }
+      // Rule 3: an invoked `.call` must name its method as a string literal.
+      const invokesCall = /\.call$/.test(callee) || /\[["']call["']\]$/.test(callee);
+      if (invokesCall) {
+        const first = node.arguments[0];
+        if (!first || (!ts.isStringLiteral(first) && !benignDomainLoop(node, file))) {
+          violations.push(`opaque CDP dispatch ${callee.slice(0, 32)}(${first ? first.getText(file).replace(/\s+/g, " ").slice(0, 32) : ""}) at ${node.getStart(file)}`);
+        } else if (ts.isStringLiteral(first) && first.text === method) {
+          const receiver = ts.isPropertyAccessExpression(node.expression)
+            ? node.expression.expression.getText(file)
+            : (node.expression as ts.ElementAccessExpression).expression.getText(file);
+          calls.push({
+            receiver,
+            argument: node.arguments[1] ? node.arguments[1].getText(file).replace(/\s+/g, " ") : "",
+            offset: node.getStart(file)
+          });
+        }
+      }
+    }
+    // Rule 2: a `call` reference may not be detached from its receiver. Without this, `const f =
+    // worker.call; await f(m, ...)` would reach a dispatch through a callee naming no connection.
+    if ((ts.isPropertyAccessExpression(node) && node.name.text === "call")
+      || (ts.isElementAccessExpression(node) && node.argumentExpression
+        && ts.isStringLiteral(node.argumentExpression) && node.argumentExpression.text === "call")) {
+      const invoked = ts.isCallExpression(node.parent) && node.parent.expression === node;
+      if (!invoked) {
+        violations.push(`detached call reference ${node.getText(file).replace(/\s+/g, "").slice(0, 44)} at ${node.getStart(file)}`);
+      }
+    }
+    // Rule 2b: a computed member access with a non-literal key is forbidden when its result can be
+    // dispatched. Both `worker["c"+"all"](m, p)` and `const k = "call"; const f = worker[k]; await
+    // f(m, p)` evaded Rule 2 (the key is no literal) AND Rule 3 (the callee text matches neither
+    // /\.call$/ nor /\["call"\]$/), making the dispatch wholly invisible rather than merely
+    // misfiltered. Decided STRUCTURALLY, with no name heuristics: the access is a violation if it is
+    // invoked, or if it is stored in a binding that is invoked anywhere in the file. Legitimate
+    // indexing such as `alphabet[byte % alphabet.length]` is untouched because its result is only
+    // read, never called - which is a property of the code, not of what the variable is named.
+    if (ts.isElementAccessExpression(node) && node.argumentExpression
+      && !ts.isStringLiteral(node.argumentExpression) && !ts.isNumericLiteral(node.argumentExpression)) {
+      const invoked = ts.isCallExpression(node.parent) && node.parent.expression === node;
+      let dispatchable = invoked;
+      if (!dispatchable && ts.isVariableDeclaration(node.parent) && node.parent.initializer === node
+        && ts.isIdentifier(node.parent.name)) {
+        const bound = node.parent.name.text;
+        const findInvocation = (scan: ts.Node): boolean => {
+          if (ts.isCallExpression(scan) && ts.isIdentifier(scan.expression) && scan.expression.text === bound) return true;
+          return ts.forEachChild(scan, findInvocation) ?? false;
+        };
+        dispatchable = findInvocation(file);
+      }
+      if (dispatchable) {
+        violations.push(`computed dispatch ${node.getText(file).replace(/\s+/g, "").slice(0, 44)} at ${node.getStart(file)}`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+
+  // Cheap exhaustiveness backstop: a dangerous method name may appear ONLY as a dispatch argument,
+  // or inside the runtime guard itself - its denylist set and its `method === "..."` comparisons ARE
+  // the enforcement, and naming a method there is what forbids it. Without this exemption the
+  // backstop flags the very mechanism that makes the method unreachable, which would pressure a
+  // future author to weaken the guard to quiet the contract.
+  const literals: string[] = [];
+  const insideGuard = (node: ts.Node): boolean => {
+    for (let scan: ts.Node | undefined = node; scan; scan = scan.parent) {
+      if (ts.isVariableDeclaration(scan) && ts.isIdentifier(scan.name)
+        && (scan.name.text === "CDP_PATH_SEVERING" || scan.name.text === "CDP_DANGEROUS"
+          || scan.name.text === "CDP_ALLOWED")) return true;
+      if (ts.isFunctionDeclaration(scan) && scan.name?.text === "assertDispatchAllowed") return true;
+    }
+    return false;
+  };
+  const sweep = (node: ts.Node) => {
+    if (ts.isStringLiteral(node) && CDP_DANGEROUS.has(node.text)) {
+      const parent = node.parent;
+      const isArgumentZero = ts.isCallExpression(parent) && parent.arguments[0] === node;
+      if (!isArgumentZero && !insideGuard(node)) literals.push(`${node.text} is not a dispatch argument at ${node.getStart(file)}`);
+    }
+    ts.forEachChild(node, sweep);
+  };
+  sweep(file);
+
+  expect(violations).toEqual([]);
+  expect(literals).toEqual([]);
+  return { calls };
+}
+it("OC10 never severs the document path the online-confirmation step observes", () => {
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+
+  // Two lifecycles reported ONLINE_PAGE_ABSENT. The cause was not the page-layer block: the service
+  // worker is registered at the origin root with no scope filter and its fetch handler answers every
+  // controlled GET, so holding the WORKER offline made the observed page's own route unreachable
+  // while the page believed it was online. The worker outage must therefore never be an offline
+  // emulation that also severs documents and RSC payloads.
+  //
+  // ENFORCED AT RUNTIME, NOT INFERRED FROM SOURCE. Seven review rounds tried to decide from source
+  // which expression holds a CDP connection, and each inference was defeated by a new spelling:
+  // aliases, bound receivers, parameters, object properties, spreads, computed keys, runtime-built
+  // method names. The invariant now lives in the probe's own `call`, the single function every
+  // dispatch passes through, so those spellings are irrelevant by construction. The checks below
+  // EXECUTE that guard rather than reading the source that contains it; see the executable suite
+  // immediately following for the subversion attempts it refuses.
+  const emulations = cdpCalls("Network.emulateNetworkConditions");
+  expect(emulations.calls).toHaveLength(2);
+  expect(emulations.calls[0].argument).toContain("offline: true");
+  expect(emulations.calls[1].argument).toContain("offline: false");
+
+  // Every blocked-URL list is EXACTLY the timer data path, or an explicit clear. A negative check
+  // for "/app*" was vacuous: no spelling of this harness ever contained it.
+  const scoped = "{ urls: [`${base}/api/timers/active*`] }";
+  const allBlocks = cdpCalls("Network.setBlockedURLs").calls;
+  expect(allBlocks.length).toBeGreaterThan(0);
+  for (const block of allBlocks) expect([scoped, "{ urls: [] }"]).toContain(block.argument);
+
+  // THE GUARD MUST GOVERN THE SOCKET. A correct guard proves nothing if a dispatch can reach
+  // `socket.send` without passing it, and that reachability was NOT enforced: the previous check
+  // matched any property assignment named `call` anywhere in the probe and set one global flag, so a
+  // six-line decoy object satisfied it while the real `call` dispatched unguarded. Nothing
+  // constrained the returned object's OTHER properties either, so a sibling
+  // `raw: (method, params) => socket.send(...)` bypassed the choke point completely. Both survived at
+  // full green. Reachability is now decided structurally, from the object literal `connect` returns.
+  const probeFile = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+
+  // The probe must PARSE. Every contract reads it through ts.createSourceFile or String.indexOf,
+  // both of which tolerate syntax errors, so a probe node refuses to run still returned 172/172.
+  execFileSync(process.execPath, ["--check", "scripts/cross-device-freshness-browser-probe.mjs"], { stdio: "pipe" });
+
+  const collect = (root: ts.Node, predicate: (node: ts.Node) => boolean): ts.Node[] => {
+    const found: ts.Node[] = [];
+    const walk = (node: ts.Node) => { if (predicate(node)) found.push(node); ts.forEachChild(node, walk); };
+    walk(root);
+    return found;
+  };
+  const textOf = (node: ts.Node) => node.getText(probeFile);
+
+  // `connect` is the sole connection factory, and it takes the kind the guard decides on.
+  const connectDecl = collect(probeFile, node => ts.isFunctionDeclaration(node)
+    && node.name?.text === "connect")[0] as ts.FunctionDeclaration | undefined;
+  expect(connectDecl).toBeDefined();
+  expect(connectDecl!.parameters.map(parameter => textOf(parameter.name))).toEqual(["url", "kind"]);
+  const returnedObjects = collect(connectDecl!, node => ts.isReturnStatement(node)
+    && !!node.expression && ts.isObjectLiteralExpression(node.expression))
+    .map(node => (node as ts.ReturnStatement).expression as ts.ObjectLiteralExpression);
+  expect(returnedObjects).toHaveLength(1);
+  const connection = returnedObjects[0];
+
+  // EXACT dispatch surface. A new property on this object is a new dispatch path, so the allowlist
+  // is exhaustive: widening it must be a deliberate edit to this contract, never a silent addition.
+  const surface = connection.properties.map(property => property.name ? textOf(property.name) : "");
+  expect([...surface].sort()).toEqual(["call", "close", "on"]);
+
+  // `socket.send` must occur EXACTLY once in the entire probe, inside that object's `call` property.
+  // This is the property the design claims - one function every dispatch passes through - and it was
+  // previously only true of the current spelling rather than enforced.
+  const sends = collect(probeFile, node => ts.isCallExpression(node)
+    && ts.isPropertyAccessExpression(node.expression)
+    && node.expression.name.text === "send"
+    && textOf(node.expression.expression) === "socket");
+  expect(sends).toHaveLength(1);
+  const callProperty = connection.properties.find(property => ts.isPropertyAssignment(property)
+    && textOf(property.name) === "call") as ts.PropertyAssignment | undefined;
+  expect(callProperty).toBeDefined();
+  expect(sends[0].getStart(probeFile)).toBeGreaterThan(callProperty!.getStart(probeFile));
+  expect(sends[0].getEnd()).toBeLessThan(callProperty!.getEnd());
+
+  // Exactly one `call` surface exists anywhere, so a decoy cannot satisfy the invocation check.
+  const callProperties = collect(probeFile, node => ts.isPropertyAssignment(node)
+    && textOf(node.name) === "call");
+  expect(callProperties).toHaveLength(1);
+
+  // The guard must be the FIRST statement of that one `call`, receiving the dispatch's own
+  // parameters - not literals, not shadowed names.
+  const dispatcher = callProperty!.initializer;
+  expect(ts.isArrowFunction(dispatcher) || ts.isFunctionExpression(dispatcher)).toBe(true);
+  const dispatcherParameters = (dispatcher as ts.ArrowFunction).parameters.map(parameter => textOf(parameter.name));
+  const dispatcherBody = (dispatcher as ts.ArrowFunction).body;
+  expect(ts.isBlock(dispatcherBody)).toBe(true);
+  const firstStatement = (dispatcherBody as ts.Block).statements[0];
+  expect(!!firstStatement && ts.isExpressionStatement(firstStatement)).toBe(true);
+  const guardCall = (firstStatement as ts.ExpressionStatement).expression;
+  expect(ts.isCallExpression(guardCall)).toBe(true);
+  expect(textOf((guardCall as ts.CallExpression).expression)).toBe("assertDispatchAllowed");
+  expect((guardCall as ts.CallExpression).arguments.map(textOf))
+    .toEqual(["kind", dispatcherParameters[0], dispatcherParameters[1]]);
+
+  // Connection creation enumerated from RESOLVED call nodes, not a regex. `/await connect\(/` did not
+  // match a non-awaited `connect(...)`, so the exactly-three bound was not a bound on connections at
+  // all: a rogue worker socket could be created and tagged "page", which the guard then lawfully
+  // permits to emulate offline - the precise defect two lifecycles failed on.
+  const connectCalls = collect(probeFile, node => ts.isCallExpression(node)
+    && ts.isIdentifier(node.expression) && node.expression.text === "connect") as ts.CallExpression[];
+  expect(connectCalls).toHaveLength(3);
+  const tagged: Record<string, string> = {};
+  for (const site of connectCalls) {
+    expect(site.arguments).toHaveLength(2);
+    expect(ts.isStringLiteral(site.arguments[1])).toBe(true);
+    tagged[textOf(site.arguments[0])] = (site.arguments[1] as ts.StringLiteral).text;
+  }
+  expect(tagged).toEqual({
+    url: "browser",
+    "target.webSocketDebuggerUrl": "page",
+    "workerTarget.webSocketDebuggerUrl": "worker"
+  });
+
+  // EVERY SOCKET MUST BE BORN INSIDE `connect`. Binding the returned object's property set closed
+  // the "sibling raw: property" spelling but not the class: a raw `new WebSocket(workerTarget...)`
+  // with its own `.send` never touches the connection object at all, took the worker offline, and
+  // survived at full green. The only thing that caught it was the dangerous-method string-literal
+  // sweep, which a concatenated method name defeats. So socket CONSTRUCTION is censused: exactly one
+  // `new WebSocket` in the probe, lexically inside `connect`.
+  const sockets = collect(probeFile, node => ts.isNewExpression(node)
+    && textOf(node.expression) === "WebSocket") as ts.NewExpression[];
+  expect(sockets).toHaveLength(1);
+  expect(sockets[0].getStart(probeFile)).toBeGreaterThan(connectDecl!.getStart(probeFile));
+  expect(sockets[0].getEnd()).toBeLessThan(connectDecl!.getEnd());
+
+  // No `.send` may be reached through any receiver other than the one socket. The previous rule
+  // matched only a receiver whose text is exactly "socket", so `const s = socket; s.send(...)`, a
+  // destructured `{ send }`, `socket["se"+"nd"]`, or `Reflect.apply(socket.send, ...)` were invisible.
+  const anySend = collect(probeFile, node => ts.isCallExpression(node)
+    && ((ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "send")
+      || (ts.isElementAccessExpression(node.expression)
+        && (!ts.isStringLiteral(node.expression.argumentExpression)
+          || node.expression.argumentExpression.text === "send")))) as ts.CallExpression[];
+  for (const send of anySend) {
+    expect(textOf((send.expression as ts.PropertyAccessExpression).expression)).toBe("socket");
+  }
+  expect(anySend).toHaveLength(1);
+  // A detached or re-bound `send`, or the socket escaping by any alias, is refused outright.
+  const sendEscapes = collect(probeFile, node => (ts.isPropertyAccessExpression(node)
+    && node.name.text === "send" && !(ts.isCallExpression(node.parent) && node.parent.expression === node))
+    || (ts.isBindingElement(node) && textOf(node.name) === "send")
+    || (ts.isVariableDeclaration(node) && !!node.initializer && textOf(node.initializer) === "socket"));
+  expect(sendEscapes.map(node => textOf(node))).toEqual([]);
+
+  // THE KIND TAG MUST BE BOUND TO THE TARGET IT CONNECTS TO. The census mapped an argument's
+  // expression TEXT to a required kind, and nothing tied that text to a verified CDP target type, so
+  // re-pointing the "page" site's target at a service_worker entry kept the tag `"page"` and the
+  // guard then lawfully permitted it to emulate offline - the eighth review's defect in a new
+  // spelling. Each tagged site's target must derive from a filter on the matching target type.
+  const targetTypeFor = (binding: string) => {
+    const declaration = collect(probeFile, node => ts.isVariableDeclaration(node)
+      && textOf(node.name) === binding)[0] as ts.VariableDeclaration | undefined;
+    expect(declaration).toBeDefined();
+    const initializer = textOf(declaration!.initializer!);
+    const types = [...initializer.matchAll(/\.type\s*===\s*"([a-z_]+)"/g)].map(match => match[1]);
+    expect(new Set(types).size).toBe(1);
+    return types[0];
+  };
+  expect(targetTypeFor("target")).toBe("page");
+  expect(targetTypeFor("workerTarget")).toBe("service_worker");
+
+  // THE PAGE'S OFFLINE RESTORE MUST BE RUNTIME-REACHABLE. Source position pins the ORDER of the two
+  // emulations but says nothing about execution: prefixing the `offline: false` restore with
+  // `if (observations.size > 9999)` kept both call nodes in the required order while the page never
+  // came back online, so the observation ran against a dead page. The reachability machinery already
+  // used for the assert helpers is applied to the dispatches that actually sever the path.
+  const dispatchStatement = (needle: string) => {
+    const lifecycle = probeFile.statements.find(ts.isTryStatement);
+    expect(lifecycle).toBeDefined();
+    const occurrences = collect(probeFile, node => ts.isCallExpression(node)
+      && textOf(node).includes(needle)) as ts.CallExpression[];
+    const direct = lifecycle!.tryBlock.statements.filter(statement => ts.isExpressionStatement(statement)
+      && ts.isAwaitExpression(statement.expression)
+      && ts.isCallExpression(statement.expression.expression)
+      && textOf(statement.expression.expression).includes(needle));
+    // Every occurrence must be one of those unconditional awaited statements: a call wrapped in a
+    // condition, a loop, a callback or a swallowing try is inert and is reported, not ignored.
+    expect(occurrences).toHaveLength(direct.length);
+    return direct.length;
+  };
+  expect(dispatchStatement('"Network.emulateNetworkConditions", { offline: true')).toBe(1);
+  expect(dispatchStatement('"Network.emulateNetworkConditions", { offline: false')).toBe(1);
+
+  // `fail` MUST THROW. Nothing constrained it, and `const fail = (code) => { browserFailure(code); }`
+  // - dropping one keyword - turned every refusal in the probe into a no-op: all four guard refusals,
+  // the timer-path and worker-control proofs, and the observation census became silent, and the probe
+  // printed PASS with exit 0 at full green. The guard FUNCTION was protected; its helper was not.
+  const failDeclaration = collect(probeFile, node => ts.isVariableDeclaration(node)
+    && textOf(node.name) === "fail")[0] as ts.VariableDeclaration | undefined;
+  expect(failDeclaration).toBeDefined();
+  const failBody = (failDeclaration!.initializer as ts.ArrowFunction).body;
+  expect(ts.isBlock(failBody)).toBe(true);
+  const failStatements = (failBody as ts.Block).statements;
+  expect(failStatements).toHaveLength(1);
+  expect(ts.isThrowStatement(failStatements[0])).toBe(true);
+  expect(textOf(failStatements[0])).toBe("throw browserFailure(code);");
+  // No other binding may shadow or re-bind it, and it may never be reassigned.
+  expect(collect(probeFile, node => ts.isVariableDeclaration(node) && textOf(node.name) === "fail")).toHaveLength(1);
+  expect(collect(probeFile, node => ts.isBinaryExpression(node)
+    && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    && textOf(node.left) === "fail")).toHaveLength(0);
+
+  // THE TAG MUST BE BOUND TO THE SOCKET, NOT TO THE TEXT THAT CHOSE IT. Scanning the target
+  // binding's initializer for `.type === "..."` only catches edits that disturb that text: assigning
+  // `target.webSocketDebuggerUrl = <service worker's url>` afterwards left the initializer intact,
+  // kept the tag "page", and let the pre-existing page emulation take the WORKER offline - the
+  // two-lifecycle defect, reinstated at full green. A target's properties may never be written.
+  for (const binding of ["target", "workerTarget"]) {
+    const writes = collect(probeFile, node => ts.isBinaryExpression(node)
+      && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+      && (ts.isPropertyAccessExpression(node.left) || ts.isElementAccessExpression(node.left))
+      && textOf(node.left.expression) === binding);
+    expect(writes.map(node => textOf(node))).toEqual([]);
+  }
+  // The URL handed to `connect` must be read directly off the type-filtered binding, never through
+  // an intermediate that could have been redirected.
+  for (const site of connectCalls.slice(1)) {
+    expect(textOf(site.arguments[0])).toMatch(/^(?:target|workerTarget)\.webSocketDebuggerUrl$/);
+  }
+
+  // IN-PAGE CODE IS AN ALLOWLIST, NOT A DENYLIST. The guard only sees CDP dispatches, so page-side
+  // JavaScript is a second, independent route to severing the observed document path - and a regex
+  // denylist over probe source could never close it: the expressions are template literals, so
+  // page-side runtime string building (`self['cach'+'es']`, `reg['un'+'register']()`), a cache handle
+  // aliased before deletion, `document.write`, `window.location =`, `history.pushState` and
+  // `Object.defineProperty(window,'fetch',...)` all sever or destroy evidence without matching any
+  // pattern. 13 of 15 such mutations survived a fully green suite. Enumerating forbidden spellings is
+  // the arms race rounds 7-11 lost five times; this inverts the polarity. Every in-page expression is
+  // pinned by hash, so ANY new or modified expression fails closed until it is deliberately reviewed
+  // and registered here. Deny by default is the only form of this check that terminates.
+  const inPageExpressions = (collect(probeFile, node => ts.isCallExpression(node)
+    && ts.isIdentifier(node.expression) && node.expression.text === "evaluate") as ts.CallExpression[])
+    .filter(node => node.arguments.length > 1)
+    .map(node => ({
+      line: probeFile.getLineAndCharacterOfPosition(node.getStart(probeFile)).line + 1,
+      digest: createHash("sha256").update(textOf(node.arguments[1]).split("\r\n").join("\n")).digest("hex").slice(0, 16)
+    }));
+  const approvedInPage = [
+    "b6314e78adb288ba", "3edb0c76cf5879f6", "fa13e2bca6b7473b", "3a2b8b8632ff5794",
+    "62774b8d810c5708", "f3d2fa2984abcdbf", "1d653cd704aebd95", "f37b8f0b68f9e17a",
+    "129668a0b4b539ae", "d2121bbba90c548e", "bced93e94d88108b", "ff6ab94dcba63c0c",
+    "5bd370d435906199", "482d895bb0b5c985", "a8c2f0c5888caf31", "03718191aea7c946",
+    "db165cc3493f249f", "a8c2f0c5888caf31", "f3ba4b67fd5acc5d", "3b6f9aaceecccc71",
+    "c3eb418ad1ace980", "078a1a12b6390ded", "7cbeebac0d318f1a", "9b9127bd4ab9c54f",
+    "0741665a967d0a2e", "865b8ee86596dac3", "4e77dbda0df164ed", "662d420e6b504459",
+    "0fff10e7d8ecad36", "d6cf750806b1eb7e", "dcdd38d262f05dca", "13cbbe4b62aa5f0c",
+    "cc02c00986be22a0"
+  ];
+  // Unregistered or altered expressions are reported with their line, so the failure names the edit.
+  expect(inPageExpressions.filter(entry => !approvedInPage.includes(entry.digest))
+    .map(entry => `unapproved in-page expression at probe:${entry.line} (${entry.digest})`)).toEqual([]);
+  // The census must be exact in both directions: a REMOVED expression is also a contract change, and
+  // the count pins it, so an attacker cannot delete a proof and leave the allowlist satisfied.
+  expect(inPageExpressions).toHaveLength(approvedInPage.length);
+  expect([...inPageExpressions].map(entry => entry.digest).sort()).toEqual([...approvedInPage].sort());
+  // `evaluate` must remain the only page-side execution route: no direct Runtime.evaluate dispatch
+  // may bypass this census, and no other helper may forward an expression to the page. The method
+  // name now appears twice - once at the single dispatch site, once as a key in the CDP_ALLOWED
+  // table - so require exactly that split rather than a bare count, which the table would inflate.
+  const evaluateLiterals = collect(probeFile, node => ts.isStringLiteral(node)
+    && node.text === "Runtime.evaluate") as ts.StringLiteral[];
+  expect(evaluateLiterals).toHaveLength(2);
+  const evaluateDispatches = evaluateLiterals.filter(node => ts.isCallExpression(node.parent)
+    && node.parent.arguments[0] === node);
+  expect(evaluateDispatches).toHaveLength(1);
+  // The one dispatch must be inside `evaluate` itself, not in some other helper.
+  const inEvaluate = (node: ts.Node): boolean => {
+    for (let scan: ts.Node | undefined = node; scan; scan = scan.parent) {
+      if (ts.isFunctionDeclaration(scan) && scan.name?.text === "evaluate") return true;
+    }
+    return false;
+  };
+  expect(inEvaluate(evaluateDispatches[0])).toBe(true);
+  // The other occurrence is the allowlist key, which is what permits it at all.
+  const inAllowedTable = (node: ts.Node): boolean => {
+    for (let scan: ts.Node | undefined = node; scan; scan = scan.parent) {
+      if (ts.isVariableDeclaration(scan) && ts.isIdentifier(scan.name)
+        && scan.name.text === "CDP_ALLOWED") return true;
+    }
+    return false;
+  };
+  expect(evaluateLiterals.filter(node => !evaluateDispatches.includes(node))
+    .every(node => inAllowedTable(node))).toBe(true);
+
+  // THE CENSUS MUST HASH THE EXPRESSION, NOT A NAME THAT POINTS AT IT. Two sites pass a bare
+  // identifier - TIMER_PATH_PROBE and WORKER_CONTROL_PROBE - so the digest covered the 16-character
+  // string "TIMER_PATH_PROBE" while the const body it names was outside the allowlist entirely.
+  // Rewriting that body to return "refused" unconditionally forged BOTH outage proofs at full
+  // green. Any identifier argument must therefore have its DECLARATION pinned too.
+  const indirectProbes = [
+    { name: "TIMER_PATH_PROBE", digest: "a2e048922c1fd78f" },
+    { name: "WORKER_CONTROL_PROBE", digest: "d0244cbdcd9dd03d" }
+  ];
+  // A pinned declaration may be a const initializer or a function declaration; hash the body either
+  // way, so the thing that actually runs in the page is what the digest covers.
+  const declarationDigest = (name: string) => {
+    const variable = collect(probeFile, node => ts.isVariableDeclaration(node)
+      && textOf(node.name) === name)[0] as ts.VariableDeclaration | undefined;
+    const fn = collect(probeFile, node => ts.isFunctionDeclaration(node)
+      && Boolean(node.name) && textOf(node.name!) === name)[0] as ts.FunctionDeclaration | undefined;
+    const subject = variable?.initializer ?? fn;
+    expect(subject, `${name} declaration missing`).toBeDefined();
+    return createHash("sha256").update(textOf(subject!).split("\r\n").join("\n"))
+      .digest("hex").slice(0, 16);
+  };
+  // Every identifier passed to evaluate must be one of the pinned indirect probes.
+  const identifierArguments = (collect(probeFile, node => ts.isCallExpression(node)
+    && ts.isIdentifier(node.expression) && node.expression.text === "evaluate") as ts.CallExpression[])
+    .filter(node => node.arguments.length > 1 && ts.isIdentifier(node.arguments[1]))
+    .map(node => textOf(node.arguments[1]));
+  expect([...identifierArguments].sort()).toEqual(indirectProbes.map(entry => entry.name).sort());
+  expect(indirectProbes.map(entry => `${entry.name}:${declarationDigest(entry.name)}`))
+    .toEqual(indirectProbes.map(entry => `${entry.name}:${entry.digest}`));
+
+  // INTERPOLATED VALUES ARE PART OF THE EXPRESSION. An approved template literal embeds
+  // ${renderedIsolationMarkup.toString()}, so editing that function changed what runs in the page
+  // while every digest stayed identical - adding one nodeName test made the tenant-isolation proof
+  // unconditionally true. Any function serialised into an in-page expression is pinned as well.
+  const interpolatedHelpers = [{ name: "renderedIsolationMarkup", digest: "f1c783683118c9bc" }];
+  expect(interpolatedHelpers.map(entry => `${entry.name}:${declarationDigest(entry.name)}`))
+    .toEqual(interpolatedHelpers.map(entry => `${entry.name}:${entry.digest}`));
+  // No OTHER function may be serialised into page code, or it would be an unpinned channel.
+  const serialisedFunctions = [...new Set([...source.matchAll(/\$\{([A-Za-z_$][\w$]*)\.toString\(\)\}/g)]
+    .map(match => match[1]))].sort();
+  expect(serialisedFunctions).toEqual(interpolatedHelpers.map(entry => entry.name).sort());
+
+  // THE PERMITTED CDP SURFACE IS ITSELF A SEVERING ROUTE. Refusing four methods left the rest of
+  // the protocol open: Page.navigate/reload sever the document, Storage.clearDataForOrigin and
+  // Network.clearBrowserCache destroy the cache evidence, ServiceWorker.stopAllWorkers kills the
+  // worker, Emulation.setScriptExecutionDisabled kills page script, and Runtime.callFunctionOn and
+  // Page.addScriptToEvaluateOnNewDocument execute arbitrary page code without naming
+  // Runtime.evaluate, bypassing the in-page census. The guard now denies every unlisted method, so
+  // the contract pins the table: adding a method is a visible, reviewable edit here.
+  const allowedEntries = [...source.matchAll(/\["([A-Za-z]+\.[A-Za-z]+)",\s*new Set\(\[([^\]]*)\]\)\]/g)]
+    .map(match => `${match[1]}=${match[2].replace(/["\s]/g, "")}`);
+  expect(allowedEntries).toEqual([
+    "Target.createTarget=browser", "Target.activateTarget=browser", "Target.closeTarget=browser",
+    "Page.enable=page", "Runtime.enable=page", "Log.enable=page",
+    "Network.enable=page,worker", "Network.setCookies=page", "Network.setBlockedURLs=page,worker",
+    "Network.emulateNetworkConditions=page", "Emulation.setDeviceMetricsOverride=page",
+    "Runtime.evaluate=page", "Runtime.addBinding=page", "Page.navigate=page",
+    "Page.addScriptToEvaluateOnNewDocument=page"
+  ]);
+  // Every method the probe actually dispatches must appear in the table, so the allowlist cannot
+  // silently drift from the dispatch sites and fail the lifecycle at runtime instead of here.
+  // Resolve dispatched methods STRUCTURALLY, not by matching double-quoted literals. A template
+  // literal (`${domain}.enable`) driven by a `for ... of [...]` array is a real dispatch of one
+  // method per element; the old regex census could not see it, which is exactly how three methods
+  // the probe itself dispatches stayed out of CDP_ALLOWED and how Fetch.enable slipped in green.
+  const dispatchCounts = new Map<string, number>();
+  const tally = (method: string) => dispatchCounts.set(method, (dispatchCounts.get(method) ?? 0) + 1);
+  const enclosingLoopDomains = (node: ts.Node): string[] | undefined => {
+    for (let scan: ts.Node | undefined = node; scan; scan = scan.parent) {
+      if (ts.isForOfStatement(scan) && ts.isArrayLiteralExpression(scan.expression)
+        && scan.expression.elements.every(element => ts.isStringLiteral(element))) {
+        return scan.expression.elements.map(element => (element as ts.StringLiteral).text);
+      }
+    }
+    return undefined;
+  };
+  for (const node of collect(probeFile, candidate => ts.isCallExpression(candidate)
+    && (ts.isPropertyAccessExpression(candidate.expression) || ts.isElementAccessExpression(candidate.expression))
+    && /(?:^|\.)call$|\["call"\]$/.test(textOf(candidate.expression))) as ts.CallExpression[]) {
+    const argument = node.arguments[0];
+    if (!argument) continue;
+    if (ts.isStringLiteral(argument)) { tally(argument.text); continue; }
+    // A template literal must be a domain placeholder over a literal array, and nothing else.
+    expect(ts.isTemplateExpression(argument), `unresolvable dispatch method at ${node.getStart(probeFile)}`).toBe(true);
+    const template = argument as ts.TemplateExpression;
+    expect(template.head.text).toBe("");
+    expect(template.templateSpans).toHaveLength(1);
+    const suffix = template.templateSpans[0].literal.text;
+    const domains = enclosingLoopDomains(node);
+    expect(domains, `template dispatch not driven by a literal array at ${node.getStart(probeFile)}`).toBeDefined();
+    for (const domain of domains!) tally(`${domain}${suffix}`);
+  }
+  const allowedMethods = allowedEntries.map(entry => entry.split("=")[0]).sort();
+  expect([...dispatchCounts.keys()].sort().filter(method => !allowedMethods.includes(method))).toEqual([]);
+  // ALLOWING A METHOD IS NOT ALLOWING IT TWICE. The table binds method and session but says nothing
+  // about how many times a method is dispatched, and two of the permitted methods are destructive on
+  // a second use: another Page.navigate takes the observed page off /app, and another
+  // Page.addScriptToEvaluateOnNewDocument installs a permanent page-side fetch override that the
+  // in-page census never sees - which forges both outage proofs, since probeTimerPath reads a
+  // TypeError as "refused". So the dispatch census is pinned exactly, per method.
+  expect([...dispatchCounts.entries()].sort(([left], [right]) => left.localeCompare(right))).toEqual([
+    ["Emulation.setDeviceMetricsOverride", 1],
+    ["Log.enable", 1],
+    ["Network.emulateNetworkConditions", 2],
+    ["Network.enable", 2],
+    ["Network.setBlockedURLs", 6],
+    ["Network.setCookies", 1],
+    ["Page.addScriptToEvaluateOnNewDocument", 1],
+    ["Page.enable", 1],
+    ["Page.navigate", 1],
+    ["Runtime.addBinding", 1],
+    ["Runtime.enable", 1],
+    ["Runtime.evaluate", 1],
+    ["Target.activateTarget", 2],
+    ["Target.closeTarget", 1],
+    ["Target.createTarget", 1]
+  ]);
+
+  // THE NAVIGATION TARGET IS PINNED STATICALLY, NOT ONLY GUARDED AT RUNTIME. Rewriting
+  // `const destination = `${base}${path}`` to anything else - e.g. `${base}/` - sends every
+  // navigation away from /app?babyId=..., which is the observed document path the whole harness
+  // exists to watch. The runtime guard does fail closed on that (the destination no longer starts
+  // with `${base}/app`, so it raises navigation_target_forbidden), but it fails closed only WHEN A
+  // LIFECYCLE RUNS - the edit otherwise lands at a fully green suite and is discovered an hour
+  // later in Chrome. Pin both the expression and its guard so it is refused at the point of
+  // writing, which is the only place a contract can be cheap.
+  const destinationDeclarations = collect(probeFile, node => ts.isVariableDeclaration(node)
+    && ts.isIdentifier(node.name) && node.name.text === "destination") as ts.VariableDeclaration[];
+  expect(destinationDeclarations).toHaveLength(1);
+  expect(textOf(destinationDeclarations[0].initializer!)).toBe("`${base}${path}`");
+  expect(source).toContain(
+    'if (!destination.startsWith(`${base}/app`)) fail("navigation_target_forbidden");');
+  // ...and the pinned dispatch must be the one that consumes it, not a literal URL.
+  const navigateDispatch = collect(probeFile, node => ts.isCallExpression(node)
+    && node.arguments.length === 2 && ts.isStringLiteral(node.arguments[0])
+    && node.arguments[0].text === "Page.navigate") as ts.CallExpression[];
+  expect(navigateDispatch).toHaveLength(1);
+  expect(textOf(navigateDispatch[0].arguments[1])).toBe("{ url: destination }");
+
+  // THE INJECTED DOCUMENT SCRIPT IS PAGE-SIDE CODE TOO, AND IT WAS PINNED BY NOTHING.
+  // Page.addScriptToEvaluateOnNewDocument carries a source string in its PARAMS, not as an argument
+  // to `evaluate`, so none of the 33 in-page digests covered it - only three `toContain` substring
+  // checks, which additional code satisfies. One prepended statement installing a `fetch` override
+  // via an alias (`const g = globalThis; g.fetch = ...`) ran on EVERY new document, before any probe
+  // code, surviving every navigation - and since probeTimerPath reads a TypeError as "refused", it
+  // forged BOTH outage proofs while the dispatch count stayed at exactly 1. Capping the count was
+  // never enough: the first dispatch's own source is the payload. Pin it by digest.
+  const injectionDispatch = collect(probeFile, node => ts.isCallExpression(node)
+    && node.arguments.length === 2
+    && ts.isStringLiteral(node.arguments[0])
+    && node.arguments[0].text === "Page.addScriptToEvaluateOnNewDocument") as ts.CallExpression[];
+  expect(injectionDispatch).toHaveLength(1);
+  const injectionParams = injectionDispatch[0].arguments[1];
+  expect(ts.isObjectLiteralExpression(injectionParams)).toBe(true);
+  const injectionProperties = (injectionParams as ts.ObjectLiteralExpression).properties;
+  expect(injectionProperties).toHaveLength(1);
+  const injectionSource = injectionProperties[0];
+  expect(ts.isPropertyAssignment(injectionSource)
+    && ts.isIdentifier(injectionSource.name) && injectionSource.name.text === "source").toBe(true);
+  expect(createHash("sha256")
+    .update(textOf((injectionSource as ts.PropertyAssignment).initializer).split("\r\n").join("\n"))
+    .digest("hex").slice(0, 16)).toBe("bb8f012d988d2903");
+
+  // THE ALLOWLIST MUST BE THE GUARD'S FIRST ACT. Asserting only that the check EXISTS let it be moved
+  // below the narrower shape rules, where an unlisted method reaches the socket whenever those rules
+  // happen not to match it. Require it structurally: statements 0 and 1 of the guard body.
+  const guardDeclaration = collect(probeFile, node => ts.isFunctionDeclaration(node)
+    && node.name?.text === "assertDispatchAllowed")[0] as ts.FunctionDeclaration | undefined;
+  expect(guardDeclaration).toBeDefined();
+  const guardStatements = guardDeclaration!.body!.statements;
+  expect(textOf(guardStatements[0])).toBe("const permittedKinds = CDP_ALLOWED.get(method);");
+  expect(textOf(guardStatements[1]))
+    .toBe('if (!permittedKinds || !permittedKinds.has(kind)) fail("cdp_dispatch_forbidden");');
+
+  // The cheap spelling denylist is kept as a SECOND line only - it catches an obviously destructive
+  // edit at the point of writing, before the hash census explains why. It is not the real gate.
+  const forbiddenInPage = [
+    /\.unregister\s*\(/, /caches\s*\.\s*delete\s*\(/, /caches\s*\.\s*keys\s*\(/,
+    /globalThis\s*\.\s*fetch\s*=/, /document\s*\.\s*write\s*\(/,
+    /location\s*\.\s*(?:replace|assign|reload)\s*\(/, /location\s*\.\s*href\s*=/,
+    /window\s*\.\s*location\s*=/, /history\s*\.\s*(?:pushState|replaceState)\s*\(/,
+    /localStorage\s*\.\s*clear\s*\(/, /sessionStorage\s*\.\s*clear\s*\(/,
+    /defineProperty\s*\(\s*window\s*,\s*["']fetch["']/, /Reflect\s*\.\s*set\s*\(\s*window\s*,\s*["']fetch["']/
+  ];
+  for (const pattern of forbiddenInPage) {
+    expect({ pattern: pattern.source, found: pattern.test(source) }).toEqual({ pattern: pattern.source, found: false });
+  }
+
+  // `window.fetch` IS overridden, legitimately: the cache-proof and timer-path observations install a
+  // temporary wrapper to watch the production loader's own request. That is only safe if every
+  // override captures the native function and restores it, so the page is never left with a
+  // permanently replaced fetch. Requiring the literal `= async` spelling was itself an escape - an
+  // arrow override, a computed key, defineProperty or Reflect.set was never COUNTED, so it needed no
+  // capture and no restore and the one-for-one check still held. A permanent override that fakes a
+  // TypeError on the timer endpoint forges BOTH outage proofs, because probeTimerPath classifies
+  // `error instanceof TypeError` as refused. So count every assignment form, not one spelling.
+  const fetchOverrides = [...source.matchAll(/(?:window|self)\s*(?:\.\s*fetch|\[\s*["'`]fetch["'`]\s*\])\s*=/g)];
+  const fetchRestores = [...source.matchAll(/finally\s*\{[^}]*window\s*\.\s*fetch\s*=\s*nativeFetch/g)];
+  const fetchCaptures = [...source.matchAll(/nativeFetch\s*=\s*window\s*\.\s*fetch/g)];
+  expect(fetchRestores.length).toBeGreaterThan(0);
+  // Each override is one install plus one restore, both matched by the assignment pattern.
+  expect(fetchOverrides).toHaveLength(fetchRestores.length * 2);
+  expect(fetchCaptures).toHaveLength(fetchRestores.length);
+
+  // The request-stalling domains must also be statically absent OUTSIDE the guard's own denylist.
+  // The runtime guard refuses them, so a lifecycle would fail closed - but a future author could add
+  // `worker.call("Fetch.enable", ...)` and see a green suite, learning the wrong lesson. Both layers
+  // now agree. Counted via the resolved enumeration, which already exempts the guard declaration.
+  for (const method of ["Fetch.enable", "Network.setRequestInterception"]) {
+    expect(cdpCalls(method).calls).toHaveLength(0);
+  }
+
+  // The worker's own sites still carry the staging/clear ordering. Resolved receivers are compared
+  // here only to locate them, never to exclude a call from the correctness assertions above.
+  const workerBlocks = allBlocks.filter(call => call.receiver === "worker");
+  expect(workerBlocks.length).toBeGreaterThan(0);
+
+  // The outage is re-asserted as the same scoped block, because a restarted worker keeps neither.
+  const reassertion = source.slice(source.indexOf("async function assertWorkerOutage("), source.indexOf("async function observe("));
+  expect(reassertion).toContain('await worker.call("Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`] });');
+  expect(reassertion).toContain('fail("worker_outage_lapsed")');
+
+  // Ordering over RESOLVED call-sites, not text offsets. The staging block is installed inside the
+  // window, and the worker's block is cleared exactly once, after the cache proof. Both properties
+  // were previously defeatable: the install assertion was satisfied by the helper definition merely
+  // existing above, and the clear check matched only canonical spacing.
+  const helperEnd = source.indexOf("async function observe(");
+  const retention = source.indexOf('await observe("offline_retention"');
+  const observation = source.indexOf('await observe("online_requires_confirmation"');
+  const cacheObservation = source.indexOf('await observe("service_worker_cache"');
+  const staging = workerBlocks.filter(block => block.offset > helperEnd && block.argument === scoped);
+  expect(staging).toHaveLength(1);
+  expect(staging[0].offset).toBeGreaterThan(retention);
+  expect(staging[0].offset).toBeLessThan(observation);
+  const clears = workerBlocks.filter(block => block.argument === "{ urls: [] }");
+  expect(clears).toHaveLength(1);
+  expect(clears[0].offset).toBeGreaterThan(cacheObservation);
+});
+
+// Executes probeTimerPath's REAL body. It was previously reached only through stubs in both
+// callers, so rewriting it to `{ await evaluate(...); return false; }` left the in-page expression
+// dispatched, every assertion on the const intact, and BOTH guards unconditionally reporting
+// success with the timer path live. The wiring between the const and the guards must be executed.
+async function runProbeTimerPath(outcome: string) {
+  const evaluated: string[] = [];
+  const probeTimerPath = probeFunction("probeTimerPath", {
+    TIMER_PATH_PROBE: "<expression>",
+    evaluate: async (_client: unknown, expression: string) => { evaluated.push(expression); return outcome; },
+    fail: (code: string) => { throw Error(code); }
+  });
+  const result = await probeTimerPath({ client: {} }).then(value => value, (error: Error) => error.message);
+  return { result, evaluated };
+}
+
+it("OC13 wires the executed probe expression to both outage guards", async () => {
+  // An answered request means the path is reachable; a network refusal means it is out.
+  const answered = await runProbeTimerPath("answered");
+  expect(answered.result).toBe(true);
+  const refused = await runProbeTimerPath("refused");
+  expect(refused.result).toBe(false);
+
+  // A fault inside the probe is NEITHER, and must not be laundered into proof of an outage. A bare
+  // catch previously made any throw - a restarted worker, a TypeError - read as "the path is out".
+  const broken = await runProbeTimerPath("probe_error");
+  expect(broken.result).toBe("timer_path_probe_failed");
+
+  // It dispatches the shared expression rather than an inline copy, so OC11's executable assertions
+  // about that expression actually govern what the guards send.
+  expect(answered.evaluated).toEqual(["<expression>"]);
+
+  // Both guards consult the probe's result; neither may discard it.
+  const source = read("scripts/cross-device-freshness-browser-probe.mjs");
+  const file = ts.createSourceFile("probe.mjs", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  for (const guard of ["assertTimerPathOut", "assertWorkerBlockEnforced"]) {
+    const declaration = file.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === guard);
+    expect(declaration).toBeDefined();
+    const body = declaration!.getText(file);
+    // The call must appear inside a condition, not as a bare discarded statement.
+    expect(body).toMatch(/if\s*\(\s*(!)?\(?\s*await\s+probeTimerPath\(/);
+  }
+});
+
+async function runAssertTimerPathOut(reachable: boolean) {
+  const evaluated: string[] = [];
+  const assertTimerPathOut = probeFunction("assertTimerPathOut", {
+    probeTimerPath: async (_device: unknown) => { evaluated.push("probe"); return reachable; },
+    fail: (code: string) => { throw Error(code); }
+  });
+  const outcome = await assertTimerPathOut({ client: {} }).then(
+    () => "path_proven_out",
+    (error: Error) => error.message
+  );
+  return { outcome, evaluated };
+}
+
 
 async function runAssertWorkerOutage(targets: unknown) {
   const emulated: unknown[] = [];
@@ -1296,9 +2441,10 @@ it("OC3 reports a lapsed worker outage as a harness condition, never as a produc
     { type: "service_worker", url: "http://127.0.0.1:41234/sw.js" }
   ]);
   expect(present.outcome).toBe("outage_held");
-  // Re-applying the outage is what makes the subsequent cache fallback deterministic.
+  // Re-applying the scoped block is what makes the subsequent cache fallback deterministic, and it
+  // must leave the document path through the same worker untouched.
   expect(present.emulated).toEqual([
-    { method: "Network.emulateNetworkConditions", params: { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 } }
+    { method: "Network.setBlockedURLs", params: { urls: ["http://127.0.0.1:41234/api/timers/active*"] } }
   ]);
 
   // A terminated worker, a different worker, or an unreachable target list all fail closed, and
@@ -1324,20 +2470,44 @@ it("OC3 reports a lapsed worker outage as a harness condition, never as a produc
  * half. The step now reports its own earliest failing sub-state, so the next failure names the
  * mechanism instead of requiring another inferential diagnosis.
  */
-async function runOnlineConfirmationState(dom: { live?: boolean; status?: boolean; time?: boolean; bar?: boolean; disabled?: boolean; foreignStatus?: boolean }) {
+async function runOnlineConfirmationState(dom: { live?: boolean; status?: boolean; time?: boolean; bar?: boolean; disabled?: boolean; foreignStatus?: boolean; timerCopy?: boolean; pageTime?: boolean }) {
   let expression = "";
   const onlineConfirmationState = probeFunction("onlineConfirmationState", {
     evaluate: async (_client: unknown, source: string) => {
       expression = source;
       return runInNewContext(source, {
         document: {
+          querySelectorAll: (selector: string) => {
+            if (selector !== "#app-freshness-status p") return [];
+            // Each paragraph gets its OWN following instant, mirroring the real wrapper: dom.time is
+            // the TIMER branch's instant and dom.pageTime the page branch's, so a page-level instant
+            // can no longer satisfy the timer-branch assertion.
+            const instant = (present: unknown) => ({ querySelector: (inner: string) => inner === "time" && present ? {} : null });
+            type Paragraph = { textContent: string; nextElementSibling: { querySelector: (inner: string) => unknown } | null };
+            const paragraphs: Paragraph[] = [
+              { textContent: "Data may be out of date.", nextElementSibling: instant(dom.pageTime ?? dom.time) },
+              { textContent: "Data current as of Jan 1.", nextElementSibling: null }
+            ];
+            if (dom.timerCopy !== false) {
+              paragraphs.push({ textContent: "Timer data may be out of date. Timer actions are unavailable.", nextElementSibling: instant(dom.time) });
+              paragraphs.push({ textContent: "Data current as of not yet confirmed.", nextElementSibling: null });
+            }
+            return paragraphs;
+          },
           querySelector: (selector: string) => {
             // Liveness defaults to present so existing cases keep their meaning.
             if (selector === "main") return dom.live === false ? null : {};
             // A foreign role="status" node must never be mistaken for the freshness region.
             if (selector === '[role="status"]') return dom.foreignStatus || dom.status ? {} : null;
             if (selector === "#app-freshness-status") return dom.status ? {} : null;
-            if (selector === "#app-freshness-status time") return dom.time ? {} : null;
+            // A region-wide lookup returns the FIRST <time> in document order, which is the PAGE
+            // branch's instant - the page paragraph precedes the timer paragraph in the shared
+            // wrapper. Modelling it as the timer's own instant let a `|| document.querySelector(
+            // '#app-freshness-status time')` fallback disjunct pass while restoring exactly the
+            // page-instant-satisfies-timer-branch confusion this stub exists to detect.
+            if (selector === "#app-freshness-status time") return (dom.pageTime ?? dom.time) ? {} : null;
+            // Same reasoning for the bare selector: only a page-level instant answers a region scan.
+            if (selector === "time") return (dom.pageTime ?? dom.time) ? {} : null;
             if (selector === '[aria-label="Running timers"]') return dom.bar ? {} : null;
             if (selector === '[aria-label="Running timers"] button:disabled') return dom.disabled ? {} : null;
             return null;
@@ -1374,9 +2544,25 @@ it("OC4 names the earliest failing sub-state of the online-confirmation conjunct
   expect((await runOnlineConfirmationState({ foreignStatus: true, status: false, time: false, bar: true, disabled: true })).state).toBe("status_absent");
 
   // The classifier is content-free and bound to the freshness region by id, not by a shared role.
+  // It reads textContent only to match the timer branch's fixed product copy - a comparison, never
+  // an emission - so the binding property is that every return is a fixed closed literal.
   const { expression } = await runOnlineConfirmationState({ status: true, time: true, bar: true, disabled: true });
   expect(expression).not.toContain("innerText");
-  expect(expression).not.toContain("textContent");
+  const returns = [...expression.split("\n").join(" ").matchAll(/return ('[a-z_]+'|[^;]+?);/g)].map(match => match[1].trim());
+  expect(returns.length).toBeGreaterThan(0);
+  for (const returned of returns) expect(returned).toMatch(/^'[a-z_]+'$/);
+  // The only textContent use is the fixed-copy predicate, and it never reaches a return.
+  expect(expression).toContain("textContent.includes('Timer data may be out of date')");
+  expect(expression.match(/textContent/g)).toHaveLength(1);
+
+  // A region rendered ONLY by the page-level branch is not a timer confirmation.
+  expect((await runOnlineConfirmationState({ status: true, time: true, bar: true, disabled: true, timerCopy: false })).state).toBe("timer_status_absent");
+
+  // The page branch's instant must NEVER satisfy the timer branch's assertion. Both branches render
+  // into one wrapper div (React fragments emit no node), so a parentElement lookup - or a region-wide
+  // fallback disjunct - would find the PAGE instant and wrongly report the conjunction confirmed.
+  expect((await runOnlineConfirmationState({ status: true, time: false, pageTime: true, bar: true, disabled: true })).state).toBe("instant_absent");
+  expect((await runOnlineConfirmationState({ status: true, time: true, pageTime: false, bar: true, disabled: true })).state).toBe("confirmed");
   expect(expression).not.toContain('[role="status"]');
   expect(expression).toContain("#app-freshness-status");
   expect(expression).toContain("'main'");
@@ -1550,4 +2736,113 @@ it("OC8 keeps a throwing detail supplier from destroying attribution", async () 
   }).then(() => "passed", browserFailureCode);
   // The original closed code is preserved rather than collapsing to unknown.
   expect(emitted).toBe("online_requires_confirmation");
+});
+
+// OC10b: EXECUTE the probe's dispatch guard against subversions that defeated static analysis.
+// Every attempt below is the SAME code path at runtime - `assertDispatchAllowed` sees a method name
+// and params, never the expression that produced them - so alias depth, computed keys, bound
+// receivers and runtime-built names cannot evade it. This is the property seven rounds of source
+// inference could not establish. The guard is loaded from the real probe, not restated here.
+it("refuses path-severing CDP dispatches at the probe's one choke point", () => {
+  const probeSource = read("scripts/cross-device-freshness-browser-probe.mjs");
+  // Lift the guard and its two constants out of the probe and execute them. Extracting by source
+  // slice keeps this test honest: if the guard is deleted or renamed, the slice fails to compile and
+  // this test fails, rather than passing against a stale copy maintained inside the contract.
+  const severingSet = probeSource.match(/^const CDP_PATH_SEVERING = .*$/m)?.[0] ?? "";
+  // The allowlist Map spans several lines; splice it whole so the VM runs the real table.
+  const allowedTable = probeSource.match(/^const CDP_ALLOWED = new Map\(\[[\s\S]*?^\]\);$/m)?.[0] ?? "";
+  expect(allowedTable).not.toBe("");
+  const timerPattern = probeSource.match(/^const CDP_TIMER_PATH = .*$/m)?.[0] ?? "";
+  const guardStart = probeSource.indexOf("function assertDispatchAllowed(");
+  const guardEnd = probeSource.indexOf("\nasync function connect(");
+  expect(severingSet).not.toBe("");
+  expect(timerPattern).not.toBe("");
+  expect(guardStart).toBeGreaterThan(-1);
+  expect(guardEnd).toBeGreaterThan(guardStart);
+  const guardSource = probeSource.slice(guardStart, guardEnd);
+  // Execute the probe's REAL `fail` and `browserFailure`, not a substitute. Modelling `fail` as a
+  // local throw meant this suite tested a function the probe did not have: dropping `throw` from the
+  // probe's own `fail` made every refusal a silent no-op while these assertions still passed.
+  const failSource = probeSource.match(/^const fail = .*$/m)?.[0] ?? "";
+  const failureImport = probeSource.match(/^import \{[^}]*browserFailure[^}]*\} from .*$/m)?.[0] ?? "";
+  expect(failSource).not.toBe("");
+  expect(failureImport).not.toBe("");
+  const { browserFailure: realBrowserFailure } = { browserFailure };
+  const harness = `${severingSet}\n${timerPattern}\n${allowedTable}\n${failSource}\n${guardSource}\n`
+    + `(kind, method, params) => { try { assertDispatchAllowed(kind, method, params); return "allowed"; } `
+    + `catch (error) { return browserFailureCode(error) ?? "not_a_browser_failure"; } }`;
+  const dispatch = runInNewContext(harness, {
+    Array, Set, Map, String, RegExp, Error, browserFailure: realBrowserFailure, browserFailureCode
+  }) as (kind: string, method: string, params?: unknown) => string;
+
+  const base = "http://127.0.0.1:41234";
+  const timerPath = { urls: [`${base}/api/timers/active*`] };
+  const offline = { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 };
+  const REFUSED = "cdp_dispatch_forbidden";
+
+  // The legitimate harness dispatches must all be allowed, or the guard has broken the probe.
+  expect(dispatch("page", "Network.emulateNetworkConditions", offline)).toBe("allowed");
+  expect(dispatch("page", "Network.emulateNetworkConditions", { ...offline, offline: false })).toBe("allowed");
+  expect(dispatch("worker", "Network.setBlockedURLs", timerPath)).toBe("allowed");
+  expect(dispatch("page", "Network.setBlockedURLs", timerPath)).toBe("allowed");
+  expect(dispatch("worker", "Network.setBlockedURLs", { urls: [] })).toBe("allowed");
+  expect(dispatch("page", "Network.setBlockedURLs", { urls: [] })).toBe("allowed");
+  // These two were previously "allowed" because the guard only refused four methods. The allowlist
+  // denies every unlisted method, so they are now refused - and that is the point: the permitted CDP
+  // surface was itself a severing route. Runtime.enable is harmless but unused; if a future author
+  // needs it, adding it to CDP_ALLOWED is a visible, reviewable edit.
+  expect(dispatch("worker", "Runtime.enable")).toBe("cdp_dispatch_forbidden");
+  expect(dispatch("worker", "Network.setCacheDisabled", { cacheDisabled: true })).toBe("cdp_dispatch_forbidden");
+  // Methods the probe legitimately dispatches remain allowed on exactly the sessions that need them.
+  expect(dispatch("browser", "Target.createTarget", { url: "about:blank" })).toBe("allowed");
+  expect(dispatch("page", "Runtime.evaluate", { expression: "1" })).toBe("allowed");
+  expect(dispatch("worker", "Network.enable")).toBe("allowed");
+  // The severing routes the twelfth review landed are all refused now, on every session.
+  for (const kind of ["browser", "page", "worker"]) {
+    expect(dispatch(kind, "Page.reload", {})).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "Storage.clearDataForOrigin", { origin: "x", storageTypes: "cache_storage" })).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "Network.clearBrowserCache", {})).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "ServiceWorker.stopAllWorkers", {})).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "ServiceWorker.unregister", { scopeURL: "/" })).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "Emulation.setScriptExecutionDisabled", { value: true })).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "Runtime.callFunctionOn", { functionDeclaration: "function(){}" })).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "DOM.removeNode", { nodeId: 1 })).toBe("cdp_dispatch_forbidden");
+    expect(dispatch(kind, "Browser.close", {})).toBe("cdp_dispatch_forbidden");
+  }
+  // Page-side execution and navigation are page-only: the worker session may not reach them.
+  expect(dispatch("worker", "Runtime.evaluate", { expression: "1" })).toBe("cdp_dispatch_forbidden");
+  expect(dispatch("worker", "Page.navigate", { url: "about:blank" })).toBe("cdp_dispatch_forbidden");
+  expect(dispatch("worker", "Page.addScriptToEvaluateOnNewDocument", { source: "1" })).toBe("cdp_dispatch_forbidden");
+  expect(dispatch("browser", "Runtime.evaluate", { expression: "1" })).toBe("cdp_dispatch_forbidden");
+
+  // Taking the WORKER offline is what severed the observed document path in two lifecycles. Refused
+  // regardless of how the worker connection was spelled at the call site, because the guard never
+  // sees the spelling.
+  expect(dispatch("worker", "Network.emulateNetworkConditions", offline)).toBe(REFUSED);
+  expect(dispatch("worker", "Network.emulateNetworkConditions", { ...offline, offline: false })).toBe(REFUSED);
+  expect(dispatch("browser", "Network.emulateNetworkConditions", offline)).toBe(REFUSED);
+  // An untagged or unknown connection kind must not be treated as the page.
+  expect(dispatch(undefined as unknown as string, "Network.emulateNetworkConditions", offline)).toBe(REFUSED);
+  expect(dispatch("", "Network.emulateNetworkConditions", offline)).toBe(REFUSED);
+  expect(dispatch("Page", "Network.emulateNetworkConditions", offline)).toBe(REFUSED);
+
+  // Wholesale and document-pattern blocks are refused on EVERY connection kind, including the page.
+  for (const kind of ["worker", "page", "browser"]) {
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: ["*"] })).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: [`${base}/*`] })).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: [`${base}/app*`] })).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: [`${base}/_next/*`] })).toBe(REFUSED);
+    // Smuggling the document pattern alongside the legitimate timer path.
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: [`${base}/api/timers/active*`, "*"] })).toBe(REFUSED);
+    // A malformed or absent list must fail closed rather than read as an empty clear.
+    expect(dispatch(kind, "Network.setBlockedURLs", {})).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: "*" })).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setBlockedURLs")).toBe(REFUSED);
+    // A near-miss timer path must not pass: the pattern is anchored, not a substring test.
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: [`${base}/api/timers/active*extra`] })).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setBlockedURLs", { urls: ["http://evil/api/timers/active*"] })).toBe(REFUSED);
+    // Request stalling severs documents just as effectively as an offline worker.
+    expect(dispatch(kind, "Fetch.enable", { patterns: [{ urlPattern: "*" }] })).toBe(REFUSED);
+    expect(dispatch(kind, "Network.setRequestInterception", { patterns: [{ urlPattern: "*" }] })).toBe(REFUSED);
+  }
 });
