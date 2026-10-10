@@ -509,6 +509,474 @@ markdown review and `git status --short` are usually enough.
 
 ### Run by hand
 
+The cross-device freshness fallback has focused controller, shell-confirmation,
+timer component/service/route and harness-contract tests in the canonical suites.
+Its production-image and two-browser runtime acceptance remains **pending**.
+No archive, Docker, Chrome or recovery lifecycle was run for the source hardening;
+static contracts are not runtime acceptance evidence.
+
+After separate lifecycle approval, `npm run verify:cross-device-freshness` requires
+Windows, local Chrome (`CUBBY_CHROME_PATH` may name chrome.exe/chromium.exe), Git,
+tar, PowerShell and a local default Docker context with Compose. Set
+`CUBBY_FRESHNESS_ACCEPTED_COMMIT` to the independently reviewed final local
+40-hex commit. The harness requires that exact HEAD and a clean tracked and nonignored-untracked
+worktree before creating disposable resources. The currently dirty source candidate
+is not eligible. It builds only a unique Git-object export, reads its Compose
+template/fixture/probe from that export, and excludes private/runtime paths and
+symlinks/submodules. Direct tar extraction uses the fixed relative operands
+`["-xf", "source.tar", "-C", "source"]` from the controlled disposable root as its
+working directory for Windows portability. It never builds from the live worktree
+or loads its `.env`.
+Compose receives generated infrastructure secrets and allowlisted OS discovery
+variables; Chrome receives only OS/profile variables. Fixture injection receives
+only its generated seed URL and app password; the probe receives only minimal Node
+OS variables, loopback/CDP endpoints, action ID and the fixture password.
+
+The unexecuted probe requires 20-second visible updates across Log, Moments,
+Calendar and timers, five-second foreground recovery, hidden cadence, truthful
+stale/reconnect state and browser diagnostics. The Calendar probe creates an
+event; Cubby has no Calendar edit action. Because both profiles run at 390
+pixels, the Calendar observation reads only the phone month cell - its spoken
+item count and its painted marker dots - against a baseline captured on the
+already-open device-B page, and never renavigates it. Desktop event-title text
+sits inside a `hidden md:block` region and the title drawer needs a selected
+date, so neither is observable at that width and neither is read. The cell's
+marker row is capped at four dots, so the observation requires the uncapped
+spoken count to rise while the marker row keeps at least as many dots and stays
+nonempty, rather than demanding a saturated dot row grow. No other own-baby
+write is issued between that baseline and the observation, so an unrelated
+activity cannot supply the increase. The submitted calendar operation ID is also
+reconciled through `/api/browser-operations/<id>`: a `completed` status carrying
+a nonempty `eventId` passes, a still-reconciling `pending`/`prepared`/`open`
+status is polled within the same 20-second bound because the submit runs
+Serializable and may retry, and a terminal `stale`/`rejected`/`expired` status or
+an unusable outcome fails closed immediately. An HTTP 2xx response alone is not a
+saved event.
+Its bounded display/read isolation proof
+watches both browsers throughout exercised Log/Moments/Calendar/timer-status
+surfaces for foreign synthetic sentinels/identifiers and checks the foreign timer
+read. This is not a hostile mutation or side-effect audit of unchanged endpoints.
+The cache probe retains the production worker, seeds an old authorized response
+under the exact future tokenized URL, obtains a newer confirmation, and uses
+acceptance-only deterministic bytes for one synchronous timer-loader dispatch.
+It requires worker delivery of that exact cached response, matching request token,
+older server instant, retained stale instant and disabled timer actions while
+online. Cache seeding alone cannot pass. The online-confirmation step does not
+rely on service-worker network emulation surviving its idle window: the timer
+endpoint is also blocked at the page layer for that assertion, then unblocked so
+the cache observation can reach the worker, and the worker outage is reconfirmed
+immediately before the cache proof depends on it. A terminated or replaced worker
+target fails closed as `FRESHNESS_BROWSER_WORKER_OUTAGE_LAPSED`, so a lapsed
+simulated outage is reported as a harness condition rather than becoming a
+product verdict. Because truthful online state is a conjunction, that step
+classifies its own earliest unmet part and reports one of the closed sub-state
+codes `FRESHNESS_BROWSER_ONLINE_PAGE_ABSENT`, `..._ONLINE_STATUS_ABSENT`,
+`..._ONLINE_INSTANT_ABSENT`, `..._ONLINE_TIMER_BAR_ABSENT` or
+`..._ONLINE_CONTROL_ENABLED` instead of one
+collapsed marker, so a failure names the mechanism rather than requiring a
+separate inferential diagnosis. The status checks are bound to the freshness
+region's own id rather than the `role="status"` several unrelated components
+also render, so an absent region is never misreported as a missing instant.
+Application liveness is checked first and reports
+`FRESHNESS_BROWSER_ONLINE_PAGE_ABSENT`, because blocking the application route
+can destroy the page the step means to observe; without that check a destroyed
+page and a live page that is legitimately current yield the same code. A
+lifecycle reported exactly that marker, so the step now blocks only the timer
+data path and leaves the application route reachable. The outage stays
+deterministic because the timer bar rejects any response that does not answer
+its own live request, so a cached reply cannot clear timer staleness, and the
+freshness region stays rendered with its confirmed instant while the page
+survives to be observed. `FRESHNESS_BROWSER_ONLINE_PAGE_ABSENT` is retained
+deliberately now that its staging cause is gone, so a real page-render fault
+still reports precisely instead of collapsing into an absent status region. That
+marker nevertheless recurred, and the cause was never the page-layer block: the
+service worker is registered at the origin root with no scope filter and its
+fetch handler answers every controlled GET, so holding the worker offline also
+severed the observed page's own document and RSC payloads. The worker outage is
+therefore a blocked-URL list scoped to the timer data path, never an offline
+emulation. That keeps the document path alive while still forcing the cache
+fallback `service_worker_cache` exists to prove, so one window can satisfy both
+steps instead of putting them in conflict. Because the worker now stays online,
+the page-layer block is the only thing holding the timer path out and the
+harness does not assume it reaches a worker-mediated request: a throwaway
+request is issued and must fail, and a reachable path reports
+`FRESHNESS_BROWSER_TIMER_PATH_REACHABLE` as a harness condition rather than
+letting a correct product re-enabling its controls read as a product verdict.
+Whether CDP enforces a blocked-URL list on a `service_worker` target at all, and
+delivers the refusal to the worker's own `fetch()` promise rather than erroring
+the fetch event, is an assumption this harness cannot establish from source. It
+is therefore proven where it is first relied upon: once the page-layer block is
+lifted, one throwaway request is governed only by the worker's block and must
+still fail, so an unenforced block reports
+`FRESHNESS_BROWSER_WORKER_BLOCK_UNENFORCED` at that point instead of surfacing
+as a product-looking cache failure several observations later. A refusal alone is
+not proof, because the worker's cache fallback must miss for a never-cached URL
+and so rejects for an unrelated reason that looks identical; a positive control
+request that must still answer through the same worker separates enforcement
+from a broken worker and reports
+`FRESHNESS_BROWSER_WORKER_CONTROL_UNREACHABLE`. That control carries a unique
+`cacheBust` query because `sw.js` pre-caches its shell assets and answers any
+controlled GET from cache when its network fails: `caches.match` defaults to
+`ignoreSearch:false`, so a busted URL can never match the cached entry and
+answering therefore requires the worker's passthrough fetch to reach the
+network. A fault inside the control is
+`FRESHNESS_BROWSER_WORKER_CONTROL_PROBE_FAILED`. The throwaway request reports a
+discriminated outcome rather than a bare boolean, so a fault inside the probe is
+`FRESHNESS_BROWSER_TIMER_PATH_PROBE_FAILED` instead of being laundered into
+proof of an outage. The online conjunction also requires the timer paragraph's
+own copy and the instant inside that paragraph's group, reporting
+`FRESHNESS_BROWSER_ONLINE_TIMER_STATUS_ABSENT` otherwise, because a page-level
+instant plus a control disabled only by a pending timer load would otherwise
+satisfy the step while timer staleness had in fact cleared.
+
+The probe enforces the path-severing invariant at RUNTIME, in the one function
+every CDP dispatch passes through. Seven review rounds tried to decide from the
+probe's source which expression held a CDP connection, and each inference was
+defeated by a new spelling: aliases, bound receivers, parameters, object
+properties, spreads, computed keys, method names built at runtime. The guard in
+`call` never sees the expression that produced the dispatch - only the method
+name and params - so those spellings are irrelevant to it by construction. Each
+connection is tagged `browser`, `page` or `worker` at `connect()`, and the guard
+refuses, with the closed code `cdp_dispatch_forbidden`: any
+`Network.emulateNetworkConditions` on a connection that is not the page (taking
+the WORKER offline is what severed the observed document path in two
+lifecycles); any `Network.setBlockedURLs` list that is not exactly the timer data
+path or an empty clear; and `Fetch.enable` or `Network.setRequestInterception`
+outright, since request interception with no handler stalls documents just as
+effectively.
+
+A guard governs nothing if a dispatch can reach the socket without passing it,
+and that REACHABILITY is the property the design actually turns on - so it is
+enforced structurally rather than assumed. Two review rounds broke earlier
+versions of these contracts five different ways while the suite stayed green: a
+decoy object literal with its own `call` property satisfied the invocation check
+while the real `call` dispatched unguarded; a sibling `raw` property on the
+returned connection reached `socket.send` directly; a `connect()` call without
+`await` escaped a regex-based census, letting a rogue worker socket be tagged
+`page`; a raw `new WebSocket` bypassed the connection object entirely, with a
+concatenated method name defeating the only remaining defence; and re-pointing
+the page site's target at a `service_worker` entry kept the tag `page`, which the
+guard then lawfully permitted to emulate offline. Each fix had closed the
+reported spelling and left the layer beneath it free.
+
+The contracts therefore require, from resolved AST nodes: `connect` takes
+`(url, kind)` and contains exactly one returned object literal; that object's
+property set is exactly `call`, `close`, `on`; exactly one `new WebSocket` exists
+in the probe and it is lexically inside `connect`, so there is no second
+connection to dispatch through; every `.send` call has `socket` as its receiver,
+and a detached, destructured, computed or aliased `send` is refused outright;
+`socket.send` occurs exactly once, inside that object's `call`; exactly one
+`call` property exists anywhere, so no decoy can satisfy the check; the guard is
+`call`'s first statement, receiving `kind` and that dispatcher's own parameter
+names, which defeats shadowing; connection sites are enumerated from resolved
+`connect` call nodes with literal tags; and each tag is bound to its target's
+verified CDP type - the `page` site's target must derive from a `type === "page"`
+filter and the worker's from `type === "service_worker"`, so a correct-looking tag
+cannot name the wrong socket. The probe must also pass `node --check`: every
+other contract reads it through an error-tolerant parser, so a probe with a
+syntax error - one that could never run - previously returned a fully green suite.
+
+The guard has no notion of WHEN a dispatch happens, so the page's own offline
+window is held by two separate contracts. Source position pins the order - the
+block, the restore and the observation must appear in sequence, with exactly two
+emulations, `offline: true` then `offline: false`. Position alone was not enough:
+prefixing the restore with `if (observations.size > 9999)` kept both call nodes
+in the required order while the page never came back online, so both emulations
+must also be unconditional awaited statements of the lifecycle's own `try` block,
+the same reachability test used for the assert helpers.
+
+Three further layers were each found free after the layer above it was bound, and
+each one could re-sever the observed document path at a fully green suite. First,
+`fail` itself: deleting one keyword, `const fail = (code) => { browserFailure(code); }`,
+made every refusal in the probe silent - all four guard refusals, the timer-path
+and worker-control proofs, the observation census - and the probe printed PASS
+with exit 0. Its body must now be exactly `throw browserFailure(code);`, with no
+shadowing and no reassignment, and the executable guard suite runs the probe's
+REAL `fail` and `browserFailure` instead of substituting a local throw, which is
+why the hole existed: that suite had been proving a function the probe did not
+contain. Second, the tag-to-target binding read only the text that CHOSE the
+target, so writing `target.webSocketDebuggerUrl = <the worker's url>` afterwards
+left the type filter intact, kept the tag `page`, and let the page emulation take
+the worker offline; no property of either target binding may now be written, and
+`connect` must read the URL directly off the type-filtered binding rather than
+through an intermediate.
+
+Third, in-page JavaScript was entirely unconstrained -
+the guard only sees CDP dispatches, so a single `evaluate` could unregister the
+service worker and purge every cache without any forbidden method. The first
+attempt at closing this was a denylist of forbidden spellings, and it failed
+badly: 13 of 15 attacks survived a fully green suite, because every in-page
+expression is a template literal and page-side runtime string building
+(`self['cach'+'es']`, `reg['un'+'register']()`), a cache handle aliased before
+deletion, `document.write`, `window.location =` and `history.pushState` match no
+pattern. Enumerating forbidden spellings is the arms race this harness lost five
+rounds running, so the polarity is inverted: all 33 in-page expressions are
+pinned by content hash in an allowlist, and ANY new or edited expression fails
+closed, reported with its probe line. The count and the sorted digest set are
+both pinned, so deleting a proof is also a contract change, and `Runtime.evaluate`
+must appear exactly once so no dispatch can bypass the census. A spelling
+denylist survives only as a cheap second line that names an obviously destructive
+edit sooner; it is not the gate. Defeating this requires registering a hash,
+which is a visible and reviewable act rather than a clever spelling.
+
+The guard refusing four known-dangerous methods left every OTHER CDP method
+permitted on every session, and that surface is itself a page-side execution
+route: `Page.navigate` and `Page.reload` sever the observed document,
+`Storage.clearDataForOrigin` and `Network.clearBrowserCache` destroy the cache
+entry the proof depends on, `ServiceWorker.stopAllWorkers` kills the worker,
+`Emulation.setScriptExecutionDisabled` kills all page script, and
+`Runtime.callFunctionOn` and a second `Page.addScriptToEvaluateOnNewDocument` run
+arbitrary page code without ever naming `Runtime.evaluate`, routing around the
+in-page census entirely. Eleven such dispatches landed at a fully green suite. So
+the same inversion applies here: `CDP_ALLOWED` maps each permitted method to the
+sessions that may use it, the guard consults it as its first act, and every
+unlisted method is refused on every session.
+
+Allowing a method is not allowing it twice. The table binds method and session
+but says nothing about frequency, and two permitted methods are destructive on a
+second use - another `Page.navigate` takes the observed page off `/app`, another
+`Page.addScriptToEvaluateOnNewDocument` installs a permanent page-side `fetch`
+override that forges both outage proofs. The dispatch census is therefore pinned
+per method with exact counts. The allowlist's POSITION is pinned too, as
+statements 0 and 1 of the guard body: asserting only that the check existed let
+it be moved below the narrower shape rules, where an unlisted method reaches the
+socket whenever those rules happen not to match it.
+
+An allowlist must admit the harness it guards, and the first version did not. The
+probe's startup loop dispatches `Page.enable`, `Runtime.enable`, `Network.enable`
+and `Log.enable` as a template literal over a domain array; only `Network.enable`
+was listed, so the guard refused the probe's own fourth dispatch and every
+lifecycle would have died before observation 1 - and it would have died with
+`CDP_DISPATCH_FORBIDDEN`, which reads like a harness defect rather than a table
+omission. The reason the contracts did not catch it is worth recording: the
+dispatch census matched `.call("Method"` - double-quoted literals only - so a
+template-literal dispatch was invisible to it, while the structural rule that DOES
+resolve the loop deliberately exempts it as a benign domain enable. Two mechanisms
+with exactly inverted blind spots, and a method appended to that array - including
+`Fetch.enable`, which stalls every request including documents - passed at a fully
+green suite. The census now resolves dispatches from the AST, expanding a literal
+array loop into the methods it really dispatches, and refuses any dispatch whose
+method it cannot resolve.
+
+Page-side code also travels in dispatch PARAMS, not only as an argument to
+`evaluate`. `Page.addScriptToEvaluateOnNewDocument` carries a source string that
+no digest covered - only substring checks, which additional code satisfies - so
+one prepended statement aliasing `globalThis.fetch` ran on every new document,
+before any probe code, surviving every navigation, and forged both outage proofs
+while the dispatch count stayed at exactly 1. Capping the count was never enough:
+the payload is the first dispatch's own source. It is now pinned by digest.
+
+Binding what the harness may DO to the browser is only half the problem, and for
+fourteen rounds it was the only half anyone attacked. The CDP allowlist, the
+socket census, the in-page expression allowlist all hold - a reviewer's severing
+mutations were caught, including the census boundary cases. Then the same
+reviewer attacked what the harness may CONCLUDE, and 15 of 20 mutations landed at
+a fully green suite: `evaluate` rewritten to `return true` made every in-page
+observation vacuous; `wait` returning before its predicate made every settle
+check vacuous; the final observation census neutered with `&& false` reported
+PASS having observed nothing; `exactCachedResponse` forced true made
+`service_worker_cache` certify on no evidence; `ownLog` set to
+`/app/../?babyId=...` passed `startsWith("/app")` as a string while resolving to
+the origin root; a mismatched `addBinding` name silently killed the isolation
+violation channel; and `closeTarget` closed the observed page rather than the
+blank one.
+
+That asymmetry is the important lesson of this work. A harness that severs the
+document path fails loudly - `ONLINE_PAGE_ABSENT`, exit 1, no evidence produced.
+A harness that forges a proof prints `FRESHNESS_BROWSER_PASS` and is
+indistinguishable from success, which is precisely the confusion this redesign
+exists to prevent. The forging surface is therefore the more dangerous one, and it
+was entirely unbound.
+
+Enumerating ways to forge evidence is the arms race rounds 7-11 lost five times,
+so the answer is the same inversion a third time, and the boundary is every
+statement the harness executes rather than any category chosen in advance: all 27
+top-level function bodies are pinned by digest, the lifecycle `try` block - the
+observation sequence itself, which is not a function at all - is pinned as one
+digest with exactly one top-level try permitted, and all 18 module-level
+constants are pinned as a CENSUS rather than a list. `ownLog` was missed by the
+first attempt precisely because it was neither a function nor on anybody's list;
+a census has no list to be absent from. Changing harness logic is now a
+deliberate, reviewable act: update the digest and say why it changed.
+
+Pinning function bodies, the lifecycle block and the module constants was still
+not a boundary, and the reason is worth stating precisely because it is the same
+mistake twice. Those three censuses ENUMERATE WHICH AST SHAPES TO PIN, which is
+the denylist polarity this document condemns for in-page code and for the CDP
+surface. A reviewer put executable logic in seventeen statement forms the
+enumeration does not name, and every one of them survived a fully green suite.
+
+The decisive fact is that a function DECLARATION is a mutable binding. A single
+module-level assignment replaces any pinned function wholesale - the pinned body
+remains in the file, byte-identical, and simply never runs:
+
+    evaluate = async () => true;          every in-page observation vacuous
+    wait = async () => {};                every settle check vacuous
+    assertDispatchAllowed = () => {};     the choke point of rounds 7-14, disabled
+    probeTimerPath = async () => false;   both outage proofs forged
+
+and the same assignment hidden in a module-level IIFE, a class static block, a
+bare block, a labeled statement, a top-level `if` or `for`, a top-level `await`,
+a destructured getter, or the lifecycle's own `catch` and `finally` clauses -
+which the lifecycle pin never covered, because it pins `tryBlock` alone.
+
+So the boundary is the whole file: one digest over EVERY top-level statement,
+printed with comments removed, plus the statement count. Nothing executes in an
+ES module outside its own statement list, so nothing can be added, removed,
+reassigned or reordered without changing that one value. The three earlier
+censuses are kept, but as diagnostics rather than as the boundary - when the
+whole-file digest changes they say which function, constant or sequence moved.
+This is the third place in this harness where enumerating permitted shapes had to
+be replaced by a closed census over everything, and it should be the last: there
+is no layer beneath "every statement in the file".
+
+The destructured-declaration case was also a fail-open: the two censuses skipped
+any declaration whose name was not a plain identifier, so a destructured getter
+was silently ignored. They now throw on a name they cannot read.
+
+One reported finding was NOT a defect. Numeric separators were said to let
+`14_000` become `1_4000` with the digest unchanged and the value changed; they
+are cosmetic in JavaScript - `14_000 === 1_4000 === 14000` is true - so the
+printer is right to normalise them and no contract was added.
+
+The digests normalise line endings, and that is a correctness requirement rather
+than a convenience. `printNode` reproduces template-literal text verbatim,
+carriage returns included, and the probe carries large multi-line in-page
+templates - so the same file checked out with CRLF digested to
+`398b66db8ea1a0bc` and with LF to `ec69ed71b7591191`. No `.gitattributes` rule
+covers the probe, the git blob stores LF, and the pin was therefore an artifact
+of one Windows checkout: the first Linux or CI run would have failed the contract
+on a file nobody had touched.
+
+Normalising is not a weakening, because JavaScript itself folds CRLF to LF inside
+template literals. Executing a real CRLF-authored file shows the template's
+character codes as `97,10,98` - the CR is simply not in the string value. Two
+checkouts differing only in line endings run the identical program, so the pin
+must give them the identical digest; anything else pins the checkout rather than
+the program. Both directions are verified: an LF checkout of these bytes passes,
+and an LF checkout that also reassigns `evaluate` still fails.
+
+The digests cover the PRINTED node with comments removed, not raw source text.
+The first version digested source text and fired when a comment was added inside
+the lifecycle block - a contract that rejects documentation is a contract the next
+author deletes, and it would have punished documenting the very sequence it
+protects. Comments do not execute, so they are excluded; but commenting a
+statement OUT changes the printed output, so a guard or an observation still
+cannot be disabled that way. Both directions are verified: comments inside the
+lifecycle, inside a function body and above a constant are accepted, while a
+commented-out navigation guard and a commented-out observation are both refused.
+
+`Page.navigate`'s destination is pinned statically as well as guarded at runtime.
+Retargeting it at the origin root sends every navigation away from the observed
+document path, and while the runtime guard does fail closed on that, it fails
+closed only when a lifecycle runs - the edit otherwise lands green and resurfaces
+an hour later in Chrome looking like a product defect, which is the exact
+confusion that cost two lifecycles and ten remediations. A contract that only
+fails at runtime is worth much less than one that fails at the point of writing.
+
+Two further layers sat below the in-page census. Its digest covers the AST text
+of what is passed to `evaluate`, so the two sites passing a bare identifier -
+`TIMER_PATH_PROBE`, `WORKER_CONTROL_PROBE` - pinned only the identifier's name
+while the const body it refers to was unpinned; rewriting that body to return
+`refused` unconditionally forged both outage proofs. And an approved template
+literal interpolates `${renderedIsolationMarkup.toString()}`, so editing that
+function changed what runs in the page while every digest stayed identical,
+making the tenant-isolation proof unconditionally true. Both declarations are now
+pinned by digest, and no other function may be serialised into page code.
+
+`window.fetch` IS overridden, legitimately: the cache-proof and timer-path
+observations install a temporary wrapper to watch the production loader's own
+request. That is only safe if every override captures the native function and
+restores it, so the page is never left with a permanently replaced fetch.
+Requiring the literal `= async` spelling was itself an escape - an arrow
+override, a computed key, `Object.defineProperty` or `Reflect.set` was never
+counted, so it needed no capture and no restore while the one-for-one check still
+held. That mattered more than it appears: a permanent override faking a
+`TypeError` on the timer endpoint forges BOTH outage proofs, because
+`probeTimerPath` classifies `error instanceof TypeError` as refused, so the
+harness would report a product verdict on manufactured evidence. Every assignment
+form is now counted, matched one-for-one against a `nativeFetch` capture and a
+`finally` restore. The request-stalling methods are
+asserted absent as well as refused at runtime, so a future author adding one sees
+a red suite rather than a green suite plus a failing lifecycle. All of this
+constrains what the harness may be edited to do; none of it is a runtime
+guarantee about what Chrome enforces against a worker-mediated fetch. That
+remains an assumption until a lifecycle executes the cache observation.
+Preservation checks require the same
+nonzero scroll offset (using a bounded spacer), connected input/preview/dialog,
+draft and focus, and identical FileList count/name/type/size. Since the composer
+consumes its picker on change, the probe reinstates a pending native selection
+after the real upload/preview without triggering a second upload.
+
+Before creating the disposable root, the harness persists a content-free ledger
+at `<OS temp>/cubby-freshness-ledgers/<exact-project>.json` containing only version,
+project, image tag, root, exported commit and harness PID. On Windows, the fixed
+PowerShell command atomically creates a missing private ledger directory with
+`DirectoryInfo.Create(DirectorySecurity)`; Node does not pre-create it. An existing
+directory is only validated, never repaired or accepted on a best-effort basis.
+Before any ledger write, the actual ACL of either directory must have the current
+Windows SID as owner, inheritance protected, and exactly one non-inherited Allow
+FullControl rule for that SID with `ContainerInherit|ObjectInherit` and
+`PropagationFlags.None`. Creation or validation failure stops before writing;
+no `Set-Acl` or insecure fallback is used. Temporary-root and directory checks
+reject redirected paths. Non-Windows creation retains mode 0700 and fails closed
+unless ownership and group/other mode restrictions validate. The content-free
+ledger write remains exclusive (`wx`, mode 0600) and fsynced. These source contracts
+do not replace the pending runtime acceptance gate.
+SIGINT/SIGTERM abort bounded child commands into one idempotent cleanup path.
+Cleanup attempts Chrome exit,
+exact project-labeled containers/volumes/networks and the exact image tag, then
+independently removes both authenticated profiles and the disposable root even if
+Docker cleanup failed. It checks resource/image/process/profile/root absence and
+only deletes the ledger after complete verification. Failures are aggregated;
+interrupted resource commands retain the content-free ledger because daemon work
+may still need recovery. Cookies/cache are never intentionally retained.
+
+Recovery is a separately approved lifecycle, invoked for **one** validated ledger:
+`npm run verify:cross-device-freshness -- --recover <absolute-ledger-path>`.
+It refuses a live recorded harness PID, unsafe paths/labels and redirected roots;
+it rechecks exact project labels before deleting resources and attributes Chrome
+only to exact disposable profile arguments with PID creation-time rechecks.
+It does not broad-match normal Cubby resources. All waits/commands are bounded and
+only fixed content-free result codes are emitted. Do not invoke either lifecycle
+as part of source-only verification.
+
+Successful acceptance emits exactly `FRESHNESS_ACCEPTANCE_PASS` followed by
+`FRESHNESS_CLEANUP_PASS`; successful recovery emits only `FRESHNESS_CLEANUP_PASS`.
+Failures emit `FRESHNESS_ACCEPTANCE_FAILED` and, for a primary failure, exactly one
+`FRESHNESS_PHASE_` code with suffix `PREFLIGHT_EXPORT`, `DOCKER_IMAGE_START`,
+`FIXTURE`, `ACTION_DISCOVERY`, `BROWSER_LAUNCH`, `BROWSER_OBSERVATION`, `TERMINAL`
+or `UNKNOWN`. These label harness boundaries, not child error content. A browser
+observation failure also emits exactly one closed `FRESHNESS_BROWSER_` predicate code
+from the probe's ordered allowlist. Malformed, extra or unclassified probe output maps to `FRESHNESS_BROWSER_UNKNOWN`;
+raw stdout and all child stderr remain discarded. Malformed CDP messages and exceptions
+thrown while dispatching CDP listeners reduce to `FRESHNESS_BROWSER_CDP_MESSAGE_FAILED`
+through the same single-marker boundary.
+Acceptance cleanup failure adds `FRESHNESS_CLEANUP_FAILED` independently
+and cannot replace the primary phase or browser predicate. Cleanup-only failure has
+no primary phase. Unclassified errors use `UNKNOWN`; no exception message, stack,
+child output or resource identity is rendered. Failure exits nonzero and emits no
+success markers.
+
+The package entry runs a plain-JavaScript launcher before loading TypeScript.
+Handled outer failures write their fixed sequence only to stdout. The launcher
+discards child stderr at spawn, retains at most the longest valid fixed stdout
+sequence, and clears that candidate after reduction. Only exact LF-terminated
+sequences with matching exit status and success invocation are accepted.
+Loader/import/startup errors, markerless failures, malformed or extra output,
+overflow and signal termination emit exactly `FRESHNESS_ACCEPTANCE_FAILED` then
+`FRESHNESS_PHASE_UNKNOWN`, with a nonzero exit. It never renders child errors.
+The child must signal readiness before the resource-owning lifecycle begins. The
+launcher gives that startup boundary 30 seconds. A startup deadline or
+SIGINT/SIGTERM before readiness terminates the child, escalates to a forced stop
+after two seconds if needed, waits for close, and emits only the closed `UNKNOWN`
+failure sequence. After readiness, SIGINT/SIGTERM are forwarded through a fixed
+IPC message and the launcher waits for the existing lifecycle's cleanup. Losing
+the launcher connection also interrupts that same path. No retry or second
+cleanup lifecycle is introduced. The source-only output contracts use synthetic
+children in a copied package under the ignored test cache; they never run the
+rehearsal.
+
 These stay outside the gates for reasons continuous integration cannot fix — a
 wall-clock budget a shared runner cannot measure honestly, a dependency on an
 image the host already holds, or a real local Chrome:

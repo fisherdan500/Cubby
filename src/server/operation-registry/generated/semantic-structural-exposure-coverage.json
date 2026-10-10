@@ -2451,11 +2451,11 @@
       "sidecarPath": "src/app/api/timers/[id]/stop/route.operation.ts"
     },
     {
-      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const babyIds = new URL(request.url).searchParams.getAll(\"babyId\");\n    if (babyIds.length > 1 || (babyIds.length === 1 && babyIds[0].length === 0)) {\n      return fail(\"invalid_baby_id\", \"Select a valid baby.\", 400);\n    }\n    const babyId = babyIds[0];\n    return ok({ timers: await getActiveTimersForShell(babyId) });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
-      "anchorDigest": "e99cea47fe265c8f9c6f196a4984405e21b1e66df390b9ce1e9edf8bae9e942a",
-      "anchorEnd": 889,
+      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const search = new URL(request.url).searchParams;\n    const tokens = search.getAll(\"requestToken\");\n    if (tokens.length !== 1 || !z.uuid().safeParse(tokens[0]).success) {\n      return fail(\"invalid_request_token\", \"Retry the refresh.\", 400);\n    }\n    const requestToken = tokens[0];\n    const babyIds = search.getAll(\"babyId\");\n    if (babyIds.length > 1 || (babyIds.length === 1 && babyIds[0].length === 0)) {\n      return fail(\"invalid_baby_id\", \"Select a valid baby.\", 400);\n    }\n    const babyId = babyIds[0];\n    const timers = await getActiveTimersForShell(babyId);\n    return ok({ timers, confirmedAt: new Date().toISOString(), requestToken }, { headers: { \"Cache-Control\": \"no-store\" } });\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "d02f5dc1061986537e2e6972381d4d66e67280ab303c8b9885112b4cec6948f4",
+      "anchorEnd": 1295,
       "anchorFile": "src/app/api/timers/active/route.ts",
-      "anchorStart": 454,
+      "anchorStart": 479,
       "binding": {
         "kind": "route_method",
         "symbol": "GET",
@@ -2757,11 +2757,11 @@
       "sidecarPath": "src/components/actions/confirmed-activity-delete.operation.ts"
     },
     {
-      "anchorBytes": "fetch(endpoint, { cache: \"no-store\" })",
-      "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
-      "anchorEnd": 2718,
+      "anchorBytes": "fetch(endpoint, { cache: \"no-store\", signal: controller.signal })",
+      "anchorDigest": "0223b7c9abd63812c91c0a028ab901c3f6a28e712b604161ecf2cb0fbf0c31a9",
+      "anchorEnd": 4981,
       "anchorFile": "src/components/active-timer-bar.tsx",
-      "anchorStart": 2680,
+      "anchorStart": 4916,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -4765,9 +4765,9 @@
     {
       "anchorBytes": "\"db:seed\"",
       "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-      "anchorEnd": 6547,
+      "anchorEnd": 6636,
       "anchorFile": "package.json",
-      "anchorStart": 6538,
+      "anchorStart": 6627,
       "binding": {
         "kind": "package_script",
         "symbol": "db:seed",
@@ -4816,9 +4816,9 @@
     {
       "anchorBytes": "\"verify:admin-assisted-accounts\"",
       "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
-      "anchorEnd": 4933,
+      "anchorEnd": 5022,
       "anchorFile": "package.json",
-      "anchorStart": 4901,
+      "anchorStart": 4990,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:admin-assisted-accounts",
@@ -4948,6 +4948,23 @@
       "ownerId": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
       "ownerModule": "scripts/browser-operation-save-path.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "anchorBytes": "\"verify:cross-device-freshness\"",
+      "anchorDigest": "529fc2f73a69d03b39f2dd5d320b790b3a40366d7efeb6110d41a0f10e5d3395",
+      "anchorEnd": 4932,
+      "anchorFile": "package.json",
+      "anchorStart": 4901,
+      "binding": {
+        "kind": "package_script",
+        "symbol": "verify:cross-device-freshness",
+        "target": "package.json#scripts.verify:cross-device-freshness"
+      },
+      "coverage": "structural_only",
+      "id": "package_command:scripts/cross-device-freshness-launcher.mjs:package_script:verify:cross-device-freshness:package.json#scripts.verify:cross-device-freshness",
+      "ownerId": "package_command:scripts/cross-device-freshness-launcher.mjs",
+      "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+      "sidecarPath": "scripts/cross-device-freshness-launcher.operation.ts"
     },
     {
       "anchorBytes": "COPY --from=builder --chown=node:node /app/dist/household-deletion-readiness-guard.mjs /app/scripts/household-deletion-readiness-guard.mjs",
@@ -5105,9 +5122,9 @@
     {
       "anchorBytes": "\"verify:integrity\"",
       "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-      "anchorEnd": 6648,
+      "anchorEnd": 6737,
       "anchorFile": "package.json",
-      "anchorStart": 6630,
+      "anchorStart": 6719,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity",
@@ -5122,9 +5139,9 @@
     {
       "anchorBytes": "\"verify:integrity-suite\"",
       "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-      "anchorEnd": 5788,
+      "anchorEnd": 5877,
       "anchorFile": "package.json",
-      "anchorStart": 5764,
+      "anchorStart": 5853,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:integrity-suite",
@@ -5173,9 +5190,9 @@
     {
       "anchorBytes": "\"verify:p1-3-migrator-bootstrap\"",
       "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-      "anchorEnd": 5593,
+      "anchorEnd": 5682,
       "anchorFile": "package.json",
-      "anchorStart": 5561,
+      "anchorStart": 5650,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-migrator-bootstrap",
@@ -5190,9 +5207,9 @@
     {
       "anchorBytes": "\"verify:p1-3-invitation-acceptance\"",
       "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-      "anchorEnd": 5703,
+      "anchorEnd": 5792,
       "anchorFile": "package.json",
-      "anchorStart": 5668,
+      "anchorStart": 5757,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:p1-3-invitation-acceptance",
@@ -5275,9 +5292,9 @@
     {
       "anchorBytes": "\"verify:performance-1y\"",
       "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-      "anchorEnd": 5211,
+      "anchorEnd": 5300,
       "anchorFile": "package.json",
-      "anchorStart": 5188,
+      "anchorStart": 5277,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-1y",
@@ -5292,9 +5309,9 @@
     {
       "anchorBytes": "\"verify:performance-5y\"",
       "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-      "anchorEnd": 5309,
+      "anchorEnd": 5398,
       "anchorFile": "package.json",
-      "anchorStart": 5286,
+      "anchorStart": 5375,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-5y",
@@ -5309,9 +5326,9 @@
     {
       "anchorBytes": "\"verify:performance-input\"",
       "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-      "anchorEnd": 5410,
+      "anchorEnd": 5499,
       "anchorFile": "package.json",
-      "anchorStart": 5384,
+      "anchorStart": 5473,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:performance-input",
@@ -5343,9 +5360,9 @@
     {
       "anchorBytes": "\"verify:platform-first-account\"",
       "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-      "anchorEnd": 5880,
+      "anchorEnd": 5969,
       "anchorFile": "package.json",
-      "anchorStart": 5849,
+      "anchorStart": 5938,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:platform-first-account",
@@ -5547,9 +5564,9 @@
     {
       "anchorBytes": "\"platform:owner\"",
       "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-      "anchorEnd": 6591,
+      "anchorEnd": 6680,
       "anchorFile": "package.json",
-      "anchorStart": 6575,
+      "anchorStart": 6664,
       "binding": {
         "kind": "package_script",
         "symbol": "platform:owner",
@@ -6057,9 +6074,9 @@
     {
       "anchorBytes": "\"verify:quick-start\"",
       "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-      "anchorEnd": 5968,
+      "anchorEnd": 6057,
       "anchorFile": "package.json",
-      "anchorStart": 5948,
+      "anchorStart": 6037,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:quick-start",
@@ -6193,9 +6210,9 @@
     {
       "anchorBytes": "\"verify:simplified-signup\"",
       "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
-      "anchorEnd": 5028,
+      "anchorEnd": 5117,
       "anchorFile": "package.json",
-      "anchorStart": 5002,
+      "anchorStart": 5091,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:simplified-signup",
@@ -6210,9 +6227,9 @@
     {
       "anchorBytes": "\"verify:sprout-preview-commit\"",
       "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-      "anchorEnd": 5121,
+      "anchorEnd": 5210,
       "anchorFile": "package.json",
-      "anchorStart": 5091,
+      "anchorStart": 5180,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:sprout-preview-commit",
@@ -6227,9 +6244,9 @@
     {
       "anchorBytes": "\"verify:system-backup\"",
       "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-      "anchorEnd": 6047,
+      "anchorEnd": 6136,
       "anchorFile": "package.json",
-      "anchorStart": 6025,
+      "anchorStart": 6114,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:system-backup",
@@ -6244,9 +6261,9 @@
     {
       "anchorBytes": "\"verify:update-preflight\"",
       "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-      "anchorEnd": 5520,
+      "anchorEnd": 5609,
       "anchorFile": "package.json",
-      "anchorStart": 5495,
+      "anchorStart": 5584,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:update-preflight",
@@ -6295,9 +6312,9 @@
     {
       "anchorBytes": "\"verify:gates:all\"",
       "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-      "anchorEnd": 6175,
+      "anchorEnd": 6264,
       "anchorFile": "package.json",
-      "anchorStart": 6157,
+      "anchorStart": 6246,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:all",
@@ -6312,9 +6329,9 @@
     {
       "anchorBytes": "\"verify:gates:disposable\"",
       "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-      "anchorEnd": 6243,
+      "anchorEnd": 6332,
       "anchorFile": "package.json",
-      "anchorStart": 6218,
+      "anchorStart": 6307,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:disposable",
@@ -6329,9 +6346,9 @@
     {
       "anchorBytes": "\"verify:gates:image\"",
       "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-      "anchorEnd": 6313,
+      "anchorEnd": 6402,
       "anchorFile": "package.json",
-      "anchorStart": 6293,
+      "anchorStart": 6382,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates:image",
@@ -6346,9 +6363,9 @@
     {
       "anchorBytes": "\"verify:gates\"",
       "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-      "anchorEnd": 6120,
+      "anchorEnd": 6209,
       "anchorFile": "package.json",
-      "anchorStart": 6106,
+      "anchorStart": 6195,
       "binding": {
         "kind": "package_script",
         "symbol": "verify:gates",
@@ -6584,9 +6601,9 @@
     {
       "anchorBytes": "activityResponsesQuery",
       "anchorDigest": "47b9b715b9a4c7d226b3c266459975bcfb393281432498f71117fa174905e818",
-      "anchorEnd": 1318,
+      "anchorEnd": 1384,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1296,
+      "anchorStart": 1362,
       "binding": {
         "kind": "server_value_import",
         "symbol": "activityResponsesQuery",
@@ -6601,9 +6618,9 @@
     {
       "anchorBytes": "feedInteractionKey",
       "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-      "anchorEnd": 1413,
+      "anchorEnd": 1479,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1395,
+      "anchorStart": 1461,
       "binding": {
         "kind": "server_value_import",
         "symbol": "feedInteractionKey",
@@ -6618,9 +6635,9 @@
     {
       "anchorBytes": "getActivityView",
       "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-      "anchorEnd": 1247,
+      "anchorEnd": 1313,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1232,
+      "anchorStart": 1298,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityView",
@@ -6635,9 +6652,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 1507,
+      "anchorEnd": 1573,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1491,
+      "anchorStart": 1557,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -6652,9 +6669,9 @@
     {
       "anchorBytes": "listActivityPhotos",
       "anchorDigest": "fdc969e38174cc87e010b87046ca8c9b8800796f16a826774692a354e68071b2",
-      "anchorEnd": 1338,
+      "anchorEnd": 1404,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1320,
+      "anchorStart": 1386,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivityPhotos",
@@ -6669,9 +6686,9 @@
     {
       "anchorBytes": "listFeedInteractions",
       "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-      "anchorEnd": 1435,
+      "anchorEnd": 1501,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1415,
+      "anchorStart": 1481,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listFeedInteractions",
@@ -6686,9 +6703,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 1190,
+      "anchorEnd": 1256,
       "anchorFile": "src/app/app/activities/[id]/page.tsx",
-      "anchorStart": 1175,
+      "anchorStart": 1241,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -6958,9 +6975,9 @@
     {
       "anchorBytes": "getHouseholdSelectionState",
       "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
-      "anchorEnd": 260,
+      "anchorEnd": 327,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 234,
+      "anchorStart": 301,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdSelectionState",
@@ -6975,9 +6992,9 @@
     {
       "anchorBytes": "requireInvitationSetupCorridor",
       "anchorDigest": "98d928b595ae3e4c55aa39ad0f690d071dd4637335cfaf40656a4a36e5da480c",
-      "anchorEnd": 348,
+      "anchorEnd": 415,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 318,
+      "anchorStart": 385,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireInvitationSetupCorridor",
@@ -6992,9 +7009,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 192,
+      "anchorEnd": 259,
       "anchorFile": "src/app/app/layout.tsx",
-      "anchorStart": 177,
+      "anchorStart": 244,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8594,10 +8611,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "32608583ddb34477681d47bce6e2ae82fcd03c89e4cf5ec0197f01608deb5854",
+  "semanticArtifactDigest": "242702c0fa51a82a24c194c31de4fac011ed53e883a2fa5095cb6b86ca569a9d",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "3a901e79d14106b1c2f327ba7b6e213c5e496b4fe318167a31565865bc3fd1e3",
+  "semanticCoverageDigest": "9b018fc9710b4f66128cd8a689f88ec79cac56adee9119da4e21920d962e3537",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "68df8f55c8032cb30a917175dbfe2a5eee2612fcce3a3d1f6edf6502dc8ee5e2"
+  "semanticFingerprint": "cb0bf33f828aec065f14027b411325c338d1206ed6fc99f45639c7977e185b0e"
 }

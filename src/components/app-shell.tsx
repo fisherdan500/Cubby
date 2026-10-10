@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { randomUUID } from "node:crypto";
+import { env } from "@/lib/env";
+import { PageFreshness } from "@/components/app-freshness";
 import { CalendarDays, ClipboardList, LineChart, Moon, PlusCircle, Settings, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -123,6 +126,7 @@ export function AppShell({
           )}
         </div>
         <BrowserOperationRecovery />
+        <PageFreshness token={randomUUID()} confirmedAt={new Date().toISOString()} timeZone={env.APP_TIMEZONE} />
         {children}
       </main>
 

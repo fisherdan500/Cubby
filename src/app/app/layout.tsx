@@ -1,4 +1,5 @@
 import { HouseholdSelectionControl } from "@/components/household-selection-control";
+import { AppFreshnessProvider } from "@/components/app-freshness";
 import { SessionActivityReporter } from "@/components/session-activity-reporter";
 import { requireUserPage } from "@/server/auth/session";
 import { getHouseholdSelectionState } from "@/server/services/household-selection";
@@ -14,6 +15,7 @@ export default async function AuthenticatedAppLayout({ children }: { children: R
   // the largest single thing between a parent and the day's log.
   const showHouseholdSelection = selection.status !== "selected" || selection.options.length > 1;
   return (
+    <AppFreshnessProvider>
     <div data-accent={accentTheme}>
       <SessionActivityReporter />
       {showHouseholdSelection ? <HouseholdSelectionControl state={selection} /> : null}
@@ -26,5 +28,6 @@ export default async function AuthenticatedAppLayout({ children }: { children: R
         </main>
       )}
     </div>
+    </AppFreshnessProvider>
   );
 }

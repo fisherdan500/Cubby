@@ -4,12 +4,12 @@
     "api_route": 122,
     "client_binding": 49,
     "instrumentation": 1,
-    "package_command": 40,
+    "package_command": 41,
     "server_action": 1,
     "server_loader": 31,
     "worker": 8
   },
-  "declarationDigest": "a04cf738d62c7a860c6a52560839e870375731610fe6462b0d25cbd806d01a18",
+  "declarationDigest": "cf1c00a8e9233dc3fbe13cea5b20f5c6cb2710236e8866b421d5e6af76071e18",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -356,6 +356,40 @@
       },
       "id": "package_command:scripts/browser-operation-save-path.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "package_script",
+            "symbol": "verify:cross-device-freshness",
+            "target": "package.json#scripts.verify:cross-device-freshness"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "excluded",
+        "exclusion": {
+          "category": "rehearsal",
+          "rationale": "isolated test or rehearsal command; structural identity only"
+        },
+        "id": "package_command:scripts/cross-device-freshness-launcher.mjs",
+        "ownerKind": "package_command",
+        "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+        "schemaVersion": 1
+      },
+      "id": "package_command:scripts/cross-device-freshness-launcher.mjs",
+      "sidecarPath": "scripts/cross-device-freshness-launcher.operation.ts"
     },
     {
       "declaration": {
@@ -9081,6 +9115,14 @@
     },
     {
       "category": "rehearsal",
+      "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+      "packageScripts": [
+        "verify:cross-device-freshness"
+      ],
+      "rationale": "isolated test or rehearsal command; structural identity only"
+    },
+    {
+      "category": "rehearsal",
       "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
       "packageScripts": [
         "verify:admin-assisted-accounts"
@@ -9189,7 +9231,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "8abe879292e49ce20c3e1afa80c439ea7ffd295f279ecc3614aa876109a0114f",
+  "generatorDigest": "792055f248201ce3ffbed9a8fdef7813407d1ea337bf6d11e91f3932b3027e16",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11701,10 +11743,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "e99cea47fe265c8f9c6f196a4984405e21b1e66df390b9ce1e9edf8bae9e942a",
-          "anchorEnd": 889,
+          "anchorDigest": "d02f5dc1061986537e2e6972381d4d66e67280ab303c8b9885112b4cec6948f4",
+          "anchorEnd": 1295,
           "anchorFile": "src/app/api/timers/active/route.ts",
-          "anchorStart": 454,
+          "anchorStart": 479,
           "kind": "route_method",
           "symbol": "GET",
           "target": "src/app/api/timers/active/route.ts#GET"
@@ -11870,63 +11912,63 @@
       "bindings": [
         {
           "anchorDigest": "47b9b715b9a4c7d226b3c266459975bcfb393281432498f71117fa174905e818",
-          "anchorEnd": 1318,
+          "anchorEnd": 1384,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1296,
+          "anchorStart": 1362,
           "kind": "server_value_import",
           "symbol": "activityResponsesQuery",
           "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
         },
         {
           "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-          "anchorEnd": 1413,
+          "anchorEnd": 1479,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1395,
+          "anchorStart": 1461,
           "kind": "server_value_import",
           "symbol": "feedInteractionKey",
           "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
         },
         {
           "anchorDigest": "ee8315b94f7c00b2caffee8d51626d9c7fc7f2e6c61e24ef578b6190f640b35a",
-          "anchorEnd": 1247,
+          "anchorEnd": 1313,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1232,
+          "anchorStart": 1298,
           "kind": "server_value_import",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 1507,
+          "anchorEnd": 1573,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1491,
+          "anchorStart": 1557,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
           "anchorDigest": "fdc969e38174cc87e010b87046ca8c9b8800796f16a826774692a354e68071b2",
-          "anchorEnd": 1338,
+          "anchorEnd": 1404,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1320,
+          "anchorStart": 1386,
           "kind": "server_value_import",
           "symbol": "listActivityPhotos",
           "target": "src/server/services/activity-responses.ts#listActivityPhotos"
         },
         {
           "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-          "anchorEnd": 1435,
+          "anchorEnd": 1501,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1415,
+          "anchorStart": 1481,
           "kind": "server_value_import",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 1190,
+          "anchorEnd": 1256,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1175,
+          "anchorStart": 1241,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -12108,27 +12150,27 @@
       "bindings": [
         {
           "anchorDigest": "fd6e37d16202972adf1ed6241642f812ce44c81863881bfdc11ac9b92a444b61",
-          "anchorEnd": 260,
+          "anchorEnd": 327,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 234,
+          "anchorStart": 301,
           "kind": "server_value_import",
           "symbol": "getHouseholdSelectionState",
           "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
         },
         {
           "anchorDigest": "98d928b595ae3e4c55aa39ad0f690d071dd4637335cfaf40656a4a36e5da480c",
-          "anchorEnd": 348,
+          "anchorEnd": 415,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 318,
+          "anchorStart": 385,
           "kind": "server_value_import",
           "symbol": "requireInvitationSetupCorridor",
           "target": "src/server/services/invitation-setup-corridor.ts#requireInvitationSetupCorridor"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-          "anchorEnd": 192,
+          "anchorEnd": 259,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 177,
+          "anchorStart": 244,
           "kind": "server_value_import",
           "symbol": "requireUserPage",
           "target": "src/server/auth/session.ts#requireUserPage"
@@ -13208,10 +13250,10 @@
     {
       "bindings": [
         {
-          "anchorDigest": "1b4852bdffd7ffb38abc4e7b81ca2bd69e909aae2b08e50b2b787ca1604925d5",
-          "anchorEnd": 2718,
+          "anchorDigest": "0223b7c9abd63812c91c0a028ab901c3f6a28e712b604161ecf2cb0fbf0c31a9",
+          "anchorEnd": 4981,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2680,
+          "anchorStart": 4916,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -15015,9 +15057,9 @@
       "bindings": [
         {
           "anchorDigest": "7a9ed74e4af0834a1add9bb9af5161ddde4fa1c1a3784bddceb2ccfd0de4a9cf",
-          "anchorEnd": 6547,
+          "anchorEnd": 6636,
           "anchorFile": "package.json",
-          "anchorStart": 6538,
+          "anchorStart": 6627,
           "kind": "package_script",
           "symbol": "db:seed",
           "target": "package.json#scripts.db:seed"
@@ -15093,9 +15135,9 @@
       "bindings": [
         {
           "anchorDigest": "cfe6b3f688e7e1c98c1f03872e7d33936dfa0633a076cb3ae83e319f6eb776b3",
-          "anchorEnd": 4933,
+          "anchorEnd": 5022,
           "anchorFile": "package.json",
-          "anchorStart": 4901,
+          "anchorStart": 4990,
           "kind": "package_script",
           "symbol": "verify:admin-assisted-accounts",
           "target": "package.json#scripts.verify:admin-assisted-accounts"
@@ -15284,6 +15326,32 @@
     {
       "bindings": [
         {
+          "anchorDigest": "529fc2f73a69d03b39f2dd5d320b790b3a40366d7efeb6110d41a0f10e5d3395",
+          "anchorEnd": 4932,
+          "anchorFile": "package.json",
+          "anchorStart": 4901,
+          "kind": "package_script",
+          "symbol": "verify:cross-device-freshness",
+          "target": "package.json#scripts.verify:cross-device-freshness"
+        }
+      ],
+      "disposition": "excluded",
+      "exclusion": {
+        "category": "rehearsal",
+        "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+        "packageScripts": [
+          "verify:cross-device-freshness"
+        ],
+        "rationale": "isolated test or rehearsal command; structural identity only"
+      },
+      "id": "package_command:scripts/cross-device-freshness-launcher.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+      "sidecarPath": "scripts/cross-device-freshness-launcher.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "966bfbf0ed7ea272d7bbd981da0544dd117f2bb8a5f04cd14949bfd9f631f839",
           "anchorEnd": 4787,
           "anchorFile": "Dockerfile",
@@ -15376,9 +15444,9 @@
         },
         {
           "anchorDigest": "447045214776f9425f5db627eb8c42008a55499cd0fe4123f39c05152ca974db",
-          "anchorEnd": 6648,
+          "anchorEnd": 6737,
           "anchorFile": "package.json",
-          "anchorStart": 6630,
+          "anchorStart": 6719,
           "kind": "package_script",
           "symbol": "verify:integrity",
           "target": "package.json#scripts.verify:integrity"
@@ -15395,9 +15463,9 @@
       "bindings": [
         {
           "anchorDigest": "32d1594eac70828f2849e3abeb7e033365e88e9da686368055e361198a4d4a30",
-          "anchorEnd": 5788,
+          "anchorEnd": 5877,
           "anchorFile": "package.json",
-          "anchorStart": 5764,
+          "anchorStart": 5853,
           "kind": "package_script",
           "symbol": "verify:integrity-suite",
           "target": "package.json#scripts.verify:integrity-suite"
@@ -15473,9 +15541,9 @@
       "bindings": [
         {
           "anchorDigest": "39dd3fbbf90548f67644a2fceee82a9d18c197a464bf26637bbee00fb769c34e",
-          "anchorEnd": 5593,
+          "anchorEnd": 5682,
           "anchorFile": "package.json",
-          "anchorStart": 5561,
+          "anchorStart": 5650,
           "kind": "package_script",
           "symbol": "verify:p1-3-migrator-bootstrap",
           "target": "package.json#scripts.verify:p1-3-migrator-bootstrap"
@@ -15499,9 +15567,9 @@
       "bindings": [
         {
           "anchorDigest": "25d59736124b47713f725cfcfa19a9c37c7f5f47fb7551b28e1e391b9522beb8",
-          "anchorEnd": 5703,
+          "anchorEnd": 5792,
           "anchorFile": "package.json",
-          "anchorStart": 5668,
+          "anchorStart": 5757,
           "kind": "package_script",
           "symbol": "verify:p1-3-invitation-acceptance",
           "target": "package.json#scripts.verify:p1-3-invitation-acceptance"
@@ -15571,27 +15639,27 @@
       "bindings": [
         {
           "anchorDigest": "e267baa5077e2f63286294c0103608dff21f017905d1cd4e91cc48fabf233a28",
-          "anchorEnd": 5211,
+          "anchorEnd": 5300,
           "anchorFile": "package.json",
-          "anchorStart": 5188,
+          "anchorStart": 5277,
           "kind": "package_script",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
           "anchorDigest": "4371daef63c22e701ecb9e598391ae2469f348d369e05cdf832ab378a6e3b21d",
-          "anchorEnd": 5309,
+          "anchorEnd": 5398,
           "anchorFile": "package.json",
-          "anchorStart": 5286,
+          "anchorStart": 5375,
           "kind": "package_script",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
           "anchorDigest": "c0fd52a21bedc71408c137441d1b678296c3e51608d6d8b75d9f568812b577a3",
-          "anchorEnd": 5410,
+          "anchorEnd": 5499,
           "anchorFile": "package.json",
-          "anchorStart": 5384,
+          "anchorStart": 5473,
           "kind": "package_script",
           "symbol": "verify:performance-input",
           "target": "package.json#scripts.verify:performance-input"
@@ -15643,9 +15711,9 @@
       "bindings": [
         {
           "anchorDigest": "69dba6b509d5299d25bbb1c30508e0ba43ee541cddc842137ad7fa965482709b",
-          "anchorEnd": 5880,
+          "anchorEnd": 5969,
           "anchorFile": "package.json",
-          "anchorStart": 5849,
+          "anchorStart": 5938,
           "kind": "package_script",
           "symbol": "verify:platform-first-account",
           "target": "package.json#scripts.verify:platform-first-account"
@@ -15768,9 +15836,9 @@
         },
         {
           "anchorDigest": "4e400a0eae7db6668c8814dcb5158ddc4f2205daecd7ad4e35f8b1e9584f9249",
-          "anchorEnd": 6591,
+          "anchorEnd": 6680,
           "anchorFile": "package.json",
-          "anchorStart": 6575,
+          "anchorStart": 6664,
           "kind": "package_script",
           "symbol": "platform:owner",
           "target": "package.json#scripts.platform:owner"
@@ -16135,9 +16203,9 @@
       "bindings": [
         {
           "anchorDigest": "8a0b55deb14c811a7698f34b757688a1f22a6ece6ef24d2b8bd4f35ccf6e39bb",
-          "anchorEnd": 5968,
+          "anchorEnd": 6057,
           "anchorFile": "package.json",
-          "anchorStart": 5948,
+          "anchorStart": 6037,
           "kind": "package_script",
           "symbol": "verify:quick-start",
           "target": "package.json#scripts.verify:quick-start"
@@ -16251,9 +16319,9 @@
       "bindings": [
         {
           "anchorDigest": "484daad7b4e672d009b5ce729320f7737e2c38572a0ee4996f40a5fad5ccc5d7",
-          "anchorEnd": 5028,
+          "anchorEnd": 5117,
           "anchorFile": "package.json",
-          "anchorStart": 5002,
+          "anchorStart": 5091,
           "kind": "package_script",
           "symbol": "verify:simplified-signup",
           "target": "package.json#scripts.verify:simplified-signup"
@@ -16277,9 +16345,9 @@
       "bindings": [
         {
           "anchorDigest": "d46cfbd2a0008a407e0ae09b9b38771c7277afe297faa135a09088b6f90f22b5",
-          "anchorEnd": 5121,
+          "anchorEnd": 5210,
           "anchorFile": "package.json",
-          "anchorStart": 5091,
+          "anchorStart": 5180,
           "kind": "package_script",
           "symbol": "verify:sprout-preview-commit",
           "target": "package.json#scripts.verify:sprout-preview-commit"
@@ -16303,9 +16371,9 @@
       "bindings": [
         {
           "anchorDigest": "aae3b73fb62af30bd9268322b0c89899350ce037dd84d0ffb1e3c36ab9c7a8ee",
-          "anchorEnd": 6047,
+          "anchorEnd": 6136,
           "anchorFile": "package.json",
-          "anchorStart": 6025,
+          "anchorStart": 6114,
           "kind": "package_script",
           "symbol": "verify:system-backup",
           "target": "package.json#scripts.verify:system-backup"
@@ -16329,9 +16397,9 @@
       "bindings": [
         {
           "anchorDigest": "b3103e5ebfa459d73b14d9f383ee6b4db157f0711b173122a1047ba7f9eadfcd",
-          "anchorEnd": 5520,
+          "anchorEnd": 5609,
           "anchorFile": "package.json",
-          "anchorStart": 5495,
+          "anchorStart": 5584,
           "kind": "package_script",
           "symbol": "verify:update-preflight",
           "target": "package.json#scripts.verify:update-preflight"
@@ -16400,36 +16468,36 @@
       "bindings": [
         {
           "anchorDigest": "24da6581a6d3326514f75f6d3de88b49d136a703936b30fc94749c1f76fa2ab3",
-          "anchorEnd": 6120,
+          "anchorEnd": 6209,
           "anchorFile": "package.json",
-          "anchorStart": 6106,
+          "anchorStart": 6195,
           "kind": "package_script",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
           "anchorDigest": "6279e6570848bce805812f738dd872b6d25b0545af55722ccaa6e24617fb32be",
-          "anchorEnd": 6175,
+          "anchorEnd": 6264,
           "anchorFile": "package.json",
-          "anchorStart": 6157,
+          "anchorStart": 6246,
           "kind": "package_script",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
           "anchorDigest": "dc79f808e6059637a4c7a858c0afd406e4ecd2c2cf7f48b6edbdec95afd21226",
-          "anchorEnd": 6243,
+          "anchorEnd": 6332,
           "anchorFile": "package.json",
-          "anchorStart": 6218,
+          "anchorStart": 6307,
           "kind": "package_script",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
           "anchorDigest": "25b004286c0fd3e5657a98dc76a377d886f97fdcc3a2cc53ac3f551f8973017c",
-          "anchorEnd": 6313,
+          "anchorEnd": 6402,
           "anchorFile": "package.json",
-          "anchorStart": 6293,
+          "anchorStart": 6382,
           "kind": "package_script",
           "symbol": "verify:gates:image",
           "target": "package.json#scripts.verify:gates:image"
@@ -16453,8 +16521,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 252,
-  "observationDigest": "656d88bb5497eb88b3c0c32298e65613a171eb3d5eb1177886c183ecf2c6e02f",
+  "observationCount": 253,
+  "observationDigest": "0bde95a1f72c2e567e58ee2deb3951cf16c8cdff1b4853c9a5c41a75375f845f",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18846,9 +18914,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 889,
+          "anchorEnd": 1295,
           "anchorFile": "src/app/api/timers/active/route.ts",
-          "anchorStart": 454,
+          "anchorStart": 479,
           "kind": "route_method",
           "ownerModule": "src/app/api/timers/active/route.ts",
           "symbol": "GET",
@@ -19008,63 +19076,63 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1318,
+          "anchorEnd": 1384,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1296,
+          "anchorStart": 1362,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "activityResponsesQuery",
           "target": "src/server/services/activity-responses.ts#activityResponsesQuery"
         },
         {
-          "anchorEnd": 1413,
+          "anchorEnd": 1479,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1395,
+          "anchorStart": 1461,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "feedInteractionKey",
           "target": "src/server/services/feed-interactions.ts#feedInteractionKey"
         },
         {
-          "anchorEnd": 1247,
+          "anchorEnd": 1313,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1232,
+          "anchorStart": 1298,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getActivityView",
           "target": "src/server/services/activities.ts#getActivityView"
         },
         {
-          "anchorEnd": 1507,
+          "anchorEnd": 1573,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1491,
+          "anchorStart": 1557,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
         },
         {
-          "anchorEnd": 1338,
+          "anchorEnd": 1404,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1320,
+          "anchorStart": 1386,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "listActivityPhotos",
           "target": "src/server/services/activity-responses.ts#listActivityPhotos"
         },
         {
-          "anchorEnd": 1435,
+          "anchorEnd": 1501,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1415,
+          "anchorStart": 1481,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
         },
         {
-          "anchorEnd": 1190,
+          "anchorEnd": 1256,
           "anchorFile": "src/app/app/activities/[id]/page.tsx",
-          "anchorStart": 1175,
+          "anchorStart": 1241,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/activities/[id]/page.tsx",
           "symbol": "requireUserPage",
@@ -19242,27 +19310,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 260,
+          "anchorEnd": 327,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 234,
+          "anchorStart": 301,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
           "symbol": "getHouseholdSelectionState",
           "target": "src/server/services/household-selection.ts#getHouseholdSelectionState"
         },
         {
-          "anchorEnd": 348,
+          "anchorEnd": 415,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 318,
+          "anchorStart": 385,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
           "symbol": "requireInvitationSetupCorridor",
           "target": "src/server/services/invitation-setup-corridor.ts#requireInvitationSetupCorridor"
         },
         {
-          "anchorEnd": 192,
+          "anchorEnd": 259,
           "anchorFile": "src/app/app/layout.tsx",
-          "anchorStart": 177,
+          "anchorStart": 244,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/layout.tsx",
           "symbol": "requireUserPage",
@@ -20313,9 +20381,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 2718,
+          "anchorEnd": 4981,
           "anchorFile": "src/components/active-timer-bar.tsx",
-          "anchorStart": 2680,
+          "anchorStart": 4916,
           "kind": "global_fetch",
           "ownerModule": "src/components/active-timer-bar.tsx",
           "symbol": "fetch[1]",
@@ -22068,9 +22136,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 6547,
+          "anchorEnd": 6636,
           "anchorFile": "package.json",
-          "anchorStart": 6538,
+          "anchorStart": 6627,
           "kind": "package_script",
           "ownerModule": "prisma/seed.ts",
           "symbol": "db:seed",
@@ -22122,9 +22190,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 4933,
+          "anchorEnd": 5022,
           "anchorFile": "package.json",
-          "anchorStart": 4901,
+          "anchorStart": 4990,
           "kind": "package_script",
           "ownerModule": "scripts/admin-assisted-accounts.acceptance-rehearsal.ts",
           "symbol": "verify:admin-assisted-accounts",
@@ -22257,6 +22325,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 4932,
+          "anchorFile": "package.json",
+          "anchorStart": 4901,
+          "kind": "package_script",
+          "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+          "symbol": "verify:cross-device-freshness",
+          "target": "package.json#scripts.verify:cross-device-freshness"
+        }
+      ],
+      "disposition": "excluded",
+      "id": "package_command:scripts/cross-device-freshness-launcher.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+      "sidecarPath": "scripts/cross-device-freshness-launcher.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 4787,
           "anchorFile": "Dockerfile",
           "anchorStart": 4649,
@@ -22347,9 +22433,9 @@
           "target": "package.json#scripts.build:integrity"
         },
         {
-          "anchorEnd": 6648,
+          "anchorEnd": 6737,
           "anchorFile": "package.json",
-          "anchorStart": 6630,
+          "anchorStart": 6719,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-check.ts",
           "symbol": "verify:integrity",
@@ -22365,9 +22451,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5788,
+          "anchorEnd": 5877,
           "anchorFile": "package.json",
-          "anchorStart": 5764,
+          "anchorStart": 5853,
           "kind": "package_script",
           "ownerModule": "scripts/integrity-suite.acceptance-rehearsal.ts",
           "symbol": "verify:integrity-suite",
@@ -22419,9 +22505,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5593,
+          "anchorEnd": 5682,
           "anchorFile": "package.json",
-          "anchorStart": 5561,
+          "anchorStart": 5650,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-migrator-bootstrap",
@@ -22437,9 +22523,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5703,
+          "anchorEnd": 5792,
           "anchorFile": "package.json",
-          "anchorStart": 5668,
+          "anchorStart": 5757,
           "kind": "package_script",
           "ownerModule": "scripts/p1-3-invitation.acceptance-rehearsal.ts",
           "symbol": "verify:p1-3-invitation-acceptance",
@@ -22500,27 +22586,27 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5211,
+          "anchorEnd": 5300,
           "anchorFile": "package.json",
-          "anchorStart": 5188,
+          "anchorStart": 5277,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-1y",
           "target": "package.json#scripts.verify:performance-1y"
         },
         {
-          "anchorEnd": 5309,
+          "anchorEnd": 5398,
           "anchorFile": "package.json",
-          "anchorStart": 5286,
+          "anchorStart": 5375,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-5y",
           "target": "package.json#scripts.verify:performance-5y"
         },
         {
-          "anchorEnd": 5410,
+          "anchorEnd": 5499,
           "anchorFile": "package.json",
-          "anchorStart": 5384,
+          "anchorStart": 5473,
           "kind": "package_script",
           "ownerModule": "scripts/performance-budgets.acceptance-rehearsal.ts",
           "symbol": "verify:performance-input",
@@ -22554,9 +22640,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5880,
+          "anchorEnd": 5969,
           "anchorFile": "package.json",
-          "anchorStart": 5849,
+          "anchorStart": 5938,
           "kind": "package_script",
           "ownerModule": "scripts/platform-first-account.acceptance-rehearsal.ts",
           "symbol": "verify:platform-first-account",
@@ -22671,9 +22757,9 @@
           "target": "package.json#scripts.build:platform-owner"
         },
         {
-          "anchorEnd": 6591,
+          "anchorEnd": 6680,
           "anchorFile": "package.json",
-          "anchorStart": 6575,
+          "anchorStart": 6664,
           "kind": "package_script",
           "ownerModule": "scripts/platform-owner.ts",
           "symbol": "platform:owner",
@@ -23022,9 +23108,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5968,
+          "anchorEnd": 6057,
           "anchorFile": "package.json",
-          "anchorStart": 5948,
+          "anchorStart": 6037,
           "kind": "package_script",
           "ownerModule": "scripts/quick-start.acceptance-rehearsal.ts",
           "symbol": "verify:quick-start",
@@ -23121,9 +23207,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5028,
+          "anchorEnd": 5117,
           "anchorFile": "package.json",
-          "anchorStart": 5002,
+          "anchorStart": 5091,
           "kind": "package_script",
           "ownerModule": "scripts/simplified-signup.acceptance-rehearsal.ts",
           "symbol": "verify:simplified-signup",
@@ -23139,9 +23225,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5121,
+          "anchorEnd": 5210,
           "anchorFile": "package.json",
-          "anchorStart": 5091,
+          "anchorStart": 5180,
           "kind": "package_script",
           "ownerModule": "scripts/sprout-preview-commit.acceptance-rehearsal.ts",
           "symbol": "verify:sprout-preview-commit",
@@ -23157,9 +23243,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 6047,
+          "anchorEnd": 6136,
           "anchorFile": "package.json",
-          "anchorStart": 6025,
+          "anchorStart": 6114,
           "kind": "package_script",
           "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
           "symbol": "verify:system-backup",
@@ -23175,9 +23261,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 5520,
+          "anchorEnd": 5609,
           "anchorFile": "package.json",
-          "anchorStart": 5495,
+          "anchorStart": 5584,
           "kind": "package_script",
           "ownerModule": "scripts/update-preflight.ts",
           "symbol": "verify:update-preflight",
@@ -23229,36 +23315,36 @@
     {
       "bindings": [
         {
-          "anchorEnd": 6120,
+          "anchorEnd": 6209,
           "anchorFile": "package.json",
-          "anchorStart": 6106,
+          "anchorStart": 6195,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates",
           "target": "package.json#scripts.verify:gates"
         },
         {
-          "anchorEnd": 6175,
+          "anchorEnd": 6264,
           "anchorFile": "package.json",
-          "anchorStart": 6157,
+          "anchorStart": 6246,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:all",
           "target": "package.json#scripts.verify:gates:all"
         },
         {
-          "anchorEnd": 6243,
+          "anchorEnd": 6332,
           "anchorFile": "package.json",
-          "anchorStart": 6218,
+          "anchorStart": 6307,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:disposable",
           "target": "package.json#scripts.verify:gates:disposable"
         },
         {
-          "anchorEnd": 6313,
+          "anchorEnd": 6402,
           "anchorFile": "package.json",
-          "anchorStart": 6293,
+          "anchorStart": 6382,
           "kind": "package_script",
           "ownerModule": "scripts/verify-gates.ts",
           "symbol": "verify:gates:image",
@@ -24606,6 +24692,12 @@
       "sidecarPath": "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts"
     },
     {
+      "id": "package_command:scripts/cross-device-freshness-launcher.mjs",
+      "ownerKind": "package_command",
+      "ownerModule": "scripts/cross-device-freshness-launcher.mjs",
+      "sidecarPath": "scripts/cross-device-freshness-launcher.operation.ts"
+    },
+    {
       "id": "package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerKind": "package_command",
       "ownerModule": "scripts/household-deletion-readiness-guard.ts",
@@ -24786,9 +24878,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "81b72eb8040bd024145de00e3ecaad604d7fcc4543fbe4aa41d2a502f2296684",
+  "ownerSetDigest": "482a02afdadfd6b5297d54452bc51409e23be3797bb60c4597b0fa4b0ecdff4d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "c6b1e26bfe061647ae5afb91c14bfcf3c44c08d2217409aeaa959f7ea28cb652",
+  "registryDigest": "823ea6931409e2daa6466216bb34bc15dbb8657d7ecb19e6e9c35e728bd589d6",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

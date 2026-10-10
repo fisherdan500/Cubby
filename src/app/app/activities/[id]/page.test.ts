@@ -35,6 +35,11 @@ vi.mock("@/components/app-shell", () => ({
     createElement("main", { "data-timer-baby-id": timerBabyId, "data-timer-activity-type": timerActivityType }, children)
 }));
 vi.mock("@/components/activity-artwork", () => ({ ActivityArtwork: () => createElement("span") }));
+vi.mock("@/components/app-freshness", () => ({
+  TimerFreshnessGuard: ({ children, babyId, activityId, expectedTimerState }: { children: React.ReactNode; babyId: string; activityId: string; expectedTimerState: string }) =>
+    createElement("fieldset", { "data-timer-freshness-guard": true, "data-expected-baby-id": babyId,
+      "data-expected-activity-id": activityId, "data-expected-timer-state": expectedTimerState }, children)
+}));
 vi.mock("@/components/actions/confirmed-activity-delete", () => ({
   ConfirmedActivityDelete: () => createElement("button", { type: "button" }, "Delete")
 }));
@@ -84,6 +89,17 @@ beforeEach(() => {
 });
 
 describe("activity detail timer controls", () => {
+  it.each(["running", "paused"])("wraps every consequential %s timer control in the freshness guard", async (timerState) => {
+    const body = await renderDetail(savedActivity({ timerState }));
+    const controls = [...body.querySelectorAll("button")].filter((button) =>
+      ["Pause", "Resume", "Stop timer"].includes(button.textContent ?? ""));
+    expect(controls).toHaveLength(2);
+    for (const control of controls) expect(control.closest("[data-timer-freshness-guard]")).not.toBeNull();
+    expect(body.querySelector("[data-timer-freshness-guard]")?.getAttribute("data-expected-baby-id")).toBe("baby-1");
+    expect(body.querySelector("[data-timer-freshness-guard]")?.getAttribute("data-expected-activity-id")).toBe("activity-1");
+    expect(body.querySelector("[data-timer-freshness-guard]")?.getAttribute("data-expected-timer-state")).toBe(timerState);
+    expect(body.textContent).toContain(timerState === "paused" ? "Timer paused" : "Timer running");
+  });
   it("scopes the shell timer bar to the activity's baby", async () => {
     const body = await renderDetail(savedActivity({ babyId: "baby-detail" }));
 

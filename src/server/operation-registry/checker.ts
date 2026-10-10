@@ -347,6 +347,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "scripts/admin-assisted-accounts.acceptance-rehearsal.operation.ts",
   "scripts/simplified-signup.acceptance-rehearsal.operation.ts",
   "scripts/browser-operation-save-path.acceptance-rehearsal.operation.ts",
+  "scripts/cross-device-freshness-launcher.operation.ts",
   "scripts/p1-3-existing-volume-migrator.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-invitation.acceptance-rehearsal.operation.ts",
   "scripts/p1-3-node-builtin-probe.operation.ts",
@@ -2541,6 +2542,18 @@ export function discoverPackageCommands(
     for (const executable of discoverStaticNodeCommandExecutables(command)) {
       const ownerModule = normalizeRepositoryCommandPath(executable.value);
       if (ownerModule) reportUnsupportedOwner(ownerModule);
+      if (ownerModule?.endsWith(".mjs") && existsSync(resolve(repositoryRoot, sidecarPathForOwner(ownerModule)))) {
+        const anchorStart = Math.max(0, packageJsonText.indexOf(JSON.stringify(scriptName)));
+        observations.push({
+          kind: "package_script",
+          ownerModule,
+          symbol: scriptName,
+          target: `package.json#scripts.${scriptName}`,
+          anchorFile: "package.json",
+          anchorStart,
+          anchorEnd: anchorStart + JSON.stringify(scriptName).length
+        });
+      }
     }
     for (const ownerModule of discoverExistingPackageExecutableTokens(
       repositoryRoot,
@@ -5789,7 +5802,7 @@ export function discoverStructuralExclusions(
       } else if (ownerModule === "scripts/operation-registry.ts") {
         category = "registry_tooling";
         rationale = "operation-registry checker tooling; excluded from its owner inventory";
-      } else if (ownerModule === "scripts/verify-gates.ts" || ownerModule === "scripts/scripts.vitest.config.ts") {
+      } else if (ownerModule === "scripts/verify-gates.ts" || ownerModule === "scripts/scripts.vitest.config.ts" || ownerModule === "scripts/cross-device-freshness-launcher.mjs") {
         // Verification tooling: the runner only spawns the repository's own npm scripts, and the
         // config only tells vitest which files to load. Neither reaches an operation.
         category = "rehearsal";
