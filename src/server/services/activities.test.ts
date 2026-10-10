@@ -445,6 +445,56 @@ describe("activity page access", () => {
     )?.[0])).toContain("FOR SHARE SKIP LOCKED");
   });
 
+  // Logging an activity must not notify the person who just logged it: they were looking at the
+  // screen when they did it. Moments already excludes its actor (momentNotificationAudience); this
+  // is the same rule for activity_created, enforced in the query so the actor is never a candidate.
+  it("does not notify the member who logged the activity", async () => {
+    mocks.notificationFindMany.mockResolvedValue([]);
+
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    expect(mocks.notificationFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ memberId: { not: "member-current" } })
+      })
+    );
+  });
+
+  it("queues nothing when the only opted-in member is the one logging the activity", async () => {
+    // The mocked preference query cannot apply its own WHERE, so returning the actor's episode here
+    // is exactly the pre-fix candidate set. Reaching the log at all would mean the actor's own entry
+    // notified them, which is the bug. This therefore exercises the user-level guard, not the query.
+    mocks.notificationFindMany.mockResolvedValue([{ memberId: "member-current" }]);
+    mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"id"')
+        ? [{ userId: "user-current" }]
+        : [{ id: "locked" }]
+    );
+
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    expect(mocks.notificationCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("notifies the others who opted in while dropping the actor from the same batch", async () => {
+    // A mixed batch: the actor and a second member both resolve as candidates. Only the other member
+    // may be written, which a single-recipient fixture could not tell apart from doing nothing.
+    mocks.notificationFindMany.mockResolvedValue([
+      { memberId: "member-current" },
+      { memberId: "recipient-episode" }
+    ]);
+    mocks.activityLock.mockImplementation((query: TemplateStringsArray, ...values: unknown[]) =>
+      String(query).includes('FROM "HouseholdMember"') && String(query).includes('"id"')
+        ? [{ userId: values[0] === "member-current" ? "user-current" : "recipient-user" }]
+        : [{ id: "locked" }]
+    );
+
+    await createActivityForContext(feedingInput(), context("parent"));
+
+    const created = mocks.notificationCreateMany.mock.calls[0]?.[0]?.data as Array<{ userId: string }>;
+    expect(created.map((row) => row.userId)).toEqual(["recipient-user"]);
+  });
+
   it("queues an activity log only for an active episode that explicitly selects its category and browser channel", async () => {
     mocks.notificationFindMany.mockResolvedValue([{ memberId: "recipient-episode" }]);
     mocks.activityLock.mockImplementation((query: TemplateStringsArray) =>
@@ -462,6 +512,8 @@ describe("activity page access", () => {
         externalDeliveryEnabled: true,
         categories: { has: "activity_created" },
         channels: { has: "browser_push" },
+        // The actor is excluded from their own activity notification.
+        memberId: { not: "member-current" },
         OR: [
           { babyScope: "all" },
           { babyScope: "selected", selectedBabies: { some: { babyId: "baby-1" } } }
