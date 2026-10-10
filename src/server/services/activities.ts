@@ -476,6 +476,10 @@ async function queueActivitySideEffects(
         externalDeliveryEnabled: true,
         categories: { has: "activity_created" },
         channels: { has: "browser_push" },
+        // Whoever logged this was looking at the screen when they did it, so notifying them is just
+        // noise. Excluded here so the actor is never a candidate and never reaches the lock below;
+        // Moments applies the same rule in momentNotificationAudience.
+        memberId: { not: ctx.memberId },
         OR: [
           { babyScope: "all" },
           { babyScope: "selected", selectedBabies: { some: { babyId: activity.babyId } } }
@@ -497,7 +501,9 @@ async function queueActivitySideEffects(
         -- rather than waiting behind the actor lock and forming an inverse lock cycle.
         FOR SHARE SKIP LOCKED
       `;
-      if (recipients.length) activeRecipientUserIds.add(recipients[0]!.userId);
+      // The actor can hold a second membership in this household, so the same person may still
+      // surface from a different member row. Dropping by userId keeps the guarantee per person.
+      if (recipients.length && recipients[0]!.userId !== ctx.userId) activeRecipientUserIds.add(recipients[0]!.userId);
     }
     if (activeRecipientUserIds.size) {
       await db.notificationLog.createMany({
