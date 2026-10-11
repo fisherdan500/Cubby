@@ -6,6 +6,7 @@ const migrationUrl = new URL(`../../../prisma/migrations/${migrationDirectory}/m
 const schemaUrl = new URL("../../../prisma/schema.prisma", import.meta.url);
 const rehearsalUrl = new URL("../../../scripts/integrity-suite.acceptance-rehearsal.ts", import.meta.url);
 const semanticUrl = new URL("./activities.semantic.ts", import.meta.url);
+const serviceUrl = new URL("./activities.ts", import.meta.url);
 const postMigrationFixtureUrls = [
   new URL("../../../scripts/activity-update-safety.integration.test.ts", import.meta.url),
   new URL("../../../scripts/backup-recovery-rehearsal.integration.test.ts", import.meta.url)
@@ -108,6 +109,28 @@ describe("precise activity timer pause interval migration", () => {
     expect(sql).toContain(
       'GRANT EXECUTE ON FUNCTION "closeActivityTimerPauseInterval"(TEXT, TIMESTAMP) TO cubby_runtime'
     );
+  });
+
+  // The runtime role holds only SELECT, INSERT on this table, so service code that calls
+  // deleteMany/delete/update/upsert on it compiles, passes mocked unit tests, and then fails at
+  // runtime as a permission error the user sees as a generic save failure. Closing a pause must go
+  // through the SECURITY DEFINER closeActivityTimerPauseInterval helper instead. Asserted
+  // statically because a mocked Prisma client cannot enforce a grant.
+  it("keeps service code free of direct writes the runtime role is not granted", () => {
+    const service = readFileSync(serviceUrl, "utf8");
+    const forbidden = [
+      "activityTimerPauseInterval.deleteMany",
+      "activityTimerPauseInterval.delete",
+      "activityTimerPauseInterval.update",
+      "activityTimerPauseInterval.updateMany",
+      "activityTimerPauseInterval.upsert"
+    ];
+    for (const call of forbidden) {
+      expect(service, `${call} is not granted to cubby_runtime`).not.toContain(call);
+    }
+    // The permitted writes remain available, so this guard cannot be satisfied by removing them.
+    expect(service).toContain("activityTimerPauseInterval.create");
+    expect(service).toContain("closeActivityTimerPauseInterval");
   });
 
   it("wires a predecessor-only rollback and restricted-role constraint rehearsal", () => {

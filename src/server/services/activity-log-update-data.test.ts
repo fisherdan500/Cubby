@@ -133,8 +133,11 @@ describe("activityLogUpdateData", () => {
     expect(data.pauseTrackingBaselineSeconds).toBeUndefined();
   });
 
-  // A genuinely corrected window cannot carry the old pause instants with it: they were measured
-  // against the previous window, and a pause outside its own entry is what a restore rejects.
+  // A genuinely corrected window must clear the precise pause tracking: starting a timer sets
+  // pauseTrackingStartedAt to the old start, and the integrity trigger requires it to sit inside
+  // the entry's window. Clearing is only legal because assertStoppedWindowCorrectionAllowed has
+  // already rejected the edit when any interval row exists - the rows themselves cannot be removed,
+  // since the table is append-only for the runtime role.
   it("clears the precise pause tracking when the window really is corrected", () => {
     const data = activityLogUpdateData(
       "baby-1",
