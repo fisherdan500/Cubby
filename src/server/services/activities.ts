@@ -922,11 +922,13 @@ export function activityLogUpdateData(
     timezone: next.timezone,
     notes: next.notes ?? null,
     timerState: before.timerState === TimerState.none ? next.timerState : before.timerState,
-    // A corrected window cannot carry the PRECISE pause instants with it: those were recorded
-    // against the old window, and leaving them would place a pause outside the entry that contains
-    // it - which a restore rejects as backup_invalid_pause_intervals, making the household's backup
-    // un-restorable. The total paused time is kept, so the active duration above stays right; only
-    // the exact placement is dropped, which is the already-supported untracked form.
+    // Starting a timer sets pauseTrackingStartedAt to the start instant, so EVERY timer-backed
+    // entry carries it. The integrity trigger requires it to sit inside [startedAt, endedAt], so a
+    // corrected window must clear it rather than leave it pointing outside the new window. Clearing
+    // is legal only while no interval rows exist (the trigger rejects tracking IS NULL with
+    // interval_count <> 0), which is exactly what assertStoppedWindowCorrectionAllowed enforces
+    // before this write can commit; the rows cannot be removed because the table is append-only for
+    // the runtime role. pausedSeconds is kept, so the active duration above stays right.
     pauseTrackingStartedAt:
       before.timerState === TimerState.none && next.timerState === TimerState.running
         ? next.startedAt
@@ -943,13 +945,19 @@ export function activityLogUpdateData(
 }
 
 /**
- * A corrected stopped-timer window leaves the recorded pause instants unplaceable: they were
- * measured against the old window, and a pause row lying outside its own entry is exactly what a
- * restore rejects as `backup_invalid_pause_intervals` - which would make the household's next
- * backup un-restorable. The aggregate `pausedSeconds` is kept, so the active duration stays right;
- * only the exact placement is dropped, which is the already-supported untracked form.
+ * `ActivityTimerPauseInterval` is APPEND-ONLY for the runtime role: the migration grants only
+ * `SELECT, INSERT` (closing a pause goes through the SECURITY DEFINER
+ * `closeActivityTimerPauseInterval`). So a corrected window can neither delete those rows nor leave
+ * them: the deferred integrity trigger also rejects `pauseTrackingStartedAt IS NULL AND
+ * interval_count <> 0`, and a pause lying outside its own entry is what a restore rejects as
+ * `backup_invalid_pause_intervals`.
+ *
+ * An entry with recorded pause instants therefore cannot have its window corrected through the
+ * ordinary edit path, and says so plainly instead of failing as a generic error. Entries with no
+ * recorded intervals - every timer that was never paused, which is the common case - correct
+ * normally.
  */
-async function dropPauseIntervalsForCorrectedWindow(
+async function assertStoppedWindowCorrectionAllowed(
   tx: Prisma.TransactionClient,
   id: string,
   before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null },
@@ -960,12 +968,13 @@ async function dropPauseIntervalsForCorrectedWindow(
   const endedAt = toDate(input.endedAt);
   if (startedAt === undefined || endedAt === undefined) return;
   // Same "actually changed" rule as activityLogUpdateData: the form submits the window on every
-  // edit, so dropping on mere presence would discard the precise pauses for a note-only change.
+  // edit, so reacting to mere presence would reject an unrelated note-only change.
   const changed =
     startedAt.getTime() !== (before.startedAt?.getTime() ?? NaN) ||
     endedAt.getTime() !== (before.endedAt?.getTime() ?? NaN);
   if (!changed) return;
-  await tx.activityTimerPauseInterval.deleteMany({ where: { activityId: id } });
+  const recordedPauses = await tx.activityTimerPauseInterval.count({ where: { activityId: id } });
+  if (recordedPauses > 0) throw new Error("activity_paused_window_not_editable");
 }
 
 async function replaceSpecificLog(
@@ -1139,7 +1148,7 @@ export async function updateActivity(id: string, raw: unknown) {
         data: activityLogUpdateData(input.babyId, next, before)
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
-      await dropPauseIntervalsForCorrectedWindow(tx, id, before, input);
+      await assertStoppedWindowCorrectionAllowed(tx, id, before, input);
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await tx.mutationReceipt.create({ data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "activity.update", targetActivityId: id, clientMutationId: input.clientMutationId, intentFingerprint: activityUpdateFingerprint(id, input), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) } });
@@ -1872,7 +1881,7 @@ export async function submitActivityUpdateBrowserOperation(raw: unknown): Promis
       }
       const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: activityLogUpdateData(input.babyId, next, before) });
       if (claimed.count !== 1) throw new Error("stale_revision");
-      await dropPauseIntervalsForCorrectedWindow(tx, id, before, input);
+      await assertStoppedWindowCorrectionAllowed(tx, id, before, input);
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);

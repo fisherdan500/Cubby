@@ -1139,6 +1139,59 @@ describe("activity page access", () => {
     );
   });
 
+  // The runtime role may only SELECT/INSERT pause intervals, and the integrity trigger forbids
+  // clearing the tracking while rows remain, so an entry that was actually paused cannot have its
+  // window corrected here. It must say so, not fail as a generic error.
+  it("refuses to correct the window of a stopped timer that recorded pauses", async () => {
+    mockActivityRead({
+      ...activity("member-author"),
+      timerState: "stopped",
+      startedAt: new Date("2026-07-14T09:30:00.000Z"),
+      endedAt: new Date("2026-07-14T10:30:00.000Z"),
+      durationSeconds: 2700,
+      pausedSeconds: 900
+    });
+    mocks.pauseIntervalCount.mockResolvedValue(1);
+
+    await expect(
+      updateActivity("activity-1", {
+        ...feedingInput(),
+        startedAt: "2026-07-14T08:00:00.000Z",
+        endedAt: "2026-07-14T10:00:00.000Z"
+      })
+    ).rejects.toThrow("activity_paused_window_not_editable");
+  });
+
+  // The common case: a timer that ran straight through has no interval rows, so correcting its
+  // window stays allowed and the duration is recomputed from the new span.
+  it("corrects the window of a stopped timer that recorded no pauses", async () => {
+    mockActivityRead({
+      ...activity("member-author"),
+      timerState: "stopped",
+      startedAt: new Date("2026-07-14T09:30:00.000Z"),
+      endedAt: new Date("2026-07-14T10:30:00.000Z"),
+      durationSeconds: 3600,
+      pausedSeconds: 0
+    });
+    mocks.pauseIntervalCount.mockResolvedValue(0);
+
+    await updateActivity("activity-1", {
+      ...feedingInput(),
+      startedAt: "2026-07-14T08:00:00.000Z",
+      endedAt: "2026-07-14T10:00:00.000Z"
+    });
+
+    expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          startedAt: new Date("2026-07-14T08:00:00.000Z"),
+          endedAt: new Date("2026-07-14T10:00:00.000Z"),
+          durationSeconds: 7200
+        })
+      })
+    );
+  });
+
   it("rejects subtype changes for timer-backed activities", async () => {
     mockActivityRead({ ...activity("member-author"), timerState: "running" });
 
