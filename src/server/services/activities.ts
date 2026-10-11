@@ -878,24 +878,94 @@ async function getEditableActivity(ctx: HouseholdContext, id: string, action: "u
 export function activityLogUpdateData(
   babyId: string,
   next: Pick<ActivityCreateDraft, "type" | "occurredAt" | "startedAt" | "endedAt" | "durationSeconds" | "timezone" | "notes" | "timerState">,
-  before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null; durationSeconds: number | null }
+  before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null; durationSeconds: number | null; pausedSeconds?: number | null }
 ) {
-  const timerBacked = before.timerState !== TimerState.none;
+  // A RUNNING or PAUSED timer is still being measured, so its timing belongs to the timer controls
+  // alone and an edit must not touch it. A STOPPED timer is a record of something that already
+  // finished: a caregiver who mistyped the window has no other way to correct it, so a stopped
+  // timer accepts a corrected window like any other entry.
+  const liveTimer = before.timerState === TimerState.running || before.timerState === TimerState.paused;
+  const stoppedTimer = before.timerState === TimerState.stopped;
+  // The draft's window comes from Prisma's create input, so each end may be a Date, an ISO string,
+  // null or absent. Normalising to a comparable instant keeps the comparison below honest instead
+  // of casting the union away.
+  const instant = (value: Date | string | null | undefined) =>
+    value === null || value === undefined ? null : (value instanceof Date ? value : new Date(value)).getTime();
+  const nextStartedAt = instant(next.startedAt);
+  const nextEndedAt = instant(next.endedAt);
+  // The form always submits both ends for a stopped entry, so "carries a window" is not enough to
+  // mean "corrected": a note-only edit arrives with the window unchanged. Comparing against what is
+  // stored keeps such an edit a no-op for the timing, which is what preserves the precise pause
+  // instants instead of discarding them on every unrelated edit.
+  const correctsStoppedWindow =
+    stoppedTimer &&
+    nextStartedAt !== null &&
+    nextEndedAt !== null &&
+    (nextStartedAt !== (before.startedAt?.getTime() ?? null) || nextEndedAt !== (before.endedAt?.getTime() ?? null));
+  // The stored duration is ACTIVE time, so the paused time stays subtracted from the new window.
+  // Recomputing it as the raw span would silently add the pause back into the active duration.
+  const correctedDuration = correctsStoppedWindow
+    ? Math.max(0, Math.round((nextEndedAt! - nextStartedAt!) / 1000) - (before.pausedSeconds ?? 0))
+    : null;
+  const keepTiming = liveTimer || (stoppedTimer && !correctsStoppedWindow);
   return {
     babyId,
     type: next.type,
     occurredAt: next.occurredAt,
-    startedAt: timerBacked ? before.startedAt : next.startedAt ?? null,
-    endedAt: timerBacked ? before.endedAt : next.endedAt ?? null,
-    durationSeconds: timerBacked ? before.durationSeconds : next.durationSeconds ?? null,
+    startedAt: keepTiming ? before.startedAt : next.startedAt ?? null,
+    endedAt: keepTiming ? before.endedAt : next.endedAt ?? null,
+    durationSeconds: keepTiming
+      ? before.durationSeconds
+      : correctsStoppedWindow
+        ? correctedDuration
+        : next.durationSeconds ?? null,
     timezone: next.timezone,
     notes: next.notes ?? null,
     timerState: before.timerState === TimerState.none ? next.timerState : before.timerState,
+    // A corrected window cannot carry the PRECISE pause instants with it: those were recorded
+    // against the old window, and leaving them would place a pause outside the entry that contains
+    // it - which a restore rejects as backup_invalid_pause_intervals, making the household's backup
+    // un-restorable. The total paused time is kept, so the active duration above stays right; only
+    // the exact placement is dropped, which is the already-supported untracked form.
     pauseTrackingStartedAt:
-      before.timerState === TimerState.none && next.timerState === TimerState.running ? next.startedAt : undefined,
+      before.timerState === TimerState.none && next.timerState === TimerState.running
+        ? next.startedAt
+        : correctsStoppedWindow
+          ? null
+          : undefined,
     pauseTrackingBaselineSeconds:
-      before.timerState === TimerState.none && next.timerState === TimerState.running ? 0 : undefined
+      before.timerState === TimerState.none && next.timerState === TimerState.running
+        ? 0
+        : correctsStoppedWindow
+          ? null
+          : undefined
   };
+}
+
+/**
+ * A corrected stopped-timer window leaves the recorded pause instants unplaceable: they were
+ * measured against the old window, and a pause row lying outside its own entry is exactly what a
+ * restore rejects as `backup_invalid_pause_intervals` - which would make the household's next
+ * backup un-restorable. The aggregate `pausedSeconds` is kept, so the active duration stays right;
+ * only the exact placement is dropped, which is the already-supported untracked form.
+ */
+async function dropPauseIntervalsForCorrectedWindow(
+  tx: Prisma.TransactionClient,
+  id: string,
+  before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null },
+  input: { startedAt?: string; endedAt?: string }
+) {
+  if (before.timerState !== TimerState.stopped) return;
+  const startedAt = toDate(input.startedAt);
+  const endedAt = toDate(input.endedAt);
+  if (startedAt === undefined || endedAt === undefined) return;
+  // Same "actually changed" rule as activityLogUpdateData: the form submits the window on every
+  // edit, so dropping on mere presence would discard the precise pauses for a note-only change.
+  const changed =
+    startedAt.getTime() !== (before.startedAt?.getTime() ?? NaN) ||
+    endedAt.getTime() !== (before.endedAt?.getTime() ?? NaN);
+  if (!changed) return;
+  await tx.activityTimerPauseInterval.deleteMany({ where: { activityId: id } });
 }
 
 async function replaceSpecificLog(
@@ -1069,6 +1139,7 @@ export async function updateActivity(id: string, raw: unknown) {
         data: activityLogUpdateData(input.babyId, next, before)
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
+      await dropPauseIntervalsForCorrectedWindow(tx, id, before, input);
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await tx.mutationReceipt.create({ data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "activity.update", targetActivityId: id, clientMutationId: input.clientMutationId, intentFingerprint: activityUpdateFingerprint(id, input), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) } });
@@ -1801,6 +1872,7 @@ export async function submitActivityUpdateBrowserOperation(raw: unknown): Promis
       }
       const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: activityLogUpdateData(input.babyId, next, before) });
       if (claimed.count !== 1) throw new Error("stale_revision");
+      await dropPauseIntervalsForCorrectedWindow(tx, id, before, input);
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);
