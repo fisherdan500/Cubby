@@ -1192,6 +1192,60 @@ describe("activity page access", () => {
     );
   });
 
+  // pausedSeconds can be > 0 with NO interval rows: the migration backfilled a baseline for
+  // pre-existing timers without creating historical rows. The row check therefore does not cover
+  // this, and the trigger independently enforces durationSeconds + pausedSeconds <= span. Because
+  // the recomputed duration clamps at zero, shortening the window below the recorded paused time
+  // would trip the trigger and surface as an unexplained failure.
+  it("refuses a corrected window shorter than the time already recorded as paused", async () => {
+    mockActivityRead({
+      ...activity("member-author"),
+      timerState: "stopped",
+      startedAt: new Date("2026-07-14T09:00:00.000Z"),
+      endedAt: new Date("2026-07-14T11:00:00.000Z"),
+      durationSeconds: 5400,
+      pausedSeconds: 1800
+    });
+    mocks.pauseIntervalCount.mockResolvedValue(0);
+
+    await expect(
+      updateActivity("activity-1", {
+        ...feedingInput(),
+        // A 20-minute window cannot contain 30 minutes of recorded pause.
+        startedAt: "2026-07-14T09:00:00.000Z",
+        endedAt: "2026-07-14T09:20:00.000Z"
+      })
+    ).rejects.toThrow("activity_window_shorter_than_paused_time");
+
+    expect(mocks.activityUpdateMany).not.toHaveBeenCalled();
+  });
+
+  // The boundary is allowed: a window exactly as long as the paused time leaves zero active
+  // duration, which satisfies durationSeconds + pausedSeconds <= span.
+  it("allows a corrected window exactly as long as the recorded paused time", async () => {
+    mockActivityRead({
+      ...activity("member-author"),
+      timerState: "stopped",
+      startedAt: new Date("2026-07-14T09:00:00.000Z"),
+      endedAt: new Date("2026-07-14T11:00:00.000Z"),
+      durationSeconds: 5400,
+      pausedSeconds: 1800
+    });
+    mocks.pauseIntervalCount.mockResolvedValue(0);
+
+    await updateActivity("activity-1", {
+      ...feedingInput(),
+      startedAt: "2026-07-14T09:00:00.000Z",
+      endedAt: "2026-07-14T09:30:00.000Z"
+    });
+
+    expect(mocks.activityUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ durationSeconds: 0 })
+      })
+    );
+  });
+
   it("rejects subtype changes for timer-backed activities", async () => {
     mockActivityRead({ ...activity("member-author"), timerState: "running" });
 

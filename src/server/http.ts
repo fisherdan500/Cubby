@@ -176,6 +176,7 @@ export function handleError(error: unknown) {
     if (error.message === "not_found") return fail("not_found", "Not found.", 404);
     if (error.message === "baby_inactive") return fail("baby_inactive", "Inactive babies cannot receive new activity or timers.", 409);
     if (error.message === "activity_paused_window_not_editable") return fail("activity_paused_window_not_editable", "This timer was paused while it ran, so its start and end times cannot be changed. Delete it and add it again with the times you want.", 409);
+    if (error.message === "activity_window_shorter_than_paused_time") return fail("activity_window_shorter_than_paused_time", "This timer recorded paused time, so the new start and end times must cover at least that long. Choose a longer span, or delete the entry and add it again.", 409);
     if (error.message === "stale_revision") return fail("stale_revision", "This item changed before your request completed. Refresh and try again.", 409);
     if (error.message === "idempotency_conflict") return fail("idempotency_conflict", "This submission key belongs to a different activity request.", 409);
     if (error.message === "baby_has_active_timer") return fail("baby_has_active_timer", "Stop or end every running or paused timer before deactivating this baby.", 409);
