@@ -956,11 +956,20 @@ export function activityLogUpdateData(
  * ordinary edit path, and says so plainly instead of failing as a generic error. Entries with no
  * recorded intervals - every timer that was never paused, which is the common case - correct
  * normally.
+ *
+ * A corrected window must also still CONTAIN the time already recorded as paused. `pausedSeconds`
+ * can be greater than zero with no interval rows at all - the migration backfilled a baseline for
+ * pre-existing timers without creating historical rows - so the row check alone does not cover it.
+ * The integrity trigger independently enforces
+ * `durationSeconds + pausedSeconds <= endedAt - startedAt`, and because the recomputed duration
+ * clamps at zero, shortening a window below the recorded paused time would trip that trigger and
+ * surface as an unexplained failure (`activity_timer_pause_integrity_failed` is deliberately not a
+ * mapped user-facing error). Rejecting it here states the real constraint instead.
  */
 async function assertStoppedWindowCorrectionAllowed(
   tx: Prisma.TransactionClient,
   id: string,
-  before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null },
+  before: { timerState: TimerState; startedAt: Date | null; endedAt: Date | null; pausedSeconds?: number | null },
   input: { startedAt?: string; endedAt?: string }
 ) {
   if (before.timerState !== TimerState.stopped) return;
@@ -973,6 +982,11 @@ async function assertStoppedWindowCorrectionAllowed(
     startedAt.getTime() !== (before.startedAt?.getTime() ?? NaN) ||
     endedAt.getTime() !== (before.endedAt?.getTime() ?? NaN);
   if (!changed) return;
+  const pausedSeconds = before.pausedSeconds ?? 0;
+  if (pausedSeconds > 0) {
+    const span = Math.round((endedAt.getTime() - startedAt.getTime()) / 1000);
+    if (span < pausedSeconds) throw new Error("activity_window_shorter_than_paused_time");
+  }
   const recordedPauses = await tx.activityTimerPauseInterval.count({ where: { activityId: id } });
   if (recordedPauses > 0) throw new Error("activity_paused_window_not_editable");
 }
@@ -1143,12 +1157,14 @@ export async function updateActivity(id: string, raw: unknown) {
       const startsTimer = before.timerState === TimerState.none && next.timerState === TimerState.running;
       if (baby.inactiveAt && (input.babyId !== before.babyId || startsTimer || activeTimer)) throw new Error("baby_inactive");
       if (input.type === "medicine" && medicineContactWasProvided && input.contactId) await requireHouseholdMedicineContact(tx, lockedCtx, input);
+      // Validated BEFORE the write: these corrections are refused outright, so there is no reason
+      // to issue an UPDATE that a guard then rejects.
+      await assertStoppedWindowCorrectionAllowed(tx, id, before, input);
       const claimed = await tx.activityLog.updateMany({
         where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: expectedUpdatedAt },
         data: activityLogUpdateData(input.babyId, next, before)
       });
       if (claimed.count !== 1) throw new Error("stale_revision");
-      await assertStoppedWindowCorrectionAllowed(tx, id, before, input);
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await tx.mutationReceipt.create({ data: { householdId: lockedCtx.householdId, actorMemberId: lockedCtx.memberId, apiKeyId: null, operation: "activity.update", targetActivityId: id, clientMutationId: input.clientMutationId, intentFingerprint: activityUpdateFingerprint(id, input), outcomeActivityId: updated.id, outcomeSnapshot: outcomeSnapshot(updated) } });
@@ -1879,9 +1895,10 @@ export async function submitActivityUpdateBrowserOperation(raw: unknown): Promis
       if (input.type === "medicine" && medicineContactWasProvided && input.contactId) {
         await requireHouseholdMedicineContact(tx, lockedCtx, input);
       }
+      // Validated BEFORE the write, matching the ordinary update path.
+      await assertStoppedWindowCorrectionAllowed(tx, id, before, input);
       const claimed = await tx.activityLog.updateMany({ where: { id, householdId: lockedCtx.householdId, deletedAt: null, updatedAt: before.updatedAt }, data: activityLogUpdateData(input.babyId, next, before) });
       if (claimed.count !== 1) throw new Error("stale_revision");
-      await assertStoppedWindowCorrectionAllowed(tx, id, before, input);
       await replaceSpecificLog(tx, id, input, medicineContactWasProvided ? undefined : before.medicine?.contactId);
       const updated = await tx.activityLog.findUniqueOrThrow({ where: { id }, include: activityInclude });
       await writeAudit(lockedCtx, { action: "activity.update", entityType: "activity", entityId: id, babyId: updated.babyId, before: auditActivityPayload(before), after: auditActivityPayload(updated) }, tx);
