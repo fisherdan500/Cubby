@@ -1,7 +1,20 @@
 import { z } from "zod";
+import { MAX_BACKUP_TEXT_LENGTH } from "@/server/services/backup-format";
 
 const nullableNumber = z.union([z.coerce.number().nonnegative(), z.literal("").transform(() => undefined)]).optional();
 const optionalString = z.string().trim().optional().transform((value) => value || undefined);
+/**
+ * Free text is bounded by what a backup can carry back in. Without this, a note longer than the
+ * restore parser accepts could be stored (the column is unbounded) and exported cleanly, and would
+ * then make the household's own backup un-restorable - the data would be stuck on the instance that
+ * accepted it. Refusing it at the point of entry keeps every layer in agreement.
+ */
+const optionalRestorableText = z
+  .string()
+  .trim()
+  .max(MAX_BACKUP_TEXT_LENGTH)
+  .optional()
+  .transform((value) => value || undefined);
 const dateString = z.string().min(1);
 
 const common = z.object({
@@ -11,7 +24,7 @@ const common = z.object({
   startedAt: z.string().optional(),
   endedAt: z.string().optional(),
   timezone: z.string().optional(),
-  notes: optionalString,
+  notes: optionalRestorableText,
   activeTimer: z.coerce.boolean().default(false)
 });
 
