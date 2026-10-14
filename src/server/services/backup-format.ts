@@ -4,6 +4,12 @@ import { plannedScheduleItemsSchema } from "@/domain/planned-schedule";
 import { singleMailbox } from "@/lib/validation/email";
 
 export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
+/**
+ * The longest free-text value a backup can carry back in. Exported so the write paths that produce
+ * these fields can refuse anything this parser would later reject: a value stored beyond it is
+ * legal in the database and exports cleanly, but makes the household's own backup un-restorable.
+ */
+export const MAX_BACKUP_TEXT_LENGTH = 100_000;
 export const BACKUP_EXCLUSIONS = [
   "Credentials and sessions (a backup never grants a login)",
   "Memberships — people already in the household are recognised; anyone else must be invited",
@@ -18,7 +24,7 @@ export const BACKUP_EXCLUSIONS = [
 
 const id = z.string().min(1).max(200);
 const shortString = z.string().max(2_000);
-const longString = z.string().max(100_000);
+const longString = z.string().max(MAX_BACKUP_TEXT_LENGTH);
 const isoDateTime = z.string().datetime({ offset: true });
 const nullableDate = isoDateTime.nullable();
 const nullableShort = shortString.nullable();
