@@ -76,11 +76,18 @@ function parseHistoricalTimerMetadata(rawActivity: Record<string, unknown>, acti
       : null;
 
   if (metadata.timerState === "none") {
+    // An untimed activity records its own duration, which need not equal the wall-clock span: the
+    // Sprout importer prefers the source row's `duration` and only falls back to the span, so
+    // imported history routinely carries a shorter recorded duration than its window. The database
+    // allows exactly that - for `timerState='none'` the integrity trigger constrains `pausedSeconds`
+    // and says nothing about duration - so demanding equality here rejected a household's own
+    // legally-stored, successfully-exported data when it tried to restore onto another instance.
+    // A duration LONGER than its window is still impossible and still refused.
     if (
       metadata.durationSeconds === undefined ||
       metadata.pausedAt !== null ||
       metadata.pausedSeconds !== 0 ||
-      metadata.durationSeconds !== wallSeconds
+      (wallSeconds !== null && metadata.durationSeconds !== null && metadata.durationSeconds > wallSeconds)
     ) {
       throw new Error("backup_invalid_timer");
     }
