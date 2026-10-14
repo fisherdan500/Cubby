@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { handleError } from "./http";
 
 describe("handleError", () => {
@@ -124,14 +124,48 @@ describe("handleError", () => {
   it("falls back to a generic failure for an error it does not recognise", async () => {
     // Still the right behaviour for a genuinely unknown error: say little, log everything. A database
     // trigger raise arrives as Prisma wrapper text with no retryable code and belongs here.
+    const logged: unknown[][] = [];
+    const consoleError = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      logged.push(args);
+    });
     const response = handleError(
       new Error('Invalid `prisma.$executeRaw()` invocation: raised exception: some_trigger_failed')
     );
 
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toEqual({
-      ok: false,
-      error: { code: "server_error", message: "Something went wrong." }
-    });
+    const body = await response.json();
+    expect(body.ok).toBe(false);
+    expect(body.error.code).toBe("server_error");
+
+    // The cause stays hidden, but the occurrence is quotable.
+    expect(body.error.message).not.toContain("some_trigger_failed");
+    expect(body.error.message).not.toContain("prisma");
+    const reference = body.error.message.match(/reference ([0-9A-F]{8})\./)?.[1];
+    expect(reference, "the generic failure must carry a quotable reference").toBeTruthy();
+
+    // ... and the SAME reference is on the logged line, so one grep joins the two. Without this the
+    // operator has only a timestamp to go on, which is what made a real restore failure undebuggable.
+    expect(logged).toHaveLength(1);
+    expect(String(logged[0][0])).toBe(`[cubby-failure ${reference}]`);
+    expect(logged[0][1]).toBeInstanceOf(Error);
+    expect(String((logged[0][1] as Error).message)).toContain("some_trigger_failed");
+
+    consoleError.mockRestore();
+  });
+
+  it("gives each unrecognised failure its own reference", async () => {
+    // Derived (hashed) references would collide across occurrences, making two separate failures
+    // indistinguishable in the log.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const first = await (handleError(new Error("one_unknown_thing"))).json();
+    const second = await (handleError(new Error("one_unknown_thing"))).json();
+
+    const a = first.error.message.match(/reference ([0-9A-F]{8})\./)?.[1];
+    const b = second.error.message.match(/reference ([0-9A-F]{8})\./)?.[1];
+    expect(a).toBeTruthy();
+    expect(b).toBeTruthy();
+    expect(a).not.toBe(b);
+
+    consoleError.mockRestore();
   });
 });

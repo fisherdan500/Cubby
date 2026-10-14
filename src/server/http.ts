@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { trustedOrigins } from "@/lib/env";
@@ -142,6 +143,20 @@ function retryableDatabaseFailure(error: unknown) {
   return message ? { code, message } : null;
 }
 
+/**
+ * A short, quotable tag printed in the server log beside the real error and shown to the person who
+ * hit it. The generic fallback deliberately says nothing about the cause, which leaves the operator
+ * grepping a whole log by timestamp to find out what actually failed - and leaves the person with no
+ * way to point at their own failure. The reference closes that gap without disclosing anything: it
+ * carries no information by itself, it is only a join key between the two.
+ *
+ * Random rather than derived: a hash of the message would be stable across occurrences, so two
+ * separate failures would be indistinguishable in the log.
+ */
+function failureReference() {
+  return randomBytes(4).toString("hex").toUpperCase();
+}
+
 export function handleError(error: unknown) {
   if (error instanceof ZodError) return fail("validation_error", "Please check the highlighted fields.", 422, error.flatten());
   const database = retryableDatabaseFailure(error);
@@ -226,6 +241,9 @@ export function handleError(error: unknown) {
     if (error.message.startsWith("attachment_store_")) return fail("attachment_store_unavailable", "Photos can't be saved right now. Try again later.", 503);
     if (error.message === "unsupported_sprout_backup") return fail("unsupported_sprout_backup", "Upload a Sprout Track zip, baby-tracker.db, or data.json backup.", 422);
   }
-  console.error(error);
-  return fail("server_error", "Something went wrong.", 500);
+  // The reference ties this exact occurrence to its logged cause. Printed on the same line as the
+  // error so one grep for the code the person quotes lands on the stack that explains it.
+  const reference = failureReference();
+  console.error(`[cubby-failure ${reference}]`, error);
+  return fail("server_error", `Something went wrong. If you need help, quote reference ${reference}.`, 500);
 }
