@@ -1262,6 +1262,65 @@ describe("backup unit preferences", () => {
     expect(mocks.restoreActivity).toHaveBeenCalledWith(expect.anything(), ctx, expect.anything(), undefined);
   });
 
+  // A Sprout-imported sleep carries its OWN recorded duration alongside its start and end
+  // (`durationFromMinutes` prefers the source row's `duration` field and only falls back to the
+  // span). The database accepts that happily: for `timerState='none'` the integrity trigger
+  // constrains `pausedSeconds` and nothing else, so a duration that disagrees with the wall-clock
+  // span is legal stored history. Exporting such an activity is also fine. Restoring it was not:
+  // the parser demanded `durationSeconds === wallSeconds` exactly, so a household could take a
+  // backup of its own data and be unable to put it back on another instance.
+  it("restores an imported activity whose recorded duration disagrees with its wall-clock span", async () => {
+    mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", name: "Finley", inactiveAt: null });
+
+    await restoreBackupJson({
+      version: 1,
+      babies: [{ id: "backup-baby-1", name: "Finley", timezone: "UTC" }],
+      activities: [
+        {
+          babyId: "backup-baby-1",
+          type: "sleep",
+          occurredAt: "2026-07-14T10:00:00.000Z",
+          startedAt: "2026-07-14T10:00:00.000Z",
+          endedAt: "2026-07-14T11:00:00.000Z",
+          timerState: "none",
+          // 50 minutes recorded against a 60-minute window, as a source export would report it.
+          durationSeconds: 3000,
+          pausedAt: null,
+          pausedSeconds: 0
+        }
+      ]
+    });
+
+    expect(mocks.restoreActivity).toHaveBeenCalledWith(expect.anything(), ctx, expect.anything(), undefined);
+  });
+
+  // The guard still has to reject genuinely impossible history: a duration LONGER than the window
+  // it happened in cannot be rounding or a source quirk, and the database's own stopped-timer rule
+  // forbids the same thing.
+  it("still rejects a duration longer than the window that contains it", async () => {
+    mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", name: "Finley", inactiveAt: null });
+
+    await expect(
+      restoreBackupJson({
+        version: 1,
+        babies: [{ id: "backup-baby-1", name: "Finley", timezone: "UTC" }],
+        activities: [
+          {
+            babyId: "backup-baby-1",
+            type: "sleep",
+            occurredAt: "2026-07-14T10:00:00.000Z",
+            startedAt: "2026-07-14T10:00:00.000Z",
+            endedAt: "2026-07-14T11:00:00.000Z",
+            timerState: "none",
+            durationSeconds: 7200,
+            pausedAt: null,
+            pausedSeconds: 0
+          }
+        ]
+      })
+    ).rejects.toThrow("backup_invalid_timer");
+  });
+
   it("forwards exact stopped timer metadata to historical restore", async () => {
     mocks.babyCreate.mockResolvedValue({ id: "saved-baby-1", name: "Finley", inactiveAt: null });
 
