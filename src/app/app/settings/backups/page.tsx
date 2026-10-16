@@ -50,14 +50,33 @@ export default async function BackupsSettingsPage() {
           <Card>
             <h2 className="mb-3 text-lg font-semibold">Moving to a new server</h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              To move a whole Cubby — every household, account and photo, with everyone signing in exactly as before — use a
-              whole-system backup. It runs on the server rather than here, because Cubby is stopped while it is made.
+              The backup above carries one household&apos;s records, and the people in it must already have accounts on the
+              Cubby you restore into. To move a whole Cubby — every household, account and photo, with everyone signing in
+              exactly as before — use a whole-system backup instead. There is nothing to upload here: it is made and
+              restored over a terminal on the servers themselves, because Cubby is stopped while it is made.
+            </p>
+            <p className="mb-2 text-sm font-semibold">On the old server</p>
+            <p className="mb-2 text-sm text-muted-foreground">
+              In a terminal, from the Cubby folder (the one holding <code>docker-compose.yml</code>), as the user who runs
+              <code> docker compose</code>:
             </p>
             <pre className="mb-3 overflow-x-auto rounded-md bg-muted p-3 text-xs">sh scripts/system-backup.sh --maintenance</pre>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Cubby stops for a few minutes, then writes one <code>.tar</code> file into <code>docker-data/system-backups</code>
+              inside that same folder. Copy that file to the new server, and keep a copy of the old server&apos;s
+              <code> .env</code> somewhere safe of its own: it holds the keys the restored accounts and sign-ins depend on,
+              and it is deliberately not inside the archive.
+            </p>
+            <p className="mb-2 text-sm font-semibold">On the new server</p>
+            <p className="mb-2 text-sm text-muted-foreground">
+              Install Cubby as usual, put the saved <code>.env</code> in place of the new one, and do not open setup or
+              create any account — the restore needs an empty install and will refuse one that is already in use. Then,
+              from the Cubby folder:
+            </p>
+            <pre className="mb-3 overflow-x-auto rounded-md bg-muted p-3 text-xs">sh scripts/system-restore.sh --archive cubby-system-….tar --confirm-empty-install --maintenance</pre>
             <p className="text-sm text-muted-foreground">
-              Keep a copy of the server&apos;s <code>.env</code> somewhere safe of its own: it holds the keys the restored accounts and
-              sign-ins depend on, and it is deliberately not inside the archive. Full instructions, including nightly scheduling and
-              restoring onto a new server, are in <code>docs/recovery/system-backup.md</code> in the Cubby checkout.
+              Nightly scheduling, what the archive does and does not hold, and how to rehearse a restore before you need one
+              are in <code>docs/recovery/system-backup.md</code> in the Cubby folder.
             </p>
           </Card>
           <Card>
