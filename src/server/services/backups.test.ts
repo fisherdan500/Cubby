@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -1679,8 +1680,11 @@ describe("backups with photos", () => {
     });
   });
 
-  it("refuses a picture naming a person this household does not have", async () => {
-    // Otherwise the picture would restore onto nobody, or worse onto whoever happened to match.
+  it("skips a picture naming a person this household does not have, and restores the rest", async () => {
+    // Previously this failed the WHOLE restore. A household backup carries no accounts, so moving a
+    // household to a new server legitimately arrives before its people do - and losing the entire
+    // file, every baby and every entry, over one avatar made migration impossible. The picture has
+    // nowhere to go and is skipped, exactly as that person's notification rules already are.
     const memberPhoto = { id: "ph-3", postId: null, position: null, babyId: null, memberEmail: "ghost@example.test", width: 512, height: 512, byteSize: 4, sha256: sha };
     const backup = createV2Backup({
       household: { name: "Recovered Home" }, settings: {}, babies: [], contacts: [], catalogs: [], activities: [], calendarEvents: [], reminders: [],
@@ -1692,8 +1696,24 @@ describe("backups with photos", () => {
     // Nobody in this household has that address, so there is no one to own the picture.
     mocks.memberFindMany.mockResolvedValue([]);
 
-    await expect(restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: backup.checksum }))
-      .rejects.toThrow("backup_dangling_reference");
+    const result = await restoreBackupArchive("/staging/upload.zip", { confirmation: "Home", previewChecksum: backup.checksum });
+
+    // No attachment row may be written: a picture must never land on nobody, or on somebody else.
+    expect(mocks.attachmentCreate).not.toHaveBeenCalled();
+    // ... and the operator is told whose picture did not come across, rather than finding out later.
+    expect(result.members.skippedMemberPhotos).toEqual(["ghost@example.test"]);
+  });
+
+  it("keeps the runtime owner check for baby and post photos", () => {
+    // The format validator already proves a baby or post photo names a row the file carries
+    // (backup-format.ts: feedPhotos dangling check), so those cases are rejected before the restore
+    // loop ever runs - which is why a malformed one cannot be exercised through restoreBackupArchive.
+    // The runtime `if (!owner) throw` therefore guards only against an id map that failed to produce
+    // a row, and must stay: dropping it would let a baby or feed photo land with a null owner.
+    const source = readFileSync("src/server/services/backups.ts", "utf8");
+    expect(source).toContain('if (!owner) throw new Error("backup_dangling_reference");');
+    // ... and the member case must be the ONLY one that skips rather than throws.
+    expect(source).toContain("if (memberOwned && !memberId) {");
   });
 
   it("refuses to restore a backup that lists photos from its JSON alone", async () => {
@@ -1856,7 +1876,7 @@ describe("restoring members", () => {
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
-    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0, memberIdByEmail: expect.any(Map) });
+    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0, memberIdByEmail: expect.any(Map), skippedMemberPhotos: [] });
   });
 
   it("reports an email that is not already a member as needing an invitation", async () => {
@@ -1866,7 +1886,7 @@ describe("restoring members", () => {
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
     expect(mocks.memberCreate).not.toHaveBeenCalled();
-    expect(result.members).toEqual({ matched: 0, needInvite: ["dad@example.com"], preferencesRestored: 0, memberIdByEmail: expect.any(Map) });
+    expect(result.members).toEqual({ matched: 0, needInvite: ["dad@example.com"], preferencesRestored: 0, memberIdByEmail: expect.any(Map), skippedMemberPhotos: [] });
   });
 
   it("scopes the match to this household, so a file cannot name an account from elsewhere", async () => {
@@ -1916,7 +1936,7 @@ describe("restoring members", () => {
 
     const result = await restoreBackupJson(backup, { previewChecksum: backup.checksum });
 
-    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0, memberIdByEmail: expect.any(Map) });
+    expect(result.members).toEqual({ matched: 1, needInvite: [], preferencesRestored: 0, memberIdByEmail: expect.any(Map), skippedMemberPhotos: [] });
   });
 
   it("carries no role from the file, so a backup cannot change anyone's authority", async () => {
