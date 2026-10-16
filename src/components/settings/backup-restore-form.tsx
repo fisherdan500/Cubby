@@ -34,6 +34,7 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
   const [pending, setPending] = useState<"preview" | "restore" | null>(null);
   const [message, setMessage] = useState("");
   const [needInvite, setNeedInvite] = useState<string[]>([]);
+  const [skippedMemberPhotos, setSkippedMemberPhotos] = useState<string[]>([]);
 
   function acknowledgePrivacy(checked: boolean) {
     setPrivacyAcknowledged(checked);
@@ -100,13 +101,16 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
       const result = await response.json() as ApiResult<{
         restored: number;
         counts?: Record<string, number>;
-        members?: { matched: number; needInvite: string[]; preferencesRestored: number };
+        members?: { matched: number; needInvite: string[]; preferencesRestored: number; skippedMemberPhotos?: string[] };
       }>;
       if (version !== selectionVersion.current) return;
       if (!result.ok) throw new Error(result.error.message);
       // A restore never grants membership, so anyone in the file who is not already a member did not
       // come across. This list is the only place the operator finds out who to invite.
       setNeedInvite(result.data.members?.needInvite ?? []);
+      // Their profile pictures could not be placed either. Reported rather than dropped silently, so
+      // a missing avatar afterwards is explained instead of discovered.
+      setSkippedMemberPhotos(result.data.members?.skippedMemberPhotos ?? []);
       setMessage(`Restore complete. Recovered ${result.data.restored} records. Refreshing Cubby…`);
       router.refresh();
     } catch (error) {
@@ -180,6 +184,19 @@ export function BackupRestoreForm({ targetHouseholdName, timeZone }: { targetHou
           </p>
           <ul className="list-disc space-y-1 pl-5 break-words">
             {needInvite.map((email) => <li key={email}>{email}</li>)}
+          </ul>
+        </section>
+      ) : null}
+      {skippedMemberPhotos.length > 0 ? (
+        <section aria-label="Profile pictures not restored" className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+          <p className="font-bold">Profile pictures waiting for their owner</p>
+          <p className="mb-2 text-muted-foreground">
+            A profile picture belongs to a person, and these people are not members here yet, so their pictures had
+            nowhere to go. Everything else in the backup was restored. Once they have joined, each of them can set their
+            picture again from their own profile.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 break-words">
+            {skippedMemberPhotos.map((email) => <li key={email}>{email}</li>)}
           </ul>
         </section>
       ) : null}

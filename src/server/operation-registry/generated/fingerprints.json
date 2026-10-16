@@ -3056,17 +3056,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8d24dde3496eee66e3152ff6d5ac0abb4ce5c82abdedb6874a0a4de7043e0fd7",
+          "digest": "e7a4ae3fbfdcea91908b86fb838fecffa3bb23d6266c78f6016cc769967af184",
           "file": "src/components/settings/backup-restore-form.tsx"
         }
       ],
       "declarationDigest": "a24b18c134da8a75e1fec73c47e0355f92d55d337b81ff013b30008454bbcf10",
-      "fingerprint": "ec1c6d2f02ea46cc8ee13f0cf430f4a939e81a2cdd34af41e76d5a644fa16e06",
+      "fingerprint": "103134aa57f111b7e2d02c8910dd0d4d53e1be2f43c493de61aa8d634012355f",
       "id": "fingerprint:client_binding:src/components/settings/backup-restore-form.tsx",
       "ownerId": "client_binding:src/components/settings/backup-restore-form.tsx",
       "ownerModule": "src/components/settings/backup-restore-form.tsx",
       "sidecarPath": "src/components/settings/backup-restore-form.operation.ts",
-      "sourceDigest": "4f31e8ed2e4d372e82fed90cea1c16d6f54ba54eba8b166f8c2ef88ca12c83e6",
+      "sourceDigest": "81df73721366da35687ef518edca2ef954472653bd5e10b90796e9f6b7cf1343",
       "status": "declared"
     },
     {
@@ -4600,11 +4600,11 @@
   ],
   "generatorDigest": "792055f248201ce3ffbed9a8fdef7813407d1ea337bf6d11e91f3932b3027e16",
   "generatorVersion": "r0.1",
-  "observationDigest": "0bde95a1f72c2e567e58ee2deb3951cf16c8cdff1b4853c9a5c41a75375f845f",
+  "observationDigest": "6736bd3262cfd5a76e0dbcadbccf40858691769c8c2168eb0672f96a8d139fa2",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "482a02afdadfd6b5297d54452bc51409e23be3797bb60c4597b0fa4b0ecdff4d",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "823ea6931409e2daa6466216bb34bc15dbb8657d7ecb19e6e9c35e728bd589d6",
+  "registryDigest": "e7b7fbf2bc5b11333c5253d2d5af5869d34554b7361ac7905d2052d6523fbef8",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

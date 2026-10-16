@@ -1148,6 +1148,7 @@ async function restoreV2InTransaction(
     });
   }
   const activatedAt = new Date();
+  const skippedMemberPhotos: string[] = [];
   for (const photo of payload.feedPhotos ?? []) {
     const storageKey = photoStorageKeys.get(photo.id);
     if (!storageKey) throw new Error("backup_photos_missing");
@@ -1158,8 +1159,21 @@ async function restoreV2InTransaction(
     const postId = photo.postId !== null ? postMap.get(photo.postId) ?? null : null;
     const babyId = babyOwned ? babyMap.get(photo.babyId!) ?? null : null;
     // Matched against the members this restore actually recognised, not against the source id: a
-    // picture whose person is not in this household must fail rather than land on somebody else.
+    // picture whose person is not in this household must never land on somebody else.
     const memberId = memberOwned ? memberIdByEmail.get(photo.memberEmail!.toLowerCase()) ?? null : null;
+    // A profile picture whose person is not a member here has nothing to hang on, exactly like that
+    // person's notification rules above, and is skipped for the same reason: a backup carries no
+    // accounts, so restoring a household onto a new server legitimately arrives before its people
+    // do. Failing the whole restore over it stranded every other record in the file - the household,
+    // its babies, and thousands of entries - on an avatar. The skipped addresses are reported rather
+    // than silently dropped, so the owner can re-upload those pictures once those people are here.
+    //
+    // Baby and post photos still fail closed: their owners are rows THIS restore just created, so a
+    // missing one means the file itself is inconsistent rather than merely ahead of its household.
+    if (memberOwned && !memberId) {
+      skippedMemberPhotos.push(photo.memberEmail!.toLowerCase());
+      continue;
+    }
     const owner = memberOwned ? memberId : babyOwned ? babyId : postId;
     if (!owner) throw new Error("backup_dangling_reference");
     await tx.attachment.create({
@@ -1204,7 +1218,7 @@ async function restoreV2InTransaction(
   const restored = counts.babies + counts.contacts + counts.catalogs + counts.activities + counts.calendarEvents + counts.reminders
     + counts.plannedSchedules + counts.feedPosts + counts.feedComments + counts.feedReactions + counts.feedPhotos;
   await writeRestoreCompletion(lockedCtx, tx, restored, parsed.backup.checksum, counts);
-  return { restored, counts, members, legacyPartial: false };
+  return { restored, counts, members: { ...members, skippedMemberPhotos: [...new Set(skippedMemberPhotos)] }, legacyPartial: false };
 }
 
 async function restoreLegacyInTransaction(
