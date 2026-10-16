@@ -24,6 +24,28 @@ it("points to the whole-system backup, which the app itself cannot make", () => 
   expect(source).toContain("Cubby is stopped");
 });
 
+it("says where the whole-system backup runs, where it lands, and how to put it back", () => {
+  const source = readFileSync("src/app/app/settings/backups/page.tsx", "utf8");
+  // Naming a command without saying WHERE to type it, where the file appears, or how to restore it
+  // reads as an instruction the reader has already failed to follow. A household that has to move
+  // servers is usually doing it under pressure, and "see the docs in the checkout" is unreachable
+  // advice for someone who is looking at a web page rather than a terminal.
+  expect(source).toContain("In a terminal");
+  expect(source).toContain("docker-compose.yml");
+  // Where the archive actually appears, so it can be found and copied.
+  expect(source).toContain("docker-data/system-backups");
+  expect(source).toContain("Copy that file to the new server");
+  // The restore half: previously the page named the backup command but never its counterpart.
+  expect(source).toContain("scripts/system-restore.sh");
+  expect(source).toContain("--confirm-empty-install");
+  // The precondition that makes a restore refuse, stated before it is hit rather than after.
+  expect(source).toContain("needs an empty install");
+  // This panel is not an upload form, and nothing on this page accepts the archive.
+  expect(source).toContain("nothing to upload here");
+  // Why the household backup above is not the tool for this job.
+  expect(source).toContain("must already have accounts");
+});
+
 it("says what a household backup does and does not carry about people", () => {
   const source = readFileSync("src/app/app/settings/backups/page.tsx", "utf8");
   expect(source).toContain("carries no passwords");
