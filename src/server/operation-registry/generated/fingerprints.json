@@ -4504,17 +4504,17 @@
           "file": "package.json"
         },
         {
-          "digest": "c0cc322db52a05211691253593b5f0629e8878460f1c613d7d7b2307e41188e0",
+          "digest": "01822a910434141c953913d6a676e4d6464e556ac829c560c5d0ee2fe12bcde4",
           "file": "scripts/system-backup.acceptance-rehearsal.ts"
         }
       ],
       "declarationDigest": "f2c2e6aed5f6864461641820bbd5ca9a71a1db450390948096bc4cf60bb05498",
-      "fingerprint": "a106274374aaa48b1d49e2de5ca15f1c0aae818f86d44a16057b59367ede121c",
+      "fingerprint": "950bbc160c49dbeaaf5591a45ac306df796a480202f9325e3c0bbb7b895132e6",
       "id": "fingerprint:package_command:scripts/system-backup.acceptance-rehearsal.ts",
       "ownerId": "package_command:scripts/system-backup.acceptance-rehearsal.ts",
       "ownerModule": "scripts/system-backup.acceptance-rehearsal.ts",
       "sidecarPath": "scripts/system-backup.acceptance-rehearsal.operation.ts",
-      "sourceDigest": "ed5c4328c99c2828ef6e495715420205a4baec396f8262fd67204fb0c73ea14c",
+      "sourceDigest": "417fb812f535b922c469dd39a015418b6749d6dbdd87d0eae691cb26df716a15",
       "status": "declared"
     },
     {

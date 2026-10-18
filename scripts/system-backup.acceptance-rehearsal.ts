@@ -171,7 +171,11 @@ export async function runSystemBackupAcceptanceRehearsal() {
     run("docker", [...compose, "run", "--rm", "--no-deps", "-T", "--entrypoint", "sh", "app", "-c", "rm -rf /var/lib/cubby/attachments/objects"], { cwd: checkout });
     run("docker", [...compose, "down", "--volumes", "--remove-orphans"], { cwd: checkout });
     const previousEnv = readFileSync(resolve(checkout, ".env"), "utf8");
+    // A dead machine takes the Sprout staging key with the .env; quick-start.sh refuses to
+    // regenerate over either one (fail key_exists), so both must be gone for this to be the real
+    // lost-everything case rather than a half-cleared checkout.
     rmSync(resolve(checkout, ".env"));
+    rmSync(resolve(checkout, "docker-data", "secrets", "sprout-staging.key"), { force: true });
     writeFileSync(resolve(checkout, "smtp-password"), `${randomBytes(18).toString("hex")}\n`, { mode: 0o600 });
     run("docker", [
       "run", "--rm", "--volume", `${checkout}:/cubby`, "--workdir", "/cubby",
