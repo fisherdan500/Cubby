@@ -48,6 +48,14 @@ Cubby marks any that are missing after a restore) and the temporary Sprout impor
   22 or newer** (`node` on the operator and cron PATH). The validator uses Node builtins only; no npm
   install is needed. The scripts fail before Docker if Node is missing/too old. Refresh all four
   `system-backup.sh`, `system-restore.sh`, `system-maintenance.sh`, `system-archive.mjs` files together.
+- Both scripts also run on a **Windows host under Git Bash**, with Docker Desktop, that same host
+  Node and Git Bash's GNU tar. Backup and restore were both exercised there end to end. One
+  difference matters and is not cosmetic: Windows does not apply the scripts' `umask 077` and
+  `chmod 700`, so the archive lands world-readable (`644`) in a world-readable directory (`755`)
+  rather than owner-only. **That file holds every household's data and every account's password
+  hash**, so restrict it yourself: keep it out of shared or synced folders, and prefer a Linux
+  host when the archive will sit anywhere other than a single-user machine. `quick-start.sh` also
+  needs `--data-owner <uid>:<gid>` there, since it cannot rely on `sudo`.
 - One Compose app/Node process owns the database and attachment store. All backup/restore operators
   use the same checkout and lock. Stop external admin writers, migrations, helper jobs, independent
   app instances and deployment automation for the entire window. This is **not** a database fence
