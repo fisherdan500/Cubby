@@ -55,7 +55,7 @@ manifest_value() {
   sed -n "s/^$1=//p" "$work/manifest.txt"
 }
 
-work=$(mktemp -d)
+work=$(private_scratch_dir) || fail "the private work directory could not be created"
 # A private copy fixes the bytes used for validation/extraction against source-file replacement.
 # The operator must provide an immutable, trusted archive and adequate private scratch space.
 node scripts/system-archive.mjs size "$archive" prisma/migrations || fail "invalid archive size or type"

@@ -190,6 +190,12 @@ function main() {
   } finally { closeSync(fd); }
 }
 try { main(); } catch (error) {
-  console.error(`system_archive_invalid: ${error instanceof Error && error.code === undefined ? error.message : "archive I/O failed"}`);
+  // A refusal carries its own message and no errno; an I/O failure carries errno and a path. Both
+  // belong in the output: the operator chose these paths, and "archive I/O failed" alone cannot
+  // distinguish a missing scratch directory from an unreadable archive or a full disk.
+  const detail = error instanceof Error
+    ? (error.code === undefined ? error.message : `archive I/O failed (${error.code}): ${error.message}`)
+    : "archive I/O failed";
+  console.error(`system_archive_invalid: ${detail}`);
   process.exitCode = 1;
 }
