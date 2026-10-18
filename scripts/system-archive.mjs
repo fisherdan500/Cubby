@@ -107,7 +107,12 @@ function inner(entry, version) {
   if (entry.type === "5") {
     if (!/^\.\/(?:objects\/(?:[a-f0-9]{2}\/)?|)$/.test(entry.name) &&
         !(version === "1" && /^\.\/(?:thumbnails\/(?:[a-f0-9]{2}\/)?|restore-staging\/)$/.test(entry.name))) bad("invalid photo directory");
-    entry.keep = entry.name === "./" || entry.name.startsWith("./objects/");
+    // The extraction root is NOT kept. `-C <mount> -xf` extracts into a directory that already
+    // exists, so a './' member only makes tar restore mode and mtime onto the mount point itself -
+    // which fails with "Cannot utime / Cannot change mode: Operation not permitted" on a Docker
+    // bind mount whose host cannot grant it, aborting a restore whose photo bytes all landed. The
+    // './objects/...' directory members still carry the structure tar needs to create.
+    entry.keep = entry.name.startsWith("./objects/");
     return entry.name;
   }
   const object = /^\.\/(objects|thumbnails)\/([a-f0-9]{2})\/(?:([a-f0-9]{32})|\.([a-f0-9]{32})\.(write-v1|[a-f0-9]{16})\.tmp)$/.exec(entry.name);

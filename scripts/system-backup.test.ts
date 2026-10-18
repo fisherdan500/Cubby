@@ -439,6 +439,27 @@ describe("closed system archive validator", () => {
     expect(result.status).toBe(0);
     expect(listTar("attachments.tar", output)).toEqual([pending, `./objects/ab/${key}`].sort());
   });
+  it("drops the './' extraction root so tar cannot touch the mount point", () => {
+    // `-C <mount> -xf` extracts into a directory that already exists. A './' member makes tar
+    // restore mode and mtime onto the mount point itself, which a Docker bind mount can refuse
+    // with "Cannot utime / Cannot change mode: Operation not permitted" - aborting a restore
+    // whose photo bytes had all landed. Keeping './objects/' is what creates the structure.
+    // Real `tar -C root .` output: the root, each directory level, then the file.
+    const withDirectories = inner(
+      tarEntry("./", Buffer.alloc(0), "5"),
+      tarEntry("./objects/", Buffer.alloc(0), "5"),
+      tarEntry("./objects/ab/", Buffer.alloc(0), "5"),
+      photo(),
+    );
+    const { result, output } = validate(syntheticArchive(withDirectories), true);
+
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+    const entries = listTar("attachments.tar", output);
+    expect(entries).not.toContain("./");
+    expect(entries).toContain("./objects/");
+    expect(entries).toContain(`./objects/ab/${key}`);
+  });
   it("validates but discards v1 derivative/upload/legacy-temp bytes", () => {
     const { result, output } = validate(syntheticArchive(inner(photo(),
       tarEntry(`./thumbnails/ab/${key}`, Buffer.from("cache")),
