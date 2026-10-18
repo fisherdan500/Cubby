@@ -107,7 +107,12 @@ function inner(entry, version) {
   if (entry.type === "5") {
     if (!/^\.\/(?:objects\/(?:[a-f0-9]{2}\/)?|)$/.test(entry.name) &&
         !(version === "1" && /^\.\/(?:thumbnails\/(?:[a-f0-9]{2}\/)?|restore-staging\/)$/.test(entry.name))) bad("invalid photo directory");
-    entry.keep = entry.name === "./" || entry.name.startsWith("./objects/");
+    // The extraction root is NOT kept. `-C <mount> -xf` extracts into a directory that already
+    // exists, so a './' member only makes tar restore mode and mtime onto the mount point itself -
+    // which fails with "Cannot utime / Cannot change mode: Operation not permitted" on a Docker
+    // bind mount whose host cannot grant it, aborting a restore whose photo bytes all landed. The
+    // './objects/...' directory members still carry the structure tar needs to create.
+    entry.keep = entry.name.startsWith("./objects/");
     return entry.name;
   }
   const object = /^\.\/(objects|thumbnails)\/([a-f0-9]{2})\/(?:([a-f0-9]{32})|\.([a-f0-9]{32})\.(write-v1|[a-f0-9]{16})\.tmp)$/.exec(entry.name);
@@ -190,6 +195,12 @@ function main() {
   } finally { closeSync(fd); }
 }
 try { main(); } catch (error) {
-  console.error(`system_archive_invalid: ${error instanceof Error && error.code === undefined ? error.message : "archive I/O failed"}`);
+  // A refusal carries its own message and no errno; an I/O failure carries errno and a path. Both
+  // belong in the output: the operator chose these paths, and "archive I/O failed" alone cannot
+  // distinguish a missing scratch directory from an unreadable archive or a full disk.
+  const detail = error instanceof Error
+    ? (error.code === undefined ? error.message : `archive I/O failed (${error.code}): ${error.message}`)
+    : "archive I/O failed";
+  console.error(`system_archive_invalid: ${detail}`);
   process.exitCode = 1;
 }

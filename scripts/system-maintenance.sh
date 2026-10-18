@@ -6,6 +6,22 @@ maintenance_stopped=false
 maintenance_was_running=false
 work=""
 partial=""
+# A private scratch directory whose path every tool in the pipeline can open.
+#
+# `mktemp -d` is not enough. Under MSYS/Git Bash it returns a POSIX path like /tmp/tmp.AbC123, and
+# the pipeline hands that path straight to `node`, a native Windows binary that reads it as
+# C:\tmp\tmp.AbC123 and cannot find it. The shell tools write where the operator expects and the
+# validator looks somewhere else, so a restore fails after the archive is already staged. Emitting a
+# native path keeps both halves pointed at the same directory. On Linux cygpath is absent and the
+# POSIX path is already native, so this is the plain `mktemp -d` result.
+private_scratch_dir() {
+  directory=$(mktemp -d) || return 1
+  if command -v cygpath > /dev/null 2>&1; then
+    cygpath -m -- "$directory" 2>/dev/null || printf '%s\n' "$directory"
+  else
+    printf '%s\n' "$directory"
+  fi
+}
 maintenance_cleanup() {
   result=$?
   trap - EXIT INT TERM

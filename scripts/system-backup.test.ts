@@ -92,10 +92,9 @@ function server() {
   }
   writeFileSync(path.join(bin, "docker"), fakeDocker);
   chmodSync(path.join(bin, "docker"), 0o755);
-  // MSYS mktemp returns /c/... which native Node cannot open when path conversion is disabled.
-  // Only this synthetic shim normalizes it; production scripts target Linux.
-  writeFileSync(path.join(bin, "mktemp"), '#!/bin/sh\ndirectory=$(/usr/bin/mktemp -d) || exit 1\ncygpath -m "$directory" 2>/dev/null || printf "%s\\n" "$directory"\n');
-  chmodSync(path.join(bin, "mktemp"), 0o755);
+  // No mktemp shim. The scripts normalize their own scratch path via private_scratch_dir, so
+  // these cases run the real `mktemp` the operator's shell provides - which is what let an MSYS
+  // path reach native node and fail a restore after the archive was already staged.
   const log = path.join(root, "docker.log");
   writeFileSync(log, "");
 
@@ -440,6 +439,27 @@ describe("closed system archive validator", () => {
     expect(result.status).toBe(0);
     expect(listTar("attachments.tar", output)).toEqual([pending, `./objects/ab/${key}`].sort());
   });
+  it("drops the './' extraction root so tar cannot touch the mount point", () => {
+    // `-C <mount> -xf` extracts into a directory that already exists. A './' member makes tar
+    // restore mode and mtime onto the mount point itself, which a Docker bind mount can refuse
+    // with "Cannot utime / Cannot change mode: Operation not permitted" - aborting a restore
+    // whose photo bytes had all landed. Keeping './objects/' is what creates the structure.
+    // Real `tar -C root .` output: the root, each directory level, then the file.
+    const withDirectories = inner(
+      tarEntry("./", Buffer.alloc(0), "5"),
+      tarEntry("./objects/", Buffer.alloc(0), "5"),
+      tarEntry("./objects/ab/", Buffer.alloc(0), "5"),
+      photo(),
+    );
+    const { result, output } = validate(syntheticArchive(withDirectories), true);
+
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+    const entries = listTar("attachments.tar", output);
+    expect(entries).not.toContain("./");
+    expect(entries).toContain("./objects/");
+    expect(entries).toContain(`./objects/ab/${key}`);
+  });
   it("validates but discards v1 derivative/upload/legacy-temp bytes", () => {
     const { result, output } = validate(syntheticArchive(inner(photo(),
       tarEntry(`./thumbnails/ab/${key}`, Buffer.from("cache")),
@@ -517,5 +537,51 @@ describe("closed system archive validator", () => {
       expect(result.status).toBe(1);
       expect(readdirSync(output)).toEqual([]);
     }
+  });
+});
+describe("portable scratch directory", () => {
+  // A restore hands its scratch path to both shell tools and `node`, a NATIVE Windows binary.
+  // MSYS `mktemp -d` yields /tmp/tmp.X, which node resolves to C:\\tmp\\tmp.X and cannot open, so
+  // the archive staged fine and validation failed after the fact. The test harness used to hide
+  // this with its own mktemp shim; the normalization belongs in the script the operator runs.
+  it("emits a path the host's node can open, on this host", () => {
+    const probe = spawnSync("sh", ["-c", ". ./scripts/system-maintenance.sh; private_scratch_dir"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    });
+
+    expect(probe.status).toBe(0);
+    const directory = probe.stdout.trim();
+    expect(directory).not.toBe("");
+    // The decisive check: resolved by node itself, exactly as the validator resolves it.
+    const seen = spawnSync(process.execPath, ["-e", "process.stdout.write(require('fs').existsSync(process.argv[1]) ? 'yes' : 'no')", directory], {
+      encoding: "utf8",
+    });
+    expect(seen.stdout).toBe("yes");
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("reports the errno when a VALID archive cannot be written out, not a bare I/O failure", () => {
+    // The decisive case: validation must SUCCEED so the failure is genuinely I/O, which is exactly
+    // the shape of the scratch-path bug - a staged archive and a destination node cannot open.
+    // The old handler collapsed every errno into "archive I/O failed", turning a one-line
+    // diagnosis into a debugging session.
+    const machine = server();
+    const input = path.join(machine.root, "valid.tar");
+    const onePhoto = tarEntry(`./objects/ab/${key}`, Buffer.from("synthetic"));
+    writeFileSync(input, syntheticArchive(Buffer.concat([onePhoto, Buffer.alloc(1024)])));
+    const missing = path.join(machine.root, "absent-scratch");
+
+    const result = spawnSync(process.execPath, [
+      path.join(repositoryRoot, "scripts/system-archive.mjs"),
+      "prepare",
+      input,
+      path.join(machine.checkout, "prisma/migrations"),
+      missing,
+    ], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("ENOENT");
+    expect(result.stderr).toContain("absent-scratch");
   });
 });
