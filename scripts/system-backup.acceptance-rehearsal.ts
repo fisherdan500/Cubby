@@ -166,7 +166,9 @@ export async function runSystemBackupAcceptanceRehearsal() {
     // the documentation tells the operator to keep .env beside the archive. This case exists so
     // the limit is measured rather than assumed, and so that a future recovery path has to change
     // this assertion deliberately instead of discovering the foreign key in production.
-    run("docker", [...compose, "exec", "-T", "app", "sh", "-c", "rm -rf /var/lib/cubby/attachments/objects"], { cwd: checkout });
+    // The refused second restore above leaves the app STOPPED, so this cannot use `exec`; a
+    // one-shot `run` container reaches the same photo store either way, as the scripts do.
+    run("docker", [...compose, "run", "--rm", "--no-deps", "-T", "--entrypoint", "sh", "app", "-c", "rm -rf /var/lib/cubby/attachments/objects"], { cwd: checkout });
     run("docker", [...compose, "down", "--volumes", "--remove-orphans"], { cwd: checkout });
     const previousEnv = readFileSync(resolve(checkout, ".env"), "utf8");
     rmSync(resolve(checkout, ".env"));
