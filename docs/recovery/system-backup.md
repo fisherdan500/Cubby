@@ -26,12 +26,18 @@ backup is for the platform owner, runs on the server, and brings back all househ
 - `database.dump`: the whole database, made by PostgreSQL's own `pg_dump`.
 - `attachments.tar`: every stored photo, exactly as stored.
 
-It does not hold `.env`. That file holds the keys the restored accounts, sign-ins and queued email
-depend on, and Cubby will not start against restored data without the same keys. Keep a copy of
-`.env` somewhere safe of its own, such as a password manager, and update that copy whenever `.env`
-changes. A stolen archive then still holds everyone's data but not the keys to sign in with it.
+It does not hold `.env`. Keep a copy of `.env` somewhere safe of its own, such as a password
+manager, and update that copy whenever `.env` changes.
+
+That copy is part of the backup, not an extra. The archive holds every account and password — a
+password is stored with its own salt and does not depend on any value in `.env` — but the restored
+database also carries security keys that a freshly generated `.env` cannot reproduce, and Cubby
+refuses to start against the mismatch. An archive without its `.env` holds all your data and cannot
+yet be brought back up: see
+[Recovering without the old `.env`](#recovering-without-the-old-env).
+
 Treat the archives as private either way: they hold every household's data and every account's
-password hash.
+password hash, and that is enough to restore the accounts somewhere else.
 
 Also left out: the household backup files in `docker-data/backups` (the database lists them, and
 Cubby marks any that are missing after a restore) and the temporary Sprout import files.
@@ -159,6 +165,42 @@ system_restore_complete households=2 accounts=5 photos=140 from=20261004T031500Z
 Everyone then signs in as before. If the new version of Cubby is newer than the archive, it brings
 the restored database forward on that first start, as any update does. Point your domain at the new
 server and turn automated backups back on once you have checked everything is there.
+
+## Recovering without the old `.env`
+
+If the old machine is unrecoverable and the archive is all you have, **the archive alone is not yet
+enough to bring Cubby back up.** The data is all there, but the install will not start.
+
+Your households, entries, photos, accounts and passwords are all in `database.dump`, and a password
+does not depend on `.env` -- it is stored with its own salt. What stops the first start is narrower:
+the restored database carries the old server's security keys, a fresh `.env` mints different keys
+under the same key version, and the startup provisioner refuses to replace a key that existing rows
+were issued against. The app reports:
+
+```text
+cubby_startup phase=fresh_auth_attestation_keys status=failed
+```
+
+and the container restarts in a loop with every byte of household data intact. The refusal is
+correct -- those keys are referenced by issued attestation receipts, and PostgreSQL enforces it with
+a `RESTRICT` foreign key -- but there is no supported recovery path around it today.
+
+**So keep a copy of `.env`.** Store it beside the archive and update the copy whenever `.env`
+changes. Without it you still hold every household's data, but restoring it onto a running Cubby
+needs a recovery procedure that does not exist yet.
+
+### If a recovery attempt is interrupted part-way
+
+Running the quick start creates the database with fresh database-role passwords. If you then put an
+older `.env` back, those passwords no longer match the cluster and the app cannot connect:
+
+```text
+cubby_startup phase=runtime_role status=failed
+```
+
+The `.env` and the database volume are a matched pair. Start over cleanly: `docker compose down -v`,
+delete the photo files, put the `.env` you intend to keep in place, then restore. Do not mix an
+`.env` from one attempt with a database volume from another.
 
 Before database replacement, refusal preserves committed target data (bootstrap may already have
 initialized/migrated the new schema). After DROP or a partial restore, the target may be partially

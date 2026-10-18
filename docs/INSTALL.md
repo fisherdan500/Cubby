@@ -42,9 +42,14 @@ From the repository on the server:
 
 3. Delete the password file: `rm smtp-password`.
 
-4. **Save a copy of `.env` somewhere safe of its own, such as a password manager.** It holds the
-   keys the accounts and email depend on. Without it, no backup can bring those back. Save it
-   again whenever you change it.
+4. **Save a copy of `.env` somewhere safe of its own, such as a password manager.** Save it again
+   whenever you change it.
+
+   This copy is not optional. The archive holds all your data — including every account and
+   password — but **a restore cannot bring Cubby back up without the matching `.env`**: the restored
+   database carries security keys that a freshly generated `.env` cannot reproduce, and the app
+   refuses to start against the mismatch. Store the `.env` copy beside your backups. See
+   [Recovering without the old `.env`](recovery/system-backup.md#recovering-without-the-old-env).
 
 5. Start Cubby:
 

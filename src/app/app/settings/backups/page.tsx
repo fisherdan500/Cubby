@@ -64,8 +64,8 @@ export default async function BackupsSettingsPage() {
             <p className="mb-3 text-sm text-muted-foreground">
               Cubby stops for a few minutes, then writes one <code>.tar</code> file into <code>docker-data/system-backups</code>
               inside that same folder. Copy that file to the new server, and keep a copy of the old server&apos;s
-              <code> .env</code> somewhere safe of its own: it holds the keys the restored accounts and sign-ins depend on,
-              and it is deliberately not inside the archive.
+              <code> .env</code> somewhere safe of its own: the archive holds your data, but Cubby will not start
+              from it without that matching file, and it is deliberately not inside the archive.
             </p>
             <p className="mb-2 text-sm font-semibold">On the new server</p>
             <p className="mb-2 text-sm text-muted-foreground">
