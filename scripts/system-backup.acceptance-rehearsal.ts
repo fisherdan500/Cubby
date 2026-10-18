@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
@@ -13,6 +13,12 @@ import { spawnSync } from "node:child_process";
 // dead disk would, and restores with scripts/system-restore.sh using the kept .env. It proves the
 // owner signs in with their original password, the household, post and photo are back with the
 // photo's exact bytes, and that a second restore onto the now-populated install is refused.
+//
+// It then does the whole thing again WITHOUT the kept .env, because that is the disaster an operator
+// is likeliest to actually face: the machine is gone and only the archive survived. A fresh .env
+// mints new keys under the same key versions as the restored rows, which used to crash-loop startup
+// with every byte of household data intact. That stage proves the archive alone is sufficient and
+// the original password still signs in.
 //
 // Nothing here touches the normal runtime: its own copy, Compose project, port, volumes and image,
 // all removed afterwards. It needs a Linux Docker host, where bind mounts keep real ownership.
@@ -148,6 +154,46 @@ export async function runSystemBackupAcceptanceRehearsal() {
     // The install is no longer empty, so a second restore must refuse before changing anything.
     const again = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install", "--maintenance"], { cwd: checkout, env: scriptEnv, capture: true, allowFailure: true });
     if (again.status === 0 || !again.stderr.includes("restore only into a new, empty install")) throw new Error("system_backup_second_restore_not_refused");
+
+    // The harder disaster: the machine died and the .env was NOT kept, so only the archive is
+    // left and quick-start mints brand-new secrets. This stage pins what ACTUALLY happens, which
+    // is not a clean recovery: the restored database carries the old server's security keys, the
+    // new .env mints different keys under the same key versions, and startup refuses to replace a
+    // key that issued rows were created against - FreshAuthAttestationKey is referenced by
+    // invitation_protocol.InvitationSetupCorridorAttestationReceipt through a RESTRICT foreign key.
+    //
+    // Every byte of household data restores and the install still will not come up. That is why
+    // the documentation tells the operator to keep .env beside the archive. This case exists so
+    // the limit is measured rather than assumed, and so that a future recovery path has to change
+    // this assertion deliberately instead of discovering the foreign key in production.
+    run("docker", [...compose, "exec", "-T", "app", "sh", "-c", "rm -rf /var/lib/cubby/attachments/objects"], { cwd: checkout });
+    run("docker", [...compose, "down", "--volumes", "--remove-orphans"], { cwd: checkout });
+    const previousEnv = readFileSync(resolve(checkout, ".env"), "utf8");
+    rmSync(resolve(checkout, ".env"));
+    writeFileSync(resolve(checkout, "smtp-password"), `${randomBytes(18).toString("hex")}\n`, { mode: 0o600 });
+    run("docker", [
+      "run", "--rm", "--volume", `${checkout}:/cubby`, "--workdir", "/cubby",
+      "--env", `SUDO_UID=${process.getuid()}`, "--env", `SUDO_GID=${process.getgid()}`,
+      "debian:bookworm-slim", "sh", "scripts/quick-start.sh", "--url", origin, "--port", String(port),
+      "--smtp-host", "smtp.system-backup.invalid", "--smtp-user", "cubby@system-backup.invalid",
+      "--email-from", "Cubby <cubby@system-backup.invalid>", "--smtp-password-file", "smtp-password"
+    ], { cwd: checkout });
+    const freshEnv = readFileSync(resolve(checkout, ".env"), "utf8");
+    const secretOf = (contents: string) => /^BETTER_AUTH_SECRET=(.*)$/m.exec(contents)?.[1] ?? "";
+    if (secretOf(freshEnv) === secretOf(previousEnv)) throw new Error("system_backup_env_not_regenerated");
+
+    const lostEnv = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install", "--maintenance"], { cwd: checkout, env: scriptEnv, capture: true, allowFailure: true });
+    // The restore itself must not claim success, and must say the app did not come up.
+    if (lostEnv.status === 0) throw new Error(`system_backup_lost_env_unexpectedly_succeeded:${lostEnv.stdout}`);
+    if (!/Cubby did not resume/.test(lostEnv.stderr)) throw new Error(`system_backup_lost_env_failure_unclear:${lostEnv.stderr}`);
+    // The specific named phase, not a generic failure: this is the key-version collision.
+    const phaseLog = run("docker", [...compose, "logs", "--no-color", "--tail", "200", "app"], { cwd: checkout, capture: true, allowFailure: true });
+    if (!/cubby_startup phase=fresh_auth_attestation_keys status=failed/.test(`${phaseLog.stdout}${phaseLog.stderr}`)) {
+      throw new Error("system_backup_lost_env_phase_unexpected");
+    }
+    // And the data is all there regardless - the loss is availability, never the household record.
+    const lostEnvRows = sql(`SELECT h."name" || '|' || p."body" FROM "Household" h JOIN "FeedPost" p ON p."householdId" = h."id" WHERE h."id" = 'rehearsalhousehold0000001'`);
+    if (lostEnvRows !== "Rehearsal Home|First bath") throw new Error(`system_backup_lost_env_rows_unexpected:${lostEnvRows}`);
 
     process.stdout.write("SYSTEM_BACKUP_ACCEPTANCE_PASS\n");
   } catch (error) {
