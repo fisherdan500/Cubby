@@ -19,6 +19,7 @@ import { feedInteractionKey, listFeedInteractions } from "@/server/services/feed
 import { listFeedPosts, type FeedPostView } from "@/server/services/feed-posts";
 import { getActivityUnitPreferences } from "@/server/services/unit-preferences";
 import { listMixedMoments, type MomentItem as FeedItem } from "@/server/services/moments";
+import { markMomentsSeen } from "@/server/services/moments-seen";
 
 /**
  * Moments, the family feed (DEC-PROD-421): everything logged for the selected baby and the family's posts,
@@ -38,6 +39,9 @@ export default async function FeedPage({
     redirect(`/app/moments/${encodeURIComponent(searchParams.post)}`);
   }
   const user = await requireUserPage();
+  // Looking at the feed is what "seen" means: the badge over the Moments tab counts from here.
+  // Before the data queries, so the shell rendered WITH this page already shows the cleared badge.
+  await markMomentsSeen().catch(() => undefined);
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const babyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const babyName = babySelector?.babies.find((baby) => baby.id === babyId)?.name;

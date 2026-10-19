@@ -9,6 +9,7 @@ import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { feedInteractionKey, listFeedInteractions } from "@/server/services/feed-interactions";
 import { getFeedPostView } from "@/server/services/feed-posts";
+import { markMomentsSeen } from "@/server/services/moments-seen";
 import { getHouseholdHome } from "@/server/services/households";
 
 /**
@@ -24,6 +25,8 @@ export default async function MomentDetailPage({ params }: { params: { id: strin
   const home = await getHouseholdHome({ includeInactive: true });
   if (!home) redirect("/onboarding");
 
+  // A notification tap lands here without passing the list; seeing one moment is seeing Moments.
+  await markMomentsSeen().catch(() => undefined);
   const post = await getFeedPostView(params.id);
 
   if (!post) {

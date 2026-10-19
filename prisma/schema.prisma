@@ -548,6 +548,7 @@ model Household {
   medicineCatalog MedicineCatalog[]
   calendarEvents  CalendarEvent[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  momentsSeenMarkers MomentsSeenMarker[]
   browserOperationBindings BrowserOperationBinding[]
   browserMutationOperations BrowserMutationOperation[]
   browserMutationOperationTombstones BrowserMutationOperationTombstone[]
@@ -579,6 +580,7 @@ model HouseholdMember {
   activities  ActivityLog[]
   auditEvents AuditEvent[]
   dashboardWarningDismissals DashboardWarningDismissal[]
+  momentsSeenMarker MomentsSeenMarker?
   delegatedApiKeys ApiKey[] @relation("ApiKeyDelegatedBy")
   delegatedWebhookEndpoints WebhookEndpoint[] @relation("WebhookDelegatedBy")
   notificationPreference NotificationPreference?
@@ -1253,6 +1255,24 @@ model FeedReaction {
 
   @@unique([householdId, postId, memberId, reaction])
   @@unique([householdId, activityId, memberId, reaction])
+}
+
+/**
+ * When this member last looked at the Moments feed. One row per member, written on every visit to
+ * Moments (list or a single moment), read to badge the Moments tab with how many moments arrived
+ * since. Same-tenant by construction: the member reference is the composite (householdId, id), so a
+ * marker cannot point into another household.
+ */
+model MomentsSeenMarker {
+  householdId String
+  memberId    String
+  seenAt      DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  member      HouseholdMember @relation(fields: [householdId, memberId], references: [householdId, id], onDelete: Cascade)
+
+  @@id([householdId, memberId])
 }
 
 model DashboardWarningDismissal {

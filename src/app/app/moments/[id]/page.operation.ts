@@ -28,6 +28,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "markMomentsSeen",
+      target: "src/server/services/moments-seen.ts#markMomentsSeen"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getFeedPostView",
       target: "src/server/services/feed-posts.ts#getFeedPostView"
     },
