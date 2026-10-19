@@ -60,7 +60,16 @@ function scan(fd, start, size, allow) {
     const header = read(fd, at, BLOCK);
     if (zero(header)) {
       const remaining = end - at;
-      if (remaining < 1024 || remaining > 10240) bad("invalid tar terminator");
+      // GNU tar writes whole 10240-byte records. The terminator is two zero blocks plus padding to
+      // the end of the record, so it is normally 1024..10240 bytes - but when the content ends
+      // exactly 512 bytes short of a record boundary, the two blocks cannot both fit in that record
+      // and tar rolls into a new one and pads it fully: 512 + 10240 = 10752. That is one length in
+      // twenty, so rejecting it failed roughly 5% of otherwise valid backups at the final check,
+      // with "invalid tar terminator" on an archive tar itself reads back cleanly.
+      //
+      // The guarantee that matters is not the terminator's size, it is that nothing hides after it;
+      // the scan below still requires every remaining byte to be zero.
+      if (remaining < 1024 || remaining > 10752) bad("invalid tar terminator");
       chunks(fd, at, remaining, (bytes) => { if (!zero(bytes)) bad("data after tar terminator"); });
       return entries;
     }

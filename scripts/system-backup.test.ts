@@ -439,6 +439,58 @@ describe("closed system archive validator", () => {
     expect(result.status).toBe(0);
     expect(listTar("attachments.tar", output)).toEqual([pending, `./objects/ab/${key}`].sort());
   });
+  it("accepts the 10752-byte terminator GNU tar writes on a record rollover", () => {
+    // GNU tar writes whole 10240-byte records. When the content length is 512 short of a record
+    // boundary the two zero blocks cannot both fit, so tar opens a new record and pads it fully,
+    // producing a 10752-byte terminator. The validator capped it at 10240 and rejected roughly one
+    // backup in twenty at the final check, on an archive tar itself reads back cleanly.
+    //
+    // The length is taken from real `tar` output rather than asserted from theory: see the
+    // rollover probe in the sibling case below, which builds the same shape with the real binary.
+    const valid = syntheticArchive(inner(photo()));
+    // syntheticArchive ends with a minimal 1024-byte terminator; swap in the rollover one.
+    const content = valid.length - 1024;
+    const rollover = Buffer.concat([valid.subarray(0, content), Buffer.alloc(10752)]);
+    expect(rollover.length - content).toBe(10752);
+
+    const { result, output } = validate(rollover, true);
+
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+    expect(listTar("attachments.tar", output)).toContain(`./objects/ab/${key}`);
+  });
+
+  it("still refuses bytes hidden in the terminator padding", () => {
+    // Widening the cap must not weaken the guarantee that matters: nothing may follow the zero
+    // blocks. Without this, a larger allowance would be a place to smuggle a payload.
+    const valid = syntheticArchive(inner(photo()));
+    const content = valid.length - 1024;
+    const padding = Buffer.alloc(10752);
+    padding.write("stowaway", 6000, "ascii");
+    const smuggled = Buffer.concat([valid.subarray(0, content), padding]);
+
+    const { result, output } = validate(smuggled, true);
+
+    expect(result.status).toBe(1);
+    expect(readdirSync(output)).toEqual([]);
+  });
+
+  it("matches what real GNU tar produces at that boundary", () => {
+    // Pins the constant to the tool's actual behaviour. Fixed-size synthetic fixtures are why the
+    // rollover never appeared in a test before, so one case uses the real binary.
+    const machine = server();
+    const staging = path.join(machine.root, "rollover");
+    mkdirSync(staging);
+    // 512 header + 18 payload blocks = 9728 content bytes, which is 10240 - 512.
+    writeFileSync(path.join(staging, "payload.bin"), Buffer.alloc(18 * 512));
+    const built = path.join(machine.root, "rollover.tar");
+    // Windows GNU tar reads a C:/... argument as a remote host without --force-local.
+    expect(spawnSync("tar", ["--force-local", "-cf", built, "-C", staging, "payload.bin"], { encoding: "utf8" }).status).toBe(0);
+    expect(spawnSync("tar", ["--force-local", "-tf", built], { encoding: "utf8" }).status).toBe(0);
+
+    const bytes = readFileSync(built);
+    expect(bytes.length - (512 + 18 * 512)).toBe(10752);
+  });
   it("drops the './' extraction root so tar cannot touch the mount point", () => {
     // `-C <mount> -xf` extracts into a directory that already exists. A './' member makes tar
     // restore mode and mtime onto the mount point itself, which a Docker bind mount can refuse
