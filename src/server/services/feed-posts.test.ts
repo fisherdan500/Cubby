@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   issueHousehold: vi.fn(),
   executeHousehold: vi.fn(),
   findMany: vi.fn(),
+  findFirst: vi.fn(),
   writeAudit: vi.fn(),
   claimStagedFeedPhotos: vi.fn(),
   removePostPhotos: vi.fn(),
@@ -25,7 +26,7 @@ vi.mock("@/server/services/browser-operations", () => ({
   executeHouseholdBrowserOperation: mocks.executeHousehold
 }));
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext, requirePermission: vi.fn() }));
-vi.mock("@/lib/db/prisma", () => ({ prisma: { feedPost: { findMany: mocks.findMany } } }));
+vi.mock("@/lib/db/prisma", () => ({ prisma: { feedPost: { findMany: mocks.findMany, findFirst: mocks.findFirst } } }));
 vi.mock("@/server/services/audit", () => ({ writeAudit: mocks.writeAudit }));
 
 import {
@@ -33,6 +34,7 @@ import {
   issueFeedPostDeleteBrowserOperation,
   issueFeedPostRestoreBrowserOperation,
   issueFeedPostUpdateBrowserOperation,
+  getFeedPostView,
   listFeedPosts,
   listRemovedFeedPosts,
   submitFeedPostCreateBrowserOperation,
@@ -192,6 +194,30 @@ describe("feed posts", () => {
     const changed = transaction({ post: post({ updatedAt: new Date("2026-09-25T11:00:00Z") }) });
     mocks.executeHousehold.mockImplementation((contract) => contract.validate(changed, ctx, { targetSnapshot: snapshot }));
     await expect(submitFeedPostDeleteBrowserOperation({ operationId, postId: "post-1" })).rejects.toThrow("stale_revision");
+  });
+});
+
+describe("one moment, by itself", () => {
+  it("scopes the lookup to the caller's household and hides removed posts", async () => {
+    mocks.findFirst.mockResolvedValue({ ...post(), author: null, photos: [], editedAt: null, externalAuthorName: null, _count: { photos: 0 } });
+    const view = await getFeedPostView("post-1");
+    expect(view).toMatchObject({ id: "post-1", authorName: "Someone", canEdit: true, canRemove: true });
+    // The two terms that make this safe: the household comes from the CONTEXT, never the id,
+    // and a removed post is invisible here exactly as it is in the list.
+    expect(mocks.findFirst.mock.calls[0][0].where).toEqual({ id: "post-1", householdId: ctx.householdId, deletedAt: null });
+  });
+
+  it("answers null for a moment that is not here, not an error", async () => {
+    // A notification can outlive its moment; the page shows a calm explanation, so the service
+    // must distinguish "gone" from "broken".
+    mocks.findFirst.mockResolvedValue(null);
+    expect(await getFeedPostView("post-gone")).toBeNull();
+  });
+
+  it("refuses an id too long to be real without touching the database", async () => {
+    expect(await getFeedPostView("x".repeat(201))).toBeNull();
+    expect(await getFeedPostView("")).toBeNull();
+    expect(mocks.findFirst).not.toHaveBeenCalled();
   });
 });
 

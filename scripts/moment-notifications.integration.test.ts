@@ -184,7 +184,37 @@ describe("a new post", () => {
       babyId: BABY
     });
     expect(sent[0].payload.body).toBe("Daniel posted a moment about Finley");
-    expect(sent[0].payload.url).toBe("https://cubby.example.test/app/moments?post=p-1");
+    // The tap lands ON the moment: its own focus page, not the top of the feed.
+    expect(sent[0].payload.url).toBe("https://cubby.example.test/app/moments/p-1");
+  });
+
+  it("points a comment on an entry at that entry, not at the feed", async () => {
+    // An entry's responses live on its own page, so that is where the tap must land. Before the
+    // moment focus page existed, every activity-targeted event fell back to the top of Moments.
+    await optIn(AUTHOR, "https://push.test/author");
+    await prisma.activityLog.create({
+      data: {
+        id: "a-url",
+        householdId: HOUSEHOLD,
+        babyId: BABY,
+        actorMemberId: AUTHOR,
+        type: "note",
+        occurredAt: new Date("2026-10-05T12:00:00.000Z"),
+        timezone: "America/New_York",
+        notes: "private fixture content that must not enter push payloads"
+      }
+    });
+
+    const result = await sendMomentNotification({
+      householdId: HOUSEHOLD,
+      kind: "comment",
+      actorMemberId: PARTNER,
+      parentAuthorMemberId: AUTHOR,
+      activityId: "a-url"
+    });
+
+    expect(result.sent).toBe(1);
+    expect(sent[0].payload.url).toBe("https://cubby.example.test/app/activities/a-url");
   });
 
   it("stays silent for a member who never opted in", async () => {

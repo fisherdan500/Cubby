@@ -212,9 +212,17 @@ export async function sendMomentNotification(
     select: { id: true, userId: true }
   });
 
+  // The tap lands ON the thing the notification is about, not at the top of a list it may have
+  // scrolled off: a post opens its own focus page, a comment or reaction on an entry opens that
+  // entry (which shows the same response thread), and only a household-wide event falls back to
+  // the feed.
   const url = publicAppUrl(
     webPushConfig.enabled ? webPushConfig.publicUrl : "",
-    event.postId ? `${MOMENTS_PATH}?post=${encodeURIComponent(event.postId)}` : MOMENTS_PATH
+    event.postId
+      ? `${MOMENTS_PATH}/${encodeURIComponent(event.postId)}`
+      : event.activityId
+        ? `/app/activities/${encodeURIComponent(event.activityId)}`
+        : MOMENTS_PATH
   );
   const tag = `moment:${event.kind}:${event.postId ?? event.activityId ?? "household"}`;
 
