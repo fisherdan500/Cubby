@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FeedActivityCard } from "@/components/feed/feed-activity-card";
 import { FeedPhotoGallery } from "@/components/feed/feed-photo-gallery";
@@ -28,8 +29,14 @@ import { listMixedMoments, type MomentItem as FeedItem } from "@/server/services
 export default async function FeedPage({
   searchParams
 }: {
-  searchParams: { babyId?: string; filter?: string; tag?: string; cursor?: string; before?: string };
+  searchParams: { babyId?: string; filter?: string; tag?: string; cursor?: string; before?: string; post?: string };
 }) {
+  // Notifications delivered before the moment focus page existed carry ?post=<id>, and a
+  // notification can sit on a lock screen for days. Honour the old shape by sending it where new
+  // ones go. Bounded like the service's own id rule, so a crafted value cannot become a weird URL.
+  if (typeof searchParams.post === "string" && searchParams.post.length > 0 && searchParams.post.length <= 200) {
+    redirect(`/app/moments/${encodeURIComponent(searchParams.post)}`);
+  }
   const user = await requireUserPage();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const babyId = babySelector?.selectedBabyId ?? searchParams.babyId;

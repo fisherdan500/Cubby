@@ -15,6 +15,11 @@ const mocks = vi.hoisted(() => ({
 
 globalThis.React = React;
 
+vi.mock("next/navigation", () => ({
+  redirect: (target: string) => {
+    throw Object.assign(new Error("NEXT_REDIRECT"), { target });
+  }
+}));
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/activities", () => ({ listActivities: mocks.listActivities, getActivityRowViewer: mocks.getActivityRowViewer }));
@@ -86,6 +91,19 @@ beforeEach(() => {
 });
 
 describe("Feed page", () => {
+  it("sends an old notification link (?post=) to the moment's own page", async () => {
+    // Notifications already on lock screens carry the pre-focus-page shape, and they can sit
+    // there for days. The feed honours them by redirecting to where new notifications land.
+    await expect(FeedPage({ searchParams: { post: "post-9" } })).rejects.toMatchObject({ target: "/app/moments/post-9" });
+    // The redirect happens before any data work: an old link costs no feed queries.
+    expect(mocks.listFeedPosts).not.toHaveBeenCalled();
+  });
+
+  it("ignores an impossible ?post= value rather than redirecting to it", async () => {
+    const body = await renderFeed({ post: "x".repeat(201), babyId: "baby-1" });
+    expect(body.querySelector('main[data-title="Moments"]')).not.toBeNull();
+  });
+
   it("is a titled screen of cards for the selected baby, newest first, under their days", async () => {
     const body = await renderFeed({ babyId: "baby-1" });
 
@@ -151,7 +169,9 @@ describe("Feed page", () => {
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual(["Milestone", "Post", "Diaper", "Note"]);
     expect(cards[1].textContent).toContain("Sam");
     expect(cards[1].textContent).toContain("The whole family");
-    expect(cards[1].querySelector("a")?.getAttribute("href")).toBe("/app/moments?babyId=baby-1&filter=posts&tag=weekend");
+    // The heading now opens the moment's own page; the #tag keeps its filter link beside it.
+    expect(cards[1].querySelector('a[href="/app/moments/post-1"]')).not.toBeNull();
+    expect([...cards[1].querySelectorAll("a")].map((a) => a.getAttribute("href"))).toContain("/app/moments?babyId=baby-1&filter=posts&tag=weekend");
     expect(cards[1].querySelector("[data-remove]")?.getAttribute("data-remove")).toBe("post-1");
   });
 

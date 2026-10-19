@@ -50,11 +50,15 @@ export function FeedPostCard({
         {/* The person who wrote it, not a generic pen: a household feed is people. */}
         <MemberAvatar name={post.authorName} photoAttachmentId={post.authorPhotoAttachmentId ?? null} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">{post.authorName}</p>
-          <p className="text-xs text-muted-foreground">
-            <span className="tabular">{time}</span>
-            {scope ? ` · ${scope}` : ""}
-          </p>
+          {/* The whole heading opens the moment by itself. Photos keep their lightbox and the
+              caption keeps its tags, so this is the one part of the card with room to be a link. */}
+          <Link href={`/app/moments/${encodeURIComponent(post.id)}`} className="block hover:underline">
+            <p className="text-sm font-semibold">{post.authorName}</p>
+            <p className="text-xs text-muted-foreground">
+              <span className="tabular">{time}</span>
+              {scope ? ` · ${scope}` : ""}
+            </p>
+          </Link>
         </div>
         {post.canRemove ? <FeedPostRemoveButton postId={post.id} /> : null}
       </header>

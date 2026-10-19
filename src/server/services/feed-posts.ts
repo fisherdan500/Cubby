@@ -107,6 +107,45 @@ export async function listFeedPosts(params: {
 export type FeedPostView = Awaited<ReturnType<typeof listFeedPosts>>[number];
 
 /**
+ * One moment, for its focus page and for the landing of a notification tap. Same permission rule
+ * and same row shape as the list: membership plus activity.read, removed posts invisible, and the
+ * household scoped from the caller's context - never from the id. Null means "not here" - missing,
+ * removed, or another household's - and the page shows a calm "this moment is gone" rather than an
+ * error, because a notification can outlive its moment.
+ */
+export async function getFeedPostView(postId: string): Promise<FeedPostView | null> {
+  const parsed = postIdSchema.safeParse({ postId });
+  if (!parsed.success) return null;
+  const ctx = await getEffectiveHouseholdContext();
+  requirePermission(ctx, "activity.read");
+  const post = await prisma.feedPost.findFirst({
+    where: { id: parsed.data.postId, householdId: ctx.householdId, deletedAt: null },
+    include: {
+      author: {
+        select: {
+          displayName: true,
+          user: { select: { name: true } },
+          attachments: { where: { type: "user_photo", state: "available" }, select: { id: true }, take: 1 }
+        }
+      },
+      photos: shownPhotos,
+      _count: { select: { photos: { where: { householdId: ctx.householdId, state: { in: ["available", "unavailable"] } } } } }
+    }
+  });
+  if (!post) return null;
+  const { _count, ...rest } = post;
+  return {
+    ...rest,
+    hasRetainedPhotos: (_count?.photos ?? 0) > 0,
+    authorName: post.author?.displayName ?? post.author?.user.name ?? post.externalAuthorName ?? "Someone",
+    authorPhotoAttachmentId: post.author?.attachments?.[0]?.id ?? null,
+    edited: post.editedAt !== null,
+    canEdit: canEditFeedPost(ctx.role, post.authorMemberId === ctx.memberId),
+    canRemove: canRemoveFeedPost(ctx.role, post.authorMemberId === ctx.memberId)
+  };
+}
+
+/**
  * Posts removed in the last thirty days that this member may bring back: their own, or - for owners,
  * admins and parents - anyone's. Newest removal first.
  */
