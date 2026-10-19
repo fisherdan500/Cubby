@@ -3136,17 +3136,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "85d691a62013c9f05e5f78a308528d0175a7be423a1d55e0e6e7cd12983ce01e",
+          "digest": "aaf43eb0183d5979b7e4b2cc26de0e4e7f4125da99bc75804fd01fdcbb33afe3",
           "file": "src/components/settings/notification-preference-form.tsx"
         }
       ],
       "declarationDigest": "263e488325316567c79a0313c32cb386407f2eb6d15d90e48fc4d7f34b9d17fa",
-      "fingerprint": "763a5fd9a95d07df52271bd2479a1ff678aa840414f6119437799c33fbec32dc",
+      "fingerprint": "31dbf026130bee9d63bb765393f54184ebf9f02d3265e55157a9c2c773559ee3",
       "id": "fingerprint:client_binding:src/components/settings/notification-preference-form.tsx",
       "ownerId": "client_binding:src/components/settings/notification-preference-form.tsx",
       "ownerModule": "src/components/settings/notification-preference-form.tsx",
       "sidecarPath": "src/components/settings/notification-preference-form.operation.ts",
-      "sourceDigest": "edcf5d080b9ad49cedcefcfa353324702b940f991b5fd45dade01d5e5a0bb9c3",
+      "sourceDigest": "a1e302b82219bdbac816af0c13906947d7593d6fcdde049782392e48f3b6a44c",
       "status": "declared"
     },
     {

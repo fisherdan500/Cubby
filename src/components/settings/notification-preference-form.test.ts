@@ -41,6 +41,13 @@ describe("NotificationPreferenceForm", () => {
     expect(delivery.checked).toBe(true);
     expect(selected.checked).toBe(true);
     expect(screen.getByText(/External delivery is off/)).toBeTruthy();
+    // The two explanations that were missing when a member saved four times without a channel:
+    // the channel hint names the consequence, and the quiet-hours pair is labelled as a pair.
+    expect(screen.getByText(/Nothing is delivered without a channel/)).toBeTruthy();
+    expect(screen.getByText("Quiet hours")).toBeTruthy();
+    expect(screen.getByText(/Leave both empty for none/)).toBeTruthy();
+    expect(screen.getByLabelText(/From/)).toBeTruthy();
+    expect(screen.getByLabelText(/Until/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save notification preferences" })).toBeTruthy();
   });
 
