@@ -22,6 +22,38 @@
 set -eu
 umask 077
 
+# On Windows the POSIX permission bits are a fiction: chmod 600 silently leaves a file 644, and
+# chmod 700 leaves a directory 755, because the real access control is the NTFS ACL underneath.
+# An archive holds every household's data and every account's «redacted-vault-secret» hash, so leaving it readable
+# by every account on the machine is not a cosmetic difference from the Linux behaviour.
+#
+# restrict_to_owner applies the platform's real mechanism: chmod where it bites, icacls where it
+# does not. It is best effort by design - a backup that succeeded must not be failed for a
+# permission tightening, and the caller is warned instead.
+restrict_to_owner() {
+  target="$1"
+  chmod "$2" "$target" 2>/dev/null || true
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*)
+      windows_target=$(cygpath -w "$target" 2>/dev/null) || return 0
+      # /inheritance:r drops the inherited grants - on a developer machine those routinely include
+      # other accounts with Modify. /grant:r replaces rather than adds, so a rerun is idempotent.
+      #
+      # (OI)(CI) on a directory matters: a bare :F grant is not inheritable, so stripping
+      # inheritance would leave files created inside it with an EMPTY DACL - unreadable and
+      # undeletable by everyone, including the account that made the backup. Files take :F.
+      if [ -d "$target" ]; then
+        grant="$(whoami):(OI)(CI)F"
+      else
+        grant="$(whoami):F"
+      fi
+      if ! icacls "$windows_target" /inheritance:r /grant:r "$grant" >/dev/null 2>&1; then
+        printf 'system_backup_warning: could not restrict %s to this account; check its permissions by hand\n' "$target" >&2
+      fi
+      ;;
+  esac
+}
+
 # Each run is recorded in the database, succeeded or failed with the reason below, so Cubby's platform
 # page shows the newest backup and the platform owner is emailed when they fail or stop. Recording is
 # best effort: when the database itself is down the run cannot be recorded, and Cubby notices the
@@ -71,7 +103,7 @@ psql_value() {
 
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$output_dir"
-chmod 700 "$output_dir"
+restrict_to_owner "$output_dir" 700
 candidate="$output_dir/.cubby-system-$stamp.partial"
 archive="$output_dir/cubby-system-$stamp.tar"
 [ ! -e "$candidate" ] && [ ! -e "$archive" ] && [ ! -e "$archive.partial" ] || fail "a backup named $stamp already exists; try again in a second"
@@ -91,7 +123,10 @@ docker compose exec -T postgres pg_restore --list < "$work/database.dump" > /dev
 # The app and its retention/jobs remain stopped through dump, bytes and counts.
 docker compose run --rm --no-deps -T --entrypoint tar app --hard-dereference --exclude=./thumbnails --exclude=./restore-staging -cf - -C /var/lib/cubby/attachments . > "$work/attachments.tar" \
   || fail "the photos could not be read"
-tar -tf "$work/attachments.tar" > /dev/null || fail "the photo archive does not read back"
+# --force-local: GNU tar reads a leading "C:" in a path as a remote host, so an --output-dir or
+# TMPDIR under a native Windows path fails here with "Cannot connect to C:" - reported to the
+# operator as "the photo archive does not read back", which sounds like corruption.
+tar --force-local -tf "$work/attachments.tar" > /dev/null || fail "the photo archive does not read back"
 
 migration=$(psql_value "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name DESC LIMIT 1") \
   || fail "the database version could not be read"
@@ -111,10 +146,11 @@ revision=$(git rev-parse --short HEAD 2>/dev/null || printf 'unknown')
 } > "$work/manifest.txt"
 (cd "$work" && sha256sum database.dump attachments.tar > checksums.sha256) || fail "the checksums could not be written"
 
-tar -cf "$archive.partial" -C "$work" manifest.txt checksums.sha256 database.dump attachments.tar \
+tar --force-local -cf "$archive.partial" -C "$work" manifest.txt checksums.sha256 database.dump attachments.tar \
   || fail "the archive could not be written"
 node scripts/system-archive.mjs check "$archive.partial" prisma/migrations || fail "the completed archive failed strict validation"
 mv "$archive.partial" "$archive"
+restrict_to_owner "$archive" 600
 
 # Keep the newest --keep archives; only files this script names are ever removed.
 ls "$output_dir" | grep -E '^cubby-system-[0-9]{8}T[0-9]{6}Z\.tar$' | sort -r | tail -n +"$((keep + 1))" | while read -r old; do
