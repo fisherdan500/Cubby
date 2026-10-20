@@ -162,10 +162,10 @@ export async function runSystemBackupAcceptanceRehearsal() {
     // key that issued rows were created against - FreshAuthAttestationKey is referenced by
     // invitation_protocol.InvitationSetupCorridorAttestationReceipt through a RESTRICT foreign key.
     //
-    // Every byte of household data restores and the install still will not come up. That is why
-    // the documentation tells the operator to keep .env beside the archive. This case exists so
-    // the limit is measured rather than assumed, and so that a future recovery path has to change
-    // this assertion deliberately instead of discovering the foreign key in production.
+    // Before the recovery path below, every byte of household data restored and the install
+    // still would not come up. Keeping .env beside the archive remains the better path - it
+    // keeps the setup receipts - but losing it is no longer fatal. This case proves the recovery
+    // works end to end, and that its cost is exactly the receipts and nothing more.
     // The refused second restore above leaves the app STOPPED, so this cannot use `exec`; a
     // one-shot `run` container reaches the same photo store either way, as the scripts do.
     run("docker", [...compose, "run", "--rm", "--no-deps", "-T", "--entrypoint", "sh", "app", "-c", "rm -rf /var/lib/cubby/attachments/objects"], { cwd: checkout });
@@ -189,17 +189,29 @@ export async function runSystemBackupAcceptanceRehearsal() {
     if (secretOf(freshEnv) === secretOf(previousEnv)) throw new Error("system_backup_env_not_regenerated");
 
     const lostEnv = run("sh", ["scripts/system-restore.sh", "--archive", kept, "--confirm-empty-install", "--maintenance"], { cwd: checkout, env: scriptEnv, capture: true, allowFailure: true });
-    // The restore itself must not claim success, and must say the app did not come up.
-    if (lostEnv.status === 0) throw new Error(`system_backup_lost_env_unexpectedly_succeeded:${lostEnv.stdout}`);
-    if (!/Cubby did not resume/.test(lostEnv.stderr)) throw new Error(`system_backup_lost_env_failure_unclear:${lostEnv.stderr}`);
-    // The specific named phase, not a generic failure: this is the key-version collision.
+    // The whole point of the recovery path: a dead machine's archive restores onto a fresh install
+    // with a fresh .env, and the install comes up. Before it existed this restore refused, and the
+    // operator was left with every byte of household data in a container that would not start.
+    if (lostEnv.status !== 0) throw new Error(`system_backup_lost_env_restore_failed:${lostEnv.stdout}${lostEnv.stderr}`);
+    // Adoption must be reported, not silent: the operator is told what was dropped and why.
+    const adopted = /system_restore_keys_adopted receipts_dropped=(\d+) old_keys_dropped=(\d+)/.exec(lostEnv.stdout);
+    if (!adopted) throw new Error(`system_backup_lost_env_keys_not_adopted:${lostEnv.stdout}`);
+    if (Number(adopted[2]) < 1) throw new Error(`system_backup_lost_env_no_old_key_dropped:${adopted[0]}`);
+    // The startup phase that used to fail must now succeed, under this install's own keys.
     const phaseLog = run("docker", [...compose, "logs", "--no-color", "--tail", "200", "app"], { cwd: checkout, capture: true, allowFailure: true });
-    if (!/cubby_startup phase=fresh_auth_attestation_keys status=failed/.test(`${phaseLog.stdout}${phaseLog.stderr}`)) {
-      throw new Error("system_backup_lost_env_phase_unexpected");
+    const phaseText = `${phaseLog.stdout}${phaseLog.stderr}`;
+    if (/cubby_startup phase=fresh_auth_attestation_keys status=failed/.test(phaseText)) {
+      throw new Error("system_backup_lost_env_phase_still_failing");
     }
-    // And the data is all there regardless - the loss is availability, never the household record.
+    // The household record is the thing that had to survive, and it did.
     const lostEnvRows = sql(`SELECT h."name" || '|' || p."body" FROM "Household" h JOIN "FeedPost" p ON p."householdId" = h."id" WHERE h."id" = 'rehearsalhousehold0000001'`);
     if (lostEnvRows !== "Rehearsal Home|First bath") throw new Error(`system_backup_lost_env_rows_unexpected:${lostEnvRows}`);
+    // Accounts restore too - a recovery that lost the people would not be a recovery.
+    const lostEnvAccounts = sql('SELECT count(*) FROM "User"');
+    if (Number(lostEnvAccounts) < 1) throw new Error(`system_backup_lost_env_accounts_unexpected:${lostEnvAccounts}`);
+    // The receipts are the declared cost, and they are gone rather than half-present.
+    const lostEnvReceipts = sql('SELECT count(*) FROM invitation_protocol."InvitationSetupCorridorAttestationReceipt"');
+    if (lostEnvReceipts !== "0") throw new Error(`system_backup_lost_env_receipts_unexpected:${lostEnvReceipts}`);
 
     process.stdout.write("SYSTEM_BACKUP_ACCEPTANCE_PASS\n");
   } catch (error) {

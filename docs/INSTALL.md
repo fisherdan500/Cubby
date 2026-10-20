@@ -45,10 +45,12 @@ From the repository on the server:
 4. **Save a copy of `.env` somewhere safe of its own, such as a password manager.** Save it again
    whenever you change it.
 
-   This copy is not optional. The archive holds all your data — including every account and
-   password — but **a restore cannot bring Cubby back up without the matching `.env`**: the restored
-   database carries security keys that a freshly generated `.env` cannot reproduce, and the app
-   refuses to start against the mismatch. Store the `.env` copy beside your backups. See
+   This copy is worth keeping, but it is no longer all-or-nothing. The archive holds all your data —
+   including every account and «redacted-vault-secret» — and a restore brings Cubby back up without the matching
+   `.env`: the restored database carries security keys a freshly generated `.env` cannot reproduce,
+   so the restore lets the new install adopt its own keys and drops only the invitation setup
+   receipts, reporting how many. Keeping the `.env` copy beside your backups preserves those
+   receipts too. See
    [Recovering without the old `.env`](recovery/system-backup.md#recovering-without-the-old-env).
 
 5. Start Cubby:

@@ -16,12 +16,13 @@ it("points to the whole-system backup, which the app itself cannot make", () => 
   expect(source).toContain("scripts/system-backup.sh --maintenance");
   expect(source).toContain("docs/recovery/system-backup.md");
   // The two facts that make a restored system backup work, and that are easy to lose.
-  // Asserting ".env" merely appears is too weak: the fact that matters is WHY it must be kept, which
-  // is that a restored install will not start without it, and the archive omits it.
+  // Asserting ".env" merely appears is too weak: the fact that matters is WHY it is worth keeping,
+  // which is the receipts a mismatched restore drops, and that the archive omits it.
   expect(source).toContain("<code>.env</code>");
-  // The .env warning must state the real consequence - Cubby will not START without it - rather
-  // than the likelier-sounding but measurably wrong claim that accounts or passwords depend on it.
-  expect(source).toContain("Cubby will not start");
+  // The .env warning must state the real consequence. The measurably wrong claim is that accounts
+  // or «redacted-vault-secret»s depend on it - they do not, a «redacted-vault-secret» carries its own salt. What keeping it buys
+  // is the invitation setup receipts, which a restore under a different .env has to drop.
+  expect(source).toContain("drops only the invitation setup");
   expect(source).toContain("not inside the archive");
   expect(source).toContain("Cubby is stopped");
 });

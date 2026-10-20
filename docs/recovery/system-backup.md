@@ -29,11 +29,12 @@ backup is for the platform owner, runs on the server, and brings back all househ
 It does not hold `.env`. Keep a copy of `.env` somewhere safe of its own, such as a password
 manager, and update that copy whenever `.env` changes.
 
-That copy is part of the backup, not an extra. The archive holds every account and password — a
-password is stored with its own salt and does not depend on any value in `.env` — but the restored
-database also carries security keys that a freshly generated `.env` cannot reproduce, and Cubby
-refuses to start against the mismatch. An archive without its `.env` holds all your data and cannot
-yet be brought back up: see
+That copy is worth keeping, but it is no longer the difference between recovery and no recovery.
+The archive holds every account and «redacted-vault-secret» — a «redacted-vault-secret» is stored with its own salt and does not
+depend on any value in `.env`. The restored database also carries security keys that a freshly
+generated `.env` cannot reproduce; the restore detects that mismatch and lets the new install adopt
+its own keys, dropping only the invitation setup receipts. Restoring with the original `.env` keeps
+those too: see
 [Recovering without the old `.env`](#recovering-without-the-old-env).
 
 Treat the archives as private either way: they hold every household's data and every account's
@@ -176,26 +177,51 @@ server and turn automated backups back on once you have checked everything is th
 
 ## Recovering without the old `.env`
 
-If the old machine is unrecoverable and the archive is all you have, **the archive alone is not yet
-enough to bring Cubby back up.** The data is all there, but the install will not start.
+If the old machine is unrecoverable and the archive is all you have, the restore works. Cubby comes
+up on the new install with your households, entries, photos, accounts and «redacted-vault-secret»s, at the cost of one
+thing named below.
 
-Your households, entries, photos, accounts and passwords are all in `database.dump`, and a password
-does not depend on `.env` -- it is stored with its own salt. What stops the first start is narrower:
-the restored database carries the old server's security keys, a fresh `.env` mints different keys
-under the same key version, and the startup provisioner refuses to replace a key that existing rows
-were issued against. The app reports:
+A «redacted-vault-secret» does not depend on `.env` -- it is stored with its own salt -- so sign-ins work as before.
+What needed a recovery path was narrower: the restored database carries the old server's security
+keys, a fresh `.env` mints different keys under the same key version, and the startup provisioner
+refuses to replace a key that existing rows were issued against. Before the restore handled it, the
+app reported
 
 ```text
 cubby_startup phase=fresh_auth_attestation_keys status=failed
 ```
 
-and the container restarts in a loop with every byte of household data intact. The refusal is
-correct -- those keys are referenced by issued attestation receipts, and PostgreSQL enforces it with
-a `RESTRICT` foreign key -- but there is no supported recovery path around it today.
+and restarted in a loop with every byte of household data intact but unreachable.
 
-**So keep a copy of `.env`.** Store it beside the archive and update the copy whenever `.env`
-changes. Without it you still hold every household's data, but restoring it onto a running Cubby
-needs a recovery procedure that does not exist yet.
+The restore now detects that the `.env` in the checkout is not the one that made the archive, and
+lets this install adopt its own keys. It reports what that cost:
+
+```text
+system_restore_step: this .env is not the one that made the archive; adopting its keys
+system_restore_keys_adopted receipts_dropped=6792 old_keys_dropped=1
+system_restore_email_keys_adopted old_keys_dropped=1 pending_mail=0
+system_restore_throttle_key_adopted old_keys_dropped=1
+```
+
+**What is dropped:** the invitation setup receipts. Each records that one past invitation setup was
+genuine, signed by a key that died with the old machine. Nothing can re-sign them and nothing still
+running reads them -- they are history, not function. The email-delivery and throttle keys go too;
+both are replaced from this `.env` on the next start. Households, accounts, memberships,
+invitations, entries and photos are untouched.
+
+**One case stops the restore rather than continuing:** mail the old server queued but never sent.
+Its contents are encrypted with the dead machine's key, so this install can neither read nor send
+it, and dropping that key quietly would bin a queued invitation with no trace. The restore says so
+and stops, naming how many:
+
+```text
+the archive holds 3 unsent email(s) encrypted with the old server's key, which this install cannot
+read or send; restore with the original .env, or clear those queues on the old server first
+```
+
+**Keeping `.env` is still better.** When you restore with the original `.env` the keys match, this
+step does not run, and the receipts are kept. Store a copy beside the archive and update it whenever
+`.env` changes. Losing it now costs you that audit history rather than the whole install.
 
 ### If a recovery attempt is interrupted part-way
 

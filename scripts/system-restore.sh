@@ -5,8 +5,9 @@
 # Before running it:
 #   1. Install Cubby as usual (the quick start), with this checkout at the same or a newer version
 #      than the one the archive came from.
-#   2. Put the old server's .env in place of the new one. The restored accounts, sign-ins and queued
-#      email depend on the keys in it; Cubby will not start against the restored data without them.
+#   2. Put the old server's .env in place of the new one if you still have it. Keeping it preserves
+#      the invitation setup receipts; without it the restore adopts this install's own keys and
+#      drops those receipts, reporting exactly how many. Everything else restores either way.
 #   3. Leave the new install empty: do not open /setup or create any account.
 #
 # It refuses to touch an install that already has an account, a household or a photo, and checks the
@@ -89,6 +90,69 @@ docker compose exec -T postgres pg_restore -U cubby_migrator -d cubby --exit-on-
 printf 'system_restore_step: putting the photos back\n'
 docker compose run --rm --no-deps -T --entrypoint tar app --no-same-owner --no-same-permissions -xf - -C /var/lib/cubby/attachments < "$work/attachments.tar" \
   || fail "the photos could not be put back"
+
+# The archive carries the old server's attestation keys; a NEW .env mints different ones under the
+# same version numbers. Startup refuses to replace a key that issued rows were created against, and
+# a RESTRICT foreign key from the setup receipts enforces that refusal in PostgreSQL rather than in
+# policy - so an install restored with a new .env would restart-loop with every byte of household
+# data intact but unreachable.
+#
+# Only act when the keys genuinely differ. Reusing the original .env is the supported path and must
+# lose nothing: the versions match, the material matches, and this block does not run.
+#
+# When they do differ, the receipts cannot be carried over. Each records that one invitation setup
+# was genuine, signed by a key that died with the old machine; nothing re-signs them and nothing
+# still live reads them. Dropping them lets this install adopt its own keys. Households, accounts,
+# memberships and invitations are untouched.
+env_keyring=$(sed -n 's/^CUBBY_FRESH_AUTH_ATTESTATION_KEYRING=//p' .env | tr -d '"' | tr -d "'" | head -1)
+archive_keyring=$(psql_value "SELECT string_agg(\"keyVersion\" || ':' || translate(encode(\"verificationKey\",'base64'),'+/=','-_'), ',' ORDER BY \"keyVersion\") FROM \"FreshAuthAttestationKey\"")
+if [ -n "$env_keyring" ] && [ -n "$archive_keyring" ] && [ "$env_keyring" != "$archive_keyring" ]; then
+  receipts=$(psql_value 'SELECT count(*) FROM invitation_protocol."InvitationSetupCorridorAttestationReceipt"')
+  archive_keys=$(psql_value 'SELECT count(*) FROM "FreshAuthAttestationKey"')
+  printf 'system_restore_step: this .env is not the one that made the archive; adopting its keys\n'
+  psql_value 'DELETE FROM invitation_protocol."InvitationSetupCorridorAttestationReceipt"' > /dev/null \
+    || fail "the restored setup receipts could not be cleared, so this install cannot adopt its own keys"
+  psql_value 'DELETE FROM "FreshAuthAttestationKey"' > /dev/null \
+    || fail "the old attestation keys could not be cleared, so this install cannot adopt its own keys"
+  printf 'system_restore_keys_adopted receipts_dropped=%s old_keys_dropped=%s\n' "$receipts" "$archive_keys"
+  printf 'Setup receipts from the old server were dropped; they could not be verified here. Nothing else changed.\n'
+
+  # The same collision stops the next startup phase: the restored EmailDeliveryEncryptionKey rows
+  # hold digests this .env cannot reproduce, and the provisioner refuses to replace a key that
+  # queued mail was encrypted under.
+  #
+  # Mail still waiting to go out is the one thing here that is not merely history. Its body cannot
+  # be decrypted without the dead machine's key, so it can never be sent from this install - but it
+  # must not vanish silently either. Fail loudly instead, and let the operator decide, unless the
+  # queue is empty.
+  pending=$(psql_value "SELECT (SELECT count(*) FROM \"EmailChangeDelivery\" WHERE \"state\" IN ('queued','dispatching','retryable_failed')) + (SELECT count(*) FROM \"InvitationEmailDelivery\" WHERE \"state\" IN ('queued','dispatching','retryable_failed'))")
+  if [ "${pending:-0}" -gt 0 ]; then
+    fail "the archive holds $pending unsent email(s) encrypted with the old server's key, which this install cannot read or send; restore with the original .env, or clear those queues on the old server first"
+  fi
+  email_keys=$(psql_value 'SELECT count(*) FROM "EmailDeliveryEncryptionKey"')
+  if [ "${email_keys:-0}" -gt 0 ]; then
+    # A constraint trigger requires exactly one active key AT COMMIT, so emptying the table can
+    # never commit on its own - startup is what puts this install's key back, one phase later.
+    # Disable that single guard for the delete and re-enable it in the same implicit transaction,
+    # so a failure anywhere rolls back the disable too and never leaves the table unguarded.
+    #
+    # The other trigger stays on: EmailDeliveryEncryptionKey_ciphertext_reference_guard refuses to
+    # drop a key that queued mail still references. The explicit check above gives the operator a
+    # better message, and this remains the backstop if it is ever wrong.
+    psql_value 'ALTER TABLE "EmailDeliveryEncryptionKey" DISABLE TRIGGER "EmailDeliveryEncryptionKey_exactly_one_active_guard"; DELETE FROM "EmailDeliveryEncryptionKey"; ALTER TABLE "EmailDeliveryEncryptionKey" ENABLE TRIGGER "EmailDeliveryEncryptionKey_exactly_one_active_guard"' > /dev/null \
+      || fail "the old email delivery keys could not be cleared, so this install cannot adopt its own keys"
+    printf 'system_restore_email_keys_adopted old_keys_dropped=%s pending_mail=0\n' "$email_keys"
+  fi
+
+  # Third and last of the key phases. The throttle key is a single row that only rate limiting reads;
+  # nothing references it and startup recreates it from this .env on the next boot.
+  throttle_keys=$(psql_value 'SELECT count(*) FROM "GlobalSecurityThrottleKey"')
+  if [ "${throttle_keys:-0}" -gt 0 ]; then
+    psql_value 'DELETE FROM "GlobalSecurityThrottleKey"' > /dev/null \
+      || fail "the old throttle key could not be cleared, so this install cannot adopt its own keys"
+    printf 'system_restore_throttle_key_adopted old_keys_dropped=%s\n' "$throttle_keys"
+  fi
+fi
 
 households=$(psql_value 'SELECT count(*) FROM "Household" WHERE "deletedAt" IS NULL')
 accounts=$(psql_value 'SELECT count(*) FROM "User"')
