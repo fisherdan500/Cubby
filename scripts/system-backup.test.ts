@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -202,6 +202,41 @@ describe("system backup", () => {
     expect(stop).toBeLessThan(dump);
     expect(dump).toBeLessThan(count);
     expect(count).toBeLessThan(resume);
+  });
+
+  it("leaves the archive readable only by the account that made it", () => {
+    const machine = server();
+    const out = path.join(machine.root, "perm-out");
+    const result = machine.run("system-backup.sh", ["--maintenance", "--output-dir", out]);
+    expect(result.status).toBe(0);
+
+    const archive = readdirSync(out).find((name) => name.endsWith(".tar"));
+    expect(archive).toBeDefined();
+    const archivePath = path.join(out, archive as string);
+
+    if (process.platform === "win32") {
+      // POSIX modes are a fiction here: chmod 600 leaves 644. The NTFS ACL is the real
+      // control, and the inherited one routinely grants other accounts Modify, so assert the
+      // ACL rather than a mode that would pass while the file stayed world-readable.
+      // icacls prints "<path> ACCOUNT:(F)" on the first line and any further ACEs on their own
+      // indented lines, then a "Successfully processed" summary. The path itself contains a
+      // drive colon, so the grants are what follows the path, not every line with a colon.
+      const acl = spawnSync("icacls", [archivePath], { encoding: "utf8" }).stdout;
+      const aces = acl
+        .split(/\r?\n/)
+        .filter((line) => line.trim().length > 0 && !line.includes("Successfully processed"))
+        .map((line, index) => (index === 0 ? line.slice(archivePath.length) : line))
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      // Every remaining grant must name this account; any other account is the exposure.
+      expect(aces.length).toBeGreaterThan(0);
+      for (const ace of aces) {
+        expect(ace.split(":")[0]).toContain(process.env.USERNAME ?? "\u0000");
+      }
+    } else {
+      expect((statSync(archivePath).mode & 0o777).toString(8)).toBe("600");
+      expect((statSync(out).mode & 0o777).toString(8)).toBe("700");
+    }
   });
 
   it("writes one archive of the database, the photos, a manifest and their checksums", () => {
