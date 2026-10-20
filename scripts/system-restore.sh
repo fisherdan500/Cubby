@@ -5,8 +5,9 @@
 # Before running it:
 #   1. Install Cubby as usual (the quick start), with this checkout at the same or a newer version
 #      than the one the archive came from.
-#   2. Put the old server's .env in place of the new one. The restored accounts, sign-ins and queued
-#      email depend on the keys in it; Cubby will not start against the restored data without them.
+#   2. Put the old server's .env in place of the new one if you still have it. Keeping it preserves
+#      the invitation setup receipts; without it the restore adopts this install's own keys and
+#      drops those receipts, reporting exactly how many. Everything else restores either way.
 #   3. Leave the new install empty: do not open /setup or create any account.
 #
 # It refuses to touch an install that already has an account, a household or a photo, and checks the
@@ -89,6 +90,33 @@ docker compose exec -T postgres pg_restore -U cubby_migrator -d cubby --exit-on-
 printf 'system_restore_step: putting the photos back\n'
 docker compose run --rm --no-deps -T --entrypoint tar app --no-same-owner --no-same-permissions -xf - -C /var/lib/cubby/attachments < "$work/attachments.tar" \
   || fail "the photos could not be put back"
+
+# The archive carries the old server's attestation keys; a NEW .env mints different ones under the
+# same version numbers. Startup refuses to replace a key that issued rows were created against, and
+# a RESTRICT foreign key from the setup receipts enforces that refusal in PostgreSQL rather than in
+# policy - so an install restored with a new .env would restart-loop with every byte of household
+# data intact but unreachable.
+#
+# Only act when the keys genuinely differ. Reusing the original .env is the supported path and must
+# lose nothing: the versions match, the material matches, and this block does not run.
+#
+# When they do differ, the receipts cannot be carried over. Each records that one invitation setup
+# was genuine, signed by a key that died with the old machine; nothing re-signs them and nothing
+# still live reads them. Dropping them lets this install adopt its own keys. Households, accounts,
+# memberships and invitations are untouched.
+env_keyring=$(sed -n 's/^CUBBY_FRESH_AUTH_ATTESTATION_KEYRING=//p' .env | tr -d '"' | tr -d "'" | head -1)
+archive_keyring=$(psql_value "SELECT string_agg(\"keyVersion\" || ':' || translate(encode(\"verificationKey\",'base64'),'+/=','-_'), ',' ORDER BY \"keyVersion\") FROM \"FreshAuthAttestationKey\"")
+if [ -n "$env_keyring" ] && [ -n "$archive_keyring" ] && [ "$env_keyring" != "$archive_keyring" ]; then
+  receipts=$(psql_value 'SELECT count(*) FROM invitation_protocol."InvitationSetupCorridorAttestationReceipt"')
+  archive_keys=$(psql_value 'SELECT count(*) FROM "FreshAuthAttestationKey"')
+  printf 'system_restore_step: this .env is not the one that made the archive; adopting its keys\n'
+  psql_value 'DELETE FROM invitation_protocol."InvitationSetupCorridorAttestationReceipt"' > /dev/null \
+    || fail "the restored setup receipts could not be cleared, so this install cannot adopt its own keys"
+  psql_value 'DELETE FROM "FreshAuthAttestationKey"' > /dev/null \
+    || fail "the old attestation keys could not be cleared, so this install cannot adopt its own keys"
+  printf 'system_restore_keys_adopted receipts_dropped=%s old_keys_dropped=%s\n' "$receipts" "$archive_keys"
+  printf 'Setup receipts from the old server were dropped; they could not be verified here. Nothing else changed.\n'
+fi
 
 households=$(psql_value 'SELECT count(*) FROM "Household" WHERE "deletedAt" IS NULL')
 accounts=$(psql_value 'SELECT count(*) FROM "User"')

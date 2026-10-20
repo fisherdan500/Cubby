@@ -39,6 +39,11 @@ case "$last" in
   *'"Household"'*) if live; then echo "\${FAKE_HOUSEHOLDS:-2}"; else echo "\${FAKE_EMPTY_HOUSEHOLDS:-0}"; fi ;;
   *'"User"'*) if [ "\${FAKE_LATE_ACCOUNT:-0}" = 1 ] && [ -f "$FAKE_STATE/stopped" ]; then echo 1; elif live; then echo "\${FAKE_ACCOUNTS:-3}"; else echo "\${FAKE_EMPTY_ACCOUNTS:-0}"; fi ;;
   *'"Attachment"'*) echo "\${FAKE_PHOTO_COUNT:-1}" ;;
+  # The restored archive's attestation keyring. FAKE_ARCHIVE_KEYRING lets a case choose whether it
+  # matches the checkout's .env (original .env restore: adopt nothing) or differs (dead machine).
+  *string_agg*) echo "\${FAKE_ARCHIVE_KEYRING:-}" ;;
+  *'"InvitationSetupCorridorAttestationReceipt"'*) echo "\${FAKE_RECEIPTS:-0}" ;;
+  *'"FreshAuthAttestationKey"'*) echo "\${FAKE_ARCHIVE_KEYS:-1}" ;;
   *) exit 91 ;;
 esac
 `;
@@ -335,6 +340,42 @@ describe("system restore", () => {
     const result = machine.run("system-restore.sh", ["--archive", "incomplete.tar", "--confirm-empty-install", "--maintenance"]);
     expect(result.status).not.toBe(0);
     expect(machine.calls()).toEqual([]);
+  });
+
+  it("adopts this install's keys when the .env is not the one that made the archive", () => {
+    const { machine, archive } = prepared();
+    // The dead-machine case: a fresh .env holds a keyring the restored database has never seen.
+    writeFileSync(path.join(machine.checkout, ".env"), "CUBBY_FRESH_AUTH_ATTESTATION_KEYRING=1:freshkeyfromthenewinstall\n");
+    const result = machine.run("system-restore.sh", ["--archive", archive, "--confirm-empty-install", "--maintenance"], {
+      FAKE_ARCHIVE_KEYRING: "1:deadmachinekeyring",
+      FAKE_RECEIPTS: "4242",
+      FAKE_ARCHIVE_KEYS: "1"
+    });
+
+    expect(result.status).toBe(0);
+    // Without this the install restart-loops on phase=fresh_auth_attestation_keys with all the
+    // household data present but unreachable.
+    expect(result.stdout).toContain("system_restore_keys_adopted receipts_dropped=4242 old_keys_dropped=1");
+    // Adoption is destructive to the receipts, so it must say so rather than proceed silently.
+    expect(result.stdout).toContain("Setup receipts from the old server were dropped");
+    const deletes = machine.calls().filter((call) => call.includes("DELETE FROM"));
+    expect(deletes.some((call) => call.includes("InvitationSetupCorridorAttestationReceipt"))).toBe(true);
+    expect(deletes.some((call) => call.includes('DELETE FROM "FreshAuthAttestationKey"'))).toBe(true);
+  });
+
+  it("keeps the setup receipts when the original .env is restored alongside the archive", () => {
+    const { machine, archive } = prepared();
+    // The supported path: same keyring on both sides. Losing receipts here would destroy audit
+    // history for an operator who did exactly what the documentation asks.
+    writeFileSync(path.join(machine.checkout, ".env"), "CUBBY_FRESH_AUTH_ATTESTATION_KEYRING=1:thekeyringthatmadethearchive\n");
+    const result = machine.run("system-restore.sh", ["--archive", archive, "--confirm-empty-install", "--maintenance"], {
+      FAKE_ARCHIVE_KEYRING: "1:thekeyringthatmadethearchive",
+      FAKE_RECEIPTS: "4242"
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).not.toContain("system_restore_keys_adopted");
+    expect(machine.calls().some((call) => call.includes("DELETE FROM"))).toBe(false);
   });
 
   it("replaces the new install's empty database with the archived one, puts the photos back, and checks the counts", () => {
