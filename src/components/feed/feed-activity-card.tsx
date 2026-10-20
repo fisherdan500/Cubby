@@ -38,7 +38,7 @@ export function FeedActivityCard({
 }) {
   const type = activity.type as ActivityTypeName;
   const label = activityLabels[type];
-  const summary = describeActivity(activity, { volume });
+  const summary = describeActivity(activity, { volume, timeZone });
   const milestone = type === "milestone";
   const author = activity.actorMember?.displayName ?? activity.actorMember?.user.name;
   const time = displayFormatter("timeOfDay", timeZone).format(activity.occurredAt);

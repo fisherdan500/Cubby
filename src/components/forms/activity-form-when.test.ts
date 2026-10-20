@@ -117,9 +117,9 @@ describe("activity form time entry", () => {
 
     // A sleep that has already ended is one tap away.
     await user.click(stillGoing);
-    await user.click(screen.getByRole("button", { name: "45 min" }));
+    await user.click(screen.getByRole("button", { name: "30 min" }));
     expect(values().activeTimer).toBeUndefined();
-    expect(values().endedAt).toBe("2026-09-15T16:32");
+    expect(values().endedAt).toBe("2026-09-15T16:17");
   });
 
   it("leaves every other timed activity as an entry that has ended", () => {
@@ -137,7 +137,8 @@ describe("activity form time entry", () => {
       mode: "bottle", amount: "4.5", unit: "mL"
     });
     expect(screen.getByRole("button", { name: /8:10 AM\s*Yesterday/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "20 min" }).getAttribute("aria-pressed")).toBe("true");
+    // 20 minutes is no longer offered as a preset, so a saved 20-minute feed reads as a custom length.
+    expect(screen.getByRole("button", { name: "Other" }).getAttribute("aria-pressed")).toBe("true");
     expect(values()).toMatchObject({ occurredAt: "2026-09-14T08:10", startedAt: "2026-09-14T08:10", endedAt: "2026-09-14T08:30", mode: "bottle", amount: "4.5", unit: "mL" });
   });
 });

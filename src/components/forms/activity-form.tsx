@@ -642,7 +642,7 @@ function BabyField({ babies, babyId, onChange }: { babies: BabyOption[]; babyId:
   );
 }
 
-const lengthPresets = [5, 10, 15, 20, 30, 45, 60];
+const lengthPresets = [5, 10, 15, 30, 60];
 
 /** "7:20 AM" on the same day; "Sep 28, 7:20 AM" when the activity ran into another one. */
 function formatEndWithDay(start: string, minutes: number) {
@@ -662,8 +662,9 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
   const custom = minutes !== null && !lengthPresets.includes(minutes);
   const [showCustom, setShowCustom] = useState(custom);
   // Saying when it ended is how a caregiver actually knows the length, especially for a sleep that
-  // crossed midnight: working the minutes out by hand is the thing this avoids.
-  const [showEnd, setShowEnd] = useState(false);
+  // crossed midnight: working the minutes out by hand is the thing this avoids. It leads the row
+  // and starts open, so the first thing offered is the end time rather than a guess in minutes.
+  const [showEnd, setShowEnd] = useState(true);
   const endValue = minutes !== null && isWallTime(start) ? minutesToEndWallTime(start, minutes) : "";
   const [endDraft, setEndDraft] = useState(endValue);
   const endInvalid = endDraft !== "" && endWallTimeToMinutes(start, endDraft) === null;
@@ -680,6 +681,18 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
         How long <span className="font-normal text-muted-foreground">(optional)</span>
       </p>
       <div className={scrollRow}>
+        {/* Ends at leads: a caregiver knows when something finished, not how many minutes it ran. */}
+        <button
+          type="button"
+          aria-pressed={showEnd}
+          onClick={() => {
+            setEndDraft(endValue);
+            setShowEnd(!showEnd);
+          }}
+          className={cn(pill, showEnd ? pillOn : pillOff)}
+        >
+          Ends at
+        </button>
         {lengthPresets.map((preset) => (
           <button
             key={preset}
@@ -696,17 +709,6 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
         ))}
         <button type="button" aria-pressed={showCustom} onClick={() => setShowCustom(!showCustom)} className={cn(pill, showCustom ? pillOn : pillOff)}>
           Other
-        </button>
-        <button
-          type="button"
-          aria-pressed={showEnd}
-          onClick={() => {
-            setEndDraft(endValue);
-            setShowEnd(!showEnd);
-          }}
-          className={cn(pill, showEnd ? pillOn : pillOff)}
-        >
-          Ends at
         </button>
       </div>
       {showEnd ? (

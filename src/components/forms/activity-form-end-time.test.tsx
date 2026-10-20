@@ -63,8 +63,6 @@ describe("setting how long an activity lasted by its end time", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderSleep(overnight);
 
-    await user.click(screen.getByRole("button", { name: "Ends at" }));
-
     const input = screen.getByLabelText("Ended") as HTMLInputElement;
     expect(input.value).toBe("2026-09-28T08:30");
   });
@@ -73,7 +71,6 @@ describe("setting how long an activity lasted by its end time", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const read = renderSleep(overnight);
 
-    await user.click(screen.getByRole("button", { name: "Ends at" }));
     const input = screen.getByLabelText("Ended");
     await user.clear(input);
     await user.type(input, "2026-09-28T07:20");
@@ -86,7 +83,6 @@ describe("setting how long an activity lasted by its end time", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const read = renderSleep(overnight);
 
-    await user.click(screen.getByRole("button", { name: "Ends at" }));
     const input = screen.getByLabelText("Ended");
     await user.clear(input);
     await user.type(input, "2026-09-28T09:05");
@@ -100,7 +96,6 @@ describe("setting how long an activity lasted by its end time", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderSleep(overnight);
 
-    await user.click(screen.getByRole("button", { name: "Ends at" }));
     const input = screen.getByLabelText("Ended");
     await user.clear(input);
     await user.type(input, "2026-09-27T19:00");
@@ -113,9 +108,9 @@ describe("setting how long an activity lasted by its end time", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const read = renderSleep(overnight);
 
-    await user.click(screen.getByRole("button", { name: "45 min" }));
+    await user.click(screen.getByRole("button", { name: "30 min" }));
 
-    expect(read().endedAt).toBe("2026-09-27T21:29");
+    expect(read().endedAt).toBe("2026-09-27T21:14");
   });
 
   it("names the day when an activity ends on a different one", () => {

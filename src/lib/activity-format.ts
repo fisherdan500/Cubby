@@ -46,6 +46,36 @@ export function formatDuration(seconds?: number | null) {
   return rest ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
+/**
+ * What a finished stretch reads as in a one-line summary.
+ *
+ * A length in minutes makes the reader do arithmetic to answer the question they actually have -
+ * when did it end - so when the activity recorded an end, say that instead. An end on a different
+ * day than the start carries the date as well, because "ended 6:10 AM" on its own is ambiguous
+ * about which morning it means.
+ *
+ * Falls back to the duration when there is no end instant to show: an entry logged as "15 min" with
+ * no end time still has something true to say, and saying nothing would lose it.
+ */
+export function formatFinishedStretch(
+  activity: Pick<ActivityLog, "startedAt" | "endedAt" | "occurredAt" | "durationSeconds">,
+  timeZone?: string
+) {
+  if (!timeZone || !activity.endedAt) return formatDuration(activity.durationSeconds);
+  const start = activity.startedAt ?? activity.occurredAt;
+  const sameDay = ACTIVITY_DAY_KEY(timeZone).format(start) === ACTIVITY_DAY_KEY(timeZone).format(activity.endedAt);
+  const shape = sameDay
+    ? { hour: "numeric" as const, minute: "2-digit" as const }
+    : { month: "short" as const, day: "numeric" as const, hour: "numeric" as const, minute: "2-digit" as const };
+  return `ended ${new Intl.DateTimeFormat("en", { ...shape, timeZone }).format(activity.endedAt).replace(",", "")}`;
+}
+
+// Year-month-day in the household's zone, compared only against another day's to decide whether a
+// stretch crossed midnight. Deliberately excludes the zone abbreviation: that changes when the
+// clocks do, which would read an afternoon nap on a DST day as overnight.
+const ACTIVITY_DAY_KEY = (timeZone: string) =>
+  new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone });
+
 export function formatElapsedBadge(date: Date | string | null | undefined, now = new Date()) {
   if (!date) return null;
   const value = new Date(date);
@@ -90,7 +120,7 @@ export function formatVolume(amount: unknown, unit: string | null | undefined, d
   return `${saved} (≈ ${rounded} ${display})`;
 }
 
-export function describeActivity(activity: ActivityWithDetails, options: { volume?: VolumeUnit } = {}) {
+export function describeActivity(activity: ActivityWithDetails, options: { volume?: VolumeUnit; timeZone?: string } = {}) {
   switch (activity.type) {
     case "feeding":
       return [
@@ -99,7 +129,7 @@ export function describeActivity(activity: ActivityWithDetails, options: { volum
         activity.feeding?.food,
         activity.feeding?.amount ? formatVolume(activity.feeding.amount, activity.feeding.unit, options.volume) : "",
         activity.feeding?.side ? `${activity.feeding.side} side` : "",
-        formatDuration(activity.durationSeconds)
+        formatFinishedStretch(activity, options.timeZone)
       ]
         .filter(Boolean)
         .join(" - ");
@@ -121,7 +151,7 @@ export function describeActivity(activity: ActivityWithDetails, options: { volum
         activity.sleep?.sleepType,
         activity.sleep?.location,
         activity.sleep?.quality,
-        formatDuration(activity.durationSeconds)
+        formatFinishedStretch(activity, options.timeZone)
       ]
         .filter(Boolean)
         .join(" - ");
@@ -131,7 +161,7 @@ export function describeActivity(activity: ActivityWithDetails, options: { volum
         activity.pumping?.leftAmount ? `L ${activity.pumping.leftAmount}` : "",
         activity.pumping?.rightAmount ? `R ${activity.pumping.rightAmount}` : "",
         activity.pumping?.inventoryAction,
-        formatDuration(activity.durationSeconds)
+        formatFinishedStretch(activity, options.timeZone)
       ]
         .filter(Boolean)
         .join(" - ");
@@ -172,7 +202,7 @@ export function describeActivity(activity: ActivityWithDetails, options: { volum
         activity.play?.activityName,
         activity.play?.location,
         activity.play?.intensity,
-        formatDuration(activity.durationSeconds)
+        formatFinishedStretch(activity, options.timeZone)
       ]
         .filter(Boolean)
         .join(" - ");

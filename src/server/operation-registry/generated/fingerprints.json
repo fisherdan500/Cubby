@@ -2768,17 +2768,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "4247bd7f6518d107e9484e6dc12f3216a9a1768563a72008636247925c310192",
+          "digest": "798101354a7003b61ba0788bb2fe2c20ad93278ef19e51989a6c2b845479d113",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "7b4a297888c2bbf4e3d188e82c79fbef0a4d27f25277d166381b5ab74359a6c1",
+      "fingerprint": "26ffbc8eb144ed448baf44bea5b0edb78c7af0ef72ec9fca4cdaacae03a3d902",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "1e0f66f9dc9e049e088495e2664dbab1c4dbed5abd8893caddbd3d743ae1292c",
+      "sourceDigest": "d7a5263ef96d0e2f254b73b86b67cd955df6dc082f79e975ffcc0bad00fbcf11",
       "status": "declared"
     },
     {
