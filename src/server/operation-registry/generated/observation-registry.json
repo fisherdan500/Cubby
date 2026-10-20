@@ -1,15 +1,15 @@
 {
   "authority": "observation_only",
   "categoryCounts": {
-    "api_route": 122,
-    "client_binding": 49,
+    "api_route": 123,
+    "client_binding": 50,
     "instrumentation": 1,
     "package_command": 41,
     "server_action": 1,
     "server_loader": 32,
     "worker": 8
   },
-  "declarationDigest": "72d5100a0a72ebe1c289bdbc0bfeb6f4e0e63ae31a657fd05ada99b7270396ce",
+  "declarationDigest": "749d96339ab4a3b58ba6a5753e8c511b670675f307fff8091069490cc8b34d4a",
   "declarationDigestVersion": "normalized-declarations.v1",
   "declarations": [
     {
@@ -4804,6 +4804,36 @@
         "bindings": [
           {
             "kind": "route_method",
+            "symbol": "GET",
+            "target": "src/app/api/moments/unseen/route.ts#GET"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "api_route:src/app/api/moments/unseen/route.ts",
+        "ownerKind": "api_route",
+        "ownerModule": "src/app/api/moments/unseen/route.ts",
+        "schemaVersion": 1
+      },
+      "id": "api_route:src/app/api/moments/unseen/route.ts",
+      "sidecarPath": "src/app/api/moments/unseen/route.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
+            "kind": "route_method",
             "symbol": "POST",
             "target": "src/app/api/notifications/preferences/issue/route.ts#POST"
           }
@@ -5934,6 +5964,11 @@
           },
           {
             "kind": "server_value_import",
+            "symbol": "markMomentsSeen",
+            "target": "src/server/services/moments-seen.ts#markMomentsSeen"
+          },
+          {
+            "kind": "server_value_import",
             "symbol": "getFeedPostView",
             "target": "src/server/services/feed-posts.ts#getFeedPostView"
           },
@@ -6001,6 +6036,11 @@
             "kind": "server_value_import",
             "symbol": "listFeedPosts",
             "target": "src/server/services/feed-posts.ts#listFeedPosts"
+          },
+          {
+            "kind": "server_value_import",
+            "symbol": "markMomentsSeen",
+            "target": "src/server/services/moments-seen.ts#markMomentsSeen"
           },
           {
             "kind": "server_value_import",
@@ -8613,6 +8653,36 @@
       "declaration": {
         "bindings": [
           {
+            "kind": "global_fetch",
+            "symbol": "fetch[1]",
+            "target": "globalThis.fetch"
+          }
+        ],
+        "deferredGateIds": [
+          "gate.carrier_authority_guard",
+          "gate.caller_controlled_scope",
+          "gate.service_operation_linkage",
+          "gate.permission_commit_reauthorization",
+          "gate.tenant_relationship_invariants",
+          "gate.model_and_effects",
+          "gate.variant_outcomes",
+          "gate.worker_containment",
+          "gate.browser_binding_staleness",
+          "gate.executable_evidence"
+        ],
+        "disposition": "observed",
+        "id": "client_binding:src/components/unseen-moments-badge.tsx",
+        "ownerKind": "client_binding",
+        "ownerModule": "src/components/unseen-moments-badge.tsx",
+        "schemaVersion": 1
+      },
+      "id": "client_binding:src/components/unseen-moments-badge.tsx",
+      "sidecarPath": "src/components/unseen-moments-badge.operation.ts"
+    },
+    {
+      "declaration": {
+        "bindings": [
+          {
             "kind": "worker_dynamic_import",
             "symbol": "startAutomatedBackupScheduler",
             "target": "src/server/automated-backup-scheduler.ts#startAutomatedBackupScheduler"
@@ -9286,7 +9356,7 @@
       "rationale": "seed fixture command; excluded from operation semantics"
     }
   ],
-  "generatorDigest": "7a28000c9e46fb1c49fce14ff694ade5883c5539e6495f800d60017251673013",
+  "generatorDigest": "829c55ae6d039788eed92b6b9f9bdad89513e02f0f5a8bf9359ba23a928e202b",
   "generatorVersion": "r0.1",
   "observationCanonical": [
     {
@@ -11299,6 +11369,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "c39326a02d1e9a64de219e850bb4f5fc78d943da249f44dd0206a42d378a720b",
+          "anchorEnd": 770,
+          "anchorFile": "src/app/api/moments/unseen/route.ts",
+          "anchorStart": 556,
+          "kind": "route_method",
+          "symbol": "GET",
+          "target": "src/app/api/moments/unseen/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "api_route:src/app/api/moments/unseen/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/moments/unseen/route.ts",
+      "sidecarPath": "src/app/api/moments/unseen/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "230d104e4c28f15ca10e215d9af050d58e6a3d745c258de37717fc7d1449fa6e",
           "anchorEnd": 541,
           "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
@@ -12315,9 +12404,9 @@
         },
         {
           "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-          "anchorEnd": 649,
+          "anchorEnd": 715,
           "anchorFile": "src/app/app/moments/[id]/page.tsx",
-          "anchorStart": 633,
+          "anchorStart": 699,
           "kind": "server_value_import",
           "symbol": "getHouseholdHome",
           "target": "src/server/services/households.ts#getHouseholdHome"
@@ -12330,6 +12419,15 @@
           "kind": "server_value_import",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorDigest": "24157bc6593af57657bec60fe9269237e29a6d28926d59229e0b1ab3a03d6536",
+          "anchorEnd": 648,
+          "anchorFile": "src/app/app/moments/[id]/page.tsx",
+          "anchorStart": 633,
+          "kind": "server_value_import",
+          "symbol": "markMomentsSeen",
+          "target": "src/server/services/moments-seen.ts#markMomentsSeen"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
@@ -12421,6 +12519,15 @@
           "kind": "server_value_import",
           "symbol": "listMixedMoments",
           "target": "src/server/services/moments.ts#listMixedMoments"
+        },
+        {
+          "anchorDigest": "24157bc6593af57657bec60fe9269237e29a6d28926d59229e0b1ab3a03d6536",
+          "anchorEnd": 1420,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1405,
+          "kind": "server_value_import",
+          "symbol": "markMomentsSeen",
+          "target": "src/server/services/moments-seen.ts#markMomentsSeen"
         },
         {
           "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
@@ -14697,6 +14804,25 @@
     {
       "bindings": [
         {
+          "anchorDigest": "bff044bd0d2a76f60824fbb76bcafa20c208bdb8950025c0629565d1103f03c9",
+          "anchorEnd": 1486,
+          "anchorFile": "src/components/unseen-moments-badge.tsx",
+          "anchorStart": 1408,
+          "kind": "global_fetch",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "exclusion": null,
+      "id": "client_binding:src/components/unseen-moments-badge.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/unseen-moments-badge.tsx",
+      "sidecarPath": "src/components/unseen-moments-badge.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorDigest": "25f01de0157fd57b225d7eadb70c27a4d8d7d2a3fa06a9424b7e7ff7542561e3",
           "anchorEnd": 1916,
           "anchorFile": "src/app/app/calendar/actions.ts",
@@ -16640,8 +16766,8 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "observationCount": 254,
-  "observationDigest": "f17cae1c0c638a3fcf10e8692bfe72e34b8cfc2c3ad77a36a5663f2bdf99e0c4",
+  "observationCount": 256,
+  "observationDigest": "c0df7fbe47dc66e61dc3135ec7733d128708fbdcfd422e552d6789ba07267590",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -18556,6 +18682,24 @@
     {
       "bindings": [
         {
+          "anchorEnd": 770,
+          "anchorFile": "src/app/api/moments/unseen/route.ts",
+          "anchorStart": 556,
+          "kind": "route_method",
+          "ownerModule": "src/app/api/moments/unseen/route.ts",
+          "symbol": "GET",
+          "target": "src/app/api/moments/unseen/route.ts#GET"
+        }
+      ],
+      "disposition": "observed",
+      "id": "api_route:src/app/api/moments/unseen/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/moments/unseen/route.ts",
+      "sidecarPath": "src/app/api/moments/unseen/route.operation.ts"
+    },
+    {
+      "bindings": [
+        {
           "anchorEnd": 541,
           "anchorFile": "src/app/api/notifications/preferences/issue/route.ts",
           "anchorStart": 197,
@@ -19537,9 +19681,9 @@
           "target": "src/server/services/baby-selector.ts#getHeaderBabySelector"
         },
         {
-          "anchorEnd": 649,
+          "anchorEnd": 715,
           "anchorFile": "src/app/app/moments/[id]/page.tsx",
-          "anchorStart": 633,
+          "anchorStart": 699,
           "kind": "server_value_import",
           "ownerModule": "src/app/app/moments/[id]/page.tsx",
           "symbol": "getHouseholdHome",
@@ -19553,6 +19697,15 @@
           "ownerModule": "src/app/app/moments/[id]/page.tsx",
           "symbol": "listFeedInteractions",
           "target": "src/server/services/feed-interactions.ts#listFeedInteractions"
+        },
+        {
+          "anchorEnd": 648,
+          "anchorFile": "src/app/app/moments/[id]/page.tsx",
+          "anchorStart": 633,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/[id]/page.tsx",
+          "symbol": "markMomentsSeen",
+          "target": "src/server/services/moments-seen.ts#markMomentsSeen"
         },
         {
           "anchorEnd": 358,
@@ -19643,6 +19796,15 @@
           "ownerModule": "src/app/app/moments/page.tsx",
           "symbol": "listMixedMoments",
           "target": "src/server/services/moments.ts#listMixedMoments"
+        },
+        {
+          "anchorEnd": 1420,
+          "anchorFile": "src/app/app/moments/page.tsx",
+          "anchorStart": 1405,
+          "kind": "server_value_import",
+          "ownerModule": "src/app/app/moments/page.tsx",
+          "symbol": "markMomentsSeen",
+          "target": "src/server/services/moments-seen.ts#markMomentsSeen"
         },
         {
           "anchorEnd": 856,
@@ -21846,6 +22008,24 @@
       "ownerKind": "client_binding",
       "ownerModule": "src/components/settings/unit-preferences-form.tsx",
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
+    },
+    {
+      "bindings": [
+        {
+          "anchorEnd": 1486,
+          "anchorFile": "src/components/unseen-moments-badge.tsx",
+          "anchorStart": 1408,
+          "kind": "global_fetch",
+          "ownerModule": "src/components/unseen-moments-badge.tsx",
+          "symbol": "fetch[1]",
+          "target": "globalThis.fetch"
+        }
+      ],
+      "disposition": "observed",
+      "id": "client_binding:src/components/unseen-moments-badge.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/unseen-moments-badge.tsx",
+      "sidecarPath": "src/components/unseen-moments-badge.operation.ts"
     },
     {
       "bindings": [
@@ -24136,6 +24316,12 @@
       "sidecarPath": "src/app/api/members/me/photo/route.operation.ts"
     },
     {
+      "id": "api_route:src/app/api/moments/unseen/route.ts",
+      "ownerKind": "api_route",
+      "ownerModule": "src/app/api/moments/unseen/route.ts",
+      "sidecarPath": "src/app/api/moments/unseen/route.operation.ts"
+    },
+    {
       "id": "api_route:src/app/api/notifications/preferences/issue/route.ts",
       "ownerKind": "api_route",
       "ownerModule": "src/app/api/notifications/preferences/issue/route.ts",
@@ -24760,6 +24946,12 @@
       "sidecarPath": "src/components/settings/unit-preferences-form.operation.ts"
     },
     {
+      "id": "client_binding:src/components/unseen-moments-badge.tsx",
+      "ownerKind": "client_binding",
+      "ownerModule": "src/components/unseen-moments-badge.tsx",
+      "sidecarPath": "src/components/unseen-moments-badge.operation.ts"
+    },
+    {
       "id": "server_action:src/app/app/calendar/actions.ts",
       "ownerKind": "server_action",
       "ownerModule": "src/app/app/calendar/actions.ts",
@@ -25066,9 +25258,9 @@
       "sidecarPath": "scripts/verify-gates.operation.ts"
     }
   ],
-  "ownerSetDigest": "24ede06bf4a6b2b3b2fec006b4717601e7d905d7d58a2ef224fa8a46a8141075",
+  "ownerSetDigest": "d3b5b0c170414b2174dfe5a10088695642b9e0a96b2cdc0201a062cbb898b664",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "f9a03c980ab58f7b8871de0486336cd1a35a3c02f4b3e2c1ae2cc4ca66537ba1",
+  "registryDigest": "a6f4e93a0a4586680414eb8d5d3ed90caabf20c9ac637f823f8e4578979571e2",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

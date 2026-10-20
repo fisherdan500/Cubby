@@ -12,6 +12,7 @@ import { BrowserOperationRecovery } from "@/components/browser-operation-recover
 import { ActiveTimerBar } from "@/components/active-timer-bar";
 import { NavLink, NavPendingProvider } from "@/components/nav-progress";
 import { SavedEntryUndo } from "@/components/saved-entry-undo";
+import { UnseenMomentsBadge } from "@/components/unseen-moments-badge";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
 
 const primaryNav = [
@@ -66,6 +67,7 @@ export function AppShell({
             >
               <item.icon className="h-5 w-5 text-primary" />
               {item.label}
+              {item.href === "/app/moments" ? <UnseenMomentsBadge placement="sidebar" /> : null}
             </NavLink>
           ))}
         </nav>

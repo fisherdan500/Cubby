@@ -7,6 +7,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLink } from "@/components/nav-progress";
 import { cn } from "@/lib/utils";
+import { UnseenMomentsBadge } from "@/components/unseen-moments-badge";
 
 // Moments (the family feed) holds the tab the Full Log had: it is meant to replace it in time
 // (DEC-PROD-421), and until then the Full Log is one tap further, behind More.
@@ -113,7 +114,10 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
                 pendingClassName="bg-primary/14 text-primary ring-1 ring-primary/20"
                 active={active}
               >
-                <item.icon className="h-5 w-5" />
+                <span className="relative">
+                  <item.icon className="h-5 w-5" />
+                  {item.href === "/app/moments" ? <UnseenMomentsBadge placement="tab" /> : null}
+                </span>
                 {item.label}
               </NavLink>
             );

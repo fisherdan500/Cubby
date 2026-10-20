@@ -53,6 +53,7 @@ const expectedDirectHouseholdModels = [
   "InvitationRecoveryRehearsalChallenge",
   "Invite",
   "MedicineCatalog",
+  "MomentsSeenMarker",
   "MutationReceipt",
   "NotificationLog",
   "NotificationPreference",

@@ -43,6 +43,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "markMomentsSeen",
+      target: "src/server/services/moments-seen.ts#markMomentsSeen"
+    },
+    {
+      kind: "server_value_import",
       symbol: "listMixedMoments",
       target: "src/server/services/moments.ts#listMixedMoments"
     },

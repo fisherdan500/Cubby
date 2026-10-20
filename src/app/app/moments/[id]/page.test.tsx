@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   requireUserPage: vi.fn(),
   getHeaderBabySelector: vi.fn(),
   getFeedPostView: vi.fn(),
+  markMomentsSeen: vi.fn(),
   listFeedInteractions: vi.fn(),
   getHouseholdHome: vi.fn()
 }));
@@ -16,6 +17,7 @@ globalThis.React = React;
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/feed-posts", () => ({ getFeedPostView: mocks.getFeedPostView }));
+vi.mock("@/server/services/moments-seen", () => ({ markMomentsSeen: mocks.markMomentsSeen }));
 vi.mock("@/server/services/households", () => ({ getHouseholdHome: mocks.getHouseholdHome }));
 vi.mock("@/server/services/feed-interactions", () => ({
   listFeedInteractions: mocks.listFeedInteractions,
@@ -73,6 +75,7 @@ beforeEach(() => {
   mocks.getHeaderBabySelector.mockResolvedValue({ selectedBabyId: "baby-1", babies: [{ id: "baby-1", name: "Avery", ageLabel: "", inactive: false }] });
   mocks.listFeedInteractions.mockResolvedValue({ comments: { "post:post-1": [{ id: "c1" }] }, reactions: { "post:post-1": [] }, canRespond: true });
   mocks.getFeedPostView.mockResolvedValue(postView());
+  mocks.markMomentsSeen.mockResolvedValue(undefined);
 });
 
 describe("Moment focus page", () => {
@@ -96,6 +99,8 @@ describe("Moment focus page", () => {
     const body = await renderMoment("post-gone");
 
     expect(body.textContent).toContain("This moment is gone");
+    // Arriving here still counts as looking at Moments, even when the moment is gone.
+    expect(mocks.markMomentsSeen).toHaveBeenCalled();
     expect(body.querySelector('a[href="/app/moments"]')).not.toBeNull();
     // Gone is not broken: nothing beyond the lookup runs, and nothing renders as an error.
     expect(mocks.listFeedInteractions).not.toHaveBeenCalled();

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   listActivities: vi.fn(),
   getActivityRowViewer: vi.fn(),
   listFeedPosts: vi.fn(),
+  markMomentsSeen: vi.fn(),
   listFeedInteractions: vi.fn(),
   getActivityUnitPreferences: vi.fn()
 }));
@@ -24,6 +25,7 @@ vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/activities", () => ({ listActivities: mocks.listActivities, getActivityRowViewer: mocks.getActivityRowViewer }));
 vi.mock("@/server/services/feed-posts", () => ({ listFeedPosts: mocks.listFeedPosts }));
+vi.mock("@/server/services/moments-seen", () => ({ markMomentsSeen: mocks.markMomentsSeen }));
 vi.mock("@/server/services/feed-interactions", () => ({
   listFeedInteractions: mocks.listFeedInteractions,
   feedInteractionKey: (kind: string, id: string) => `${kind}:${id}`
@@ -82,6 +84,7 @@ beforeEach(() => {
   mocks.getActivityUnitPreferences.mockResolvedValue({ preferences: { volume: "oz" } });
   mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-1", role: "caretaker" });
   mocks.listFeedPosts.mockResolvedValue([]);
+  mocks.markMomentsSeen.mockResolvedValue(undefined);
   mocks.listFeedInteractions.mockResolvedValue({ comments: {}, reactions: {}, canRespond: true });
   mocks.listActivities.mockResolvedValue([
     entry("a1", "2026-09-25T15:00:00Z", "milestone", { milestone: { title: "Rolled over", category: "Motor" } }),
@@ -164,6 +167,8 @@ describe("Feed page", () => {
       authorName: "Sam", canRemove: true
     }]);
     const body = await renderFeed({ babyId: "baby-1" });
+    // Rendering the feed IS seeing it: the badge over the Moments tab counts from this visit.
+    expect(mocks.markMomentsSeen).toHaveBeenCalled();
     const cards = [...body.querySelectorAll("article")];
 
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual(["Milestone", "Post", "Diaper", "Note"]);
