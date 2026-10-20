@@ -131,7 +131,15 @@ if [ -n "$env_keyring" ] && [ -n "$archive_keyring" ] && [ "$env_keyring" != "$a
   fi
   email_keys=$(psql_value 'SELECT count(*) FROM "EmailDeliveryEncryptionKey"')
   if [ "${email_keys:-0}" -gt 0 ]; then
-    psql_value 'DELETE FROM "EmailDeliveryEncryptionKey"' > /dev/null \
+    # A constraint trigger requires exactly one active key AT COMMIT, so emptying the table can
+    # never commit on its own - startup is what puts this install's key back, one phase later.
+    # Disable that single guard for the delete and re-enable it in the same implicit transaction,
+    # so a failure anywhere rolls back the disable too and never leaves the table unguarded.
+    #
+    # The other trigger stays on: EmailDeliveryEncryptionKey_ciphertext_reference_guard refuses to
+    # drop a key that queued mail still references. The explicit check above gives the operator a
+    # better message, and this remains the backstop if it is ever wrong.
+    psql_value 'ALTER TABLE "EmailDeliveryEncryptionKey" DISABLE TRIGGER "EmailDeliveryEncryptionKey_exactly_one_active_guard"; DELETE FROM "EmailDeliveryEncryptionKey"; ALTER TABLE "EmailDeliveryEncryptionKey" ENABLE TRIGGER "EmailDeliveryEncryptionKey_exactly_one_active_guard"' > /dev/null \
       || fail "the old email delivery keys could not be cleared, so this install cannot adopt its own keys"
     printf 'system_restore_email_keys_adopted old_keys_dropped=%s pending_mail=0\n' "$email_keys"
   fi
