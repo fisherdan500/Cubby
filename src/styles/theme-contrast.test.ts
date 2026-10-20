@@ -181,6 +181,29 @@ describe("theme contrast", () => {
     }
   });
 
+  it("never styles with a color token the theme does not define", () => {
+    // Tailwind silently drops a class whose token is absent from the config, so
+    // `text-destructive` compiles to NOTHING: the element renders in whatever color it inherits
+    // and every gate stays green. Found live as an invisible tab badge and seven error messages
+    // rendered without their intended color. Guarded by name: the shadcn-style tokens that do
+    // not exist here but that habit keeps reaching for.
+    const sourceRoot = fileURLToPath(new URL("..", import.meta.url));
+    const phantom = /\b(?:text|bg|border|ring|fill|stroke)-(?:destructive|secondary|popover|input)(?:-foreground)?\b/;
+    const offenders: string[] = [];
+    for (const entry of readdirSync(sourceRoot, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".tsx")) continue;
+      const file = path.join(entry.parentPath, entry.name);
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(/"[^"]*"|`[^`]*`/g)) {
+        if (phantom.test(match[0])) {
+          offenders.push(`${path.relative(sourceRoot, file)}:${source.slice(0, match.index).split("\n").length}`);
+        }
+      }
+    }
+
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+
   it("draws every form control's boundary with the control token, not the decorative border", () => {
     // A form element, or anything carrying a field's focus or checked styling, is a control. The token
     // above is only worth something if controls actually use it.

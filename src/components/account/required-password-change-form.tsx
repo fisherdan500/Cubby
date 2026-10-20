@@ -107,7 +107,7 @@ export function RequiredPasswordChangeForm() {
           required
         />
       </div>
-      {message ? <p className="text-sm text-destructive">{message}</p> : null}
+      {message ? <p className="text-sm text-danger">{message}</p> : null}
       <Button type="submit" disabled={busy}>{busy ? "Setting password…" : "Set my password"}</Button>
     </form>
   );

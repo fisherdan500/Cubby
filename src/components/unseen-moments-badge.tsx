@@ -55,7 +55,7 @@ export function UnseenMomentsBadge({ placement }: { placement: "sidebar" | "tab"
     return (
       <span
         aria-label={label}
-        className="absolute -right-2.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground"
+        className="absolute -right-2.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white"
       >
         {count > 9 ? "9+" : count}
       </span>
@@ -64,7 +64,7 @@ export function UnseenMomentsBadge({ placement }: { placement: "sidebar" | "tab"
   return (
     <span
       aria-label={label}
-      className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-bold leading-none text-destructive-foreground"
+      className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-bold leading-none text-white"
     >
       {count > 9 ? "9+" : count}
     </span>

@@ -2544,17 +2544,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "8654137cb518a3515c88e27636a8acef84527cb6d58b224ba75984bf08106460",
+          "digest": "f55d32614fcd86a08be1c3b309807dd26aea61d6194499118f897f8dd3527f26",
           "file": "src/components/account/required-password-change-form.tsx"
         }
       ],
       "declarationDigest": "2d8c944bff30be1ab0a84c8977094bdbe634deed84e4201b74b804202b65989a",
-      "fingerprint": "7c10e18a60346876c311fbbbef80ee3a06d44068f42c58f14619633b4c6c3ba5",
+      "fingerprint": "96a006aa77d26d33ae46355e967f1afc883f0174c93771a2e4fb62052f21d1d5",
       "id": "fingerprint:client_binding:src/components/account/required-password-change-form.tsx",
       "ownerId": "client_binding:src/components/account/required-password-change-form.tsx",
       "ownerModule": "src/components/account/required-password-change-form.tsx",
       "sidecarPath": "src/components/account/required-password-change-form.operation.ts",
-      "sourceDigest": "2440163512f4029ea38f9233bad97b4ea5b640efa7be91c483fee9a7f7b3d705",
+      "sourceDigest": "5630ae1195f225f6498907d162d202e6167ae7abf9a91be7e4974c6646f5e5dd",
       "status": "declared"
     },
     {
@@ -2640,17 +2640,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "b39bdb97b0c6445206b8ba539766acd56636ba7045b1fa5af9e575f4f3ec2d18",
+          "digest": "c6303c4eeab6c14111007bab4aa080dc7ecf6da2498dcb14936bb64dfb575c02",
           "file": "src/components/activities/activity-photo-control.tsx"
         }
       ],
       "declarationDigest": "ffe4ec210ff8947ed2e40a7d38fca0224851607cef4f095f6f636879f0a448bf",
-      "fingerprint": "c2a3a6088982ceb411564182fe4ab8cb5f8c0bf474d5c45d7950dbb4ce340a1f",
+      "fingerprint": "e448c147af5050c46ca2c6e3bace4ebe61665278e6417175ff9f757910dd452a",
       "id": "fingerprint:client_binding:src/components/activities/activity-photo-control.tsx",
       "ownerId": "client_binding:src/components/activities/activity-photo-control.tsx",
       "ownerModule": "src/components/activities/activity-photo-control.tsx",
       "sidecarPath": "src/components/activities/activity-photo-control.operation.ts",
-      "sourceDigest": "3d6fda0b5a4f15291236b516f1802ec259dd99956cfe18a54a7b266c98e1aa8c",
+      "sourceDigest": "cef9d0dcc1b1b6c74a8cf7d559dc862cd1aea60b2c2b909371fe25e855bd6f0b",
       "status": "declared"
     },
     {
@@ -2768,33 +2768,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "e4bb6c95464b819ecf0087988b0c21a0f5b876e35e11fefa0b2387a3231e9c3c",
+          "digest": "4247bd7f6518d107e9484e6dc12f3216a9a1768563a72008636247925c310192",
           "file": "src/components/forms/activity-form.tsx"
         }
       ],
       "declarationDigest": "2d1799571e02f5b5fa7226dee007c554b62e8d316beed53d734a1639c2f000ab",
-      "fingerprint": "ff72daaf52aad92d4edd98aa5854d132e4c25bcfe137bcd6ff1f4581310f0bbb",
+      "fingerprint": "7b4a297888c2bbf4e3d188e82c79fbef0a4d27f25277d166381b5ab74359a6c1",
       "id": "fingerprint:client_binding:src/components/forms/activity-form.tsx",
       "ownerId": "client_binding:src/components/forms/activity-form.tsx",
       "ownerModule": "src/components/forms/activity-form.tsx",
       "sidecarPath": "src/components/forms/activity-form.operation.ts",
-      "sourceDigest": "e1e7f6674f26d015f9a48f3383f3911b7f2d4d4a0ffe586267e0bae6cdb97748",
+      "sourceDigest": "1e0f66f9dc9e049e088495e2664dbab1c4dbed5abd8893caddbd3d743ae1292c",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "e0aa5832edb0c5bd5a7f7a7d21e907e4d46fd36c6cf51a9358c9c38e637e0c1d",
+          "digest": "e3c0a553b1111a7144c6ee3fd47f68a130b2aaedb06ca8cbd90cba961a29cf22",
           "file": "src/components/forms/activity-photo-picker.tsx"
         }
       ],
       "declarationDigest": "acbb3fb232014ffdc54b20c7a5031d6110a1021140ffb7dbd116097484e589c8",
-      "fingerprint": "634d56699c02d22a1cc59623881bf386314598b133e1d408df45ee92977d0bc6",
+      "fingerprint": "e046609e1a387616206a436a197367d2df7412efd5fbe934e2a14446a2f73211",
       "id": "fingerprint:client_binding:src/components/forms/activity-photo-picker.tsx",
       "ownerId": "client_binding:src/components/forms/activity-photo-picker.tsx",
       "ownerModule": "src/components/forms/activity-photo-picker.tsx",
       "sidecarPath": "src/components/forms/activity-photo-picker.operation.ts",
-      "sourceDigest": "b2d98ce0cae266d0e6bbcfe6f4f187b5dc04df1cbe0eb0d66b03544884332b6f",
+      "sourceDigest": "7e4cf62dfd11522cf1c3974b58df3ed8cc9669b800094d2c573024e96b4800c8",
       "status": "declared"
     },
     {
@@ -2928,33 +2928,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "09978884637c76b7effd3c360d1172fc09fbf976008d30cefcbdd8a3919e00f5",
+          "digest": "eee025babcb71b7d7b3c48486745e30fdce66bebca26a100791f2fd4766f4fc1",
           "file": "src/components/members/profile-name-control.tsx"
         }
       ],
       "declarationDigest": "983c52b168a8ac135c55eeef17689e5e5ec090c24fc16876d155048e16f99d50",
-      "fingerprint": "66ab41c2fc838693926301c395d86a05073bef0e2242d721b9078f9ea8b0f3bc",
+      "fingerprint": "0c12149299867b558e5c5d1778636e7771af032ad8d2a17b9819c392e7d9fac6",
       "id": "fingerprint:client_binding:src/components/members/profile-name-control.tsx",
       "ownerId": "client_binding:src/components/members/profile-name-control.tsx",
       "ownerModule": "src/components/members/profile-name-control.tsx",
       "sidecarPath": "src/components/members/profile-name-control.operation.ts",
-      "sourceDigest": "b95cb0e002743bea56487d8a21243971dd72613259adc132fe4ba0e95c7482c0",
+      "sourceDigest": "aa351a8211e302dcec02d8e489af3378e4826ca142b85eafe961a030d947d740",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "f6270123073bd41c3dce4226e21e8c69712393a0df1a4b4a294ab66da111d4e0",
+          "digest": "3364cf2301ff9d9f4733031cadc8a779663e125fef4c0ce3330a123112b76084",
           "file": "src/components/members/profile-photo-control.tsx"
         }
       ],
       "declarationDigest": "92fa035f6bfc4002a94ca36c3739feeb7483e1bcadfd25baf0e75aa56b792c8b",
-      "fingerprint": "5e13ec43180516db988608b2f01c208c37f072b1851b98188f5c9234a4749c6c",
+      "fingerprint": "250853ed746165745053c0c3b61dd6c518dc15129edee46d0ab7a128fe01dd92",
       "id": "fingerprint:client_binding:src/components/members/profile-photo-control.tsx",
       "ownerId": "client_binding:src/components/members/profile-photo-control.tsx",
       "ownerModule": "src/components/members/profile-photo-control.tsx",
       "sidecarPath": "src/components/members/profile-photo-control.operation.ts",
-      "sourceDigest": "20fa8ea08bb378e80b5f712256dc41c4f4f89c7bda936d724c72e4ddc0a130e1",
+      "sourceDigest": "a31de9bc58178b7e6949a1585a08904397062e026f9a7ef7cda25b8c5dca833a",
       "status": "declared"
     },
     {
@@ -3168,17 +3168,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "ee298988c7abcf6f826dadfc18e9380726d1d0786a19ac76b2e4034f4bb5a299",
+          "digest": "eda94eb6263b27071273d15d5629ec0332af4bafb64e376323f415bcd51a9b4d",
           "file": "src/components/settings/notification-subscribe-card.tsx"
         }
       ],
       "declarationDigest": "d04335c74a63f2ff1be9373d88dfdd118e67924eb2285e6ea95fbd2a7188739e",
-      "fingerprint": "bb3a0e597f143293d1ec4b8874f976377a19f8d7d408d60f39732d8c83c7a5f0",
+      "fingerprint": "30c7d8b283a9dbcef557d7e742ebd35c088b6967eb45708267b92b17fa4bca1b",
       "id": "fingerprint:client_binding:src/components/settings/notification-subscribe-card.tsx",
       "ownerId": "client_binding:src/components/settings/notification-subscribe-card.tsx",
       "ownerModule": "src/components/settings/notification-subscribe-card.tsx",
       "sidecarPath": "src/components/settings/notification-subscribe-card.operation.ts",
-      "sourceDigest": "602d642ce355b79926f4e1e00cff9ea6bf7c55ad6ff08f8345baa6727552c7c9",
+      "sourceDigest": "ddbedc197b8d461053ded0584df270855105be2a52e8846d3f4ccafe272224fa",
       "status": "declared"
     },
     {
@@ -3280,17 +3280,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "e28baffb280e3ce84588be38be19e8011beed14fd468700ba9ade4c05b0dc684",
+          "digest": "ac60578dc47ef9d7274ae86d7d1e51550977780108ec910494762e1afcc6cba6",
           "file": "src/components/unseen-moments-badge.tsx"
         }
       ],
       "declarationDigest": "a10f3f6b59fe4d20e6e9f8edfe0e9a01ba3d625ef9460d6c51c9c4fa02047ec0",
-      "fingerprint": "b6547983074d9b0f34ff2a8b7fc8ee9d10480f2d59de76c121a9cd451df018dc",
+      "fingerprint": "f25e1c027ea8260e8f9639861ce6fbe9de6171ec5b2b141e74b3c9472abcddd1",
       "id": "fingerprint:client_binding:src/components/unseen-moments-badge.tsx",
       "ownerId": "client_binding:src/components/unseen-moments-badge.tsx",
       "ownerModule": "src/components/unseen-moments-badge.tsx",
       "sidecarPath": "src/components/unseen-moments-badge.operation.ts",
-      "sourceDigest": "bf8057154ea379167d1b98a304cae84aa45600be20105618b6b0544cfc4aa03f",
+      "sourceDigest": "2bcccb90cc5d63168cd2755a653c50c00d447e8dc7b170b333692e723b2cb7c1",
       "status": "declared"
     },
     {

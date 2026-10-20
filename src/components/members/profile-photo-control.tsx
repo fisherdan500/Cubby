@@ -93,7 +93,7 @@ export function ProfilePhotoControl({
           {busy ? "Adding…" : photoAttachmentId ? "Change your picture" : "Add your picture"}
         </button>
         {error ? (
-          <p role="alert" className="text-xs font-semibold text-destructive">
+          <p role="alert" className="text-xs font-semibold text-danger">
             {error}
           </p>
         ) : null}
