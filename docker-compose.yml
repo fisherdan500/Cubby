@@ -14,7 +14,7 @@ services:
       # PostgreSQL must run in UTC; APP_TIMEZONE is app-only display. See docs/DEVELOPMENT.md "Timezone".
       TZ: UTC
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cubby_migrator -d cubby"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cubby_migrator -d cubby"]
       interval: 10s
       timeout: 5s
       retries: 10
