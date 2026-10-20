@@ -98,7 +98,7 @@ describe("activity form time entry", () => {
     await user.click(screen.getByRole("button", { name: "30 min ago" }));
     await user.click(screen.getByRole("button", { name: "15 min" }));
     expect(values()).toMatchObject({ occurredAt: "2026-09-15T15:17", startedAt: "2026-09-15T15:17", endedAt: "2026-09-15T15:32" });
-    expect(screen.getByText("Ends 3:32 PM · 15 min")).toBeTruthy();
+    expect((screen.getByLabelText("Ended") as HTMLInputElement).value).toBe("2026-09-15T15:32");
     await user.click(screen.getByRole("button", { name: "Other" }));
     await user.type(screen.getByRole("spinbutton", { name: "Minutes" }), "22");
     expect(values().endedAt).toBe("2026-09-15T15:39");

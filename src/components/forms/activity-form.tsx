@@ -667,6 +667,15 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
   const [showEnd, setShowEnd] = useState(true);
   const endValue = minutes !== null && isWallTime(start) ? minutesToEndWallTime(start, minutes) : "";
   const [endDraft, setEndDraft] = useState(endValue);
+  // The length is the stored truth; this field only displays it. Picking "15 min", typing a custom
+  // length, or moving the start all recompute the end, and the field has to follow - otherwise it
+  // sits showing an end that no longer matches what will be saved. Re-syncing during render is
+  // React's own pattern for state that mirrors a value computed above it.
+  const [syncedEnd, setSyncedEnd] = useState(endValue);
+  if (endValue !== syncedEnd) {
+    setSyncedEnd(endValue);
+    setEndDraft(endValue);
+  }
   const endInvalid = endDraft !== "" && endWallTimeToMinutes(start, endDraft) === null;
 
   function commitEnd(next: string) {
@@ -748,10 +757,12 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
           />
         </label>
       ) : null}
-      {minutes ? (
+      {minutes && !showEnd ? (
         <p className="text-xs font-semibold text-muted-foreground" aria-live="polite">
-          {/* The day is named only when it is not the day it started, so an overnight sleep cannot
-              read as if it ended the same morning it began. */}
+          {/* Only when the Ended field is hidden: with it open this would repeat, in words, the
+              value already sitting in the input directly above. The day is named only when it is
+              not the day it started, so an overnight sleep cannot read as if it ended the same
+              morning it began. */}
           Ends {formatEndWithDay(start, minutes)} · {formatMinutes(minutes)}
         </p>
       ) : null}

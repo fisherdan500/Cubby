@@ -113,9 +113,51 @@ describe("setting how long an activity lasted by its end time", () => {
     expect(read().endedAt).toBe("2026-09-27T21:14");
   });
 
-  it("names the day when an activity ends on a different one", () => {
+  it("moves the Ended field to match a preset, so the two never disagree", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderSleep(overnight);
-    // "Ends 8:30 AM" on a sleep that began the previous evening would read as the same morning.
-    expect(screen.getByText(/Ends Sep 28, 8:30 AM/)).toBeTruthy();
+
+    // The sleep opens on its saved 8:30am end.
+    expect((screen.getByLabelText("Ended") as HTMLInputElement).value).toBe("2026-09-28T08:30");
+
+    // Choosing a length is choosing an end: 8:44pm + 30 min.
+    await user.click(screen.getByRole("button", { name: "30 min" }));
+
+    expect((screen.getByLabelText("Ended") as HTMLInputElement).value).toBe("2026-09-27T21:14");
   });
+
+  it("follows a custom length too", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSleep(overnight);
+
+    // A 706-minute sleep is no preset, so it opens as a custom length already.
+    const custom = screen.getByRole("spinbutton", { name: "Minutes" });
+    await user.clear(custom);
+    await user.type(custom, "45");
+
+    expect((screen.getByLabelText("Ended") as HTMLInputElement).value).toBe("2026-09-27T21:29");
+  });
+
+  it("does not repeat the end in words while the field is showing it", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSleep(overnight);
+
+    await user.click(screen.getByRole("button", { name: "30 min" }));
+
+    // The input already says 9:14pm; saying it again underneath is the clutter.
+    expect(screen.queryByText(/^Ends \d/)).toBeNull();
+
+    // Collapsing the field leaves the summary as the only place the end is stated.
+    await user.click(screen.getByRole("button", { name: "Ends at" }));
+    expect(screen.getByText(/^Ends 9:14 PM · 30 min$/)).toBeTruthy();
+  });
+
+  it("names the day when an activity ends on a different one", async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderSleep(overnight);
+      // The summary is the collapsed view of what the Ended field shows when open, so close it first.
+      await user.click(screen.getByRole("button", { name: "Ends at" }));
+      // "Ends 8:30 AM" on a sleep that began the previous evening would read as the same morning.
+      expect(screen.getByText(/Ends Sep 28, 8:30 AM/)).toBeTruthy();
+    });
 });
