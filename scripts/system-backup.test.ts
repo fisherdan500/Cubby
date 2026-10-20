@@ -44,6 +44,9 @@ case "$last" in
   *string_agg*) echo "\${FAKE_ARCHIVE_KEYRING:-}" ;;
   *'"InvitationSetupCorridorAttestationReceipt"'*) echo "\${FAKE_RECEIPTS:-0}" ;;
   *'"FreshAuthAttestationKey"'*) echo "\${FAKE_ARCHIVE_KEYS:-1}" ;;
+  *EmailChangeDelivery*) echo "\${FAKE_PENDING_MAIL:-0}" ;;
+  *'"EmailDeliveryEncryptionKey"'*) echo "\${FAKE_EMAIL_KEYS:-1}" ;;
+  *'"GlobalSecurityThrottleKey"'*) echo "\${FAKE_THROTTLE_KEYS:-1}" ;;
   *) exit 91 ;;
 esac
 `;
@@ -361,6 +364,41 @@ describe("system restore", () => {
     const deletes = machine.calls().filter((call) => call.includes("DELETE FROM"));
     expect(deletes.some((call) => call.includes("InvitationSetupCorridorAttestationReceipt"))).toBe(true);
     expect(deletes.some((call) => call.includes('DELETE FROM "FreshAuthAttestationKey"'))).toBe(true);
+  });
+
+  it("adopts the email and throttle keys too, so every startup phase can pass", () => {
+    const { machine, archive } = prepared();
+    writeFileSync(path.join(machine.checkout, ".env"), "CUBBY_FRESH_AUTH_ATTESTATION_KEYRING=1:freshkeyfromthenewinstall\n");
+    const result = machine.run("system-restore.sh", ["--archive", archive, "--confirm-empty-install", "--maintenance"], {
+      FAKE_ARCHIVE_KEYRING: "1:deadmachinekeyring",
+      FAKE_PENDING_MAIL: "0",
+      FAKE_EMAIL_KEYS: "2",
+      FAKE_THROTTLE_KEYS: "1"
+    });
+
+    // Adopting only the attestation keys left startup failing one phase later, on
+    // email_delivery_keys, with the install still unreachable.
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("system_restore_email_keys_adopted old_keys_dropped=2 pending_mail=0");
+    expect(result.stdout).toContain("system_restore_throttle_key_adopted old_keys_dropped=1");
+  });
+
+  it("refuses rather than silently binning mail the old server never sent", () => {
+    const { machine, archive } = prepared();
+    writeFileSync(path.join(machine.checkout, ".env"), "CUBBY_FRESH_AUTH_ATTESTATION_KEYRING=1:freshkeyfromthenewinstall\n");
+    const result = machine.run("system-restore.sh", ["--archive", archive, "--confirm-empty-install", "--maintenance"], {
+      FAKE_ARCHIVE_KEYRING: "1:deadmachinekeyring",
+      FAKE_PENDING_MAIL: "3"
+    });
+
+    // That mail is encrypted with a key that died with the machine: it can never be sent from here.
+    // Dropping its key quietly would delete a queued invitation with no trace, so the operator is
+    // told and gets to choose.
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("3 unsent email");
+    expect(result.stderr).toContain("restore with the original .env");
+    // And nothing was binned on the way to refusing.
+    expect(machine.calls().some((call) => call.includes('DELETE FROM "EmailDeliveryEncryptionKey"'))).toBe(false);
   });
 
   it("keeps the setup receipts when the original .env is restored alongside the archive", () => {

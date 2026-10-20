@@ -199,12 +199,25 @@ lets this install adopt its own keys. It reports what that cost:
 ```text
 system_restore_step: this .env is not the one that made the archive; adopting its keys
 system_restore_keys_adopted receipts_dropped=6792 old_keys_dropped=1
+system_restore_email_keys_adopted old_keys_dropped=1 pending_mail=0
+system_restore_throttle_key_adopted old_keys_dropped=1
 ```
 
 **What is dropped:** the invitation setup receipts. Each records that one past invitation setup was
 genuine, signed by a key that died with the old machine. Nothing can re-sign them and nothing still
-running reads them -- they are history, not function. Households, accounts, memberships, invitations,
-entries and photos are untouched.
+running reads them -- they are history, not function. The email-delivery and throttle keys go too;
+both are replaced from this `.env` on the next start. Households, accounts, memberships,
+invitations, entries and photos are untouched.
+
+**One case stops the restore rather than continuing:** mail the old server queued but never sent.
+Its contents are encrypted with the dead machine's key, so this install can neither read nor send
+it, and dropping that key quietly would bin a queued invitation with no trace. The restore says so
+and stops, naming how many:
+
+```text
+the archive holds 3 unsent email(s) encrypted with the old server's key, which this install cannot
+read or send; restore with the original .env, or clear those queues on the old server first
+```
 
 **Keeping `.env` is still better.** When you restore with the original `.env` the keys match, this
 step does not run, and the receipts are kept. Store a copy beside the archive and update it whenever

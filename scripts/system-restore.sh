@@ -116,6 +116,34 @@ if [ -n "$env_keyring" ] && [ -n "$archive_keyring" ] && [ "$env_keyring" != "$a
     || fail "the old attestation keys could not be cleared, so this install cannot adopt its own keys"
   printf 'system_restore_keys_adopted receipts_dropped=%s old_keys_dropped=%s\n' "$receipts" "$archive_keys"
   printf 'Setup receipts from the old server were dropped; they could not be verified here. Nothing else changed.\n'
+
+  # The same collision stops the next startup phase: the restored EmailDeliveryEncryptionKey rows
+  # hold digests this .env cannot reproduce, and the provisioner refuses to replace a key that
+  # queued mail was encrypted under.
+  #
+  # Mail still waiting to go out is the one thing here that is not merely history. Its body cannot
+  # be decrypted without the dead machine's key, so it can never be sent from this install - but it
+  # must not vanish silently either. Fail loudly instead, and let the operator decide, unless the
+  # queue is empty.
+  pending=$(psql_value "SELECT (SELECT count(*) FROM \"EmailChangeDelivery\" WHERE \"state\" IN ('queued','dispatching','retryable_failed')) + (SELECT count(*) FROM \"InvitationEmailDelivery\" WHERE \"state\" IN ('queued','dispatching','retryable_failed'))")
+  if [ "${pending:-0}" -gt 0 ]; then
+    fail "the archive holds $pending unsent email(s) encrypted with the old server's key, which this install cannot read or send; restore with the original .env, or clear those queues on the old server first"
+  fi
+  email_keys=$(psql_value 'SELECT count(*) FROM "EmailDeliveryEncryptionKey"')
+  if [ "${email_keys:-0}" -gt 0 ]; then
+    psql_value 'DELETE FROM "EmailDeliveryEncryptionKey"' > /dev/null \
+      || fail "the old email delivery keys could not be cleared, so this install cannot adopt its own keys"
+    printf 'system_restore_email_keys_adopted old_keys_dropped=%s pending_mail=0\n' "$email_keys"
+  fi
+
+  # Third and last of the key phases. The throttle key is a single row that only rate limiting reads;
+  # nothing references it and startup recreates it from this .env on the next boot.
+  throttle_keys=$(psql_value 'SELECT count(*) FROM "GlobalSecurityThrottleKey"')
+  if [ "${throttle_keys:-0}" -gt 0 ]; then
+    psql_value 'DELETE FROM "GlobalSecurityThrottleKey"' > /dev/null \
+      || fail "the old throttle key could not be cleared, so this install cannot adopt its own keys"
+    printf 'system_restore_throttle_key_adopted old_keys_dropped=%s\n' "$throttle_keys"
+  fi
 fi
 
 households=$(psql_value 'SELECT count(*) FROM "Household" WHERE "deletedAt" IS NULL')
