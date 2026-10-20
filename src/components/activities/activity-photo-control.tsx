@@ -110,7 +110,7 @@ export function ActivityPhotoControl({
         />
       </label>
       {error ? (
-        <p role="alert" className="text-sm font-semibold text-destructive">
+        <p role="alert" className="text-sm font-semibold text-danger">
           {error}
         </p>
       ) : null}

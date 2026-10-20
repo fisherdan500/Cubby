@@ -84,7 +84,7 @@ export function ProfileNameControl({ name }: { name: string }) {
         </button>
         {saved ? <p className="text-xs font-semibold text-muted-foreground">Saved.</p> : null}
       </div>
-      {error ? <p role="alert" className="text-xs font-semibold text-destructive">{error}</p> : null}
+      {error ? <p role="alert" className="text-xs font-semibold text-danger">{error}</p> : null}
     </form>
   );
 }

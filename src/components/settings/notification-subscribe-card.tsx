@@ -231,7 +231,7 @@ export function NotificationSubscribeCard() {
 
       {state.step === "failed" && (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-destructive">{state.reason}</p>
+          <p className="text-sm text-danger">{state.reason}</p>
           <button
             type="button"
             onClick={turnOn}

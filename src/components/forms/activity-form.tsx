@@ -723,7 +723,7 @@ function LengthField({ minutes, onChange, start }: { minutes: number | null; onC
             className="w-56"
           />
           {endInvalid ? (
-            <span role="alert" className="text-xs font-semibold text-destructive">
+            <span role="alert" className="text-xs font-semibold text-danger">
               Ends before it started — check the date.
             </span>
           ) : null}
