@@ -133,7 +133,15 @@ the manual create/replace/revoke ones and follow the same fixed-code discipline.
 
 Two harness details look optional but are not. The disposable PostgreSQL
 healthcheck probes `127.0.0.1:5432`, because the image's first-start temporary
-server answers a socket-only `pg_isready` while TCP is still closed. Identities
+server answers a socket-only `pg_isready` while TCP is still closed -- the
+healthcheck then reports healthy against a server that is about to shut down,
+and whichever rehearsal connects inside that window fails with whatever it
+happened to be doing: `the database system is shutting down`, `database "..."
+does not exist`, a serialization failure or a deadlock. Four different-looking
+CI flakes were all this one window. This rule was documented here and still
+silently broken in 18 of 20 Compose files, so
+`scripts/disposable-postgres-readiness.test.ts` now enforces it across every
+Compose file in the repository and names any that drops the `-h`. Identities
 seeded directly into the database must store the lowercased email, because Better
 Auth looks users up by the lowercased submitted email with case-sensitive equality;
 `scripts/p1-3-invitation-browser-fixture-identity.ts` does this for seeded fixtures.

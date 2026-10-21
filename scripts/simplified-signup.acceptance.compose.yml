@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${CUBBY_SIGNUP_REHEARSAL_PASSWORD:?signup rehearsal password required}
       TZ: UTC
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cubby_signup_rehearsal -d cubby_simplified_signup"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cubby_signup_rehearsal -d cubby_simplified_signup"]
       interval: 2s
       timeout: 3s
       retries: 30

@@ -16767,7 +16767,7 @@
     }
   ],
   "observationCount": 256,
-  "observationDigest": "c0df7fbe47dc66e61dc3135ec7733d128708fbdcfd422e552d6789ba07267590",
+  "observationDigest": "4ac4403fe046e7e5fc1821a60e0a50add26fc2f936073d52ca79ce6418af33d9",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -25260,7 +25260,7 @@
   ],
   "ownerSetDigest": "d3b5b0c170414b2174dfe5a10088695642b9e0a96b2cdc0201a062cbb898b664",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a6f4e93a0a4586680414eb8d5d3ed90caabf20c9ac637f823f8e4578979571e2",
+  "registryDigest": "bf1b5148557b568018ad2fb87bc60d3f11dd812cf74e63758dc9abfaa26ef956",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {
@@ -25476,158 +25476,158 @@
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 3145,
+      "anchorEnd": 3158,
       "anchorFile": "docker-compose.yml",
-      "anchorStart": 3015,
+      "anchorStart": 3028,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "01b9d16bfa0de572d085c3df1993e2832fb454e4f530709f55de457112b773d6",
-      "id": "runtime:docker-compose.yml:3015:main:eval",
+      "fingerprint": "e3c70016f94d2e54ee237dec4e595d01691f58c5847ec32f82c5551a0b4467ab",
+      "id": "runtime:docker-compose.yml:3028:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 4911,
+      "anchorEnd": 4924,
       "anchorFile": "scripts/admin-assisted-accounts.acceptance.compose.yml",
-      "anchorStart": 4781,
+      "anchorStart": 4794,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "9f3dc4d72c3c056b7f9e18bf367f802f859b05878dca158d10e5ebc55b98f5bc",
-      "id": "runtime:scripts/admin-assisted-accounts.acceptance.compose.yml:4781:main:eval",
+      "fingerprint": "a3d09629a59d0d983933e70f442cd53fcf9e8fb952ce4111f67e1dfad23f78c8",
+      "id": "runtime:scripts/admin-assisted-accounts.acceptance.compose.yml:4794:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 4825,
+      "anchorEnd": 4838,
       "anchorFile": "scripts/backup-recovery-rehearsal.compose.yml",
-      "anchorStart": 4695,
+      "anchorStart": 4708,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "50a60f79fc13507c7018f68e33c3e5c1d333c3cf3760148120c2ba2dea34deca",
-      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:4695:main:eval",
+      "fingerprint": "c43d611385c55f8144ecd661c144b06ae3b0c017794fe1f0044b675bfeaeee76",
+      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:4708:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 4969,
+      "anchorEnd": 4982,
       "anchorFile": "scripts/browser-operation-save-path.acceptance.compose.yml",
-      "anchorStart": 4839,
+      "anchorStart": 4852,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "f41011f45b67b23744f858f6f2f2247f57736805fdbe0fee37f003f289e874fc",
-      "id": "runtime:scripts/browser-operation-save-path.acceptance.compose.yml:4839:main:eval",
+      "fingerprint": "e3677aa42acbf539805e14d240e2a2a466185b0867aba59a1b718f06d4556b67",
+      "id": "runtime:scripts/browser-operation-save-path.acceptance.compose.yml:4852:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 4421,
+      "anchorEnd": 4434,
       "anchorFile": "scripts/performance-budgets.acceptance.compose.yml",
-      "anchorStart": 4291,
+      "anchorStart": 4304,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "92d5b25bbf8f383aa2b38330701d903292f63717438119498a654e82577f9570",
-      "id": "runtime:scripts/performance-budgets.acceptance.compose.yml:4291:main:eval",
+      "fingerprint": "534f13b2d822dbc9fd94347af76f3b141f84df85b5531739a4d98adcdbbb8be0",
+      "id": "runtime:scripts/performance-budgets.acceptance.compose.yml:4304:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     },
     {
       "anchorBytes": " [\"CMD\", \"node\", \"-e\", \"fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\"]",
-      "anchorEnd": 5254,
+      "anchorEnd": 5267,
       "anchorFile": "scripts/simplified-signup.acceptance.compose.yml",
-      "anchorStart": 5124,
+      "anchorStart": 5137,
       "codeOption": "-e",
       "disposition": "structural_exclusion",
       "exclusion": {
         "category": "healthcheck_probe_runtime",
         "rationale": "Node healthcheck probe runtime without a repository module; observation-only structural exclusion"
       },
-      "fingerprint": "679bd79cb411b015cc0ef4c259bddd871ca706ecea9a4c42591be5105ad42a25",
-      "id": "runtime:scripts/simplified-signup.acceptance.compose.yml:5124:main:eval",
+      "fingerprint": "1158ccf65308892e67caafc3e2548d8a5ceb176ba1d9e488906f4099d88f90b9",
+      "id": "runtime:scripts/simplified-signup.acceptance.compose.yml:5137:main:eval",
       "ownerModule": null,
       "path": null,
       "role": "main"
     }
   ],
-  "runtimeInvocationLedgerDigest": "686c7252929b28cf2c04b89f36ef736ca418f7c0bc7365d26d7c0ba846603876",
+  "runtimeInvocationLedgerDigest": "a44d6bf1daba640eb7f2c1a75d9a059556719621766a7c525deff0f426d5f0ac",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1,
   "structuralIdentityAnchors": [
     {
       "anchorDigest": "b955511c0cd0a0eb6752e0983a50d13b5b5897c376a8e504423326af522affac",
-      "end": 1269,
+      "end": 1282,
       "file": "docker-compose.yml",
       "kind": "container_build_selector",
-      "start": 1257,
+      "start": 1270,
       "targetFile": "Dockerfile"
     },
     {
       "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
-      "end": 623,
+      "end": 636,
       "file": "scripts/admin-assisted-accounts.acceptance.compose.yml",
       "kind": "container_build_selector",
-      "start": 566,
+      "start": 579,
       "targetFile": "Dockerfile"
     },
     {
       "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
-      "end": 784,
+      "end": 797,
       "file": "scripts/backup-recovery-rehearsal.compose.yml",
       "kind": "container_build_selector",
-      "start": 727,
+      "start": 740,
       "targetFile": "Dockerfile"
     },
     {
       "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
-      "end": 635,
+      "end": 648,
       "file": "scripts/browser-operation-save-path.acceptance.compose.yml",
       "kind": "container_build_selector",
-      "start": 578,
+      "start": 591,
       "targetFile": "Dockerfile"
     },
     {
       "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
-      "end": 627,
+      "end": 640,
       "file": "scripts/performance-budgets.acceptance.compose.yml",
       "kind": "container_build_selector",
-      "start": 570,
+      "start": 583,
       "targetFile": "Dockerfile"
     },
     {
       "anchorDigest": "fdd3f2134b2320b697a7efefb94e4be884fcb2284c0da84f330e0476c6761737",
-      "end": 1037,
+      "end": 1050,
       "file": "scripts/simplified-signup.acceptance.compose.yml",
       "kind": "container_build_selector",
-      "start": 980,
+      "start": 993,
       "targetFile": "Dockerfile"
     },
     {

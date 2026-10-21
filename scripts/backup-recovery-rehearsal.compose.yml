@@ -9,7 +9,7 @@ services:
       # database_timezone startup phase must still pin every connection to UTC so sign-in works.
       TZ: America/New_York
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cubby_rehearsal -d cubby_backup_rehearsal"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cubby_rehearsal -d cubby_backup_rehearsal"]
       interval: 2s
       timeout: 3s
       retries: 30
