@@ -121,6 +121,59 @@ describe("handleError", () => {
     expect(wrongStatus).toEqual([]);
   });
 
+  it("keeps the exact wording of every backup sentence a person can reach", async () => {
+    // The table above pins CODES and STATUSES; it never asserted the sentence itself, so any of
+    // these could have been reworded into something unhelpful - or into a bare identifier - without
+    // a single test failing. Restoring a backup is the moment a family is most likely to be anxious
+    // and least able to guess what a terse refusal wants from them, so the words are part of the
+    // contract, not decoration.
+    //
+    // Pinned verbatim and deliberately. Changing a sentence here is allowed; changing it WITHOUT
+    // noticing is what this prevents. If you reword one, update its line and keep the qualities
+    // asserted at the bottom of this test.
+    const expected: Array<[string, number, string]> = [
+      ["backup_upload_busy", 429, "Another backup upload is in progress. Try again when it finishes."],
+      ["backup_upload_timeout", 408, "The backup upload took too long. Try again."],
+      ["backup_upload_aborted", 408, "The backup upload was cancelled."],
+      ["backup_active_timer", 409, "This backup contains a running or paused timer. Stop it before exporting a new backup."],
+      ["backup_invalid_timer", 422, "This backup contains invalid timer history and cannot be restored."],
+      ["backup_invalid_content_type", 415, "Upload a JSON backup with application/json content type."],
+      ["backup_invalid_json", 422, "The selected file is not valid JSON."],
+      ["backup_invalid", 422, "The selected file is not a valid Cubby backup."],
+      ["backup_duplicate_source_id", 422, "The backup contains duplicate source records and cannot be restored."],
+      ["backup_dangling_reference", 422, "The backup contains a reference to a missing record and cannot be restored."],
+      ["backup_too_large", 413, "Cubby backup files must be 25 MiB or smaller."],
+      ["backup_target_not_empty", 409, "This household already has data, so a restore would have to overwrite it. Restore into a new empty household instead, or set up Cubby fresh on the new machine and restore there."],
+      ["backup_checksum_mismatch", 422, "The backup checksum does not match its contents."],
+      ["backup_unsupported_version", 422, "This Cubby backup version is not supported."],
+      ["backup_confirmation_mismatch", 422, "Type the current household name exactly to confirm restore."],
+      ["backup_preview_mismatch", 409, "The selected backup changed after preview. Preview it again."],
+      ["backup_restore_retry", 409, "The household changed during restore. Preview the backup and try again."],
+      ["backup_photos_missing", 422, "This backup lists photos that are not in the file. Choose the .zip backup, which includes them."],
+      ["backup_photo_mismatch", 422, "A photo in this backup does not match what the backup lists, so the file is damaged. Try another backup."],
+      ["backup_photo_unavailable", 409, "A photo could not be read, so the backup was not made. Run the integrity check, then try again."],
+      ["backup_audit_integrity_unavailable", 409, "This household's audit history could not be verified, so restoring into it was refused. Run the integrity check to see why, then try again."],
+      ["archive_too_large", 413, "Cubby backup archives must be 2 GiB or smaller."],
+      ["backup_too_large_to_restore", 413, "This backup holds more history than Cubby can restore in one go. Keep the file safely - it is still a complete copy - and see Moving One Household To A New Cubby in the install guide for how to bring it in. Retrying will not help."],
+      ["backup_directory_unavailable", 503, "Cubby cannot reach its backup folder (AUTOMATED_BACKUP_DIRECTORY). Check it on the platform page, then try again."]
+    ];
+
+    const drifted: string[] = [];
+    for (const [code, status, message] of expected) {
+      const response = handleError(new Error(code));
+      const body = (await response.json()) as { error: { code: string; message: string } };
+      if (body.error.message !== message) drifted.push(`${code}: "${body.error.message}"`);
+      expect(response.status).toBe(status);
+
+      // Qualities every one of these has to keep, whatever the wording becomes:
+      // a real sentence, never a bare identifier leaked into the interface.
+      expect(body.error.message).not.toMatch(/^(backup|archive|pause)_/);
+      expect(body.error.message.length).toBeGreaterThan(20);
+      expect(body.error.message).toMatch(/[.!]$/);
+    }
+    expect(drifted).toEqual([]);
+  });
+
   it("tells a family what to do when the household they are restoring into already has data", async () => {
     // The commonest moment to reach for a backup is on the instance already in use, and the refusal
     // there used to name the requirement ("a fresh household with only its current owner") without
