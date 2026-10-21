@@ -6,6 +6,7 @@ import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
 import { ActivityPhotoPicker } from "@/components/forms/activity-photo-picker";
+import { runFeedOperation } from "@/components/feed/feed-post-actions";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { scrollRow, useFollowNow, WhenField, type WhenValue } from "@/components/forms/when-field";
@@ -119,6 +120,9 @@ export function ActivityForm({
   const [activeTimer, setActiveTimer] = useState(() => type === "sleep" && !initial);
   // Photos chosen before the entry exists: uploaded privately already, attached by the save itself.
   const [photoIds, setPhotoIds] = useState<string[]>([]);
+  // A comment needs a parent row that already exists, so unlike photos it cannot ride the save.
+  // It is posted against the id the save returns -- see finish().
+  const [feedComment, setFeedComment] = useState("");
   useFollowNow(when, setWhen, appTimeZone);
 
   function clearOperation(storageKey: string) {
@@ -129,11 +133,27 @@ export function ActivityForm({
     }
   }
 
-  function finish(storageKey: string, body: Record<string, FormDataEntryValue>, completed: ActivityOperationData) {
+  async function finish(storageKey: string, body: Record<string, FormDataEntryValue>, completed: ActivityOperationData) {
     clearOperation(storageKey);
     // The screen this returns to offers a short-lived Undo for a new entry.
     const createdId = createdActivityId(completed);
     if (createdId) rememberSavedEntry(sessionStorage, { activityId: createdId, label: activityLabels[type] }, Date.now());
+    // The comment can only be written against a parent that already exists, so it goes now, with the
+    // id the save just returned. Deliberately NOT awaited into the save's own failure path: the entry
+    // is the thing that matters, and a comment that does not send must never cost the family an entry.
+    if (createdId && feedComment.trim()) {
+      try {
+        await runFeedOperation(
+          `cubby:feed-comment-create:activity:${createdId}`,
+          "/api/feed/comments",
+          "POST",
+          { parentKind: "activity", parentId: createdId, body: feedComment.trim() },
+          { parentKind: "activity", parentId: createdId }
+        );
+      } catch {
+        // Swallowed on purpose. The entry is saved; the comment is not worth undoing it for.
+      }
+    }
     const destination = activityFormSuccessHref({
       successTo,
       babyId: String(body.babyId || defaultBaby),
@@ -164,7 +184,7 @@ export function ActivityForm({
           clearOperation(storageKey);
           currentOperationId = undefined;
         } else if (reconciled.status === "completed") {
-          finish(storageKey, body, reconciled.result?.ok ? reconciled.result.data : undefined);
+          await finish(storageKey, body, reconciled.result?.ok ? reconciled.result.data : undefined);
           return;
         } else if (reconciled.status === "pending") {
           setError("This activity request is still in progress. Reconcile it before changing it again.");
@@ -199,7 +219,7 @@ export function ActivityForm({
         return;
       }
       if (submitted.status === "completed") {
-        finish(storageKey, body, submitted.result?.ok ? submitted.result.data : undefined);
+        await finish(storageKey, body, submitted.result?.ok ? submitted.result.data : undefined);
         return;
       }
       if (submitted.status === "pending") {
@@ -260,6 +280,26 @@ export function ActivityForm({
           entry and come back to add the picture they already took. Only the save that CREATES an entry
           claims photos, so offering this while editing would promise something the save drops. */}
       {activityId ? null : <ActivityPhotoPicker onChange={setPhotoIds} />}
+
+      {/* Words belong with the entry for the same reason the pictures do. This is a real Moments
+          comment -- the household sees it under the entry and can reply -- not a second private
+          notes field; notes are text ON the entry, a comment is a response UNDER it.
+          Hidden while editing for the photo picker's reason: that save path never claims it. */}
+      {activityId ? null : (
+        <label className="block text-sm font-semibold">
+          Comment
+          <Textarea
+            name="feedComment"
+            rows={2}
+            value={feedComment}
+            onChange={(event) => setFeedComment(event.target.value)}
+            placeholder="Say something about this for the family"
+          />
+          <span className="mt-1 block text-xs font-normal text-muted">
+            Shows in Moments under this entry, where the household can reply.
+          </span>
+        </label>
+      )}
 
       {/* Cancel and Save share the activity page's bar: FIXED just above the phone's bottom navigation, the
           same height and in the same spot on every form, so the thumb always finds them and they never
