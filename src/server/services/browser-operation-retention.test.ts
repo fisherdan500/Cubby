@@ -60,10 +60,33 @@ describe("browser operation retention", () => {
     expect(mocks.transaction).toHaveBeenCalledTimes(2);
   });
 
-  it.each([{ code: "P2034" }, { code: "P2010", meta: { code: "40001" } }])("propagates serialization exhaustion after exactly two attempts %#", async (conflict) => {
+  it.each([{ code: "P2034" }, { code: "P2010", meta: { code: "40001" } }])("propagates serialization exhaustion only after spending every attempt %#", async (conflict) => {
     mocks.transaction.mockRejectedValue(conflict);
     await expect(runBrowserOperationRetention({ batchSize: 25 })).rejects.toBe(conflict);
-    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+    expect(mocks.transaction).toHaveBeenCalledTimes(5);
+  });
+
+  it("keeps retrying past the second attempt, which real contention used to exhaust", async () => {
+    // A concurrent abandon on the same identity invalidates retention's read, and PostgreSQL
+    // refuses the commit. Two conflicts in a row is ordinary contention, not a reason to abandon
+    // the whole pass and leave expired bindings unexpired.
+    mocks.transaction
+      .mockRejectedValueOnce({ code: "P2034" })
+      .mockRejectedValueOnce({ code: "P2034" })
+      .mockRejectedValueOnce({ code: "P2034" });
+    await expect(runBrowserOperationRetention({ now: new Date("2026-08-17T12:00:00Z"), batchSize: 25 })).resolves.toEqual({
+      household: { unresolvedAlertCount: 0, compactedCount: 0, deletedBindingCount: 0 },
+      account: { unresolvedAlertCount: 0, compactedCount: 0, deletedBindingCount: 0 }
+    });
+    expect(mocks.transaction).toHaveBeenCalledTimes(4);
+  });
+
+  it("waits between attempts instead of re-reading the same contended rows immediately", async () => {
+    mocks.transaction.mockRejectedValueOnce({ code: "P2034" });
+    const started = Date.now();
+    await runBrowserOperationRetention({ now: new Date("2026-08-17T12:00:00Z"), batchSize: 25 });
+    // The first backoff is 25ms plus jitter; spinning would return in ~0ms.
+    expect(Date.now() - started).toBeGreaterThanOrEqual(20);
   });
 
   it("does not retry an unrelated transaction failure", async () => {

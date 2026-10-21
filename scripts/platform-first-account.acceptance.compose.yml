@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: cubby_first_account_acceptance
       POSTGRES_PASSWORD: ${CUBBY_FIRST_ACCOUNT_ACCEPTANCE_PASSWORD:?synthetic password required}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cubby_first_account_acceptance -d cubby_first_account_acceptance"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cubby_first_account_acceptance -d cubby_first_account_acceptance"]
       interval: 2s
       timeout: 2s
       retries: 30

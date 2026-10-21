@@ -3680,7 +3680,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -3692,15 +3692,15 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
@@ -3708,21 +3708,21 @@
           "file": "scripts/household-deletion-readiness-guard.ts"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "cfc9e48a4f21a149ddcc6ee22a1787f0ec42dd6d49b156495f544aed3fd5e222",
-      "fingerprint": "80da904c6cb117c86f3d724fdc185f029f1c8be2f7316858aa306a45352ae937",
+      "fingerprint": "ac33e49b3a8a4eef61b62bad7fef52ad42ff41b247b96b07561162644a137789",
       "id": "fingerprint:package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerId": "package_command:scripts/household-deletion-readiness-guard.ts",
       "ownerModule": "scripts/household-deletion-readiness-guard.ts",
       "sidecarPath": "scripts/household-deletion-readiness-guard.operation.ts",
-      "sourceDigest": "933e14985d9538e75021dff26c3e0b24d41252fe03894e48aff6cdb86351eae3",
+      "sourceDigest": "3ccb04c52fb235bf3795a5b31eb28018138fabf4dc3aaa9e4e9e7769ea4308a0",
       "status": "declared"
     },
     {
@@ -3732,7 +3732,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -3740,15 +3740,15 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
@@ -3756,21 +3756,21 @@
           "file": "scripts/integrity-check.ts"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "c653663765b8b9c3e8e21f3903713c66fa1a8ee927409604794b4302728c15a1",
-      "fingerprint": "ee2835bdd9acbd271b69c5658526bfb430fc73059db58ffbc50d3ab05fb625d9",
+      "fingerprint": "2ca2a1e62f53e92843a3a896194593c336ac3a37b863af9151fcd668bafb058c",
       "id": "fingerprint:package_command:scripts/integrity-check.ts",
       "ownerId": "package_command:scripts/integrity-check.ts",
       "ownerModule": "scripts/integrity-check.ts",
       "sidecarPath": "scripts/integrity-check.operation.ts",
-      "sourceDigest": "3aefd866359a6c30cd60f88c1514d428e7b4ea96a69952ef668c53863b725591",
+      "sourceDigest": "6f2ae695128084c768424535a5692ca8720db5bdc9794d8ee96285b324b2d0ef",
       "status": "declared"
     },
     {
@@ -3880,7 +3880,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -3892,15 +3892,15 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
@@ -3908,21 +3908,21 @@
           "file": "scripts/p1-3-node-builtin-probe.mjs"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "1562497e78e2dd043661a15cff76be29362091a45e2c1d757532854b6f75fc10",
-      "fingerprint": "79583cb1a7edcf6d054dade613b4301be7785b5b92dc0717a9b12ba719652afb",
+      "fingerprint": "5c5c2adb442a1c85f1cf3d9486f77163e073674ac4cf760f5932012f73ae55a2",
       "id": "fingerprint:package_command:scripts/p1-3-node-builtin-probe.mjs",
       "ownerId": "package_command:scripts/p1-3-node-builtin-probe.mjs",
       "ownerModule": "scripts/p1-3-node-builtin-probe.mjs",
       "sidecarPath": "scripts/p1-3-node-builtin-probe.operation.ts",
-      "sourceDigest": "46e67377fa8b1d3df1fe4d7afb97f5bfe69d75a22efcbf758659ea13e982dcb1",
+      "sourceDigest": "11485905a39afe00054d06aecd6ad599af76b6e409e3873a10fbd9c033a7a310",
       "status": "declared"
     },
     {
@@ -3992,7 +3992,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4000,19 +4000,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4020,17 +4020,17 @@
           "file": "scripts/platform-owner.ts"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "3246f88ee86d13812b057916cb440a2a626faf92c3fdf8fa60bc959d2712f9c2",
-      "fingerprint": "81da90182b40bb58159e70be25a83acfd566fc97a49aafb633bab6b0b6eaa93a",
+      "fingerprint": "d6909921c29a1fc7d9ab7cb6351958c0a81d9b31bdacf5014faa7966552df6db",
       "id": "fingerprint:package_command:scripts/platform-owner.ts",
       "ownerId": "package_command:scripts/platform-owner.ts",
       "ownerModule": "scripts/platform-owner.ts",
       "sidecarPath": "scripts/platform-owner.operation.ts",
-      "sourceDigest": "5c0620537f9cce87a9686b429e531520605e2bc08f1cae75ab42cae6424c894a",
+      "sourceDigest": "e6afbd7077f5ae26018f4da8c254a57922b05f9854219a70798704eefa107945",
       "status": "declared"
     },
     {
@@ -4060,7 +4060,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4072,19 +4072,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4092,17 +4092,17 @@
           "file": "scripts/provision-database-timezone.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "b955075c076d41c34cde29144ddbe77893af4324035949a0e3b49701fd0aedaf",
-      "fingerprint": "88e1dbb7f9fabaede1206567506d2461d5fb807c1d0549a9981abbaf833404c7",
+      "fingerprint": "fd07cd0a7512417697175a30e5092d9c4661057c79ee8bc7bca98428a0b9c93e",
       "id": "fingerprint:package_command:scripts/provision-database-timezone.mjs",
       "ownerId": "package_command:scripts/provision-database-timezone.mjs",
       "ownerModule": "scripts/provision-database-timezone.mjs",
       "sidecarPath": "scripts/provision-database-timezone.operation.ts",
-      "sourceDigest": "242070cd613f419a3d063c3ee62fe900ae0f7dcfb9c6a08acbaac563dce9717e",
+      "sourceDigest": "d6deda4d9ef6026ba92c446ef8012119d05fee962442ad29fc99d10665405c14",
       "status": "declared"
     },
     {
@@ -4112,7 +4112,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4124,19 +4124,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4144,17 +4144,17 @@
           "file": "scripts/provision-email-delivery-keys.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "3ec0a70c2151c092806abb5fdb0e3a4e9778e9ba1eff50f220322ae849b25f89",
-      "fingerprint": "81b2192e37405fda43486fa075d418385bb33f45671da943259165015f6dd99c",
+      "fingerprint": "fea0117320b2d54b07428fd72e3c4407027e22095db053fcbcf5b9b155c33689",
       "id": "fingerprint:package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerId": "package_command:scripts/provision-email-delivery-keys.mjs",
       "ownerModule": "scripts/provision-email-delivery-keys.mjs",
       "sidecarPath": "scripts/provision-email-delivery-keys.operation.ts",
-      "sourceDigest": "e555be9ff0c06efae88332e0ad97d26bd505bf8ae05920ca91f84ea509fc9a8b",
+      "sourceDigest": "2ad26f2ee771a2e82c36cabe8d208a15ebea4e39f2ce2836ee71d13791f15917",
       "status": "declared"
     },
     {
@@ -4164,7 +4164,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4176,19 +4176,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4196,17 +4196,17 @@
           "file": "scripts/provision-fresh-auth-attestation-keys.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "f08aa3cb50e2250ca24f5bd928a7ba51ee1a982abc73714f6e84e5f527c9bd3d",
-      "fingerprint": "a7d9921ad2a03941c4937a1e2e2ef8327299321ea9570f66231e14fa9e48f052",
+      "fingerprint": "a7338aadb841cbefccba5b48317d93059df4ed2f054b52deb60c8b2f4d1bf7e8",
       "id": "fingerprint:package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
       "ownerId": "package_command:scripts/provision-fresh-auth-attestation-keys.mjs",
       "ownerModule": "scripts/provision-fresh-auth-attestation-keys.mjs",
       "sidecarPath": "scripts/provision-fresh-auth-attestation-keys.operation.ts",
-      "sourceDigest": "002936383f0a62b7860581c386180af265a63e3ac3d1a17d3c8148fc3f554d73",
+      "sourceDigest": "f46dc25324f19e7cac71d2b845b10a451f9ee46529eff8d446cc39179c4c3483",
       "status": "declared"
     },
     {
@@ -4216,7 +4216,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4228,19 +4228,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4248,17 +4248,17 @@
           "file": "scripts/provision-global-security-throttle-key.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "aaabe40de6ef27d59c1228e7565317489f805861274300b1166b27f5533abee4",
-      "fingerprint": "b7b1da38ea2cfef43a12430bceb4d9da1488be40dbd7976085da661e259c17a5",
+      "fingerprint": "063c3638ab402043717bbdaa48829a8919a01d56cde7ac0be5eac465eb9ac80a",
       "id": "fingerprint:package_command:scripts/provision-global-security-throttle-key.mjs",
       "ownerId": "package_command:scripts/provision-global-security-throttle-key.mjs",
       "ownerModule": "scripts/provision-global-security-throttle-key.mjs",
       "sidecarPath": "scripts/provision-global-security-throttle-key.operation.ts",
-      "sourceDigest": "180f25e8052b32c3e5a4df8b6b3f7dfc1c52b6ed940a1ad3911358b1e533ca80",
+      "sourceDigest": "3073216f713149d93189747150c2ea164568673abccc232ac6809d47dbda1950",
       "status": "declared"
     },
     {
@@ -4268,7 +4268,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4280,19 +4280,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4300,17 +4300,17 @@
           "file": "scripts/provision-invitation-runtime-roles.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "7ce38019bcbd51bb1cec16a6430bfdb6f547936df292131645910ad144e9cc02",
-      "fingerprint": "9776799b94688c47adc1f31c66c0b3f19bbefaad7464811d2a8a16122e4eaba7",
+      "fingerprint": "5576569f35863c5fa0370c882d6ad382124912762a9602e886bd6e64ceed5771",
       "id": "fingerprint:package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerId": "package_command:scripts/provision-invitation-runtime-roles.mjs",
       "ownerModule": "scripts/provision-invitation-runtime-roles.mjs",
       "sidecarPath": "scripts/provision-invitation-runtime-roles.operation.ts",
-      "sourceDigest": "defdf621d1ad68b22c6b082d1d2d1c22a75daf7724b8f3759fae1e70277291f2",
+      "sourceDigest": "00a8bea839e6f157683fbf938c95b82e6469efc9df65bfc8b1709f9468295219",
       "status": "declared"
     },
     {
@@ -4320,7 +4320,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4332,19 +4332,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4352,17 +4352,17 @@
           "file": "scripts/provision-platform-setup-code.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "a61dda018952d15438808805513aa3e9384fa70be68f348547874d16f3e8debc",
-      "fingerprint": "1870d7515a6f8c236102ccee5c01c16eca1c0c13e6b34c83e87f8307351d9899",
+      "fingerprint": "394b5dfa052431af67b93fb89fce73357cb7222f3e3df4f3e9653d2f13212049",
       "id": "fingerprint:package_command:scripts/provision-platform-setup-code.mjs",
       "ownerId": "package_command:scripts/provision-platform-setup-code.mjs",
       "ownerModule": "scripts/provision-platform-setup-code.mjs",
       "sidecarPath": "scripts/provision-platform-setup-code.operation.ts",
-      "sourceDigest": "744c74fa8a824acaf9c2b7170859a7afa330f6bb77dead759a84d02ab7c21831",
+      "sourceDigest": "4147a2b51eb94ebe0d9d388600c9e0f6718ba20e12d2568337ce644e69e0b196",
       "status": "declared"
     },
     {
@@ -4372,7 +4372,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4384,19 +4384,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4404,17 +4404,17 @@
           "file": "scripts/provision-security-runtime-role.mjs"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "875b0cb9cbc0ed831f536ef3b3803eac8e55dc67ed20616103c71b0ef2eb3113",
-      "fingerprint": "cd7359198e68909881b4d9e9f29ca89650fc9df5ebe39b510e331d21fc4a9751",
+      "fingerprint": "31fda4a552e6a4be61eb594eee322dd5a111df8512d074c3dcfcfcdeb8fcf6c4",
       "id": "fingerprint:package_command:scripts/provision-security-runtime-role.mjs",
       "ownerId": "package_command:scripts/provision-security-runtime-role.mjs",
       "ownerModule": "scripts/provision-security-runtime-role.mjs",
       "sidecarPath": "scripts/provision-security-runtime-role.operation.ts",
-      "sourceDigest": "0c8e6527fe2d3cf2d0daa4d31c0ee3c84639d031af6d1b7657c0501051af597d",
+      "sourceDigest": "c7043cac08de4a510035fec83cbf6387fc5547962816588862932a81a65443bc",
       "status": "declared"
     },
     {
@@ -4464,7 +4464,7 @@
           "file": "Dockerfile"
         },
         {
-          "digest": "cbca2730cb2c250cdaaa1a0842cad1264de47159ca1fc44c8fd2e5084ddd0b7a",
+          "digest": "bc94cfe5b945b5bcb4f11ee2e802ee5ba0ce0ae63772c9ee2039dd5f953a2dd4",
           "file": "docker-compose.yml"
         },
         {
@@ -4472,19 +4472,19 @@
           "file": "package.json"
         },
         {
-          "digest": "54dc0816ab62b4be410a97616348f6ec6b455328e7c6571c1e3f7d1ff3c03b88",
+          "digest": "947941b1b93a0ca18e3a5e6782136cba23ca6f758248178fb2d8d2d3b4fc61f2",
           "file": "scripts/admin-assisted-accounts.acceptance.compose.yml"
         },
         {
-          "digest": "65e133e6c8c3202f5ca340deff69847488b8c0b7f2efcd700546719fb5101d20",
+          "digest": "ceaa1a57e4a7be2d5b120837d3189c4d867d07025bad03ba3a7865ab98c100be",
           "file": "scripts/backup-recovery-rehearsal.compose.yml"
         },
         {
-          "digest": "8caddb70da347ba6d3cd9f999b8e41f6ee5a338634fa3a5c986a027c0efb4084",
+          "digest": "53d033e2b78bcdb26d0dbe0fa5e7ffbac5cc52c8d49299f7875dfcbe260a4d59",
           "file": "scripts/browser-operation-save-path.acceptance.compose.yml"
         },
         {
-          "digest": "ddfc6a778147d2750f9a0865165a3c92e57e479d0cf192baf02cd45201999506",
+          "digest": "a0dd52c2aafc956df0cb54259a95dba64c8e621a33e190fb6c641bd4d254c7b4",
           "file": "scripts/performance-budgets.acceptance.compose.yml"
         },
         {
@@ -4492,17 +4492,17 @@
           "file": "scripts/security-operator.ts"
         },
         {
-          "digest": "fc12d3596473dbedd2fbc3995e7089862029783771a0d2787f644a9d85cd20b4",
+          "digest": "fb33eb4a15203b92f15cecbe1ece54a417113b69d000ad1223026a4883b3c5ba",
           "file": "scripts/simplified-signup.acceptance.compose.yml"
         }
       ],
       "declarationDigest": "f96c68b2729a122fcbaabe348a0e1febca5b8fddc254edcc963e7292333b5311",
-      "fingerprint": "26c147608f1f2a3f5d30fac7f1beecd18ab70a7721a40ae7e67ac6602a37c85f",
+      "fingerprint": "d6b8840c285bcc8756b855ae469d0bce5d5f583bf1f4fd85e3f8e13396b5f2cf",
       "id": "fingerprint:package_command:scripts/security-operator.ts",
       "ownerId": "package_command:scripts/security-operator.ts",
       "ownerModule": "scripts/security-operator.ts",
       "sidecarPath": "scripts/security-operator.operation.ts",
-      "sourceDigest": "79de76a706397d3e09d11931d5b14cbf8b1dfa2fa100571b5bf20b3b0be482e0",
+      "sourceDigest": "0bc2652cb493a11eea0246407f0c2d377b086f5e62d326defc363a1ec0c9afae",
       "status": "declared"
     },
     {
@@ -4648,11 +4648,11 @@
   ],
   "generatorDigest": "829c55ae6d039788eed92b6b9f9bdad89513e02f0f5a8bf9359ba23a928e202b",
   "generatorVersion": "r0.1",
-  "observationDigest": "c0df7fbe47dc66e61dc3135ec7733d128708fbdcfd422e552d6789ba07267590",
+  "observationDigest": "4ac4403fe046e7e5fc1821a60e0a50add26fc2f936073d52ca79ce6418af33d9",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "d3b5b0c170414b2174dfe5a10088695642b9e0a96b2cdc0201a062cbb898b664",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "a6f4e93a0a4586680414eb8d5d3ed90caabf20c9ac637f823f8e4578979571e2",
+  "registryDigest": "bf1b5148557b568018ad2fb87bc60d3f11dd812cf74e63758dc9abfaa26ef956",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {
@@ -4712,31 +4712,31 @@
       "id": "runtime:docker/entrypoint.sh:4830:main:/app/server.js"
     },
     {
-      "fingerprint": "01b9d16bfa0de572d085c3df1993e2832fb454e4f530709f55de457112b773d6",
-      "id": "runtime:docker-compose.yml:3015:main:eval"
+      "fingerprint": "e3c70016f94d2e54ee237dec4e595d01691f58c5847ec32f82c5551a0b4467ab",
+      "id": "runtime:docker-compose.yml:3028:main:eval"
     },
     {
-      "fingerprint": "9f3dc4d72c3c056b7f9e18bf367f802f859b05878dca158d10e5ebc55b98f5bc",
-      "id": "runtime:scripts/admin-assisted-accounts.acceptance.compose.yml:4781:main:eval"
+      "fingerprint": "a3d09629a59d0d983933e70f442cd53fcf9e8fb952ce4111f67e1dfad23f78c8",
+      "id": "runtime:scripts/admin-assisted-accounts.acceptance.compose.yml:4794:main:eval"
     },
     {
-      "fingerprint": "50a60f79fc13507c7018f68e33c3e5c1d333c3cf3760148120c2ba2dea34deca",
-      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:4695:main:eval"
+      "fingerprint": "c43d611385c55f8144ecd661c144b06ae3b0c017794fe1f0044b675bfeaeee76",
+      "id": "runtime:scripts/backup-recovery-rehearsal.compose.yml:4708:main:eval"
     },
     {
-      "fingerprint": "f41011f45b67b23744f858f6f2f2247f57736805fdbe0fee37f003f289e874fc",
-      "id": "runtime:scripts/browser-operation-save-path.acceptance.compose.yml:4839:main:eval"
+      "fingerprint": "e3677aa42acbf539805e14d240e2a2a466185b0867aba59a1b718f06d4556b67",
+      "id": "runtime:scripts/browser-operation-save-path.acceptance.compose.yml:4852:main:eval"
     },
     {
-      "fingerprint": "92d5b25bbf8f383aa2b38330701d903292f63717438119498a654e82577f9570",
-      "id": "runtime:scripts/performance-budgets.acceptance.compose.yml:4291:main:eval"
+      "fingerprint": "534f13b2d822dbc9fd94347af76f3b141f84df85b5531739a4d98adcdbbb8be0",
+      "id": "runtime:scripts/performance-budgets.acceptance.compose.yml:4304:main:eval"
     },
     {
-      "fingerprint": "679bd79cb411b015cc0ef4c259bddd871ca706ecea9a4c42591be5105ad42a25",
-      "id": "runtime:scripts/simplified-signup.acceptance.compose.yml:5124:main:eval"
+      "fingerprint": "1158ccf65308892e67caafc3e2548d8a5ceb176ba1d9e488906f4099d88f90b9",
+      "id": "runtime:scripts/simplified-signup.acceptance.compose.yml:5137:main:eval"
     }
   ],
-  "runtimeInvocationLedgerDigest": "686c7252929b28cf2c04b89f36ef736ca418f7c0bc7365d26d7c0ba846603876",
+  "runtimeInvocationLedgerDigest": "a44d6bf1daba640eb7f2c1a75d9a059556719621766a7c525deff0f426d5f0ac",
   "runtimeInvocationLedgerDigestVersion": "selected-shell-runtime-ledger.v1",
   "schemaDigest": "4b1d6e1e6fc0534ed448ccccb27f08a51309e0721e3a42d80a5f47ff3c47c2b7",
   "schemaVersion": 1
