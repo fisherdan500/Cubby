@@ -209,7 +209,12 @@ export function handleError(error: unknown) {
     if (error.message === "backup_duplicate_source_id") return fail("backup_duplicate_source_id", "The backup contains duplicate source records and cannot be restored.", 422);
     if (error.message === "backup_dangling_reference") return fail("backup_dangling_reference", "The backup contains a reference to a missing record and cannot be restored.", 422);
     if (error.message === "backup_too_large") return fail("backup_too_large", "Cubby backup files must be 25 MiB or smaller.", 413);
-    if (error.message === "backup_target_not_empty") return fail("backup_target_not_empty", "Restore requires a fresh household with only its current owner.", 409);
+    // Names the way out, not just the refusal. This is the message a family meets when they try to
+    // restore onto the instance they are already using - the commonest moment to reach for a backup -
+    // and "requires a fresh household" told them what was wrong without telling them what to do.
+    // Restoring into a household that already holds entries would have to merge or overwrite them,
+    // so the guard stays; the sentence now points at the two paths that actually work.
+    if (error.message === "backup_target_not_empty") return fail("backup_target_not_empty", "This household already has data, so a restore would have to overwrite it. Restore into a new empty household instead, or set up Cubby fresh on the new machine and restore there.", 409);
     if (error.message === "backup_checksum_mismatch") return fail("backup_checksum_mismatch", "The backup checksum does not match its contents.", 422);
     if (error.message === "backup_unsupported_version") return fail("backup_unsupported_version", "This Cubby backup version is not supported.", 422);
     if (error.message === "backup_confirmation_mismatch") return fail("backup_confirmation_mismatch", "Type the current household name exactly to confirm restore.", 422);

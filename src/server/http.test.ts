@@ -121,6 +121,21 @@ describe("handleError", () => {
     expect(wrongStatus).toEqual([]);
   });
 
+  it("tells a family what to do when the household they are restoring into already has data", async () => {
+    // The commonest moment to reach for a backup is on the instance already in use, and the refusal
+    // there used to name the requirement ("a fresh household with only its current owner") without
+    // naming a way forward. Pin the guidance: the message has to offer the paths that work, or this
+    // regresses to a dead end the next time someone edits the copy.
+    const response = handleError(new Error("backup_target_not_empty"));
+    const body = (await response.json()) as { error: { code: string; message: string } };
+    expect(response.status).toBe(409);
+    expect(body.error.code).toBe("backup_target_not_empty");
+    expect(body.error.message).toMatch(/already has data/i);
+    expect(body.error.message).toMatch(/new empty household/i);
+    // Says why it refuses rather than only that it refuses.
+    expect(body.error.message).toMatch(/overwrite/i);
+  });
+
   it("falls back to a generic failure for an error it does not recognise", async () => {
     // Still the right behaviour for a genuinely unknown error: say little, log everything. A database
     // trigger raise arrives as Prisma wrapper text with no retryable code and belongs here.
