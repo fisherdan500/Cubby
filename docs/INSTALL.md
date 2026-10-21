@@ -428,7 +428,8 @@ webhook. The onboarding **Restore household backup** choice creates an ordinary 
 household with one owner membership, settings and a household-creation audit checkpoint, and no
 baby. Ordinary **Create a new household and first baby** still creates its initial baby. A household
 you have been trying things in may not be empty even if it looks empty on screen. The refusal is
-`Restore requires a fresh household with only its current owner.`
+`This household already has data, so a restore would have to overwrite it. Restore into a new empty
+household instead, or set up Cubby fresh on the new machine and restore there.`
 
 **You must be the household's only member, and its owner.** Invite the rest of the family *after*
 the restore, not before.

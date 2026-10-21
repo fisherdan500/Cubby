@@ -81,31 +81,32 @@ restores into a fresh household and proves that:
 
 ## Moving Your Data To Another Machine
 
-This is the path to use when you are replacing hardware, rebuilding an instance, or carrying a
-household to a new Cubby. It is verified end-to-end against a real exported household in
+The full procedure lives in **INSTALL.md section 9, "Moving One Household To A New Cubby"** — follow
+that one. It covers what this flow does and does not carry (accounts, authorship, vaccine
+documents), the exact onboarding path, and the steps in order.
+
+The short version, and the parts people trip over:
+
+- Use the onboarding **Restore household backup** choice on the destination. It deliberately creates
+  an EMPTY household with no baby, which is what restore requires. The ordinary **Create a new
+  household and first baby** choice does create a baby, and that household is then no longer empty.
+- **A restore renames the household** to the name stored in the backup (`backups.ts:971`). The
+  confirmation box asks for the name the household has **now**, before the restore — not the name it
+  will end up with.
+- **The confirmation is checked BEFORE emptiness.** So a second restore attempt into an
+  already-restored household fails on the confirmation, not on the emptiness guard, which is
+  confusing if you expected the latter.
+- **A restore will not land on top of existing data.** Cubby refuses rather than merging or
+  overwriting. There is no "replace everything in this household" option, by design: a merge would
+  have to silently pick a winner for every conflicting entry.
+- A household that merely *looks* empty may not be — an outstanding invite, API key or webhook is
+  enough to fail the check.
+
+Verified end-to-end against a real exported household in
 `scripts/real-backup-migration.integration.test.ts`.
 
-1. On the old instance, export the household backup (Settings -> Backups). Keep the `.zip` if the
-   household has photos; `backup.json` alone is refused for a household that had any.
-2. Install Cubby on the new machine and complete first-run setup. You will be asked to create a
-   household and a baby - that is expected, and the next step replaces them.
-3. Still on the new machine, create a **new, empty household** and switch to it, or use the
-   first-run household **only if you have not logged anything into it**. Restore needs a household
-   whose sole member is you and which holds no entries.
-4. Restore the backup into that empty household.
-
-Two things surprise people, both deliberate:
-
-- **The household is renamed.** A restore adopts the household name stored in the backup, so the
-  target takes the old household's name. The confirmation box asks for the name the household has
-  **now**, before the restore - not the name it will end up with.
-- **A restore will not land on top of existing data.** If the target already holds entries, Cubby
-  refuses rather than merging or overwriting, and says so. Restore into a fresh empty household
-  instead. There is no "replace everything in this household" option, by design: a merge would have
-  to silently pick a winner for every conflicting entry.
-
 If a restore fails with a generic "Something went wrong", that message carries a reference code.
-Quote it when reporting the problem - it joins directly to the server log line that names the real
+Quote it when reporting the problem — it joins directly to the server log line that names the real
 cause, which no other message in the restore path does.
 
 ## What Version 2 Includes
