@@ -14805,9 +14805,9 @@
       "bindings": [
         {
           "anchorDigest": "bff044bd0d2a76f60824fbb76bcafa20c208bdb8950025c0629565d1103f03c9",
-          "anchorEnd": 1486,
+          "anchorEnd": 2843,
           "anchorFile": "src/components/unseen-moments-badge.tsx",
-          "anchorStart": 1408,
+          "anchorStart": 2765,
           "kind": "global_fetch",
           "symbol": "fetch[1]",
           "target": "globalThis.fetch"
@@ -16767,7 +16767,7 @@
     }
   ],
   "observationCount": 256,
-  "observationDigest": "4ac4403fe046e7e5fc1821a60e0a50add26fc2f936073d52ca79ce6418af33d9",
+  "observationDigest": "73bcc4ae37a07147e13dffeb7e6c39679af2e098968c40657dec984f035f3ebe",
   "observationDigestVersion": "normalized-observation.v1",
   "omissionLedger": [],
   "owners": [
@@ -22012,9 +22012,9 @@
     {
       "bindings": [
         {
-          "anchorEnd": 1486,
+          "anchorEnd": 2843,
           "anchorFile": "src/components/unseen-moments-badge.tsx",
-          "anchorStart": 1408,
+          "anchorStart": 2765,
           "kind": "global_fetch",
           "ownerModule": "src/components/unseen-moments-badge.tsx",
           "symbol": "fetch[1]",
@@ -25260,7 +25260,7 @@
   ],
   "ownerSetDigest": "d3b5b0c170414b2174dfe5a10088695642b9e0a96b2cdc0201a062cbb898b664",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "bf1b5148557b568018ad2fb87bc60d3f11dd812cf74e63758dc9abfaa26ef956",
+  "registryDigest": "0e5dd8a4f83e4bfa9cb6dfc19bd6abf52474775df65eaceab5323d1a75f73c32",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationLedger": [
     {

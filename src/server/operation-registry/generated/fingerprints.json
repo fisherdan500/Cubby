@@ -3280,17 +3280,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "ac60578dc47ef9d7274ae86d7d1e51550977780108ec910494762e1afcc6cba6",
+          "digest": "ae0df5eda0a54c47a4e6cd06a52a6e5d4e6e64b623f80e08cc4b05ce5b246595",
           "file": "src/components/unseen-moments-badge.tsx"
         }
       ],
       "declarationDigest": "a10f3f6b59fe4d20e6e9f8edfe0e9a01ba3d625ef9460d6c51c9c4fa02047ec0",
-      "fingerprint": "f25e1c027ea8260e8f9639861ce6fbe9de6171ec5b2b141e74b3c9472abcddd1",
+      "fingerprint": "b7d61ff53618a74033c2af4a4393544fa5ff6a97c52e6a9ba7e6332736311cd4",
       "id": "fingerprint:client_binding:src/components/unseen-moments-badge.tsx",
       "ownerId": "client_binding:src/components/unseen-moments-badge.tsx",
       "ownerModule": "src/components/unseen-moments-badge.tsx",
       "sidecarPath": "src/components/unseen-moments-badge.operation.ts",
-      "sourceDigest": "2bcccb90cc5d63168cd2755a653c50c00d447e8dc7b170b333692e723b2cb7c1",
+      "sourceDigest": "8f0cb2aa5677bd258a70898e9da20f4f7409356cadd55ef4badd41c07e5acfb8",
       "status": "declared"
     },
     {
@@ -4648,11 +4648,11 @@
   ],
   "generatorDigest": "829c55ae6d039788eed92b6b9f9bdad89513e02f0f5a8bf9359ba23a928e202b",
   "generatorVersion": "r0.1",
-  "observationDigest": "4ac4403fe046e7e5fc1821a60e0a50add26fc2f936073d52ca79ce6418af33d9",
+  "observationDigest": "73bcc4ae37a07147e13dffeb7e6c39679af2e098968c40657dec984f035f3ebe",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "d3b5b0c170414b2174dfe5a10088695642b9e0a96b2cdc0201a062cbb898b664",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "bf1b5148557b568018ad2fb87bc60d3f11dd812cf74e63758dc9abfaa26ef956",
+  "registryDigest": "0e5dd8a4f83e4bfa9cb6dfc19bd6abf52474775df65eaceab5323d1a75f73c32",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

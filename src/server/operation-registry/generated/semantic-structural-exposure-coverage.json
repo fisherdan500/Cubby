@@ -4510,9 +4510,9 @@
     {
       "anchorBytes": "fetch(\"/api/moments/unseen\", { cache: \"no-store\", signal: controller.signal })",
       "anchorDigest": "bff044bd0d2a76f60824fbb76bcafa20c208bdb8950025c0629565d1103f03c9",
-      "anchorEnd": 1486,
+      "anchorEnd": 2843,
       "anchorFile": "src/components/unseen-moments-badge.tsx",
-      "anchorStart": 1408,
+      "anchorStart": 2765,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -8781,9 +8781,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "203c7a35da55386be6ea4515d6766c6118b04c1c0672c12f9826b5f00d8a4955",
+  "semanticArtifactDigest": "0673ae2e49d73f5056d3e999b064537358b754a7f4be5be7ad1aa35573ca59b3",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "b4c65997d822ea6b7418c21dd18d7779c4c5fe5b1575cf82b8be665d2c98e112",
+  "semanticCoverageDigest": "2e606642f3d297e73ac03d636845043d07c4f94f58562c4003be0a0de23a1ff1",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "3ede7935764339883c00cceba080a57926cad222da8c9346039b05ded19d2e43"
