@@ -79,6 +79,35 @@ restores into a fresh household and proves that:
 - authors and reactors return as names, not accounts;
 - a second restore is refused before any photo is stored.
 
+## Moving Your Data To Another Machine
+
+This is the path to use when you are replacing hardware, rebuilding an instance, or carrying a
+household to a new Cubby. It is verified end-to-end against a real exported household in
+`scripts/real-backup-migration.integration.test.ts`.
+
+1. On the old instance, export the household backup (Settings -> Backups). Keep the `.zip` if the
+   household has photos; `backup.json` alone is refused for a household that had any.
+2. Install Cubby on the new machine and complete first-run setup. You will be asked to create a
+   household and a baby - that is expected, and the next step replaces them.
+3. Still on the new machine, create a **new, empty household** and switch to it, or use the
+   first-run household **only if you have not logged anything into it**. Restore needs a household
+   whose sole member is you and which holds no entries.
+4. Restore the backup into that empty household.
+
+Two things surprise people, both deliberate:
+
+- **The household is renamed.** A restore adopts the household name stored in the backup, so the
+  target takes the old household's name. The confirmation box asks for the name the household has
+  **now**, before the restore - not the name it will end up with.
+- **A restore will not land on top of existing data.** If the target already holds entries, Cubby
+  refuses rather than merging or overwriting, and says so. Restore into a fresh empty household
+  instead. There is no "replace everything in this household" option, by design: a merge would have
+  to silently pick a winner for every conflicting entry.
+
+If a restore fails with a generic "Something went wrong", that message carries a reference code.
+Quote it when reporting the problem - it joins directly to the server log line that names the real
+cause, which no other message in the restore path does.
+
 ## What Version 2 Includes
 
 - Household name and non-security household settings, including appearance and
