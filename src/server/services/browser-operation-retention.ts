@@ -4,6 +4,26 @@ import { prisma } from "@/lib/db/prisma";
 const dayMs = 24 * 60 * 60 * 1000;
 const terminalRetentionMs = 30 * dayMs;
 
+// Retention reads its candidate rows, then takes each identity lock, then writes. Under
+// Serializable a concurrent abandon on the same identity invalidates that read and PostgreSQL
+// refuses the commit. That is the documented outcome rather than a fault, and the remedy is to
+// retry on a fresh snapshot.
+//
+// One retry was not enough. Real contention lost both attempts and the entire retention pass
+// failed, so expired bindings were left unexpired until the next pass happened to run unopposed.
+// The work is idempotent and a pass is cheap, so spend more attempts before giving up.
+const retentionAttempts = 5;
+
+function retentionBackoffMs(attempt: number) {
+  // Retrying immediately re-reads the same contended rows, and two passes retrying in lockstep
+  // would collide again, so back off with jitter rather than spinning.
+  return 25 * 2 ** attempt + Math.floor(Math.random() * 25);
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => { setTimeout(resolve, ms); });
+}
+
 function isRetentionSerializationConflict(error: unknown) {
   if (!error || typeof error !== "object") return false;
   const candidate = error as { code?: unknown; meta?: { code?: unknown }; message?: unknown };
@@ -43,7 +63,7 @@ export async function runBrowserOperationRetention({
   const unresolvedBefore = new Date(now.getTime() - dayMs);
   const terminalBefore = new Date(now.getTime() - terminalRetentionMs);
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < retentionAttempts; attempt += 1) {
     try {
       return await prisma.$transaction(async (transaction) => {
     const tx = transaction as unknown as RetentionTransaction;
@@ -115,7 +135,10 @@ export async function runBrowserOperationRetention({
     };
       }, { isolationLevel: "Serializable" });
     } catch (error) {
-      if (attempt === 0 && isRetentionSerializationConflict(error)) continue;
+      if (attempt + 1 < retentionAttempts && isRetentionSerializationConflict(error)) {
+        await sleep(retentionBackoffMs(attempt));
+        continue;
+      }
       throw error;
     }
   }
