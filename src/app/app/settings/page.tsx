@@ -35,7 +35,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
   const [platformOwner, policy] = await Promise.all([isPlatformOwner(user.id), getAppRegistrationPolicy()]);
   // Only show the ownership card to someone who can act on it: the owner, or the member an offer
   // is waiting for. Anyone else would reach a page with no available action.
-  const ownershipView = await getOwnershipTransferView(ctx.householdId).catch(() => null);
+  // Hide the card when this household is not the viewer's to act in; let any real failure through
+  // rather than silently dropping a settings entry the User is entitled to see.
+  const ownershipView = await getOwnershipTransferView(ctx.householdId).catch((error: unknown) => {
+    if (error instanceof Error && error.message === "forbidden") return null;
+    throw error;
+  });
   const showOwnership = Boolean(ownershipView?.isOwner || ownershipView?.pending?.awaitingMe);
   const visibleSections = sections.filter((section) => hasPermission(ctx.role, section.permission));
   return (

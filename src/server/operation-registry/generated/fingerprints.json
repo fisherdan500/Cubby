@@ -2400,33 +2400,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "8721a6e3606904d5b936959bc46d12588f6addd0e3f31137af22c125e1f00404",
+          "digest": "ec1dcd82361ed8bbeb288481b62002b5a9a75aa50fbd24e07d8dbd26902fcb17",
           "file": "src/app/app/settings/ownership-transfer/page.tsx"
         }
       ],
       "declarationDigest": "88a19ce0c5605c4b43548d2d9bc5d191c8fb316bd3efaf5d6564b58ea90c5afb",
-      "fingerprint": "6382e9b9e3b65968b09afab1bb90856f7fbbc44c65dc73df495171e7fb354c7e",
+      "fingerprint": "e77c0232acbb097d1f2590092be8ccba867b1e99150cb616b1a5ebb360130b96",
       "id": "fingerprint:server_loader:src/app/app/settings/ownership-transfer/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/ownership-transfer/page.tsx",
       "ownerModule": "src/app/app/settings/ownership-transfer/page.tsx",
       "sidecarPath": "src/app/app/settings/ownership-transfer/page.operation.ts",
-      "sourceDigest": "e98702d6ba78df8268807d1a5d1f74b263605be2a6b721bffaf9951ad481df41",
+      "sourceDigest": "05690a1f89b2eb49dacdcc633cfb47d27be34af6f114d8d1597c0c049a226fa5",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "b44db7a446d20917b52d9bf8dae4e71e3e7ee97ae486fb5438de4c0b689d9071",
+          "digest": "05bb79fd093278f44a4c315233f40ce505cdf28fe0c2b7acb9c0cd544687aa54",
           "file": "src/app/app/settings/page.tsx"
         }
       ],
       "declarationDigest": "0b8d39692d83cf4fc301cb6608982b410d3c8e87b09a94939a8c36b282cc5545",
-      "fingerprint": "cfb1ac097051f6ff674c5da10e1edc86be514253d7c243e3f90b9acabf148033",
+      "fingerprint": "7a514f41acd284f689687dfee260e680c8c3648f71121a15e393b0f06a10ab9f",
       "id": "fingerprint:server_loader:src/app/app/settings/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/page.tsx",
       "ownerModule": "src/app/app/settings/page.tsx",
       "sidecarPath": "src/app/app/settings/page.operation.ts",
-      "sourceDigest": "71185e6e0684938adf85c90d7bbafdfec0fad3665369c05ec3afc6b8db5d389b",
+      "sourceDigest": "36fa2644722a2683e5be39aad0458463e316a220a7dda588df498a2a8e80865c",
       "status": "declared"
     },
     {

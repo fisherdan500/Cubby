@@ -30,12 +30,15 @@ export default async function OwnershipTransferPage({
   const memberships = await getHouseholdLeaveOptions();
   if (memberships.length === 0) notFound();
 
+  // Only "forbidden" means "not a household you can act in". A database failure must surface as a
+  // failure: rendering it as "nothing to do" would tell the User a calm lie about their household.
   const views = await Promise.all(
     memberships.map(async (option) => {
       try {
         return await getOwnershipTransferView(option.householdId);
-      } catch {
-        return null;
+      } catch (error) {
+        if (error instanceof Error && error.message === "forbidden") return null;
+        throw error;
       }
     })
   );

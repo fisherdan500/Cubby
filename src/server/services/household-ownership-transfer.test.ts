@@ -605,7 +605,7 @@ describe("the recipient accepting", () => {
       householdId: "household-1",
       transferId: "transfer-1",
       operationId: settleOperationId
-    })).rejects.toThrow("household_ownership_transfer_recipient_invalid");
+    })).rejects.toThrow("household_ownership_transfer_recipient_ineligible");
     expect(mocks.txMemberUpdate).not.toHaveBeenCalled();
   });
 
@@ -766,6 +766,158 @@ describe("the recipient declining", () => {
 });
 
 describe("the owner withdrawing an offer", () => {
+  it("scopes the withdrawal to a live offer in the owner's own household", async () => {
+    // Without the household scope an owner could withdraw another household's offer, and without
+    // the status filter they could re-settle a transfer that was already accepted.
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    const where = mocks.transferFindFirst.mock.calls[1][0].where;
+    expect(where.id).toBe("transfer-1");
+    expect(where.householdId).toBe("household-1");
+    expect(where.status).toBeNull();
+  });
+
+  it("only lets a live, unsuspended owner withdraw", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    const actorWhere = mocks.txMemberFindFirst.mock.calls[0][0].where;
+    expect(actorWhere.householdId).toBe("household-1");
+    expect(actorWhere.deletedAt).toBeNull();
+    expect(actorWhere.disabledAt).toBeNull();
+    expect(actorWhere.household).toEqual({ deletedAt: null });
+  });
+
+  it.each([
+    ["an administrator", recipient({ role: "admin" })],
+    ["a parent", recipient({ role: "parent" })],
+    ["a read-only member", recipient({ role: "read_only" })]
+  ])("refuses a withdrawal by %s", async (_label, actor) => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(actor);
+
+    await expect(cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("forbidden");
+    expect(mocks.transferUpdate).not.toHaveBeenCalled();
+  });
+
+  it("requires fresh authentication, re-checked inside the transaction", async () => {
+    // DEC-PROD-017 applies to every step that changes who holds the household, withdrawal
+    // included: a stale session must not be able to revoke an offer.
+    mocks.requireFreshSession.mockRejectedValue(new Error("fresh_authentication_required"));
+    await expect(cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("fresh_authentication_required");
+
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-owner" },
+      session: { id: "session-1", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch(null));
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner());
+    await expect(cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("unauthenticated");
+  });
+
+  it("serialises on the advisory lock", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    expect(mocks.policyLock).toHaveBeenCalledTimes(1);
+  });
+
+  it("persists the idempotency key with the settlement", async () => {
+    // Without settleOperationId on the row, replay detection can never match and a retried
+    // withdrawal would be judged afresh.
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    const data = mocks.transferUpdate.mock.calls[0][0].data;
+    expect(data.settleOperationId).toBe(settleOperationId);
+    expect(data.settledAt).toBeInstanceOf(Date);
+  });
+
+  it("returns the original outcome when a withdrawal is retried", async () => {
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({
+      status: "cancelled",
+      settledAt: now,
+      settleOperationId
+    }));
+
+    const result = await cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    expect(result.status).toBe("cancelled");
+    expect(mocks.transferUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["accepted", "accepted"],
+    ["declined", "declined"]
+  ])("refuses an operation id already spent on a %s answer", async (_label, status) => {
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({
+      status,
+      settledAt: now,
+      settleOperationId
+    }));
+
+    await expect(cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("household_ownership_transfer_operation_reused");
+  });
+
+  it("refuses a replayed operation id from another household", async () => {
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({
+      householdId: "household-other",
+      status: "cancelled",
+      settledAt: now,
+      settleOperationId
+    }));
+
+    await expect(cancelOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("household_ownership_transfer_operation_reused");
+  });
+
   it("takes back an offer nobody has answered", async () => {
     // Without this the owner is trapped: one pending transfer per household means an offer to the
     // wrong person would block every future transfer, and an owner cannot leave a household.
@@ -817,5 +969,327 @@ describe("the owner withdrawing an offer", () => {
     });
 
     expect(mocks.auditCreate.mock.calls[0][1].action).toBe("household.ownership_transfer_cancelled");
+  });
+});
+
+describe("invariants the rest of the suite leans on", () => {
+  it("hides a household from a suspended viewer rather than offering dead buttons", async () => {
+    // A suspended member cannot offer or accept, so showing them an offer would show a control
+    // that always refuses. The reader must agree with the mutating paths.
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.memberFindFirst.mockResolvedValue(null);
+
+    await expect(getOwnershipTransferView("household-1")).rejects.toThrow("forbidden");
+
+    const where = mocks.memberFindFirst.mock.calls[0][0].where;
+    expect(where.disabledAt).toBeNull();
+    expect(where.deletedAt).toBeNull();
+    expect(where.household).toEqual({ deletedAt: null });
+  });
+
+  it("judges time by the database clock, not this process's clock", async () => {
+    // A transaction can wait a long time in the advisory-lock queue, so a timestamp taken before
+    // the lock is not the time the decision is made. Expiry is a deadline and must use DB time.
+    const seen: string[] = [];
+    mocks.queryRaw.mockImplementation(async (template: unknown) => {
+      const sql = rawSql(template);
+      seen.push(sql);
+      if (sql.includes("clock_timestamp")) return [{ now: new Date() }];
+      if (sql.includes("lock_actor_session_for_operation")) return [freshSessionRow];
+      if (sql.includes("FOR UPDATE")) return [];
+      throw new Error(`unexpected raw query: ${sql}`);
+    });
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+
+    await initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    });
+
+    expect(seen.some((sql) => sql.includes("clock_timestamp"))).toBe(true);
+  });
+
+  it("locks member rows in a fixed ascending id order", async () => {
+    // Two transactions that lock the same rows in different orders can wait on each other for
+    // ever. removeMember locks ORDER BY "id", so this must too.
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.txMemberFindFirst
+      .mockResolvedValueOnce(recipient())
+      .mockResolvedValueOnce(owner())
+      .mockResolvedValueOnce(recipient());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await acceptOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    const lock = memberLockCalls()[0];
+    expect(lock).toContain("FOR UPDATE");
+    expect(lock).toContain('ORDER BY "id"');
+
+    // The SQL text alone is not the invariant: the id list handed to it must be ascending too, or
+    // two transactions can take the same two rows in opposite orders and wait on each other.
+    const lockCall = mocks.queryRaw.mock.calls.find(([t]) => rawSql(t).includes("FOR UPDATE"));
+    const ids = JSON.stringify(lockCall?.slice(1) ?? []).match(/member-[a-z]+/g) ?? [];
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+    expect(ids).toEqual([...ids].sort());
+  });
+
+  it("locks BOTH parties before moving ownership, not just the recipient", async () => {
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.txMemberFindFirst
+      .mockResolvedValueOnce(recipient())
+      .mockResolvedValueOnce(owner())
+      .mockResolvedValueOnce(recipient());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await acceptOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    // Both ids must appear in the lock parameters: locking only the recipient leaves the outgoing
+    // owner's row free to be mutated between the check and the write.
+    const params = mocks.queryRaw.mock.calls
+      .filter(([t]) => rawSql(t).includes("FOR UPDATE"))
+      .flatMap(([, ...rest]) => rest.map((value) => JSON.stringify(value)))
+      .join(" ");
+    const lockedText = params + JSON.stringify(mocks.queryRaw.mock.calls.filter(([t]) => rawSql(t).includes("FOR UPDATE")));
+    expect(lockedText).toContain("member-owner");
+    expect(lockedText).toContain("member-recipient");
+  });
+
+  it("tells the recipient an offer was withdrawn rather than just 'not found'", async () => {
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.txMemberFindFirst.mockResolvedValueOnce(recipient());
+    mocks.transferFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(pendingTransfer({ status: "cancelled", settledAt: now }));
+
+    await expect(acceptOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("household_ownership_transfer_withdrawn");
+  });
+
+  it("gives the accept-side recipient failure its own code", async () => {
+    // The initiate-side sentence tells the owner to choose someone else; the person reading this
+    // on accept is the recipient, who is choosing nobody.
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.txMemberFindFirst
+      .mockResolvedValueOnce(recipient())
+      .mockResolvedValueOnce(owner())
+      .mockResolvedValueOnce(recipient({ disabledAt: now }));
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await expect(acceptOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("household_ownership_transfer_recipient_ineligible");
+  });
+
+  it("looks up an initiate replay by the caller's own operation id", async () => {
+    // If the lookup keys on anything but the submitted id, replay detection never matches and the
+    // retry hits the unique constraint as a 500 instead of returning the first outcome.
+    mocks.transferFindFirst.mockResolvedValueOnce(null);
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+
+    await initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    });
+
+    expect(mocks.transferFindFirst.mock.calls[0][0].where).toEqual({
+      initiateOperationId: initiateOperationId
+    });
+  });
+
+  it("keeps the initiate replay check scoped to the stated household", async () => {
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({ householdId: "household-other" }));
+
+    await expect(initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    })).rejects.toThrow("forbidden");
+  });
+
+  it("stores the initiating operation id so a retry can reconcile", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+
+    await initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    });
+
+    const created = mocks.transferCreate.mock.calls[0][0].data;
+    expect(created.initiateOperationId).toBe(initiateOperationId);
+    expect(created.initiateOperationId).not.toBeNull();
+  });
+
+  it("settles a lapsed offer with the transaction clock, not the epoch", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+    mocks.transferFindFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(pendingTransfer({ expiresAt: new Date("2026-10-01T00:00:00.000Z") }));
+
+    await initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: otherOperationId
+    });
+
+    const settledAt = mocks.transferUpdate.mock.calls[0][0].data.settledAt as Date;
+    expect(settledAt.getTime()).toBeGreaterThan(new Date("2026-01-01T00:00:00.000Z").getTime());
+  });
+
+  it("refuses a decline whose operation id was spent on an acceptance", async () => {
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({
+      status: "accepted",
+      settledAt: now,
+      settleOperationId
+    }));
+
+    await expect(declineOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("household_ownership_transfer_operation_reused");
+  });
+
+  it("persists the decline idempotency key", async () => {
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.txMemberFindFirst.mockResolvedValueOnce(recipient());
+    mocks.transferFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(pendingTransfer());
+
+    await declineOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    });
+
+    expect(mocks.transferUpdate.mock.calls[0][0].data.settleOperationId).toBe(settleOperationId);
+  });
+
+  it("refuses an accept replay naming another household's transfer", async () => {
+    // findSettledOperation must prove the replayed row is the one the caller named, or a spent
+    // operation id from one household reports success against another.
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({
+      householdId: "household-other",
+      status: "accepted",
+      settledAt: now,
+      settleOperationId
+    }));
+
+    await expect(acceptOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("forbidden");
+    expect(mocks.txMemberUpdate).not.toHaveBeenCalled();
+  });
+
+  it("refuses an accept replay naming a different transfer id", async () => {
+    mocks.requireUser.mockResolvedValue({ id: "user-recipient" });
+    mocks.requireFreshSession.mockResolvedValue({
+      user: { id: "user-recipient" },
+      session: { id: "session-2", createdAt: new Date("2026-10-21T23:25:00.000Z") }
+    });
+    mocks.queryRaw.mockImplementation(queryRawDispatch({
+      ...freshSessionRow,
+      id: "session-2",
+      userId: "user-recipient"
+    }));
+    mocks.transferFindFirst.mockResolvedValueOnce(pendingTransfer({
+      id: "transfer-elsewhere",
+      status: "accepted",
+      settledAt: now,
+      settleOperationId
+    }));
+
+    await expect(acceptOwnershipTransfer({
+      householdId: "household-1",
+      transferId: "transfer-1",
+      operationId: settleOperationId
+    })).rejects.toThrow("forbidden");
   });
 });

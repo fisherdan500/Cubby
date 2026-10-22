@@ -132,7 +132,10 @@ describe("handleError", () => {
       ["household_ownership_transfer_already_pending", 409, "This household already has a transfer waiting for a reply. Withdraw it before offering the household to someone else."],
       ["household_ownership_transfer_expired", 410, "This ownership transfer expired before it was accepted. Ask the owner to offer it again."],
       ["household_ownership_transfer_owner_changed", 409, "The member who offered this household is no longer its owner, so the offer can no longer be accepted."],
-      ["household_ownership_transfer_operation_reused", 409, "This ownership transfer request was already completed. Reload the page and start again."]
+      ["household_ownership_transfer_operation_reused", 409, "This ownership transfer request was already answered. Reload the page to see where it stands."],
+      ["household_ownership_transfer_recipient_ineligible", 409, "Your membership changed while this offer was waiting, so you can no longer accept it. Ask a household administrator about your access."],
+      ["household_ownership_transfer_withdrawn", 409, "The owner withdrew this ownership offer, so there is nothing to answer."],
+      ["household_ownership_transfer_already_answered", 409, "This ownership offer was already answered. Reload the page to see where it stands."]
     ];
 
     const unexplained: string[] = [];

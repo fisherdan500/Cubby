@@ -173,8 +173,17 @@ async function listOwnershipTransferRecipients(
  */
 export async function getOwnershipTransferView(householdId: string) {
   const user = await requireUser();
+  // A suspended member can neither offer a household nor accept one, so showing them an offer
+  // would be showing them a button that always refuses. Every mutating path filters disabledAt;
+  // the reader has to agree with them or the screen promises something the service denies.
   const actor = await prisma.householdMember.findFirst({
-    where: { householdId, userId: user.id, deletedAt: null, household: { deletedAt: null } },
+    where: {
+      householdId,
+      userId: user.id,
+      deletedAt: null,
+      disabledAt: null,
+      household: { deletedAt: null }
+    },
     include: { household: { select: { id: true, name: true } } }
   });
   if (!actor) throw new Error("forbidden");
@@ -345,7 +354,22 @@ async function loadSettleableTransfer(
   const transfer = await tx.householdOwnershipTransfer.findFirst({
     where: { id: input.transferId, householdId: input.householdId, status: null }
   });
-  if (!transfer) throw new Error("not_found");
+  if (!transfer) {
+    // The recipient may have had this page open while the owner withdrew the offer, or while
+    // somebody answered it. "Not found" is true but tells them nothing, so look at why the row is
+    // no longer pending and say that instead.
+    const settled = await tx.householdOwnershipTransfer.findFirst({
+      where: { id: input.transferId, householdId: input.householdId }
+    });
+    if (settled?.status === "cancelled") {
+      throw new Error("household_ownership_transfer_withdrawn");
+    }
+    if (settled?.status === "expired") {
+      throw new Error("household_ownership_transfer_expired");
+    }
+    if (settled) throw new Error("household_ownership_transfer_already_answered");
+    throw new Error("not_found");
+  }
   // Only the named recipient may answer. Nobody else's acceptance means anything.
   if (transfer.toMemberId !== actor.id) throw new Error("forbidden");
 
@@ -422,7 +446,10 @@ export async function acceptOwnershipTransfer(raw: unknown) {
       include: { user: { select: { id: true, email: true, emailVerified: true } } }
     });
     if (!recipient || recipient.id !== actor.id || !eligibleRecipient(recipient)) {
-      throw new Error("household_ownership_transfer_recipient_invalid");
+      // A distinct code from the initiate-side one: the person reading this is the recipient, who
+      // is choosing nobody and can invite nobody, so "choose an active member" is not advice they
+      // can act on.
+      throw new Error("household_ownership_transfer_recipient_ineligible");
     }
 
     // DEC-PROD-018: the former owner becomes an administrator, not a removed member.
