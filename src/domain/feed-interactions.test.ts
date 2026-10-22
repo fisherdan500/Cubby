@@ -96,7 +96,9 @@ describe("editing posts", () => {
   it("lets only the author edit a post, and only while they may still post", () => {
     expect(canEditFeedPost("caretaker", true)).toBe(true);
     expect(canEditFeedPost("owner", false)).toBe(false);
-    // A member made read-only keeps their posts but can no longer change them.
-    expect(canEditFeedPost("read_only", true)).toBe(false);
+    // A relative may post (User, 2026-10-22), so they may also edit what they wrote. The rule is
+    // still "only the author, and only while they may post" -- read_only now satisfies both.
+    expect(canEditFeedPost("read_only", true)).toBe(true);
+    expect(canEditFeedPost("read_only", false)).toBe(false);
   });
 });

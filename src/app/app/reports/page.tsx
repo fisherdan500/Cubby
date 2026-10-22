@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BarChart3, Clock3, LineChart, TrendingUp, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { hasPermission } from "@/domain/roles";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { RoutineTab } from "@/components/reports/routine-tab";
 import { TrendsTab } from "@/components/reports/trends-tab";
@@ -67,6 +68,9 @@ export default async function ReportsPage({
   const historyTab = tab === "growth" || tab === "milestones";
   const report = await getReports(user.id, { ...searchParams, babyId: selectedBabyId, compare: tab === "stats", history: historyTab });
   if (!report?.home) redirect("/onboarding");
+  // A relative sees Moments only (User decision, 2026-10-22). Guarded here as well as hidden
+  // from the navigation, so typing the URL does not reach it either.
+  if (!hasPermission(report.home.role, "activity.create")) redirect("/app/moments");
   // The plan sits beside the observed routine, so it is only read when that tab is open.
   const schedule = tab === "routine" && report.baby ? await getPlannedSchedule(report.baby.id) : null;
   // A trend reads a far longer stretch than the other tabs, so it is only read when it is shown.
@@ -119,7 +123,7 @@ export default async function ReportsPage({
   ];
 
   return (
-    <AppShell title="Reports" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Reports" userName={user.name} babySelector={babySelector} role={report.home.role}>
       {!report.baby || !report.stats ? (
         <Card>Add a baby before viewing reports.</Card>
       ) : (

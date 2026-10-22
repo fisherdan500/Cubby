@@ -194,13 +194,15 @@ describe("Feed page", () => {
     expect(body.querySelector("[data-remove]")).toBeNull();
   });
 
-  it("offers the composer to those who may post, and not to read-only members", async () => {
+  it("offers the composer to every member, relatives included", async () => {
+    // The User's decision (2026-10-22): a relative may comment, post and react. Moments is their
+    // one screen, so withholding the composer there would leave them nothing to do on it.
     let body = await renderFeed({ babyId: "baby-1" });
     expect(body.querySelector("[data-composer]")?.getAttribute("data-composer")).toBe("Avery");
 
     mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-9", role: "read_only" });
     body = await renderFeed({ babyId: "baby-1" });
-    expect(body.querySelector("[data-composer]")).toBeNull();
+    expect(body.querySelector("[data-composer]")).not.toBeNull();
   });
 
   it("puts the family's reactions and comments under every post and entry shown", async () => {
@@ -253,9 +255,11 @@ describe("Feed page", () => {
     const removed = [...body.querySelectorAll("a")].find((link) => link.textContent === "Recently removed");
     expect(removed?.getAttribute("href")).toBe("/app/moments/removed?babyId=baby-1");
 
+    // "Recently removed" follows feed.post, and a relative now has it (User, 2026-10-22): they can
+    // undo their own deletion rather than being stuck with it.
     mocks.getActivityRowViewer.mockResolvedValue({ memberId: "member-9", role: "read_only" });
     const readOnly = await renderFeed({ babyId: "baby-1" });
-    expect([...readOnly.querySelectorAll("a")].some((link) => link.textContent === "Recently removed")).toBe(false);
+    expect([...readOnly.querySelectorAll("a")].some((link) => link.textContent === "Recently removed")).toBe(true);
   });
 
   describe("Photos", () => {

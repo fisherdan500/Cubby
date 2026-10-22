@@ -270,7 +270,7 @@ describe("logging an entry with a photo", () => {
     // every role that may log an entry may also attach a photo (pinned in src/domain/roles.test.ts).
     const tx = transaction([]);
     mocks.executeBrowserOperation.mockImplementation(async (contract: { execute: Function }) =>
-      contract.execute(tx, { ...ctx, role: "read_only" as const }, baby));
+      contract.execute(tx, { ...ctx, role: "no_such_role" as never }, baby));
     const { submitActivityCreateBrowserOperation } = await import("./activities");
 
     await expect(

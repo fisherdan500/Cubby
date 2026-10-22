@@ -82,22 +82,24 @@ describe("role permissions", () => {
     expect(checked, "no role can log an entry, so the rule was never exercised").toBeGreaterThan(0);
   });
 
-  it("does not let a photo be attached by someone who cannot log an entry", () => {
-    let checked = 0;
-    for (const role of householdRoles) {
-      if (!hasPermission(role, "feed.post")) continue;
-      checked += 1;
-      expect(hasPermission(role, "activity.create"), `${role} can attach a photo but cannot log an entry`).toBe(true);
-    }
-    expect(checked, "no role can attach a photo, so the rule was never exercised").toBeGreaterThan(0);
+  // The converse is deliberately NOT required. The User's rule runs one way only -- "if a person can
+  // create a log then they should also be able to add a photo" -- and read_only now holds feed.post
+  // without activity.create, because a relative may post a photo to Moments but may not record a
+  // feeding. Posting to the family feed and caretaking are different acts. Asserting set equality
+  // here was a strengthening of the rule that the product has now outgrown.
+  it("lets a role post to the feed without being able to log an entry", () => {
+    expect(hasPermission("read_only", "feed.post")).toBe(true);
+    expect(hasPermission("read_only", "activity.create")).toBe(false);
   });
 
   // The same rule stated as the set equality it really is. The two loops above name one offending
   // role per run; this names every mismatch at once. It needs the loops' witness to stay honest,
   // since two empty sets are equal -- so these three tests are kept together deliberately.
-  it("grants logging and photo rights to exactly the same roles", () => {
+  it("gives every logger photo rights, and allows posters who are not loggers", () => {
     const canLog = householdRoles.filter((role) => hasPermission(role, "activity.create"));
     const canAttach = householdRoles.filter((role) => hasPermission(role, "feed.post"));
-    expect(canAttach).toEqual(canLog);
+    expect(canLog.length, "no role can log an entry, so the rule was never exercised").toBeGreaterThan(0);
+    for (const role of canLog) expect(canAttach).toContain(role);
+    expect(canAttach).toContain("read_only");
   });
 });

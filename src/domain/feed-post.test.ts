@@ -45,9 +45,13 @@ describe("bringing a removed post back", () => {
 });
 
 describe("who may post and remove", () => {
-  it("lets everyone but read-only members post", () => {
-    for (const role of ["owner", "admin", "parent", "caretaker"] as const) expect(hasPermission(role, "feed.post")).toBe(true);
-    expect(hasPermission("read_only", "feed.post")).toBe(false);
+  // The User's decision (2026-10-22) reversed this: a relative may "comment, post and react". They
+  // are family, not an audience. Posting a photo to Moments and recording a feeding are different
+  // acts -- read_only gained feed.post and still has no activity.create.
+  it("lets every member post, relatives included", () => {
+    for (const role of ["owner", "admin", "parent", "caretaker", "read_only"] as const) {
+      expect(hasPermission(role, "feed.post"), role).toBe(true);
+    }
   });
 
   it("lets an author remove their own post, and owners, admins and parents remove any", () => {

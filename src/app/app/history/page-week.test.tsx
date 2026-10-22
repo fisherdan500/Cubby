@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  redirect: vi.fn(),
   requireUserPage: vi.fn(),
   getHeaderBabySelector: vi.fn(),
   listActivities: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("@/server/services/unit-preferences", () => ({ getActivityUnitPreference
 vi.mock("@/lib/env", () => ({ env: mocks.env }));
 vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
+  redirect: mocks.redirect,
   useRouter: () => mocks.router,
   usePathname: () => "/app/history",
   useSearchParams: () => mocks.searchParams

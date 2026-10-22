@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { hasPermission } from "@/domain/roles";
 import { ActivityListRow } from "@/components/activity-list-row";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { Card } from "@/components/ui/card";
@@ -40,6 +41,9 @@ export default async function HistoryPage({
     getActivityUnitPreferences(),
     getActivityRowViewer()
   ]);
+  // A relative sees Moments only (User decision, 2026-10-22). Guarded here as well as hidden
+  // from the navigation, so typing the URL does not reach it either.
+  if (!hasPermission(viewer.role, "activity.create")) redirect("/app/moments");
   const { items: activities, nextCursor } = paginateHistoryItems(activityResults);
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const returnTo = historyHref({
@@ -54,7 +58,7 @@ export default async function HistoryPage({
   const groups = groupActivitiesByDay(activities, env.APP_TIMEZONE);
 
   return (
-    <AppShell title="Full Log" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Full Log" userName={user.name} babySelector={babySelector} role={viewer.role}>
       <div className="mx-auto max-w-3xl space-y-5">
         {/* Search leads, since that is what the log is opened for; the type filter sits beside it. */}
         <AutoSubmitForm className="flex max-w-full flex-wrap items-center gap-2">

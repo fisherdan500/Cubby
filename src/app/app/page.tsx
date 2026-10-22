@@ -55,6 +55,9 @@ export default async function DashboardPage({
     date: searchParams.date
   });
   if (!pageData?.dashboard.home) redirect("/onboarding");
+  // A relative cannot log an entry, so this screen -- a form for recording a feeding -- is not
+  // their home. Moments is (User decision, 2026-10-22): photos and milestones, not statistics.
+  if (!hasPermission(pageData.dashboard.home.role, "activity.create")) redirect("/app/moments");
   const { dashboard, babySelector } = pageData;
   const { baby } = dashboard;
   const currentDashboard = dashboard as DashboardWithBaby;
@@ -65,7 +68,7 @@ export default async function DashboardPage({
   const visibleActivities = baby ? filterActivitiesBySummaryType(currentDashboard.activities, selectedSummaryType) : [];
 
   return (
-    <AppShell title="Log Entry" userName={user.name} babySelector={babySelector} showAllTimers>
+    <AppShell title="Log Entry" userName={user.name} babySelector={babySelector} showAllTimers role={dashboard.home.role}>
       {!baby ? (
         <ZeroActiveBabies canManageBabies={hasPermission(dashboard.home.role, "baby.manage")} />
       ) : (

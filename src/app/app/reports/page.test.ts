@@ -57,7 +57,7 @@ async function renderReports(tab?: string, params: Record<string, string> = {}) 
 
 function baseReport() {
   return {
-    home: { householdId: "household-1" },
+    home: { householdId: "household-1", role: "parent" },
     baby: { id: "baby-1", name: "Avery", birthDate: null },
     startKey: "2026-09-13",
     endKey,

@@ -97,7 +97,10 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "feed.post",
     "feed.comment"
   ],
-  read_only: ["activity.read", "session.manage", "feed.comment"]
+  // A relative may join in: comment, react, and post to Moments (DEC-PROD, User 2026-10-22).
+  // They still cannot LOG an entry -- posting a photo to the family feed and recording a
+  // feeding are different acts, and only the second is caretaking.
+  read_only: ["activity.read", "session.manage", "feed.comment", "feed.post"]
 };
 
 export function hasPermission(role: HouseholdRoleName, permission: Permission) {

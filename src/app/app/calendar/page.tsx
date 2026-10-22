@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight, Clock3, MapPin, PlusCircle, Users, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { hasPermission } from "@/domain/roles";
 import { CalendarDrawerShell } from "@/components/calendar-drawer-shell";
 import { CalendarFocusRestore } from "@/components/calendar-focus-restore";
 import { CalendarEventSubmission } from "@/components/calendar-event-submission";
@@ -30,10 +31,13 @@ export default async function CalendarPage({
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const calendar = await getCalendar(user.id, { ...searchParams, babyId: selectedBabyId });
   if (!calendar?.home) redirect("/onboarding");
+  // A relative sees Moments only (User decision, 2026-10-22). Guarded here as well as hidden
+  // from the navigation, so typing the URL does not reach it either.
+  if (!hasPermission(calendar.home.role, "activity.create")) redirect("/app/moments");
   const canAddEvent = !calendar.baby?.inactiveAt;
 
   return (
-    <AppShell title="Calendar" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Calendar" userName={user.name} babySelector={babySelector} role={calendar.home.role}>
       {!calendar.baby ? (
         <div className="rounded-lg border border-border bg-card p-4">Add a baby before viewing the calendar.</div>
       ) : (
