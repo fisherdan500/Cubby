@@ -1244,6 +1244,23 @@
       "sidecarPath": "src/app/api/households/ownership-transfer/answer/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (!body || typeof body !== \"object\") return fail(\"invalid_body\", \"Send a JSON object.\", 400);\n    return ok(await cancelOwnershipTransfer(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "6132cfa06c6b3dee70d3db657c0e6f85f318558e9442ab3b17324cd406d80955",
+      "anchorEnd": 748,
+      "anchorFile": "src/app/api/households/ownership-transfer/cancel/route.ts",
+      "anchorStart": 428,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/households/ownership-transfer/cancel/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/households/ownership-transfer/cancel/route.ts:route_method:POST:src/app/api/households/ownership-transfer/cancel/route.ts#POST",
+      "ownerId": "api_route:src/app/api/households/ownership-transfer/cancel/route.ts",
+      "ownerModule": "src/app/api/households/ownership-transfer/cancel/route.ts",
+      "sidecarPath": "src/app/api/households/ownership-transfer/cancel/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const householdId = new URL(request.url).searchParams.get(\"householdId\");\n    if (!householdId) return fail(\"invalid_request\", \"Name the household to list transfer recipients for.\");\n    return ok(await getOwnershipTransferRecipients(householdId));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
       "anchorDigest": "91dd07543d555e978e1c689c769e16b9c72ccc7ba7e788c6e14559900b552686",
       "anchorEnd": 673,
@@ -4289,9 +4306,9 @@
     {
       "anchorBytes": "fetch(\"/api/households/ownership-transfer\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          householdId,\n          toMemberId: formData.get(\"toMemberId\"),\n          confirmation: formData.get(\"confirmation\"),\n          operationId\n        })\n      })",
       "anchorDigest": "b069e7cecd92506eddcc5b804c1e87df360066d8a2e1a8dd312e781302e7275a",
-      "anchorEnd": 3521,
+      "anchorEnd": 3981,
       "anchorFile": "src/components/settings/ownership-transfer-form.tsx",
-      "anchorStart": 3195,
+      "anchorStart": 3655,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -4304,11 +4321,11 @@
       "sidecarPath": "src/components/settings/ownership-transfer-form.operation.ts"
     },
     {
-      "anchorBytes": "fetch(\"/api/households/ownership-transfer/answer\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ answer: choice, householdId, transferId, operationId })\n      })",
-      "anchorDigest": "1ef86970e6a6f032a8e15180ece4ea897775048e169fc1d734307cdf019a0b83",
-      "anchorEnd": 7342,
+      "anchorBytes": "fetch(\"/api/households/ownership-transfer/cancel\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ householdId, transferId, operationId })\n      })",
+      "anchorDigest": "c10915f6bb63266da21fd1af5994b32d6760379adffc4a81c17e33611a8642d0",
+      "anchorEnd": 8262,
       "anchorFile": "src/components/settings/ownership-transfer-form.tsx",
-      "anchorStart": 7113,
+      "anchorStart": 8049,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[2]",
@@ -4316,6 +4333,23 @@
       },
       "coverage": "structural_only",
       "id": "client_binding:src/components/settings/ownership-transfer-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/ownership-transfer-form.tsx",
+      "ownerModule": "src/components/settings/ownership-transfer-form.tsx",
+      "sidecarPath": "src/components/settings/ownership-transfer-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/households/ownership-transfer/answer\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ answer: choice, householdId, transferId, operationId })\n      })",
+      "anchorDigest": "1ef86970e6a6f032a8e15180ece4ea897775048e169fc1d734307cdf019a0b83",
+      "anchorEnd": 11062,
+      "anchorFile": "src/components/settings/ownership-transfer-form.tsx",
+      "anchorStart": 10833,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[3]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/ownership-transfer-form.tsx:global_fetch:fetch[3]:globalThis.fetch",
       "ownerId": "client_binding:src/components/settings/ownership-transfer-form.tsx",
       "ownerModule": "src/components/settings/ownership-transfer-form.tsx",
       "sidecarPath": "src/components/settings/ownership-transfer-form.operation.ts"
@@ -8012,9 +8046,9 @@
     {
       "anchorBytes": "getHouseholdLeaveOptions",
       "anchorDigest": "3e34d97bbb19562ad66492682f355c3846b066da7ceec4e288107dac3b34450c",
-      "anchorEnd": 350,
+      "anchorEnd": 413,
       "anchorFile": "src/app/app/settings/ownership-transfer/page.tsx",
-      "anchorStart": 326,
+      "anchorStart": 389,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdLeaveOptions",
@@ -8029,9 +8063,9 @@
     {
       "anchorBytes": "getOwnershipTransferView",
       "anchorDigest": "ebf9616d8607cffabb7a138946f6926889c7c3a85b2b7a1361aa9d100893c9b1",
-      "anchorEnd": 428,
+      "anchorEnd": 491,
       "anchorFile": "src/app/app/settings/ownership-transfer/page.tsx",
-      "anchorStart": 404,
+      "anchorStart": 467,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getOwnershipTransferView",
@@ -8046,9 +8080,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 284,
+      "anchorEnd": 347,
       "anchorFile": "src/app/app/settings/ownership-transfer/page.tsx",
-      "anchorStart": 269,
+      "anchorStart": 332,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8063,9 +8097,9 @@
     {
       "anchorBytes": "getAppRegistrationPolicy",
       "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 599,
+      "anchorEnd": 690,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 575,
+      "anchorStart": 666,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getAppRegistrationPolicy",
@@ -8090,6 +8124,23 @@
       },
       "coverage": "structural_only",
       "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getEffectiveHouseholdContext:src/server/auth/context.ts#getEffectiveHouseholdContext",
+      "ownerId": "server_loader:src/app/app/settings/page.tsx",
+      "ownerModule": "src/app/app/settings/page.tsx",
+      "sidecarPath": "src/app/app/settings/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getOwnershipTransferView",
+      "anchorDigest": "ebf9616d8607cffabb7a138946f6926889c7c3a85b2b7a1361aa9d100893c9b1",
+      "anchorEnd": 599,
+      "anchorFile": "src/app/app/settings/page.tsx",
+      "anchorStart": 575,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getOwnershipTransferView",
+        "target": "src/server/services/household-ownership-transfer.ts#getOwnershipTransferView"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/page.tsx:server_value_import:getOwnershipTransferView:src/server/services/household-ownership-transfer.ts#getOwnershipTransferView",
       "ownerId": "server_loader:src/app/app/settings/page.tsx",
       "ownerModule": "src/app/app/settings/page.tsx",
       "sidecarPath": "src/app/app/settings/page.operation.ts"
@@ -8917,10 +8968,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "6d5a76c0a1a368d9f521e29743b6e71595eb0676fe23e5b285bdcfe95ce1af12",
+  "semanticArtifactDigest": "75d684b77bb9ad4ab123352fabd6c062d0c4282fca104aab3946d06b13667f39",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "67a333b604bbc6e71c1bf4672636938bbfecd8e881770aec598592a81a4df5eb",
+  "semanticCoverageDigest": "85519e1186970f9b7408b9a36e042bae862f4a84c3bafbbbe46d7e80201f82d4",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "1ae15d28c4a959060b924631253065ab9c87c45fae11eee9373910d47cce07bf"
+  "semanticFingerprint": "da46d69f1924120423984a1e59f70cb5f58ef8115bd461f191773c7edea3c259"
 }

@@ -56,7 +56,7 @@ implementation, merge, deployment, and cleanup approvals.
 
 - Status: active (reconciled 2026-09-22 against PR #121).
   - Accepted, with merged evidence: P0, P1.1, P1-2, P1-5, P1-6 and P1-7.
-  - P1-3: Invitation Protocol v2 is merged (#64), with the accepted-state recovery guard (#65) and the recovery-code notice and cross-lineage re-invitation (#66). Ownership transfer, support access, merge and deletion remain open.
+  - P1-3: Invitation Protocol v2 is merged (#64), with the accepted-state recovery guard (#65) and the recovery-code notice and cross-lineage re-invitation (#66). Ownership transfer is merged (#259); support access, merge and deletion remain open.
   - P1-4: every browser-operation and HTTP mutation family is covered by the disposable save-path acceptance rehearsal (#79, #83, #85–#91).
   - P1-1: host-local account verification is repaired and a one-time setup-code ownership claim was added (#100).
   - P1-5 is complete: every date and time renders in the household zone, and an invalid zone fails visibly (#103).

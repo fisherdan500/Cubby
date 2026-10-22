@@ -214,6 +214,7 @@ export const APPENDIX_A_SIDECAR_PATHS = [
   "src/app/api/household-selection/route.operation.ts",
   "src/app/api/households/leave/route.operation.ts",
   "src/app/api/households/ownership-transfer/answer/route.operation.ts",
+  "src/app/api/households/ownership-transfer/cancel/route.operation.ts",
   "src/app/api/households/ownership-transfer/route.operation.ts",
   "src/app/api/invites/[token]/accept/route.operation.ts",
   "src/app/api/invites/[token]/revoke/route.operation.ts",

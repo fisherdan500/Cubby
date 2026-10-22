@@ -6,6 +6,7 @@ import { hasPermission, type Permission } from "@/domain/roles";
 import { getEffectiveHouseholdContext } from "@/server/auth/context";
 import { requireUserPage } from "@/server/auth/session";
 import { isPlatformOwner } from "@/server/services/platform-authority";
+import { getOwnershipTransferView } from "@/server/services/household-ownership-transfer";
 import { getAppRegistrationPolicy } from "@/server/services/registration";
 
 const sections = [
@@ -32,6 +33,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
   const user = await requireUserPage();
   const ctx = await getEffectiveHouseholdContext();
   const [platformOwner, policy] = await Promise.all([isPlatformOwner(user.id), getAppRegistrationPolicy()]);
+  // Only show the ownership card to someone who can act on it: the owner, or the member an offer
+  // is waiting for. Anyone else would reach a page with no available action.
+  const ownershipView = await getOwnershipTransferView(ctx.householdId).catch(() => null);
+  const showOwnership = Boolean(ownershipView?.isOwner || ownershipView?.pending?.awaitingMe);
   const visibleSections = sections.filter((section) => hasPermission(ctx.role, section.permission));
   return (
     <AppShell title="Settings" userName={user.name}>
@@ -50,15 +55,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
             </Card>
           </Link>
         ))}
-        <Link href="/app/settings/ownership-transfer" prefetch={false}>
-          <Card className="h-full transition hover:bg-muted">
-            <UserCheck className="mb-4 h-6 w-6 text-primary" />
-            <h2 className="font-editorial text-lg font-bold">Household ownership</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Hand this household to another member, or answer an offer made to you.
-            </p>
-          </Card>
-        </Link>
+        {showOwnership ? (
+          <Link href="/app/settings/ownership-transfer" prefetch={false}>
+            <Card className="h-full transition hover:bg-muted">
+              <UserCheck className="mb-4 h-6 w-6 text-primary" />
+              <h2 className="font-editorial text-lg font-bold">Household ownership</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {ownershipView?.pending?.awaitingMe
+                  ? "Someone has offered you this household. Accept or decline."
+                  : "Hand this household to another member. They must accept before anything moves."}
+              </p>
+            </Card>
+          </Link>
+        ) : null}
         <Link href="/app/settings/leave" prefetch={false}>
           <Card className="h-full transition hover:bg-muted">
             <LogOut className="mb-4 h-6 w-6 text-danger" />

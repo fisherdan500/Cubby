@@ -39,6 +39,19 @@ ALTER TABLE "HouseholdOwnershipTransfer"
   ADD CONSTRAINT "HouseholdOwnershipTransfer_distinct_parties_check"
   CHECK ("fromMemberId" <> "toMemberId");
 
+-- "status" is NULL while an offer is outstanding and a known settled value afterwards. The partial
+-- unique index below depends entirely on that, so the set of settled values is constrained here
+-- rather than left to whichever service happens to write the column.
+ALTER TABLE "HouseholdOwnershipTransfer"
+  ADD CONSTRAINT "HouseholdOwnershipTransfer_status_check"
+  CHECK ("status" IS NULL OR "status" IN ('accepted', 'declined', 'cancelled', 'expired'));
+
+-- A settled row records WHEN it settled, and an outstanding one has not settled. Keeping these two
+-- columns consistent means "pending" cannot be inferred two ways that disagree.
+ALTER TABLE "HouseholdOwnershipTransfer"
+  ADD CONSTRAINT "HouseholdOwnershipTransfer_settled_at_check"
+  CHECK (("status" IS NULL) = ("settledAt" IS NULL));
+
 CREATE UNIQUE INDEX "HouseholdOwnershipTransfer_householdId_id_key"
   ON "HouseholdOwnershipTransfer"("householdId", "id");
 

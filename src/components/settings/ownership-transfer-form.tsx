@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ShieldCheck, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatInstantDate } from "@/lib/timezone";
 
 type Recipient = {
   memberId: string;
@@ -20,7 +21,22 @@ type PendingTransfer = {
 };
 
 type SubmissionState = { busy: boolean };
-type OperationStorage = Pick<Storage, "getItem" | "setItem">;
+type OperationStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+function operationKey(scopeId: string) {
+  return `cubby.household-ownership-transfer-operation:${scopeId}`;
+}
+
+/**
+ * Forget a settled operation id.
+ *
+ * The id exists so a RETRY of one request reconciles instead of duplicating. Once the request has
+ * definitively finished, keeping it would make the owner's next, genuinely different offer reuse a
+ * spent id -- which the unique index rejects.
+ */
+export function clearTransferSubmission(scopeId: string, storage: OperationStorage) {
+  storage.removeItem(operationKey(scopeId));
+}
 
 /**
  * One operation id per household for the owner's initiation, held in sessionStorage.
@@ -36,7 +52,7 @@ export function beginTransferSubmission(
 ) {
   if (state.busy) return null;
   state.busy = true;
-  const key = `cubby.household-ownership-transfer-operation:${scopeId}`;
+  const key = operationKey(scopeId);
   const operationId = storage.getItem(key) ?? create();
   storage.setItem(key, operationId);
   return operationId;
@@ -60,12 +76,14 @@ export function OwnershipTransferForm({
   householdId,
   householdName,
   recipients,
-  pending
+  pending,
+  timeZone
 }: {
   householdId: string;
   householdName: string;
   recipients: readonly Recipient[];
   pending: PendingTransfer | null;
+  timeZone: string;
 }) {
   const submission = useRef<SubmissionState>({ busy: false });
   const [message, setMessage] = useState("");
@@ -73,14 +91,13 @@ export function OwnershipTransferForm({
 
   if (pending) {
     return (
-      <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-        <p className="font-semibold">
-          Waiting for {pending.recipientName ?? "the chosen member"} to accept.
-        </p>
-        <p className="mt-2 text-muted-foreground">
-          You are still the owner until they accept. Nothing has changed yet.
-        </p>
-      </div>
+      <OwnershipTransferPendingPanel
+        householdId={householdId}
+        transferId={pending.transferId}
+        recipientName={pending.recipientName}
+        expiresAt={pending.expiresAt}
+        timeZone={timeZone}
+      />
     );
   }
 
@@ -118,13 +135,17 @@ export function OwnershipTransferForm({
       });
       const result = await response.json();
       if (!result.ok) {
+        // A refusal the server actually judged is final: drop the id so the next attempt is a new
+        // request. Only an unknown outcome keeps it, because that is what a retry reconciles.
+        clearTransferSubmission(householdId, window.sessionStorage);
         setMessage(
           result.error.code === "fresh_authentication_required"
-            ? "Sign in again, return here, and retry with the same confirmation."
+            ? "Sign in again, return here, and offer the household again."
             : result.error.message
         );
         return;
       }
+      clearTransferSubmission(householdId, window.sessionStorage);
       window.location.reload();
     } catch {
       setMessage("The result is unknown. Retry this form to reconcile the same transfer request.");
@@ -190,6 +211,84 @@ export function OwnershipTransferForm({
 }
 
 /**
+ * The owner's view while an offer is outstanding, with a way out of it.
+ *
+ * Only one offer may be pending per household, so without a withdraw control an offer made to the
+ * wrong person -- or to someone who never replies -- would block the household from ever changing
+ * owner, and would block the owner from leaving too.
+ */
+export function OwnershipTransferPendingPanel({
+  householdId,
+  transferId,
+  recipientName,
+  expiresAt,
+  timeZone
+}: {
+  householdId: string;
+  transferId: string;
+  recipientName: string | null;
+  expiresAt: string;
+  timeZone: string;
+}) {
+  const submission = useRef<SubmissionState>({ busy: false });
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function withdraw() {
+    const scope = `${transferId}:cancel`;
+    const operationId = beginTransferSubmission(submission.current, scope, window.sessionStorage);
+    if (!operationId) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/households/ownership-transfer/cancel", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ householdId, transferId, operationId })
+      });
+      const result = await response.json();
+      if (!result.ok) {
+        clearTransferSubmission(scope, window.sessionStorage);
+        setMessage(
+          result.error.code === "fresh_authentication_required"
+            ? "Sign in again, return here, and withdraw the offer once more."
+            : result.error.message
+        );
+        return;
+      }
+      clearTransferSubmission(scope, window.sessionStorage);
+      window.location.reload();
+    } catch {
+      setMessage("The result is unknown. Try withdrawing again to reconcile the same request.");
+    } finally {
+      finishTransferSubmission(submission.current);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+        <p className="font-semibold">
+          Waiting for {recipientName ?? "the chosen member"} to accept.
+        </p>
+        <p className="mt-2 text-muted-foreground">
+          You are still the owner until they accept. Nothing has changed yet. The offer lapses on{" "}
+          {formatInstantDate(expiresAt, timeZone)} if they never answer.
+        </p>
+      </div>
+      {message ? <p role="alert" className="text-sm font-semibold text-danger">{message}</p> : null}
+      <Button type="button" variant="secondary" disabled={busy} onClick={() => void withdraw()}>
+        {busy ? "Withdrawing..." : "Withdraw this offer"}
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        Withdraw the offer to choose a different member. Nobody&apos;s role changes.
+      </p>
+    </div>
+  );
+}
+
+/**
  * The recipient's side: accept and become the owner, or decline and change nothing.
  *
  * Decline is not a destructive action and is not styled as one -- it simply ends the offer.
@@ -207,7 +306,8 @@ export function OwnershipTransferAnswerForm({
 }) {
   const submission = useRef<SubmissionState>({ busy: false });
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [pendingChoice, setPendingChoice] = useState<"accept" | "decline" | null>(null);
+  const busy = pendingChoice !== null;
 
   async function answer(choice: "accept" | "decline") {
     const operationId = beginTransferSubmission(
@@ -216,7 +316,7 @@ export function OwnershipTransferAnswerForm({
       window.sessionStorage
     );
     if (!operationId) return;
-    setBusy(true);
+    setPendingChoice(choice);
     setMessage("");
     try {
       const response = await fetch("/api/households/ownership-transfer/answer", {
@@ -226,6 +326,7 @@ export function OwnershipTransferAnswerForm({
       });
       const result = await response.json();
       if (!result.ok) {
+        clearTransferSubmission(`${transferId}:${choice}`, window.sessionStorage);
         setMessage(
           result.error.code === "fresh_authentication_required"
             ? "Sign in again, return here, and answer once more."
@@ -233,12 +334,13 @@ export function OwnershipTransferAnswerForm({
         );
         return;
       }
+      clearTransferSubmission(`${transferId}:${choice}`, window.sessionStorage);
       window.location.assign("/app/settings");
     } catch {
       setMessage("The result is unknown. Answer again to reconcile the same request.");
     } finally {
       finishTransferSubmission(submission.current);
-      setBusy(false);
+      setPendingChoice(null);
     }
   }
 
@@ -260,10 +362,10 @@ export function OwnershipTransferAnswerForm({
       <div className="flex flex-wrap gap-3">
         <Button type="button" disabled={busy} onClick={() => void answer("accept")}>
           <UserCheck className="h-4 w-4" />
-          {busy ? "Working..." : "Accept ownership"}
+          {pendingChoice === "accept" ? "Accepting..." : "Accept ownership"}
         </Button>
         <Button type="button" variant="secondary" disabled={busy} onClick={() => void answer("decline")}>
-          Decline
+          {pendingChoice === "decline" ? "Declining..." : "Decline"}
         </Button>
       </div>
     </div>
