@@ -179,6 +179,11 @@ export function handleError(error: unknown) {
     if (error.message === "household_owner_cannot_leave") return fail("household_owner_cannot_leave", "The protected household owner must transfer ownership before leaving.", 409);
     if (error.message === "household_leave_confirmation_mismatch") return fail("household_leave_confirmation_mismatch", "Type the household name exactly to confirm leaving.", 422);
     if (error.message === "household_leave_operation_reused") return fail("household_leave_operation_reused", "This leave operation belongs to an earlier membership. Start a new leave request.", 409);
+    if (error.message === "household_ownership_transfer_confirmation_mismatch") return fail("household_ownership_transfer_confirmation_mismatch", "Type the household name exactly to confirm the transfer.", 422);
+    if (error.message === "household_ownership_transfer_recipient_invalid") return fail("household_ownership_transfer_recipient_invalid", "Choose an active household member with a verified account. Invite them first if they are not a member yet.", 422);
+    if (error.message === "household_ownership_transfer_already_pending") return fail("household_ownership_transfer_already_pending", "This household already has a transfer waiting for a reply. Cancel it before starting another.", 409);
+    if (error.message === "household_ownership_transfer_expired") return fail("household_ownership_transfer_expired", "This ownership transfer expired. Ask the owner to start a new one.", 410);
+    if (error.message === "household_ownership_transfer_owner_changed") return fail("household_ownership_transfer_owner_changed", "The household owner changed after this transfer was offered, so it can no longer be accepted.", 409);
     if (error.message === "suspended_membership_must_leave") return fail("suspended_membership_must_leave", "Leave your suspended household membership before creating another household.", 409);
     if (error.message === "email_not_verified") return fail("email_not_verified", "Verify your email before creating a household.", 403);
     if (error.message === "platform_uninitialized") return fail("platform_uninitialized", "Platform authority is not initialized.", 409);

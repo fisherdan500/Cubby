@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Bell, DatabaseBackup, Download, KeyRound, LockKeyhole, LogOut, Palette, Ruler, Shield, SunMoon, UserRound, UserRoundCog, Users } from "lucide-react";
+import { Baby, Bell, DatabaseBackup, Download, KeyRound, LockKeyhole, LogOut, Palette, Ruler, Shield, SunMoon, UserCheck, UserRound, UserRoundCog, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { hasPermission, type Permission } from "@/domain/roles";
@@ -50,6 +50,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
             </Card>
           </Link>
         ))}
+        <Link href="/app/settings/ownership-transfer" prefetch={false}>
+          <Card className="h-full transition hover:bg-muted">
+            <UserCheck className="mb-4 h-6 w-6 text-primary" />
+            <h2 className="font-editorial text-lg font-bold">Household ownership</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Hand this household to another member, or answer an offer made to you.
+            </p>
+          </Card>
+        </Link>
         <Link href="/app/settings/leave" prefetch={false}>
           <Card className="h-full transition hover:bg-muted">
             <LogOut className="mb-4 h-6 w-6 text-danger" />

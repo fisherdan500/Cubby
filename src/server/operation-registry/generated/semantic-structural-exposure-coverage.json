@@ -1227,6 +1227,57 @@
       "sidecarPath": "src/app/api/households/leave/route.operation.ts"
     },
     {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null) as Record<string, unknown> | null;\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    const { answer, ...rest } = body;\n    if (answer !== \"accept\" && answer !== \"decline\") {\n      return fail(\"invalid_request\", \"Answer the transfer with accept or decline.\");\n    }\n    return ok(answer === \"accept\"\n      ? await acceptOwnershipTransfer(rest)\n      : await declineOwnershipTransfer(rest));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "b2c55a98e276166be4f1a1d799e60bd8c3dd27e6422f037fbcd807ddb18c5dc7",
+      "anchorEnd": 1042,
+      "anchorFile": "src/app/api/households/ownership-transfer/answer/route.ts",
+      "anchorStart": 441,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/households/ownership-transfer/answer/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/households/ownership-transfer/answer/route.ts:route_method:POST:src/app/api/households/ownership-transfer/answer/route.ts#POST",
+      "ownerId": "api_route:src/app/api/households/ownership-transfer/answer/route.ts",
+      "ownerModule": "src/app/api/households/ownership-transfer/answer/route.ts",
+      "sidecarPath": "src/app/api/households/ownership-transfer/answer/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function GET(request: Request) {\n  try {\n    const householdId = new URL(request.url).searchParams.get(\"householdId\");\n    if (!householdId) return fail(\"invalid_request\", \"Name the household to list transfer recipients for.\");\n    return ok(await getOwnershipTransferRecipients(householdId));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "91dd07543d555e978e1c689c769e16b9c72ccc7ba7e788c6e14559900b552686",
+      "anchorEnd": 673,
+      "anchorFile": "src/app/api/households/ownership-transfer/route.ts",
+      "anchorStart": 310,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "GET",
+        "target": "src/app/api/households/ownership-transfer/route.ts#GET"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/households/ownership-transfer/route.ts:route_method:GET:src/app/api/households/ownership-transfer/route.ts#GET",
+      "ownerId": "api_route:src/app/api/households/ownership-transfer/route.ts",
+      "ownerModule": "src/app/api/households/ownership-transfer/route.ts",
+      "sidecarPath": "src/app/api/households/ownership-transfer/route.operation.ts"
+    },
+    {
+      "anchorBytes": "export async function POST(request: Request) {\n  try {\n    const body = await request.json().catch(() => null);\n    if (body === null) return fail(\"invalid_json\", \"Provide a valid JSON request body.\");\n    return ok(await initiateOwnershipTransfer(body));\n  } catch (error) {\n    return handleError(error);\n  }\n}",
+      "anchorDigest": "c0d75ac6979a5758efbda39077bdc86f982b5e828e29408dd5d1ba116b70bd02",
+      "anchorEnd": 1079,
+      "anchorFile": "src/app/api/households/ownership-transfer/route.ts",
+      "anchorStart": 767,
+      "binding": {
+        "kind": "route_method",
+        "symbol": "POST",
+        "target": "src/app/api/households/ownership-transfer/route.ts#POST"
+      },
+      "coverage": "structural_only",
+      "id": "api_route:src/app/api/households/ownership-transfer/route.ts:route_method:POST:src/app/api/households/ownership-transfer/route.ts#POST",
+      "ownerId": "api_route:src/app/api/households/ownership-transfer/route.ts",
+      "ownerModule": "src/app/api/households/ownership-transfer/route.ts",
+      "sidecarPath": "src/app/api/households/ownership-transfer/route.operation.ts"
+    },
+    {
       "anchorBytes": "export async function POST(request: Request) { return handleInvitationRoute(request, \"accept-abandon\"); }",
       "anchorDigest": "c9b48d7bf0de379e777c6a088facdeccb190efeac76b5937094636f1193b3217",
       "anchorEnd": 227,
@@ -4034,9 +4085,9 @@
     {
       "anchorBytes": "fetch(\"/api/households/leave\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          householdId: preview.householdId,\n          confirmation: formData.get(\"confirmation\"),\n          operationId\n        })\n      })",
       "anchorDigest": "bd1a0ccf0c54b13b0b3aaed4046dc0b80386bc754b063fce20151352a65c0a42",
-      "anchorEnd": 3453,
+      "anchorEnd": 3811,
       "anchorFile": "src/components/settings/leave-household-form.tsx",
-      "anchorStart": 3169,
+      "anchorStart": 3527,
       "binding": {
         "kind": "global_fetch",
         "symbol": "fetch[1]",
@@ -4234,6 +4285,40 @@
       "ownerId": "client_binding:src/components/settings/notification-subscribe-card.tsx",
       "ownerModule": "src/components/settings/notification-subscribe-card.tsx",
       "sidecarPath": "src/components/settings/notification-subscribe-card.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/households/ownership-transfer\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({\n          householdId,\n          toMemberId: formData.get(\"toMemberId\"),\n          confirmation: formData.get(\"confirmation\"),\n          operationId\n        })\n      })",
+      "anchorDigest": "b069e7cecd92506eddcc5b804c1e87df360066d8a2e1a8dd312e781302e7275a",
+      "anchorEnd": 3521,
+      "anchorFile": "src/components/settings/ownership-transfer-form.tsx",
+      "anchorStart": 3195,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[1]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/ownership-transfer-form.tsx:global_fetch:fetch[1]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/ownership-transfer-form.tsx",
+      "ownerModule": "src/components/settings/ownership-transfer-form.tsx",
+      "sidecarPath": "src/components/settings/ownership-transfer-form.operation.ts"
+    },
+    {
+      "anchorBytes": "fetch(\"/api/households/ownership-transfer/answer\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify({ answer: choice, householdId, transferId, operationId })\n      })",
+      "anchorDigest": "1ef86970e6a6f032a8e15180ece4ea897775048e169fc1d734307cdf019a0b83",
+      "anchorEnd": 7342,
+      "anchorFile": "src/components/settings/ownership-transfer-form.tsx",
+      "anchorStart": 7113,
+      "binding": {
+        "kind": "global_fetch",
+        "symbol": "fetch[2]",
+        "target": "globalThis.fetch"
+      },
+      "coverage": "structural_only",
+      "id": "client_binding:src/components/settings/ownership-transfer-form.tsx:global_fetch:fetch[2]:globalThis.fetch",
+      "ownerId": "client_binding:src/components/settings/ownership-transfer-form.tsx",
+      "ownerModule": "src/components/settings/ownership-transfer-form.tsx",
+      "sidecarPath": "src/components/settings/ownership-transfer-form.operation.ts"
     },
     {
       "anchorBytes": "fetch(\"/api/platform/test-email\", { method: \"POST\" })",
@@ -7925,11 +8010,62 @@
       "sidecarPath": "src/app/app/settings/notifications/page.operation.ts"
     },
     {
+      "anchorBytes": "getHouseholdLeaveOptions",
+      "anchorDigest": "3e34d97bbb19562ad66492682f355c3846b066da7ceec4e288107dac3b34450c",
+      "anchorEnd": 350,
+      "anchorFile": "src/app/app/settings/ownership-transfer/page.tsx",
+      "anchorStart": 326,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getHouseholdLeaveOptions",
+        "target": "src/server/services/household-leave.ts#getHouseholdLeaveOptions"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/ownership-transfer/page.tsx:server_value_import:getHouseholdLeaveOptions:src/server/services/household-leave.ts#getHouseholdLeaveOptions",
+      "ownerId": "server_loader:src/app/app/settings/ownership-transfer/page.tsx",
+      "ownerModule": "src/app/app/settings/ownership-transfer/page.tsx",
+      "sidecarPath": "src/app/app/settings/ownership-transfer/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getOwnershipTransferView",
+      "anchorDigest": "ebf9616d8607cffabb7a138946f6926889c7c3a85b2b7a1361aa9d100893c9b1",
+      "anchorEnd": 428,
+      "anchorFile": "src/app/app/settings/ownership-transfer/page.tsx",
+      "anchorStart": 404,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getOwnershipTransferView",
+        "target": "src/server/services/household-ownership-transfer.ts#getOwnershipTransferView"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/ownership-transfer/page.tsx:server_value_import:getOwnershipTransferView:src/server/services/household-ownership-transfer.ts#getOwnershipTransferView",
+      "ownerId": "server_loader:src/app/app/settings/ownership-transfer/page.tsx",
+      "ownerModule": "src/app/app/settings/ownership-transfer/page.tsx",
+      "sidecarPath": "src/app/app/settings/ownership-transfer/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 284,
+      "anchorFile": "src/app/app/settings/ownership-transfer/page.tsx",
+      "anchorStart": 269,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "requireUserPage",
+        "target": "src/server/auth/session.ts#requireUserPage"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/ownership-transfer/page.tsx:server_value_import:requireUserPage:src/server/auth/session.ts#requireUserPage",
+      "ownerId": "server_loader:src/app/app/settings/ownership-transfer/page.tsx",
+      "ownerModule": "src/app/app/settings/ownership-transfer/page.tsx",
+      "sidecarPath": "src/app/app/settings/ownership-transfer/page.operation.ts"
+    },
+    {
       "anchorBytes": "getAppRegistrationPolicy",
       "anchorDigest": "7f3c0562f154667906a2a2845096f7d188544525f6b1986686e2fa8593329fec",
-      "anchorEnd": 588,
+      "anchorEnd": 599,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 564,
+      "anchorStart": 575,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getAppRegistrationPolicy",
@@ -7944,9 +8080,9 @@
     {
       "anchorBytes": "getEffectiveHouseholdContext",
       "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
-      "anchorEnd": 393,
+      "anchorEnd": 404,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 365,
+      "anchorStart": 376,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getEffectiveHouseholdContext",
@@ -7961,9 +8097,9 @@
     {
       "anchorBytes": "isPlatformOwner",
       "anchorDigest": "fbf065a2185ebdd2a5077cd751746d54ac68a0c87d494839fe09efb795db51aa",
-      "anchorEnd": 507,
+      "anchorEnd": 518,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 492,
+      "anchorStart": 503,
       "binding": {
         "kind": "server_value_import",
         "symbol": "isPlatformOwner",
@@ -7978,9 +8114,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 450,
+      "anchorEnd": 461,
       "anchorFile": "src/app/app/settings/page.tsx",
-      "anchorStart": 435,
+      "anchorStart": 446,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8781,10 +8917,10 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "c206c09d05e25c699461caa41d8a85b8a5e627805bf13990de33a344d14251ae",
+  "semanticArtifactDigest": "6d5a76c0a1a368d9f521e29743b6e71595eb0676fe23e5b285bdcfe95ce1af12",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "6c241e40ec6c0ff8c0932e8bd0e1581dec2ce39719bb545357d9cae648ec194b",
+  "semanticCoverageDigest": "67a333b604bbc6e71c1bf4672636938bbfecd8e881770aec598592a81a4df5eb",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
-  "semanticFingerprint": "3ede7935764339883c00cceba080a57926cad222da8c9346039b05ded19d2e43"
+  "semanticFingerprint": "1ae15d28c4a959060b924631253065ab9c87c45fae11eee9373910d47cce07bf"
 }
