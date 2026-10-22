@@ -84,7 +84,7 @@ People see the feed as **Moments**, at `/app/moments`, because "Feed" already me
 
 Step 2 adds text posts:
 - a caption about the selected baby or the whole family, with #tags taken from the text; whole-family posts appear for every baby;
-- anyone but read-only members may post; authors remove their own posts, and owners, admins and parents any;
+- every member may post, relatives included; authors remove their own posts, and owners, admins and parents any;
 - posts sit among entries by time, under a Posts filter, and tapping a tag shows every post that carries it;
 - the audit records only that a post was made or removed, never its text;
 - posts are carried in backups, keeping the author's name on restore.

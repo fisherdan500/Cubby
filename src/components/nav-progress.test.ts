@@ -44,14 +44,14 @@ describe("the tabs a parent moves between are prefetched", () => {
 
   it("routes the desktop primary nav through the prefetching link", () => {
     const source = readFileSync("src/components/app-shell.tsx", "utf8");
-    expect(source).toMatch(/primaryNav\.map[\s\S]{0,400}<NavLink/);
+    expect(source).toMatch(/(primaryNav|navItems)\.map[\s\S]{0,400}<NavLink/);
     // The old plain Link would silently lose both prefetch and the pending state.
-    expect(source).not.toMatch(/primaryNav\.map[\s\S]{0,400}<Link\b/);
+    expect(source).not.toMatch(/(primaryNav|navItems)\.map[\s\S]{0,400}<Link\b/);
   });
 
   it("routes the phone bottom tabs through the prefetching link", () => {
     const source = readFileSync("src/components/mobile-bottom-nav.tsx", "utf8");
-    expect(source).toMatch(/mobileNav\.map[\s\S]{0,600}<NavLink/);
-    expect(source).not.toMatch(/mobileNav\.map[\s\S]{0,600}<Link\b/);
+    expect(source).toMatch(/(mobileNav|tabs)\.map[\s\S]{0,600}<NavLink/);
+    expect(source).not.toMatch(/(mobileNav|tabs)\.map[\s\S]{0,600}<Link\b/);
   });
 });

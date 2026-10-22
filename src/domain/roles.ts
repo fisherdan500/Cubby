@@ -9,7 +9,7 @@ export const householdRoleDetails: Record<HouseholdRoleName, { label: string; de
   admin: { label: "Admin", description: "Manages household settings, people, integrations, backups, and activity." },
   parent: { label: "Parent", description: "Manages babies, notifications, exports, and all activity." },
   caretaker: { label: "Caretaker", description: "Logs activity and manages only activity they recorded." },
-  read_only: { label: "Read only", description: "Can review household activity without making changes." }
+  read_only: { label: "Read only", description: "Sees Moments and can post, comment and react, but cannot log or change activity." }
 };
 
 export type Permission =
@@ -36,7 +36,9 @@ export type Permission =
   | "feed.moderate";
 
 // Product rule, enforced by src/domain/roles.test.ts: any role granted "activity.create" must also
-// be granted "feed.post", and vice versa. Anyone who may log an entry may also attach a photo to it.
+// be granted "feed.post" -- anyone who may log an entry may also attach a photo to it. The converse
+// does not hold: a relative may post to Moments without being able to log activity (User,
+// 2026-10-22), so feed.post holders are a superset rather than the same set.
 const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
   owner: [
     "household.manage",
@@ -97,7 +99,10 @@ const rolePermissions: Record<HouseholdRoleName, Permission[]> = {
     "feed.post",
     "feed.comment"
   ],
-  read_only: ["activity.read", "session.manage", "feed.comment"]
+  // A relative may join in: comment, react, and post to Moments (DEC-PROD, User 2026-10-22).
+  // They still cannot LOG an entry -- posting a photo to the family feed and recording a
+  // feeding are different acts, and only the second is caretaking.
+  read_only: ["activity.read", "session.manage", "feed.comment", "feed.post"]
 };
 
 export function hasPermission(role: HouseholdRoleName, permission: Permission) {

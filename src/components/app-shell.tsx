@@ -14,14 +14,32 @@ import { NavLink, NavPendingProvider } from "@/components/nav-progress";
 import { SavedEntryUndo } from "@/components/saved-entry-undo";
 import { UnseenMomentsBadge } from "@/components/unseen-moments-badge";
 import type { HeaderBabySelectorData } from "@/lib/baby-selector";
+import { hasPermission, type HouseholdRoleName } from "@/domain/roles";
 
+// Each destination names the permission it needs, so a member is never shown a screen that will
+// refuse them. A relative (read_only) holds activity.read but not activity.create, so Log Entry is
+// absent from their navigation entirely rather than present and broken.
+//
+// "requires: null" means every member sees it.
 const primaryNav = [
-  { href: "/app", label: "Log Entry", icon: PlusCircle },
-  { href: "/app/moments", label: "Moments", icon: Sparkles },
-  { href: "/app/history", label: "Full Log", icon: ClipboardList },
-  { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/app/reports", label: "Reports", icon: LineChart }
+  { href: "/app", label: "Log Entry", icon: PlusCircle, requires: "activity.create" as const },
+  { href: "/app/moments", label: "Moments", icon: Sparkles, requires: null },
+  { href: "/app/history", label: "Full Log", icon: ClipboardList, requires: "activity.create" as const },
+  { href: "/app/calendar", label: "Calendar", icon: CalendarDays, requires: "activity.create" as const },
+  { href: "/app/reports", label: "Reports", icon: LineChart, requires: "activity.create" as const }
 ];
+
+/**
+ * The navigation a given role should see.
+ *
+ * Gated on activity.create rather than on the role name: a future role that cannot log entries gets
+ * the same treatment without anyone remembering to add it here. The User's decision (2026-10-22) is
+ * that a relative sees Moments only -- photos and milestones, not feeding and sleep statistics.
+ */
+export function navForRole(role: HouseholdRoleName | undefined) {
+  if (!role) return primaryNav;
+  return primaryNav.filter((item) => item.requires === null || hasPermission(role, item.requires));
+}
 
 export function AppShell({
   children,
@@ -31,7 +49,8 @@ export function AppShell({
   timerBabyId,
   timerActivityType,
   showAllTimers,
-  parent
+  parent,
+  role
 }: {
   children: React.ReactNode;
   title: string;
@@ -47,18 +66,24 @@ export function AppShell({
   // Where a phone's back link at the top of the page goes, for pages reached from another page
   // (the settings sections) rather than from a bottom tab.
   parent?: { href: string; label: string };
+  // The viewer's role in the household on screen. Omitted by screens that are not household-scoped
+  // (onboarding, account recovery), where the full navigation is correct.
+  role?: HouseholdRoleName;
 }) {
   const selectedBabyId = babySelector?.selectedBabyId;
+  const navItems = navForRole(role);
+  // A relative has no Log Entry screen, so the brand link must not lead there.
+  const homeHref = navItems[0]?.href ?? "/app/moments";
 
   return (
     <NavPendingProvider>
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-card/94 backdrop-blur md:flex md:flex-col print:hidden">
-        <Link href="/app" className="flex h-20 items-center gap-3 border-b border-border px-5">
+        <Link href={homeHref} className="flex h-20 items-center gap-3 border-b border-border px-5">
           <BrandLockup size="sm" tagline="Family journal" priority />
         </Link>
         <nav className="flex-1 space-y-2 px-4 py-6">
-          {primaryNav.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.href}
               href={withBabyId(item.href, selectedBabyId)}
@@ -139,7 +164,7 @@ export function AppShell({
         <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />
       ) : null}
       <SavedEntryUndo />
-      <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} />
+      <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} role={role} />
     </div>
     </NavPendingProvider>
   );

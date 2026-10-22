@@ -97,7 +97,7 @@ export default async function FeedPage({
   };
 
   return (
-    <AppShell title="Moments" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Moments" userName={user.name} babySelector={babySelector} role={viewer.role}>
       <div className="mx-auto max-w-2xl space-y-5">
         <nav aria-label="Moments filters" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {feedFilters.map((option) => {

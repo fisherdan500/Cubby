@@ -5,6 +5,7 @@ import { FeedPostCard } from "@/components/feed/feed-post-card";
 import { FeedResponses } from "@/components/feed/feed-responses";
 import { Card } from "@/components/ui/card";
 import { env } from "@/lib/env";
+import { getEffectiveHouseholdContext } from "@/server/auth/context";
 import { requireUserPage } from "@/server/auth/session";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { feedInteractionKey, listFeedInteractions } from "@/server/services/feed-interactions";
@@ -22,6 +23,7 @@ import { getHouseholdHome } from "@/server/services/households";
  */
 export default async function MomentDetailPage({ params }: { params: { id: string } }) {
   const user = await requireUserPage();
+  const ctx = await getEffectiveHouseholdContext();
   const home = await getHouseholdHome({ includeInactive: true });
   if (!home) redirect("/onboarding");
 
@@ -31,7 +33,7 @@ export default async function MomentDetailPage({ params }: { params: { id: strin
 
   if (!post) {
     return (
-      <AppShell title="Moments" userName={user.name}>
+      <AppShell title="Moments" userName={user.name} role={ctx.role}>
         <div className="mx-auto w-full max-w-xl px-4 pb-10 pt-4">
           <Card className="space-y-3 p-6 text-center">
             <p className="text-base font-semibold">This moment is gone</p>
@@ -56,7 +58,7 @@ export default async function MomentDetailPage({ params }: { params: { id: strin
   const key = feedInteractionKey("post", post.id);
 
   return (
-    <AppShell title="Moment" userName={user.name}>
+    <AppShell title="Moment" userName={user.name} role={ctx.role}>
       <div className="mx-auto w-full max-w-xl space-y-3 px-4 pb-10 pt-4">
         <p>
           <Link href="/app/moments" className="text-sm font-semibold text-primary hover:underline">

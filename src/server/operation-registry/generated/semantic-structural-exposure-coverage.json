@@ -6958,9 +6958,9 @@
     {
       "anchorBytes": "getCalendar",
       "anchorDigest": "ce6cb1482f8b76b4be23c8b83d183472afdbb04681656948b89f5045c2994f35",
-      "anchorEnd": 1098,
+      "anchorEnd": 1146,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1087,
+      "anchorStart": 1135,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getCalendar",
@@ -6975,9 +6975,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 1035,
+      "anchorEnd": 1083,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 1014,
+      "anchorStart": 1062,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -7009,9 +7009,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 972,
+      "anchorEnd": 1020,
       "anchorFile": "src/app/app/calendar/page.tsx",
-      "anchorStart": 957,
+      "anchorStart": 1005,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7043,9 +7043,9 @@
     {
       "anchorBytes": "getActivityRowViewer",
       "anchorDigest": "758ec923801272713fbcbed3f0a65bc050444f2e32e706aa31570f68f2c7d899",
-      "anchorEnd": 887,
+      "anchorEnd": 945,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 867,
+      "anchorStart": 925,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityRowViewer",
@@ -7060,9 +7060,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 1051,
+      "anchorEnd": 1109,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 1025,
+      "anchorStart": 1083,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -7077,9 +7077,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 973,
+      "anchorEnd": 1031,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 952,
+      "anchorStart": 1010,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -7094,9 +7094,9 @@
     {
       "anchorBytes": "listActivities",
       "anchorDigest": "1f275c8479e19d5499a4de2c2b7e0d98004447a9963eed3d4a3f0696d9084ef2",
-      "anchorEnd": 903,
+      "anchorEnd": 961,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 889,
+      "anchorStart": 947,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listActivities",
@@ -7111,9 +7111,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 825,
+      "anchorEnd": 883,
       "anchorFile": "src/app/app/history/page.tsx",
-      "anchorStart": 810,
+      "anchorStart": 868,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7179,9 +7179,9 @@
     {
       "anchorBytes": "getActivityUnitPreferences",
       "anchorDigest": "1181875400acb4076c7390b5e955f9739522629d44cedf901ab9748d19f7143d",
-      "anchorEnd": 695,
+      "anchorEnd": 743,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 669,
+      "anchorStart": 717,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getActivityUnitPreferences",
@@ -7196,9 +7196,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 620,
+      "anchorEnd": 668,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 604,
+      "anchorStart": 652,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -7213,9 +7213,9 @@
     {
       "anchorBytes": "getLastFeeding",
       "anchorDigest": "e04c42dec24b7f12114440accfa8910e4726d852aa23953c6eb946f06f202766",
-      "anchorEnd": 555,
+      "anchorEnd": 603,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 541,
+      "anchorStart": 589,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getLastFeeding",
@@ -7230,9 +7230,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 499,
+      "anchorEnd": 547,
       "anchorFile": "src/app/app/log/[type]/page.tsx",
-      "anchorStart": 484,
+      "anchorStart": 532,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7247,9 +7247,9 @@
     {
       "anchorBytes": "feedInteractionKey",
       "anchorDigest": "f61cf05a751cec9db8a63af869119603c0981b83a409da75697538310621413c",
-      "anchorEnd": 491,
+      "anchorEnd": 561,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 473,
+      "anchorStart": 543,
       "binding": {
         "kind": "server_value_import",
         "symbol": "feedInteractionKey",
@@ -7262,11 +7262,28 @@
       "sidecarPath": "src/app/app/moments/[id]/page.operation.ts"
     },
     {
+      "anchorBytes": "getEffectiveHouseholdContext",
+      "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+      "anchorEnd": 371,
+      "anchorFile": "src/app/app/moments/[id]/page.tsx",
+      "anchorStart": 343,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getEffectiveHouseholdContext",
+        "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/moments/[id]/page.tsx:server_value_import:getEffectiveHouseholdContext:src/server/auth/context.ts#getEffectiveHouseholdContext",
+      "ownerId": "server_loader:src/app/app/moments/[id]/page.tsx",
+      "ownerModule": "src/app/app/moments/[id]/page.tsx",
+      "sidecarPath": "src/app/app/moments/[id]/page.operation.ts"
+    },
+    {
       "anchorBytes": "getFeedPostView",
       "anchorDigest": "dacbba484f6a39540d5783220d2e9ff6346ebf25f407c7a440cbf68fa10f73e9",
-      "anchorEnd": 584,
+      "anchorEnd": 654,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 569,
+      "anchorStart": 639,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getFeedPostView",
@@ -7281,9 +7298,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 421,
+      "anchorEnd": 491,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 400,
+      "anchorStart": 470,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -7298,9 +7315,9 @@
     {
       "anchorBytes": "getHouseholdHome",
       "anchorDigest": "fc12ac660c80611c37ff2d3a05e95a99db0615b483255fca06e8d9d6d5f1b24f",
-      "anchorEnd": 715,
+      "anchorEnd": 785,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 699,
+      "anchorStart": 769,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHouseholdHome",
@@ -7315,9 +7332,9 @@
     {
       "anchorBytes": "listFeedInteractions",
       "anchorDigest": "fc3277073b2e6e49b06cb3351b006533a7dd7cf908ddd0d0b629ab678dc128bc",
-      "anchorEnd": 513,
+      "anchorEnd": 583,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 493,
+      "anchorStart": 563,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listFeedInteractions",
@@ -7332,9 +7349,9 @@
     {
       "anchorBytes": "markMomentsSeen",
       "anchorDigest": "24157bc6593af57657bec60fe9269237e29a6d28926d59229e0b1ab3a03d6536",
-      "anchorEnd": 648,
+      "anchorEnd": 718,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 633,
+      "anchorStart": 703,
       "binding": {
         "kind": "server_value_import",
         "symbol": "markMomentsSeen",
@@ -7349,9 +7366,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 358,
+      "anchorEnd": 428,
       "anchorFile": "src/app/app/moments/[id]/page.tsx",
-      "anchorStart": 343,
+      "anchorStart": 413,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7534,11 +7551,28 @@
       "sidecarPath": "src/app/app/moments/page.operation.ts"
     },
     {
-      "anchorBytes": "getHeaderBabySelector",
-      "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 422,
+      "anchorBytes": "getEffectiveHouseholdContext",
+      "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+      "anchorEnd": 429,
       "anchorFile": "src/app/app/moments/removed/page.tsx",
       "anchorStart": 401,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getEffectiveHouseholdContext",
+        "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/moments/removed/page.tsx:server_value_import:getEffectiveHouseholdContext:src/server/auth/context.ts#getEffectiveHouseholdContext",
+      "ownerId": "server_loader:src/app/app/moments/removed/page.tsx",
+      "ownerModule": "src/app/app/moments/removed/page.tsx",
+      "sidecarPath": "src/app/app/moments/removed/page.operation.ts"
+    },
+    {
+      "anchorBytes": "getHeaderBabySelector",
+      "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
+      "anchorEnd": 492,
+      "anchorFile": "src/app/app/moments/removed/page.tsx",
+      "anchorStart": 471,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -7553,9 +7587,9 @@
     {
       "anchorBytes": "listRemovedFeedPosts",
       "anchorDigest": "4033c2369f031d9e3c4a655f4ce81e828048c1006917e2d3f9ea3b581175abb1",
-      "anchorEnd": 494,
+      "anchorEnd": 564,
       "anchorFile": "src/app/app/moments/removed/page.tsx",
-      "anchorStart": 474,
+      "anchorStart": 544,
       "binding": {
         "kind": "server_value_import",
         "symbol": "listRemovedFeedPosts",
@@ -7621,9 +7655,9 @@
     {
       "anchorBytes": "getHeaderBabySelector",
       "anchorDigest": "af5a48409aa76869dc6f1168d46d03e279e36a0ee449a2f487ea483457f8ed5f",
-      "anchorEnd": 786,
+      "anchorEnd": 834,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 765,
+      "anchorStart": 813,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getHeaderBabySelector",
@@ -7638,9 +7672,9 @@
     {
       "anchorBytes": "getPlannedSchedule",
       "anchorDigest": "b1f5d69b1bdda67ed827a0cb9e64ce027893b4a6484c0ed60d2f4be9799646d2",
-      "anchorEnd": 856,
+      "anchorEnd": 904,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 838,
+      "anchorStart": 886,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getPlannedSchedule",
@@ -7655,9 +7689,9 @@
     {
       "anchorBytes": "getReports",
       "anchorDigest": "a5c5069a6d481b23647f792fd23b511d1c90cfc8b8c6673d7aebea733c99f3f2",
-      "anchorEnd": 921,
+      "anchorEnd": 969,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 911,
+      "anchorStart": 959,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getReports",
@@ -7672,9 +7706,9 @@
     {
       "anchorBytes": "getTrends",
       "anchorDigest": "6ba3ccd7f56634f5098fa64cd1c9dfdc2584e9e83ab4f0e75a69d0462eec07c2",
-      "anchorEnd": 976,
+      "anchorEnd": 1024,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 967,
+      "anchorStart": 1015,
       "binding": {
         "kind": "server_value_import",
         "symbol": "getTrends",
@@ -7689,9 +7723,9 @@
     {
       "anchorBytes": "requireUserPage",
       "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 723,
+      "anchorEnd": 771,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 708,
+      "anchorStart": 756,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -7706,9 +7740,9 @@
     {
       "anchorBytes": "resolveTrendWindow",
       "anchorDigest": "09d073b1b98a5b9257759c112c10f590d360dd5ac892ee3a3fd36c3190ca68a4",
-      "anchorEnd": 996,
+      "anchorEnd": 1044,
       "anchorFile": "src/app/app/reports/page.tsx",
-      "anchorStart": 978,
+      "anchorStart": 1026,
       "binding": {
         "kind": "server_value_import",
         "symbol": "resolveTrendWindow",
@@ -8197,11 +8231,28 @@
       "sidecarPath": "src/app/app/settings/security-history/page.operation.ts"
     },
     {
-      "anchorBytes": "requireUserPage",
-      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
-      "anchorEnd": 225,
+      "anchorBytes": "getEffectiveHouseholdContext",
+      "anchorDigest": "233fd8a19357903757b76f017083420addc660d6ca2d8d3e36776f90d9931ccd",
+      "anchorEnd": 238,
       "anchorFile": "src/app/app/settings/sessions/page.tsx",
       "anchorStart": 210,
+      "binding": {
+        "kind": "server_value_import",
+        "symbol": "getEffectiveHouseholdContext",
+        "target": "src/server/auth/context.ts#getEffectiveHouseholdContext"
+      },
+      "coverage": "structural_only",
+      "id": "server_loader:src/app/app/settings/sessions/page.tsx:server_value_import:getEffectiveHouseholdContext:src/server/auth/context.ts#getEffectiveHouseholdContext",
+      "ownerId": "server_loader:src/app/app/settings/sessions/page.tsx",
+      "ownerModule": "src/app/app/settings/sessions/page.tsx",
+      "sidecarPath": "src/app/app/settings/sessions/page.operation.ts"
+    },
+    {
+      "anchorBytes": "requireUserPage",
+      "anchorDigest": "0d503cb2aff00e8c9c94d98712931529860e849543641940e24d027a80ea0091",
+      "anchorEnd": 295,
+      "anchorFile": "src/app/app/settings/sessions/page.tsx",
+      "anchorStart": 280,
       "binding": {
         "kind": "server_value_import",
         "symbol": "requireUserPage",
@@ -8968,9 +9019,9 @@
     "scope": "platform_registration_and_browser_household_mutations"
   },
   "schemaVersion": 1,
-  "semanticArtifactDigest": "75d684b77bb9ad4ab123352fabd6c062d0c4282fca104aab3946d06b13667f39",
+  "semanticArtifactDigest": "9fdb9b3c840327864a1b3f09d7a23065da6b7cd83d0f3afd794e0dca7ddf75af",
   "semanticArtifactVersion": "semantic-artifact.v1",
-  "semanticCoverageDigest": "85519e1186970f9b7408b9a36e042bae862f4a84c3bafbbbe46d7e80201f82d4",
+  "semanticCoverageDigest": "857bf5fe9c55ba0004890334742653ddb63192051f46b3e718f38b3c413f9333",
   "semanticDeclarationCount": 56,
   "semanticDeclarationDigest": "a45eeb176e0f1e2e3c173593ad2b4538a63a474ea30e541615007179499b73f8",
   "semanticFingerprint": "da46d69f1924120423984a1e59f70cb5f58ef8115bd461f191773c7edea3c259"

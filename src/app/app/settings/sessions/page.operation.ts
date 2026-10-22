@@ -8,6 +8,11 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "getEffectiveHouseholdContext",
+      target: "src/server/auth/context.ts#getEffectiveHouseholdContext"
+    },
+    {
+      kind: "server_value_import",
       symbol: "requireUserPage",
       target: "src/server/auth/session.ts#requireUserPage"
     }

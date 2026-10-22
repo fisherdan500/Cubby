@@ -8,14 +8,15 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLink } from "@/components/nav-progress";
 import { cn } from "@/lib/utils";
 import { UnseenMomentsBadge } from "@/components/unseen-moments-badge";
+import { hasPermission, type HouseholdRoleName } from "@/domain/roles";
 
 // Moments (the family feed) holds the tab the Full Log had: it is meant to replace it in time
 // (DEC-PROD-421), and until then the Full Log is one tap further, behind More.
 const mobileNav = [
-  { href: "/app", label: "Log", icon: PlusCircle },
-  { href: "/app/moments", label: "Moments", icon: Sparkles },
-  { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/app/reports", label: "Reports", icon: LineChart }
+  { href: "/app", label: "Log", icon: PlusCircle, requires: "activity.create" as const },
+  { href: "/app/moments", label: "Moments", icon: Sparkles, requires: null },
+  { href: "/app/calendar", label: "Calendar", icon: CalendarDays, requires: "activity.create" as const },
+  { href: "/app/reports", label: "Reports", icon: LineChart, requires: "activity.create" as const }
 ];
 
 const tab = "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold transition";
@@ -29,13 +30,31 @@ const sheetRow =
  * between are tabs; everything used occasionally - the Full Log, Settings, light/dark, signing out - sits
  * behind More, in a sheet that opens upward from the thumb rather than from the top corner.
  */
-export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?: string; userName: string }) {
+export function MobileBottomNav({
+  selectedBabyId,
+  userName,
+  role
+}: {
+  selectedBabyId?: string;
+  userName: string;
+  role?: HouseholdRoleName;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const moreActive = pathname.startsWith("/app/settings") || pathname === "/app/babies" || pathname === "/app/history";
+
+  // A relative holds no activity.create, so the Log tab is absent rather than present and
+  // refusing. Gated on the permission, not the role name, so a future non-logging role behaves
+  // correctly without being added here.
+  const tabs = role ? mobileNav.filter((item) => item.requires === null || hasPermission(role, item.requires)) : mobileNav;
+  const canSeeFullLog = role ? hasPermission(role, "activity.create") : true;
+
+  // Tabs plus the More button. Written as whole class names because Tailwind scans source text
+  // and cannot see a class built by string interpolation.
+  const gridColumns = tabs.length === 1 ? "grid-cols-2" : tabs.length === 2 ? "grid-cols-3" : tabs.length === 3 ? "grid-cols-4" : "grid-cols-5";
 
   useEffect(() => {
     setOpen(false);
@@ -86,10 +105,12 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
           className="fixed inset-x-3 bottom-[4.75rem] z-40 space-y-0.5 rounded-xl border border-border bg-card p-2 text-card-foreground shadow-xl"
         >
           <p className="truncate px-3 py-2 text-xs font-bold text-muted-foreground">Signed in as {userName}</p>
-          <NavLink href={withBabyId("/app/history", selectedBabyId)} className={sheetRow} onNavigate={() => setOpen(false)}>
+          {canSeeFullLog ? (
+            <NavLink href={withBabyId("/app/history", selectedBabyId)} className={sheetRow} onNavigate={() => setOpen(false)}>
             <ClipboardList className="h-5 w-5 text-primary" />
             Full Log
           </NavLink>
+          ) : null}
           <NavLink href="/app/settings" className={sheetRow} onNavigate={() => setOpen(false)}>
             <Settings className="h-5 w-5 text-primary" />
             Settings
@@ -103,8 +124,8 @@ export function MobileBottomNav({ selectedBabyId, userName }: { selectedBabyId?:
       ) : null}
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/96 px-2 py-2 shadow-[0_-8px_24px_hsl(var(--shadow)/0.08)] backdrop-blur">
-        <div className="grid grid-cols-5 gap-1">
-          {mobileNav.map((item) => {
+        <div className={cn("grid gap-1", gridColumns)}>
+          {tabs.map((item) => {
             const active = isActivePath(pathname, item.href);
             return (
               <NavLink

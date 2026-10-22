@@ -8,6 +8,11 @@ export const operation = {
   bindings: [
     {
       kind: "server_value_import",
+      symbol: "getEffectiveHouseholdContext",
+      target: "src/server/auth/context.ts#getEffectiveHouseholdContext"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getHeaderBabySelector",
       target: "src/server/services/baby-selector.ts#getHeaderBabySelector"
     },

@@ -27,7 +27,9 @@ describe("upload authorization precedes all body access", () => {
     ["Sprout import", sproutImport, "multipart/form-data"]
   ] as const) {
     it.each([["unauthenticated", 401], ["forbidden", 403], ["household_selection_stale", 409]] as const)(`${name} rejects %s without touching bytes`, async (code, status) => {
-      if (code === "forbidden") mocks.context.mockResolvedValue({ role: "read_only" });
+      // No real role lacks feed.post since relatives gained it (User, 2026-10-22), so the refusal
+      // is driven by an explicitly unprivileged role rather than by naming a role that may change.
+      if (code === "forbidden") mocks.context.mockResolvedValue({ role: "no_such_role" });
       else mocks.context.mockRejectedValue(new Error(code));
       const request = new Request("https://cubby.test/upload", { method: "POST", body: "{}", headers: {
         "content-type": contentType, "x-cubby-restore-confirmation": "Home", "x-cubby-backup-checksum": "checksum"

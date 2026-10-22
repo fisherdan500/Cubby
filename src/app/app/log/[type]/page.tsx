@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { hasPermission } from "@/domain/roles";
 import { ActivityForm } from "@/components/forms/activity-form";
 import { ActivityFormHeader } from "@/components/forms/activity-form-header";
 import { Card } from "@/components/ui/card";
@@ -23,6 +24,12 @@ export default async function LogActivityPage({
   const user = await requireUserPage();
   const home = await getHouseholdHome();
   if (!home) redirect("/onboarding");
+  // A relative sees Moments only (User decision, 2026-10-22). Without this, the form the change
+  // exists to keep away from them is still reachable by URL, bookmark, or an old home-screen
+  // shortcut -- it would render in full and then refuse on submit. The write itself is refused
+  // server-side regardless (createActivity requires activity.create), so this is about not
+  // presenting a form that cannot work.
+  if (!hasPermission(home.role, "activity.create")) redirect("/app/moments");
   const unitSettings = await getActivityUnitPreferences();
   const babies = home.household.babies.map((baby) => ({
     id: baby.id,
@@ -33,7 +40,7 @@ export default async function LogActivityPage({
   const lastFeeding = type === "feeding" ? await getLastFeeding(selectedBaby?.id) : null;
 
   return (
-    <AppShell title={`Log ${activityLabels[type]}`} userName={user.name} timerBabyId={selectedBaby?.id} timerActivityType={type}>
+    <AppShell title={`Log ${activityLabels[type]}`} userName={user.name} role={home.role} timerBabyId={selectedBaby?.id} timerActivityType={type}>
       {/* Bottom padding keeps the last field clear of the form's fixed Cancel / Log bar. */}
       <div className="pb-20">
         <Card className="mx-auto max-w-lg space-y-4">

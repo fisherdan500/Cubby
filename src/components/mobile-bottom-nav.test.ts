@@ -14,6 +14,7 @@ vi.mock("@/components/theme-toggle", () => ({
 }));
 
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import type { HouseholdRoleName } from "@/domain/roles";
 
 globalThis.React = React;
 
@@ -22,8 +23,8 @@ afterEach(() => {
   navigation.pathname = "/app";
 });
 
-function renderNav() {
-  render(createElement(MobileBottomNav, { selectedBabyId: "baby-1", userName: "Parent" }));
+function renderNav(role?: HouseholdRoleName) {
+  render(createElement(MobileBottomNav, { selectedBabyId: "baby-1", userName: "Parent", role }));
   return screen.getByRole("button", { name: "More" });
 }
 
@@ -101,5 +102,56 @@ describe("MobileBottomNav", () => {
     expect(screen.getByRole("link", { name: "Moments" }).getAttribute("aria-current")).toBe("page");
     // "Feed" means feeding the baby; no tab uses it for anything else.
     expect(screen.queryByRole("link", { name: "Feed" })).toBeNull();
+  });
+});
+
+describe("what a relative's bottom bar shows", () => {
+  // A phone has no sidebar: this bar is the only chrome. These assert the rendered DOM rather than
+  // the source text -- an earlier version grepped for the identifiers `canSeeFullLog` and
+  // `gridColumns`, which a mutation could satisfy while changing what every tab decided.
+  it("gives a relative only Moments, and keeps the entry form away", () => {
+    renderNav("read_only");
+    expect(screen.queryByRole("link", { name: /Moments/ })).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /^Log$/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Calendar/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Reports/ })).toBeNull();
+  });
+
+  it("leaves a caretaker's bar complete", () => {
+    renderNav("caretaker");
+    for (const name of [/^Log$/, /Moments/, /Calendar/, /Reports/]) {
+      expect(screen.queryByRole("link", { name }), String(name)).not.toBeNull();
+    }
+  });
+
+  it("sizes the grid to the tabs it actually renders, leaving no dead cells", () => {
+    // With the Log, Calendar and Reports tabs gone, a hardcoded five-column grid would leave three
+    // visible gaps in a relative's bar.
+    const { container } = render(
+      createElement(MobileBottomNav, { selectedBabyId: "baby-1", userName: "Parent", role: "read_only" as HouseholdRoleName })
+    );
+    const grid = container.querySelector("nav > div");
+    const tabCount = grid?.querySelectorAll("a").length ?? 0;
+    // Tabs plus the More button.
+    expect(grid?.className).toContain(`grid-cols-${tabCount + 1}`);
+    expect(grid?.className).not.toContain("grid-cols-5");
+  });
+
+  it("drops Full Log from a relative's More sheet", async () => {
+    const user = userEvent.setup();
+    const more = renderNav("read_only");
+    await act(async () => {
+      await user.click(more);
+    });
+    expect(screen.queryByRole("link", { name: /Full Log/ })).toBeNull();
+  });
+
+  it("keeps Full Log in a caretaker's More sheet", async () => {
+    const user = userEvent.setup();
+    const more = renderNav("caretaker");
+    await act(async () => {
+      await user.click(more);
+    });
+    expect(screen.queryByRole("link", { name: /Full Log/ })).not.toBeNull();
   });
 });
