@@ -257,9 +257,10 @@ export async function initiateOwnershipTransfer(raw: unknown) {
       throw new Error("household_ownership_transfer_operation_reused");
     }
 
-    await lockMembersForOwnershipMutation(tx, [input.toMemberId]);
-
-    const actor = await tx.householdMember.findFirst({
+    // The actor is identified by user, not by a member id the caller supplies, so their row id must
+    // be discovered before it can be locked. This read establishes WHICH rows to lock; the authority
+    // decision below is made against the re-read under the lock.
+    const actorIdentity = await tx.householdMember.findFirst({
       where: {
         householdId: input.householdId,
         userId: freshSession.user.id,
@@ -269,7 +270,24 @@ export async function initiateOwnershipTransfer(raw: unknown) {
       },
       include: { household: { select: { id: true, name: true } } }
     });
-    if (!actor || actor.role !== HouseholdRole.owner) throw new Error("forbidden");
+    if (!actorIdentity) throw new Error("forbidden");
+
+    // Lock the actor and the recipient in ONE ordered statement. Locking only the recipient left the
+    // owner check reading an unlocked row, so a concurrent ownership mutation could commit between
+    // that read and this offer being written -- creating an offer from someone who is no longer the
+    // owner. acceptOwnershipTransfer already locks both parties; this path was the asymmetric one.
+    // One statement in ascending id order, matching invites.ts, so the two paths cannot deadlock.
+    await lockMembersForOwnershipMutation(tx, [actorIdentity.id, input.toMemberId]);
+
+    // Re-read the actor under the lock: between the discovery read and here, another transaction
+    // could have committed a role change. Only this value is allowed to grant authority.
+    const actor = await tx.householdMember.findUniqueOrThrow({
+      where: { id: actorIdentity.id },
+      include: { household: { select: { id: true, name: true } } }
+    });
+    if (actor.role !== HouseholdRole.owner || actor.deletedAt || actor.disabledAt) {
+      throw new Error("forbidden");
+    }
 
     if (input.confirmation !== actor.household.name) {
       throw new Error("household_ownership_transfer_confirmation_mismatch");

@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   memberFindFirst: vi.fn(),
   memberFindMany: vi.fn(),
   txMemberFindFirst: vi.fn(),
+  txMemberFindUniqueOrThrow: vi.fn(),
   txMemberFindMany: vi.fn(),
   txMemberUpdate: vi.fn(),
   prismaTransferFindFirst: vi.fn(),
@@ -156,6 +157,7 @@ function txClient() {
     $queryRaw: mocks.queryRaw,
     householdMember: {
       findFirst: mocks.txMemberFindFirst,
+      findUniqueOrThrow: mocks.txMemberFindUniqueOrThrow,
       findMany: mocks.txMemberFindMany,
       update: mocks.txMemberUpdate
     },
@@ -177,6 +179,18 @@ beforeEach(() => {
     session: { id: "session-1", createdAt: new Date("2026-10-21T23:25:00.000Z") }
   });
   mocks.queryRaw.mockImplementation(queryRawDispatch());
+  // The service re-reads the actor under the row lock before trusting its role. By default echo
+  // whatever the discovery read produced, so the re-read is transparent to tests that are not about
+  // the lock window. Hardcoding owner() here would override a test's own non-owner actor and mask
+  // the authority check it is trying to exercise; tests about the window override this explicitly.
+  mocks.txMemberFindUniqueOrThrow.mockImplementation(async ({ where }) => {
+    for (const result of mocks.txMemberFindFirst.mock.results) {
+      if (result.type !== "return") continue;
+      const value = await result.value;
+      if (value && value.id === where.id) return value;
+    }
+    return owner();
+  });
   mocks.policyLock.mockResolvedValue(1);
   mocks.transferFindFirst.mockResolvedValue(null);
   mocks.prismaTransferFindFirst.mockResolvedValue(null);
@@ -300,6 +314,101 @@ describe("the owner naming a successor", () => {
 
     // The recipient row is locked before it is judged.
     expect(memberLockCalls().length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("locks the actor's own row before trusting that they are still the owner", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+    // Carried over from the #259 review. The recipient was locked and the ACTOR was not, so the
+    // owner check read an unlocked row: a concurrent transaction settling ownership elsewhere could
+    // commit between this read and the offer being written, and the offer would be created by
+    // someone who is no longer the owner. acceptOwnershipTransfer already locks both parties, so
+    // this path was the asymmetric one.
+    await initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    });
+
+    const lockIndex = mocks.queryRaw.mock.calls.findIndex(([t]) =>
+      rawSql(t).includes("FOR UPDATE") && rawSql(t).includes("HouseholdMember")
+    );
+    expect(lockIndex).toBeGreaterThanOrEqual(0);
+
+    // The actor's row id is not supplied by the caller, so one unlocked read is unavoidable to
+    // discover WHICH row to lock. The decision that grants authority must come from a SECOND read
+    // taken after the lock -- asserting only that some actor read exists would pass while the role
+    // check still read an unlocked row.
+    expect(mocks.txMemberFindUniqueOrThrow).toHaveBeenCalledTimes(1);
+    expect(mocks.txMemberFindUniqueOrThrow.mock.calls[0][0].where).toEqual({ id: "member-owner" });
+
+    // The re-read happens after the lock, which is what makes its value trustworthy.
+    expect(mocks.queryRaw.mock.invocationCallOrder[lockIndex]).toBeLessThan(
+      mocks.txMemberFindUniqueOrThrow.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("refuses when the actor stopped being the owner between discovery and the lock", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+    // The whole point of the re-read: a concurrent transaction commits a role change in that window.
+    // The discovery read still says owner; the locked re-read says admin, and that must win.
+    mocks.txMemberFindUniqueOrThrow.mockImplementation(async () => ({
+      ...owner(),
+      role: "admin"
+    }));
+
+    await expect(initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    })).rejects.toThrow("forbidden");
+
+    expect(mocks.transferCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the actor was suspended between discovery and the lock", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+    mocks.txMemberFindUniqueOrThrow.mockImplementation(async () => ({
+      ...owner(),
+      disabledAt: new Date("2026-10-22T00:00:00.000Z")
+    }));
+
+    await expect(initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    })).rejects.toThrow("forbidden");
+
+    expect(mocks.transferCreate).not.toHaveBeenCalled();
+  });
+
+  it("locks the actor and the recipient together, in ascending id order", async () => {
+    mocks.txMemberFindFirst.mockResolvedValueOnce(owner()).mockResolvedValueOnce(recipient());
+    // One lock statement covering both rows, ordered, so this path and member removal cannot
+    // deadlock against each other -- the same discipline invites.ts and acceptOwnershipTransfer use.
+    await initiateOwnershipTransfer({
+      householdId: "household-1",
+      toMemberId: "member-recipient",
+      confirmation: "River House",
+      operationId: initiateOperationId
+    });
+
+    const locks = memberLockCalls();
+    expect(locks.length).toBe(1);
+    expect(locks[0]).toContain("ORDER BY");
+    // Both parties appear in the one locked set.
+    // Prisma.join yields a sql fragment, so the ids are inside its values, not the raw args.
+    const lockedIds = mocks.queryRaw.mock.calls
+      .filter(([t]) => rawSql(t).includes("FOR UPDATE") && rawSql(t).includes("HouseholdMember"))
+      .flatMap(([, ...values]) => values)
+      .flatMap((value) => (value && typeof value === "object" && "values" in value
+        ? (value as { values: unknown[] }).values
+        : [value]))
+      .flat();
+    expect(lockedIds).toContain("member-recipient");
+    expect(lockedIds).toContain("member-owner");
   });
 
   it("requires fresh authentication at the edge", async () => {
