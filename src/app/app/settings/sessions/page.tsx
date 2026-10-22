@@ -2,12 +2,14 @@ import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { SessionManager } from "@/components/settings/session-manager";
 import { env } from "@/lib/env";
+import { getEffectiveHouseholdContext } from "@/server/auth/context";
 import { requireUserPage } from "@/server/auth/session";
 
 export default async function SessionsPage() {
   const user = await requireUserPage();
+  const ctx = await getEffectiveHouseholdContext();
   return (
-    <AppShell title="Sessions" userName={user.name} parent={{ href: "/app/settings", label: "Settings" }}>
+    <AppShell title="Sessions" userName={user.name} role={ctx.role} parent={{ href: "/app/settings", label: "Settings" }}>
       <div>
         <Card>
           <SessionManager key={`sessions:${user.id}`} accountScope={user.id} timeZone={env.APP_TIMEZONE} />

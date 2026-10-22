@@ -148,3 +148,37 @@ describe("the phone's bottom tabs", () => {
     expect(source).not.toMatch(/role === "read_only"/);
   });
 });
+
+describe("the role actually reaches the chrome", () => {
+  // M11/M12 from an independent review: the desktop nav filtered correctly while the phone nav was
+  // handed `undefined`, and a page could stop passing the viewer's role at all. Both survived the
+  // whole suite because every page test stubs AppShell away and no test rendered it for real.
+  // These assert the wiring itself, in source, since AppShell is a server component that reads env
+  // and node:crypto and cannot be rendered in jsdom.
+  const shell = readFileSync("src/components/app-shell.tsx", "utf8");
+
+  it("hands the viewer's role to the phone's bottom bar", () => {
+    // `role={undefined}` or a dropped prop leaves a relative with every tab on a phone.
+    expect(shell).toMatch(/<MobileBottomNav[^>]*\srole=\{role\}/);
+    expect(shell).not.toMatch(/<MobileBottomNav[^>]*role=\{undefined\}/);
+  });
+
+  it.each([
+    ["src/app/app/moments/page.tsx", /role=\{viewer\.role\}/g],
+    ["src/app/app/moments/removed/page.tsx", /role=\{ctx\.role\}/g],
+    ["src/app/app/moments/[id]/page.tsx", /role=\{ctx\.role\}/g],
+    ["src/app/app/settings/page.tsx", /role=\{ctx\.role\}/g],
+    ["src/app/app/settings/sessions/page.tsx", /role=\{ctx\.role\}/g],
+    ["src/app/app/log/[type]/page.tsx", /role=\{home\.role\}/g]
+  ])("%s tells the shell who is looking", (file, pattern) => {
+    // Every page a relative can reach must pass the role, or they get a parent's sidebar with links
+    // that bounce them straight back to Moments.
+    const source = readFileSync(file, "utf8");
+    const shells = source.match(/<AppShell/g) ?? [];
+    expect(shells.length).toBeGreaterThan(0);
+    // Every AppShell site on the page must pass the role, not just the first. The moment focus page
+    // renders two (the found moment and the "moment is gone" fallback a stale notification lands
+    // on), and an earlier version of this test only required one of them.
+    expect(source.match(pattern as RegExp & { global: true }) ?? []).toHaveLength(shells.length);
+  });
+});

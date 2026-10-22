@@ -105,7 +105,7 @@ The first household creator is the protected owner and has full administrative
 access. Owners can appoint delegated admins. Admins manage operational household
 settings and lower-access members, but cannot change the owner or grant/revoke
 Admin access. Parents can manage babies, notifications, exports, and activity;
-caretakers manage their own activity; read-only members cannot write.
+caretakers manage their own activity; read-only members cannot write activity (they may post to Moments, comment and react).
 
 Server-side permission enforcement is required for every household-scoped read or
 write. UI hiding is not enough.

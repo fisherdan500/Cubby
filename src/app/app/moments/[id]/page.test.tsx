@@ -3,7 +3,7 @@ import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
+const mocks = vi.hoisted(() => ({ getEffectiveHouseholdContext: vi.fn(),
   requireUserPage: vi.fn(),
   getHeaderBabySelector: vi.fn(),
   getFeedPostView: vi.fn(),
@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
 
 globalThis.React = React;
 
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext
+}));
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/feed-posts", () => ({ getFeedPostView: mocks.getFeedPostView }));
@@ -70,6 +73,7 @@ async function renderMoment(id = "post-1") {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({ userId: "user-1", memberId: "member-1", householdId: "household-1", role: "parent" });
   mocks.requireUserPage.mockResolvedValue({ id: "user-1", name: "Sam" });
   mocks.getHouseholdHome.mockResolvedValue({ householdId: "household-1" });
   mocks.getHeaderBabySelector.mockResolvedValue({ selectedBabyId: "baby-1", babies: [{ id: "baby-1", name: "Avery", ageLabel: "", inactive: false }] });

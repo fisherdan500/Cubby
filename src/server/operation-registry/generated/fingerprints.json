@@ -1,6 +1,6 @@
 {
   "authority": "observation_only",
-  "declarationDigest": "7534c290f8fabac6241438b2fe9bc015bad03ad8a9a84d4c59a3c6861af8529b",
+  "declarationDigest": "60ffda6c68128981d9af20f6a4e36afc1ef46b0d0583ce2120b641b64c8c97ee",
   "declarationDigestVersion": "normalized-declarations.v1",
   "deferredGateRegistryDigest": "385c95a8856bf5ac87e658f618b7ff1f37259598bbc4b25cf242f7e41f170519",
   "deferredGateRegistryDigestVersion": "deferred-gates.v1",
@@ -2160,17 +2160,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "1f86c5a439e03e01efc14cf5d8b5915cb635976fe04ad66a0c83dbe2630ec380",
+          "digest": "2d657542c91613f33896f31c8f4714256a33b30cb3c12193e9f0af64407c734c",
           "file": "src/app/app/history/page.tsx"
         }
       ],
       "declarationDigest": "76bcf0a297f538154c916b65dfbbc162578b8add859110ace4ad198af734d3f3",
-      "fingerprint": "a13aa4866bcb6e3e5b07890d16b4571e2cc290b57d710cce139c81b8373715a5",
+      "fingerprint": "e6ccb00ae98c971062dbad79c4879e0a003258d77573f74fb044d2002553db9a",
       "id": "fingerprint:server_loader:src/app/app/history/page.tsx",
       "ownerId": "server_loader:src/app/app/history/page.tsx",
       "ownerModule": "src/app/app/history/page.tsx",
       "sidecarPath": "src/app/app/history/page.operation.ts",
-      "sourceDigest": "deb3d2929067d2a6667febd686e9642bf7eef5aadd82380d995b30ff281baef5",
+      "sourceDigest": "d08103edc2c9e7dab58187a69e225003c84c604d932f51a035d357a6df6b3fe7",
       "status": "declared"
     },
     {
@@ -2192,33 +2192,33 @@
     {
       "anchorFiles": [
         {
-          "digest": "1a4bca09da7c1483942b1a23f4d74c3ac3f5fa9ac823475c7a440b91d1a7d4a7",
+          "digest": "3c3a72a0e9e8db8056b2cfe88033dab46095ee8ce3ffe204a0c14e0ca5ae923b",
           "file": "src/app/app/log/[type]/page.tsx"
         }
       ],
       "declarationDigest": "23dcb767f2eebf170caae52d98a2e20ac71ed9b981f95bc8b7f865d2487a5e12",
-      "fingerprint": "f2d6acd3a4cdfdc25ebfd334b2eadcb9f951df39c8df9348b1a638a81efb7753",
+      "fingerprint": "10b6f8dfdbe8657f375cc4fc8fa4af4c183e17a93dc322ebafb20bea4b224db5",
       "id": "fingerprint:server_loader:src/app/app/log/[type]/page.tsx",
       "ownerId": "server_loader:src/app/app/log/[type]/page.tsx",
       "ownerModule": "src/app/app/log/[type]/page.tsx",
       "sidecarPath": "src/app/app/log/[type]/page.operation.ts",
-      "sourceDigest": "4e3608334ea918c1cd22d344c24e0ec2683a925ed4b37add7761783bdd5f2a10",
+      "sourceDigest": "b485ebde25ea8bb136262eb90aad597b0969ef0e179abcb61a5840795e01f9cb",
       "status": "declared"
     },
     {
       "anchorFiles": [
         {
-          "digest": "16b1dffebc69cd21bbc21241963f1c2d21301fea6e1978b5779b9e3ac040c948",
+          "digest": "026ec942f0cec45ab60ae137e91ebca4c36e4c2698b9dd28339e63a68d70bf8b",
           "file": "src/app/app/moments/[id]/page.tsx"
         }
       ],
-      "declarationDigest": "fc12ebd9110ff150e8aaaad4705240bff3b190e0d246e146c9e2b0af683f0552",
-      "fingerprint": "184a70e68fd174bf4f2789d046d6738bdeb5e0fe12e8700f4b5584c168959057",
+      "declarationDigest": "cbdf693ae2f1915b8cd277d0deb47145e8907442d65cbde1c12b3a6d7a33b0cb",
+      "fingerprint": "0e034645cd7c8528d90c6a10900262ab0fbb24051c3363e030de7939a96ce930",
       "id": "fingerprint:server_loader:src/app/app/moments/[id]/page.tsx",
       "ownerId": "server_loader:src/app/app/moments/[id]/page.tsx",
       "ownerModule": "src/app/app/moments/[id]/page.tsx",
       "sidecarPath": "src/app/app/moments/[id]/page.operation.ts",
-      "sourceDigest": "cbc50a067375d75492d557b8a64a4286bd4f653014f94b55c2bbd6d43baaf51a",
+      "sourceDigest": "6138c352d65a91666b1f0acd96fd5bf5466ca57c7e3023489f13070eb5da5f88",
       "status": "declared"
     },
     {
@@ -2240,17 +2240,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "2b507bbd5719881543e78cb57139b9a36e55dd4ba6273e2ffb76e4329fbaaffc",
+          "digest": "1a619b13d68ea59c75c6a27d0ab3f3c801af6f5b87360c3c552cd58c3d797284",
           "file": "src/app/app/moments/removed/page.tsx"
         }
       ],
-      "declarationDigest": "91ea49d66e43c9f4adb1c4944b372a0b50bd6efbabd5ac826c583240d4d2e90f",
-      "fingerprint": "7920abe00a2ecb338c59d5334e84f2e1f3a64f55274a087c8fcfcd15ef68098a",
+      "declarationDigest": "7840da32d0985e45c19ba9c20dc7874663af840beafe952e0fd9f3a69f9dc43e",
+      "fingerprint": "d24e0edf269e1007e5e046c97862d473004e7fae39d4f20d014c85052fefed64",
       "id": "fingerprint:server_loader:src/app/app/moments/removed/page.tsx",
       "ownerId": "server_loader:src/app/app/moments/removed/page.tsx",
       "ownerModule": "src/app/app/moments/removed/page.tsx",
       "sidecarPath": "src/app/app/moments/removed/page.operation.ts",
-      "sourceDigest": "d2afe09628677ea61143bae0f6e5b78bcbc1968f7463e09219697d22fe2e3894",
+      "sourceDigest": "a6f6f8d8ce1e61263a5893914862d0c2f677fb6db786d759ed08847282cee81a",
       "status": "declared"
     },
     {
@@ -2416,17 +2416,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "05bb79fd093278f44a4c315233f40ce505cdf28fe0c2b7acb9c0cd544687aa54",
+          "digest": "ce23ea6e76cc9642204a9d009eb5971cae684a5c77b97a96a8be075bb0991861",
           "file": "src/app/app/settings/page.tsx"
         }
       ],
       "declarationDigest": "0b8d39692d83cf4fc301cb6608982b410d3c8e87b09a94939a8c36b282cc5545",
-      "fingerprint": "7a514f41acd284f689687dfee260e680c8c3648f71121a15e393b0f06a10ab9f",
+      "fingerprint": "50e67a2ab9011eda0cbc33b19a045a21a021922fb4a817adcb4e392abcacd980",
       "id": "fingerprint:server_loader:src/app/app/settings/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/page.tsx",
       "ownerModule": "src/app/app/settings/page.tsx",
       "sidecarPath": "src/app/app/settings/page.operation.ts",
-      "sourceDigest": "36fa2644722a2683e5be39aad0458463e316a220a7dda588df498a2a8e80865c",
+      "sourceDigest": "60e3e72854e994635d8fb737e8661763785017692ae64bbe7318ab2519fb9cb7",
       "status": "declared"
     },
     {
@@ -2448,17 +2448,17 @@
     {
       "anchorFiles": [
         {
-          "digest": "50321b062b67707b2dad0bb3adb933c238e4290b44309b2747cc2eceb7df1305",
+          "digest": "6344d7b7f90aac2cbb3d3b3dceba01700948c279ff20e44f9f771530c5f205d3",
           "file": "src/app/app/settings/sessions/page.tsx"
         }
       ],
-      "declarationDigest": "1e02b68853ba02816f6f3a1540b67a62d06c1acd84aac1aabe86de29cddb4ccd",
-      "fingerprint": "c7fbf35d74abb42bc3b6e9da3ad6324f231470895b5a50c59268e752bb0158c7",
+      "declarationDigest": "84589a61b675252195c1961eccb859ab8f8cecabd7b4fccd12e7d04576d21b78",
+      "fingerprint": "20d0789797b67ed4a8b7d46c94efd2a6348e2dd91658d11bfa42150ed1b20624",
       "id": "fingerprint:server_loader:src/app/app/settings/sessions/page.tsx",
       "ownerId": "server_loader:src/app/app/settings/sessions/page.tsx",
       "ownerModule": "src/app/app/settings/sessions/page.tsx",
       "sidecarPath": "src/app/app/settings/sessions/page.operation.ts",
-      "sourceDigest": "37ebdb54fc034838a1a73c9951bbfd6dbfbc0426555b2d08293a22061871205b",
+      "sourceDigest": "9c1244497ac9550f1dc4b22289a9c5f7803ad399f439319529f46cf9315482b2",
       "status": "declared"
     },
     {
@@ -4728,11 +4728,11 @@
   ],
   "generatorDigest": "5441f427aab44c94bbc1d5912b0c58ae813c3edbd9bc411290c457833fb1fbdc",
   "generatorVersion": "r0.1",
-  "observationDigest": "44e6d3e621a538f544397b43a37e2b86c14c2f74f29490f6404002ca003da108",
+  "observationDigest": "14e57ee67e90ff47a4d15ea04f63f5e04043ff08a62fae4d0f021f490fcdbb3f",
   "observationDigestVersion": "normalized-observation.v1",
   "ownerSetDigest": "0769c1e1136532170ab16ee3c239bb213c9311f61cf26d1a3f7dbf3e5e24f5ca",
   "ownerSetDigestVersion": "owner-set.v1",
-  "registryDigest": "936c3c3234bece1fa5f36b42ae3e3bedf7e56a6351cc5d7b15d8069e814fd9fc",
+  "registryDigest": "2212cab416dc8a914fc27491301d6d7e445ea99b24cc01ac48697b342ff4e061",
   "registryDigestVersion": "operation-registry.v1",
   "runtimeInvocationFingerprints": [
     {

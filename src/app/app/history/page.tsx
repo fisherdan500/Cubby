@@ -29,8 +29,14 @@ export default async function HistoryPage({
   const week = resolveHistoryWeek(searchParams.week, env.APP_TIMEZONE);
   if (week.status === "invalid") notFound();
   const weekKey = week.status === "valid" ? week.key : undefined;
+  // A relative sees Moments only (User decision, 2026-10-22). Guarded here as well as hidden from
+  // the navigation, so typing the URL does not reach it either. The viewer is resolved first and on
+  // its own: reading the whole activity log and then throwing it away would be wasted work for
+  // someone who is being sent elsewhere.
+  const viewer = await getActivityRowViewer();
+  if (!hasPermission(viewer.role, "activity.create")) redirect("/app/moments");
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
-  const [activityResults, unitSettings, viewer] = await Promise.all([
+  const [activityResults, unitSettings] = await Promise.all([
     listActivities({
       babyId: babySelector?.selectedBabyId ?? searchParams.babyId,
       type: searchParams.type,
@@ -38,12 +44,8 @@ export default async function HistoryPage({
       ...(week.status === "valid" ? { week: week.key } : {}),
       page: historyPageQuery(searchParams.cursor)
     }),
-    getActivityUnitPreferences(),
-    getActivityRowViewer()
+    getActivityUnitPreferences()
   ]);
-  // A relative sees Moments only (User decision, 2026-10-22). Guarded here as well as hidden
-  // from the navigation, so typing the URL does not reach it either.
-  if (!hasPermission(viewer.role, "activity.create")) redirect("/app/moments");
   const { items: activities, nextCursor } = paginateHistoryItems(activityResults);
   const selectedBabyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const returnTo = historyHref({

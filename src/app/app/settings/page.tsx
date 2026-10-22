@@ -44,7 +44,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { d
   const showOwnership = Boolean(ownershipView?.isOwner || ownershipView?.pending?.awaitingMe);
   const visibleSections = sections.filter((section) => hasPermission(ctx.role, section.permission));
   return (
-    <AppShell title="Settings" userName={user.name}>
+    <AppShell title="Settings" userName={user.name} role={ctx.role}>
       {searchParams.denied === "1" ? (
         <div className="mb-3 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm font-semibold text-danger">
           You do not have access to that setting.

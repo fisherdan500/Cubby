@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { HouseholdRole } from "@prisma/client";
 import {
   canAssignHouseholdRole,
   canManageHouseholdRole,
   canMutateOwnOrAny,
   householdRoles,
-  hasPermission
+  hasPermission,
+  type Permission
 } from "@/domain/roles";
 
 describe("role permissions", () => {
@@ -37,7 +39,7 @@ describe("role permissions", () => {
     expect(canMutateOwnOrAny("caretaker", "update", false)).toBe(false);
   });
 
-  it("keeps read-only members from writing", () => {
+  it("keeps read-only members from changing activity", () => {
     expect(hasPermission("read_only", "activity.read")).toBe(true);
     expect(hasPermission("read_only", "activity.create")).toBe(false);
   });
@@ -101,5 +103,41 @@ describe("role permissions", () => {
     expect(canLog.length, "no role can log an entry, so the rule was never exercised").toBeGreaterThan(0);
     for (const role of canLog) expect(canAttach).toContain(role);
     expect(canAttach).toContain("read_only");
+    // The old set equality was the only alarm against over-granting feed.post. Relaxing it to one
+    // direction removed that alarm, so the exception is pinned explicitly instead: read_only is the
+    // single role that may post without being able to log, and any future addition must be
+    // deliberate rather than silent.
+    expect(canAttach.filter((role) => !canLog.includes(role))).toEqual(["read_only"]);
+  });
+});
+
+const allPermissions = (() => {
+  // Read from source so a permission added to the union is automatically covered below; an
+  // inlined copy would quietly stop testing new permissions.
+  const source = readFileSync("src/domain/roles.ts", "utf8");
+  const union = source.slice(source.indexOf("export type Permission ="));
+  return [...new Set(union.slice(0, union.indexOf(";")).match(/"[a-z.]+"/g)!.map((q) => q.slice(1, -1)))] as Permission[];
+})();
+
+describe("a relative's permissions are pinned exactly", () => {
+  // An independent review showed that adding "export.create" to read_only -- letting a relative
+  // export the household's entire activity log -- passed the whole suite, as did granting
+  // notification.manage and integration.manage (API keys and webhooks). Nothing asserted the set,
+  // only individual members of it. Driven off the full Permission union so a newly added
+  // permission must be classified here deliberately rather than landing on a relative silently.
+  const granted = ["activity.read", "feed.comment", "feed.post", "session.manage"] as const;
+
+  it("grants exactly what the User decided", () => {
+    for (const permission of granted) {
+      expect(hasPermission("read_only", permission), permission).toBe(true);
+    }
+  });
+
+  it("withholds every other permission in the system", () => {
+    const withheld = allPermissions.filter((permission) => !granted.includes(permission as never));
+    expect(withheld.length).toBeGreaterThan(0);
+    for (const permission of withheld) {
+      expect(hasPermission("read_only", permission), permission).toBe(false);
+    }
   });
 });

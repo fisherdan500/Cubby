@@ -28,7 +28,7 @@ import { queueMomentNotification } from "@/server/services/moment-notifications"
 /**
  * Posts in the private family feed (DEC-PROD-421): words, photos (DEC-PROD-422), or both. A post is
  * about one baby, or the whole family, and whole-family posts appear in every baby's feed. Anyone but
- * read-only members may post; an author may edit their own post and remove it, and owners, admins and
+ * every member may post, relatives included; an author may edit their own post and remove it, and owners, admins and
  * parents may remove any. A removed post and its photos can be brought back for thirty days. The audit
  * trail records that a post was made, edited, removed or restored, never what it said or showed.
  */

@@ -164,7 +164,7 @@ export function AppShell({
         <ActiveTimerBar selectedBabyId={timerBabyId ?? selectedBabyId} activityType={timerActivityType} />
       ) : null}
       <SavedEntryUndo />
-      <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName}  role={role}/>
+      <MobileBottomNav selectedBabyId={selectedBabyId} userName={userName} role={role} />
     </div>
     </NavPendingProvider>
   );

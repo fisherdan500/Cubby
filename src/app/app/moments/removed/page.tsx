@@ -6,6 +6,7 @@ import { FEED_POST_RECOVERY_MS } from "@/domain/feed-post";
 import { env } from "@/lib/env";
 import { feedHref } from "@/lib/feed";
 import { requireUserPage } from "@/server/auth/session";
+import { getEffectiveHouseholdContext } from "@/server/auth/context";
 import { getHeaderBabySelector } from "@/server/services/baby-selector";
 import { listRemovedFeedPosts } from "@/server/services/feed-posts";
 
@@ -23,6 +24,7 @@ function timeLeft(deletedAt: Date, now: Date) {
  */
 export default async function RemovedFeedPostsPage({ searchParams }: { searchParams: { babyId?: string } }) {
   const user = await requireUserPage();
+  const ctx = await getEffectiveHouseholdContext();
   const babySelector = await getHeaderBabySelector(user.id, searchParams.babyId, { includeInactive: true });
   const babyId = babySelector?.selectedBabyId ?? searchParams.babyId;
   const posts = await listRemovedFeedPosts();
@@ -30,7 +32,7 @@ export default async function RemovedFeedPostsPage({ searchParams }: { searchPar
   const removedOn = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: env.APP_TIMEZONE });
 
   return (
-    <AppShell title="Recently removed" userName={user.name} babySelector={babySelector}>
+    <AppShell title="Recently removed" userName={user.name} babySelector={babySelector} role={ctx.role}>
       <div className="mx-auto max-w-2xl space-y-4">
         <Link href={feedHref({ babyId })} className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-muted">
           Back to Moments

@@ -3,7 +3,7 @@ import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
+const mocks = vi.hoisted(() => ({ getEffectiveHouseholdContext: vi.fn(),
   requireUserPage: vi.fn(),
   getHeaderBabySelector: vi.fn(),
   listRemovedFeedPosts: vi.fn()
@@ -11,6 +11,9 @@ const mocks = vi.hoisted(() => ({
 
 globalThis.React = React;
 
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext
+}));
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/services/baby-selector", () => ({ getHeaderBabySelector: mocks.getHeaderBabySelector }));
 vi.mock("@/server/services/feed-posts", () => ({ listRemovedFeedPosts: mocks.listRemovedFeedPosts }));
@@ -31,6 +34,7 @@ async function renderPage(searchParams: Record<string, string> = {}) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({ userId: "user-1", memberId: "member-1", householdId: "household-1", role: "parent" });
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-29T12:00:00Z"));
   mocks.requireUserPage.mockResolvedValue({ id: "user-1", name: "Sam" });

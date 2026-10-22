@@ -2,10 +2,13 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ requireUserPage: vi.fn(), requireSettingsPage: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getEffectiveHouseholdContext: vi.fn(), requireUserPage: vi.fn(), requireSettingsPage: vi.fn() }));
 
 globalThis.React = React;
 
+vi.mock("@/server/auth/context", () => ({
+  getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext
+}));
 vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
 vi.mock("@/server/auth/page-access", () => ({ requireSettingsPage: mocks.requireSettingsPage }));
 vi.mock("@/components/app-shell", () => ({
@@ -18,6 +21,7 @@ vi.mock("@/components/settings/session-manager", () => ({
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.getEffectiveHouseholdContext.mockResolvedValue({ userId: "user-1", memberId: "member-1", householdId: "household-1", role: "parent" });
   mocks.requireUserPage.mockResolvedValue({ id: "global-user", name: "Global User" });
 });
 
