@@ -557,6 +557,7 @@ model Household {
   feedComments    FeedComment[]
   feedReactions   FeedReaction[]
   attachments     Attachment[]
+  ownershipTransfers HouseholdOwnershipTransfer[]
 
   @@index([deletedAt])
   @@index([createdAt])
@@ -592,6 +593,8 @@ model HouseholdMember {
   feedReactions FeedReaction[]
   attachments Attachment[]
   profilePhotos Attachment[] @relation("MemberProfilePhoto")
+  ownershipTransfersFrom HouseholdOwnershipTransfer[] @relation("OwnershipTransferFrom")
+  ownershipTransfersTo   HouseholdOwnershipTransfer[] @relation("OwnershipTransferTo")
 
   @@unique([householdId, id])
   @@index([householdId, role])
@@ -1202,6 +1205,40 @@ model Attachment {
   @@index([householdId, memberId])
   @@index([state, purgeAfter])
   @@index([state, createdAt])
+}
+
+/// A household ownership transfer the owner has initiated and the recipient has not yet answered.
+///
+/// Ownership moves in two steps on purpose (DEC-PROD-017): the owner names a recipient and gives up
+/// authority knowingly, and the recipient accepts knowingly. Neither half is a surprise. The row IS
+/// the pending state -- it grants no authority while it sits here, and acceptance is what moves the
+/// role.
+///
+/// Both member references carry the householdId in a composite foreign key, so a transfer can never
+/// name a member of a different household: the database refuses it rather than trusting the caller.
+/// Exactly one transfer may be pending per household, enforced by a partial unique index in the
+/// migration rather than in application code.
+model HouseholdOwnershipTransfer {
+  id               String    @id @default(cuid())
+  householdId      String
+  fromMemberId     String
+  toMemberId       String
+  /// Set when the transfer settles; a NULL status is the pending state the partial index guards.
+  status           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  expiresAt        DateTime
+  settledAt        DateTime?
+  /// Idempotency for the initiating and settling browser operations.
+  initiateOperationId String? @unique
+  settleOperationId   String? @unique
+  household        Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  fromMember       HouseholdMember  @relation("OwnershipTransferFrom", fields: [householdId, fromMemberId], references: [householdId, id], onDelete: Cascade)
+  toMember         HouseholdMember  @relation("OwnershipTransferTo", fields: [householdId, toMemberId], references: [householdId, id], onDelete: Cascade)
+
+  @@unique([householdId, id])
+  @@index([householdId, status])
+  @@index([householdId, toMemberId, status])
 }
 
 // A comment in the family feed (DEC-PROD-421), on a post or on a logged entry - exactly one of the

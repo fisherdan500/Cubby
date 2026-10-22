@@ -57,8 +57,16 @@ export function LeaveHouseholdForm({ preview }: { preview: LeavePreview }) {
       <div className="rounded-lg border border-danger/40 bg-danger/5 p-4">
         <p className="font-semibold text-danger">The protected household owner cannot leave.</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          You must transfer ownership before leaving. Ownership transfer is not available in this milestone.
+          A household must always have exactly one owner, so you must transfer ownership to another
+          member first. They become the owner once they accept, and you stay in the household as an
+          administrator.
         </p>
+        <a
+          className="mt-3 inline-block text-sm font-semibold underline"
+          href={`/app/settings/ownership-transfer?householdId=${encodeURIComponent(preview.householdId)}`}
+        >
+          Transfer ownership
+        </a>
       </div>
     );
   }

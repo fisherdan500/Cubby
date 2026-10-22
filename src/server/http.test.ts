@@ -121,6 +121,44 @@ describe("handleError", () => {
     expect(wrongStatus).toEqual([]);
   });
 
+  it("explains every ownership-transfer refusal in words, with its status", async () => {
+    // Handing a household to someone else is rare, consequential and hard to undo, so each refusal
+    // has to say what went wrong and what the person can do instead. Codes and statuses are pinned
+    // together: a 409 quietly becoming a 500 would not change the sentence, and a reworded sentence
+    // would not change the code, so neither alone would catch a regression.
+    const expected: Array<[string, number, string]> = [
+      ["household_ownership_transfer_confirmation_mismatch", 422, "Type the household name exactly to confirm the transfer."],
+      ["household_ownership_transfer_recipient_invalid", 422, "Choose an active household member with a verified account. Invite them first if they are not a member yet."],
+      ["household_ownership_transfer_already_pending", 409, "This household already has a transfer waiting for a reply. Withdraw it before offering the household to someone else."],
+      ["household_ownership_transfer_expired", 410, "This ownership transfer expired before it was accepted. Ask the owner to offer it again."],
+      ["household_ownership_transfer_owner_changed", 409, "The member who offered this household is no longer its owner, so the offer can no longer be accepted."],
+      ["household_ownership_transfer_operation_reused", 409, "This ownership transfer request was already answered. Reload the page to see where it stands."],
+      ["household_ownership_transfer_recipient_ineligible", 409, "Your membership changed while this offer was waiting, so you can no longer accept it. Ask a household administrator about your access."],
+      ["household_ownership_transfer_withdrawn", 409, "The owner withdrew this ownership offer, so there is nothing to answer."],
+      ["household_ownership_transfer_already_answered", 409, "This ownership offer was already answered. Reload the page to see where it stands."]
+    ];
+
+    const unexplained: string[] = [];
+    const wrongStatus: string[] = [];
+    for (const [code, status, message] of expected) {
+      const response = handleError(new Error(code));
+      const body = (await response.json()) as { error: { code: string; message: string } };
+      if (body.error.code === "server_error") unexplained.push(code);
+      if (response.status !== status) wrongStatus.push(`${code}:${response.status}!=${status}`);
+      expect(body.error.message).toBe(message);
+      // A raw identifier is not an explanation, and neither is a fragment.
+      expect(body.error.message).not.toMatch(/^household_/);
+      expect(body.error.message.length).toBeGreaterThan(20);
+      expect(body.error.message.trim()).toMatch(/[.!?]$/);
+    }
+    expect(unexplained).toEqual([]);
+    expect(wrongStatus).toEqual([]);
+    // Every refusal must point at something that exists. "Cancel it" was in here before a withdraw
+    // path did, which is exactly the sort of instruction a person cannot follow.
+    const sentences = expected.map(([, , message]) => message).join(" ");
+    expect(sentences).not.toMatch(/\bCancel it\b/);
+  });
+
   it("keeps the exact wording of every backup sentence a person can reach", async () => {
     // The table above pins CODES and STATUSES; it never asserted the sentence itself, so any of
     // these could have been reworded into something unhelpful - or into a bare identifier - without

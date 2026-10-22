@@ -39,6 +39,7 @@ const expectedDirectHouseholdModels = [
   "FeedPost",
   "FeedReaction",
   "HouseholdMember",
+  "HouseholdOwnershipTransfer",
   "HouseholdSettings",
   "ImportBatch",
   "ImportedRecord",

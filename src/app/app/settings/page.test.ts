@@ -2,11 +2,13 @@ import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  requireUserPage: vi.fn(),
-  getEffectiveHouseholdContext: vi.fn(),
-  isPlatformOwner: vi.fn(),
-  getAppRegistrationPolicy: vi.fn()
+const mocks = vi.hoisted(() => ({
+  requireUserPage: vi.fn(),
+  getEffectiveHouseholdContext: vi.fn(),
+  isPlatformOwner: vi.fn(),
+  getAppRegistrationPolicy: vi.fn(),
+  requireUser: vi.fn(),
+  getOwnershipTransferView: vi.fn()
 }));
 
 globalThis.React = React;
@@ -17,7 +19,13 @@ vi.mock("next/link", () => ({
 vi.mock("@/components/app-shell", () => ({
   AppShell: ({ children }: { children: React.ReactNode }) => createElement("main", null, children)
 }));
-vi.mock("@/server/auth/session", () => ({ requireUserPage: mocks.requireUserPage }));
+vi.mock("@/server/auth/session", () => ({
+  requireUserPage: mocks.requireUserPage,
+  requireUser: mocks.requireUser
+}));
+vi.mock("@/server/services/household-ownership-transfer", () => ({
+  getOwnershipTransferView: mocks.getOwnershipTransferView
+}));
 vi.mock("@/server/auth/context", () => ({ getEffectiveHouseholdContext: mocks.getEffectiveHouseholdContext }));
 vi.mock("@/server/services/platform-authority", () => ({ isPlatformOwner: mocks.isPlatformOwner }));
 vi.mock("@/server/services/registration", () => ({ getAppRegistrationPolicy: mocks.getAppRegistrationPolicy }));
@@ -31,6 +39,8 @@ async function render(role: string) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.requireUser.mockResolvedValue({ id: "user-1" });
+  mocks.getOwnershipTransferView.mockResolvedValue({ isOwner: true, awaitingMe: false, pending: null });
   mocks.requireUserPage.mockResolvedValue({ id: "user-1", name: "Avery" });
   mocks.isPlatformOwner.mockResolvedValue(false);
   mocks.getAppRegistrationPolicy.mockResolvedValue({ platformOwnerBound: true });

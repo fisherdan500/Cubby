@@ -13,6 +13,11 @@ export const operation = {
     },
     {
       kind: "server_value_import",
+      symbol: "getOwnershipTransferView",
+      target: "src/server/services/household-ownership-transfer.ts#getOwnershipTransferView"
+    },
+    {
+      kind: "server_value_import",
       symbol: "getAppRegistrationPolicy",
       target: "src/server/services/registration.ts#getAppRegistrationPolicy"
     },
