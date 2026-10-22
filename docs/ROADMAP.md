@@ -43,7 +43,10 @@ text, credentials, route names, or implementation structure.
 
 ### Cross-Device Freshness Fallback
 
-- Status: in progress — bounded fallback source implemented; runtime/two-browser acceptance pending.
+- Status: source complete and deployed; the only outstanding step is the two-browser Chrome
+  rehearsal, which is a separately approved gate (it starts Docker, PostgreSQL and Chrome).
+  No source work remains on this item. DEC-PROD-173's prompt timer/revision phase is separate
+  and still unstarted.
 - Priority: high
 - Goal: Keep an open household screen and its active timers current across devices without interrupting unsaved work.
 - Acceptance: Separately approved disposable production-image/two-browser Chrome rehearsal proves visible updates within 20 seconds, foreground updates within five seconds, truthful independent page/timer stale state, scoped reads, preserved drafts/photos/dialogs/focus/scroll, bounded requests and complete teardown.
@@ -75,7 +78,7 @@ implementation, merge, deployment, and cleanup approvals.
 
 ### Family Feed
 
-- Status: in progress (DEC-PROD-421)
+- Status: steps 1-4 done; relative access shipped in #260. No step remains unbuilt.
 - Priority: medium
 - Goal: A private family journal: everything logged for the baby as a scrollable feed, then text posts with #tags, then comments and emoji reactions, and later photos.
 - Notes: Private to the household. No public sharing, followers, like counts, ranking or streaks. Browser notifications are separately opt-in per member and cover eligible new Moments, comments and reactions under that member's saved preference. Step 1 adds a Feed tab: every logged activity as its own card for the selected baby, newest first under household days, with header filters, opening the entry and returning to the same feed. On phones it takes the Full Log's tab, and the Full Log moves behind More, with the aim that the feed replaces it.
@@ -90,7 +93,7 @@ Step 2 adds text posts:
 - posts are carried in backups, keeping the author's name on restore.
 
 Step 3 adds comments, reactions and editing:
-- every member, read-only members included, may comment on and react to a post or a logged entry; neither changes the entry;
+- every member, read-only members included, may comment on and react to a post or a logged entry; neither changes the entry; since #260 read-only members (relatives) may also create posts, and their navigation is Moments-only;
 - four reactions - ❤️ love, 😂 funny, 🥰 aww, 🎉 celebrate - shown with the names of who chose them, never a count. 👏 well done was retired so the row fits beside Comment on a phone; stored ones are kept but hidden;
 - authors edit their own comments and posts, marked "edited"; authors remove their own comments, and owners, admins and parents any;
 - the audit records what was done and what it was on, never the words;
@@ -124,7 +127,12 @@ Photos (DEC-PROD-422) are the first attachment type, built to the attachment rul
 
 ### Routine And Planned Schedule
 
-- Status: in progress (DEC-PROD-420)
+- Status: steps 1-2 done (#141 observed Routine; planned schedule shipped — `PlannedSchedule`
+  model, `planned-schedule.ts`, `api/babies/[id]/schedule`, `planned_schedule.save` audit).
+  Step 3 (suggestions) is NOT built and is NOT authorized: `DEC-PROD-352` states it
+  "authorizes no explanation engine, proposal history UI, schema ... migration, worker,
+  deployment, commit or push change." Decided is not go — do not start it without the User
+  explicitly lifting that.
 - Priority: medium
 - Goal: Show what the baby's day actually looks like, and let caregivers write the plan they intend, printable for anyone looking after the baby.
 - Notes: Step 1 (#141) rebuilt the observed Routine: wake, naps and bedtime read by time rather than position, with feed rhythm, variability, an honest not-enough-data state, and a print view labelled observed. Step 2 adds one planned schedule per baby: items at an exact time or within a window, with optional notes. It is edited on the Routine tab beside the observed routine, prints on its own, is saved against its revision, is audited without its text, and is carried in backups. Medicine and supplement items wait for their safety fields (DEC-PROD-149).
